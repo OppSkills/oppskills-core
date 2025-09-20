@@ -14,6 +14,13 @@ import { Menu, Calendar, Users, Trophy, X } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
 import Link from "next/link";
 import Image from "next/image";
+import {
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from "@clerk/nextjs";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -141,10 +148,25 @@ const Navbar = () => {
           {/* Right Side - Buttons */}
           <div className="flex items-center space-x-4">
             <div className="hidden md:flex items-center space-x-2">
-              <Button variant="outline" size="lg">
-                Host an Event
-              </Button>
-              <Button size="lg">Log In</Button>
+              <SignedIn>
+                <Link href="/dashboard">
+                  <Button variant="outline" size="lg">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button variant="outline" size="lg">
+                  Host an Event
+                </Button>
+                <UserButton afterSignOutUrl="/" />
+              </SignedIn>
+              <SignedOut>
+                <Button variant="outline" size="lg">
+                  Host an Event
+                </Button>
+                <SignInButton mode="modal">
+                  <Button size="lg">Log In</Button>
+                </SignInButton>
+              </SignedOut>
             </div>
 
             <div className="border border-border rounded-md">
@@ -221,16 +243,41 @@ const Navbar = () => {
 
               {/* Mobile Buttons */}
               <div className="pt-4 space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Host an Event
-                </Button>
-                <Button className="w-full" onClick={() => setIsOpen(false)}>
-                  Log In
-                </Button>
+                <SignedIn>
+                  <Link href="/dashboard">
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Host an Event
+                  </Button>
+                  <div className="flex justify-center pt-2">
+                    <UserButton afterSignOutUrl="/" />
+                  </div>
+                </SignedIn>
+                <SignedOut>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Host an Event
+                  </Button>
+                  <SignInButton mode="modal">
+                    <Button className="w-full" onClick={() => setIsOpen(false)}>
+                      Log In
+                    </Button>
+                  </SignInButton>
+                </SignedOut>
               </div>
             </div>
           </div>

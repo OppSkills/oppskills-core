@@ -1,0 +1,28 @@
+{
+  "name": "@oppskills/types",
+  "version": "1.0.0",
+  "description": "Shared types for OppSkills applications",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "dev": "tsc -w"
+  },
+  "dependencies": {
+    "@types/numeral": "^2.0.5",
+    "@oppskills/db": "workspace:*",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "reflect-metadata": "^0.2.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
