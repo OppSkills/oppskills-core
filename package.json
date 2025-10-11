@@ -17,7 +17,7 @@
     "db:studio": "cd packages/database && pnpm dlx prisma studio",
     "db:generate": "cd packages/database && pnpm dlx prisma generate",
     "load-secrets": "echo 'loading secrets' && tsx load-secrets.mts",
-    "start:backend": "pnpm run load-secrets && turbo run start --filter=@oppskills/db --filter=@oppskills/backend",
+    "start:backend": "turbo run start --filter=@oppskills/db --filter=@oppskills/backend",
     "start:ui-landing": "turbo run start --filter=ui-landing",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"
