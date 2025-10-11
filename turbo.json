@@ -1,14 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "start": {
-      "env": [
-          "NODE_ENV",
-          "AWS_REGION",
-          "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI",
-          "AWS_CONTAINER_CREDENTIALS_FULL_URI"
-      ]
-    },
+    "start": {},
     "build": {
       "dependsOn": [
         "^build"
