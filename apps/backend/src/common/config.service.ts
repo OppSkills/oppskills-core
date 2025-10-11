@@ -19,14 +19,14 @@ export class ClerkAuthConfigService {
   }
 
   get redisHost(): string {
-    return this.configService.get('REDIS_HOST', 'localhost');
+    return this.configService.get('REDISHOST', 'localhost');
   }
 
   get redisPort(): number {
-    return this.configService.get('REDIS_PORT', 6379);
+    return this.configService.get('REDISPORT', 6379);
   }
 
   get redisPassword(): string {
-    return this.configService.get('REDIS_PASSWORD', '');
+    return this.configService.get('REDISPASSWORD', '');
   }
 }

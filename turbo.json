@@ -4,7 +4,10 @@
     "start": {
       "env": [
         "DATABASE_URL",
-        "CLERK_WEBHOOK_SECRET"
+        "CLERK_WEBHOOK_SECRET",
+        "REDISHOST",
+        "REDISPORT",
+        "REDISPASSWORD"
       ]
     },
     "build": {
