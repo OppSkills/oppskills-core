@@ -20,8 +20,8 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   private initializeRedis() {
     try {
       this.redis = new Redis({
-        host: process.env.REDIS_HOST,
-        port: parseInt(process.env.REDIS_PORT || '6379'),
+        host: process.env.REDISHOST,
+        port: parseInt(process.env.REDISPORT || '6379'),
         maxRetriesPerRequest: 3,
         retryStrategy: (times) => {
           const delay = Math.min(times * 100, 3000);
