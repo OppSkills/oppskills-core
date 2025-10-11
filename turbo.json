@@ -1,7 +1,12 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "start": {},
+    "start": {
+      "env": [
+        "DATABASE_URL",
+        "CLERK_WEBHOOK_SECRET"
+      ]
+    },
     "build": {
       "dependsOn": [
         "^build"
