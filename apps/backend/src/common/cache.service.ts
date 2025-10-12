@@ -14,14 +14,30 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    this.initializeRedis();
+    // this.initializeRedis();
   }
 
   private initializeRedis() {
     try {
+      // Log environment variables for debugging
+      this.logger.debug('Redis environment variables:', {
+        REDIS_URL: process.env.REDIS_URL ? 'SET' : 'NOT SET',
+        REDISHOST: process.env.REDISHOST,
+        REDISPORT: process.env.REDISPORT,
+      });
+
+      // Use REDIS_URL if available, otherwise fall back to individual host/port
+      const redisConfig = process.env.REDIS_URL 
+        ? { url: process.env.REDIS_URL }
+        : {
+            host: process.env.REDISHOST || 'localhost',
+            port: parseInt(process.env.REDISPORT || '6379'),
+          };
+
+      this.logger.debug('Redis config:', redisConfig);
+
       this.redis = new Redis({
-        host: process.env.REDISHOST,
-        port: parseInt(process.env.REDISPORT || '6379'),
+        ...redisConfig,
         maxRetriesPerRequest: 3,
         retryStrategy: (times) => {
           const delay = Math.min(times * 100, 3000);

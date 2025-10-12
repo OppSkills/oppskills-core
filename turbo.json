@@ -3,12 +3,10 @@
   "tasks": {
     "start": {
       "env": [
-        "DATABASE_URL",
-        "CLERK_WEBHOOK_SECRET",
-        "REDISHOST",
-        "REDISPORT",
-        "REDISPASSWORD",
-        "DIRECT_URL"
+          "NODE_ENV",
+          "AWS_REGION",
+          "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI",
+          "AWS_CONTAINER_CREDENTIALS_FULL_URI"
       ]
     },
     "build": {
