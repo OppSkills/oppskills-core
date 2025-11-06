@@ -8,7 +8,7 @@ import { UserAccountsModule } from './user-accounts/user-accounts.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: ['.env', '.env.local'],
+      envFilePath: process.env.NODE_ENV === 'production' ? '.env' : '.env.local',
       isGlobal: true,
     }),
     UserAccountsModule,

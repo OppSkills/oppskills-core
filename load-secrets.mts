@@ -64,14 +64,10 @@ async function loadSecrets(retryCount = 0, maxRetries = 5, retryDelay = 5000) {
         const envPath = path.resolve(process.cwd(), 'apps/backend/.env');
         fs.writeFileSync(envPath, envContent, 'utf8');
         console.log('Secrets loaded from AWS Secrets Manager and saved to apps/backend/.env file');
-        console.log('Backend .env file path:', envPath);
-        console.log('Backend env content:', envContent);
 
         const dbEnvPath = path.resolve(process.cwd(), 'packages/database/.env');
         fs.writeFileSync(dbEnvPath, dbEnvContent, 'utf8');
         console.log('Secrets loaded from AWS Secrets Manager and saved to packages/database/.env file');
-        console.log('Database .env file path:', dbEnvPath);
-        console.log('Database env content:', dbEnvContent);
     } catch (error) {
         console.error('Error loading secrets', error);
         if (retryCount < maxRetries) {
