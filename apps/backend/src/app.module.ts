@@ -4,6 +4,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ClerkAuthConfigService } from './common/config.service';
 import { UserAccountsModule } from './user-accounts/user-accounts.module';
+import { HackathonModule } from './hackathon/hackathon.module' ;
+import { TeamModule } from './team/team.module';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { UserAccountsModule } from './user-accounts/user-accounts.module';
       isGlobal: true,
     }),
     UserAccountsModule,
+    HackathonModule,
+    TeamModule,
   ],
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],

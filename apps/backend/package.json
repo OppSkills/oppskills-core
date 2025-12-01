@@ -28,6 +28,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@oppskills/db": "workspace:*",
     "@oppskills/types": "workspace:*",
+    "cors": "^2.8.5",
     "cross-env": "^10.0.0",
     "crypto": "^1.0.1",
     "ioredis": "^5.7.0",

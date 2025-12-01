@@ -1,7 +1,10 @@
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Poppins } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import ClientProviders from "../../src/client-providers";
+
 import {
   ClerkProvider,
   SignInButton,
@@ -16,10 +19,12 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -38,6 +43,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+      
+
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <head />
@@ -50,10 +57,13 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+             <ClientProviders>
             {children}
+          </ClientProviders>
           </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
+   
   );
 }

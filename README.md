@@ -1,6 +1,25 @@
 # Turborepo starter
+docker compose up -d 
+pnpm dev:backend
+pnpm dev:ui-landing
+pnpm db:dev
+svix listen http://localhost:3001/user-accounts/clerk-webhook
+await window.Clerk.session.getToken();
+pnpm build --filter=@oppskills/types
 
-This Turborepo starter is maintained by the Turborepo core team.
+
+docker-compose up --build -d 
+
+
+
+{
+          "title": "AI Labs Challenge 2025",
+          "description": "An event to build AI-powered tools.",
+          "startDate": "2025-11-08",
+          "endDate": "2025-11-15 ",
+          "mode": "online",
+          "ownerId": "user_3594scawdQRhwSKG2vSM9Q3byvB"
+}
 
 ## Using this example
 
