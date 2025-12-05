@@ -9,12 +9,11 @@ import React from 'react'
 const Home = () => {
   return (
     <div className='poppins'>
-      <Navbar/>
-      <HeroSection/>
-      <ParticipateSection/>
-      <UpcomingCompetitions/>
-      <UpcomingEvents/>
-      <ActiveCommunitypage/>
+      <HeroSection />
+      <ParticipateSection />
+      <UpcomingCompetitions />
+      <UpcomingEvents />
+      <ActiveCommunitypage />
     </div>
   )
 }
