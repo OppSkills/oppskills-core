@@ -25,18 +25,18 @@ export const useHackathons = () => {
 
   // ▌CREATE
   const create = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (payload: unknown) => {
       const token = await getToken();
-      return createHackathon(token!, data);
+      return createHackathon(token!, payload as Record<string, unknown>);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hackathons'] }),
   });
 
   // ▌UPDATE
   const update = useMutation({
-    mutationFn: async ({ id, data }: any) => {
+    mutationFn: async (payload: { id: string; data: unknown }) => {
       const token = await getToken();
-      return updateHackathon(token!, id, data);
+      return updateHackathon(token!, payload.id, payload.data as Record<string, unknown>);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['hackathons'] }),
   });

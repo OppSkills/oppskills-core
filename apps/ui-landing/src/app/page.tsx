@@ -1,7 +1,5 @@
-import Footer from '@/components/footer'
 import ActiveCommunitypage from '@/components/landingpage/ActiveCommunitypage'
 import HeroSection from '@/components/landingpage/hero-section'
-import LandingPage from '@/components/landingpage/landingpage'
 import ParticipateSection from '@/components/landingpage/ParticipateSection'
 import UpcomingCompetitions from '@/components/landingpage/UpcomingCompetitions'
 import { UpcomingEvents } from '@/components/landingpage/UpcomingEvents'
@@ -17,8 +15,6 @@ const Home = () => {
       <UpcomingCompetitions/>
       <UpcomingEvents/>
       <ActiveCommunitypage/>
-      {/* <LandingPage/> */}
-      {/* <Footer/> */}
     </div>
   )
 }

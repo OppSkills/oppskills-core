@@ -8,10 +8,10 @@ const ParticipateSection = () => {
     <section className="w-full flex justify-center bg-background">
       <div className="w-full max-w-[1440px] px-6 py-12 md:px-[60px] xl:px-[140px] md:py-[48px] flex flex-col items-start gap-10">
         <div className="flex flex-col items-start gap-6 w-full">
-          <h1 className="poppins font-semibold text-[32px] md:text-[48px] leading-[125%] text-[#100013]">
+          <h1 className="poppins font-semibold text-[32px] md:text-[48px] leading-[125%] text-foreground">
             Participate in
           </h1>
-          <p className="inter font-normal text-[16px] md:text-[20px] leading-normal text-[#7C737E] w-full max-w-[811px]">
+          <p className="inter font-normal text-[16px] md:text-[20px] leading-normal text-muted-foreground w-full max-w-[811px]">
             Build skills, network with professionals, and accelerate your career
             journey.
           </p>

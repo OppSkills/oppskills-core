@@ -5,14 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import ClientProviders from "../../src/client-providers";
 
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from "@clerk/nextjs";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
