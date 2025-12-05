@@ -5,8 +5,6 @@ import {
   Twitter,
   Linkedin,
   Mail,
-  MapPin,
-  Globe,
   ArrowRight,
 } from "lucide-react";
 import Image from "next/image";

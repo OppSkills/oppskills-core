@@ -1,4 +1,5 @@
 import { Airplay, BrushIcon, Code } from "lucide-react";
+import Image from "next/image";
 import React from "react";
 
 const ActiveCommunitypage = () => {
@@ -125,7 +126,7 @@ const ActiveCommunitypage = () => {
               communities["near-you"].map((community, index) => (
                 <div className="relative" key={index} >
                   <div className="absolute bottom-0 right-0 opacity-50">
-                    <img src={`/icons/texture${index % 3 + 1}.svg`} />
+                    <Image src={`/icons/texture${index % 3 + 1}.svg`} alt="" width={100} height={100} />
                   </div>
                   <div className="w-full bg-background p-4 rounded-md">
                     <div className="flex w-full justify-between pb-6">
@@ -172,7 +173,7 @@ const ActiveCommunitypage = () => {
               communities["top"].map((community, index) => (
                 <div className="relative" key={index} >
                   <div className="absolute bottom-0 right-0 opacity-50">
-                    <img src={`/icons/texture${index % 3 + 1}.svg`} />
+                    <Image src={`/icons/texture${index % 3 + 1}.svg`} alt="" width={100} height={100} />
                   </div>
                   <div className="w-full bg-background p-4 rounded-md">
                     <div className="flex w-full justify-between pb-6">
