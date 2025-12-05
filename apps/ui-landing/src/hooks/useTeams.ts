@@ -13,8 +13,8 @@ export const useTeams = () => {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
   
-   // ▌GET TEAMS OF A HACKATHON
-  const teamsByHackathon = (hackathonId: string) =>
+  // ▌GET TEAMS OF A HACKATHON
+  const useTeamsByHackathon = (hackathonId: string) =>
     useQuery({
       queryKey: ["teams", hackathonId],
       queryFn: async () => {
@@ -37,18 +37,18 @@ export const useTeams = () => {
 
      // ▌CREATE
   const create = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (payload: unknown) => {
       const token = await getToken();
-      return createTeam(token!, data);
+      return createTeam(token!, payload as Record<string, unknown>);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teams"] }),
   });
 
   // ▌JOIN
   const join = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (payload: unknown) => {
       const token = await getToken();
-      return joinTeam(token!, data);
+      return joinTeam(token!, payload as Record<string, unknown>);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teams"] });
@@ -68,5 +68,5 @@ export const useTeams = () => {
     },
   });
 
-  return { teamsByHackathon, create, join, leave };
+  return { teamsByHackathon: useTeamsByHackathon, create, join, leave };
 }

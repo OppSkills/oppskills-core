@@ -7,12 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs"; 
+import { useAuth } from "@clerk/nextjs";
 
 export default function HackathonList() {
   const { data, isLoading, error } = useHackathons();
   const router = useRouter();
-  const { userId } = useAuth(); 
+  const { userId } = useAuth();
 
   if (isLoading)
     return <p className="p-6 text-center">Loading hackathons...</p>;
@@ -47,7 +47,7 @@ export default function HackathonList() {
 
   return (
     <div className="max-w-4xl mx-auto mt-8 space-y-6">
-      {hackathons.map((hack) => {
+      {hackathons.map((hack: any) => {
         // Check if the current user is the owner of this hackathon
         const isOwner = userId && hack.ownerId === userId;
 
@@ -84,7 +84,7 @@ export default function HackathonList() {
                   onClick={() => handleViewClick(hack.id)}
                   className="mt-4 w-full bg-yellow-600 hover:bg-yellow-700"
                 >
-                   View/Manage Your Hackathon
+                  View/Manage Your Hackathon
                 </Button>
               ) : (
                 <Button

@@ -80,11 +80,11 @@ export const UpcomingEvents = () => {
     <section className="w-full flex justify-center bg-background">
       <div className="w-full max-w-[1440px] px-6 py-12 md:px-[60px] xl:px-[140px] xl:py-[48px] flex flex-col items-start gap-10">
         <div className="flex flex-col items-start gap-6 w-full">
-          <h1 className="poppins font-semibold text-[32px] md:text-[48px] leading-[125%] text-[#100013]">
+          <h1 className="poppins font-semibold text-[32px] md:text-[48px] leading-[125%] text-foreground">
             Upcoming Events
           </h1>
 
-          <p className="inter font-normal text-[16px] md:text-[20px] leading-[150%] text-[#7C737E] w-full max-w-[1158px]">
+          <p className="inter font-normal text-[16px] md:text-[20px] leading-[150%] text-muted-foreground w-full max-w-[1158px]">
             Stay ahead with the latest hackathons, idea challenges, and quizzes.
             Register, participate, and showcase your talent.{" "}
           </p>
@@ -95,7 +95,7 @@ export const UpcomingEvents = () => {
             // CARD CONTAINER
             <div
               key={card.id}
-              className="flex flex-col w-full max-w-[370px] rounded-[20px] border-[0.5px] border-[#C3BFC4] bg-[#FAFAFA] overflow-hidden shadow-[0_2px_8px_2px_rgba(69,69,69,0.10)] transition-transform hover:scale-[1.02] group cursor-pointer"
+              className="flex flex-col w-full max-w-[370px] rounded-[20px] border-[0.5px] border-border bg-card overflow-hidden shadow-[0_2px_8px_2px_rgba(69,69,69,0.10)] transition-transform hover:scale-[1.02] group cursor-pointer"
             >
               {/* IMAGE SECTION */}
               <div className="relative h-[241px] w-full">
@@ -118,7 +118,7 @@ export const UpcomingEvents = () => {
                     <g style={{ mixBlendMode: "color-dodge" }}>
                       <path
                         d="M13.5 7.875C12.8787 7.875 12.375 8.37868 12.375 9C12.375 9.62132 12.8787 10.125 13.5 10.125H22.5C23.1213 10.125 23.625 9.62132 23.625 9C23.625 8.37868 23.1213 7.875 22.5 7.875H13.5Z"
-                        fill="#FAFAFA"
+                        fill="currentColor"
                       />
                       <path
                         fillRule="evenodd"
@@ -138,7 +138,7 @@ export const UpcomingEvents = () => {
                   {/* Left: Day • Date • Time */}
                   <div className="flex items-center gap-2">
                     {/* Day */}
-                    <span className="inter font-normal text-[12px] leading-[150%] text-[#7C737E]">
+                    <span className="inter font-normal text-[12px] leading-[150%] text-muted-foreground">
                       {card.day}
                     </span>
 
@@ -154,7 +154,7 @@ export const UpcomingEvents = () => {
                     </svg>
 
                     {/* Date */}
-                    <span className="inter font-normal text-[12px] leading-[150%] text-[#7C737E]">
+                    <span className="inter font-normal text-[12px] leading-[150%] text-muted-foreground">
                       {card.date}
                     </span>
 
@@ -170,7 +170,7 @@ export const UpcomingEvents = () => {
                     </svg>
 
                     {/* Time */}
-                    <span className="inter font-normal text-[12px] leading-[150%] text-[#7C737E]">
+                    <span className="inter font-normal text-[12px] leading-[150%] text-muted-foreground">
                       {card.time}
                     </span>
                   </div>
@@ -180,7 +180,7 @@ export const UpcomingEvents = () => {
                     {card.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="flex justify-center items-center px-2 py-1 rounded-[13px] bg-[#EACCF7] text-[#680095] inter font-medium text-[10px] leading-[150%]"
+                        className="flex justify-center items-center px-2 py-1 rounded-[13px] bg-secondary text-secondary-foreground inter font-medium text-[10px] leading-[150%]"
                       >
                         {tag}
                       </span>
@@ -189,14 +189,14 @@ export const UpcomingEvents = () => {
                 </div>
 
                 {/* --- MIDDLE: Title --- */}
-                <h3 className="poppins font-semibold text-[20px] leading-[125%] text-[#100013] line-clamp-2">
+                <h3 className="poppins font-semibold text-[20px] leading-[125%] text-card-foreground line-clamp-2">
                   {card.title}
                 </h3>
 
                 {/* --- BOTTOM ROW: Attendees, Register, Entry Fee --- */}
                 <div className="flex justify-between items-center w-full">
                   <div className="flex flex-col gap-1">
-                    <span className="inter font-normal text-[12px] leading-[150%] text-[#7C737E]">
+                    <span className="inter font-normal text-[12px] leading-[150%] text-muted-foreground">
                       Attendees
                     </span>
                     <div className="flex items-center gap-1">
@@ -232,7 +232,7 @@ export const UpcomingEvents = () => {
                           <circle cx="8" cy="8" r="8" fill="#CFFF9C" />
                         </svg>
                       </div>
-                      <span className="inter font-medium text-[16px] leading-[150%] text-[#342636] ml-1">
+                      <span className="inter font-medium text-[16px] leading-[150%] text-card-foreground ml-1">
                         {card.attendees}
                       </span>
                     </div>
@@ -240,20 +240,20 @@ export const UpcomingEvents = () => {
 
                   {/* 2. Register By */}
                   <div className="flex flex-col gap-1">
-                    <span className="inter font-normal text-[12px] leading-[150%] text-[#7C737E]">
+                    <span className="inter font-normal text-[12px] leading-[150%] text-muted-foreground">
                       Register by
                     </span>
-                    <span className="inter font-medium text-[16px] leading-[150%] text-[#342636]">
+                    <span className="inter font-medium text-[16px] leading-[150%] text-card-foreground">
                       {card.registerBy}
                     </span>
                   </div>
 
                   {/* 3. Entry Fee */}
                   <div className="flex flex-col gap-1">
-                    <span className="inter font-normal text-[12px] leading-[150%] text-[#7C737E]">
+                    <span className="inter font-normal text-[12px] leading-[150%] text-muted-foreground">
                       Entry Fee
                     </span>
-                    <span className="inter font-medium text-[16px] leading-[150%] text-[#342636]">
+                    <span className="inter font-medium text-[16px] leading-[150%] text-card-foreground">
                       {card.entryFee}
                     </span>
                   </div>

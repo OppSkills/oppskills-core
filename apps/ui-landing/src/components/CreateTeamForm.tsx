@@ -28,10 +28,11 @@ export function CreateTeamForm({ hackathonId }: CreateTeamFormProps) {
       { name: teamName, maxSize, hackathonId },
       {
         onSuccess: (data) => {
-        console.log("Team '${data.name}' created successfully.")
+          const result = data as Record<string, unknown>;
+          console.log(`Team '${(result.name as string) ?? ""}' created successfully.`);
         },
-        onError: (error: any) => {
-         console.log("Could not create team")
+        onError: (error: unknown) => {
+          console.log("Could not create team", error);
         },
       }
     );

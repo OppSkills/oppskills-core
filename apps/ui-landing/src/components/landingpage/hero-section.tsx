@@ -66,17 +66,14 @@ export default function HeroSection() {
 </div>
 </div>
 
-<div className="w-full flex justify-center items-center py-6 md:py-10">
-      <img
-        src="/hero-banner.png"  
+    <div className="w-full flex justify-center items-center py-6 md:py-10">
+      <Image
+        src="/hero-banner.png"
         alt="Hero Banner"
-        className="
-          w-full
-          max-w-[1200px]
-          h-auto
-          object-contain
-          px-2 md:px-6
-        "
+        width={1200}
+        height={600}
+        className="w-full max-w-[1200px] h-auto object-contain px-2 md:px-6"
+        priority
       />
     </div>
     </section>

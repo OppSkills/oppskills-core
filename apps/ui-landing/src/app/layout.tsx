@@ -5,14 +5,9 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import ClientProviders from "../../src/client-providers";
 
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from "@clerk/nextjs";
+import { ClerkProvider } from "@clerk/nextjs";
+import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-      
+
 
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
@@ -57,13 +52,15 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-             <ClientProviders>
-            {children}
-          </ClientProviders>
+            <ClientProviders>
+              <Navbar />
+              {children}
+              <Footer />
+            </ClientProviders>
           </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
-   
+
   );
 }
