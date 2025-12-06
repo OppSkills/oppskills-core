@@ -1,19 +1,12 @@
 name: Trigger Vercel Deploy for UI Landing
 
 on:
-  # Trigger on direct push to main
-  push:
-    branches:
-      - main
-    paths:
-      - "apps/ui-landing/**"
-
-  # Trigger when PR is merged to main
   pull_request:
     branches:
       - main
     types:
-      - closed
+      - opened    # When PR is created
+      - closed    # When PR is merged
     paths:
       - "apps/ui-landing/**"
 
@@ -23,16 +16,16 @@ permissions:
 jobs:
   trigger-vercel-deploy:
     runs-on: ubuntu-latest
-    # Run if: (push event OR merged PR) AND not from this bot
+    # Run if: PR opened OR PR merged (not just closed)
     if: |
-      (github.event_name == 'push' || github.event.pull_request.merged == true) &&
-      github.event.head_commit.author.email != 'khareu450@gmail.com'
+      github.event.action == 'opened' ||
+      (github.event.action == 'closed' && github.event.pull_request.merged == true)
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.action == 'opened' && github.head_ref || 'main' }}
           fetch-depth: 0
 
       - name: Configure Git user for Vercel deployment
@@ -46,4 +39,4 @@ jobs:
 
       - name: Push changes
         run: |
-          git push origin main
+          git push origin ${{ github.event.action == 'opened' && github.head_ref || 'main' }}
