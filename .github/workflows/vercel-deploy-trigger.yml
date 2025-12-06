@@ -5,8 +5,14 @@ on:
     branches:
       - main
     types:
-      - opened    # When PR is created
-      - closed    # When PR is merged
+      - opened       # PR created
+      - synchronize  # New commits pushed to PR
+    paths:
+      - "apps/ui-landing/**"
+
+  push:
+    branches:
+      - main
     paths:
       - "apps/ui-landing/**"
 
@@ -14,29 +20,48 @@ permissions:
   contents: write
 
 jobs:
-  trigger-vercel-deploy:
+  trigger-preview-deploy:
+    # For PR preview deployments
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    # Run if: PR opened OR PR merged (not just closed)
-    if: |
-      github.event.action == 'opened' ||
-      (github.event.action == 'closed' && github.event.pull_request.merged == true)
 
     steps:
-      - name: Checkout repository
+      - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.action == 'opened' && github.head_ref || 'main' }}
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Configure Git user for Vercel deployment
+      - name: Configure Git user for Vercel
         run: |
           git config user.name "Vercel Deploy Bot"
           git config user.email "khareu450@gmail.com"
 
-      - name: Create empty commit to trigger Vercel
+      - name: Create commit to trigger Vercel preview
         run: |
-          git commit --allow-empty -m "chore: trigger vercel deployment"
+          git commit --allow-empty -m "chore: trigger vercel preview deploy"
+          git push origin ${{ github.head_ref }}
 
-      - name: Push changes
+  trigger-production-deploy:
+    # For production deployments after merge
+    if: |
+      github.event_name == 'push' &&
+      github.event.head_commit.author.email != 'khareu450@gmail.com'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure Git user for Vercel
         run: |
-          git push origin ${{ github.event.action == 'opened' && github.head_ref || 'main' }}
+          git config user.name "Vercel Deploy Bot"
+          git config user.email "khareu450@gmail.com"
+
+      - name: Create commit to trigger Vercel production deploy
+        run: |
+          git commit --allow-empty -m "chore: trigger vercel production deploy"
+          git push origin main
