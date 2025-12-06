@@ -22,7 +22,6 @@ enum HackathonMode {
 model UserEntity {
   id         String   @id @default(cuid())
   email      String   @unique
-  username   String   @unique
   imageUrl   String?
   firstName  String?
   lastName   String?

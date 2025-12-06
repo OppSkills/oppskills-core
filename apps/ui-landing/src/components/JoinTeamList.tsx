@@ -3,7 +3,13 @@
 
 import React from "react";
 import { useTeams } from "@/hooks/useTeams";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -14,7 +20,7 @@ interface JoinTeamListProps {
 interface Team {
   id: string;
   name: string;
-  leader?: { username?: string } | null;
+  leader?: { id?: string; email?: string } | null;
   members?: unknown[];
   maxSize?: number;
 }
@@ -23,28 +29,35 @@ export function JoinTeamList({ hackathonId }: JoinTeamListProps) {
   const { teamsByHackathon, join } = useTeams();
   const { data: teams, isLoading, error } = teamsByHackathon(hackathonId);
 
-
   const handleJoinTeam = (teamId: string) => {
     join.mutate(
       { teamId, hackathonId }, // Your `joinTeam` API takes a CreateTeamDto which has teamId in the implementation
       {
         onSuccess: () => {
-         
-           console.log("You have successfully joined the team."); 
-         
+          console.log("You have successfully joined the team.");
         },
         onError: (error: unknown) => {
-          console.log("You have not joined the team.", error); 
+          console.log("You have not joined the team.", error);
         },
       }
     );
   };
 
-  if (isLoading) return <p className="text-center">Loading available teams...</p>;
-  if (error) return <p className="text-center text-red-500">Failed to load teams: {(error as Error)?.message ?? String(error)}</p>;
+  if (isLoading)
+    return <p className="text-center">Loading available teams...</p>;
+  if (error)
+    return (
+      <p className="text-center text-red-500">
+        Failed to load teams: {(error as Error)?.message ?? String(error)}
+      </p>
+    );
 
   if (!teams || teams.length === 0) {
-    return <p className="text-center text-gray-500">No teams have been created yet. Be the first!</p>;
+    return (
+      <p className="text-center text-gray-500">
+        No teams have been created yet. Be the first!
+      </p>
+    );
   }
 
   return (
@@ -55,7 +68,9 @@ export function JoinTeamList({ hackathonId }: JoinTeamListProps) {
           <Card key={team.id}>
             <CardHeader>
               <CardTitle className="text-xl">{team.name}</CardTitle>
-              <p className="text-sm text-gray-500">Leader: {team.leader?.username ?? "N/A"}</p>
+              <p className="text-sm text-gray-500">
+                Leader: {team.leader?.email ?? "N/A"}
+              </p>
             </CardHeader>
             <CardContent>
               <Badge variant="secondary">
@@ -66,9 +81,14 @@ export function JoinTeamList({ hackathonId }: JoinTeamListProps) {
               <Button
                 className="w-full"
                 onClick={() => handleJoinTeam(team.id)}
-                disabled={(team.members?.length ?? 0) >= (team.maxSize ?? 0) || join.isPending}
+                disabled={
+                  (team.members?.length ?? 0) >= (team.maxSize ?? 0) ||
+                  join.isPending
+                }
               >
-                {(team.members?.length ?? 0) >= (team.maxSize ?? 0) ? "Team Full" : "Join Team"}
+                {(team.members?.length ?? 0) >= (team.maxSize ?? 0)
+                  ? "Team Full"
+                  : "Join Team"}
               </Button>
             </CardFooter>
           </Card>
