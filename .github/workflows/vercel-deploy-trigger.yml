@@ -5,8 +5,8 @@ on:
     branches:
       - main
     types:
-      - opened # PR created
-      - synchronize # New commits pushed to PR
+      - opened       # PR created
+      - synchronize  # New commits pushed to PR
     paths:
       - "apps/ui-landing/**"
 
@@ -21,7 +21,6 @@ permissions:
 
 jobs:
   trigger-preview-deploy:
-    # For PR preview deployments
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
@@ -32,34 +31,35 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 2
 
-      - name: Check if last commit is from bot (prevent infinite loop)
+      - name: Check if should skip (prevent infinite loop)
         id: check
         run: |
           LAST_AUTHOR=$(git log -1 --format='%ae')
-          if [ "$LAST_AUTHOR" = "khareu450@gmail.com" ]; then
+          LAST_MSG=$(git log -1 --format='%s')
+          echo "Last commit author: $LAST_AUTHOR"
+          echo "Last commit message: $LAST_MSG"
+          if [ "$LAST_AUTHOR" = "khareu450@gmail.com" ] || [[ "$LAST_MSG" == *"trigger vercel"* ]]; then
+            echo "Skipping - already triggered"
             echo "skip=true" >> $GITHUB_OUTPUT
           else
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Configure Git user for Vercel
+      - name: Configure Git and push trigger commit
         if: steps.check.outputs.skip != 'true'
         run: |
           git config user.name "Vercel Deploy Bot"
           git config user.email "khareu450@gmail.com"
-
-      - name: Create commit to trigger Vercel preview
-        if: steps.check.outputs.skip != 'true'
-        run: |
           git commit --allow-empty -m "chore: trigger vercel preview deploy"
           git push origin ${{ github.head_ref }}
 
   trigger-production-deploy:
-    # For production deployments after merge
     if: |
       github.event_name == 'push' &&
-      github.event.head_commit.author.email != 'khareu450@gmail.com'
+      github.event.head_commit.author.email != 'khareu450@gmail.com' &&
+      !contains(github.event.head_commit.message, 'trigger vercel')
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -67,12 +67,9 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Configure Git user for Vercel
+      - name: Configure Git and push trigger commit
         run: |
           git config user.name "Vercel Deploy Bot"
           git config user.email "khareu450@gmail.com"
-
-      - name: Create commit to trigger Vercel production deploy
-        run: |
           git commit --allow-empty -m "chore: trigger vercel production deploy"
           git push origin main
