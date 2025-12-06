@@ -1,0 +1,36 @@
+name: Trigger Vercel Deploy for UI Landing
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/ui-landing/**"
+
+permissions:
+  contents: write
+
+jobs:
+  trigger-vercel-deploy:
+    runs-on: ubuntu-latest
+    # Prevent infinite loop - skip if the last commit was from this workflow
+    if: github.event.head_commit.author.email != 'khareu450@gmail.com'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git user for Vercel deployment
+        run: |
+          git config user.name "Vercel Deploy Bot"
+          git config user.email "khareu450@gmail.com"
+
+      - name: Create empty commit to trigger Vercel
+        run: |
+          git commit --allow-empty -m "chore: trigger vercel deployment"
+
+      - name: Push changes
+        run: |
+          git push origin main
