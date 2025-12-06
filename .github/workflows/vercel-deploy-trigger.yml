@@ -5,10 +5,14 @@ on:
     branches:
       - main
     types:
-      - opened       # PR created
-      - synchronize  # New commits pushed to PR
+      - opened  # PR created
     paths:
       - "apps/ui-landing/**"
+
+  # Trigger when PR is approved (just before merge)
+  pull_request_review:
+    types:
+      - submitted
 
   push:
     branches:
@@ -21,14 +25,17 @@ permissions:
 
 jobs:
   trigger-preview-deploy:
-    if: github.event_name == 'pull_request'
+    # Run on PR opened OR when PR is approved
+    if: |
+      (github.event_name == 'pull_request' && github.event.action == 'opened') ||
+      (github.event_name == 'pull_request_review' && github.event.review.state == 'approved')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 2
 
       - name: Check if should skip (prevent infinite loop)
@@ -51,7 +58,7 @@ jobs:
           git config user.name "Vercel Deploy Bot"
           git config user.email "khareu450@gmail.com"
           git commit --allow-empty -m "chore: trigger vercel preview deploy"
-          git push origin ${{ github.head_ref }}
+          git push origin ${{ github.event.pull_request.head.ref }}
 
   trigger-production-deploy:
     if: |
