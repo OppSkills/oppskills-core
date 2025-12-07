@@ -10,7 +10,7 @@ import Image from "next/image"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-export default function Login() {
+export default function Login({ setIsOpenLogin }: { setIsOpenLogin: (mode: boolean) => void }) {
     const { isLoaded, signIn, setActive } = useSignIn()
     const router = useRouter()
     const [email, setEmail] = useState("")
@@ -50,6 +50,7 @@ export default function Login() {
             if (result.status === "complete") {
                 await setActive({ session: result.createdSessionId })
                 toast.success("Welcome back!")
+                setIsOpenLogin(false)
                 router.push("/dashboard")
             } else {
                 console.log(result)

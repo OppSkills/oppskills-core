@@ -34,7 +34,7 @@ export default function Auth({ setIsOpenLogin }: { setIsOpenLogin: (isOpen: bool
             </div>
           </div>
           <div className='container'>
-            {currentMode === "login" ? <Login /> : <Register setIsOpenLogin={setIsOpenLogin} />}
+            {currentMode === "login" ? <Login setIsOpenLogin={setIsOpenLogin} /> : <Register setIsOpenLogin={setIsOpenLogin} />}
           </div>
         </div>
       </div>
