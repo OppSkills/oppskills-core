@@ -15,15 +15,18 @@ export default function Auth({ setIsOpenLogin }: { setIsOpenLogin: (isOpen: bool
   const slides = [{
     image: "/characters/competition.png",
     title: "Join Competitions",
-    description: "Improve your skills by taking part in hackathons, pitch-offs, and quiz challenges."
+    description: "Improve your skills by taking part in hackathons, pitch-offs, and quiz challenges.",
+    features: ["hackathons", "pitching", "quizzes"]
   }, {
     image: "/characters/events.png",
     title: "Participate in Events",
-    description: "Learn, network, and grow through workshops, meets, and campus events."
+    description: "Learn, network, and grow through workshops, meets, and campus events.",
+    features: ["workshops", "meets", "games"]
   }, {
     image: "/characters/communities.png",
     title: "Join Communities",
-    description: "Connect with developers, designers, and entrepreneurs who share your goals."
+    description: "Connect with developers, designers, and entrepreneurs who share your goals.",
+    features: ["developers", "designers", "entrepreneurs"]
   }];
   return (
     <div className='h-screen p-6 bg-background fixed top-0 left-0 w-full overflow-y-scroll md:overflow-y-hidden'>
@@ -45,6 +48,7 @@ export default function Auth({ setIsOpenLogin }: { setIsOpenLogin: (isOpen: bool
                   className='absolute bottom-0 z-10 left-0 w-full'>
                   <Image src={slide.image} alt="Hero" width={400} height={400} />
                 </motion.div>
+
                 <div className='z-0 absolute inset-0 bg-[url("/icons/stars_2.svg")] bg-repeat bg-size-[200px_200px] opacity-5 bg-center w-full h-full'></div>
                 <div className='p-4'>
                   <div className='flex items-center h-full w-full'>
@@ -55,6 +59,26 @@ export default function Auth({ setIsOpenLogin }: { setIsOpenLogin: (isOpen: bool
                       className='w-full max-w-md relative'>
                       <h1 className='py-3 text-4xl font-semibold text-background'>{slide.title}</h1>
                       <p className='text-background/90'>{slide.description}</p>
+                    </motion.div>
+                  </div>
+                  <div>
+                    <motion.div key={activeIndex === index ? "active" : "inactive"}
+                      className='xl:absolute z-20 pe-4 pt-4 xl:pt-0 xl:pe-0 h-full top-0 right-20 flex items-center gap-2 justify-between xl:justify-center flex-row xl:flex-col'
+                      initial="hidden"
+                      animate="show"
+                    >
+                      {slide.features.map((e: string, i: number) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.2, duration: 0.5, ease: "easeOut" }}
+                          className='card hover:bg-background px-2 flex flex-col gap-2 justify-center items-center border-2 rounded-xl xl:h-28 xl:w-28 h-20 w-20 backdrop-blur-2xl text-secondary hover:text-primary'
+                        >
+                          <Image src={"/icons/" + e + ".svg"} alt={e} width={40} height={40} />
+                          <div className='text-xs xl:text-md font-semibold'>{e.charAt(0).toUpperCase() + e.slice(1)}</div>
+                        </motion.div>
+                      ))}
                     </motion.div>
                   </div>
                 </div>
