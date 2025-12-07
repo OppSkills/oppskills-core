@@ -69,7 +69,7 @@ export default function Login({ setIsOpenLogin }: { setIsOpenLogin: (mode: boole
         <div className="flex flex-col gap-4">
             <Button
                 onClick={handleGoogleLogin}
-                className='w-full rounded-full text-foreground py-6 border-zinc-200/20 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                className='w-full rounded-full text-foreground py-6 border-zinc-200/20'
                 variant="outline"
                 type="button"
             >
