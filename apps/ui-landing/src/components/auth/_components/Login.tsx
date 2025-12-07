@@ -4,11 +4,10 @@ import { useState } from "react"
 import { useSignIn } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import Image from "next/image"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { FloatingLabelInput } from "@/components/ui/derived/FloatingInput"
 
 export default function Login({ setIsOpenLogin }: { setIsOpenLogin: (mode: boolean) => void }) {
     const { isLoaded, signIn, setActive } = useSignIn()
@@ -87,20 +86,19 @@ export default function Login({ setIsOpenLogin }: { setIsOpenLogin: (mode: boole
 
             <form onSubmit={handleSubmit} className="grid gap-4">
                 <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
+                    <FloatingLabelInput
                         id="email"
                         type="email"
-                        placeholder="m@example.com"
+                        label="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                     />
                 </div>
                 <div className="grid gap-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
+                    <FloatingLabelInput
                         id="password"
                         type="password"
+                        label="Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />

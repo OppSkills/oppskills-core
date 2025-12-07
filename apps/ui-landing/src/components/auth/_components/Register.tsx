@@ -16,7 +16,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+
 import RTooltip from "@/components/ui/Rtooltip"
+import { FloatingLabelInput } from "@/components/ui/derived/FloatingInput"
 
 export default function Register({ setIsOpenLogin }: { setIsOpenLogin: (mode: boolean) => void }) {
     const { isLoaded, signUp, setActive } = useSignUp()
@@ -221,12 +223,11 @@ export default function Register({ setIsOpenLogin }: { setIsOpenLogin: (mode: bo
             {/* Step 1: Email */}
             {step === 1 && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Email Address</Label>
-                        <Input
+                    <div className="space-y-4">
+                        <FloatingLabelInput
                             id="email"
                             type="email"
-                            placeholder="name@example.com"
+                            label="Email Address"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
@@ -249,12 +250,11 @@ export default function Register({ setIsOpenLogin }: { setIsOpenLogin: (mode: bo
                         <p className="text-sm text-muted-foreground">We sent a code to <span className="font-medium text-foreground">{email}</span></p>
                         <button onClick={() => setStep(1)} className="text-xs text-primary hover:underline mt-1">Change email</button>
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="otp">Enter 6-digit Code</Label>
-                        <Input
+                    <div className="space-y-4">
+                        <FloatingLabelInput
                             id="otp"
+                            label="Enter 6-digit Code"
                             type="text"
-                            placeholder="123456"
                             maxLength={6}
                             className="text-center text-2xl tracking-widest letter-spacing-2"
                             value={otp}
@@ -277,20 +277,18 @@ export default function Register({ setIsOpenLogin }: { setIsOpenLogin: (mode: bo
                 <form onSubmit={handleDetailsSubmit} className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="firstName">First Name</Label>
-                            <Input
+                            <FloatingLabelInput
                                 id="firstName"
-                                placeholder="John"
+                                label="First Name"
                                 value={userDetails.firstName}
                                 onChange={(e) => setUserDetails({ ...userDetails, firstName: e.target.value })}
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="lastName">Last Name</Label>
-                            <Input
+                            <FloatingLabelInput
                                 id="lastName"
-                                placeholder="Doe"
+                                label="Last Name"
                                 value={userDetails.lastName}
                                 onChange={(e) => setUserDetails({ ...userDetails, lastName: e.target.value })}
                             />
@@ -298,20 +296,18 @@ export default function Register({ setIsOpenLogin }: { setIsOpenLogin: (mode: bo
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number</Label>
-                        <Input
+                        <FloatingLabelInput
                             id="phone"
-                            placeholder="+1 234 567 890"
+                            label="Phone Number"
                             value={userDetails.phone}
                             onChange={(e) => setUserDetails({ ...userDetails, phone: e.target.value })}
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="pass">Password</Label>
-                        <Input
+                        <FloatingLabelInput
                             id="pass"
                             type="password"
-                            placeholder="••••••••"
+                            label="Password"
                             value={userDetails.password}
                             onChange={(e) => setUserDetails({ ...userDetails, password: e.target.value })}
                             required
@@ -347,20 +343,18 @@ export default function Register({ setIsOpenLogin }: { setIsOpenLogin: (mode: bo
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="course">Course</Label>
-                            <Input
+                            <FloatingLabelInput
                                 id="course"
-                                placeholder="B.Tech, B.Sc..."
+                                label="Course"
                                 value={educationDetails.course}
                                 onChange={(e) => setEducationDetails({ ...educationDetails, course: e.target.value })}
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="specialisation">Specialisation</Label>
-                            <Input
+                            <FloatingLabelInput
                                 id="specialisation"
-                                placeholder="CSE, ECE..."
+                                label="Specialisation"
                                 value={educationDetails.specialisation}
                                 onChange={(e) => setEducationDetails({ ...educationDetails, specialisation: e.target.value })}
                             />
@@ -369,22 +363,20 @@ export default function Register({ setIsOpenLogin }: { setIsOpenLogin: (mode: bo
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="fromYear">From Year</Label>
-                            <Input
+                            <FloatingLabelInput
                                 id="fromYear"
                                 type="number"
-                                placeholder="2020"
+                                label="From Year"
                                 value={educationDetails.fromYear}
                                 onChange={(e) => setEducationDetails({ ...educationDetails, fromYear: e.target.value })}
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="toYear">To Year</Label>
-                            <Input
+                            <FloatingLabelInput
                                 id="toYear"
                                 type="number"
-                                placeholder="2024"
+                                label="To Year"
                                 value={educationDetails.toYear}
                                 onChange={(e) => setEducationDetails({ ...educationDetails, toYear: e.target.value })}
                                 required
@@ -410,10 +402,9 @@ export default function Register({ setIsOpenLogin }: { setIsOpenLogin: (mode: bo
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="rollNumber">Roll Number</Label>
-                            <Input
+                            <FloatingLabelInput
                                 id="rollNumber"
-                                placeholder="Your ID/Roll No"
+                                label="Roll Number"
                                 value={educationDetails.rollNumber}
                                 onChange={(e) => setEducationDetails({ ...educationDetails, rollNumber: e.target.value })}
                             />
