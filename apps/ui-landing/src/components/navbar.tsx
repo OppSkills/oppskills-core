@@ -156,7 +156,7 @@ const Navbar = () => {
                     <Plus className="w-4 h-4 mr-2" /> Host
                   </Button>
                 </Link>
-                <Button onClick={() => { setIsOpenLogin(true) }} className="w-full bg-primary text-primary-foreground">
+                <Button onClick={() => { setIsOpenLogin(true) }} className="w-full bg-primary text-foreground">
                   Sign In / Sign Up
                 </Button>
               </SignedOut>

@@ -132,7 +132,7 @@ const ActiveCommunitypage = () => {
                       {community.icon}
                     </div>
                     <p className="text-[10px]">
-                      <span className="px-2 bg-primary/10 py-1 rounded-lg text-primary-foreground font-semibold"> {community.location}</span>
+                      <span className="px-2 bg-primary/10 py-1 rounded-lg text-secondary-foreground font-semibold"> {community.location}</span>
                     </p>
                   </div>
                   <div>
@@ -177,7 +177,7 @@ const ActiveCommunitypage = () => {
                       {community.icon}
                     </div>
                     <p className="text-[10px]">
-                      <span className="px-2 bg-primary/10 py-1 rounded-lg text-primary-foreground"> {community.location}</span>
+                      <span className="px-2 bg-primary/10 py-1 rounded-lg text-secondary-foreground"> {community.location}</span>
                     </p>
                   </div>
                   <div>
