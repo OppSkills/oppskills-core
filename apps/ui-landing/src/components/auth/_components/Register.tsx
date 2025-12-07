@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Check, Loader2, X } from "lucide-react"
+import { Check, CheckIcon, GraduationCap, Loader2, Mail, Settings, User, X } from "lucide-react"
 import { toast } from "sonner"
 import {
     Select,
@@ -16,6 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import RTooltip from "@/components/ui/Rtooltip"
 
 export default function Register({ setIsOpenLogin }: { setIsOpenLogin: (mode: boolean) => void }) {
     const { isLoaded, signUp, setActive } = useSignUp()
@@ -176,20 +177,44 @@ export default function Register({ setIsOpenLogin }: { setIsOpenLogin: (mode: bo
         }
     }
 
+    const stepName: Record<number, { name: string, icon: React.ReactNode }> = {
+        1: {
+            name: "Email",
+            icon: <Mail />
+        },
+        2: {
+            name: "Verify",
+            icon: <CheckIcon />
+        },
+        3: {
+            name: "Details",
+            icon: <User />
+        },
+        4: {
+            name: "Education",
+            icon: <GraduationCap />
+        },
+        5: {
+            name: "Skills",
+            icon: <Settings />
+        }
+    };
+
     return (
         <div className="flex flex-col gap-6">
             <div id="clerk-captcha"></div>
             {/* Steps Indicator - Clickable */}
             <div className="flex justify-between mb-4 px-2">
                 {[1, 2, 3, 4, 5].map((i) => (
-                    <button
-                        key={i}
-                        onClick={() => handleStepClick(i)}
-                        disabled={i > step}
-                        className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-colors border-none outline-none focus:ring-2 ring-offset-1 focus:ring-primary ${step >= i ? "bg-primary text-primary-foreground cursor-pointer" : "bg-muted text-muted-foreground cursor-not-allowed"
-                            }`}>
-                        {step > i ? <Check className="w-4 h-4" /> : i}
-                    </button>
+                    <RTooltip content={stepName[i].name} key={i}>
+                        <button
+                            onClick={() => handleStepClick(i)}
+                            disabled={i > step}
+                            className={`flex items-center justify-center w-12 h-12 rounded-full text-xs font-bold transition-colors border-none outline-none focus:ring-2 ring-offset-1 focus:ring-primary ${step >= i ? "bg-primary text-primary-foreground cursor-pointer" : "bg-muted text-muted-foreground cursor-not-allowed"
+                                }`}>
+                            {step > i ? <Check className="w-4 h-4" /> : stepName[i].icon}
+                        </button>
+                    </RTooltip>
                 ))}
             </div>
 
