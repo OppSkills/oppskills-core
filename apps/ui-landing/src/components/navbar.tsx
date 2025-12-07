@@ -84,15 +84,6 @@ const Navbar = () => {
 
             {/* Logic for Guests */}
             <SignedOut>
-              <Link href="/organizer">
-                <Button
-                  variant="outline"
-                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Host
-                </Button>
-              </Link>
               <Button onClick={() => { setIsOpenLogin(true) }} className="bg-primary text-primary-foreground hover:bg-primary/90">
                 Sign In / Sign Up
               </Button>

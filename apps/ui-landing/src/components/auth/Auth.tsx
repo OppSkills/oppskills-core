@@ -29,10 +29,18 @@ export default function Auth({ setIsOpenLogin }: { setIsOpenLogin: (isOpen: bool
     features: ["developers", "designers", "entrepreneurs"]
   }];
   return (
-    <div className='h-screen p-6 bg-background fixed top-0 left-0 w-full overflow-y-scroll md:overflow-y-hidden'>
-      <div className='fixed top-6 right-6 z-50 cursor-pointer' onClick={() => setIsOpenLogin(false)}><X /></div>
-      <div className='flex flex-col-reverse h-full sm:flex-row gap-6 items-center justify-end'>
-        <div className='h-full min-h-[600px] sm:min-h-[90vh] md:w-2/5 w-full bg-linear-to-br from-primary to-primary/80 rounded-2xl relative overflow-hidden' >
+    <div className='fixed top-0 w-full bg-black/80 left-0 h-screen flex justify-center items-center z-50 px-4'>
+      <div
+        className='relative w-full max-w-[850px] min-h-[500px] max-h-[90vh] md:h-[580px] bg-background rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-200'
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className='absolute top-4 right-4 z-50 cursor-pointer p-2 rounded-full bg-background/50 hover:bg-muted transition-colors border border-border/50 backdrop-blur-md' onClick={() => setIsOpenLogin(false)}>
+          <X className='w-5 h-5 text-foreground' />
+        </div>
+
+        {/* Hero Section - Hidden on Mobile */}
+        <div className='hidden md:block w-full md:w-[45%] h-full bg-linear-to-br from-primary to-primary/80 relative overflow-hidden'>
           <Swiper loop={true} modules={[Autoplay]} autoplay={{
             delay: 3000,
             disableOnInteraction: false,
@@ -61,45 +69,29 @@ export default function Auth({ setIsOpenLogin }: { setIsOpenLogin: (isOpen: bool
                       <p className='text-background/90'>{slide.description}</p>
                     </motion.div>
                   </div>
-                  <div>
-                    <motion.div key={activeIndex === index ? "active" : "inactive"}
-                      className='xl:absolute z-20 pe-4 pt-4 xl:pt-0 xl:pe-0 h-full top-0 right-20 flex items-center gap-2 justify-between xl:justify-center flex-row xl:flex-col'
-                      initial="hidden"
-                      animate="show"
-                    >
-                      {slide.features.map((e: string, i: number) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.2, duration: 0.5, ease: "easeOut" }}
-                          className='card hover:bg-background px-2 flex flex-col gap-2 justify-center items-center border-2 rounded-xl xl:h-28 xl:w-28 h-20 w-20 backdrop-blur-2xl text-secondary hover:text-primary'
-                        >
-                          <Image src={"/icons/" + e + ".svg"} alt={e} width={40} height={40} />
-                          <div className='text-xs xl:text-md font-semibold'>{e.charAt(0).toUpperCase() + e.slice(1)}</div>
-                        </motion.div>
-                      ))}
-                    </motion.div>
-                  </div>
                 </div>
               </SwiperSlide>
             ))}
           </Swiper>
         </div>
-        <div className='auth-container flex justify-center h-full md:w-3/5 w-full bg-background'>
-          <div className='p-7 lg:w-md'>
-            <div>
-              <h2 className='text-2xl font-semibold'>{currentMode === "login" ? "Sign In" : "Sign Up"}</h2>
-              <p className='text-foreground/90 py-2'>{currentMode === "login" ? "Login to your account" : "Register now to take part in all the events"}</p>
-            </div>
-            <div className='flex items-center justify-center gap-2 py-2'>
-              <div className='border-2 p-1 rounded-full flex gap-2'>
-                <Button variant={currentMode === "login" ? "default" : "ghost"} className='rounded-full' onClick={() => setCurrentMode("login")}>Sign In</Button>
-                <Button variant={currentMode === "register" ? "default" : "ghost"} className='rounded-full' onClick={() => setCurrentMode("register")}>Sign Up</Button>
+
+        {/* Form Section */}
+        <div className='w-full md:w-[55%] h-full bg-background flex flex-col'>
+          <div className='flex-1 overflow-y-auto p-8'>
+            <div className='max-w-md mx-auto'>
+              <div>
+                <h2 className='text-2xl font-semibold'>{currentMode === "login" ? "Sign In" : "Sign Up"}</h2>
+                <p className='text-foreground/90 py-2'>{currentMode === "login" ? "Login to your account" : "Register now to take part in all the events"}</p>
               </div>
-            </div>
-            <div className='container'>
-              {currentMode === "login" ? <Login setIsOpenLogin={setIsOpenLogin} /> : <Register setIsOpenLogin={setIsOpenLogin} />}
+              <div className='flex items-center justify-center gap-2 py-2 mb-4 w-full'>
+                <div className='border-2 p-1 rounded-full flex gap-2 w-full'>
+                  <Button variant={currentMode === "login" ? "default" : "ghost"} className='rounded-full flex-1' onClick={() => setCurrentMode("login")}>Sign In</Button>
+                  <Button variant={currentMode === "register" ? "default" : "ghost"} className='rounded-full flex-1' onClick={() => setCurrentMode("register")}>Sign Up</Button>
+                </div>
+              </div>
+              <div className='container'>
+                {currentMode === "login" ? <Login setIsOpenLogin={setIsOpenLogin} /> : <Register setIsOpenLogin={setIsOpenLogin} />}
+              </div>
             </div>
           </div>
         </div>

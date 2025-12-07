@@ -4,11 +4,11 @@ import { useState } from "react"
 import { useSignUp } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Check, CheckIcon, GraduationCap, Loader2, Mail, Settings, User, X } from "lucide-react"
 import { toast } from "sonner"
+import { motion } from "framer-motion"
 import {
     Select,
     SelectContent,
@@ -206,13 +206,24 @@ export default function Register({ setIsOpenLogin }: { setIsOpenLogin: (mode: bo
         <div className="flex flex-col gap-6">
             <div id="clerk-captcha"></div>
             {/* Steps Indicator - Clickable */}
-            <div className="flex justify-between mb-4 px-2">
+            <div className="relative flex justify-between mb-4">
+                {/* Progress Bar Background */}
+                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -translate-y-1/2 -z-0" />
+
+                {/* Animated Progress Bar */}
+                <motion.div
+                    className="absolute top-1/2 left-0 h-0.5 bg-primary -translate-y-1/2 -z-0"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${(step / 4) * 100 > 100 ? 100 : (step / 4) * 100}%` }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                />
+
                 {[1, 2, 3, 4, 5].map((i) => (
                     <RTooltip content={stepName[i].name} key={i}>
                         <button
                             onClick={() => handleStepClick(i)}
                             disabled={i > step}
-                            className={`flex items-center justify-center w-12 h-12 rounded-full text-xs font-bold transition-colors border-none outline-none focus:ring-2 ring-offset-1 focus:ring-primary ${step >= i ? "bg-primary text-primary-foreground cursor-pointer" : "bg-muted text-muted-foreground cursor-not-allowed"
+                            className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full text-xs font-bold transition-colors border-none outline-none focus:ring-2 ring-offset-1 focus:ring-primary ${step >= i ? "bg-primary text-primary-foreground cursor-pointer" : "bg-muted text-muted-foreground cursor-not-allowed"
                                 }`}>
                             {step > i ? <Check className="w-4 h-4" /> : stepName[i].icon}
                         </button>
