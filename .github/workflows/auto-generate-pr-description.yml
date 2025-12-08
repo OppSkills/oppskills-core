@@ -26,30 +26,25 @@ jobs:
         with:
           state: open
 
-      # Step 3: Fetch main and feature branch, get safe diff
-      - name: Get code diff
-        id: diff
+      # Step 3: Get diff of the last commit only
+      - name: Get last commit diff
         run: |
-          FEATURE_BRANCH=${GITHUB_REF#refs/heads/}
-          git fetch origin main
-          git fetch origin $FEATURE_BRANCH
-          # Use safe diff: compares branch against main without merge-base errors
-          DIFF=$(git diff origin/main $FEATURE_BRANCH)
-          echo "DIFF_CONTENT<<EOF" >> $GITHUB_OUTPUT
-          echo "$DIFF" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          git fetch origin ${{ github.ref_name }}
+          git log -1 --pretty=format:"%H %s" > last_commit.txt
+          git diff HEAD~1 HEAD > last_commit.diff
 
       # Step 4: Generate AI PR description using Gemini
       - name: Generate PR description with Gemini
         id: ai
         run: |
+          DIFF_CONTENT=$(cat last_commit.diff)
           RESPONSE=$(curl -s -X POST \
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${{ secrets.GEMINI_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d "{
               \"contents\": [{
                 \"parts\": [{
-                  \"text\": \"Write a clean, structured PR description summarizing these code changes:\\n\\n${{ steps.diff.outputs.DIFF_CONTENT }}\"
+                  \"text\": \"Write a clean, structured PR description summarizing the last commit changes:\\n\\n$DIFF_CONTENT\"
                 }]
               }]
             }" | jq -r '.candidates[0].content.parts[0].text')
@@ -64,12 +59,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ steps.pr.outputs.number }}
           body: |
-            ### 🤖 AI-Generated PR Description
+            ### 🤖 AI-Generated PR Description (Last Commit)
             ${{ steps.ai.outputs.DESC }}
 
       # Step 6: Log description if no PR found
       - name: Log description if no PR found
         if: steps.pr.outputs.number == ''
         run: |
-          echo "No PR found for this branch. Here is the generated description:"
+          echo "No PR found for this branch. Here is the generated description from last commit:"
           echo "${{ steps.ai.outputs.DESC }}"
