@@ -58,7 +58,7 @@
 }
 
 :root {
-  --radius: 20px;
+  --radius: 0.625rem;
 
   --background: #FFFFFF;
   --foreground: #0F0015;

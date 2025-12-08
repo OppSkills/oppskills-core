@@ -145,7 +145,7 @@ const ActiveCommunitypage = () => {
                         <p className="text-sm">Members</p>
                         <div className="flex items-center">
                           {community.members.users.map((user, index) => (
-                            <img key={index} src={user.image} alt="" width={20} height={20} className={`rounded-full ${index === community.members.users.length - 1 ? "" : "-mr-2"}`} />
+                            <img key={index} src={user.image} alt={user.name || 'User profile'} width={20} height={20} className={`rounded-full ${index === community.members.users.length - 1 ? "" : "-mr-2"}`} />
                           ))}
                           <p className="text-lg ms-1 text-foreground/80 font-semibold">+{community.members.count}</p>
                         </div>
@@ -190,7 +190,7 @@ const ActiveCommunitypage = () => {
                         <p className="text-sm">Members</p>
                         <div className="flex items-center">
                           {community.members.users.map((user, index) => (
-                            <img key={index} src={user.image} alt="" width={20} height={20} className={`rounded-full ${index === community.members.users.length - 1 ? "" : "-mr-2"}`} />
+                            <img key={index} src={user.image} alt="User profile" width={20} height={20} className={`rounded-full ${index === community.members.users.length - 1 ? "" : "-mr-2"}`} />
                           ))}
                           <p className="text-lg ms-1 text-foreground/80 font-semibold">+{community.members.count}</p>
                         </div>

@@ -71,6 +71,7 @@ export default function Login({ setIsOpenLogin }: { setIsOpenLogin: (mode: boole
                 className='w-full rounded-full text-foreground py-6 border-zinc-200/20'
                 variant="outline"
                 type="button"
+                aria-label="Sign in with Google account"
             >
                 <Image src="/google.png" alt="Google" width={20} height={20} /> Continue with Google
             </Button>
