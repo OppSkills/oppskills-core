@@ -10,31 +10,36 @@ permissions:
   contents: read
   pull-requests: write
 
-
 jobs:
   generate_pr_description:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      # Step 1: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Find PR for this commit (if any)
+      # Step 2: Find PR for this branch (if any)
+      - name: Find PR for this branch
         id: pr
         uses: jwalton/gh-find-current-pr@v1.3.3
         with:
           state: open
 
-      - name: Get diff against main
+      # Step 3: Fetch main and feature branch, get diff
+      - name: Get code diff
         id: diff
         run: |
+          FEATURE_BRANCH=${GITHUB_REF#refs/heads/}
           git fetch origin main
-          DIFF=$(git diff origin/main...${GITHUB_REF##*/})
+          git fetch origin $FEATURE_BRANCH
+          DIFF=$(git diff origin/main...$FEATURE_BRANCH)
           echo "DIFF_CONTENT<<EOF" >> $GITHUB_OUTPUT
           echo "$DIFF" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Generate PR description using Gemini
+      # Step 4: Generate AI PR description using Gemini
+      - name: Generate PR description with Gemini
         id: ai
         run: |
           RESPONSE=$(curl -s -X POST \
@@ -50,18 +55,20 @@ jobs:
           echo "DESC=$RESPONSE" >> $GITHUB_OUTPUT
           echo "Generated Description:\\n$RESPONSE"
 
-      - name: Post description to PR (if PR exists)
+      # Step 5: Post description to PR if it exists
+      - name: Post description to PR
         if: steps.pr.outputs.number != ''
         uses: peter-evans/create-or-update-comment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ steps.pr.outputs.number }}
           body: |
-            ### 🤖 AI‑Generated PR Description
+            ### 🤖 AI-Generated PR Description
             ${{ steps.ai.outputs.DESC }}
 
+      # Step 6: Fallback log if no PR
       - name: Log description if no PR found
         if: steps.pr.outputs.number == ''
         run: |
-          echo "No PR found for this commit — here’s the generated description:"
+          echo "No PR found for this branch. Here is the generated description:"
           echo "${{ steps.ai.outputs.DESC }}"
