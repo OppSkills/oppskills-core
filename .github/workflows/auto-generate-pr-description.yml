@@ -26,14 +26,15 @@ jobs:
         with:
           state: open
 
-      # Step 3: Fetch main and feature branch, get diff
+      # Step 3: Fetch main and feature branch, get safe diff
       - name: Get code diff
         id: diff
         run: |
           FEATURE_BRANCH=${GITHUB_REF#refs/heads/}
           git fetch origin main
           git fetch origin $FEATURE_BRANCH
-          DIFF=$(git diff origin/main...$FEATURE_BRANCH)
+          # Use safe diff: compares branch against main without merge-base errors
+          DIFF=$(git diff origin/main $FEATURE_BRANCH)
           echo "DIFF_CONTENT<<EOF" >> $GITHUB_OUTPUT
           echo "$DIFF" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -66,7 +67,7 @@ jobs:
             ### 🤖 AI-Generated PR Description
             ${{ steps.ai.outputs.DESC }}
 
-      # Step 6: Fallback log if no PR
+      # Step 6: Log description if no PR found
       - name: Log description if no PR found
         if: steps.pr.outputs.number == ''
         run: |
