@@ -267,7 +267,7 @@ export default function Register({ setIsOpenLogin }: { setIsOpenLogin: (mode: bo
                             label="Enter 6-digit Code"
                             type="text"
                             maxLength={6}
-                            className="text-center text-2xl tracking-widest letter-spacing-2"
+                            className="text-center text-2xl tracking-widest"
                             value={otp}
                             onChange={(e) => setOtp(e.target.value)}
                         />
