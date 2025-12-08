@@ -1,0 +1,50 @@
+name: AI PR Description
+
+on:
+  push:
+    branches:
+      - vijay/onboard
+
+jobs:
+  generate_pr_description:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Get PR for branch
+        id: pr
+        uses: actions-ecosystem/action-get-latest-pr@v1
+        with:
+          branch: vijay/onboard
+
+      - name: Get diff
+        id: diff
+        run: |
+          echo "DIFF_CONTENT<<EOF" >> $GITHUB_OUTPUT
+          git fetch origin
+          git diff origin/main...vijay/onboard >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate PR description using Gemini
+        id: ai
+        run: |
+          RESPONSE=$(curl -s -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${{ secrets.GEMINI_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"contents\": [{
+                \"parts\": [{
+                  \"text\": \"Write a clean, well-structured PR description summarizing these code changes:\n\n${{ steps.diff.outputs.DIFF_CONTENT }}\"
+                }]
+              }]
+            }" | jq -r '.candidates[0].content.parts[0].text')
+
+          echo "DESC=$RESPONSE" >> $GITHUB_OUTPUT
+
+      - name: Update PR description
+        uses: thomaseizinger/update-pr-description@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          description: ${{ steps.ai.outputs.DESC }}
+          pr_number: ${{ steps.pr.outputs.number }}
