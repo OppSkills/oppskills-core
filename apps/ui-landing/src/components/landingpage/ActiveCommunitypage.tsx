@@ -1,6 +1,5 @@
 import { Airplay, BrushIcon, Code } from "lucide-react";
 import Image from "next/image";
-import React from "react";
 
 const ActiveCommunitypage = () => {
   const communities = {
@@ -124,39 +123,37 @@ const ActiveCommunitypage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-6">
             {
               communities["near-you"].map((community, index) => (
-                <div className="relative" key={index} >
-                  <div className="absolute bottom-0 right-0 opacity-50">
+                <div key={index} className="relative w-full overflow-hidden bg-background p-4 rounded-lg border-border border shadow-md">
+                  <div className="absolute bottom-0 right-0">
                     <Image src={`/icons/texture${index % 3 + 1}.svg`} alt="" width={100} height={100} />
                   </div>
-                  <div className="w-full bg-background p-4 rounded-md">
-                    <div className="flex w-full justify-between pb-6">
-                      <div className="h-8 w-16 flex items-center">
-                        {community.icon}
-                      </div>
-                      <p className="text-[10px]">
-                        <span className="px-2 bg-accent/50 py-1 rounded-lg text-foreground/70 font-semibold"> {community.location}</span>
-                      </p>
+                  <div className="flex w-full justify-between pb-6">
+                    <div className="h-8 w-16 flex items-center">
+                      {community.icon}
                     </div>
-                    <div>
-                      <p className="text-md text-foreground/60 py-3">{community.type}</p>
-                      <p className="text-3xl font-semibold text-foreground">{community.host}</p>
-                    </div>
-                    <div className="mt-6">
-                      <div className="flex gap-2 text-foreground/60">
-                        <div>
-                          <h4 className="text-sm">Members</h4>
-                          <div className="flex items-center">
-                            {community.members.users.map((user, index) => (
-                              <img key={index} src={user.image} alt="" width={20} height={20} className={`rounded-full ${index === community.members.users.length - 1 ? "" : "-mr-2"}`} />
-                            ))}
-                            <p className="text-lg ms-1 text-foreground/80 font-semibold">+{community.members.count}</p>
-                          </div>
+                    <p className="text-[10px]">
+                      <span className="px-2 bg-primary/10 py-1 rounded-lg text-secondary-foreground font-semibold"> {community.location}</span>
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-md text-foreground/60 py-3">{community.type}</p>
+                    <p className="text-3xl font-semibold text-foreground">{community.host}</p>
+                  </div>
+                  <div className="mt-6">
+                    <div className="flex gap-2 text-foreground/60">
+                      <div>
+                        <p className="text-sm">Members</p>
+                        <div className="flex items-center">
+                          {community.members.users.map((user, index) => (
+                            <img key={index} src={user.image} alt={user.name || 'User profile'} width={20} height={20} className={`rounded-full ${index === community.members.users.length - 1 ? "" : "-mr-2"}`} />
+                          ))}
+                          <p className="text-lg ms-1 text-foreground/80 font-semibold">+{community.members.count}</p>
                         </div>
-                        <div>
-                          <h4 className="text-sm">Register By</h4>
-                          <div className="flex items-center text-foreground/80 font-semibold">
-                            <p className="text-lg ms-1">{community.deadline}</p>
-                          </div>
+                      </div>
+                      <div>
+                        <p className="text-sm">Register By</p>
+                        <div className="flex items-center text-foreground/80 font-semibold">
+                          <p className="text-lg ms-1">{community.deadline}</p>
                         </div>
                       </div>
                     </div>
@@ -171,39 +168,37 @@ const ActiveCommunitypage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-6">
             {
               communities["top"].map((community, index) => (
-                <div className="relative" key={index} >
-                  <div className="absolute bottom-0 right-0 opacity-50">
+                <div key={index} className="relative w-full overflow-hidden bg-background p-4 rounded-lg border-border border shadow-md ">
+                  <div className="absolute bottom-0 right-0">
                     <Image src={`/icons/texture${index % 3 + 1}.svg`} alt="" width={100} height={100} />
                   </div>
-                  <div className="w-full bg-background p-4 rounded-md">
-                    <div className="flex w-full justify-between pb-6">
-                      <div className="h-8 w-16 flex items-center">
-                        {community.icon}
-                      </div>
-                      <p className="text-[10px]">
-                        <span className="px-2 bg-accent/50 py-1 rounded-lg text-foreground/70 font-semibold"> {community.location}</span>
-                      </p>
+                  <div className="flex w-full justify-between pb-6">
+                    <div className="h-8 w-16 flex items-center">
+                      {community.icon}
                     </div>
-                    <div>
-                      <p className="text-md text-foreground/60 py-3">{community.type}</p>
-                      <p className="text-3xl font-semibold text-foreground">{community.host}</p>
-                    </div>
-                    <div className="mt-6">
-                      <div className="flex gap-2 text-foreground/60">
-                        <div>
-                          <h4 className="text-sm">Members</h4>
-                          <div className="flex items-center">
-                            {community.members.users.map((user, index) => (
-                              <img key={index} src={user.image} alt="" width={20} height={20} className={`rounded-full ${index === community.members.users.length - 1 ? "" : "-mr-2"}`} />
-                            ))}
-                            <p className="text-lg ms-1 text-foreground/80 font-semibold">+{community.members.count}</p>
-                          </div>
+                    <p className="text-[10px]">
+                      <span className="px-2 bg-primary/10 py-1 rounded-lg text-secondary-foreground"> {community.location}</span>
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-md text-foreground/60 py-3">{community.type}</p>
+                    <p className="text-3xl font-semibold text-foreground">{community.host}</p>
+                  </div>
+                  <div className="mt-6">
+                    <div className="flex gap-2 text-foreground/60">
+                      <div>
+                        <p className="text-sm">Members</p>
+                        <div className="flex items-center">
+                          {community.members.users.map((user, index) => (
+                            <img key={index} src={user.image} alt="User profile" width={20} height={20} className={`rounded-full ${index === community.members.users.length - 1 ? "" : "-mr-2"}`} />
+                          ))}
+                          <p className="text-lg ms-1 text-foreground/80 font-semibold">+{community.members.count}</p>
                         </div>
-                        <div>
-                          <h4 className="text-sm">Register By</h4>
-                          <div className="flex items-center text-foreground/80 font-semibold">
-                            <p className="text-lg ms-1">{community.deadline}</p>
-                          </div>
+                      </div>
+                      <div>
+                        <p className="text-sm">Register By</p>
+                        <div className="flex items-center text-foreground/80 font-semibold">
+                          <p className="text-lg ms-1">{community.deadline}</p>
                         </div>
                       </div>
                     </div>

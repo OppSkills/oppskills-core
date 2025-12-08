@@ -1,73 +1,80 @@
-// src/components/CreateTeamForm.tsx
-"use client";
+"use client"
 
-import React, { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { useTeams } from "@/hooks/useTeams";
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { toast } from "sonner"
+import { Loader2 } from "lucide-react"
 
 interface CreateTeamFormProps {
-  hackathonId: string;
+  hackathonId: string
 }
 
 export function CreateTeamForm({ hackathonId }: CreateTeamFormProps) {
-  const [teamName, setTeamName] = useState("");
-  const [maxSize, setMaxSize] = useState(4); // Default size
-  const { create } = useTeams();
+  const [isLoading, setIsLoading] = useState(false)
+  const [teamData, setTeamData] = useState({
+    name: "",
+    description: "",
+    maxMembers: "4"
+  })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!teamName || maxSize < 2) {
-    console.log("Please enter a valid team name and max size (min 2).")
-      return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!teamData.name || !teamData.description) {
+      toast.error("Please fill in all fields")
+      return
     }
 
-    create.mutate(
-      { name: teamName, maxSize, hackathonId },
-      {
-        onSuccess: (data) => {
-          const result = data as Record<string, unknown>;
-          console.log(`Team '${(result.name as string) ?? ""}' created successfully.`);
-        },
-        onError: (error: unknown) => {
-          console.log("Could not create team", error);
-        },
-      }
-    );
-  };
+    setIsLoading(true)
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    setIsLoading(false)
+
+    console.log("Creating team for hackathon:", hackathonId, teamData)
+    toast.success("Team created successfully! (Mock)")
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg">
-      <h2 className="text-xl font-semibold">Team Leader Registration</h2>
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-md">
+      <h2 className="text-xl font-semibold">Create a New Team</h2>
       <div className="space-y-2">
         <Label htmlFor="teamName">Team Name</Label>
         <Input
           id="teamName"
-          value={teamName}
-          onChange={(e) => setTeamName(e.target.value)}
-          placeholder="e.g., Code Warriors"
-          required
-          disabled={create.isPending}
+          placeholder="e.g. The Innovators"
+          value={teamData.name}
+          onChange={(e) => setTeamData({ ...teamData, name: e.target.value })}
         />
       </div>
+
       <div className="space-y-2">
-        <Label htmlFor="maxSize">Max Team Size (Min 2)</Label>
-        <Input
-          id="maxSize"
-          type="number"
-          value={maxSize}
-          onChange={(e) => setMaxSize(parseInt(e.target.value) || 2)}
-          min={2}
-          max={10} // Example max limit
-          required
-          disabled={create.isPending}
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          placeholder="What is your team building?"
+          value={teamData.description}
+          onChange={(e) => setTeamData({ ...teamData, description: e.target.value })}
         />
       </div>
-      <Button type="submit" className="w-full" disabled={create.isPending}>
-        {create.isPending ? "Creating Team..." : "Create Team & Register"}
+
+      <div className="space-y-2">
+        <Label htmlFor="maxMembers">Max Size</Label>
+        <Input
+          id="maxMembers"
+          type="number"
+          min="2"
+          max="6"
+          value={teamData.maxMembers}
+          onChange={(e) => setTeamData({ ...teamData, maxMembers: e.target.value })}
+        />
+      </div>
+
+      <Button type="submit" disabled={isLoading} className="w-full">
+        {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+        Create Team
       </Button>
     </form>
-  );
+  )
 }

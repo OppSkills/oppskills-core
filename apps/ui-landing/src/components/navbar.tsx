@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Plus } from "lucide-react";
 import Link from "next/link";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import Auth from "./auth/Auth";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isOpenLogin, setIsOpenLogin] = useState(false);
 
   const navLinks = [
     { name: "Home", href: "/" },
@@ -16,6 +18,18 @@ const Navbar = () => {
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
   ];
+
+  useEffect(() => {
+    if (isOpenLogin) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isOpenLogin]);
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-8 py-4">
@@ -70,20 +84,9 @@ const Navbar = () => {
 
             {/* Logic for Guests */}
             <SignedOut>
-              <Link href="/organizer">
-                <Button
-                  variant="outline"
-                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Host
-                </Button>
-              </Link>
-              <SignInButton mode="modal">
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                  Sign In / Sign Up
-                </Button>
-              </SignInButton>
+              <Button onClick={() => { setIsOpenLogin(true) }} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                Sign In / Sign Up
+              </Button>
             </SignedOut>
           </div>
 
@@ -144,16 +147,15 @@ const Navbar = () => {
                     <Plus className="w-4 h-4 mr-2" /> Host
                   </Button>
                 </Link>
-                <SignInButton mode="modal">
-                  <Button className="w-full bg-primary text-primary-foreground">
-                    Sign In / Sign Up
-                  </Button>
-                </SignInButton>
+                <Button onClick={() => { setIsOpenLogin(true) }} className="w-full bg-primary text-foreground">
+                  Sign In / Sign Up
+                </Button>
               </SignedOut>
             </div>
           </div>
         </div>
       )}
+      {isOpenLogin && <Auth setIsOpenLogin={setIsOpenLogin} />}
     </nav>
   );
 };

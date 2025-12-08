@@ -1,6 +1,6 @@
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Poppins } from "next/font/google";
+import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import ClientProviders from "../../src/client-providers";
@@ -8,15 +8,10 @@ import ClientProviders from "../../src/client-providers";
 import { ClerkProvider } from "@clerk/nextjs";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -44,7 +39,7 @@ export default function RootLayout({
       <html lang="en" suppressHydrationWarning>
         <head />
         <body
-          className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
+          className={`${inter.variable} ${poppins.variable} antialiased`}
         >
           <ThemeProvider
             attribute="class"
@@ -56,6 +51,7 @@ export default function RootLayout({
               <Navbar />
               {children}
               <Footer />
+              <Toaster position="bottom-right" duration={5000} richColors />
             </ClientProviders>
           </ThemeProvider>
         </body>
