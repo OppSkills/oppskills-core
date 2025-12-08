@@ -4,37 +4,32 @@ on:
   push:
     branches:
       - vijay/onboard
-  workflow_dispatch:   # Allows manual testing
+  workflow_dispatch:
 
 jobs:
   generate_pr_description:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout code
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Get open PR for this branch (if exists)
-      - name: Find PR for branch
+      - name: Find PR for this commit (if any)
         id: pr
-        uses: peter-evans/find-pull-request@v2
+        uses: jwalton/gh-find-current-pr@v1.3.3
         with:
           state: open
-          head: vijay/onboard
 
-      # Step 3: Get diff against main
-      - name: Get code diff
+      - name: Get diff against main
         id: diff
         run: |
           git fetch origin main
-          DIFF=$(git diff origin/main...vijay/onboard)
+          DIFF=$(git diff origin/main...${GITHUB_REF##*/})
           echo "DIFF_CONTENT<<EOF" >> $GITHUB_OUTPUT
           echo "$DIFF" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # Step 4: Generate description using Gemini Flash 2.5
-      - name: Generate AI PR description
+      - name: Generate PR description using Gemini
         id: ai
         run: |
           RESPONSE=$(curl -s -X POST \
@@ -43,28 +38,25 @@ jobs:
             -d "{
               \"contents\": [{
                 \"parts\": [{
-                  \"text\": \"Write a clean, structured PR description summarizing these code changes:\n\n${{ steps.diff.outputs.DIFF_CONTENT }}\"
+                  \"text\": \"Write a clean, structured PR description summarizing these code changes:\\n\\n${{ steps.diff.outputs.DIFF_CONTENT }}\"
                 }]
               }]
             }" | jq -r '.candidates[0].content.parts[0].text')
           echo "DESC=$RESPONSE" >> $GITHUB_OUTPUT
-          echo "AI PR Description Generated:"
-          echo "$RESPONSE"
+          echo "Generated Description:\\n$RESPONSE"
 
-      # Step 5: Update PR description if PR exists
-      - name: Update PR description (if PR exists)
-        if: steps.pr.outputs.pull-request-number != ''
+      - name: Post description to PR (if PR exists)
+        if: steps.pr.outputs.number != ''
         uses: peter-evans/create-or-update-comment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ steps.pr.outputs.pull-request-number }}
+          issue-number: ${{ steps.pr.outputs.number }}
           body: |
-            ### AI Generated PR Description
+            ### 🤖 AI‑Generated PR Description
             ${{ steps.ai.outputs.DESC }}
 
-      # Step 6: Fallback log if no PR
-      - name: Log AI description if no PR
-        if: steps.pr.outputs.pull-request-number == ''
+      - name: Log description if no PR found
+        if: steps.pr.outputs.number == ''
         run: |
-          echo "No PR found. Here is the generated description:"
+          echo "No PR found for this commit — here’s the generated description:"
           echo "${{ steps.ai.outputs.DESC }}"
