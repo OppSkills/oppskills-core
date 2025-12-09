@@ -1,6 +1,11 @@
 name: Deploy apps to Vercel
 
 on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - ".verceldeployments"
   workflow_dispatch: # Allows manual triggering
   repository_dispatch:
     types:
