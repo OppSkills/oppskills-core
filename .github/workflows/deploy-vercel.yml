@@ -1,6 +1,11 @@
 name: Deploy apps to Vercel
 
 on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - ".verceldeployments"
   workflow_dispatch: # Allows manual triggering
   repository_dispatch:
     types:
@@ -14,6 +19,7 @@ jobs:
       OPPSKILLS_CORE_DEV_USER: khareutkarshk
       OPPSKILLS_CORE_DEV_EMAIL: khareu550@gmail.com
       ORG_NAME: ${{ github.repository_owner }}
+      BRANCH_NAME: ${{ github.ref_name }}
 
     steps:
       - name: Set Repository Name
@@ -30,12 +36,12 @@ jobs:
           mkdir target-repo
           cd target-repo
           git init
-          git checkout -b main
+          git checkout -b ${{ env.BRANCH_NAME }}
           git remote add origin https://${{ secrets.OPPSKILLS_CORE_DEV_PAT }}@github.com/${{ env.ORG_NAME }}/${{ env.repo-name }}.git
           git config core.sparseCheckout true
           echo ".verceldeployments" > .git/info/sparse-checkout
 
-          git pull origin main
+          git pull origin ${{ env.BRANCH_NAME }} || git pull origin main
 
           # Get the current timestamp
           TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
@@ -46,7 +52,7 @@ jobs:
           # Commit and push the changes with a custom commit message
           git add .verceldeployments
           git commit -m "Vercel Deployment triggered at $TIMESTAMP"
-          git push origin main # Adjust branch name as necessary
+          git push origin ${{ env.BRANCH_NAME }}
 
       # - name: Notify Google Chat
       #   run: |
