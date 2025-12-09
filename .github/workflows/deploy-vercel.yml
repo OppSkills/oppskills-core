@@ -4,8 +4,7 @@ on:
   workflow_dispatch: # Allows manual triggering
   repository_dispatch:
     types:
-      - deploy-fusion-vercel
-      - deploy-suite-vercel
+      - deploy-oppskills-vercel
 
 jobs:
   update-file-as-oppskills-dev:
@@ -17,23 +16,9 @@ jobs:
       ORG_NAME: ${{ github.repository_owner }}
 
     steps:
-      - name: Determine Repository Name
-        id: repo-name
+      - name: Set Repository Name
         run: |
-          # Set the repository name based on the event type
-          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            if [ "${{ github.event.action }}" = "deploy-fusion-vercel" ]; then
-              echo "repo-name=fusion-core" >> $GITHUB_ENV
-            elif [ "${{ github.event.action }}" = "deploy-suite-vercel" ]; then
-              echo "repo-name=growth-suite" >> $GITHUB_ENV
-            else
-              echo "Unknown event type: ${{ github.event.action }}"
-              exit 1
-            fi
-          else
-            # Default for workflow_dispatch
-            echo "repo-name=oppskills-core" >> $GITHUB_ENV
-          fi
+          echo "repo-name=oppskills-core" >> $GITHUB_ENV
 
       - name: Update Deployment Log
         run: |
@@ -63,8 +48,8 @@ jobs:
           git commit -m "Vercel Deployment triggered at $TIMESTAMP"
           git push origin main # Adjust branch name as necessary
 
-      - name: Notify Google Chat
-        run: |
-          curl -X POST -H "Content-Type: application/json" \
-            -d '{"text": "Vercel deployment triggered for ${{ env.repo-name }}"}' \
-            "https://chat.googleapis.com/v1/spaces/AAAANEuBG5s/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=b_a2UEXL_09UdgMGhwapcUrYiYP8N2ubvxc7qSZdI1w"
+      # - name: Notify Google Chat
+      #   run: |
+      #     curl -X POST -H "Content-Type: application/json" \
+      #       -d '{"text": "Vercel deployment triggered for ${{ env.repo-name }}"}' \
+      #       "https://chat.googleapis.com/v1/spaces/AAAANEuBG5s/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=b_a2UEXL_09UdgMGhwapcUrYiYP8N2ubvxc7qSZdI1w"
