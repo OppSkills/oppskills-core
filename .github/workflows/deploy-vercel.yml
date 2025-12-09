@@ -12,7 +12,7 @@ jobs:
 
     env:
       OPPSKILLS_CORE_DEV_USER: khareutkarshk
-      OPPSKILLS_CORE_DEV_EMAIL: khareu450@gmail.com
+      OPPSKILLS_CORE_DEV_EMAIL: khareu550@gmail.com
       ORG_NAME: ${{ github.repository_owner }}
 
     steps:
