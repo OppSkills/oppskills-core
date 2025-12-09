@@ -3,8 +3,6 @@
 import Image from "next/image";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-// Generate random registrations
-const generateRandom = () => Math.floor(Math.random() * 400); // adjusted max to allow total to fit near 600
 export interface RegistrationData {
     month: string;
     men: number;
@@ -47,7 +45,7 @@ const CustomLegend = () => (
 export default function RegistrationLineChart() {
     return (
         <div className="w-full bg-background rounded-[20px] p-6 border border-border">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h2 className="text-xl font-bold">Registration Overview</h2>
                 <CustomLegend />
             </div>

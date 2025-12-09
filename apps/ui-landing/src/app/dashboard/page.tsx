@@ -43,28 +43,28 @@ export default async function page() {
     },
   ];
   return (
-    <div className='flex justify-center w-full bg-surface'>
-      <div className='w-[1150px] bg-background p-6 my-6 rounded-[20px] flex flex-col gap-6'>
+    <div className='flex justify-center w-full bg-surface p-2 sm:p-4'>
+      <div className='w-full max-w-[1150px] bg-background p-4 sm:p-6 my-2 sm:my-6 rounded-[20px] flex flex-col gap-6'>
         {/* Header */}
-        <div className='flex justify-between items-center gap-2 w-full'>
+        <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full'>
           <div className='left'>
-            <h1 className='font-semibold text-[28px]'>
+            <h1 className='font-semibold text-[24px] md:text-[28px] break-words'>
               Welcome back, {user?.firstName} {user?.lastName}
             </h1>
-            <p className='text-[16px] text-muted-foreground pt-2'>View all the details for Hackverse Hackathon</p>
+            <p className='text-sm md:text-[16px] text-muted-foreground pt-1 md:pt-2'>View all the details for Hackverse Hackathon</p>
           </div>
-          <div className='right'>
+          <div className='right self-end md:self-auto'>
             <Button className='rounded-full'><Image src="/icons/share.svg" alt="Share" width={16} height={16} /> Share</Button>
           </div>
         </div>
         {/* Analytics */}
-        <div className='grid grid-cols-1 xl:grid-cols-4 gap-5 justify-between'>
+        <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 justify-between'>
           {analyticData.map((item, index) => (
             <AnalyticCard key={index}
               className={`${item.type === "highlight" ? "bg-[radial-gradient(circle_at_top_left,var(--color-primary)_0%,var(--color-foreground)_50%)] text-primary-foreground" : "bg-background"}`}
             >
-              <p className='text-[20px]'>{item.title}</p>
-              <h3 className='text-4xl font-semibold py-5'>{item.value}</h3>
+              <p className='text-[16px] xl:text-[20px]'>{item.title}</p>
+              <h3 className='text-3xl xl:text-4xl font-semibold py-4 xl:py-5'>{item.value}</h3>
               <div className='flex justify-between w-full items-center'>
                 <p className={`text-xs ${item.type === "normal" ? "text-primary" : "text-primary-foreground"}`}>{item.badge}</p>
                 <Badge className={`min-w-[42px] text-xs rounded-full bg-linear-to-r border-0 ${item.type === "normal" ? "from-primary to-foreground" : "from-primary/20 to-foreground/50"}`}>{item.badgeValue}</Badge>
@@ -73,13 +73,9 @@ export default async function page() {
           ))}
         </div>
         {/*CHARTS*/}
-        <div className='flex gap-6 w-full'>
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-6 w-full'>
           <RegistrationLineChart />
           <Alerts />
-        </div>
-
-        {/* Detailed Analytics Grid */}
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 w-full'>
           <RoundStats />
           <DomainsChart />
           <GenderDiversityChart />
