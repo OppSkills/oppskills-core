@@ -12,7 +12,7 @@ const Home = () => {
       <ParticipateSection />
       <UpcomingCompetitions />
       <UpcomingEvents />
-      <ActiveCommunitypage />
+      {/* <ActiveCommunitypage /> */}
     </div>
   )
 }
