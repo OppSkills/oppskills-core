@@ -231,9 +231,9 @@ export default function OpportunityPage() {
                 </div>
 
                 {/* List Container */}
-                <div className="rounded-[20px] border border-border overflow-hidden shadow-sm overflow-x-auto">
+                <div className="bg-muted/30 rounded-[20px] border border-border p-2 overflow-hidden shadow-sm">
                     {/* Header Row - Desktop Only */}
-                    <div className="grid grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 items-center bg-secondary/30 p-4 rounded-t-xl text-sm font-semibold text-foreground border-b border-border/50 min-w-[1070px]">
+                    <div className="hidden lg:grid grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 items-center bg-secondary/30 p-4 rounded-t-xl text-sm font-semibold text-foreground border-b border-border/50">
                         {table.getHeaderGroups().map((headerGroup) => (
                             <React.Fragment key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
@@ -253,14 +253,14 @@ export default function OpportunityPage() {
                             <div
                                 key={row.id}
                                 className={cn(
-                                    "grid grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 p-6 items-center border-b border-border last:border-0 hover:bg-muted/10 transition-colors min-w-[1070px]",
-                                    "h-auto lg:h-32"
+                                    "flex flex-col lg:grid lg:grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 p-6 items-center border-b border-border last:border-0 hover:bg-muted/10 transition-colors",
+                                    "lg:h-32"
                                 )}
                             >
                                 {row.getVisibleCells().map((cell, index) => {
                                     const isSno = index === 0;
                                     return (
-                                        <div key={cell.id} className={cn(isSno && "text-center")}>
+                                        <div key={cell.id} className={cn(isSno && "hidden lg:block text-center")}>
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </div>
                                     );

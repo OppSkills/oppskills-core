@@ -85,7 +85,7 @@ const Footer = () => {
         {/* Bottom Section */}
         <div className="flex flex-col lg:flex-row justify-between gap-12 lg:gap-8">
           {/* Links Columns */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-16 lg:gap-24 flex-grow">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-16 lg:gap-24 grow">
             {Object.entries(footerLinks).map(([category, links]) => (
               <div key={category} className="space-y-6">
                 <h4 className="text-lg font-semibold text-gray-200">
