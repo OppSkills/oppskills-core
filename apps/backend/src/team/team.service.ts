@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import type { CreateTeamDto } from '@oppskills/types';
 
@@ -11,8 +15,10 @@ export class TeamService {
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
-    if(hackathon.ownerId === leaderId)
-      throw new ForbiddenException('Hackathon owner cannot create a team in their own hackathon');
+    if (hackathon.ownerId === leaderId)
+      throw new ForbiddenException(
+        'Hackathon owner cannot create a team in their own hackathon',
+      );
 
     const team = await prisma.teamEntity.create({
       data: {
@@ -34,10 +40,26 @@ export class TeamService {
     return prisma.teamEntity.findMany({
       where: { hackathonId },
       include: {
-        leader: { select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true } },
+        leader: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
         members: {
           include: {
-            user: { select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true } },
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                imageUrl: true,
+              },
+            },
           },
         },
       },
@@ -52,7 +74,15 @@ export class TeamService {
         leader: true,
         members: {
           include: {
-            user: { select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true } },
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                imageUrl: true,
+              },
+            },
           },
         },
       },
@@ -71,12 +101,12 @@ export class TeamService {
 
     if (team.members.length >= team.maxSize)
       throw new ForbiddenException('Team is already full');
-    
-    if(team.leaderId === userId)
+
+    if (team.leaderId === userId)
       throw new ForbiddenException('Team leader cannot join their own team');
-    
+
     // Prevent joining twice
-    const alreadyMember = team.members.some(m => m.userId === userId);
+    const alreadyMember = team.members.some((m) => m.userId === userId);
     if (alreadyMember)
       throw new ForbiddenException('User already part of this team');
 
