@@ -263,7 +263,7 @@ export class UserAccountsService {
             try {
               const {
                 success,
-                data: { user_id },
+                data,
               } = await this.delete({
                 user_id: clerkUserId,
               });
