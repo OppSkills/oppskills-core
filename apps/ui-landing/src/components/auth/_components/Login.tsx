@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { FloatingLabelInput } from "@/components/ui/derived/FloatingInput";
+import { getClerkErrorMessage } from "@/lib/utils";
 
 export default function Login({
   setIsOpenLogin,
@@ -28,9 +29,9 @@ export default function Login({
         redirectUrl: "/sso-callback",
         redirectUrlComplete: "/dashboard",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("OAuth error", err);
-      toast.error("Failed to start Google login");
+      toast.error(getClerkErrorMessage(err, "Failed to start Google login"));
     }
   };
 
@@ -59,10 +60,9 @@ export default function Login({
         console.log(result);
         toast.error("Something went wrong during sign in");
       }
-    } catch (err: any) {
-      console.log("Login error", err.errors[0].message);
-      const msg = err.errors[0].message || "Invalid credentials";
-      toast.error(msg);
+    } catch (err: unknown) {
+      console.log("Login error", err);
+      toast.error(getClerkErrorMessage(err, "Invalid credentials"));
     } finally {
       setIsLoading(false);
     }
