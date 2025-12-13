@@ -27,7 +27,7 @@ export class HackathonService {
     return prisma.hackathonEntity.findMany({
       include: {
         owner: {
-          select: { id: true, username: true, email: true, imageUrl: true },
+          select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
         },
       },
       orderBy: { createdAt: 'desc' },

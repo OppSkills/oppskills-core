@@ -16,14 +16,12 @@ export class UserAccountsService {
     async create({
         id,
         email,
-        username,
         firstName,
         lastName,
         imageUrl,
     }: {
         id: string;
         email: string;
-        username: string;
         firstName: string;
         lastName: string;
         imageUrl: string;
@@ -34,7 +32,6 @@ export class UserAccountsService {
                 data: {
                     id,
                     email,
-                    username,
                     firstName,
                     lastName,
                     imageUrl,
@@ -57,14 +54,12 @@ export class UserAccountsService {
         firstName,
         lastName,
         imageUrl,
-        username,
     }: {
         id: string;
         email: string;
         firstName: string;
         lastName: string;
         imageUrl: string;
-        username: string;
     }) {
         try {
             const user = await prisma.userEntity.update({
@@ -74,7 +69,6 @@ export class UserAccountsService {
                     firstName,
                     lastName,
                     imageUrl,
-                    username,
                 },
             });
 
@@ -201,7 +195,6 @@ export class UserAccountsService {
                       firstName: payload.data.first_name,
                       lastName: payload.data.last_name,
                       imageUrl: payload.data.image_url,
-                      username: payload.data.username,
                     });
     
                     return { success: true, data: userAccountAccess };
@@ -225,8 +218,6 @@ export class UserAccountsService {
               const primaryEmail = payload.data.email_addresses.find(
                 (email) => email.verification.status === 'verified',
               )?.email_address;
-
-              const username = payload.data.username;
     
               if (!primaryEmail) {
                 throw new HttpException(
@@ -236,7 +227,7 @@ export class UserAccountsService {
               }
     
               try {
-                if (clerkUserId && primaryEmail && username) {
+                if (clerkUserId && primaryEmail) {
                   try {
                     const user = await this.update({
                       id: clerkUserId,
@@ -244,7 +235,6 @@ export class UserAccountsService {
                       firstName: payload.data.first_name,
                       lastName: payload.data.last_name,
                       imageUrl: payload.data.image_url,
-                      username: username,
                     });
                     return { success: true, data: user };
                   } catch (error) {

@@ -34,10 +34,10 @@ export class TeamService {
     return prisma.teamEntity.findMany({
       where: { hackathonId },
       include: {
-        leader: { select: { id: true, username: true } },
+        leader: { select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true } },
         members: {
           include: {
-            user: { select: { id: true, username: true, email: true } },
+            user: { select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true } },
           },
         },
       },
@@ -52,7 +52,7 @@ export class TeamService {
         leader: true,
         members: {
           include: {
-            user: { select: { id: true, username: true, email: true } },
+            user: { select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true } },
           },
         },
       },

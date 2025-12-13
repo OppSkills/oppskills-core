@@ -20,12 +20,11 @@ export interface ClerkWebhookRequestDto {
           created_at: number;
           updated_at: number;
           object: string;
-          linked_to: any[];
+          linked_to: unknown[];
           reserved: boolean;
         }>;
         first_name: string;
         last_name: string;
-        username: string;
         created_at: number;
         updated_at: number;
         password_enabled: boolean;
@@ -34,8 +33,8 @@ export interface ClerkWebhookRequestDto {
         image_url: string;
         profile_image_url: string;
         primary_email_address_id: string;
-        private_metadata: Record<string, any>;
-        unsafe_metadata: Record<string, any>;
+        private_metadata: Record<string, unknown>;
+        unsafe_metadata: Record<string, unknown>;
       };
       event_attributes: {
         http_request: {
