@@ -259,7 +259,7 @@ export default function TalentPipelinePage() {
                 {/* Table Container */}
                 <div className="rounded-[24px] border border-border overflow-hidden shadow-sm overflow-x-auto bg-white">
                     {/* Header Row */}
-                    <div className="grid grid-cols-[60px_2.5fr_1.2fr_1.2fr_1.8fr_1.8fr] gap-4 items-center bg-primary/10 p-4 min-w-[1070px] border-b-2 border-primary/30">
+                    <div className="grid grid-cols-[60px_1.8fr_1.2fr_1.2fr_1.8fr_1.8fr] gap-4 items-center bg-primary/10 p-4 min-w-[1070px] border-b-2 border-primary/30">
                         {table.getHeaderGroups().map((headerGroup) => (
                             <React.Fragment key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
@@ -285,7 +285,7 @@ export default function TalentPipelinePage() {
                             <div
                                 key={row.id}
                                 className={cn(
-                                    "grid grid-cols-[60px_2.5fr_1.2fr_1.2fr_1.8fr_1.8fr] gap-4 p-5 items-center border-b border-border last:border-0 hover:bg-muted/5 transition-colors min-w-[1070px]",
+                                    "grid grid-cols-[60px_1.8fr_1.2fr_1.2fr_1.8fr_1.8fr] gap-4 p-5 items-center border-b border-border last:border-0 hover:bg-muted/5 transition-colors min-w-[1070px]",
                                     "h-auto"
                                 )}
                             >
