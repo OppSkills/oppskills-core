@@ -12,7 +12,7 @@ export default function LayoutProvider({
 }) {
   const pathname = usePathname();
 
-  const isDashboard = pathname.includes("/dashboard");
+  const isDashboard = pathname.startsWith("/dashboard");
 
   if (isDashboard) {
     return <main>{children}</main>;
