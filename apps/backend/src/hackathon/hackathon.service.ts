@@ -53,7 +53,7 @@ export class HackathonService {
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
     if (hackathon.ownerId !== userId)
-      throw new ForbiddenException('You are not the owner of this Hacakathon');
+      throw new ForbiddenException('You are not the owner of this Hackathon');
 
     return prisma.hackathonEntity.update({
       where: { id },
