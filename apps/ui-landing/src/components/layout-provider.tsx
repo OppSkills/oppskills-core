@@ -2,7 +2,7 @@
 
 import Navbar from "./navbar";
 import Footer from "./footer";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { usePathname } from "next/navigation";
 
 export default function LayoutProvider({
