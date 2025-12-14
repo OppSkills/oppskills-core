@@ -116,13 +116,15 @@ const columns = [
         header: "Name",
         cell: (info) => (
             <div className="flex flex-col gap-1">
-                <span className="font-semibold text-base lg:text-lg">{info.getValue()}</span>
+                <div className="flex gap-2">
+                    <span className="font-semibold text-base lg:text-lg">{info.getValue()}</span>
+                    <div>
+                        <Badge className="bg-muted text-muted-foreground text-[10px] px-1">{info.row.original.type}</Badge>
+                    </div>
+                </div>
                 <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed max-w-[90%]">
                     {info.row.original.description}
                 </p>
-                <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded font-medium w-fit">
-                    {info.row.original.type}
-                </span>
             </div>
         ),
     }),
