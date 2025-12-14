@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
@@ -9,12 +8,12 @@ import { ClerkProvider } from "@clerk/nextjs";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Toaster } from "@/components/ui/sonner";
+import LayoutProvider from "@/components/layout-provider";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
-
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -24,7 +23,8 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "OppSkills - Opportunities & Skills Platform",
-  description: "Discover hackathons, build skills, and connect with communities",
+  description:
+    "Discover hackathons, build skills, and connect with communities",
 };
 
 export default function RootLayout({
@@ -33,30 +33,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-
-
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <head />
-        <body
-          className={`${inter.variable} ${poppins.variable} antialiased`}
-        >
+        <body className={`${inter.variable} ${poppins.variable} antialiased`}>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
+            defaultTheme="light"
             enableSystem
             disableTransitionOnChange
           >
             <ClientProviders>
-              <Navbar />
-              {children}
-              <Footer />
-              <Toaster position="bottom-right" duration={5000} richColors />
+              <LayoutProvider>{children}</LayoutProvider>
             </ClientProviders>
           </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
-
   );
 }

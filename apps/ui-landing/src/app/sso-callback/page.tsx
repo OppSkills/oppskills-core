@@ -16,6 +16,11 @@ export default function SSOCallbackPage() {
       <AuthenticateWithRedirectCallback
         afterSignInUrl="/dashboard"
         afterSignUpUrl="/dashboard"
+        /**
+         * When Clerk sign-up requires additional info (e.g. username is required),
+         * route the user back into our app instead of Clerk-hosted completion UI.
+         */
+        continueSignUpUrl="/complete-profile"
       />
     </div>
   );
