@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Kaushan+Script&display=swap");
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -60,48 +60,48 @@
 :root {
   --radius: 0.625rem;
 
-  --background: #FFFFFF;
-  --foreground: #0F0015;
+  --background: #ffffff;
+  --foreground: #0f0015;
 
-  --card: #FFFFFF;
-  --card-foreground: #0F0015;
+  --card: #ffffff;
+  --card-foreground: #0f0015;
 
-  --popover: #FFFFFF;
-  --popover-foreground: #0F0015;
+  --popover: #ffffff;
+  --popover-foreground: #0f0015;
 
-  --primary: #9500D5;
+  --primary: #9500d5;
   --primary-foreground: #ffffff;
 
-  --surface: #EDEDED;
+  --surface: #ededed;
 
-  --secondary: #EACCF7;
-  --secondary-foreground: #3C0055;
+  --secondary: #eaccf7;
+  --secondary-foreground: #3c0055;
 
-  --muted: #F5E6FB;
-  --muted-foreground: #7C737E;
-  --accent: #BF66E6;
-  --accent-foreground: #FFFFFF;
+  --muted: #f5e6fb;
+  --muted-foreground: #7c737e;
+  --accent: #bf66e6;
+  --accent-foreground: #ffffff;
 
-  --destructive: #FF4D4D;
+  --destructive: #ff4d4d;
 
-  --border: #C3BFC4;
-  --input: #F5E6FB;
-  --ring: #9500D5;
+  --border: #c3bfc4;
+  --input: #f5e6fb;
+  --ring: #9500d5;
 
-  --chart-1: #9500D5;
-  --chart-2: #AA33DD;
-  --chart-3: #BF66E6;
-  --chart-4: #D599EE;
-  --chart-5: #EACCF7;
+  --chart-1: #9500d5;
+  --chart-2: #aa33dd;
+  --chart-3: #bf66e6;
+  --chart-4: #d599ee;
+  --chart-5: #eaccf7;
 
-  --sidebar: #F5E6FB;
-  --sidebar-foreground: #0F0015;
-  --sidebar-primary: #9500D5;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #BF66E6;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #EACCF7;
-  --sidebar-ring: #9500D5;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f0015;
+  --sidebar-primary: #9500d5;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #bf66e6;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #ffffff;
+  --sidebar-ring: #9500d5;
 }
 
 @layer base {
@@ -248,4 +248,15 @@ h5,
 h6 {
   font-family: var(--font-poppins);
   font-weight: var(--font-weight-semibold);
+}
+
+.dark {
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
