@@ -49,6 +49,9 @@ BEGIN
       AND table_name = 'hackathon'
       AND column_name = 'status'
   ) THEN
+    -- Drop existing default before changing type (prevents cast errors)
+    ALTER TABLE "oppskills"."hackathon" ALTER COLUMN "status" DROP DEFAULT;
+
     ALTER TABLE "oppskills"."hackathon"
     ALTER COLUMN "status" TYPE "oppskills"."LifecycleStatus"
     USING (
@@ -59,6 +62,9 @@ BEGIN
         ELSE 'DRAFT'
       END
     )::"oppskills"."LifecycleStatus";
+
+    -- Re-apply default after conversion
+    ALTER TABLE "oppskills"."hackathon" ALTER COLUMN "status" SET DEFAULT 'DRAFT';
   END IF;
 END $$;
 
@@ -70,11 +76,16 @@ ALTER TABLE "oppskills"."hackathon" DROP COLUMN IF EXISTS "reviewed_by_id";
 ALTER TABLE "oppskills"."hackathon" DROP COLUMN IF EXISTS "rejection_reason";
 
 -- 4) Event table -> Festival table (rename + reshape)
-ALTER TABLE "oppskills"."event" DROP CONSTRAINT IF EXISTS "event_hackathon_id_fkey";
-ALTER TABLE "oppskills"."event" DROP CONSTRAINT IF EXISTS "event_organizer_user_id_fkey";
-ALTER TABLE "oppskills"."event" DROP CONSTRAINT IF EXISTS "event_reviewed_by_id_fkey";
+DO $$
+BEGIN
+  IF to_regclass('oppskills.event') IS NOT NULL THEN
+    ALTER TABLE "oppskills"."event" DROP CONSTRAINT IF EXISTS "event_hackathon_id_fkey";
+    ALTER TABLE "oppskills"."event" DROP CONSTRAINT IF EXISTS "event_organizer_user_id_fkey";
+    ALTER TABLE "oppskills"."event" DROP CONSTRAINT IF EXISTS "event_reviewed_by_id_fkey";
 
-ALTER TABLE "oppskills"."event" RENAME TO "festival";
+    ALTER TABLE "oppskills"."event" RENAME TO "festival";
+  END IF;
+END $$;
 
 -- Slug must be NOT NULL
 UPDATE "oppskills"."festival"

@@ -23,6 +23,14 @@ import { Logger } from '../_utils/logger';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { HackathonService } from './hackathon.service';
 
+function assertNonEmptyId(id: string, fieldName: string): string {
+  const trimmed = id.trim();
+  if (trimmed.length === 0) {
+    throw new BadRequestException(`${fieldName} is required.`);
+  }
+  return trimmed;
+}
+
 @Controller('hackathons')
 @UseGuards(ClerkAuthGuard)
 export class HackathonController {
@@ -55,10 +63,8 @@ export class HackathonController {
 
   @Get(':id')
   async getHackathon(@Param('id') id: string) {
-    if (!id || id.trim().length === 0) {
-      throw new BadRequestException('id is required.');
-    }
-    return this.hackathonService.getHackathonById(id);
+    const safeId = assertNonEmptyId(id, 'id');
+    return this.hackathonService.getHackathonById(safeId);
   }
 
   /** Update a hackathon (owner-only). */
@@ -71,18 +77,16 @@ export class HackathonController {
     const userId = req.user?.id;
     if (!userId) throw new UnauthorizedException('User not found');
 
-    if (!id || id.trim().length === 0) {
-      throw new BadRequestException('id is required.');
-    }
-
-    return this.hackathonService.updateHackathon(id, dto, userId);
+    const safeId = assertNonEmptyId(id, 'id');
+    return this.hackathonService.updateHackathon(safeId, dto, userId);
   }
 
   @Delete(':id')
   async deleteHackathon(@Param('id') id: string, @Req() req: Request) {
     const userId = req.user?.id;
     if (!userId) throw new UnauthorizedException('User not found');
-    return this.hackathonService.deleteHackathon(id, userId);
+    const safeId = assertNonEmptyId(id, 'id');
+    return this.hackathonService.deleteHackathon(safeId, userId);
   }
 
   @Patch(':id/status')
@@ -93,10 +97,12 @@ export class HackathonController {
   ) {
     const userId = req.user?.id;
     if (!userId) throw new UnauthorizedException('User not found');
-    if (!id || id.trim().length === 0) {
-      throw new BadRequestException('id is required.');
-    }
-    return this.hackathonService.updateHackathonStatus(id, dto.status, userId);
+    const safeId = assertNonEmptyId(id, 'id');
+    return this.hackathonService.updateHackathonStatus(
+      safeId,
+      dto.status,
+      userId,
+    );
   }
 
   @Post(':id/register')
@@ -106,6 +112,7 @@ export class HackathonController {
   ) {
     const userId = req.user?.id;
     if (!userId) throw new UnauthorizedException('User not found');
-    return this.hackathonService.registerForHackathon(hackathonId, userId);
+    const safeId = assertNonEmptyId(hackathonId, 'id');
+    return this.hackathonService.registerForHackathon(safeId, userId);
   }
 }

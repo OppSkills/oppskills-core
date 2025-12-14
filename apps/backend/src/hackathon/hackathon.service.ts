@@ -1,10 +1,12 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { prisma } from '@oppskills/db';
+import { Prisma, prisma } from '@oppskills/db';
 import type { CreateHackathonDto, UpdateHackathonDto } from '@oppskills/types';
 
 type LifecycleStatus =
@@ -23,6 +25,16 @@ export class HackathonService {
    * - If `festivalId` is null/undefined => standalone hackathon.
    */
   async createHackathon(dto: CreateHackathonDto, userId: string) {
+    if (dto.festivalId) {
+      const festival = await prisma.festivalEntity.findUnique({
+        where: { id: dto.festivalId },
+        select: { id: true },
+      });
+      if (!festival) {
+        throw new BadRequestException('Referenced festival does not exist.');
+      }
+    }
+
     const startDate = this.parseDate(dto.startDate, 'startDate');
     const endDate = this.parseDate(dto.endDate, 'endDate');
     if (endDate.getTime() < startDate.getTime()) {
@@ -78,14 +90,16 @@ export class HackathonService {
                 create: {
                   externalFormLink: dto.registrationForm.externalFormLink,
                   fields: {
-                    create: dto.registrationForm.fields.map((field) => ({
-                      label: field.label,
-                      type: field.type,
-                      required: field.required,
-                      order: field.order,
-                      options: field.options ?? [],
-                      placeholder: field.placeholder,
-                    })),
+                    create: (dto.registrationForm.fields ?? []).map(
+                      (field) => ({
+                        label: field.label,
+                        type: field.type,
+                        required: field.required,
+                        order: field.order,
+                        options: field.options ?? [],
+                        placeholder: field.placeholder,
+                      }),
+                    ),
                   },
                 },
               }
@@ -135,8 +149,23 @@ export class HackathonService {
 
       return hackathon;
     } catch (error) {
-      const message = error instanceof Error ? error.message : `${error}`;
-      throw new ForbiddenException(`Error creating hackathon: ${message}`);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ConflictException(
+            'A hackathon with the same unique field already exists.',
+          );
+        }
+        if (error.code === 'P2003') {
+          throw new BadRequestException('Invalid reference provided.');
+        }
+      }
+
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(
+          `Error creating hackathon: ${error.message}`,
+        );
+      }
+      throw new InternalServerErrorException('Error creating hackathon.');
     }
   }
 
@@ -219,18 +248,42 @@ export class HackathonService {
       );
     }
 
+    // Nested updates are not supported via this endpoint (yet).
+    if (dto.rounds || dto.prizeBreakdown || dto.registrationForm) {
+      throw new BadRequestException(
+        'Nested updates (rounds, prizeBreakdown, registrationForm) are not supported in PUT /hackathons/:id. Use dedicated endpoints.',
+      );
+    }
+
+    if (dto.festivalId) {
+      const festival = await prisma.festivalEntity.findUnique({
+        where: { id: dto.festivalId },
+        select: { id: true },
+      });
+      if (!festival) {
+        throw new BadRequestException('Referenced festival does not exist.');
+      }
+    }
+
     // Validate cross-field constraints
     this.assertLocationValid(dto);
     this.assertUniversityRestrictionValid(dto);
     this.assertPricingValid(dto);
 
-    const startDate = this.parseDate(dto.startDate, 'startDate');
-    const endDate = this.parseDate(dto.endDate, 'endDate');
+    const startDate = dto.startDate
+      ? this.parseDate(dto.startDate, 'startDate')
+      : hackathon.startDate;
+    const endDate = dto.endDate
+      ? this.parseDate(dto.endDate, 'endDate')
+      : hackathon.endDate;
     if (endDate.getTime() < startDate.getTime()) {
       throw new BadRequestException('endDate must be >= startDate.');
     }
 
-    const slug = await this.buildHackathonSlug(dto.slug, dto.name, id);
+    const name = dto.name ?? hackathon.name;
+    const slug = dto.slug
+      ? await this.buildHackathonSlug(dto.slug, name, id)
+      : undefined;
 
     return prisma.hackathonEntity.update({
       where: { id },

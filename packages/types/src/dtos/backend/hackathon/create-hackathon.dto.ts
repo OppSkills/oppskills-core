@@ -9,6 +9,7 @@ import {
   IsUrl,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from "class-validator";
 import { Type } from "class-transformer";
@@ -145,10 +146,16 @@ export class RegistrationFormDto {
   @IsUrl()
   externalFormLink?: string;
 
+  /**
+   * If you provide `externalFormLink`, `fields` becomes optional.
+   * Otherwise, `fields` is required and validated.
+   */
+  @IsOptional()
+  @ValidateIf((value: RegistrationFormDto) => !value.externalFormLink)
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => RegistrationFieldDto)
-  fields: RegistrationFieldDto[];
+  fields?: RegistrationFieldDto[];
 }
 
 export class RoundDto {
@@ -302,8 +309,125 @@ export class CreateHackathonDto {
   rounds?: RoundDto[];
 }
 
-/** Partial update payload for hackathons (owner-only). */
-export class UpdateHackathonDto extends CreateHackathonDto {}
+/**
+ * Partial update payload for hackathons.
+ * All fields are optional to support partial updates.
+ */
+export class UpdateHackathonDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20000)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(180)
+  slug?: string;
+
+  @IsOptional()
+  @IsString()
+  festivalId?: string;
+
+  @IsOptional()
+  @IsUrl()
+  bannerImageUrl?: string;
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(HACKATHON_MODE_VALUES)
+  mode?: HackathonModeValue;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(VISIBILITY_VALUES)
+  visibility?: VisibilityValue;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(HACKATHON_TYPE_VALUES)
+  hackathonType?: HackathonTypeValue;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(PARTICIPANT_TYPE_VALUES)
+  participantType?: ParticipantTypeValue;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => HackathonLocationDto)
+  location?: HackathonLocationDto;
+
+  @IsOptional()
+  @IsDateString()
+  registrationDeadline?: string;
+
+  @IsOptional()
+  @IsUrl()
+  externalRegistrationLink?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => RegistrationFormDto)
+  registrationForm?: RegistrationFormDto;
+
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  entryFeeAmount?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(8)
+  currency?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  prizeTotalWorthAmount?: string;
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @IsArray()
+  @Type(() => PrizeBreakdownDto)
+  prizeBreakdown?: PrizeBreakdownDto[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(180)
+  organizationName?: string;
+
+  @IsOptional()
+  @IsUrl()
+  organizationLogoUrl?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  allowedUniversities?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RoundDto)
+  rounds?: RoundDto[];
+}
 
 /**
  * Update hackathon lifecycle status.

@@ -86,7 +86,57 @@ export class CreateFestivalDto {
   organizationLogoUrl?: string;
 }
 
-export class UpdateFestivalDto extends CreateFestivalDto {}
+/**
+ * Partial update payload for festivals.
+ * - All fields are optional.
+ * - `startDate`/`endDate` are optional specifically to support partial updates.
+ */
+export class UpdateFestivalDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(180)
+  slug?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50000)
+  description?: string;
+
+  @IsOptional()
+  @IsUrl()
+  posterImageUrl?: string;
+
+  @IsOptional()
+  @IsUrl()
+  websiteUrl?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => FestivalLocationDto)
+  location?: FestivalLocationDto;
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  organizationName?: string;
+
+  @IsOptional()
+  @IsUrl()
+  organizationLogoUrl?: string;
+}
 
 /**
  * Update festival lifecycle status.

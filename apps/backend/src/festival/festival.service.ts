@@ -83,7 +83,13 @@ export class FestivalService {
   async updateFestival(id: string, dto: UpdateFestivalDto, userId: string) {
     const existing = await prisma.festivalEntity.findUnique({
       where: { id },
-      select: { id: true, organizerId: true },
+      select: {
+        id: true,
+        organizerId: true,
+        startDate: true,
+        endDate: true,
+        name: true,
+      },
     });
     if (!existing) throw new NotFoundException('Festival not found');
     if (existing.organizerId !== userId) {
@@ -95,15 +101,23 @@ export class FestivalService {
       }
     }
 
-    const startDate = this.parseDate(dto.startDate, 'startDate');
-    const endDate = this.parseDate(dto.endDate, 'endDate');
+    const startDate = dto.startDate
+      ? this.parseDate(dto.startDate, 'startDate')
+      : existing.startDate;
+    const endDate = dto.endDate
+      ? this.parseDate(dto.endDate, 'endDate')
+      : existing.endDate;
+
     if (endDate.getTime() < startDate.getTime()) {
       throw new BadRequestException('endDate must be >= startDate.');
     }
 
     this.assertLocationValid(dto.location);
 
-    const slug = await this.buildFestivalSlug(dto.slug, dto.name, id);
+    const name = dto.name ?? existing.name;
+    const slug = dto.slug
+      ? await this.buildFestivalSlug(dto.slug, name, id)
+      : undefined;
 
     return prisma.festivalEntity.update({
       where: { id },

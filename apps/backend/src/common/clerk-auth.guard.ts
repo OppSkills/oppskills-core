@@ -7,19 +7,9 @@ import {
 import { verifyToken } from '@clerk/backend';
 import type { Request } from 'express';
 // Removed unused ClerkUser import, as we are no longer relying on the full object
-import { Logger } from 'src/_utils/logger';
 import { prisma } from '@oppskills/db';
+import { Logger } from 'src/_utils/logger';
 import { ClerkAuthConfigService } from './config.service';
-
-// Extend the Request object to safely add the 'user' property for type clarity (Optional, but good practice)
-declare module 'express' {
-  interface Request {
-    user?: {
-      id: string;
-      email?: string;
-    };
-  }
-}
 
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
@@ -35,32 +25,55 @@ export class ClerkAuthGuard implements CanActivate {
     // -----------------------------
     // When AUTH_BYPASS=true, you can pass X-User-Id to authenticate locally without Clerk.
     if (process.env.AUTH_BYPASS === 'true') {
-      const headerUserId = request.header('x-user-id');
-      if (typeof headerUserId === 'string' && headerUserId.trim().length > 0) {
-        const userId = headerUserId.trim();
-        const email = request.header('x-user-email') || `${userId}@local.test`;
+      // Security: Only allow auth bypass in development or test environments
+      const nodeEnv = process.env.NODE_ENV;
+      const isProduction = nodeEnv === 'production';
 
-        // Ensure user exists (FKs require it).
-        await prisma.userEntity.upsert({
-          where: { id: userId },
-          update: {
-            email,
-          },
-          create: {
-            id: userId,
-            email,
-          },
-        });
-
-        request.user = { id: userId, email };
-        this.logger.log(
-          '[canActivate] AUTH_BYPASS active; authenticated user',
-          {
-            userId,
-            email,
-          },
+      if (isProduction) {
+        this.logger.error(
+          '[canActivate] SECURITY WARNING: AUTH_BYPASS is set in production environment. ' +
+            'Auth bypass will not be performed and normal authentication will continue. ' +
+            'Remove AUTH_BYPASS from environment variables in production.',
         );
-        return true;
+        // Continue with normal auth flow - do not bypass
+      } else if (nodeEnv === 'development' || nodeEnv === 'test') {
+        const headerUserId = request.header('x-user-id');
+        if (
+          typeof headerUserId === 'string' &&
+          headerUserId.trim().length > 0
+        ) {
+          const userId = headerUserId.trim();
+          const email =
+            request.header('x-user-email') || `${userId}@local.test`;
+
+          // Ensure user exists (FKs require it).
+          await prisma.userEntity.upsert({
+            where: { id: userId },
+            update: {
+              email,
+            },
+            create: {
+              id: userId,
+              email,
+            },
+          });
+
+          request.user = { id: userId, email };
+          this.logger.log(
+            '[canActivate] AUTH_BYPASS active; authenticated user',
+            {
+              userId,
+              email,
+            },
+          );
+          return true;
+        }
+      } else {
+        this.logger.warn(
+          `[canActivate] AUTH_BYPASS is set but NODE_ENV="${nodeEnv}" is not supported. ` +
+            'Auth bypass only works in development or test environments.',
+        );
+        // Continue with normal auth flow - do not bypass
       }
     }
 

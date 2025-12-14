@@ -111,7 +111,12 @@ CREATE TABLE "oppskills"."registration_form" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "registration_form_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "registration_form_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "registration_form_exactly_one_parent_check"
+      CHECK (
+        ("hackathon_id" IS NOT NULL AND "event_id" IS NULL) OR
+        ("hackathon_id" IS NULL AND "event_id" IS NOT NULL)
+      )
 );
 
 -- CreateTable
