@@ -99,6 +99,7 @@ ALTER TABLE "oppskills"."festival" RENAME COLUMN "organizer_user_id" TO "organiz
 
 -- Convert festival.status from PublishStatus -> LifecycleStatus
 ALTER TABLE "oppskills"."festival"
+ALTER COLUMN "status" DROP DEFAULT,
 ALTER COLUMN "status" TYPE "oppskills"."LifecycleStatus"
 USING (
   CASE ("status"::TEXT)
@@ -108,6 +109,9 @@ USING (
     ELSE 'DRAFT'
   END
 )::"oppskills"."LifecycleStatus";
+
+-- Re-apply default after conversion
+ALTER TABLE "oppskills"."festival" ALTER COLUMN "status" SET DEFAULT 'DRAFT';
 
 -- Drop festival columns that don't belong to festivals
 ALTER TABLE "oppskills"."festival" DROP COLUMN IF EXISTS "hackathon_id";
