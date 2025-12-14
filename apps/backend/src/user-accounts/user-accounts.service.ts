@@ -261,10 +261,7 @@ export class UserAccountsService {
 
           if (clerkUserId) {
             try {
-              const {
-                success,
-                data,
-              } = await this.delete({
+              const { success, data } = await this.delete({
                 user_id: clerkUserId,
               });
 

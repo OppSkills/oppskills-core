@@ -1,6 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { Injectable } from '@nestjs/common';
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class ClerkAuthConfigService {
@@ -29,4 +28,19 @@ export class ClerkAuthConfigService {
   get redisPassword(): string {
     return this.configService.get('REDISPASSWORD', '');
   }
+
+  /**
+   * Comma-separated Clerk user IDs that are allowed to perform admin actions.
+   * Example: "user_abc,user_def"
+   */
+  get adminUserIds(): string[] {
+    const raw = this.configService.get<string>('ADMIN_USER_IDS', '');
+    return raw
+      .split(',')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+  }
+
+  // Intentionally no Clerk-role config here.
+  // Authorization should be driven by our own DB `UserEntity.accessLevel`.
 }

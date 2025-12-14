@@ -1,20 +1,28 @@
-import { Controller, Post, Body, Get, Param, Req, UseGuards, Delete, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Req,
+  UseGuards,
+  Delete,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { TeamService } from './team.service';
 import { CreateTeamDto } from '@oppskills/types';
 import type { Request } from 'express';
 
-
-@Controller('hackathon')
+@Controller('hackathons')
 @UseGuards(ClerkAuthGuard)
 export class TeamController {
-
   constructor(private readonly teamService: TeamService) {}
 
   @Post('create-team')
   async createTeam(@Body() dto: CreateTeamDto, @Req() req: Request) {
     const user = req['user'];
-     if (!user) {
+    if (!user) {
       throw new UnauthorizedException('User not found in request');
     }
     return this.teamService.createTeam(dto, user.id);
@@ -42,7 +50,7 @@ export class TeamController {
   @Delete('leave-team/:teamId')
   async leaveTeam(@Param('teamId') teamId: string, @Req() req: Request) {
     const user = req['user'];
-     if (!user) {
+    if (!user) {
       throw new UnauthorizedException('User not found in request');
     }
     return this.teamService.leaveTeam(teamId, user.id);
