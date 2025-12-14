@@ -47,8 +47,8 @@ export default async function page() {
     },
   ];
   return (
-    <div className="flex justify-center w-full bg-surface">
-      <div className="w-full max-w-[1150px] bg-background p-4 sm:p-6 my-4 rounded-[20px] flex flex-col gap-6">
+    <div className="flex justify-center w-full bg-neutral-200">
+      <div className="w-full max-w-[1150px] bg-background p-4 sm:p-6 rounded-[20px] flex flex-col gap-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
           <div className="left">

@@ -31,7 +31,7 @@ export default function LayoutProvider({
           className="bg-neutral-200"
         >
           <AppSidebar variant="floating" className="" />
-          <SidebarInset className="bg-neutral-200 p-2">
+          <SidebarInset className="bg-neutral-200 p-2 space-y-4 my-1">
             <SiteHeader />
             {children}
           </SidebarInset>
