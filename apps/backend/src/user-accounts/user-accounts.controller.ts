@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Headers,
+  Logger,
+} from '@nestjs/common';
 import { UserAccountsService } from './user-accounts.service';
 import type { ClerkWebhookRequestDto } from '@oppskills/types';
 
@@ -25,5 +35,5 @@ export class UserAccountsController {
       svixTimestamp,
       svixSignature,
     );
-  } 
+  }
 }

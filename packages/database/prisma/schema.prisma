@@ -19,17 +19,104 @@ enum HackathonMode {
   @@schema("oppskills")
 }
 
+/// Internal app authorization role for a user.
+/// Default is USER.
+enum AccessLevel {
+  ADMIN
+  USER
+  VIEWER
+
+  @@map("AccessLevel")
+  @@schema("oppskills")
+}
+
+/// General lifecycle status for festivals and hackathons.
+enum LifecycleStatus {
+  DRAFT
+  PUBLISHED
+  ONGOING
+  COMPLETED
+  CANCELLED
+
+  @@map("LifecycleStatus")
+  @@schema("oppskills")
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+  UNIVERSITY_ONLY
+
+  @@map("Visibility")
+  @@schema("oppskills")
+}
+
+enum HackathonType {
+  CODING_HACKATHON
+  IDEA_HACKATHON
+  CASE_STUDY_COMPETITION
+  DESIGN_HACKATHON
+  OPEN_HACKATHON
+
+  @@map("HackathonType")
+  @@schema("oppskills")
+}
+
+enum ParticipantType {
+  INDIVIDUAL
+  TEAM_OF_2
+  TEAM_OF_3
+  TEAM_OF_4
+  TEAM_OF_5
+  TEAM_OF_6
+  MORE_THAN_6
+
+  @@map("ParticipantType")
+  @@schema("oppskills")
+}
+
+enum LocationType {
+  PHYSICAL
+  VIRTUAL
+
+  @@map("LocationType")
+  @@schema("oppskills")
+}
+
+enum RoundStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+
+  @@map("RoundStatus")
+  @@schema("oppskills")
+}
+
+enum RegistrationFieldType {
+  TEXT
+  PHONE_NO
+  EMAIL
+  NUMBER
+  ATTACHMENTS
+  OPTIONS
+
+  @@map("RegistrationFieldType")
+  @@schema("oppskills")
+}
+
 model UserEntity {
   id         String   @id @default(cuid())
   email      String   @unique
   imageUrl   String?
   firstName  String?
   lastName   String?
+  accessLevel AccessLevel @default(USER) @map("access_level")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   // Relations
   hackathons   HackathonEntity[]   @relation("UserHackathons")  // created hackathons
+  festivals    FestivalEntity[]    @relation("UserFestivals")   // created festivals
   teams        TeamEntity[]        @relation("UserTeams")       // teams this user has created
   teamMembers  TeamMemberEntity[]                             // teams they are part of
 
@@ -40,13 +127,52 @@ model UserEntity {
 
 model HackathonEntity {
   id          String         @id @default(cuid())
-  title       String
-  description String?
+  name        String         @map("title")
+  description String?        @db.Text
   startDate   DateTime
   endDate     DateTime
   mode        HackathonMode
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // ---------------------------
+  // Extended Hackathon Details
+  // ---------------------------
+  slug                     String          @unique
+  festivalId               String?         @map("festival_id")
+  festival                 FestivalEntity? @relation(fields: [festivalId], references: [id], onDelete: SetNull)
+  bannerImageUrl           String?
+  visibility               Visibility       @default(PUBLIC)
+  hackathonType            HackathonType    @default(CODING_HACKATHON)
+  participantType          ParticipantType  @default(INDIVIDUAL)
+
+  // Location (denormalized columns for easy filtering)
+  locationType             LocationType?    @map("location_type")
+  locationAddress          String?          @map("location_address")
+  locationCity             String?          @map("location_city")
+  locationVirtualLink      String?          @map("location_virtual_link")
+
+  // Registration
+  registrationDeadline     DateTime?        @map("registration_deadline")
+  externalRegistrationLink String?          @map("external_registration_link")
+  registrationForm         RegistrationFormEntity?
+
+  // Pricing & Prizes
+  isFree                   Boolean          @default(true) @map("is_free")
+  entryFeeAmount           Decimal?         @db.Decimal(12, 2) @map("entry_fee_amount")
+  currency                 String           @default("INR")
+  prizeTotalWorthAmount    Decimal?         @db.Decimal(12, 2) @map("prize_total_worth_amount")
+  prizeBreakdown           PrizeBreakdownEntity[]
+
+  // Organizer / University Restrictions
+  organizationName         String?          @map("organization_name")
+  organizationLogoUrl      String?          @map("organization_logo_url")
+  allowedUniversities      String[]         @default([]) @map("allowed_universities")
+
+  // Metadata
+  impressions              Int              @default(0)
+  registrationCount        Int              @default(0) @map("registration_count")
+  status                   LifecycleStatus  @default(DRAFT)
 
   // Relation: only the creator (organizer) can edit/delete
   ownerId     String
@@ -55,8 +181,127 @@ model HackathonEntity {
   // Relation: teams participating in this hackathon
   teams       TeamEntity[]
 
+  // Relations: hackathon structure
+  rounds      RoundEntity[]
+
   @@map("hackathon")
   @@schema("oppskills")
+  @@index([festivalId])
+}
+
+model FestivalEntity {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?  @db.Text
+  posterImageUrl String? @map("poster_image_url")
+  websiteUrl  String?  @map("website_url")
+
+  // Location
+  locationType        LocationType? @map("location_type")
+  locationAddress     String?       @map("location_address")
+  locationCity        String?       @map("location_city")
+  locationVirtualLink String?       @map("location_virtual_link")
+
+  // Dates
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+
+  // Organizer
+  organizerId          String?     @map("organizer_id")
+  organizer            UserEntity? @relation("UserFestivals", fields: [organizerId], references: [id], onDelete: SetNull)
+  organizationName     String? @map("organization_name")
+  organizationLogoUrl  String? @map("organization_logo_url")
+
+  // Lifecycle
+  status        LifecycleStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  hackathons HackathonEntity[]
+
+  @@map("festival")
+  @@schema("oppskills")
+  @@index([organizerId])
+}
+
+model RoundEntity {
+  id          String      @id @default(cuid())
+  hackathonId String      @map("hackathon_id")
+  hackathon   HackathonEntity @relation(fields: [hackathonId], references: [id])
+
+  name        String
+  description String?     @db.Text
+
+  // Use DateTime for real scheduling; API can expose "date" + "time" if desired.
+  startsAt    DateTime    @map("starts_at")
+  order       Int
+  status      RoundStatus @default(UPCOMING)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("round")
+  @@schema("oppskills")
+  @@index([hackathonId])
+  @@unique([hackathonId, order])
+}
+
+model RegistrationFormEntity {
+  id               String   @id @default(cuid())
+  externalFormLink String?  @map("external_form_link")
+
+  // Hackathon registration form (optional; one per hackathon)
+  hackathonId String? @unique @map("hackathon_id")
+  hackathon   HackathonEntity? @relation(fields: [hackathonId], references: [id])
+
+  fields    RegistrationFieldEntity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("registration_form")
+  @@schema("oppskills")
+}
+
+model RegistrationFieldEntity {
+  id                 String                @id @default(cuid())
+  registrationFormId String                @map("registration_form_id")
+  registrationForm   RegistrationFormEntity @relation(fields: [registrationFormId], references: [id])
+
+  label       String
+  type        RegistrationFieldType
+  required    Boolean @default(false)
+  order       Int
+  options     String[] @default([])
+  placeholder String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("registration_field")
+  @@schema("oppskills")
+  @@index([registrationFormId])
+  @@unique([registrationFormId, order])
+}
+
+model PrizeBreakdownEntity {
+  id          String   @id @default(cuid())
+  hackathonId String   @map("hackathon_id")
+  hackathon   HackathonEntity @relation(fields: [hackathonId], references: [id])
+
+  position    String
+  amount      Decimal  @db.Decimal(12, 2)
+  description String?  @db.Text
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("prize_breakdown")
+  @@schema("oppskills")
+  @@index([hackathonId])
 }
 
 model TeamEntity {

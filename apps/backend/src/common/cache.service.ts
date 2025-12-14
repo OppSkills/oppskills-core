@@ -27,7 +27,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       });
 
       // Use REDIS_URL if available, otherwise fall back to individual host/port
-      const redisConfig = process.env.REDIS_URL 
+      const redisConfig = process.env.REDIS_URL
         ? { url: process.env.REDIS_URL }
         : {
             host: process.env.REDISHOST || 'localhost',

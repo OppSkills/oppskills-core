@@ -1,12 +1,13 @@
-import { Module, Global } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ClerkAuthConfigService } from './config.service';
+import { AdminGuard } from './admin.guard';
 import { CacheService } from './cache.service';
+import { ClerkAuthConfigService } from './config.service';
 
 @Global()
 @Module({
   imports: [ConfigModule],
-  providers: [ClerkAuthConfigService, CacheService],
-  exports: [ClerkAuthConfigService, CacheService],
+  providers: [ClerkAuthConfigService, CacheService, AdminGuard],
+  exports: [ClerkAuthConfigService, CacheService, AdminGuard],
 })
 export class CommonModule {}
