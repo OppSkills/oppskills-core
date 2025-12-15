@@ -5,107 +5,68 @@ import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { getHackathons } from "@/lib/api/hackathonApi";
 import {
-    createColumnHelper,
-    flexRender,
-    getCoreRowModel,
-    useReactTable,
-    getSortedRowModel,
-    SortingState,
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  type SortingState,
+  useReactTable,
 } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 
-// Type definition for our data
-type Hackathon = {
-    id: number;
-    name: string;
-    description: string;
-    type: string;
-    status: string;
-    startDate: string;
-    startTime: string;
-    endDate: string;
-    endTime: string;
-    candidates: string;
-    isOpen: boolean;
-    registrationLabel: string;
+/**
+ * Converts stored rich-text HTML into a human-friendly plain-text snippet.
+ *
+ * We intentionally do NOT render HTML here (security + table UX).
+ */
+function stripHtmlToText(input: string): string {
+  const value = input.trim();
+  if (value.length === 0) return "";
+
+  // In the browser we can reliably parse HTML.
+  if (typeof window !== "undefined" && typeof document !== "undefined") {
+    const el = document.createElement("div");
+    el.innerHTML = value;
+    return (el.textContent ?? el.innerText ?? "").replace(/\s+/g, " ").trim();
+  }
+
+  // Fallback for non-browser contexts (shouldn't run for this client page, but safe).
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Row model for the dashboard table.
+ *
+ * Note: This is an adapter around the backend hackathon entity.
+ */
+type HackathonRow = {
+  id: string;
+  ownerId?: string;
+  dashboardSlug: string;
+  name: string;
+  description: string;
+  type: "Hackathon";
+  status: string;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  candidates: string;
+  isOpen: boolean;
+  registrationLabel: "Open" | "Closed";
 };
 
-// Mock Data
-const data: Hackathon[] = [
-    {
-        id: 1,
-        name: "Hackverse",
-        description: "Some so called big engg. college name will come up here who is trying to be tier 1",
-        type: "Hackathon",
-        status: "Completed",
-        startDate: "01 Jan 26",
-        startTime: "12:00 AM IST",
-        endDate: "01 Jan 26",
-        endTime: "12:00 AM IST",
-        candidates: "1,243",
-        isOpen: false,
-        registrationLabel: "Closed",
-    },
-    {
-        id: 2,
-        name: "HackInfy",
-        description: "Some so called big engg. college name will come up here who is trying to be tier 1",
-        type: "Hackathon",
-        status: "Completed",
-        startDate: "01 Jan 26",
-        startTime: "12:00 AM IST",
-        endDate: "01 Jan 26",
-        endTime: "12:00 AM IST",
-        candidates: "12,000",
-        isOpen: false,
-        registrationLabel: "Closed",
-    },
-    {
-        id: 3,
-        name: "HackWipro",
-        description: "Some so called big engg. college name will come up here who is trying to be tier 1",
-        type: "Hackathon",
-        status: "Completed",
-        startDate: "01 Jan 26",
-        startTime: "12:00 AM IST",
-        endDate: "01 Jan 26",
-        endTime: "12:00 AM IST",
-        candidates: "1300",
-        isOpen: false,
-        registrationLabel: "Closed",
-    },
-    {
-        id: 4,
-        name: "Bas kar",
-        description: "Some so called big engg. college name will come up here who is trying to be tier 1",
-        type: "Hackathon",
-        status: "In Progress",
-        startDate: "01 Jan 26",
-        startTime: "12:00 AM IST",
-        endDate: "01 Jan 26",
-        endTime: "12:00 AM IST",
-        candidates: "12,232",
-        isOpen: true,
-        registrationLabel: "Open",
-    },
-    {
-        id: 5,
-        name: "Enough of Hack",
-        description: "Some so called big engg. college name will come up here who is trying to be tier 1",
-        type: "Hackathon",
-        status: "In Progress",
-        startDate: "01 Jan 26",
-        startTime: "12:00 AM IST",
-        endDate: "01 Jan 26",
-        endTime: "12:00 AM IST",
-        candidates: "23,000",
-        isOpen: true,
-        registrationLabel: "Open",
-    },
-];
-
-const columnHelper = createColumnHelper<Hackathon>();
+const columnHelper = createColumnHelper<HackathonRow>();
 
 const columns = [
     columnHelper.display({
@@ -135,59 +96,170 @@ const columns = [
             <Badge variant="secondary" className="bg-secondary/50 text-secondary-foreground font-normal">
                 {info.getValue()}
             </Badge>
-        ),
-    }),
-    columnHelper.accessor("startDate", {
-        header: "Start Date",
-        cell: (info) => (
-            <div className="flex flex-col text-sm">
-                <span className="font-medium text-base">{info.getValue()}</span>
-                <span className="text-xs text-muted-foreground">{info.row.original.startTime}</span>
-            </div>
-        ),
-    }),
-    columnHelper.accessor("endDate", {
-        header: "End Date",
-        cell: (info) => (
-            <div className="flex flex-col text-sm">
-                <span className="font-medium text-base">{info.getValue()}</span>
-                <span className="text-xs text-muted-foreground">{info.row.original.endTime}</span>
-            </div>
-        ),
-    }),
-    columnHelper.accessor("candidates", {
-        header: "Candidates",
-        cell: (info) => <div className="text-base font-medium">{info.getValue()}</div>,
-    }),
-    columnHelper.accessor("isOpen", {
-        header: () => <div className="text-center">Registration</div>,
-        cell: (info) => (
-            <div className="flex items-center justify-center gap-3">
-                <Switch checked={info.getValue()} />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed max-w-[90%]">
+          {stripHtmlToText(info.row.original.description)}
+        </p>
+      </Link>
+    ),
+  }),
+  columnHelper.accessor("status", {
+    header: "Status",
+    cell: (info) => (
+      <Badge
+        variant="secondary"
+        className="bg-secondary/50 text-secondary-foreground font-normal"
+      >
+        {info.getValue()}
+      </Badge>
+    ),
+  }),
+  columnHelper.accessor("startDate", {
+    header: "Start Date",
+    cell: (info) => (
+      <div className="flex flex-col text-sm">
+        <span className="font-medium text-base">{info.getValue()}</span>
+        <span className="text-xs text-muted-foreground">
+          {info.row.original.startTime}
+        </span>
+      </div>
+    ),
+  }),
+  columnHelper.accessor("endDate", {
+    header: "End Date",
+    cell: (info) => (
+      <div className="flex flex-col text-sm">
+        <span className="font-medium text-base">{info.getValue()}</span>
+        <span className="text-xs text-muted-foreground">
+          {info.row.original.endTime}
+        </span>
+      </div>
+    ),
+  }),
+  columnHelper.accessor("candidates", {
+    header: "Candidates",
+    cell: (info) => (
+      <div className="text-base font-medium">{info.getValue()}</div>
+    ),
+  }),
+  columnHelper.accessor("isOpen", {
+    header: () => <div className="text-center">Registration</div>,
+    cell: (info) => (
+      <div className="flex items-center justify-center gap-3">
+        <Switch checked={info.getValue()} />
 
-                <span
-                    className={cn(
-                        "px-3 py-1 rounded text-xs font-medium w-16 text-center shadow-sm",
-                        info.getValue() ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                    )}
-                >
-                    {info.row.original.registrationLabel}
-                </span>
-            </div>
-        ),
-    }),
-    columnHelper.display({
-        id: "actions",
-        header: () => <div className="text-center">Edit</div>,
-        cell: () => (
-            <div className="flex justify-center">
-                <button className="p-2 rounded-full hover:bg-muted transition-colors border border-gray-300">
-                    <MoreVertical className="w-5 h-5 text-gray-600" />
-                </button>
-            </div>
-        ),
-    }),
+        <span
+          className={cn(
+            "px-3 py-1 rounded text-xs font-medium w-16 text-center shadow-sm",
+            info.getValue()
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          )}
+        >
+          {info.row.original.registrationLabel}
+        </span>
+      </div>
+    ),
+  }),
+  columnHelper.display({
+    id: "actions",
+    header: () => <div className="text-center">Edit</div>,
+    cell: (info) => (
+      <div className="flex justify-center">
+        <Link
+          href={`/dashboard/opportunity/${info.row.original.dashboardSlug}/edit-opportunity`}
+          aria-label={`Edit ${info.row.original.name}`}
+          className="p-2 rounded-full hover:bg-muted transition-colors border border-gray-300"
+        >
+          <MoreVertical className="w-5 h-5 text-gray-600" />
+        </Link>
+      </div>
+    ),
+  }),
 ];
+
+/**
+ * Type guard: checks if a value is a non-null object.
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getString(
+  obj: Record<string, unknown>,
+  key: string
+): string | undefined {
+  const value = obj[key];
+  return typeof value === "string" && value.trim().length > 0
+    ? value
+    : undefined;
+}
+
+function formatDate(value: string | undefined): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return format(d, "dd MMM yy");
+}
+
+function isRegistrationOpen(input: {
+  status?: string;
+  registrationDeadline?: string;
+}): boolean {
+  const status = (input.status ?? "").toUpperCase();
+  if (status === "CANCELLED" || status === "COMPLETED") return false;
+
+  const deadlineStr = input.registrationDeadline;
+  if (!deadlineStr) return false;
+  const deadline = new Date(deadlineStr);
+  if (Number.isNaN(deadline.getTime())) return false;
+
+  return Date.now() <= deadline.getTime();
+}
+
+function extractHackathonRows(input: unknown): HackathonRow[] {
+  const raw = Array.isArray(input)
+    ? input
+    : isRecord(input) && Array.isArray(input["data"])
+      ? input["data"]
+      : [];
+
+  return raw
+    .map((row): HackathonRow | null => {
+      if (!isRecord(row)) return null;
+
+      const id = getString(row, "id");
+      const name = getString(row, "name");
+      if (!id || !name) return null;
+
+      const slug = getString(row, "slug");
+      const ownerId =
+        getString(row, "ownerId") ??
+        (isRecord(row["owner"]) ? getString(row["owner"], "id") : undefined);
+      const status = getString(row, "status") ?? "DRAFT";
+      const registrationDeadline = getString(row, "registrationDeadline");
+      const open = isRegistrationOpen({ status, registrationDeadline });
+
+      return {
+        id,
+        ownerId,
+        dashboardSlug: slug ?? id,
+        name,
+        description: getString(row, "description") ?? "",
+        type: "Hackathon",
+        status,
+        startDate: formatDate(getString(row, "startDate")),
+        startTime: "—",
+        endDate: formatDate(getString(row, "endDate")),
+        endTime: "—",
+        candidates: "—",
+        isOpen: open,
+        registrationLabel: open ? "Open" : "Closed",
+      };
+    })
+    .filter((v): v is HackathonRow => v !== null);
+}
 
 export default function OpportunityPage() {
     const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -276,9 +348,15 @@ export default function OpportunityPage() {
                                 No results found.
                             </div>
                         )}
-                    </div>
+                      </div>
+                    );
+                  })}
                 </div>
-            </div>
+              ))
+            )}
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 }

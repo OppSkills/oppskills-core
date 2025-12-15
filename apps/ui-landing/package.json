@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "prebuild": "pnpm --filter @oppskills/types build",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -43,7 +44,8 @@
     "recharts": "^3.5.1",
     "sonner": "^2.0.7",
     "swiper": "^12.0.3",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "@oppskills/types": "workspace:*"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

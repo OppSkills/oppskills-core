@@ -8,23 +8,34 @@ import {
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
+import type { CreateTeamDto } from "@oppskills/types";
+
+/**
+ * Ensures we have a token for authenticated API calls.
+ */
+function requireToken(token: string | null): string {
+  if (typeof token !== "string" || token.trim().length === 0) {
+    throw new Error("Not authenticated.");
+  }
+  return token;
+}
 
 export const useTeams = () => {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  
+
   // ▌GET TEAMS OF A HACKATHON
   const useTeamsByHackathon = (hackathonId: string) =>
     useQuery({
       queryKey: ["teams", hackathonId],
       queryFn: async () => {
-        const token = await getToken();
-        return getTeamsByHackathon(token!, hackathonId);
+        const token = requireToken(await getToken());
+        return getTeamsByHackathon(token, hackathonId);
       },
       enabled: !!hackathonId,
     });
 
-     // ▌GET SINGLE TEAM
+  // ▌GET SINGLE TEAM
   // const teamById = (teamId: string) =>
   //   useQuery({
   //     queryKey: ["team", teamId],
@@ -35,20 +46,20 @@ export const useTeams = () => {
   //     enabled: !!teamId,
   //   });
 
-     // ▌CREATE
+  // ▌CREATE
   const create = useMutation({
-    mutationFn: async (payload: unknown) => {
-      const token = await getToken();
-      return createTeam(token!, payload as Record<string, unknown>);
+    mutationFn: async (payload: CreateTeamDto) => {
+      const token = requireToken(await getToken());
+      return createTeam(token, payload);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teams"] }),
   });
 
   // ▌JOIN
   const join = useMutation({
-    mutationFn: async (payload: unknown) => {
-      const token = await getToken();
-      return joinTeam(token!, payload as Record<string, unknown>);
+    mutationFn: async (payload: CreateTeamDto) => {
+      const token = requireToken(await getToken());
+      return joinTeam(token, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teams"] });
@@ -56,11 +67,11 @@ export const useTeams = () => {
     },
   });
 
-   // ▌LEAVE
+  // ▌LEAVE
   const leave = useMutation({
     mutationFn: async (teamId: string) => {
-      const token = await getToken();
-      return leaveTeam(token!, teamId);
+      const token = requireToken(await getToken());
+      return leaveTeam(token, teamId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teams"] });
@@ -69,4 +80,4 @@ export const useTeams = () => {
   });
 
   return { teamsByHackathon: useTeamsByHackathon, create, join, leave };
-}
+};
