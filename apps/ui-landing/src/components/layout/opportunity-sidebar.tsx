@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import {
-  IconHome,
   IconUsers,
-  IconSettings,
-  IconCalendarEvent,
-  IconFileText,
+  IconDashboard,
+  IconPencil,
+  IconCreditCard,
+  IconUserCog,
+  IconMail,
 } from "@tabler/icons-react";
 
 import { NavMain } from "./nav-main";
@@ -28,29 +29,34 @@ import { useParams } from "next/navigation";
  */
 const getOpportunityNavItems = (slug: string) => [
   {
-    title: "Overview",
+    title: "Dashboard",
     url: `/dashboard/opportunity/${slug}`,
-    icon: IconHome,
+    icon: IconDashboard,
   },
   {
-    title: "Participants",
-    url: `/dashboard/opportunity/${slug}/participants`,
+    title: "Manage registration",
+    url: `/dashboard/opportunity/${slug}/manage-registration`,
     icon: IconUsers,
   },
   {
-    title: "Registration",
-    url: `/dashboard/opportunity/${slug}/manage-registration`,
-    icon: IconCalendarEvent,
+    title: "Edit Opportunity",
+    url: `/dashboard/opportunity/${slug}/edit-opportunity`,
+    icon: IconPencil,
   },
   {
-    title: "Content",
-    url: `/dashboard/opportunity/${slug}/content`,
-    icon: IconFileText,
+    title: "Payments",
+    url: `/dashboard/opportunity/${slug}/payments`,
+    icon: IconCreditCard,
   },
   {
-    title: "Settings",
-    url: `/dashboard/opportunity/${slug}/settings`,
-    icon: IconSettings,
+    title: "Manage Roles",
+    url: `/dashboard/opportunity/${slug}/manage-roles`,
+    icon: IconUserCog,
+  },
+  {
+    title: "Send Notifications",
+    url: `/dashboard/opportunity/${slug}/send-notifications`,
+    icon: IconMail,
   },
 ];
 
