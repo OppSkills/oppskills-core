@@ -1,57 +1,61 @@
-import axios from 'axios';
+import type { CreateHackathonDto, UpdateHackathonDto } from "@oppskills/types";
+import { buildAuthHeaders, createApiClient } from "./apiClient";
 
-const API = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL
-})
+const API = createApiClient("/hackathons");
 
-export const getHackathons = async (token: string)=>{
-const res = await API.get('/', {
-    headers: {
-        Authorization: `Bearer ${token}`,
-    }
-});
-return res.data;
+/**
+ * Fetches hackathons visible to the current user.
+ */
+export async function getHackathons(token: string): Promise<unknown> {
+  const res = await API.get("", { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
 }
 
-export const getHackathonById = async (token: string, id: string) => {
-  const res = await API.get(`/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
-};
-
-export const createHackathon = async (token: string, data:any)=>{
-    const res = await API.post('', data, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        }
-    });
-    return res.data
+/**
+ * Fetches a single hackathon by id.
+ */
+export async function getHackathonById(token: string, id: string): Promise<unknown> {
+  const res = await API.get(`/${id}`, { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
 }
 
-export const updateHackathon = async (token: string, id:string, data:any)=>{
-    const res = await API.patch(`/${id}`, data, {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    })
-    return res.data
+/**
+ * Creates a new hackathon (server creates it as DRAFT).
+ */
+export async function createHackathon(
+  token: string,
+  data: CreateHackathonDto,
+): Promise<unknown> {
+  const res = await API.post("", data, { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
 }
 
-export const deleteHackathon = async (token: string, id:string)=>{
-    const res = await API.delete(`/${id}`, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        }
-    });
-    return res.data;
+/**
+ * Updates a hackathon.
+ *
+ * NOTE: Backend uses PUT for full/partial updates; we keep this as PUT to match.
+ */
+export async function updateHackathon(
+  token: string,
+  id: string,
+  data: UpdateHackathonDto,
+): Promise<unknown> {
+  const res = await API.put(`/${id}`, data, { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
 }
 
-export const registerForHackathon = async (token: string, id:string)=>{
-    const res = await API.post(`/${id}/register`,{},{
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    })
-    return res.data
+/**
+ * Deletes a hackathon.
+ */
+export async function deleteHackathon(token: string, id: string): Promise<unknown> {
+  const res = await API.delete(`/${id}`, { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
+}
+
+/**
+ * Registers the current user for a hackathon.
+ */
+export async function registerForHackathon(token: string, id: string): Promise<unknown> {
+  const res = await API.post(`/${id}/register`, {}, { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
 }

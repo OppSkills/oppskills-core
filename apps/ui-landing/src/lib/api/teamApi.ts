@@ -1,48 +1,47 @@
-import axios from 'axios';
+import type { CreateTeamDto } from "@oppskills/types";
+import { buildAuthHeaders, createApiClient } from "./apiClient";
 
-const API = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL
-})
+const API = createApiClient("/hackathons");
 
-export const createTeam = async(token: string, data: any)=>{
-    const res = await API.post('/create-team', data, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        }
-    });
-    return res.data;
+/**
+ * Creates a team for a hackathon.
+ */
+export async function createTeam(token: string, data: CreateTeamDto): Promise<unknown> {
+  const res = await API.post("/create-team", data, { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
 }
 
- export const joinTeam = async(token: string, data: any) =>{
-        const res = await API.post('/join-team', data, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            },
-        });
-        return res.data
-    }
+/**
+ * Joins a team (payload depends on backend DTO).
+ */
+export async function joinTeam(token: string, data: CreateTeamDto): Promise<unknown> {
+  const res = await API.post("/join-team", data, { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
+}
 
-    export const leaveTeam = async (token: string, teamId: string)=>{
-        const res = await API.delete(`/leave-team/${teamId}`,{
-            headers:
-            {
-                Authorization: `Bearer ${token}`
-            }
-        })
-        return res.data;
-    }
+/**
+ * Leaves a team.
+ */
+export async function leaveTeam(token: string, teamId: string): Promise<unknown> {
+  const res = await API.delete(`/leave-team/${teamId}`, { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
+}
 
+/**
+ * Lists teams for a given hackathon.
+ */
+export async function getTeamsByHackathon(
+  token: string,
+  hackathonId: string,
+): Promise<unknown> {
+  const res = await API.get(`/teams/${hackathonId}`, { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
+}
 
-   export const getTeamsByHackathon = async (token: string, hackathonId: string) => {
-  const res = await API.get(`/teams/${hackathonId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
-};
-
-export const getTeamById = async (token: string, teamId: string) => {
-  const res = await API.get(`/team/${teamId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
-};
+/**
+ * Fetches a single team by id.
+ */
+export async function getTeamById(token: string, teamId: string): Promise<unknown> {
+  const res = await API.get(`/team/${teamId}`, { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
+}
