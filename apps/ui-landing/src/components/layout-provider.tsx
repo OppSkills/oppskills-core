@@ -6,8 +6,11 @@ import { Toaster } from "@/components/ui/sonner";
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "./layout/app-sidebar";
 import { SidebarInset } from "./ui/sidebar";
-import { SidebarProvider } from "./ui/sidebar";
+import { SidebarContextProvider, SidebarProvider } from "./ui/sidebar";
 import { SiteHeader } from "./layout/site-header";
+import { cn } from "@/lib/utils";
+import React from "react";
+import { OpportunitySidebar } from "./layout/opportunity-sidebar";
 
 export default function LayoutProvider({
   children,
@@ -18,6 +21,33 @@ export default function LayoutProvider({
 
   const isDashboard = pathname.startsWith("/dashboard");
 
+  /**
+   * Check if the current route is an opportunity detail page
+   * Pattern: /dashboard/opportunity/[slug] or /dashboard/opportunity/[slug]/...
+   * Excludes the opportunity list page: /dashboard/opportunity
+   */
+  const isOpportunityDetail = React.useMemo(() => {
+    const opportunityDetailPattern = /^\/dashboard\/opportunity\/[^/]+/;
+    return opportunityDetailPattern.test(pathname);
+  }, [pathname]);
+
+  /**
+   * Control the main sidebar's open state
+   * When on opportunity detail pages, force collapse to icon mode
+   * Hooks must be at the top level, not inside conditionals
+   */
+  const [mainSidebarOpen, setMainSidebarOpen] =
+    React.useState(!isOpportunityDetail);
+
+  /**
+   * Update main sidebar state when route changes
+   * Collapse main sidebar when entering opportunity detail pages
+   */
+  React.useEffect(() => {
+    setMainSidebarOpen(!isOpportunityDetail);
+  }, [isOpportunityDetail]);
+
+  // Dashboard layout with dual-sidebar support for opportunity details
   if (isDashboard) {
     return (
       <main className="">
@@ -29,9 +59,39 @@ export default function LayoutProvider({
             } as React.CSSProperties
           }
           className="bg-neutral-200"
+          open={mainSidebarOpen}
+          onOpenChange={setMainSidebarOpen}
         >
+          {/* Main application sidebar - collapses to icon mode on opportunity details */}
           <AppSidebar variant="floating" className="" />
-          <SidebarInset className="bg-neutral-200 p-2 space-y-4 my-1">
+
+          {/* Secondary opportunity sidebar - only visible on opportunity detail pages */}
+          {isOpportunityDetail && (
+            <SidebarContextProvider defaultOpen={true}>
+              <OpportunitySidebar
+                /**
+                 * Render as a second LEFT sidebar, immediately to the right of the primary sidebar.
+                 * We override the internal `left-0` positioning from `Sidebar` using inline styles
+                 * (more reliable than Tailwind arbitrary `calc()` classes here), and the sidebar's
+                 * own "gap" will push the content area.
+                 */
+                side="left"
+                variant="floating"
+                collapsible="icon"
+                style={{
+                  left: "calc(var(--sidebar-width-icon) + 1rem)",
+                }}
+              />
+            </SidebarContextProvider>
+          )}
+
+          <SidebarInset
+            className={cn(
+              "bg-neutral-200 p-2 space-y-4 my-1"
+              // Adjust left margin when secondary sidebar is visible
+              // isOpportunityDetail && "ml-[calc(var(--spacing)*62)]"
+            )}
+          >
             <SiteHeader />
             <div className="rounded-[20px] overflow-hidden">{children}</div>
           </SidebarInset>
@@ -39,6 +99,8 @@ export default function LayoutProvider({
       </main>
     );
   }
+
+  // Non-dashboard layout (landing pages, etc.)
   return (
     <main>
       <Navbar />

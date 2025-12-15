@@ -29,7 +29,7 @@ const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
-const SIDEBAR_WIDTH_ICON = "3rem";
+const SIDEBAR_WIDTH_ICON = "3.5rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
 type SidebarContextProps = {
@@ -51,6 +51,72 @@ function useSidebar() {
   }
 
   return context;
+}
+
+/**
+ * Context-only provider for a sidebar.
+ *
+ * Why this exists:
+ * - `SidebarProvider` renders a layout wrapper (`div` with `w-full` + flex) intended
+ *   to be the top-level dashboard shell.
+ * - For secondary/embedded sidebars (like an "opportunity" sidebar) we often need
+ *   a separate sidebar state/context without introducing an extra layout wrapper.
+ */
+function SidebarContextProvider({
+  defaultOpen = true,
+  open: openProp,
+  onOpenChange: setOpenProp,
+  children,
+}: {
+  defaultOpen?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  const isMobile = useIsMobile();
+  const [openMobile, setOpenMobile] = React.useState(false);
+
+  // Internal state when uncontrolled.
+  const [_open, _setOpen] = React.useState(defaultOpen);
+  const open = openProp ?? _open;
+
+  const setOpen = React.useCallback(
+    (value: boolean | ((value: boolean) => boolean)) => {
+      const openState = typeof value === "function" ? value(open) : value;
+      if (setOpenProp) {
+        setOpenProp(openState);
+      } else {
+        _setOpen(openState);
+      }
+    },
+    [setOpenProp, open]
+  );
+
+  const toggleSidebar = React.useCallback(() => {
+    return isMobile ? setOpenMobile((prev) => !prev) : setOpen((prev) => !prev);
+  }, [isMobile, setOpen, setOpenMobile]);
+
+  // We add a state so that we can do data-state="expanded" or "collapsed".
+  const state = open ? "expanded" : "collapsed";
+
+  const contextValue = React.useMemo<SidebarContextProps>(
+    () => ({
+      state,
+      open,
+      setOpen,
+      isMobile,
+      openMobile,
+      setOpenMobile,
+      toggleSidebar,
+    }),
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+  );
+
+  return (
+    <SidebarContext.Provider value={contextValue}>
+      <TooltipProvider delayDuration={0}>{children}</TooltipProvider>
+    </SidebarContext.Provider>
+  );
 }
 
 function SidebarProvider({
@@ -730,6 +796,7 @@ export {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarContextProvider,
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,

@@ -1,14 +1,20 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
     ColumnDef,
     flexRender,
     getCoreRowModel,
     RowSelectionState,
     useReactTable,
-} from "@tanstack/react-table"
-import { Filter, ListFilter, ArrowRight, Search, EllipsisVertical } from "lucide-react"
+} from "@tanstack/react-table";
+import {
+    Filter,
+    ListFilter,
+    ArrowRight,
+    Search,
+    EllipsisVertical,
+} from "lucide-react";
 
 import {
     Table,
@@ -26,16 +32,16 @@ import { FloatingInput } from "@/components/ui/derived/FloatingInput"
 import { useParams, useRouter } from "next/navigation"
 
 type Participant = {
-    id: string
-    serialNumber: number
-    teamName: string
-    memberCount: number
-    email: string
-    university: string
-    avatarUrl: string
-    status: "Completed" | "Incomplete"
-    currentRound: string
-}
+    id: string;
+    serialNumber: number;
+    teamName: string;
+    memberCount: number;
+    email: string;
+    university: string;
+    avatarUrl: string;
+    status: "Completed" | "Incomplete";
+    currentRound: string;
+};
 
 /* ---------------------------- DATA ---------------------------- */
 
@@ -95,7 +101,7 @@ const data: Participant[] = [
         status: "Completed",
         currentRound: "ROUND 1",
     },
-]
+];
 
 /* -------------------------- COLUMNS --------------------------- */
 
@@ -242,8 +248,10 @@ export default function Participants() {
 
     React.useEffect(() => {
         if (filterValue == "all") setFilteredData(data);
-        else if (filterValue == "completed") setFilteredData(data.filter((item) => item.status == "Completed"));
-        else if (filterValue == "incomplete") setFilteredData(data.filter((item) => item.status == "Incomplete"));
+        else if (filterValue == "completed")
+            setFilteredData(data.filter((item) => item.status == "Completed"));
+        else if (filterValue == "incomplete")
+            setFilteredData(data.filter((item) => item.status == "Incomplete"));
     }, [filterValue]);
 
     return (
@@ -251,13 +259,34 @@ export default function Participants() {
             {/* HEADER */}
             <div className="py-4 flex w-full justify-between">
                 <div className="flex gap-4">
-                    <Button className="border-2" onClick={() => setFilteredValue("all")} variant={filterValue === "all" ? "default" : "outline"}>All ({data.length})</Button>
-                    <Button className="border-2" onClick={() => setFilteredValue("completed")} variant={filterValue === "completed" ? "default" : "outline"}>Completed</Button>
-                    <Button className="border-2" onClick={() => setFilteredValue("incomplete")} variant={filterValue === "incomplete" ? "default" : "outline"}>Incomplete</Button>
+                    <Button
+                        className="border-2"
+                        onClick={() => setFilteredValue("all")}
+                        variant={filterValue === "all" ? "default" : "outline"}
+                    >
+                        All ({data.length})
+                    </Button>
+                    <Button
+                        className="border-2"
+                        onClick={() => setFilteredValue("completed")}
+                        variant={filterValue === "completed" ? "default" : "outline"}
+                    >
+                        Completed
+                    </Button>
+                    <Button
+                        className="border-2"
+                        onClick={() => setFilteredValue("incomplete")}
+                        variant={filterValue === "incomplete" ? "default" : "outline"}
+                    >
+                        Incomplete
+                    </Button>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="relative">
-                        <FloatingInput className="rounded-full min-w-sm" placeholder="Search" />
+                        <FloatingInput
+                            className="rounded-full min-w-sm"
+                            placeholder="Search"
+                        />
                         <div className="absolute flex right-3 top-1/2 -translate-y-1/2">
                             <Search className="text-foreground/30" />
                         </div>
@@ -269,7 +298,7 @@ export default function Participants() {
                     </div>
                 </div>
             </div>
-            <div className="min-w-[1070px] rounded-xl border border-surface bg-primary-foreground shadow-sm">
+            <div className="w-full rounded-xl border border-surface bg-primary-foreground shadow-sm">
                 <Table>
                     <TableHeader className="sticky top-0 z-10 bg-primary">
                         {table.getHeaderGroups().map((group) => (
@@ -321,5 +350,5 @@ export default function Participants() {
                 </Table>
             </div>
         </div>
-    )
+    );
 }
