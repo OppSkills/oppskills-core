@@ -67,9 +67,13 @@ import { createHackathon } from "@/lib/api/hackathonApi";
 import { createFestival, getFestivals } from "@/lib/api/festivalApi";
 
 /**
- * Organizer page: creates festivals and hackathons.
+ * Renders the organizer page for creating and managing festivals and hackathons.
  *
- * Image upload is intentionally NOT implemented yet (S3 integration later).
+ * Provides UI for listing events, creating festivals, configuring hackathon details
+ * (name, date, time, location, description, type, participants, visibility),
+ * customizing registration questions, and previewing the event card.
+ *
+ * @returns The organizer page React element.
  */
 export default function Page() {
   const InputBlock = ({

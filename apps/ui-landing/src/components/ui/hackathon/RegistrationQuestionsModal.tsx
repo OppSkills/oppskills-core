@@ -44,6 +44,19 @@ interface RegistrationQuestionsModalProps {
     onSave: (questions: RegistrationQuestion[]) => void;
 }
 
+/**
+ * Modal dialog for viewing and editing the list of registration form questions.
+ *
+ * Renders a dialog that shows a set of fixed, required questions and any custom questions;
+ * allows adding new custom questions (with a selectable question type), deleting custom questions,
+ * and saving the current questions list.
+ *
+ * @param open - Whether the modal is open
+ * @param onOpenChange - Callback invoked when the modal open state should change
+ * @param initialQuestions - Optional initial questions to populate the modal; if omitted or empty the component displays the default fixed questions
+ * @param onSave - Callback invoked with the current list of questions when the user saves
+ * @returns A React element rendering the registration questions modal
+ */
 export default function RegistrationQuestionsModal({
     open,
     onOpenChange,
