@@ -19,6 +19,9 @@ import {
 } from "lucide-react";
 import EventCard from "@/components/ui/derived/EventCard";
 import HackathonInput from "@/components/ui/hackathon/Input";
+import RegistrationQuestionsModal, {
+  RegistrationQuestion,
+} from "@/components/ui/hackathon/RegistrationQuestionsModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -109,6 +112,7 @@ export default function Page() {
     eventRegisterBy: Date | undefined;
     hackathonType: string;
     participantType: string;
+    registrationQuestions: RegistrationQuestion[];
   }
 
   const [formData, setFormData] = useState<FormData>({
@@ -124,6 +128,7 @@ export default function Page() {
     hackathonType: "",
     participantType: "",
     eventRegisterBy: undefined,
+    registrationQuestions: [],
   });
 
   const [showFestivalModal, setShowFestivalModal] = useState(false);
@@ -163,6 +168,8 @@ export default function Page() {
     useState<boolean>(false);
   const [isSubmittingFestival, setIsSubmittingFestival] =
     useState<boolean>(false);
+
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
   /**
    * Type guard: checks if a value is a non-null object.
@@ -621,7 +628,7 @@ export default function Page() {
                     subLabel={
                       formData.eventDescription
                         ? formData.eventDescription.replace(/<[^>]*>?/gm, "") +
-                          (formData.eventDescription.length > 50 ? "..." : "")
+                        (formData.eventDescription.length > 50 ? "..." : "")
                         : undefined
                     }
                     className="h-full"
@@ -749,11 +756,13 @@ export default function Page() {
             </div>
 
             {/* Registration Form Setup */}
-            <InputBlock
-              icon={<FileEdit className="w-6 h-6" />}
-              label="Registration Form"
-              subLabel="Customize registration questions"
-            />
+            <div onClick={() => setShowRegistrationModal(true)}>
+              <InputBlock
+                icon={<FileEdit className="w-6 h-6" />}
+                label="Registration Form"
+                subLabel="Customize registration questions"
+              />
+            </div>
 
             <Button
               className="w-full font-semibold rounded-full"
@@ -949,8 +958,8 @@ export default function Page() {
                       subLabel={
                         festivalFormData.description
                           ? festivalFormData.description
-                              .replace(/<[^>]*>?/gm, "")
-                              .substring(0, 50) + "..."
+                            .replace(/<[^>]*>?/gm, "")
+                            .substring(0, 50) + "..."
                           : undefined
                       }
                     />
@@ -1114,6 +1123,14 @@ export default function Page() {
           </div>
         </DialogContent>
       </Dialog>
+      <RegistrationQuestionsModal
+        open={showRegistrationModal}
+        onOpenChange={setShowRegistrationModal}
+        initialQuestions={formData.registrationQuestions}
+        onSave={(questions) =>
+          setFormData({ ...formData, registrationQuestions: questions })
+        }
+      />
     </div>
   );
 }
