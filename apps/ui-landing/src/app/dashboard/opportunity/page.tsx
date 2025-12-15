@@ -13,6 +13,7 @@ import {
     getSortedRowModel,
     SortingState,
 } from "@tanstack/react-table";
+import { useRouter } from "next/navigation";
 
 // Type definition for our data
 type Hackathon = {
@@ -117,7 +118,7 @@ const columns = [
         cell: (info) => (
             <div className="flex flex-col gap-1">
                 <div className="flex gap-2">
-                    <span className="font-semibold text-base lg:text-lg">{info.getValue()}</span>
+                    <span className="font-semibold text-base lg:text-lg hover:text-primary cursor-pointer">{info.getValue()}</span>
                     <div>
                         <Badge className="bg-muted text-muted-foreground text-[10px] px-1">{info.row.original.type}</Badge>
                     </div>
@@ -192,6 +193,7 @@ export default function OpportunityPage() {
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [tableData, setTableData] = React.useState(data);
     const [searchTerm, setSearchTerm] = React.useState("");
+    const router = useRouter();
 
     React.useEffect(() => {
         if (!searchTerm.trim()) return setTableData(data);
@@ -212,7 +214,7 @@ export default function OpportunityPage() {
 
     return (
         <div className="w-full min-h-screen bg-background p-6 flex flex-col items-center">
-            <div className="w-full max-w-[1150px] space-y-6">
+            <div className="w-full space-y-6">
 
                 {/* Top Search Bar */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
@@ -262,7 +264,7 @@ export default function OpportunityPage() {
                                 {row.getVisibleCells().map((cell, index) => {
                                     const isSno = index === 0;
                                     return (
-                                        <div key={cell.id} className={cn(isSno && "hidden lg:block text-center")}>
+                                        <div key={cell.id} className={cn(isSno && "hidden lg:block text-center")} onClick={() => { router.push(`/dashboard/opportunity/${row.original.id}/manage-registration/`) }}>
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </div>
                                     );

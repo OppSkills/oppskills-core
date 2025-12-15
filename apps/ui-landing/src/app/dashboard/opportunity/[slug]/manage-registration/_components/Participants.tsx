@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { FloatingInput } from "@/components/ui/derived/FloatingInput"
+import { useParams, useRouter } from "next/navigation"
 
 type Participant = {
     id: string
@@ -98,131 +99,134 @@ const data: Participant[] = [
 
 /* -------------------------- COLUMNS --------------------------- */
 
-const columns: ColumnDef<Participant>[] = [
-    {
-        id: "select",
-        header: ({ table }) => {
-            const isAll = table.getIsAllPageRowsSelected()
-            const isSome = table.getIsSomePageRowsSelected()
-
-            return (
-                <div className="flex items-center justify-center">
-                    <Checkbox
-                        checked={isAll ? true : isSome ? "indeterminate" : false}
-                        onCheckedChange={(value) =>
-                            table.toggleAllPageRowsSelected(!!value)
-                        }
-                        aria-label="Select all"
-                        className="border-primary-foreground"
-                    /></div>
-            )
-        },
-        cell: ({ row }) => (
-            <div className="flex items-center justify-center">
-                <Checkbox
-                    checked={row.getIsSelected()}
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                />
-            </div>
-        ),
-        enableSorting: false,
-        enableHiding: false,
-    },
-    {
-        accessorKey: "serialNumber",
-        header: () => <span className="text-primary-foreground flex  justify-center">S. No.</span>,
-        cell: ({ getValue }) => (
-            <div className="text-center">{getValue<number>()}</div>
-        ),
-    },
-    {
-        accessorKey: "teamName",
-        header: () => (
-            <div className="flex items-center gap-2 text-primary-foreground">
-                <span>{data.length} Teams Participated</span>
-                <Image alt="Arrange Order" src="/icons/order.svg" width={24} height={24} />
-            </div>
-        ),
-        cell: ({ row }) => {
-            const {
-                avatarUrl,
-                teamName,
-                memberCount,
-                email,
-                university,
-            } = row.original
-
-            return (
-                <div className="flex gap-4 py-2">
-                    <Avatar className="h-12 w-12">
-                        <AvatarImage src={avatarUrl} alt={teamName} />
-                        <AvatarFallback>
-                            {teamName.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-2">
-                            <span className="font-semibold">{teamName}</span>
-                            <span className="rounded-sm bg-accent px-2 py-0.5 text-[10px] font-medium text-accent-foreground">
-                                {memberCount} Members Joined
-                            </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">{email}</span>
-                        <span className="text-xs text-muted-foreground">
-                            {university}
-                        </span>
-                    </div>
-                </div>
-            )
-        },
-    },
-    {
-        accessorKey: "status",
-        header: () => (
-            <div className="flex items-center justify-center gap-2 text-primary-foreground">
-                <Filter className="h-4 w-4" />
-                <span>Reg. Status</span>
-                <Image alt="Arrange Order" src="/icons/order.svg" width={24} height={24} />
-
-            </div>
-        ),
-        cell: ({ getValue }) => {
-            const status = getValue<Participant["status"]>()
-
-            return (
-                <div className="flex justify-center">
-                    <span
-                        className={`rounded-xs px-4 py-1 text-xs ${status === "Completed"
-                            ? "bg-primary/10 text-primary"
-                            : "bg-destructive/10 text-destructive"
-                            }`}
-                    >
-                        {status}
-                    </span>
-                </div>
-            )
-        },
-    },
-    {
-        accessorKey: "currentRound",
-        header: () => (
-            <div className="text-center text-primary-foreground">Action / Status</div>
-        ),
-        cell: ({ getValue }) => (
-            <div className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
-                <span>REG</span>
-                <ArrowRight className="h-4 w-4" />
-                <span>{getValue<string>()}</span>
-            </div>
-        ),
-    },
-]
-
-/* ------------------------ COMPONENT --------------------------- */
 
 export default function Participants() {
+    const params = useParams();
+    const slug = params.slug as string;
+    const router = useRouter();
+
+    const columns: ColumnDef<Participant>[] = React.useMemo(() => [
+        {
+            id: "select",
+            header: ({ table }) => {
+                const isAll = table.getIsAllPageRowsSelected()
+                const isSome = table.getIsSomePageRowsSelected()
+
+                return (
+                    <div className="flex items-center justify-center">
+                        <Checkbox
+                            checked={isAll ? true : isSome ? "indeterminate" : false}
+                            onCheckedChange={(value) =>
+                                table.toggleAllPageRowsSelected(!!value)
+                            }
+                            aria-label="Select all"
+                            className="border-primary-foreground"
+                        /></div>
+                )
+            },
+            cell: ({ row }) => (
+                <div className="flex items-center justify-center">
+                    <Checkbox
+                        checked={row.getIsSelected()}
+                        onCheckedChange={(value) => row.toggleSelected(!!value)}
+                        aria-label="Select row"
+                    />
+                </div>
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
+            accessorKey: "serialNumber",
+            header: () => <span className="text-primary-foreground flex  justify-center">S. No.</span>,
+            cell: ({ getValue }) => (
+                <div className="text-center">{getValue<number>()}</div>
+            ),
+        },
+        {
+            accessorKey: "teamName",
+            header: () => (
+                <div className="flex items-center gap-2 text-primary-foreground">
+                    <span>{data.length} Teams Participated</span>
+                    <Image alt="Arrange Order" src="/icons/order.svg" width={24} height={24} />
+                </div>
+            ),
+            cell: ({ row }) => {
+                const {
+                    avatarUrl,
+                    teamName,
+                    memberCount,
+                    email,
+                    university,
+                } = row.original
+
+                return (
+                    <div className="flex gap-4 py-2">
+                        <Avatar className="h-12 w-12">
+                            <AvatarImage src={avatarUrl} alt={teamName} />
+                            <AvatarFallback>
+                                {teamName.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                        </Avatar>
+
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold hover:text-primary cursor-pointer" onClick={() => { router.push(`/dashboard/opportunity/${slug}/manage-registration/${row.original.id}`) }}>{teamName}</span>
+                                <span className="rounded-sm bg-accent px-2 py-0.5 text-[10px] font-medium text-accent-foreground">
+                                    {memberCount} Members Joined
+                                </span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">{email}</span>
+                            <span className="text-xs text-muted-foreground">
+                                {university}
+                            </span>
+                        </div>
+                    </div>
+                )
+            },
+        },
+        {
+            accessorKey: "status",
+            header: () => (
+                <div className="flex items-center justify-center gap-2 text-primary-foreground">
+                    <Filter className="h-4 w-4" />
+                    <span>Reg. Status</span>
+                    <Image alt="Arrange Order" src="/icons/order.svg" width={24} height={24} />
+
+                </div>
+            ),
+            cell: ({ getValue }) => {
+                const status = getValue<Participant["status"]>()
+
+                return (
+                    <div className="flex justify-center">
+                        <span
+                            className={`rounded-xs px-4 py-1 text-xs ${status === "Completed"
+                                ? "bg-primary/10 text-primary"
+                                : "bg-destructive/10 text-destructive"
+                                }`}
+                        >
+                            {status}
+                        </span>
+                    </div>
+                )
+            },
+        },
+        {
+            accessorKey: "currentRound",
+            header: () => (
+                <div className="text-center text-primary-foreground">Action / Status</div>
+            ),
+            cell: ({ getValue }) => (
+                <div className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
+                    <span>REG</span>
+                    <ArrowRight className="h-4 w-4" />
+                    <span>{getValue<string>()}</span>
+                </div>
+            ),
+        },
+    ], [slug, router])
+
     const [filteredData, setFilteredData] = React.useState(data);
     const [filterValue, setFilteredValue] = React.useState("all");
     const [rowSelection, setRowSelection] =
