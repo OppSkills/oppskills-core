@@ -33,7 +33,7 @@ export default function LayoutProvider({
           <AppSidebar variant="floating" className="" />
           <SidebarInset className="bg-neutral-200 p-2 space-y-4 my-1">
             <SiteHeader />
-            {children}
+            <div className="rounded-[20px] overflow-hidden">{children}</div>
           </SidebarInset>
         </SidebarProvider>
       </main>

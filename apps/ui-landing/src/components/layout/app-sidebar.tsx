@@ -26,12 +26,12 @@ const data = {
     },
     {
       title: "Opportunity",
-      url: "#",
+      url: "/dashboard/opportunity",
       icon: IconReport,
     },
     {
       title: "Talent pipeline",
-      url: "#",
+      url: "/dashboard/talent-pipeline",
       icon: IconUsers,
     },
   ],
