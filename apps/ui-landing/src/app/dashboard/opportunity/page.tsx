@@ -19,7 +19,6 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { useRouter } from "next/navigation";
 
 /**
  * Converts stored rich-text HTML into a human-friendly plain-text snippet.
@@ -69,32 +68,36 @@ type HackathonRow = {
 const columnHelper = createColumnHelper<HackathonRow>();
 
 const columns = [
-    columnHelper.display({
-        id: "sno",
-        header: () => <div className="text-center">S. No.</div>,
-        cell: (info) => <div className="text-center font-medium text-lg">{info.row.index + 1}</div>,
-    }),
-    columnHelper.accessor("name", {
-        header: "Name",
-        cell: (info) => (
-            <div className="flex flex-col gap-1">
-                <div className="flex gap-2">
-                    <span className="font-semibold text-base lg:text-lg hover:text-primary cursor-pointer">{info.getValue()}</span>
-                    <div>
-                        <Badge className="bg-muted text-muted-foreground text-[10px] px-1">{info.row.original.type}</Badge>
-                    </div>
-                </div>
-                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed max-w-[90%]">
-                    {info.row.original.description}
-                </p>
-            </div>
-        ),
-    }),
-    columnHelper.accessor("status", {
-        header: "Status",
-        cell: (info) => (
-            <Badge variant="secondary" className="bg-secondary/50 text-secondary-foreground font-normal">
-                {info.getValue()}
+  columnHelper.display({
+    id: "sno",
+    header: () => <div className="text-center">S. No.</div>,
+    cell: (info) => (
+      <div className="text-center font-medium text-lg">
+        <Link
+          href={`/dashboard/opportunity/${info.row.original.dashboardSlug}`}
+          aria-label={`Open ${info.row.original.name}`}
+          className="inline-flex w-full justify-center hover:underline"
+        >
+          {info.row.index + 1}
+        </Link>
+      </div>
+    ),
+  }),
+  columnHelper.accessor("name", {
+    header: "Name",
+    cell: (info) => (
+      <Link
+        href={`/dashboard/opportunity/${info.row.original.dashboardSlug}`}
+        aria-label={`Open ${info.row.original.name}`}
+        className="flex flex-col gap-1 hover:underline"
+      >
+        <div className="flex gap-2 items-start">
+          <span className="font-semibold text-base lg:text-lg">
+            {info.getValue()}
+          </span>
+          <div>
+            <Badge className="bg-muted text-muted-foreground text-[10px] px-1">
+              {info.row.original.type}
             </Badge>
           </div>
         </div>
@@ -262,91 +265,175 @@ function extractHackathonRows(input: unknown): HackathonRow[] {
 }
 
 export default function OpportunityPage() {
-    const [sorting, setSorting] = React.useState<SortingState>([]);
-    const [tableData, setTableData] = React.useState(data);
-    const [searchTerm, setSearchTerm] = React.useState("");
-    const router = useRouter();
+  const { getToken, userId, isLoaded } = useAuth();
+  const router = useRouter();
 
-    React.useEffect(() => {
-        if (!searchTerm.trim()) return setTableData(data);
-        const filteredData = data.filter((item) => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
-        setTableData(filteredData);
-    }, [searchTerm]);
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [allRows, setAllRows] = React.useState<HackathonRow[]>([]);
+  const [tableData, setTableData] = React.useState<HackathonRow[]>([]);
+  const [searchTerm, setSearchTerm] = React.useState<string>("");
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
-    const table = useReactTable({
-        data: tableData,
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        state: {
-            sorting,
-        },
-        onSortingChange: setSorting,
-    });
+  /**
+   * Clerk's `getToken` reference can change across renders, which would re-trigger our
+   * data-fetching effect and make the page feel slow. Keep the latest function in a ref
+   * and only re-run the fetch when auth/user identity is actually ready/changed.
+   */
+  const getTokenRef = React.useRef(getToken);
+  React.useEffect(() => {
+    getTokenRef.current = getToken;
+  }, [getToken]);
 
-    return (
-        <div className="w-full min-h-screen bg-background p-6 flex flex-col items-center">
-            <div className="w-full space-y-6">
+  React.useEffect(() => {
+    if (!isLoaded) return;
 
-                {/* Top Search Bar */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
-                    <div className="relative w-full sm:max-w-md">
-                        <input
-                            type="text"
-                            placeholder="Search"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full h-12 pl-4 pr-12 rounded-full border border-border bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-sm"
-                        />
-                        <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                    </div>
-                    <button className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full font-medium shadow-md hover:bg-primary/90 transition-colors">
-                        <Plus className="w-5 h-5" />
-                        Host
-                    </button>
-                </div>
+    let cancelled = false;
 
-                {/* List Container */}
-                <div className="bg-muted/30 rounded-[20px] border border-border p-2 overflow-hidden shadow-sm">
-                    {/* Header Row - Desktop Only */}
-                    <div className="hidden lg:grid grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 items-center bg-secondary/30 p-4 rounded-t-xl text-sm font-semibold text-foreground border-b border-border/50">
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <React.Fragment key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <div key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(header.column.columnDef.header, header.getContext())}
-                                    </div>
-                                ))}
-                            </React.Fragment>
-                        ))}
-                    </div>
+    const run = async (): Promise<void> => {
+      setIsLoading(true);
+      try {
+        const token = await getTokenRef.current();
+        if (typeof token !== "string" || token.trim().length === 0) {
+          if (!cancelled) {
+            setAllRows([]);
+            setTableData([]);
+          }
+          return;
+        }
 
-                    {/* Data Rows */}
-                    <div className="flex flex-col bg-white rounded-b-xl">
-                        {table.getRowModel().rows.map((row) => (
-                            <div
-                                key={row.id}
-                                className={cn(
-                                    "flex flex-col lg:grid lg:grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 p-6 items-center border-b border-border last:border-0 hover:bg-muted/10 transition-colors",
-                                    "lg:h-32"
-                                )}
-                            >
-                                {row.getVisibleCells().map((cell, index) => {
-                                    const isSno = index === 0;
-                                    return (
-                                        <div key={cell.id} className={cn(isSno && "hidden lg:block text-center")} onClick={() => { router.push(`/dashboard/opportunity/${row.original.id}/manage-registration/`) }}>
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ))}
-                        {data.length === 0 && (
-                            <div className="h-24 flex items-center justify-center text-muted-foreground">
-                                No results found.
-                            </div>
+        const res = await getHackathons(token);
+        const rows = extractHackathonRows(res);
+
+        /**
+         * Dashboard default: show only hackathons owned by the current user.
+         * If you want "all hackathons", remove this filter.
+         */
+        const filtered =
+          typeof userId === "string"
+            ? rows.filter(
+              (r) => typeof r.ownerId === "string" && r.ownerId === userId
+            )
+            : rows;
+
+        if (!cancelled) {
+          setAllRows(filtered);
+          setTableData(filtered);
+        }
+      } catch (err: unknown) {
+        toast.error("Failed to load hackathons.");
+        if (!cancelled) {
+          setAllRows([]);
+          setTableData([]);
+        }
+        // eslint-disable-next-line no-console
+        console.error(err);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, userId]);
+
+  React.useEffect(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (q.length === 0) {
+      setTableData(allRows);
+      return;
+    }
+    setTableData(allRows.filter((item) => item.name.toLowerCase().includes(q)));
+  }, [searchTerm, allRows]);
+
+  const table = useReactTable({
+    data: tableData,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+  });
+
+  return (
+    <div className="w-full min-h-screen bg-background p-6 flex flex-col items-center">
+      <div className="w-full max-w-[1150px] space-y-6">
+        {/* Top Search Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
+          <div className="relative w-full sm:max-w-md">
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-12 pl-4 pr-12 rounded-full border border-border bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-sm"
+            />
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/organizer")}
+            className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full font-medium shadow-md hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Host
+          </button>
+        </div>
+
+        {/* List Container */}
+        <div className="bg-muted/30 rounded-[20px] border border-border p-2 overflow-hidden shadow-sm">
+          {/* Header Row - Desktop Only */}
+          <div className="hidden lg:grid grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 items-center bg-secondary/30 p-4 rounded-t-xl text-sm font-semibold text-foreground border-b border-border/50">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <React.Fragment key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <div key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                  </div>
+                ))}
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* Data Rows */}
+          <div className="flex flex-col bg-white rounded-b-xl">
+            {isLoading ? (
+              <div className="h-24 flex items-center justify-center text-muted-foreground">
+                Loading hackathons...
+              </div>
+            ) : table.getRowModel().rows.length === 0 ? (
+              <div className="h-24 flex items-center justify-center text-muted-foreground">
+                No results found.
+              </div>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <div
+                  key={row.id}
+                  className={cn(
+                    "flex flex-col lg:grid lg:grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 p-6 items-center border-b border-border last:border-0 hover:bg-muted/10 transition-colors",
+                    "lg:h-32"
+                  )}
+                >
+                  {row.getVisibleCells().map((cell, index) => {
+                    const isSno = index === 0;
+                    return (
+                      <div
+                        key={cell.id}
+                        className={cn(isSno && "hidden lg:block text-center")}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
                         )}
                       </div>
                     );
