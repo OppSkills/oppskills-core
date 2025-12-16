@@ -196,9 +196,9 @@ export default function EditOpportunityPage() {
   });
 
   return (
-    <div className="w-full flex flex-col items-center py-6 gap-6 bg-background">
+    <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
       {/* Tabs Navigation */}
-      <div className="w-full xl:max-w-[1161px] overflow-x-auto no-scrollbar">
+      <div className="w-full overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-4 min-w-max px-2">
           {tabs.map((tab) => (
             <button
@@ -218,7 +218,7 @@ export default function EditOpportunityPage() {
         </div>
       </div>
 
-      <div className="w-full xl:max-w-[1161px]">
+      <div className="w-full">
         {activeTab === "basic-details" && (
           <BasicDetails formData={formData} setFormData={setFormData} />
         )}

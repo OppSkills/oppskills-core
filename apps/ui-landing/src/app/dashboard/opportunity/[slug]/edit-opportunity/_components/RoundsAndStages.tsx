@@ -181,7 +181,7 @@ export default function RoundsAndStages({ formData, setFormData }: RoundsAndStag
                                             {/* Start Date & Time */}
                                             <div className="flex flex-col gap-2">
                                                 <Label>Start Date & Time</Label>
-                                                <div className="flex gap-2">
+                                                <div className="flex gap-2 flex-col">
                                                     <Popover>
                                                         <PopoverTrigger asChild>
                                                             <Button
@@ -232,7 +232,7 @@ export default function RoundsAndStages({ formData, setFormData }: RoundsAndStag
                                             {/* End Date & Time */}
                                             <div className="flex flex-col gap-2">
                                                 <Label>End Date & Time</Label>
-                                                <div className="flex gap-2">
+                                                <div className="flex gap-2 flex-col">
                                                     <Popover>
                                                         <PopoverTrigger asChild>
                                                             <Button
