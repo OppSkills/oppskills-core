@@ -1,0 +1,122 @@
+.html-content {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #1f2937; /* neutral dark */
+}
+
+/* Headings */
+.html-content h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 1.6rem 0 1rem;
+}
+
+.html-content h2 {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 1.4rem 0 0.9rem;
+}
+
+.html-content h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 1.2rem 0 0.7rem;
+}
+
+.html-content h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 1rem 0 0.6rem;
+}
+
+.html-content h5 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.html-content h6 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+/* Paragraphs */
+.html-content p {
+  margin: 0.75rem 0;
+}
+
+/* Bold / Italic */
+.html-content b,
+.html-content strong {
+  font-weight: 600;
+}
+
+.html-content i,
+.html-content em {
+  font-style: italic;
+}
+
+/* Lists */
+.html-content ul,
+.html-content ol {
+  margin: 0.8rem 0 0.8rem 1.5rem;
+  padding: 0;
+}
+
+.html-content li {
+  margin: 0.4rem 0;
+}
+
+/* Links */
+.html-content a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.html-content a:hover {
+  text-decoration: none;
+}
+
+/* Blockquotes */
+.html-content blockquote {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  color: #374151;
+  margin: 1rem 0;
+}
+
+/* Tables (if any) */
+.html-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.html-content th,
+.html-content td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.html-content th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+/* Code blocks */
+.html-content pre {
+  background: #f3f4f6;
+  padding: 0.75rem;
+  overflow-x: auto;
+  border-radius: 4px;
+}
+
+.html-content code {
+  background: #f3f4f6;
+  padding: 0.15rem 0.3rem;
+  border-radius: 3px;
+  font-family: monospace;
+}

@@ -1,0 +1,221 @@
+name: Deploy Backend to AWS ECS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/backend/**'
+      - 'packages/**'
+      - 'Dockerfile'
+      - 'load-secrets.mts'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+    inputs:
+      skip_migrations:
+        description: 'Skip database migrations'
+        required: false
+        default: 'false'
+
+env:
+  AWS_REGION: us-east-1
+  ECS_CLUSTER: oppskills-core
+  ECS_SERVICE: oppskills-api-server-task-service-zql8vo1s
+  CONTAINER_NAME: oppskills-dev
+  AWS_ACCOUNT_ID: 443512646680
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build Docker image
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+          # Push both tags
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+          # Output image URI for next steps
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Get current task definition
+        id: get-task-def
+        run: |
+          # Get the current task definition and save to file
+          aws ecs describe-task-definition \
+            --task-definition $(aws ecs describe-services \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --services ${{ env.ECS_SERVICE }} \
+              --query 'services[0].taskDefinition' \
+              --output text) \
+            --query 'taskDefinition' > task-definition.json
+
+          cat task-definition.json
+
+      - name: Update task definition with new image
+        id: update-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Run database migrations
+        if: github.event.inputs.skip_migrations != 'true'
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -e  # Exit on error
+
+          # Get the task definition ARN (without revision number for family name)
+          TASK_DEFINITION_FAMILY=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query 'services[0].taskDefinition' \
+            --output text | cut -d'/' -f2 | cut -d':' -f1)
+
+          # Get network configuration from current service
+          NETWORK_CONFIG=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query 'services[0].networkConfiguration' \
+            --output json)
+
+          SUBNETS=$(echo $NETWORK_CONFIG | jq -r '.awsvpcConfiguration.subnets | join(",")')
+          SECURITY_GROUPS=$(echo $NETWORK_CONFIG | jq -r '.awsvpcConfiguration.securityGroups | join(",")')
+          ASSIGN_PUBLIC_IP=$(echo $NETWORK_CONFIG | jq -r '.awsvpcConfiguration.assignPublicIp')
+
+          echo "Running migrations using task definition: $TASK_DEFINITION_FAMILY"
+          echo "Container name: ${{ env.CONTAINER_NAME }}"
+          echo "Subnets: $SUBNETS"
+          echo "Security Groups: $SECURITY_GROUPS"
+          echo "Assign Public IP: $ASSIGN_PUBLIC_IP"
+
+          # Create overrides JSON file
+          cat > task-overrides.json <<EOF
+          {
+            "containerOverrides": [{
+              "name": "${{ env.CONTAINER_NAME }}",
+              "command": ["sh", "-c", "cd packages/database && pnpm exec prisma migrate deploy"]
+            }]
+          }
+          EOF
+
+          echo "Task overrides:"
+          cat task-overrides.json
+
+          # Run migrations as a one-off task
+          echo "Starting migration task..."
+          TASK_ARN=$(aws ecs run-task \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --task-definition $TASK_DEFINITION_FAMILY \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUPS],assignPublicIp=$ASSIGN_PUBLIC_IP}" \
+            --overrides file://task-overrides.json \
+            --query 'tasks[0].taskArn' \
+            --output text 2>&1) || {
+              echo "Failed to start migration task"
+              echo "Error: $TASK_ARN"
+              exit 1
+            }
+
+          echo "Migration task started: $TASK_ARN"
+
+          # Wait for migration task to complete
+          echo "Waiting for migrations to complete..."
+          aws ecs wait tasks-stopped \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --tasks $TASK_ARN
+
+          # Check exit code
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --tasks $TASK_ARN \
+            --query 'tasks[0].containers[0].exitCode' \
+            --output text)
+
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "::error::Migration task failed with exit code: $EXIT_CODE"
+
+            # Get task details for debugging
+            echo "Task details:"
+            aws ecs describe-tasks \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --tasks $TASK_ARN \
+              --query 'tasks[0].{TaskArn:taskArn,LastStatus:lastStatus,StopCode:stopCode,StoppedReason:stoppedReason}' \
+              --output table
+
+            echo "Container details:"
+            aws ecs describe-tasks \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --tasks $TASK_ARN \
+              --query 'tasks[0].containers[0]' \
+              --output json
+
+            exit 1
+          fi
+
+          echo "Migrations completed successfully"
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.update-task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+          wait-for-minutes: 10
+
+      - name: Verify deployment
+        run: |
+          # Get the current running task
+          TASK_ARN=$(aws ecs list-tasks \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service-name ${{ env.ECS_SERVICE }} \
+            --desired-status RUNNING \
+            --query 'taskArns[0]' \
+            --output text)
+
+          # Get task details
+          aws ecs describe-tasks \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --tasks $TASK_ARN \
+            --query 'tasks[0].{TaskArn:taskArn,LastStatus:lastStatus,HealthStatus:healthStatus,Image:containers[0].image}' \
+            --output table
+
+          echo "Deployment completed successfully!"
+          echo "Deployed image: ${{ steps.build-image.outputs.image }}"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Deployment failed! Check the logs above for details."
+          echo "Image: ${{ steps.build-image.outputs.image }}"
+          echo "Cluster: ${{ env.ECS_CLUSTER }}"
+          echo "Service: ${{ env.ECS_SERVICE }}"

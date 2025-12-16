@@ -2,6 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 const competitionsData = [
   {
@@ -127,9 +128,11 @@ const UpcomingCompetitions = () => {
               <div className="flex flex-col p-4 gap-4 w-full">
                 <div className="flex justify-between items-start w-full">
                   <div className="flex flex-col gap-2 max-w-[65%]">
-                    <h3 className="poppins font-semibold text-[20px] leading-[125%] text-card-foreground">
-                      {card.title}
-                    </h3>
+                    <Link href={`/competitions/${card.id}`}>
+                      <h3 className="poppins font-semibold text-[20px] leading-[125%] text-card-foreground">
+                        {card.title}
+                      </h3>
+                    </Link>
                     <p className="inter font-normal text-[12px] leading-[150%] text-muted-foreground">
                       {card.organization}
                     </p>
