@@ -31,7 +31,7 @@ import { Button } from "@/components/ui/button"
 import { FloatingInput } from "@/components/ui/derived/FloatingInput"
 import { useParams, useRouter } from "next/navigation"
 
-type Participant = {
+export type Participant = {
     id: string;
     serialNumber: number;
     teamName: string;
@@ -43,70 +43,13 @@ type Participant = {
     currentRound: string;
 };
 
-/* ---------------------------- DATA ---------------------------- */
-
-const data: Participant[] = [
-    {
-        id: "1",
-        serialNumber: 1,
-        teamName: "InnoTech",
-        memberCount: 4,
-        email: "esther.williamson@five9.com",
-        university: "Stanford University",
-        avatarUrl: "https://i.pravatar.cc/150?u=1",
-        status: "Completed",
-        currentRound: "ROUND 1",
-    },
-    {
-        id: "2",
-        serialNumber: 2,
-        teamName: "Team Gravity",
-        memberCount: 3,
-        email: "cody.cooper@five9.com",
-        university: "Niagara University",
-        avatarUrl: "https://i.pravatar.cc/150?u=2",
-        status: "Completed",
-        currentRound: "ROUND 1",
-    },
-    {
-        id: "3",
-        serialNumber: 3,
-        teamName: "CorePeakers",
-        memberCount: 2,
-        email: "aubrey.flores@five9.com",
-        university: "Brown University",
-        avatarUrl: "https://i.pravatar.cc/150?u=3",
-        status: "Completed",
-        currentRound: "ROUND 1",
-    },
-    {
-        id: "4",
-        serialNumber: 4,
-        teamName: "Vibe Vasters",
-        memberCount: 1,
-        email: "shane.webb@five9.com",
-        university: "MIT",
-        avatarUrl: "https://i.pravatar.cc/150?u=4",
-        status: "Incomplete",
-        currentRound: "ROUND 1",
-    },
-    {
-        id: "5",
-        serialNumber: 5,
-        teamName: "ViloTech",
-        memberCount: 4,
-        email: "arthur.russel@five9.com",
-        university: "Villanova University",
-        avatarUrl: "https://i.pravatar.cc/150?u=5",
-        status: "Completed",
-        currentRound: "ROUND 1",
-    },
-];
-
 /* -------------------------- COLUMNS --------------------------- */
 
+interface ParticipantsProps {
+    data: Participant[];
+}
 
-export default function Participants() {
+export default function Participants({ data }: ParticipantsProps) {
     const params = useParams();
     const slug = params.slug as string;
     const router = useRouter();
@@ -252,7 +195,7 @@ export default function Participants() {
             setFilteredData(data.filter((item) => item.status == "Completed"));
         else if (filterValue == "incomplete")
             setFilteredData(data.filter((item) => item.status == "Incomplete"));
-    }, [filterValue]);
+    }, [filterValue, data]);
 
     return (
         <div className="w-full overflow-x-auto pb-4">
