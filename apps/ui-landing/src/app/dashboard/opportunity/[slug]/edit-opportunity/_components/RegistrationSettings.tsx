@@ -10,11 +10,10 @@ import {
     PlusCircle,
     Trash2,
     Lock,
-    X
 } from "lucide-react";
-import React, { useState } from "react";
+import React from "react";
 import { cn } from "@/lib/utils";
-import { FormData } from "../page";
+import { FormData, RegistrationQuestion } from "../page"; // Importing types from page.tsx (assuming they are exported)
 import { Input } from "@/components/ui/input";
 import {
     Popover,
@@ -29,70 +28,52 @@ interface RegistrationSettingsProps {
     setFormData: (data: React.SetStateAction<FormData>) => void;
 }
 
-interface CustomQuestion {
-    id: string;
-    label: string;
-    required: boolean;
-}
-
 export default function RegistrationSettings({ formData, setFormData }: RegistrationSettingsProps) {
-    // --- Local State for UI Functionality ---
 
-    // Who Can Register
-    const candidateTypes = ["Everyone can apply", "School students", "College students", "Freshers", "Professionals"];
-    const [selectedCandidates, setSelectedCandidates] = useState<string[]>(["Everyone can apply"]);
+    // --- Handlers ---
+    const updateSettings = (updates: Partial<FormData['registrationSettings']>) => {
+        setFormData(prev => ({
+            ...prev,
+            registrationSettings: {
+                ...prev.registrationSettings,
+                ...updates
+            }
+        }));
+    };
 
     const toggleCandidate = (type: string) => {
-        if (selectedCandidates.includes(type)) {
-            setSelectedCandidates(selectedCandidates.filter(t => t !== type));
+        const current = formData.registrationSettings.candidateTypes;
+        if (current.includes(type)) {
+            updateSettings({ candidateTypes: current.filter(t => t !== type) });
         } else {
-            setSelectedCandidates([...selectedCandidates, type]);
+            updateSettings({ candidateTypes: [...current, type] });
         }
     };
 
-    // Timeline State
-    const [regStartDate, setRegStartDate] = useState<Date | undefined>(new Date());
-    const [regStartTime, setRegStartTime] = useState("09:00");
-
-    const [regDeadlineDate, setRegDeadlineDate] = useState<Date | undefined>(new Date());
-    const [regDeadlineTime, setRegDeadlineTime] = useState("21:00");
-
-    const [eventDate, setEventDate] = useState<Date | undefined>(new Date());
-    const [eventTime, setEventTime] = useState("09:00");
-
-    // Max Teams
-    const [maxTeamsNoLimit, setMaxTeamsNoLimit] = useState(true);
-
-    // Basic Questions (Static)
-    const basicQuestions = [
-        { id: "name", label: "Name", required: true },
-        { id: "email", label: "Email", required: true },
-        { id: "mobile", label: "Mobile Number", required: true },
-        { id: "gender", label: "Gender", required: true },
-        { id: "college", label: "Current College/ Organization", required: true },
-        { id: "userType", label: "User Type", required: true },
-    ];
-
-    // Custom Questions (Dynamic)
-    const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
-
+    // Questions Handlers
     const handleAddQuestion = () => {
-        const newQuestion: CustomQuestion = {
+        const newQuestion: RegistrationQuestion = {
             id: crypto.randomUUID(),
             label: "",
-            required: false
+            required: false,
+            isStatic: false
         };
-        setCustomQuestions([...customQuestions, newQuestion]);
+        updateSettings({ questions: [...formData.registrationSettings.questions, newQuestion] });
     };
 
-    const handleUpdateQuestion = (id: string, updates: Partial<CustomQuestion>) => {
-        setCustomQuestions(prev => prev.map(q => q.id === id ? { ...q, ...updates } : q));
+    const handleUpdateQuestion = (id: string, updates: Partial<RegistrationQuestion>) => {
+        const updatedQuestions = formData.registrationSettings.questions.map(q =>
+            q.id === id ? { ...q, ...updates } : q
+        );
+        updateSettings({ questions: updatedQuestions });
     };
 
     const handleDeleteQuestion = (id: string) => {
-        setCustomQuestions(prev => prev.filter(q => q.id !== id));
+        const updatedQuestions = formData.registrationSettings.questions.filter(q => q.id !== id);
+        updateSettings({ questions: updatedQuestions });
     };
 
+    const candidateTypes = ["Everyone can apply", "School students", "College students", "Freshers", "Professionals"];
 
     return (
         <div className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-5 duration-500">
@@ -107,7 +88,7 @@ export default function RegistrationSettings({ formData, setFormData }: Registra
 
                 <div className="flex flex-wrap gap-3">
                     {candidateTypes.map((type) => {
-                        const isSelected = selectedCandidates.includes(type);
+                        const isSelected = formData.registrationSettings.candidateTypes.includes(type);
                         return (
                             <button
                                 key={type}
@@ -140,18 +121,18 @@ export default function RegistrationSettings({ formData, setFormData }: Registra
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className="w-full bg-white border-none shadow-sm text-foreground justify-start px-3">
                                         <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
-                                        {regStartDate ? format(regStartDate, "d MMM yyyy") : "Date"}
+                                        {formData.registrationSettings.startDate ? format(formData.registrationSettings.startDate, "d MMM yyyy") : "Date"}
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={regStartDate} onSelect={setRegStartDate} /></PopoverContent>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.registrationSettings.startDate} onSelect={(date) => updateSettings({ startDate: date })} /></PopoverContent>
                             </Popover>
                             <div className="bg-white rounded-md flex items-center p-3 shadow-sm w-[130px]">
                                 <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
                                 <input
                                     type="time"
                                     className="bg-transparent border-none text-sm outline-none w-full font-medium"
-                                    value={regStartTime}
-                                    onChange={e => setRegStartTime(e.target.value)}
+                                    value={formData.registrationSettings.startTime}
+                                    onChange={e => updateSettings({ startTime: e.target.value })}
                                 />
                             </div>
                         </div>
@@ -165,18 +146,18 @@ export default function RegistrationSettings({ formData, setFormData }: Registra
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className="w-full bg-white border-none shadow-sm text-foreground justify-start px-3">
                                         <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
-                                        {regDeadlineDate ? format(regDeadlineDate, "d MMM yyyy") : "Date"}
+                                        {formData.registrationSettings.endDate ? format(formData.registrationSettings.endDate, "d MMM yyyy") : "Date"}
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={regDeadlineDate} onSelect={setRegDeadlineDate} /></PopoverContent>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.registrationSettings.endDate} onSelect={(date) => updateSettings({ endDate: date })} /></PopoverContent>
                             </Popover>
                             <div className="bg-white rounded-md flex items-center p-3 shadow-sm w-[130px]">
                                 <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
                                 <input
                                     type="time"
                                     className="bg-transparent border-none text-sm outline-none w-full font-medium"
-                                    value={regDeadlineTime}
-                                    onChange={e => setRegDeadlineTime(e.target.value)}
+                                    value={formData.registrationSettings.endTime}
+                                    onChange={e => updateSettings({ endTime: e.target.value })}
                                 />
                             </div>
                         </div>
@@ -190,18 +171,18 @@ export default function RegistrationSettings({ formData, setFormData }: Registra
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className="w-full bg-white border-none shadow-sm text-foreground justify-start px-3">
                                         <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
-                                        {eventDate ? format(eventDate, "d MMM yyyy") : "Date"}
+                                        {formData.registrationSettings.eventDate ? format(formData.registrationSettings.eventDate, "d MMM yyyy") : "Date"}
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={eventDate} onSelect={setEventDate} /></PopoverContent>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.registrationSettings.eventDate} onSelect={(date) => updateSettings({ eventDate: date })} /></PopoverContent>
                             </Popover>
                             <div className="bg-white rounded-md flex items-center p-3 shadow-sm w-[130px]">
                                 <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
                                 <input
                                     type="time"
                                     className="bg-transparent border-none text-sm outline-none w-full font-medium"
-                                    value={eventTime}
-                                    onChange={e => setEventTime(e.target.value)}
+                                    value={formData.registrationSettings.eventTime}
+                                    onChange={e => updateSettings({ eventTime: e.target.value })}
                                 />
                             </div>
                         </div>
@@ -217,17 +198,17 @@ export default function RegistrationSettings({ formData, setFormData }: Registra
                 </div>
                 <div>
                     <button
-                        onClick={() => setMaxTeamsNoLimit(!maxTeamsNoLimit)}
+                        onClick={() => updateSettings({ maxTeamsNoLimit: !formData.registrationSettings.maxTeamsNoLimit })}
                         className={cn(
                             "flex items-center gap-2 px-6 py-2.5 rounded-full border transition-all",
-                            maxTeamsNoLimit
+                            formData.registrationSettings.maxTeamsNoLimit
                                 ? "border-[#F3E8FF] bg-white shadow-sm"
                                 : "border-border bg-white text-muted-foreground"
                         )}
                     >
-                        <InfinityIcon className={cn("w-5 h-5", maxTeamsNoLimit ? "text-purple-600" : "text-muted-foreground")} />
-                        <span className={cn("text-sm font-semibold", maxTeamsNoLimit ? "text-purple-600" : "text-muted-foreground")}>
-                            {maxTeamsNoLimit ? "No Limit" : "Limit set"}
+                        <InfinityIcon className={cn("w-5 h-5", formData.registrationSettings.maxTeamsNoLimit ? "text-purple-600" : "text-muted-foreground")} />
+                        <span className={cn("text-sm font-semibold", formData.registrationSettings.maxTeamsNoLimit ? "text-purple-600" : "text-muted-foreground")}>
+                            {formData.registrationSettings.maxTeamsNoLimit ? "No Limit" : "Limit set"}
                         </span>
                     </button>
                 </div>
@@ -239,79 +220,81 @@ export default function RegistrationSettings({ formData, setFormData }: Registra
                 <p className="text-muted-foreground text-sm mb-6">Filled by all team members</p>
 
                 <div className="flex flex-col gap-3">
-                    {/* Static Basic Questions */}
-                    {basicQuestions.map((question) => (
-                        <div key={question.id} className="group flex items-center gap-3 bg-muted/30 p-3 rounded-lg border border-transparent">
-                            <div className="text-muted-foreground/50 p-1 cursor-default">
-                                <Menu className="w-4 h-4" />
-                            </div>
+                    {formData.registrationSettings.questions.map((question) => {
+                        if (question.isStatic) {
+                            return (
+                                <div key={question.id} className="group flex items-center gap-3 bg-muted/30 p-3 rounded-lg border border-transparent">
+                                    <div className="text-muted-foreground/50 p-1 cursor-default">
+                                        <Menu className="w-4 h-4" />
+                                    </div>
 
-                            <div className="flex-1">
-                                <span className="font-medium text-sm text-foreground">{question.label}</span>
-                            </div>
+                                    <div className="flex-1">
+                                        <span className="font-medium text-sm text-foreground">{question.label}</span>
+                                    </div>
 
-                            <div className="flex items-center gap-2">
-                                <div className="bg-white px-3 py-1 rounded text-xs font-medium text-muted-foreground shadow-sm flex items-center gap-1">
-                                    Required
-                                    <Lock className="w-3 h-3 text-muted-foreground/50" />
+                                    <div className="flex items-center gap-2">
+                                        <div className="bg-white px-3 py-1 rounded text-xs font-medium text-muted-foreground shadow-sm flex items-center gap-1">
+                                            Required
+                                            <Lock className="w-3 h-3 text-muted-foreground/50" />
+                                        </div>
+                                        <div className="p-1">
+                                            <CheckCircle2 className="w-6 h-6 text-green-600 fill-green-100" />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="p-1">
-                                    <CheckCircle2 className="w-6 h-6 text-green-600 fill-green-100" />
+                            );
+                        } else {
+                            return (
+                                <div key={question.id} className="group flex items-center gap-3 bg-white p-3 rounded-lg border border-border/60 hover:border-primary/30 transition-all shadow-sm">
+                                    <div className="text-muted-foreground cursor-grab active:cursor-grabbing p-1">
+                                        <Menu className="w-4 h-4" />
+                                    </div>
+
+                                    <div className="flex-1">
+                                        <Input
+                                            value={question.label}
+                                            onChange={(e) => handleUpdateQuestion(question.id, { label: e.target.value })}
+                                            placeholder="Type your question here..."
+                                            className="bg-transparent border-0 border-b rounded-none px-0 h-8 focus-visible:ring-0 focus-visible:border-primary placeholder:text-muted-foreground/50"
+                                            autoFocus={!question.label}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => handleUpdateQuestion(question.id, { required: !question.required })}
+                                            className={cn(
+                                                "px-3 py-1 rounded text-xs font-medium border transition-colors",
+                                                question.required
+                                                    ? "bg-white text-foreground border-border shadow-sm"
+                                                    : "bg-transparent text-muted-foreground/50 border-transparent hover:bg-muted"
+                                            )}
+                                        >
+                                            Required?
+                                        </button>
+                                        <button
+                                            onClick={() => handleUpdateQuestion(question.id, { required: !question.required })}
+                                            className="focus:outline-none"
+                                            title="Toggle Required"
+                                        >
+                                            <CheckCircle2 className={cn(
+                                                "w-6 h-6 transition-colors",
+                                                question.required ? "text-green-600 fill-green-100" : "text-muted-foreground/30"
+                                            )} />
+                                        </button>
+                                        <div className="w-[1px] h-6 bg-border mx-1"></div>
+                                        <button
+                                            onClick={() => handleDeleteQuestion(question.id)}
+                                            className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                                            title="Delete Question"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    ))}
-
-                    {/* Dynamic Custom Questions */}
-                    {customQuestions.map((question) => (
-                        <div key={question.id} className="group flex items-center gap-3 bg-white p-3 rounded-lg border border-border/60 hover:border-primary/30 transition-all shadow-sm">
-                            <div className="text-muted-foreground cursor-grab active:cursor-grabbing p-1">
-                                <Menu className="w-4 h-4" />
-                            </div>
-
-                            <div className="flex-1">
-                                <Input
-                                    value={question.label}
-                                    onChange={(e) => handleUpdateQuestion(question.id, { label: e.target.value })}
-                                    placeholder="Type your question here..."
-                                    className="bg-transparent border-0 border-b rounded-none px-0 h-8 focus-visible:ring-0 focus-visible:border-primary placeholder:text-muted-foreground/50"
-                                    autoFocus={!question.label}
-                                />
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => handleUpdateQuestion(question.id, { required: !question.required })}
-                                    className={cn(
-                                        "px-3 py-1 rounded text-xs font-medium border transition-colors",
-                                        question.required
-                                            ? "bg-white text-foreground border-border shadow-sm"
-                                            : "bg-transparent text-muted-foreground/50 border-transparent hover:bg-muted"
-                                    )}
-                                >
-                                    Required?
-                                </button>
-                                <button
-                                    onClick={() => handleUpdateQuestion(question.id, { required: !question.required })}
-                                    className="focus:outline-none"
-                                    title="Toggle Required"
-                                >
-                                    <CheckCircle2 className={cn(
-                                        "w-6 h-6 transition-colors",
-                                        question.required ? "text-green-600 fill-green-100" : "text-muted-foreground/30"
-                                    )} />
-                                </button>
-                                <div className="w-[1px] h-6 bg-border mx-1"></div>
-                                <button
-                                    onClick={() => handleDeleteQuestion(question.id)}
-                                    className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                                    title="Delete Question"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                            );
+                        }
+                    })}
 
                     {/* Add Additional Questions Button */}
                     <Button

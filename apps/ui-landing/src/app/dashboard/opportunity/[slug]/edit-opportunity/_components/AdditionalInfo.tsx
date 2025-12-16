@@ -2,44 +2,59 @@
 
 import { Button } from "@/components/ui/button";
 import { Plus, Edit2, Trash2, FileText, Phone, Mail, User } from "lucide-react";
-import React, { useState } from "react";
+import React from "react";
 import { cn } from "@/lib/utils";
-import { FormData } from "../page";
+import { FormData, Contact, Attachment } from "../page";
 
-// Define local types for Additional Info items if they don't exist in FormData yet
-// For now, I'll extend FormData in the parent, but here I'll just use what I expect
-export interface ContactDetail {
-    id: string;
-    name: string;
-    phone: string;
-    email: string;
-}
-
-export interface Attachment {
-    id: string;
-    title: string;
-    type: string; // "Zip File" | "PDF File" etc.
-}
 
 interface AdditionalInfoProps {
-    formData: FormData; // We'll assume we add contacts/attachments to FormData
+    formData: FormData;
     setFormData: (data: React.SetStateAction<FormData>) => void;
 }
 
 export default function AdditionalInfo({ formData, setFormData }: AdditionalInfoProps) {
-    // Mocking local management for now since FormData interface might not have these yet
-    // Ideally these should be in FormData. I will update page.tsx to include them.
 
-    // Handlers would update central state. For this step, I'll assume they exist or I'll add them to page tsx next.
-    // Using direct mutation of a placeholder structure for the UI demo as per user request style
+    // Check if additionalInfo exists, if not, provide defaults safely
+    const contacts = formData.additionalInfo?.contacts || [];
+    const attachments = formData.additionalInfo?.attachments || [];
 
-    const [contacts, setContacts] = useState<ContactDetail[]>([
-        { id: "1", name: "Team Member Name", phone: "+91 99999 99999", email: "Emailoftheperson@gmail.com" }
-    ]);
-    const [attachments, setAttachments] = useState<Attachment[]>([
-        { id: "1", title: "Sample PPT", type: "Zip File" },
-        { id: "2", title: "Sample PDF", type: "PDF File" }
-    ]);
+    const updateInfo = (updates: Partial<FormData['additionalInfo']>) => {
+        setFormData(prev => ({
+            ...prev,
+            additionalInfo: {
+                ...prev.additionalInfo,
+                ...updates
+            }
+        }));
+    };
+
+    const handleAddContact = () => {
+        const newContact: Contact = {
+            id: crypto.randomUUID(),
+            name: "New Team Member",
+            phone: "",
+            email: ""
+        };
+        updateInfo({ contacts: [...contacts, newContact] });
+    };
+
+    const handleDeleteContact = (id: string) => {
+        updateInfo({ contacts: contacts.filter(c => c.id !== id) });
+    };
+
+    const handleAddAttachment = () => {
+        const newAttachment: Attachment = {
+            id: crypto.randomUUID(),
+            title: "New Document",
+            type: "PDF File"
+        };
+        updateInfo({ attachments: [...attachments, newAttachment] });
+    };
+
+    const handleDeleteAttachment = (id: string) => {
+        updateInfo({ attachments: attachments.filter(a => a.id !== id) });
+    };
+
 
     return (
         <div className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-5 duration-500">
@@ -59,6 +74,7 @@ export default function AdditionalInfo({ formData, setFormData }: AdditionalInfo
                     <Button
                         variant="outline"
                         size="icon"
+                        onClick={handleAddContact}
                         className="rounded-full h-8 w-8 border-dashed border-2 hover:bg-secondary/20"
                     >
                         <Plus className="w-4 h-4" />
@@ -78,9 +94,9 @@ export default function AdditionalInfo({ formData, setFormData }: AdditionalInfo
                                 <div>
                                     <h4 className="font-semibold text-base">{contact.name}</h4>
                                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                        <span>{contact.phone}</span>
+                                        <span>{contact.phone || 'No Phone'}</span>
                                         <span className="text-border">|</span>
-                                        <span>{contact.email}</span>
+                                        <span>{contact.email || 'No Email'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -89,13 +105,23 @@ export default function AdditionalInfo({ formData, setFormData }: AdditionalInfo
                                     <Edit2 className="w-3 h-3" />
                                     <span className="text-xs">Edit</span>
                                 </Button>
-                                <Button variant="ghost" size="sm" className="text-primary hover:text-destructive hover:bg-destructive/10 gap-1 h-8">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteContact(contact.id)}
+                                    className="text-primary hover:text-destructive hover:bg-destructive/10 gap-1 h-8"
+                                >
                                     <Trash2 className="w-3 h-3" />
                                     <span className="text-xs">Delete</span>
                                 </Button>
                             </div>
                         </div>
                     ))}
+                    {contacts.length === 0 && (
+                        <div className="text-center text-muted-foreground text-sm italic py-4">
+                            No contact details added yet.
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -105,12 +131,13 @@ export default function AdditionalInfo({ formData, setFormData }: AdditionalInfo
                     <div>
                         <h3 className="text-lg font-bold">Attachments</h3>
                         <p className="text-muted-foreground text-sm">
-                            Add Contact details of key persons related to event.
+                            Upload documents relevant to the event (Rules, Brokerage, etc.)
                         </p>
                     </div>
                     <Button
                         variant="outline"
                         size="icon"
+                        onClick={handleAddAttachment}
                         className="rounded-full h-8 w-8 border-dashed border-2 hover:bg-secondary/20"
                     >
                         <Plus className="w-4 h-4" />
@@ -137,13 +164,23 @@ export default function AdditionalInfo({ formData, setFormData }: AdditionalInfo
                                     <Edit2 className="w-3 h-3" />
                                     <span className="text-xs">Edit</span>
                                 </Button>
-                                <Button variant="ghost" size="sm" className="text-primary hover:text-destructive hover:bg-destructive/10 gap-1 h-8">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteAttachment(file.id)}
+                                    className="text-primary hover:text-destructive hover:bg-destructive/10 gap-1 h-8"
+                                >
                                     <Trash2 className="w-3 h-3" />
                                     <span className="text-xs">Delete</span>
                                 </Button>
                             </div>
                         </div>
                     ))}
+                    {attachments.length === 0 && (
+                        <div className="text-center text-muted-foreground text-sm italic py-4">
+                            No attachments added yet.
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

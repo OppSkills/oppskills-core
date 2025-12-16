@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trophy, Edit2, Trash2, AlertTriangle } from "lucide-react";
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
-import { FormData } from "../page";
+import { FormData, Prize } from "../page";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -14,12 +14,37 @@ interface PrizesProps {
 }
 
 export default function Prizes({ formData, setFormData }: PrizesProps) {
-    // Local state for the UI demo using placeholders mostly
-    const [description, setDescription] = useState("");
-    const [certificateProvided, setCertificateProvided] = useState<boolean | null>(null);
-    const [prizes, setPrizes] = useState([
-        { id: "1", name: "1st Prize", amount: "₹ 50,000", description: "Cash Prize + Swags" }
-    ]);
+
+    const updatePrizes = (updates: Partial<FormData['prizes']>) => {
+        setFormData(prev => ({
+            ...prev,
+            prizes: {
+                ...prev.prizes,
+                ...updates
+            }
+        }));
+    };
+
+    const handleAddPrize = () => {
+        // Ideally open a modal, but for now let's add a placeholder prize to edit
+        const newPrize: Prize = {
+            id: crypto.randomUUID(),
+            name: "New Prize",
+            amount: "₹ 0",
+            description: "Description"
+        };
+        updatePrizes({ list: [...formData.prizes.list, newPrize] });
+    };
+
+    const handleDeletePrize = (id: string) => {
+        updatePrizes({ list: formData.prizes.list.filter(p => p.id !== id) });
+    };
+
+    // Mock edit function - in real app would open dialog
+    const handleEditPrize = (id: string) => {
+        console.log("Edit prize", id);
+        // Logic to open edit modal would go here
+    };
 
     return (
         <div className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-5 duration-500">
@@ -37,8 +62,8 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                 <div className="flex flex-col gap-2 mb-6">
                     <Label className="text-muted-foreground font-normal">One liner description about prizes</Label>
                     <Input
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
+                        value={formData.prizes.description}
+                        onChange={(e) => updatePrizes({ description: e.target.value })}
                         placeholder="Place Holder Text"
                         className="bg-background"
                         maxLength={100}
@@ -53,10 +78,10 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                     <Label className="text-muted-foreground font-normal">Participation Certificate will be provided ?</Label>
                     <div className="flex gap-4 mt-1">
                         <button
-                            onClick={() => setCertificateProvided(true)}
+                            onClick={() => updatePrizes({ certificateProvided: true })}
                             className={cn(
                                 "px-8 py-2 rounded-full border text-sm transition-all",
-                                certificateProvided === true
+                                formData.prizes.certificateProvided === true
                                     ? "bg-secondary text-secondary-foreground border-secondary font-semibold"
                                     : "bg-background text-muted-foreground border-border hover:bg-muted"
                             )}
@@ -64,10 +89,10 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                             Yes
                         </button>
                         <button
-                            onClick={() => setCertificateProvided(false)}
+                            onClick={() => updatePrizes({ certificateProvided: false })}
                             className={cn(
                                 "px-8 py-2 rounded-full border text-sm transition-all",
-                                certificateProvided === false
+                                formData.prizes.certificateProvided === false
                                     ? "bg-secondary text-secondary-foreground border-secondary font-semibold"
                                     : "bg-background text-muted-foreground border-border hover:bg-muted"
                             )}
@@ -90,15 +115,16 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                     <Button
                         variant="outline"
                         size="icon"
+                        onClick={handleAddPrize}
                         className="rounded-full h-10 w-10 border-dashed border-2 hover:bg-secondary/20"
                     >
                         <Plus className="w-5 h-5" />
                     </Button>
                 </div>
 
-                {prizes.length > 0 && (
+                {formData.prizes.list.length > 0 && (
                     <div className="flex flex-col gap-3">
-                        {prizes.map((prize) => (
+                        {formData.prizes.list.map((prize) => (
                             <div
                                 key={prize.id}
                                 className="flex items-center justify-between p-4 rounded-xl bg-secondary/20 border border-secondary/30"
@@ -113,11 +139,21 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Button variant="ghost" size="sm" className="text-primary hover:text-primary hover:bg-primary/10 gap-1 h-8">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleEditPrize(prize.id)}
+                                        className="text-primary hover:text-primary hover:bg-primary/10 gap-1 h-8"
+                                    >
                                         <Edit2 className="w-3 h-3" />
                                         <span className="text-xs">Edit</span>
                                     </Button>
-                                    <Button variant="ghost" size="sm" className="text-primary hover:text-destructive hover:bg-destructive/10 gap-1 h-8">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeletePrize(prize.id)}
+                                        className="text-primary hover:text-destructive hover:bg-destructive/10 gap-1 h-8"
+                                    >
                                         <Trash2 className="w-3 h-3" />
                                         <span className="text-xs">Delete</span>
                                     </Button>

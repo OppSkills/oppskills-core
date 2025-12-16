@@ -35,6 +35,58 @@ export interface Round {
   endTime: string;
 }
 
+export interface RegistrationQuestion {
+  id: string;
+  label: string;
+  required: boolean;
+  isStatic: boolean;
+}
+
+export interface RegistrationSettingsData {
+  candidateTypes: string[];
+  startDate: Date | undefined;
+  startTime: string;
+  endDate: Date | undefined;
+  endTime: string;
+  eventDate: Date | undefined;
+  eventTime: string;
+  maxTeamsNoLimit: boolean;
+  minTeamSize?: number;
+  maxTeamSize?: number;
+  questions: RegistrationQuestion[];
+}
+
+export interface Prize {
+  id: string;
+  name: string;
+  amount: string;
+  description: string;
+}
+
+export interface PrizesData {
+  description: string;
+  certificateProvided: boolean | null;
+  list: Prize[];
+}
+
+export interface Contact {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+}
+
+export interface Attachment {
+  id: string;
+  title: string;
+  type: string;
+}
+
+export interface AdditionalInfoData {
+  contacts: Contact[];
+  attachments: Attachment[];
+}
+
 export interface FormData {
   eventFestName: string;
   festivalId?: string;
@@ -48,8 +100,11 @@ export interface FormData {
   eventRegisterBy: Date | undefined;
   hackathonType: string;
   participantType: string;
-  registrationQuestions: RegistrationQuestion[];
+  registrationQuestions: React.ReactNode[]; // Keep for compatibility if used elsewhere, but we use registrationSettings.questions now
   rounds: Round[];
+  registrationSettings: RegistrationSettingsData;
+  prizes: PrizesData;
+  additionalInfo: AdditionalInfoData;
 }
 
 /**
@@ -68,20 +123,76 @@ export default function EditOpportunityPage() {
   ];
 
   const [formData, setFormData] = useState<FormData>({
-    eventFestName: "",
-    festivalId: undefined,
-    eventFestVisibility: "",
-    eventName: "HackVerse",
+    eventFestName: "TechFest 2025",
+    festivalId: "fest-001",
+    eventFestVisibility: "Public",
+    eventName: "HackVerse 2025",
     eventDate: new Date("2025-11-24"),
-    eventLocation: "",
+    eventLocation: "Bangalore International Exhibition Centre",
     eventTimeFrom: "09:00",
-    eventDescription: "",
-    eventThumbnail: "",
-    hackathonType: "",
-    participantType: "",
-    eventRegisterBy: undefined,
+    eventDescription: "Join us for the biggest hackathon of the year! Build, learn, and grow with the community.",
+    eventThumbnail: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=2670",
+    hackathonType: "Online",
+    participantType: "Team",
+    eventRegisterBy: new Date("2025-11-20"),
     registrationQuestions: [],
-    rounds: [],
+    rounds: [
+      {
+        id: "r1",
+        name: "Ideation Phase",
+        description: "Submit your initial ideas and prototypes.",
+        startDate: new Date("2025-11-01"),
+        endDate: new Date("2025-11-10"),
+        startTime: "10:00",
+        endTime: "23:59"
+      },
+      {
+        id: "r2",
+        name: "Hackathon Finale",
+        description: "24-hour non-stop coding marathon.",
+        startDate: new Date("2025-11-24"),
+        endDate: new Date("2025-11-25"),
+        startTime: "09:00",
+        endTime: "09:00"
+      }
+    ],
+    registrationSettings: {
+      candidateTypes: ["College students", "Freshers"],
+      startDate: new Date("2025-10-01"),
+      startTime: "09:00",
+      endDate: new Date("2025-11-20"),
+      endTime: "23:59",
+      eventDate: new Date("2025-11-24"),
+      eventTime: "09:00",
+      maxTeamsNoLimit: false,
+      questions: [
+        { id: "name", label: "Name", required: true, isStatic: true },
+        { id: "email", label: "Email", required: true, isStatic: true },
+        { id: "mobile", label: "Mobile Number", required: true, isStatic: true },
+        { id: "gender", label: "Gender", required: true, isStatic: true },
+        { id: "college", label: "Current College/ Organization", required: true, isStatic: true },
+        { id: "userType", label: "User Type", required: true, isStatic: true },
+        { id: "github", label: "GitHub Profile URL", required: true, isStatic: false },
+      ]
+    },
+    prizes: {
+      description: "Win exciting cash prizes and internship opportunities!",
+      certificateProvided: true,
+      list: [
+        { id: "p1", name: "Star Performer", amount: "₹ 1,00,000", description: "Grand winner of the hackathon" },
+        { id: "p2", name: "Runner Up", amount: "₹ 50,000", description: "Second place winner" }
+      ]
+    },
+    additionalInfo: {
+      contacts: [
+        { id: "c1", name: "John Doe", phone: "+91 98765 43210", email: "john.doe@example.com" },
+        { id: "c2", name: "Jane Smith", phone: "+91 99887 76655", email: "jane.smith@example.com" }
+      ],
+      attachments: [
+        { id: "a1", title: "Rulebook.pdf", type: "PDF File" },
+        { id: "a2", title: "Problem_Statement.zip", type: "Zip File" }
+      ]
+    }
   });
 
   return (
