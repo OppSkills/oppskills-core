@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import React from "react";
 import { cn } from "@/lib/utils";
-import { FormData, RegistrationQuestion } from "../page"; // Importing types from page.tsx (assuming they are exported)
+import { FormData, BasicQuestion } from "../page"; // Importing types from page.tsx
 import { Input } from "@/components/ui/input";
 import {
     Popover,
@@ -52,7 +52,7 @@ export default function RegistrationSettings({ formData, setFormData }: Registra
 
     // Questions Handlers
     const handleAddQuestion = () => {
-        const newQuestion: RegistrationQuestion = {
+        const newQuestion: BasicQuestion = {
             id: crypto.randomUUID(),
             label: "",
             required: false,
@@ -61,7 +61,7 @@ export default function RegistrationSettings({ formData, setFormData }: Registra
         updateSettings({ questions: [...formData.registrationSettings.questions, newQuestion] });
     };
 
-    const handleUpdateQuestion = (id: string, updates: Partial<RegistrationQuestion>) => {
+    const handleUpdateQuestion = (id: string, updates: Partial<BasicQuestion>) => {
         const updatedQuestions = formData.registrationSettings.questions.map(q =>
             q.id === id ? { ...q, ...updates } : q
         );

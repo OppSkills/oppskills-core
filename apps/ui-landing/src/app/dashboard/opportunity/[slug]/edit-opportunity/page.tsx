@@ -35,7 +35,7 @@ export interface Round {
   endTime: string;
 }
 
-export interface RegistrationQuestion {
+export interface BasicQuestion {
   id: string;
   label: string;
   required: boolean;
@@ -53,7 +53,7 @@ export interface RegistrationSettingsData {
   maxTeamsNoLimit: boolean;
   minTeamSize?: number;
   maxTeamSize?: number;
-  questions: RegistrationQuestion[];
+  questions: BasicQuestion[];
 }
 
 export interface Prize {
@@ -100,7 +100,7 @@ export interface FormData {
   eventRegisterBy: Date | undefined;
   hackathonType: string;
   participantType: string;
-  registrationQuestions: React.ReactNode[]; // Keep for compatibility if used elsewhere, but we use registrationSettings.questions now
+  registrationQuestions: RegistrationQuestion[];
   rounds: Round[];
   registrationSettings: RegistrationSettingsData;
   prizes: PrizesData;
@@ -196,7 +196,7 @@ export default function EditOpportunityPage() {
   });
 
   return (
-    <div className="w-full flex flex-col items-center py-6 gap-6">
+    <div className="w-full flex flex-col items-center py-6 gap-6 bg-background">
       {/* Tabs Navigation */}
       <div className="w-full xl:max-w-[1161px] overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-4 min-w-max px-2">

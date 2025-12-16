@@ -13,7 +13,6 @@ import {
     Wand2,
     Upload,
 } from "lucide-react";
-import HackathonInput from "@/components/ui/hackathon/Input";
 import RegistrationQuestionsModal, {
     RegistrationQuestion,
 } from "@/components/ui/hackathon/RegistrationQuestionsModal";
