@@ -58,7 +58,7 @@ export default function AddEditRoleModal({
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-4">
                     <div className="flex flex-col gap-2">
-                        <Label htmlFor="name" className="text-right text-left">
+                        <Label htmlFor="name" className="text-left">
                             Name
                         </Label>
                         <Input
@@ -71,7 +71,7 @@ export default function AddEditRoleModal({
                         />
                     </div>
                     <div className="flex flex-col gap-2">
-                        <Label htmlFor="email" className="text-right text-left">
+                        <Label htmlFor="email" className="text-left">
                             Email
                         </Label>
                         <Input
@@ -85,7 +85,7 @@ export default function AddEditRoleModal({
                         />
                     </div>
                     <div className="flex flex-col gap-2">
-                        <Label htmlFor="phone" className="text-right text-left">
+                        <Label htmlFor="phone" className="text-left">
                             Phone Number
                         </Label>
                         <Input
