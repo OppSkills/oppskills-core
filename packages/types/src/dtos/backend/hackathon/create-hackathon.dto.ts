@@ -16,6 +16,7 @@ import {
   ValidateNested,
 } from "class-validator";
 import { Type } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 /**
  * NOTE:
@@ -100,29 +101,34 @@ export type HackathonRoundTypeValue =
 
 export class HackathonLocationDto {
   /** Location type for the hackathon. */
+  @ApiProperty({ description: 'Location type (PHYSICAL or VIRTUAL)', enum: LOCATION_TYPE_VALUES })
   @IsString()
   @IsIn(LOCATION_TYPE_VALUES)
   type: LocationTypeValue;
 
   /** Physical address (required when type=PHYSICAL). */
+  @ApiPropertyOptional({ description: 'Physical address (required when type=PHYSICAL)', maxLength: 500 })
   @IsOptional()
   @IsString()
   @MaxLength(500)
   address?: string;
 
   /** City (optional, used for search/filter). */
+  @ApiPropertyOptional({ description: 'City name for filtering', maxLength: 120 })
   @IsOptional()
   @IsString()
   @MaxLength(120)
   city?: string;
 
   /** Virtual meeting link (required when type=VIRTUAL). */
+  @ApiPropertyOptional({ description: 'Virtual meeting link (required when type=VIRTUAL)', format: 'uri' })
   @IsOptional()
   @IsUrl()
   virtualLink?: string;
 }
 
 export class PrizeBreakdownDto {
+  @ApiProperty({ description: 'Prize position (e.g., "1st Place", "Runner-up")', maxLength: 60, example: '1st Place' })
   @IsString()
   @MaxLength(60)
   position: string;
@@ -131,10 +137,12 @@ export class PrizeBreakdownDto {
    * Decimal string e.g. "1000.00"
    * Stored as Decimal(12,2) in DB.
    */
+  @ApiProperty({ description: 'Prize amount as decimal string', maxLength: 40, example: '1000.00' })
   @IsString()
   @MaxLength(40)
   amount: string;
 
+  @ApiPropertyOptional({ description: 'Prize description', maxLength: 2000 })
   @IsOptional()
   @IsString()
   @MaxLength(2000)
@@ -383,15 +391,18 @@ export class RoundDto {
  */
 export class CreateHackathonDto {
   // Basic Details
+  @ApiProperty({ description: 'Hackathon name', maxLength: 160, example: 'Tech Innovation Hackathon 2025' })
   @IsString()
   @MaxLength(160)
   name: string;
 
+  @ApiPropertyOptional({ description: 'Detailed hackathon description', maxLength: 20000 })
   @IsOptional()
   @IsString()
   @MaxLength(20000)
   description?: string;
 
+  @ApiPropertyOptional({ description: 'URL-friendly slug', maxLength: 180, example: 'tech-innovation-2025' })
   @IsOptional()
   @IsString()
   @MaxLength(180)
@@ -401,52 +412,63 @@ export class CreateHackathonDto {
    * Optional parent festival. If not provided, hackathon is standalone.
    * (NULL in DB means "Individual Hackathon")
    */
+  @ApiPropertyOptional({ description: 'Parent festival ID (null for standalone hackathon)' })
   @IsOptional()
   @IsString()
   festivalId?: string;
 
+  @ApiPropertyOptional({ description: 'Banner image URL', format: 'uri' })
   @IsOptional()
   @IsUrl()
   bannerImageUrl?: string;
 
   // Core dates & mode (existing fields)
+  @ApiProperty({ description: 'Hackathon start date (ISO 8601)', format: 'date-time', example: '2025-03-15T10:00:00Z' })
   @IsDateString()
   startDate: string;
 
+  @ApiProperty({ description: 'Hackathon end date (ISO 8601)', format: 'date-time', example: '2025-03-17T18:00:00Z' })
   @IsDateString()
   endDate: string;
 
+  @ApiProperty({ description: 'Hackathon mode', enum: HACKATHON_MODE_VALUES, example: 'HYBRID' })
   @IsString()
   @IsIn(HACKATHON_MODE_VALUES)
   mode: HackathonModeValue;
 
   // Configuration
+  @ApiPropertyOptional({ description: 'Hackathon visibility', enum: VISIBILITY_VALUES, default: 'PUBLIC' })
   @IsOptional()
   @IsString()
   @IsIn(VISIBILITY_VALUES)
   visibility?: VisibilityValue;
 
+  @ApiPropertyOptional({ description: 'Type of hackathon', enum: HACKATHON_TYPE_VALUES })
   @IsOptional()
   @IsString()
   @IsIn(HACKATHON_TYPE_VALUES)
   hackathonType?: HackathonTypeValue;
 
+  @ApiPropertyOptional({ description: 'Participant type/team size', enum: PARTICIPANT_TYPE_VALUES })
   @IsOptional()
   @IsString()
   @IsIn(PARTICIPANT_TYPE_VALUES)
   participantType?: ParticipantTypeValue;
 
   // Location
+  @ApiPropertyOptional({ description: 'Location details', type: () => HackathonLocationDto })
   @IsOptional()
   @ValidateNested()
   @Type(() => HackathonLocationDto)
   location?: HackathonLocationDto;
 
   // Registration
+  @ApiPropertyOptional({ description: 'Registration deadline (ISO 8601)', format: 'date-time' })
   @IsOptional()
   @IsDateString()
   registrationDeadline?: string;
 
+  @ApiPropertyOptional({ description: 'External registration form link', format: 'uri' })
   @IsOptional()
   @IsUrl()
   externalRegistrationLink?: string;
@@ -457,27 +479,32 @@ export class CreateHackathonDto {
   registrationForm?: RegistrationFormDto;
 
   // Pricing & Prizes
+  @ApiPropertyOptional({ description: 'Whether the hackathon is free to enter', default: true })
   @IsOptional()
   @IsBoolean()
   isFree?: boolean;
 
   /** Decimal string e.g. "199.00" */
+  @ApiPropertyOptional({ description: 'Entry fee amount (decimal string)', example: '199.00' })
   @IsOptional()
   @IsString()
   @MaxLength(40)
   entryFeeAmount?: string;
 
+  @ApiPropertyOptional({ description: 'Currency code', maxLength: 8, example: 'USD' })
   @IsOptional()
   @IsString()
   @MaxLength(8)
   currency?: string;
 
   /** Decimal string e.g. "10000.00" */
+  @ApiPropertyOptional({ description: 'Total prize pool worth (decimal string)', example: '10000.00' })
   @IsOptional()
   @IsString()
   @MaxLength(40)
   prizeTotalWorthAmount?: string;
 
+  @ApiPropertyOptional({ description: 'Prize breakdown by position', type: [PrizeBreakdownDto] })
   @IsOptional()
   @ValidateNested({ each: true })
   @IsArray()
@@ -518,12 +545,19 @@ export class CreateHackathonDto {
    * Who can attend this hackathon.
    * Defaults to ["EVERYONE_CAN_APPLY"] if not provided.
    */
+  @ApiPropertyOptional({
+    description: 'Who can attend this hackathon',
+    enum: HACKATHON_ATTENDEE_ELIGIBILITY_VALUES,
+    isArray: true,
+    default: ['EVERYONE_CAN_APPLY']
+  })
   @IsOptional()
   @IsArray()
   @IsIn(HACKATHON_ATTENDEE_ELIGIBILITY_VALUES, { each: true })
   attendeeEligibility?: HackathonAttendeeEligibilityValue[];
 
   /** Maximum number of teams allowed (null = unlimited) */
+  @ApiPropertyOptional({ description: 'Maximum number of teams allowed (null = unlimited)', minimum: 1 })
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -534,6 +568,7 @@ export class CreateHackathonDto {
    * Hackathon rounds.
    * If not provided, 3 default rounds will be created with evenly split timelines.
    */
+  @ApiPropertyOptional({ description: 'Hackathon rounds (defaults to 3 rounds if not provided)', type: [RoundDto] })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
@@ -545,6 +580,7 @@ export class CreateHackathonDto {
    * Application questions (separate from registration form).
    * Q/A, MCQ, or True/False questions.
    */
+  @ApiPropertyOptional({ description: 'Application questions for registration', type: [HackathonQuestionDto] })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
@@ -762,6 +798,11 @@ export class UpdateHackathonAdditionalInfoDto {
  * Allowed transitions are enforced on the backend.
  */
 export class UpdateHackathonStatusDto {
+  @ApiProperty({
+    description: 'New lifecycle status',
+    enum: LIFECYCLE_STATUS_VALUES,
+    example: 'PUBLISHED'
+  })
   @IsString()
   @IsIn(LIFECYCLE_STATUS_VALUES)
   status: HackathonLifecycleStatusValue;
