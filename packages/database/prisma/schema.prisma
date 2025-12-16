@@ -104,6 +104,38 @@ enum RegistrationFieldType {
   @@schema("oppskills")
 }
 
+/// Who can attend the hackathon (multi-select).
+enum HackathonAttendeeEligibility {
+  EVERYONE_CAN_APPLY
+  SCHOOL_STUDENTS
+  COLLEGE_STUDENTS
+  FRESHERS
+  PROFESSIONALS
+
+  @@map("HackathonAttendeeEligibility")
+  @@schema("oppskills")
+}
+
+/// Type of application question for hackathon registration.
+enum HackathonQuestionType {
+  QUESTION_ANSWER
+  MCQ
+  TRUE_FALSE
+
+  @@map("HackathonQuestionType")
+  @@schema("oppskills")
+}
+
+/// Type of hackathon round (determines submission requirements).
+enum HackathonRoundType {
+  ONLINE
+  OFFLINE
+  PRESENTATION
+
+  @@map("HackathonRoundType")
+  @@schema("oppskills")
+}
+
 model UserEntity {
   id         String   @id @default(cuid())
   email      String   @unique
@@ -163,11 +195,22 @@ model HackathonEntity {
   currency                 String           @default("INR")
   prizeTotalWorthAmount    Decimal?         @db.Decimal(12, 2) @map("prize_total_worth_amount")
   prizeBreakdown           PrizeBreakdownEntity[]
+  prizeDescription         Json?            @map("prize_description")
+  prizeCertificate         Boolean          @default(false) @map("prize_certificate")
 
   // Organizer / University Restrictions
   organizationName         String?          @map("organization_name")
   organizationLogoUrl      String?          @map("organization_logo_url")
   allowedUniversities      String[]         @default([]) @map("allowed_universities")
+
+  // Eligibility & Team Settings
+  attendeeEligibility      HackathonAttendeeEligibility[] @default([]) @map("attendee_eligibility")
+  maxTeams                 Int?             @map("max_teams")
+
+  // Additional Contact Info
+  contactName              String?          @map("contact_name")
+  contactEmail             String?          @map("contact_email")
+  contactPhone             String?          @map("contact_phone")
 
   // Metadata
   impressions              Int              @default(0)
@@ -183,6 +226,8 @@ model HackathonEntity {
 
   // Relations: hackathon structure
   rounds      RoundEntity[]
+  questions   HackathonQuestionEntity[]
+  attachments HackathonAttachmentEntity[]
 
   @@map("hackathon")
   @@schema("oppskills")
@@ -230,15 +275,20 @@ model FestivalEntity {
 model RoundEntity {
   id          String      @id @default(cuid())
   hackathonId String      @map("hackathon_id")
-  hackathon   HackathonEntity @relation(fields: [hackathonId], references: [id])
+  hackathon   HackathonEntity @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
 
   name        String
   description String?     @db.Text
 
   // Use DateTime for real scheduling; API can expose "date" + "time" if desired.
   startsAt    DateTime    @map("starts_at")
+  endsAt      DateTime    @map("ends_at")
   order       Int
   status      RoundStatus @default(UPCOMING)
+
+  // Round type determines submission requirements
+  roundType        HackathonRoundType @map("round_type")
+  submissionConfig Json?              @map("submission_config")
 
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -339,6 +389,57 @@ model TeamMemberEntity {
   @@unique([userId, teamId])  // one user can't join the same team twice
   @@map("team_member")
   @@schema("oppskills")
+}
+
+/// Application questions for hackathon (separate from registration form).
+model HackathonQuestionEntity {
+  id           String   @id @default(cuid())
+  hackathonId  String   @map("hackathon_id")
+  hackathon    HackathonEntity @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  questionText String   @map("question_text") @db.Text
+  type         HackathonQuestionType
+  required     Boolean  @default(false)
+  order        Int
+
+  /// Options for MCQ questions (empty for other types)
+  options      String[] @default([])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("hackathon_question")
+  @@schema("oppskills")
+  @@index([hackathonId])
+  @@unique([hackathonId, order])
+}
+
+/// Attachments for hackathon (S3-ready: stores storageKey + optional publicUrl).
+model HackathonAttachmentEntity {
+  id           String   @id @default(cuid())
+  hackathonId  String   @map("hackathon_id")
+  hackathon    HackathonEntity @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  /// Storage key for S3 or other storage provider
+  storageKey   String   @map("storage_key")
+
+  /// Optional public URL (for direct access or CDN)
+  publicUrl    String?  @map("public_url")
+
+  /// Original file name
+  fileName     String?  @map("file_name")
+
+  /// MIME type of the file
+  mimeType     String?  @map("mime_type")
+
+  /// File size in bytes
+  sizeBytes    Int?     @map("size_bytes")
+
+  createdAt    DateTime @default(now())
+
+  @@map("hackathon_attachment")
+  @@schema("oppskills")
+  @@index([hackathonId])
 }
 
 

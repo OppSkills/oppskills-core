@@ -18,6 +18,9 @@ import {
   CreateHackathonDto,
   UpdateHackathonDto,
   UpdateHackathonStatusDto,
+  UpdateHackathonRoundsDto,
+  UpdateHackathonQuestionsDto,
+  UpdateHackathonAdditionalInfoDto,
 } from '@oppskills/types';
 import { Logger } from '../_utils/logger';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
@@ -114,5 +117,89 @@ export class HackathonController {
     if (!userId) throw new UnauthorizedException('User not found');
     const safeId = assertNonEmptyId(hackathonId, 'id');
     return this.hackathonService.registerForHackathon(safeId, userId);
+  }
+
+  /**
+   * Replace all rounds of a hackathon.
+   * - Owner-only (or admin).
+   * - Allowed only when status is DRAFT.
+   */
+  @Put(':id/rounds')
+  async updateHackathonRounds(
+    @Param('id') id: string,
+    @Body() dto: UpdateHackathonRoundsDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+
+    const safeId = assertNonEmptyId(id, 'id');
+    this.logger.log(`Updating rounds for hackathon=${safeId} by userId=${userId}`);
+
+    const hackathon = await this.hackathonService.updateHackathonRounds(
+      safeId,
+      dto,
+      userId,
+    );
+    return {
+      message: 'Hackathon rounds updated successfully.',
+      data: hackathon,
+    };
+  }
+
+  /**
+   * Replace all application questions of a hackathon.
+   * - Owner-only (or admin).
+   * - Allowed only when status is DRAFT.
+   */
+  @Put(':id/questions')
+  async updateHackathonQuestions(
+    @Param('id') id: string,
+    @Body() dto: UpdateHackathonQuestionsDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+
+    const safeId = assertNonEmptyId(id, 'id');
+    this.logger.log(`Updating questions for hackathon=${safeId} by userId=${userId}`);
+
+    const hackathon = await this.hackathonService.updateHackathonQuestions(
+      safeId,
+      dto,
+      userId,
+    );
+    return {
+      message: 'Hackathon questions updated successfully.',
+      data: hackathon,
+    };
+  }
+
+  /**
+   * Update additional info (contact + attachments) of a hackathon.
+   * - Owner-only (or admin).
+   * - Allowed only when status is DRAFT.
+   */
+  @Put(':id/additional-info')
+  async updateHackathonAdditionalInfo(
+    @Param('id') id: string,
+    @Body() dto: UpdateHackathonAdditionalInfoDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+
+    const safeId = assertNonEmptyId(id, 'id');
+    this.logger.log(`Updating additional info for hackathon=${safeId} by userId=${userId}`);
+
+    const hackathon = await this.hackathonService.updateHackathonAdditionalInfo(
+      safeId,
+      dto,
+      userId,
+    );
+    return {
+      message: 'Hackathon additional info updated successfully.',
+      data: hackathon,
+    };
   }
 }

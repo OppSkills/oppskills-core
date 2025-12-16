@@ -8,17 +8,45 @@ import type { CreateTeamDto } from '@oppskills/types';
 
 @Injectable()
 export class TeamService {
+  /**
+   * Create a team for a hackathon.
+   * - Verifies hackathon exists and is open for registration.
+   * - Enforces maxTeams limit if configured on the hackathon.
+   * - Hackathon owner cannot create a team in their own hackathon.
+   */
   async createTeam(dto: CreateTeamDto, leaderId: string) {
-    // Verify hackathon exists
+    // Verify hackathon exists and get maxTeams setting
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { id: dto.hackathonId },
+      select: {
+        id: true,
+        ownerId: true,
+        maxTeams: true,
+        _count: {
+          select: {
+            teams: true,
+          },
+        },
+      },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
-    if (hackathon.ownerId === leaderId)
+    // Hackathon owner cannot create a team in their own hackathon
+    if (hackathon.ownerId === leaderId) {
       throw new ForbiddenException(
         'Hackathon owner cannot create a team in their own hackathon',
       );
+    }
+
+    // Enforce maxTeams limit if configured (null = unlimited)
+    if (hackathon.maxTeams !== null) {
+      const currentTeamCount = hackathon._count.teams;
+      if (currentTeamCount >= hackathon.maxTeams) {
+        throw new ForbiddenException(
+          `Maximum number of teams (${hackathon.maxTeams}) has been reached for this hackathon.`,
+        );
+      }
+    }
 
     const team = await prisma.teamEntity.create({
       data: {
