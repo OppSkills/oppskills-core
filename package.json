@@ -17,8 +17,8 @@
     "db:studio": "cd packages/database && pnpm exec prisma studio",
     "db:generate": "cd packages/database && pnpm exec prisma generate",
     "load-secrets": "echo 'loading secrets' && tsx load-secrets.mts",
-    "start:backend": "turbo run start --filter=@oppskills/backend",
-    "start:backend:with-migrations": "pnpm load-secrets && turbo run start --filter=@oppskills/db --filter=@oppskills/backend",
+    "start:backend": "node apps/backend/dist/main.js",
+    "start:backend:with-migrations": "pnpm -C packages/database exec prisma migrate deploy && node apps/backend/dist/main.js",
     "start:ui-landing": "turbo run start --filter=ui-landing",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"

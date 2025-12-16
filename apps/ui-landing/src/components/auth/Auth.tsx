@@ -11,7 +11,7 @@ import { X } from 'lucide-react';
 
 export default function Auth({ setIsOpenLogin }: { setIsOpenLogin: (isOpen: boolean) => void }) {
   const [currentMode, setCurrentMode] = useState("login");
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0); 
   const slides = [{
     image: "/characters/competition.png",
     title: "Join Competitions",
