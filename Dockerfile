@@ -60,11 +60,12 @@ RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/packages/database/dist ./packages/database/dist
 COPY --from=builder /app/packages/types/dist ./packages/types/dist
+
+# Copy Prisma schema (required for prisma generate)
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 
-# Copy Prisma generated client
-COPY --from=builder /app/node_modules/.pnpm/@prisma+client* ./node_modules/.pnpm/
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# Regenerate Prisma Client in production stage (ensures it's in the right location for pnpm)
+RUN cd packages/database && pnpm exec prisma generate
 
 # Copy load-secrets script (required for production startup)
 COPY load-secrets.mts ./
