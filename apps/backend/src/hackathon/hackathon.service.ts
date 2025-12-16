@@ -7,7 +7,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, prisma } from '@oppskills/db';
-import type { CreateHackathonDto, UpdateHackathonDto } from '@oppskills/types';
+import type {
+  CreateHackathonDto,
+  UpdateHackathonDto,
+  UpdateHackathonRoundsDto,
+  UpdateHackathonQuestionsDto,
+  UpdateHackathonAdditionalInfoDto,
+  HackathonAttendeeEligibilityValue,
+  HackathonRoundTypeValue,
+} from '@oppskills/types';
 
 type LifecycleStatus =
   | 'DRAFT'
@@ -18,11 +26,20 @@ type LifecycleStatus =
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 
+/** Default round type for auto-generated rounds. */
+const DEFAULT_ROUND_TYPE: HackathonRoundTypeValue = 'ONLINE';
+
+/** Default attendee eligibility when not provided. */
+const DEFAULT_ATTENDEE_ELIGIBILITY: HackathonAttendeeEligibilityValue[] = [
+  'EVERYONE_CAN_APPLY',
+];
+
 @Injectable()
 export class HackathonService {
   /**
    * Create a hackathon as a user.
    * - If `festivalId` is null/undefined => standalone hackathon.
+   * - If `rounds` is not provided, creates 3 default rounds with evenly split timelines.
    */
   async createHackathon(dto: CreateHackathonDto, userId: string) {
     if (dto.festivalId) {
@@ -47,6 +64,27 @@ export class HackathonService {
     this.assertPricingValid(dto);
 
     const slug = await this.buildHackathonSlug(dto.slug, dto.name);
+
+    // Build rounds data - either from DTO or generate default 3 rounds
+    const roundsData = dto.rounds
+      ? dto.rounds.map((round) => ({
+          name: round.name,
+          description: round.description,
+          startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
+          endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
+          order: round.order,
+          roundType: round.roundType,
+          submissionConfig: round.submissionConfig
+            ? (round.submissionConfig as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+        }))
+      : this.generateDefaultRounds(startDate, endDate);
+
+    // Determine attendee eligibility
+    const attendeeEligibility =
+      dto.attendeeEligibility && dto.attendeeEligibility.length > 0
+        ? dto.attendeeEligibility
+        : DEFAULT_ATTENDEE_ELIGIBILITY;
 
     try {
       const hackathon = await prisma.hackathonEntity.create({
@@ -81,9 +119,22 @@ export class HackathonService {
           currency: dto.currency ?? 'INR',
           prizeTotalWorthAmount: dto.prizeTotalWorthAmount,
 
+          // New prize fields
+          prizeDescription: dto.prizeDescription ?? Prisma.JsonNull,
+          prizeCertificate: dto.prizeCertificate ?? false,
+
           organizationName: dto.organizationName,
           organizationLogoUrl: dto.organizationLogoUrl,
           allowedUniversities: dto.allowedUniversities ?? [],
+
+          // New eligibility & team settings
+          attendeeEligibility,
+          maxTeams: dto.maxTeams ?? null,
+
+          // New contact info fields
+          contactName: dto.additionalInfo?.contact?.name,
+          contactEmail: dto.additionalInfo?.contact?.email,
+          contactPhone: dto.additionalInfo?.contact?.phone,
 
           registrationForm: dto.registrationForm
             ? {
@@ -105,16 +156,9 @@ export class HackathonService {
               }
             : undefined,
 
-          rounds: dto.rounds
-            ? {
-                create: dto.rounds.map((round) => ({
-                  name: round.name,
-                  description: round.description,
-                  startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
-                  order: round.order,
-                })),
-              }
-            : undefined,
+          rounds: {
+            create: roundsData,
+          },
 
           prizeBreakdown: dto.prizeBreakdown
             ? {
@@ -125,26 +169,34 @@ export class HackathonService {
                 })),
               }
             : undefined,
+
+          // New questions relation
+          questions: dto.questions
+            ? {
+                create: dto.questions.map((q) => ({
+                  questionText: q.questionText,
+                  type: q.type,
+                  required: q.required,
+                  order: q.order,
+                  options: q.options ?? [],
+                })),
+              }
+            : undefined,
+
+          // New attachments relation
+          attachments: dto.additionalInfo?.attachments
+            ? {
+                create: dto.additionalInfo.attachments.map((att) => ({
+                  storageKey: att.storageKey,
+                  publicUrl: att.publicUrl,
+                  fileName: att.fileName,
+                  mimeType: att.mimeType,
+                  sizeBytes: att.sizeBytes,
+                })),
+              }
+            : undefined,
         },
-        include: {
-          owner: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-              imageUrl: true,
-            },
-          },
-          festival: true,
-          rounds: true,
-          prizeBreakdown: true,
-          registrationForm: {
-            include: {
-              fields: true,
-            },
-          },
-        },
+        include: this.getHackathonIncludeClause(),
       });
 
       return hackathon;
@@ -169,54 +221,26 @@ export class HackathonService {
     }
   }
 
+  /**
+   * List hackathons, optionally filtered by festival.
+   * Includes all relations: owner, festival, rounds, questions, attachments, etc.
+   */
   async listHackathons(input: { festivalId?: string }) {
     return prisma.hackathonEntity.findMany({
       where: input.festivalId ? { festivalId: input.festivalId } : undefined,
-      include: {
-        owner: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            imageUrl: true,
-          },
-        },
-        festival: true,
-        rounds: true,
-        prizeBreakdown: true,
-        registrationForm: {
-          include: {
-            fields: true,
-          },
-        },
-      },
+      include: this.getHackathonIncludeClause(),
       orderBy: { createdAt: 'desc' },
     });
   }
 
+  /**
+   * Get a single hackathon by ID.
+   * Includes all relations: owner, festival, rounds, questions, attachments, etc.
+   */
   async getHackathonById(id: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { id },
-      include: {
-        owner: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            imageUrl: true,
-          },
-        },
-        festival: true,
-        rounds: true,
-        prizeBreakdown: true,
-        registrationForm: {
-          include: {
-            fields: true,
-          },
-        },
-      },
+      include: this.getHackathonIncludeClause(),
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
     return hackathon;
@@ -225,6 +249,7 @@ export class HackathonService {
   /**
    * Update a hackathon (owner-only).
    * - Allowed only when status is DRAFT.
+   * - Nested updates (rounds, questions, additionalInfo, etc.) use dedicated endpoints.
    */
   async updateHackathon(id: string, dto: UpdateHackathonDto, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
@@ -248,10 +273,16 @@ export class HackathonService {
       );
     }
 
-    // Nested updates are not supported via this endpoint (yet).
-    if (dto.rounds || dto.prizeBreakdown || dto.registrationForm) {
+    // Nested updates are not supported via this endpoint - use dedicated endpoints.
+    if (
+      dto.rounds ||
+      dto.prizeBreakdown ||
+      dto.registrationForm ||
+      dto.questions ||
+      dto.additionalInfo
+    ) {
       throw new BadRequestException(
-        'Nested updates (rounds, prizeBreakdown, registrationForm) are not supported in PUT /hackathons/:id. Use dedicated endpoints.',
+        'Nested updates (rounds, prizeBreakdown, registrationForm, questions, additionalInfo) are not supported in PUT /hackathons/:id. Use dedicated endpoints.',
       );
     }
 
@@ -316,29 +347,22 @@ export class HackathonService {
         currency: dto.currency ?? undefined,
         prizeTotalWorthAmount: dto.prizeTotalWorthAmount,
 
+        // New prize fields
+        prizeDescription:
+          dto.prizeDescription !== undefined
+            ? dto.prizeDescription ?? Prisma.JsonNull
+            : undefined,
+        prizeCertificate: dto.prizeCertificate,
+
         organizationName: dto.organizationName,
         organizationLogoUrl: dto.organizationLogoUrl,
         allowedUniversities: dto.allowedUniversities ?? undefined,
+
+        // New eligibility & team settings
+        attendeeEligibility: dto.attendeeEligibility,
+        maxTeams: dto.maxTeams,
       },
-      include: {
-        owner: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            imageUrl: true,
-          },
-        },
-        festival: true,
-        rounds: true,
-        prizeBreakdown: true,
-        registrationForm: {
-          include: {
-            fields: true,
-          },
-        },
-      },
+      include: this.getHackathonIncludeClause(),
     });
   }
 
@@ -410,6 +434,246 @@ export class HackathonService {
 
     return {
       message: 'User registered successfully for hackathon.',
+    };
+  }
+
+  /**
+   * Replace all rounds of a hackathon.
+   * - Allowed only when status is DRAFT.
+   * - Owner-only (or admin).
+   */
+  async updateHackathonRounds(
+    id: string,
+    dto: UpdateHackathonRoundsDto,
+    userId: string,
+  ) {
+    const hackathon = await this.assertHackathonEditableByUser(id, userId);
+
+    // Validate round timeline constraints
+    for (const round of dto.rounds) {
+      const startsAt = this.parseDate(round.startsAt, 'rounds.startsAt');
+      const endsAt = this.parseDate(round.endsAt, 'rounds.endsAt');
+      if (endsAt.getTime() < startsAt.getTime()) {
+        throw new BadRequestException(
+          `Round "${round.name}": endsAt must be >= startsAt.`,
+        );
+      }
+    }
+
+    // Delete existing rounds and create new ones in a transaction
+    await prisma.$transaction(async (tx) => {
+      await tx.roundEntity.deleteMany({
+        where: { hackathonId: id },
+      });
+
+      await tx.roundEntity.createMany({
+        data: dto.rounds.map((round) => ({
+          hackathonId: id,
+          name: round.name,
+          description: round.description,
+          startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
+          endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
+          order: round.order,
+          roundType: round.roundType,
+          submissionConfig: round.submissionConfig
+            ? (round.submissionConfig as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+        })),
+      });
+    });
+
+    return prisma.hackathonEntity.findUnique({
+      where: { id },
+      include: this.getHackathonIncludeClause(),
+    });
+  }
+
+  /**
+   * Replace all application questions of a hackathon.
+   * - Allowed only when status is DRAFT.
+   * - Owner-only (or admin).
+   */
+  async updateHackathonQuestions(
+    id: string,
+    dto: UpdateHackathonQuestionsDto,
+    userId: string,
+  ) {
+    await this.assertHackathonEditableByUser(id, userId);
+
+    // Validate MCQ questions have at least 2 options
+    for (const q of dto.questions) {
+      if (q.type === 'MCQ') {
+        if (!q.options || q.options.length < 2) {
+          throw new BadRequestException(
+            `MCQ question "${q.questionText.substring(0, 30)}..." requires at least 2 options.`,
+          );
+        }
+      }
+    }
+
+    // Delete existing questions and create new ones in a transaction
+    await prisma.$transaction(async (tx) => {
+      await tx.hackathonQuestionEntity.deleteMany({
+        where: { hackathonId: id },
+      });
+
+      await tx.hackathonQuestionEntity.createMany({
+        data: dto.questions.map((q) => ({
+          hackathonId: id,
+          questionText: q.questionText,
+          type: q.type,
+          required: q.required,
+          order: q.order,
+          options: q.options ?? [],
+        })),
+      });
+    });
+
+    return prisma.hackathonEntity.findUnique({
+      where: { id },
+      include: this.getHackathonIncludeClause(),
+    });
+  }
+
+  /**
+   * Update additional info (contact + attachments) of a hackathon.
+   * - Allowed only when status is DRAFT.
+   * - Owner-only (or admin).
+   */
+  async updateHackathonAdditionalInfo(
+    id: string,
+    dto: UpdateHackathonAdditionalInfoDto,
+    userId: string,
+  ) {
+    await this.assertHackathonEditableByUser(id, userId);
+
+    // Update contact info and attachments in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Update contact fields on hackathon
+      await tx.hackathonEntity.update({
+        where: { id },
+        data: {
+          contactName: dto.contact?.name,
+          contactEmail: dto.contact?.email,
+          contactPhone: dto.contact?.phone,
+        },
+      });
+
+      // Replace attachments if provided
+      if (dto.attachments !== undefined) {
+        await tx.hackathonAttachmentEntity.deleteMany({
+          where: { hackathonId: id },
+        });
+
+        if (dto.attachments.length > 0) {
+          await tx.hackathonAttachmentEntity.createMany({
+            data: dto.attachments.map((att) => ({
+              hackathonId: id,
+              storageKey: att.storageKey,
+              publicUrl: att.publicUrl,
+              fileName: att.fileName,
+              mimeType: att.mimeType,
+              sizeBytes: att.sizeBytes,
+            })),
+          });
+        }
+      }
+    });
+
+    return prisma.hackathonEntity.findUnique({
+      where: { id },
+      include: this.getHackathonIncludeClause(),
+    });
+  }
+
+  /**
+   * Assert that a hackathon exists, is editable (DRAFT status),
+   * and the user has permission to edit it.
+   * @returns The hackathon if all checks pass.
+   */
+  private async assertHackathonEditableByUser(id: string, userId: string) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id },
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    if (hackathon.ownerId !== userId) {
+      const isAdmin = await this.isAdminUser(userId);
+      if (!isAdmin) {
+        throw new ForbiddenException(
+          'You are not allowed to edit this hackathon.',
+        );
+      }
+    }
+
+    const status = hackathon.status as LifecycleStatus;
+    if (status !== 'DRAFT') {
+      throw new ForbiddenException(
+        'You can only edit a hackathon in DRAFT status.',
+      );
+    }
+
+    return hackathon;
+  }
+
+  /**
+   * Generate 3 default rounds by evenly splitting the hackathon duration.
+   */
+  private generateDefaultRounds(startDate: Date, endDate: Date) {
+    const totalDuration = endDate.getTime() - startDate.getTime();
+    const roundDuration = totalDuration / 3;
+
+    const roundNames = ['Round 1', 'Round 2', 'Round 3'];
+
+    return roundNames.map((name, index) => {
+      const roundStart = new Date(startDate.getTime() + index * roundDuration);
+      const roundEnd = new Date(
+        startDate.getTime() + (index + 1) * roundDuration,
+      );
+
+      return {
+        name,
+        description: null,
+        startsAt: roundStart,
+        endsAt: roundEnd,
+        order: index,
+        roundType: DEFAULT_ROUND_TYPE,
+        submissionConfig: Prisma.JsonNull,
+      };
+    });
+  }
+
+  /**
+   * Get the standard include clause for hackathon queries.
+   * Includes all relations: owner, festival, rounds, questions, attachments, etc.
+   */
+  private getHackathonIncludeClause() {
+    return {
+      owner: {
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          imageUrl: true,
+        },
+      },
+      festival: true,
+      rounds: {
+        orderBy: { order: 'asc' as const },
+      },
+      prizeBreakdown: true,
+      registrationForm: {
+        include: {
+          fields: {
+            orderBy: { order: 'asc' as const },
+          },
+        },
+      },
+      questions: {
+        orderBy: { order: 'asc' as const },
+      },
+      attachments: true,
     };
   }
 
