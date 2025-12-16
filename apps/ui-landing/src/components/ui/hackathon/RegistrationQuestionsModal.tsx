@@ -42,6 +42,7 @@ interface RegistrationQuestionsModalProps {
     onOpenChange: (open: boolean) => void;
     initialQuestions?: RegistrationQuestion[];
     onSave: (questions: RegistrationQuestion[]) => void;
+    questions: RegistrationQuestion[];
 }
 
 export default function RegistrationQuestionsModal({
@@ -49,6 +50,7 @@ export default function RegistrationQuestionsModal({
     onOpenChange,
     initialQuestions,
     onSave,
+    questions: questionsInput,
 }: RegistrationQuestionsModalProps) {
     const defaultFixedQuestions: RegistrationQuestion[] = [
         {
