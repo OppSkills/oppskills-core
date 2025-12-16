@@ -53,19 +53,16 @@ COPY apps/backend/package.json ./apps/backend/
 COPY packages/database/package.json ./packages/database/
 COPY packages/types/package.json ./packages/types/
 
-# Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+# Copy Prisma schema before install (needed for postinstall script)
+COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
+
+# Install production dependencies (allow scripts for Prisma client generation)
+RUN pnpm install --prod --frozen-lockfile --config.ignore-scripts=false
 
 # Copy built artifacts from builder stage
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/packages/database/dist ./packages/database/dist
 COPY --from=builder /app/packages/types/dist ./packages/types/dist
-
-# Copy Prisma schema (required for prisma generate)
-COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
-
-# Regenerate Prisma Client in production stage (ensures it's in the right location for pnpm)
-RUN cd packages/database && pnpm exec prisma generate
 
 # Copy load-secrets script (required for production startup)
 COPY load-secrets.mts ./
