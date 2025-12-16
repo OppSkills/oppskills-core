@@ -21,7 +21,7 @@ env:
   AWS_REGION: us-east-1
   ECS_CLUSTER: oppskills-core
   ECS_SERVICE: oppskills-api-server-task-service-zql8vo1s
-  CONTAINER_NAME: oppskills-backend
+  CONTAINER_NAME: oppskills-dev
   AWS_ACCOUNT_ID: 443512646680
 
 jobs:

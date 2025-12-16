@@ -45,6 +45,7 @@ WORKDIR /app
 # Install only runtime dependencies
 RUN apk add --no-cache \
     openssl \
+    curl \
     && npm install -g pnpm@10.5.2 tsx
 
 # Copy package files
