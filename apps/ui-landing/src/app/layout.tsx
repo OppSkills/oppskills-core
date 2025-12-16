@@ -5,10 +5,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import ClientProviders from "../../src/client-providers";
 
 import { ClerkProvider } from "@clerk/nextjs";
-import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
-import { Toaster } from "@/components/ui/sonner";
 import LayoutProvider from "@/components/layout-provider";
+import { NuqsAdapter } from 'nuqs/adapters/next/app'
 
 const inter = Inter({
   variable: "--font-inter",
@@ -44,7 +42,9 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <ClientProviders>
-              <LayoutProvider>{children}</LayoutProvider>
+              <NuqsAdapter>
+                <LayoutProvider>{children}</LayoutProvider>
+              </NuqsAdapter>
             </ClientProviders>
           </ThemeProvider>
         </body>

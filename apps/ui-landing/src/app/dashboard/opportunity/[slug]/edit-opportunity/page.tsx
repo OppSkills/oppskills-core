@@ -12,6 +12,7 @@ import {
   RegistrationQuestion,
 } from "@/components/ui/hackathon/RegistrationQuestionsModal";
 import React, { useState } from "react";
+import { useQueryState } from "nuqs";
 import { cn } from "@/lib/utils";
 
 // Import new components
@@ -55,7 +56,7 @@ export interface FormData {
  * Edit Opportunity Page
  */
 export default function EditOpportunityPage() {
-  const [activeTab, setActiveTab] = useState("basic-details");
+  const [activeTab, setActiveTab] = useQueryState("tab", { defaultValue: "basic-details" });
 
   const tabs = [
     { id: "preview", label: "Preview", icon: <CheckCircle2 className="w-4 h-4" /> },
