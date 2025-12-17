@@ -12,18 +12,12 @@ services:
       - "5434:5432"
     volumes:
       - postgres_data_oppskills:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d oppskills"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     restart: unless-stopped
-
-  redis:
-    image: redis:alpine
-    container_name: oppskills-redis
-    ports:
-      - "6380:6379"
-    volumes:
-      - redis_data_oppskills:/data
-    restart: unless-stopped
-    command: redis-server --appendonly yes
 
 volumes:
   postgres_data_oppskills:
-  redis_data_oppskills:

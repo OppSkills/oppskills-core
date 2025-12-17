@@ -1,0 +1,109 @@
+################################################################################
+# Backend Production Dockerfile (EC2/ECR friendly)
+#
+# - Builds the monorepo packages needed by the backend (@oppskills/db, @oppskills/types, @oppskills/backend)
+# - Runs `load-secrets.mts` at container start to generate:
+#   - /app/.env                     (used by Nest ConfigModule in production)
+#   - /app/packages/database/.env   (used by Prisma migrations/client)
+# - Does NOT require Redis/Postgres containers (Neon Postgres is remote via DATABASE_URL)
+################################################################################
+
+# =============================================================================
+# Stage 1: Builder - Install dependencies and build required packages
+# =============================================================================
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# Build dependencies + tooling for monorepo build
+RUN apk add --no-cache \
+    openssl \
+    python3 \
+    make \
+    g++ \
+  && npm install -g pnpm@10.5.2 turbo tsx
+
+# Copy only package manifests first for better layer caching
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps/backend/package.json ./apps/backend/package.json
+COPY packages/database/package.json ./packages/database/package.json
+COPY packages/types/package.json ./packages/types/package.json
+
+# Install all dependencies (dev deps required for build)
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY apps/backend ./apps/backend
+COPY packages ./packages
+COPY load-secrets.mts ./load-secrets.mts
+
+# Generate Prisma client before TS builds
+RUN cd packages/database && pnpm exec prisma generate
+
+# Build packages in dependency order
+RUN pnpm build --filter=@oppskills/db
+RUN pnpm build --filter=@oppskills/types
+RUN pnpm build --filter=@oppskills/backend
+
+# =============================================================================
+# Stage 2: Runtime - Copy only what we need to run
+# =============================================================================
+FROM node:22-alpine AS runtime
+
+WORKDIR /app
+
+# Runtime deps: openssl (node tls), curl (healthcheck), tsx (load-secrets.mts), pnpm (scripts)
+RUN apk add --no-cache \
+    openssl \
+    curl \
+  && npm install -g pnpm@10.5.2 tsx
+
+# Copy manifests
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps/backend/package.json ./apps/backend/package.json
+COPY packages/database/package.json ./packages/database/package.json
+COPY packages/types/package.json ./packages/types/package.json
+
+# Prisma schema must exist for any postinstall hooks / runtime usage
+COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
+
+# Install production dependencies only
+RUN pnpm install --prod --frozen-lockfile --config.ignore-scripts=false
+
+# Prisma client runtime artifacts live in node_modules/.prisma within the
+# workspace package that runs `prisma generate` (packages/database).
+# Copy them into the runtime image so @prisma/client can resolve
+# ".prisma/client/default" at runtime.
+COPY --from=builder /app/packages/database/node_modules/.prisma ./packages/database/node_modules/.prisma
+
+# Copy built artifacts
+COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder /app/packages/database/dist ./packages/database/dist
+COPY --from=builder /app/packages/types/dist ./packages/types/dist
+
+# Copy secrets loader + entrypoint
+COPY --from=builder /app/load-secrets.mts ./load-secrets.mts
+COPY apps/backend/docker-entrypoint.sh ./docker-entrypoint.sh
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs \
+  && adduser -S nestjs -u 1001 \
+  && chmod +x /app/docker-entrypoint.sh \
+  && chown -R nestjs:nodejs /app
+
+USER nestjs
+
+ENV NODE_ENV="production"
+EXPOSE 3001
+
+# Health endpoint exists at GET /health (see apps/backend/src/app.controller.ts)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -fsS http://localhost:3001/health || exit 1
+
+# Entrypoint loads secrets (and optionally runs migrations), then execs CMD
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
+# Default command: start backend
+CMD ["node", "apps/backend/dist/main.js"]
+
+

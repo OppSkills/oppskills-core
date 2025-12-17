@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  backend:
+    # IMPORTANT:
+    # Set BACKEND_IMAGE when deploying (e.g. via GitHub Actions):
+    # BACKEND_IMAGE=443512646680.dkr.ecr.us-east-1.amazonaws.com/<repo>:<tag>
+    image: "${BACKEND_IMAGE:?BACKEND_IMAGE is required}"
+    container_name: "oppskills-backend"
+    restart: "unless-stopped"
+    ports:
+      # Bind to localhost so the backend is only reachable via Nginx on the host.
+      - "127.0.0.1:3001:3001"
+    environment:
+      # The entrypoint will load Secrets Manager into /app/.env on container start.
+      NODE_ENV: "production"
+      AWS_REGION: "${AWS_REGION:-us-east-1}"
+      PORT: "3001"
+      # Set RUN_MIGRATIONS=false to skip prisma migrate deploy during deploy.
+      RUN_MIGRATIONS: "${RUN_MIGRATIONS:-true}"
+

@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  backend:
+    container_name: "oppskills-backend"
+    build:
+      context: "."
+      dockerfile: "apps/backend/Dockerfile.prod"
+    depends_on:
+      postgres:
+        condition: "service_healthy"
+    restart: "unless-stopped"
+    ports:
+      - "3001:3001"
+    environment:
+      # Local mode skips AWS Secrets Manager in `load-secrets.mts`.
+      NODE_ENV: "local"
+      PORT: "3001"
+      RUN_MIGRATIONS: "true"
+      # Postgres runs as a compose service named "postgres" (see docker-compose.yml)
+      DATABASE_URL: "postgresql://postgres:mysecretpassword@postgres:5432/oppskills?schema=public"
