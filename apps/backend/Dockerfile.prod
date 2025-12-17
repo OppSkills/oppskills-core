@@ -64,17 +64,15 @@ COPY apps/backend/package.json ./apps/backend/package.json
 COPY packages/database/package.json ./packages/database/package.json
 COPY packages/types/package.json ./packages/types/package.json
 
-# Prisma schema must exist for any postinstall hooks / runtime usage
-COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
-
 # Install production dependencies only
 RUN pnpm install --prod --frozen-lockfile --config.ignore-scripts=false
 
-# Prisma client runtime artifacts live in node_modules/.prisma within the
-# workspace package that runs `prisma generate` (packages/database).
-# Copy them into the runtime image so @prisma/client can resolve
-# ".prisma/client/default" at runtime.
-COPY --from=builder /app/packages/database/node_modules/.prisma ./packages/database/node_modules/.prisma
+# Prisma client runtime artifacts location under pnpm is not stable to copy
+# between stages (it may live under the pnpm virtual store, symlinked in).
+# Instead, re-run `prisma generate` in the runtime stage after installing
+# production deps. This reliably creates the required `.prisma` artifacts.
+COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
+RUN pnpm -C packages/database exec prisma generate
 
 # Copy built artifacts
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist

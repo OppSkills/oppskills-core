@@ -1,4 +1,4 @@
-name: Deploy Backend to AWS EC2 (via ECR)
+name: Deploy Backend to EC2 (ECR)
 
 on:
   push:
@@ -7,10 +7,9 @@ on:
     paths:
       - "apps/backend/**"
       - "packages/**"
-      - "Dockerfile"
-      - "apps/backend/Dockerfile.prod"
       - "load-secrets.mts"
-      - ".github/workflows/deploy-backend.yml"
+      - "apps/backend/Dockerfile.prod"
+      - ".github/workflows/deploy-backend-ec2.yml"
   workflow_dispatch:
     inputs:
       skip_migrations:
@@ -19,16 +18,17 @@ on:
         default: "false"
 
 env:
-  AWS_REGION: us-east-1
-  AWS_ACCOUNT_ID: 443512646680
+  AWS_REGION: "us-east-1"
+  AWS_ACCOUNT_ID: "443512646680"
 
 jobs:
   build-and-deploy:
-    name: Build and Deploy Backend
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
@@ -38,29 +38,25 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
+      - name: Login to ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
+      - name: Build and push image
+        id: build
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Build Docker image
-          docker build -f apps/backend/Dockerfile.prod -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          set -eu
+          docker build -f apps/backend/Dockerfile.prod -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
+          docker tag "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
 
-          # Push both tags
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
-          # Output image URI for next steps
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-      - name: Deploy to EC2 (pull from ECR and restart container)
+      - name: Deploy on EC2 (pull + run container)
         uses: appleboy/ssh-action@v1.0.3
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
@@ -78,16 +74,15 @@ jobs:
             set -eu
 
             if ! command -v aws >/dev/null 2>&1; then
-              echo "::error::AWS CLI is required on the EC2 instance (install awscli v2)."
+              echo "AWS CLI is required on EC2. Install it first."
               exit 1
             fi
 
             if ! command -v docker >/dev/null 2>&1; then
-              echo "::error::Docker is required on the EC2 instance."
+              echo "Docker is required on EC2."
               exit 1
             fi
 
-            # Use sudo docker if the current user doesn't have docker permissions.
             docker_cmd() { docker "$@"; }
             if ! docker ps >/dev/null 2>&1; then
               if command -v sudo >/dev/null 2>&1; then
@@ -98,13 +93,9 @@ jobs:
             ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
             IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
 
-            echo "Logging into ECR: ${ECR_REGISTRY}"
             aws ecr get-login-password --region "${AWS_REGION}" | docker_cmd login --username AWS --password-stdin "${ECR_REGISTRY}"
-
-            echo "Pulling image: ${IMAGE}"
             docker_cmd pull "${IMAGE}"
 
-            echo "Restarting container: oppskills-backend"
             docker_cmd stop oppskills-backend || true
             docker_cmd rm oppskills-backend || true
 
@@ -118,14 +109,6 @@ jobs:
               -e RUN_MIGRATIONS="${RUN_MIGRATIONS}" \
               "${IMAGE}"
 
-            echo "Pruning unused images..."
             docker_cmd image prune -f
 
-            echo "Deployment completed successfully!"
-            docker_cmd ps --filter "name=oppskills-backend"
 
-      - name: Notify on failure
-        if: failure()
-        run: |
-          echo "::error::Deployment failed! Check the logs above for details."
-          echo "Image: ${{ steps.build-image.outputs.image }}"
