@@ -25,7 +25,8 @@ pnpm load-secrets
 
 if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
   echo "[entrypoint] Running Prisma migrations (migrate deploy)..."
-  pnpm -C packages/database exec prisma migrate deploy
+  # Use the pinned Prisma CLI installed in the image and point it at the schema.
+  prisma migrate deploy --schema packages/database/prisma/schema.prisma
 else
   echo "[entrypoint] RUN_MIGRATIONS is not true; skipping migrations."
 fi
