@@ -1,38 +1,39 @@
-"use client"
-import { CompetitionSidebar } from './_components/CompetitionSidebar';
-import { CompetitionTabs } from './_components/CompetitionTabs';
-import { RoundsTimeline } from './_components/RoundsTimeline';
-import { AboutSection } from './_components/AboutSection';
-import { Organizers } from './_components/Organizers';
-import { Prizes } from './_components/Prizes';
-import { CompetitionDetails } from './_components/types';
-import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-
+"use client";
+import { CompetitionSidebar } from "./_components/CompetitionSidebar";
+import { CompetitionTabs } from "./_components/CompetitionTabs";
+import { RoundsTimeline } from "./_components/RoundsTimeline";
+import { AboutSection } from "./_components/AboutSection";
+import { Organizers } from "./_components/Organizers";
+import { Prizes } from "./_components/Prizes";
+import { CompetitionDetails } from "./_components/types";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export default function CompetitionDetailsPage({ searchParams }: PageProps) {
-    const { slug } = useParams();
-    const [competition, setCompetition] = useState<CompetitionDetails>({
-    id: '1',
-    slug: 'silicon-valley-funding-summit-2026',
-    title: 'Silicon Valley Funding Summit At CES 2026 - VIP Access For Investors',
-    thumbnail: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2670&auto=format&fit=crop',
-    location: 'Las Vegas, NV',
-    dateRange: 'January 7-10, 2026',
-    tags: ['Funding', 'Tech', 'Innovation'],
-    
-    featuredIn: 'FestName',
-    specificDate: 'Monday, 5 January 2026',
-    specificTime: '8:00 - 20:00 GMT-8',
-    venueName: 'College/University Name',
-    venueAddress: 'City, State',
-    teamSize: '1-2 Members',
+export default function CompetitionDetailsPage() {
+  const { slug } = useParams();
+  const [competition, setCompetition] = useState<CompetitionDetails>({
+    id: "1",
+    slug: "silicon-valley-funding-summit-2026",
+    title:
+      "Silicon Valley Funding Summit At CES 2026 - VIP Access For Investors",
+    thumbnail:
+      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2670&auto=format&fit=crop",
+    location: "Las Vegas, NV",
+    dateRange: "January 7-10, 2026",
+    tags: ["Funding", "Tech", "Innovation"],
+
+    featuredIn: "FestName",
+    specificDate: "Monday, 5 January 2026",
+    specificTime: "8:00 - 20:00 GMT-8",
+    venueName: "College/University Name",
+    venueAddress: "City, State",
+    teamSize: "1-2 Members",
     impressions: 206,
-    registrationDeadline: '8 Days',
+    registrationDeadline: "8 Days",
 
     about: `
             <p><b>Theme:</b> Data Visualization Challenge – <i>“Turning Raw Data Into Real Insights”</i></p>
@@ -150,146 +151,146 @@ export default function CompetitionDetailsPage({ searchParams }: PageProps) {
 
     `,
     rounds: [
-        {
-        id: 'r1',
-        name: 'Round Name',
-        description: 'Round Description in 2 lines...',
-        startDate: 'Jan 10, 2026 12:00 PM IST',
-        endDate: 'Jan 20, 2026 11:59 PM IST',
-        status: 'upcoming',
-        },
-        {
-        id: 'r2',
-        name: 'Round Name',
-        description: 'Round Description in 2 lines...',
-        startDate: 'Feb 1, 2026 12:00 PM IST',
-        endDate: 'Feb 15, 2026 11:59 PM IST',
-        status: 'upcoming',
-        },
-        {
-        id: 'r3',
-        name: 'Round Name',
-        description: 'Round Description in 2 lines...',
-        startDate: 'Feb 20, 2026 12:00 PM IST',
-        endDate: 'Feb 25, 2026 11:59 PM IST',
-        status: 'upcoming',
-        },
-        {
-        id: 'r4',
-        name: 'Round Name',
-        description: 'Round Description in 2 lines...',
-        startDate: 'Mar 1, 2026 12:00 PM IST',
-        endDate: 'Mar 5, 2026 11:59 PM IST',
-        status: 'upcoming',
-        },
+      {
+        id: "r1",
+        name: "Round Name",
+        description: "Round Description in 2 lines...",
+        startDate: "Jan 10, 2026 12:00 PM IST",
+        endDate: "Jan 20, 2026 11:59 PM IST",
+        status: "upcoming",
+      },
+      {
+        id: "r2",
+        name: "Round Name",
+        description: "Round Description in 2 lines...",
+        startDate: "Feb 1, 2026 12:00 PM IST",
+        endDate: "Feb 15, 2026 11:59 PM IST",
+        status: "upcoming",
+      },
+      {
+        id: "r3",
+        name: "Round Name",
+        description: "Round Description in 2 lines...",
+        startDate: "Feb 20, 2026 12:00 PM IST",
+        endDate: "Feb 25, 2026 11:59 PM IST",
+        status: "upcoming",
+      },
+      {
+        id: "r4",
+        name: "Round Name",
+        description: "Round Description in 2 lines...",
+        startDate: "Mar 1, 2026 12:00 PM IST",
+        endDate: "Mar 5, 2026 11:59 PM IST",
+        status: "upcoming",
+      },
     ],
     organizers: [
-        {
-        id: 'o1',
-        name: 'Owner Name',
-        role: 'Organizer',
-        avatar: '', 
-        company: '',
-        },
-        {
-        id: 'o2',
-        name: 'Owner Name',
-        role: 'Organizer',
-        avatar: '', 
-        company: '',
-        },
+      {
+        id: "o1",
+        name: "Owner Name",
+        role: "Organizer",
+        avatar: "",
+        company: "",
+      },
+      {
+        id: "o2",
+        name: "Owner Name",
+        role: "Organizer",
+        avatar: "",
+        company: "",
+      },
     ],
     prizes: [
-        {
-        id: 'p1',
-        title: 'Winner',
-        amount: '₹ 5,000',
-        description: '',
-        icon: 'trophy',
-        },
-        {
-        id: 'p2',
-        title: '1st Runner Up',
-        amount: '₹ 5,000',
-        description: '',
-        icon: 'medal',
-        },
-        {
-        id: 'p3',
-        title: '2nd Runner Up',
-        amount: 'Neckband + Swags',
-        description: '',
-        icon: 'star',
-        },
-        {
-        id: 'p4',
-        title: 'Participation',
-        amount: 'Certificate',
-        description: '',
-        icon: 'star',
-        },
+      {
+        id: "p1",
+        title: "Winner",
+        amount: "₹ 5,000",
+        description: "",
+        icon: "trophy",
+      },
+      {
+        id: "p2",
+        title: "1st Runner Up",
+        amount: "₹ 5,000",
+        description: "",
+        icon: "medal",
+      },
+      {
+        id: "p3",
+        title: "2nd Runner Up",
+        amount: "Neckband + Swags",
+        description: "",
+        icon: "star",
+      },
+      {
+        id: "p4",
+        title: "Participation",
+        amount: "Certificate",
+        description: "",
+        icon: "star",
+      },
     ],
-    });
-    console.log(slug);
-    const [curTab, setCurTab]=useState<string | null>(null);
-    useEffect(() => {
-        if (curTab) {
-            const element = document.getElementById(curTab);
-            if (element) {
-                element.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-                });
-            }
-        }
-    }, [curTab]);
+  });
+  console.log(slug);
+  const [curTab, setCurTab] = useState<string | null>(null);
+  useEffect(() => {
+    if (curTab) {
+      const element = document.getElementById(curTab);
+      if (element) {
+        element.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }
+  }, [curTab]);
   return (
     <div className="min-h-screen bg-transparent py-8">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative items-start">
-          
           {/* Sidebar */}
           <div className="lg:col-span-1 lg:sticky lg:top-20">
-             <CompetitionSidebar competition={competition} />
+            <CompetitionSidebar competition={competition} />
           </div>
 
           {/* Main Content */}
           <div className="lg:col-span-2">
             <h1 className="text-3xl font-extrabold text-foreground leading-tight mb-6">
-               {competition.title}
+              {competition.title}
             </h1>
-            
-            <CompetitionTabs setCurTab={setCurTab}/>
+
+            <CompetitionTabs setCurTab={setCurTab} />
 
             <div className="space-y-12">
-               <section id="rounds" className="scroll-mt-24">
-                  <RoundsTimeline rounds={competition.rounds} />
-               </section>
+              <section id="rounds" className="scroll-mt-24">
+                <RoundsTimeline rounds={competition.rounds} />
+              </section>
 
-               <section id="details" className="scroll-mt-24">
-                  <AboutSection content={competition.about} />
-               </section>
+              <section id="details" className="scroll-mt-24">
+                <AboutSection content={competition.about} />
+              </section>
 
-               <section className="scroll-mt-24">
-                  {/* Note: In image, this is 'Organizers' visualized after about, 
+              <section className="scroll-mt-24">
+                {/* Note: In image, this is 'Organizers' visualized after about, 
                       though image labels it 'Rounds Timeline' again erroneously. 
                       I am placing it here to match flow. */}
-                  <Organizers organizers={competition.organizers} />
-               </section>
+                <Organizers organizers={competition.organizers} />
+              </section>
 
-               <section id="prizes" className="scroll-mt-24">
-                  <Prizes prizes={competition.prizes} />
-               </section>
+              <section id="prizes" className="scroll-mt-24">
+                <Prizes prizes={competition.prizes} />
+              </section>
 
-               <section id="reviews" className="scroll-mt-24">
-                  <h2 className="text-2xl font-bold text-foreground mb-6">Reviews</h2>
-                  <div className="p-12 text-center text-muted-foreground bg-zinc-50 dark:bg-zinc-900 border border-dashed rounded-xl">
-                    Reviews coming soon...
-                  </div>
-               </section>
+              <section id="reviews" className="scroll-mt-24">
+                <h2 className="text-2xl font-bold text-foreground mb-6">
+                  Reviews
+                </h2>
+                <div className="p-12 text-center text-muted-foreground bg-zinc-50 dark:bg-zinc-900 border border-dashed rounded-xl">
+                  Reviews coming soon...
+                </div>
+              </section>
             </div>
           </div>
-
         </div>
       </div>
     </div>

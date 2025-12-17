@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
+
 import { currentUser } from "@clerk/nextjs/server";
 import GenderDiversityChart from "@/app/dashboard/_components/GenderDiversityChart";
 import ImpressionsChart from "@/app/dashboard/_components/ImpressionsChart";
@@ -76,25 +76,12 @@ export default async function page() {
           {analyticData.map((item, index) => (
             <MotionItem key={index}>
               <AnalyticCard
-                className={`${item.type === "highlight" ? "bg-[radial-gradient(circle_at_top_left,var(--color-primary)_0%,var(--color-foreground)_50%)] text-primary-foreground" : "bg-background"}`}
-              >
-                <p className="text-[16px] xl:text-[20px]">{item.title}</p>
-                <h3 className="text-3xl xl:text-4xl font-semibold py-4 xl:py-5">
-                  {item.value}
-                </h3>
-                <div className="flex justify-between w-full items-center">
-                  <p
-                    className={`text-xs ${item.type === "normal" ? "text-primary" : "text-primary-foreground"}`}
-                  >
-                    {item.badge}
-                  </p>
-                  <Badge
-                    className={`min-w-[42px] text-xs rounded-full bg-linear-to-r border-0 ${item.type === "normal" ? "from-primary to-foreground" : "from-primary/20 to-foreground/50"}`}
-                  >
-                    {item.badgeValue}
-                  </Badge>
-                </div>
-              </AnalyticCard>
+                type={(item.type as "normal" | "highlight") || "normal"}
+                title={item.title}
+                value={item.value}
+                badge={item.badge}
+                badgeValue={item.badgeValue}
+              />
             </MotionItem>
           ))}
         </MotionContainer>

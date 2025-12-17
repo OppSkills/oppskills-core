@@ -11,6 +11,7 @@ import { SiteHeader } from "./layout/site-header";
 import { cn } from "@/lib/utils";
 import React from "react";
 import { OpportunitySidebar } from "./layout/opportunity-sidebar";
+import { MobileNavigationProvider } from "./layout/mobile-navigation-context";
 
 export default function LayoutProvider({
   children,
@@ -47,56 +48,80 @@ export default function LayoutProvider({
     setMainSidebarOpen(!isOpportunityDetail);
   }, [isOpportunityDetail]);
 
+  // Mobile sidebar state management
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [activeMobileTab, setActiveMobileTab] = React.useState<
+    "main" | "opportunity"
+  >("opportunity");
+
   // Dashboard layout with dual-sidebar support for opportunity details
   if (isDashboard) {
     return (
-      <main className="">
-        <SidebarProvider
-          style={
-            {
-              "--sidebar-width": "calc(var(--spacing) * 62)",
-              "--header-height": "calc(var(--spacing) * 12)",
-            } as React.CSSProperties
-          }
-          className="bg-neutral-200"
-          open={mainSidebarOpen}
-          onOpenChange={setMainSidebarOpen}
-        >
-          {/* Main application sidebar - collapses to icon mode on opportunity details */}
-          <AppSidebar variant="floating" className="" />
-
-          {/* Secondary opportunity sidebar - only visible on opportunity detail pages */}
-          {isOpportunityDetail && (
-            <SidebarContextProvider defaultOpen={true}>
-              <OpportunitySidebar
-                /**
-                 * Render as a second LEFT sidebar, immediately to the right of the primary sidebar.
-                 * We override the internal `left-0` positioning from `Sidebar` using inline styles
-                 * (more reliable than Tailwind arbitrary `calc()` classes here), and the sidebar's
-                 * own "gap" will push the content area.
-                 */
-                side="left"
-                variant="floating"
-                collapsible="icon"
-                style={{
-                  left: "calc(var(--sidebar-width-icon) + 1rem)",
-                }}
-              />
-            </SidebarContextProvider>
-          )}
-
-          <SidebarInset
-            className={cn(
-              "bg-neutral-200 p-2 space-y-4 my-1"
-              // Adjust left margin when secondary sidebar is visible
-              // isOpportunityDetail && "ml-[calc(var(--spacing)*62)]"
-            )}
+      <MobileNavigationProvider
+        value={{
+          mobileMenuOpen,
+          setMobileMenuOpen,
+          activeMobileTab,
+          setActiveMobileTab,
+          isOpportunityDetail,
+        }}
+      >
+        <main className="">
+          <SidebarProvider
+            style={
+              {
+                "--sidebar-width": "calc(var(--spacing) * 62)",
+                "--header-height": "calc(var(--spacing) * 12)",
+              } as React.CSSProperties
+            }
+            className="bg-neutral-200"
+            open={mainSidebarOpen}
+            onOpenChange={setMainSidebarOpen}
+            openMobile={activeMobileTab === "main" && mobileMenuOpen}
+            onOpenMobileChange={(open) => {
+              setMobileMenuOpen(open);
+              if (open) setActiveMobileTab("main");
+            }}
           >
-            <SiteHeader />
-            <div className="rounded-[20px] overflow-hidden">{children}</div>
-          </SidebarInset>
-        </SidebarProvider>
-      </main>
+            {/* Main application sidebar - collapses to icon mode on opportunity details */}
+            <AppSidebar variant="floating" className="" />
+
+            {/* Secondary opportunity sidebar - only visible on opportunity detail pages */}
+            {isOpportunityDetail ? (
+              <SidebarContextProvider
+                defaultOpen={true}
+                openMobile={activeMobileTab === "opportunity" && mobileMenuOpen}
+                onOpenMobileChange={(open) => {
+                  setMobileMenuOpen(open);
+                  if (open) setActiveMobileTab("opportunity");
+                }}
+              >
+                <OpportunitySidebar
+                  side="left"
+                  variant="floating"
+                  collapsible="icon"
+                  style={{
+                    left: "calc(var(--sidebar-width-icon) + 1rem)",
+                  }}
+                />
+                <SidebarInset
+                  className={cn("bg-neutral-200 p-2 space-y-4 my-1")}
+                >
+                  <SiteHeader />
+                  <div className="rounded-[20px] overflow-hidden">
+                    {children}
+                  </div>
+                </SidebarInset>
+              </SidebarContextProvider>
+            ) : (
+              <SidebarInset className={cn("bg-neutral-200 p-2 space-y-4 my-1")}>
+                <SiteHeader />
+                <div className="rounded-[20px] overflow-hidden">{children}</div>
+              </SidebarInset>
+            )}
+          </SidebarProvider>
+        </main>
+      </MobileNavigationProvider>
     );
   }
 

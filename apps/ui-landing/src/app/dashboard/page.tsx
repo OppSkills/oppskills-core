@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import AnalyticCard from "./_components/AnalyticCard";
-import { Badge } from "@/components/ui/badge";
+
 import { currentUser } from "@clerk/nextjs/server";
 import RegistrationLineChart from "./_components/RegistrationChart";
 import Alerts from "./_components/Alerts";
@@ -64,8 +64,8 @@ export default async function page() {
               Here is the summary of overall performance
             </p>
           </div>
-          <div className="right self-end md:self-auto">
-            <Button className="rounded-full px-6 h-12 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-purple-200">
+          <div className="right self-end md:self-auto w-full sm:w-auto">
+            <Button className="w-full rounded-full px-6 h-12 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-purple-200">
               <Plus className="mr-2 h-5 w-5" />
               Host
             </Button>
@@ -76,36 +76,13 @@ export default async function page() {
         <MotionContainer className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           {analyticData.map((item, index) => (
             <MotionItem key={index}>
-
               <AnalyticCard
-                className={`${item.type === "highlight" ? "bg-[radial-gradient(circle_at_top_left,var(--color-primary)_0%,var(--color-foreground)_50%)] text-primary-foreground" : "bg-background"}`}
-              >
-                <div>
-                  <p className={`text-base font-medium ${item.type === "highlight" ? "text-purple-200" : "text-gray-700"}`}>
-                    {item.title}
-                  </p>
-                  <h3 className="text-5xl font-bold mt-4 tracking-tight">
-                    {item.value}
-                  </h3>
-                </div>
-
-                <div className="flex justify-between w-full items-center mt-auto">
-                  <p
-                    className={`text-xs font-medium ${item.type === "normal" ? "text-purple-700" : "text-purple-200"
-                      }`}
-                  >
-                    {item.badge}
-                  </p>
-                  <Badge
-                    className={`min-w-[50px] h-7 flex items-center justify-center text-xs font-bold rounded-full ${item.type === "highlight"
-                      ? "bg-purple-500/30 text-white hover:bg-purple-500/40"
-                      : "bg-[#2A003D] text-white hover:bg-[#2A003D]/90"
-                      }`}
-                  >
-                    {item.badgeValue}
-                  </Badge>
-                </div>
-              </AnalyticCard>
+                type={(item.type as "normal" | "highlight") || "normal"}
+                title={item.title}
+                value={item.value}
+                badge={item.badge}
+                badgeValue={item.badgeValue}
+              />
             </MotionItem>
           ))}
         </MotionContainer>

@@ -319,7 +319,7 @@ export default function Page() {
   }, []);
 
   return (
-    <div className="w-full flex justify-center py-8">
+    <div className="w-full flex justify-center py-8 px-6 md:px-0">
       <div className="w-full xl:max-w-[1161px] flex flex-col lg:flex-row p-2 gap-6">
         {/* Left Sidebar */}
         <div className="w-full lg:max-w-[371px] flex flex-col gap-6">

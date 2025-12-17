@@ -30,7 +30,7 @@ export default function DomainsChart() {
                             cursor={{ fill: 'transparent' }}
                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                         />
-                        <Bar dataKey="value" fill="#c084fc" radius={[0, 10, 10, 0]} barSize={40}>
+                        <Bar dataKey="value" fill="#8979FF" radius={[0, 10, 10, 0]} barSize={40}>
                             <LabelList
                                 dataKey="value"
                                 position="right"
