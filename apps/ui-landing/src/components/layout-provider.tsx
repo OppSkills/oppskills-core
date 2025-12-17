@@ -66,15 +66,9 @@ export default function LayoutProvider({
           <AppSidebar variant="floating" className="" />
 
           {/* Secondary opportunity sidebar - only visible on opportunity detail pages */}
-          {isOpportunityDetail && (
+          {isOpportunityDetail ? (
             <SidebarContextProvider defaultOpen={true}>
               <OpportunitySidebar
-                /**
-                 * Render as a second LEFT sidebar, immediately to the right of the primary sidebar.
-                 * We override the internal `left-0` positioning from `Sidebar` using inline styles
-                 * (more reliable than Tailwind arbitrary `calc()` classes here), and the sidebar's
-                 * own "gap" will push the content area.
-                 */
                 side="left"
                 variant="floating"
                 collapsible="icon"
@@ -82,19 +76,17 @@ export default function LayoutProvider({
                   left: "calc(var(--sidebar-width-icon) + 1rem)",
                 }}
               />
+              <SidebarInset className={cn("bg-neutral-200 p-2 space-y-4 my-1")}>
+                <SiteHeader />
+                <div className="rounded-[20px] overflow-hidden">{children}</div>
+              </SidebarInset>
             </SidebarContextProvider>
+          ) : (
+            <SidebarInset className={cn("bg-neutral-200 p-2 space-y-4 my-1")}>
+              <SiteHeader />
+              <div className="rounded-[20px] overflow-hidden">{children}</div>
+            </SidebarInset>
           )}
-
-          <SidebarInset
-            className={cn(
-              "bg-neutral-200 p-2 space-y-4 my-1"
-              // Adjust left margin when secondary sidebar is visible
-              // isOpportunityDetail && "ml-[calc(var(--spacing)*62)]"
-            )}
-          >
-            <SiteHeader />
-            <div className="rounded-[20px] overflow-hidden">{children}</div>
-          </SidebarInset>
         </SidebarProvider>
       </main>
     );

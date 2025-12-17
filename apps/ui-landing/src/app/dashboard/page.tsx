@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import AnalyticCard from "./_components/AnalyticCard";
-import { Badge } from "@/components/ui/badge";
+
 import { currentUser } from "@clerk/nextjs/server";
 import RegistrationLineChart from "./_components/RegistrationChart";
 import Alerts from "./_components/Alerts";
@@ -78,29 +78,12 @@ export default async function page() {
             <MotionItem key={index}>
 
               <AnalyticCard
-                className={`${item.type === "highlight" ? "bg-[radial-gradient(circle_at_top_left,var(--color-primary-700)_0%,var(--color-primary-900)_70%)] text-primary-foreground" : "bg-background"}`}
-              >
-                <div className="flex flex-col md:gap-6">
-                  <p className={`text-base font-medium ${item.type === "highlight" ? "text-purple-200" : "text-gray-700"}`}>
-                    {item.title}
-                  </p>
-                  <h3 className="text-5xl font-bold tracking-tight">
-                    {item.value}
-                  </h3>
-
-                  <div className="flex justify-between w-full items-center mt-auto">
-                    <p
-                      className={`text-xs font-medium ${item.type === "normal" ? "text-purple-700" : "text-purple-200"
-                        }`}
-                    >
-                      {item.badge}
-                    </p>
-                    <Badge variant={item.type === "highlight" ? "default" : "gradient"}>
-                      {item.badgeValue}
-                    </Badge>
-                  </div>
-                </div>
-              </AnalyticCard>
+                type={(item.type as "normal" | "highlight") || "normal"}
+                title={item.title}
+                value={item.value}
+                badge={item.badge}
+                badgeValue={item.badgeValue}
+              />
             </MotionItem>
           ))}
         </MotionContainer>

@@ -8,9 +8,7 @@ import {
   FileText,
   Settings,
 } from "lucide-react";
-import {
-  RegistrationQuestion,
-} from "@/components/ui/hackathon/RegistrationQuestionsModal";
+import { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
 import React, { useState } from "react";
 import { useQueryState } from "nuqs";
 import { cn } from "@/lib/utils";
@@ -21,6 +19,7 @@ import RoundsAndStages from "./_components/RoundsAndStages";
 import AdditionalInfo from "./_components/AdditionalInfo";
 import Prizes from "./_components/Prizes";
 import RegistrationSettings from "./_components/RegistrationSettings";
+import CompetitionDetailsPage from "@/app/competitions/[slug]/page";
 
 /**
  * Shared Types
@@ -111,15 +110,37 @@ export interface FormData {
  * Edit Opportunity Page
  */
 export default function EditOpportunityPage() {
-  const [activeTab, setActiveTab] = useQueryState("tab", { defaultValue: "basic-details" });
+  const [activeTab, setActiveTab] = useQueryState("tab", {
+    defaultValue: "basic-details",
+  });
 
   const tabs = [
-    { id: "preview", label: "Preview", icon: <CheckCircle2 className="w-4 h-4" /> },
-    { id: "basic-details", label: "Basic Details", icon: <FileEdit className="w-4 h-4" /> },
-    { id: "registration-settings", label: "Registration Settings", icon: <Settings className="w-4 h-4" /> },
-    { id: "rounds-stages", label: "Rounds and Stages", icon: <LayoutTemplate className="w-4 h-4" /> },
+    {
+      id: "preview",
+      label: "Preview",
+      icon: <CheckCircle2 className="w-4 h-4" />,
+    },
+    {
+      id: "basic-details",
+      label: "Basic Details",
+      icon: <FileEdit className="w-4 h-4" />,
+    },
+    {
+      id: "registration-settings",
+      label: "Registration Settings",
+      icon: <Settings className="w-4 h-4" />,
+    },
+    {
+      id: "rounds-stages",
+      label: "Rounds and Stages",
+      icon: <LayoutTemplate className="w-4 h-4" />,
+    },
     { id: "prizes", label: "Prizes", icon: <Trophy className="w-4 h-4" /> },
-    { id: "additional-info", label: "Additional Info", icon: <FileText className="w-4 h-4" /> },
+    {
+      id: "additional-info",
+      label: "Additional Info",
+      icon: <FileText className="w-4 h-4" />,
+    },
   ];
 
   const [formData, setFormData] = useState<FormData>({
@@ -130,8 +151,10 @@ export default function EditOpportunityPage() {
     eventDate: new Date("2025-11-24"),
     eventLocation: "Bangalore International Exhibition Centre",
     eventTimeFrom: "09:00",
-    eventDescription: "Join us for the biggest hackathon of the year! Build, learn, and grow with the community.",
-    eventThumbnail: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=2670",
+    eventDescription:
+      "Join us for the biggest hackathon of the year! Build, learn, and grow with the community.",
+    eventThumbnail:
+      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=2670",
     hackathonType: "Online",
     participantType: "Team",
     eventRegisterBy: new Date("2025-11-20"),
@@ -144,7 +167,7 @@ export default function EditOpportunityPage() {
         startDate: new Date("2025-11-01"),
         endDate: new Date("2025-11-10"),
         startTime: "10:00",
-        endTime: "23:59"
+        endTime: "23:59",
       },
       {
         id: "r2",
@@ -153,8 +176,8 @@ export default function EditOpportunityPage() {
         startDate: new Date("2025-11-24"),
         endDate: new Date("2025-11-25"),
         startTime: "09:00",
-        endTime: "09:00"
-      }
+        endTime: "09:00",
+      },
     ],
     registrationSettings: {
       candidateTypes: ["College students", "Freshers"],
@@ -168,31 +191,66 @@ export default function EditOpportunityPage() {
       questions: [
         { id: "name", label: "Name", required: true, isStatic: true },
         { id: "email", label: "Email", required: true, isStatic: true },
-        { id: "mobile", label: "Mobile Number", required: true, isStatic: true },
+        {
+          id: "mobile",
+          label: "Mobile Number",
+          required: true,
+          isStatic: true,
+        },
         { id: "gender", label: "Gender", required: true, isStatic: true },
-        { id: "college", label: "Current College/ Organization", required: true, isStatic: true },
+        {
+          id: "college",
+          label: "Current College/ Organization",
+          required: true,
+          isStatic: true,
+        },
         { id: "userType", label: "User Type", required: true, isStatic: true },
-        { id: "github", label: "GitHub Profile URL", required: true, isStatic: false },
-      ]
+        {
+          id: "github",
+          label: "GitHub Profile URL",
+          required: true,
+          isStatic: false,
+        },
+      ],
     },
     prizes: {
       description: "Win exciting cash prizes and internship opportunities!",
       certificateProvided: true,
       list: [
-        { id: "p1", name: "Star Performer", amount: "₹ 1,00,000", description: "Grand winner of the hackathon" },
-        { id: "p2", name: "Runner Up", amount: "₹ 50,000", description: "Second place winner" }
-      ]
+        {
+          id: "p1",
+          name: "Star Performer",
+          amount: "₹ 1,00,000",
+          description: "Grand winner of the hackathon",
+        },
+        {
+          id: "p2",
+          name: "Runner Up",
+          amount: "₹ 50,000",
+          description: "Second place winner",
+        },
+      ],
     },
     additionalInfo: {
       contacts: [
-        { id: "c1", name: "John Doe", phone: "+91 98765 43210", email: "john.doe@example.com" },
-        { id: "c2", name: "Jane Smith", phone: "+91 99887 76655", email: "jane.smith@example.com" }
+        {
+          id: "c1",
+          name: "John Doe",
+          phone: "+91 98765 43210",
+          email: "john.doe@example.com",
+        },
+        {
+          id: "c2",
+          name: "Jane Smith",
+          phone: "+91 99887 76655",
+          email: "jane.smith@example.com",
+        },
       ],
       attachments: [
         { id: "a1", title: "Rulebook.pdf", type: "PDF File" },
-        { id: "a2", title: "Problem_Statement.zip", type: "Zip File" }
-      ]
-    }
+        { id: "a2", title: "Problem_Statement.zip", type: "Zip File" },
+      ],
+    },
   });
 
   return (
@@ -240,11 +298,7 @@ export default function EditOpportunityPage() {
         )}
 
         {/* Placeholders for other tabs */}
-        {activeTab === "preview" && (
-          <div className="flex items-center justify-center p-12 text-muted-foreground border-2 border-dashed rounded-xl">
-            Content for {tabs.find(t => t.id === activeTab)?.label} is coming soon.
-          </div>
-        )}
+        {activeTab === "preview" && <CompetitionDetailsPage />}
       </div>
     </div>
   );
