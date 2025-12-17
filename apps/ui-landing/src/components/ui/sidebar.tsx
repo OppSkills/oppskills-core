@@ -66,19 +66,38 @@ function SidebarContextProvider({
   defaultOpen = true,
   open: openProp,
   onOpenChange: setOpenProp,
+  openMobile: openMobileProp,
+  onOpenMobileChange: onOpenMobileChange,
   children,
 }: {
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  openMobile?: boolean;
+  onOpenMobileChange?: (open: boolean) => void;
   children: React.ReactNode;
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
 
+  // Helper to set the mobile state, supporting controlled via prop or local state
+  const setOpenMobileState = React.useCallback(
+    (value: boolean | ((value: boolean) => boolean)) => {
+      const openState = typeof value === "function" ? value(openMobile) : value;
+      if (onOpenMobileChange) {
+        onOpenMobileChange(openState);
+      } else {
+        setOpenMobile(openState);
+      }
+    },
+    [onOpenMobileChange, openMobile]
+  );
+
   // Internal state when uncontrolled.
   const [_open, _setOpen] = React.useState(defaultOpen);
   const open = openProp ?? _open;
+
+  const finalOpenMobile = openMobileProp ?? openMobile;
 
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -93,8 +112,10 @@ function SidebarContextProvider({
   );
 
   const toggleSidebar = React.useCallback(() => {
-    return isMobile ? setOpenMobile((prev) => !prev) : setOpen((prev) => !prev);
-  }, [isMobile, setOpen, setOpenMobile]);
+    return isMobile
+      ? setOpenMobileState(!finalOpenMobile)
+      : setOpen((prev) => !prev);
+  }, [isMobile, setOpen, setOpenMobileState, finalOpenMobile]);
 
   // We add a state so that we can do data-state="expanded" or "collapsed".
   const state = open ? "expanded" : "collapsed";
@@ -105,11 +126,19 @@ function SidebarContextProvider({
       open,
       setOpen,
       isMobile,
-      openMobile,
-      setOpenMobile,
+      openMobile: finalOpenMobile,
+      setOpenMobile: setOpenMobileState,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [
+      state,
+      open,
+      setOpen,
+      isMobile,
+      finalOpenMobile,
+      setOpenMobileState,
+      toggleSidebar,
+    ]
   );
 
   return (
@@ -123,6 +152,8 @@ function SidebarProvider({
   defaultOpen = true,
   open: openProp,
   onOpenChange: setOpenProp,
+  openMobile: openMobileProp,
+  onOpenMobileChange: onOpenMobileChange,
   className,
   style,
   children,
@@ -131,14 +162,32 @@ function SidebarProvider({
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  openMobile?: boolean;
+  onOpenMobileChange?: (open: boolean) => void;
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
+
+  // Helper to set the mobile state, supporting controlled via prop or local state
+  const setOpenMobileState = React.useCallback(
+    (value: boolean | ((value: boolean) => boolean)) => {
+      const openState = typeof value === "function" ? value(openMobile) : value;
+      if (onOpenMobileChange) {
+        onOpenMobileChange(openState);
+      } else {
+        setOpenMobile(openState);
+      }
+    },
+    [onOpenMobileChange, openMobile]
+  );
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
   const [_open, _setOpen] = React.useState(defaultOpen);
   const open = openProp ?? _open;
+
+  const finalOpenMobile = openMobileProp ?? openMobile;
+
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === "function" ? value(open) : value;
@@ -156,8 +205,10 @@ function SidebarProvider({
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
-    return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
-  }, [isMobile, setOpen, setOpenMobile]);
+    return isMobile
+      ? setOpenMobileState(!finalOpenMobile)
+      : setOpen((open) => !open);
+  }, [isMobile, setOpen, setOpenMobileState, finalOpenMobile]);
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
@@ -185,11 +236,19 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
-      openMobile,
-      setOpenMobile,
+      openMobile: finalOpenMobile,
+      setOpenMobile: setOpenMobileState,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [
+      state,
+      open,
+      setOpen,
+      isMobile,
+      finalOpenMobile,
+      setOpenMobileState,
+      toggleSidebar,
+    ]
   );
 
   return (

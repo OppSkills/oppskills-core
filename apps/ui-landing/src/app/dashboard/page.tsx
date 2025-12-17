@@ -64,8 +64,8 @@ export default async function page() {
               Here is the summary of overall performance
             </p>
           </div>
-          <div className="right self-end md:self-auto">
-            <Button className="rounded-full px-6 h-12 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-purple-200">
+          <div className="right self-end md:self-auto w-full sm:w-auto">
+            <Button className="w-full rounded-full px-6 h-12 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-purple-200">
               <Plus className="mr-2 h-5 w-5" />
               Host
             </Button>
@@ -76,7 +76,6 @@ export default async function page() {
         <MotionContainer className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           {analyticData.map((item, index) => (
             <MotionItem key={index}>
-
               <AnalyticCard
                 type={(item.type as "normal" | "highlight") || "normal"}
                 title={item.title}

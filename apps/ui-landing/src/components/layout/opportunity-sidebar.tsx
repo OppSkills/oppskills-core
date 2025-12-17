@@ -10,6 +10,8 @@ import {
   IconMail,
 } from "@tabler/icons-react";
 
+import { MobileSidebarSwitcher } from "./mobile-sidebar-switcher";
+import { SidebarFooter } from "@/components/ui/sidebar";
 import { NavMain } from "./nav-main";
 
 import {
@@ -95,6 +97,9 @@ export function OpportunitySidebar({
       <SidebarContent>
         <NavMain items={navItems} />
       </SidebarContent>
+      <SidebarFooter>
+        <MobileSidebarSwitcher />
+      </SidebarFooter>
     </Sidebar>
   );
 }

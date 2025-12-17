@@ -4,6 +4,8 @@ import * as React from "react";
 import { IconDashboard, IconReport, IconUsers } from "@tabler/icons-react";
 
 import { NavMain } from "./nav-main";
+import { MobileSidebarSwitcher } from "./mobile-sidebar-switcher";
+import { useMobileNavigation } from "./mobile-navigation-context";
 
 import {
   Sidebar,
@@ -39,6 +41,7 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { isOpportunityDetail } = useMobileNavigation();
   return (
     <Sidebar collapsible="icon" {...props} className="">
       <SidebarHeader>
@@ -61,6 +64,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
+      {isOpportunityDetail && (
+        <SidebarFooter>
+          <MobileSidebarSwitcher />
+        </SidebarFooter>
+      )}
     </Sidebar>
   );
 }
