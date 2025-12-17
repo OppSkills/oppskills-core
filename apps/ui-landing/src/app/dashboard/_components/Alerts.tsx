@@ -34,20 +34,18 @@ export default function Alerts() {
                 {alertsData.map((alert, index) => (
                     <div key={index} className="flex justify-between items-center p-4 rounded-[12px] border border-border/60 bg-white hover:border-primary/30 transition-colors">
                         <div className="flex flex-col gap-1 max-w-[70%]">
-                            <h3 className="font-semibold text-foreground text-sm">{alert.title}</h3>
-                            <p className="text-[10px] text-muted-foreground line-clamp-2 leading-tight">
+                            <p className="font-semibold text-foreground text-md">{alert.title}</p>
+                            <p className="text-xs text-neutral-600 line-clamp-2 leading-tight">
                                 {alert.subtitle}
                             </p>
                         </div>
 
-                        <div className="flex flex-col items-end gap-2">
-                            {/* Evaluation Badge - Purple */}
-                            <div className="bg-purple-100 text-purple-700 text-[10px] font-medium px-3 py-1 rounded w-fit text-center min-w-[70px]">
-                                Evaluation
+                        <div className="flex flex-col items-end rounded-lg border overflow-hidden text-xs border-primary-300">
+                            <div className="bg-primary-200 text-primary-600 px-4 py-1 border-bottom border-primary-300">
+                                <p>Evaluation</p>
                             </div>
-                            {/* Round Badge - White with Border */}
-                            <div className="bg-white border text-zinc-600 text-[10px] font-medium px-3 py-1 rounded-full w-fit text-center min-w-[70px]">
-                                Round 1
+                            <div className="px-4 py-1 flex justify-center w-full text-primary-900 text-sm">
+                                <p>Stage 1</p>
                             </div>
                         </div>
                     </div>

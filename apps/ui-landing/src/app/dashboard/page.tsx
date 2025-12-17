@@ -78,32 +78,27 @@ export default async function page() {
             <MotionItem key={index}>
 
               <AnalyticCard
-                className={`${item.type === "highlight" ? "bg-[radial-gradient(circle_at_top_left,var(--color-primary)_0%,var(--color-foreground)_50%)] text-primary-foreground" : "bg-background"}`}
+                className={`${item.type === "highlight" ? "bg-[radial-gradient(circle_at_top_left,var(--color-primary-700)_0%,var(--color-primary-900)_70%)] text-primary-foreground" : "bg-background"}`}
               >
-                <div>
+                <div className="flex flex-col md:gap-6">
                   <p className={`text-base font-medium ${item.type === "highlight" ? "text-purple-200" : "text-gray-700"}`}>
                     {item.title}
                   </p>
-                  <h3 className="text-5xl font-bold mt-4 tracking-tight">
+                  <h3 className="text-5xl font-bold tracking-tight">
                     {item.value}
                   </h3>
-                </div>
 
-                <div className="flex justify-between w-full items-center mt-auto">
-                  <p
-                    className={`text-xs font-medium ${item.type === "normal" ? "text-purple-700" : "text-purple-200"
-                      }`}
-                  >
-                    {item.badge}
-                  </p>
-                  <Badge
-                    className={`min-w-[50px] h-7 flex items-center justify-center text-xs font-bold rounded-full ${item.type === "highlight"
-                      ? "bg-purple-500/30 text-white hover:bg-purple-500/40"
-                      : "bg-[#2A003D] text-white hover:bg-[#2A003D]/90"
-                      }`}
-                  >
-                    {item.badgeValue}
-                  </Badge>
+                  <div className="flex justify-between w-full items-center mt-auto">
+                    <p
+                      className={`text-xs font-medium ${item.type === "normal" ? "text-purple-700" : "text-purple-200"
+                        }`}
+                    >
+                      {item.badge}
+                    </p>
+                    <Badge variant={item.type === "highlight" ? "default" : "gradient"}>
+                      {item.badgeValue}
+                    </Badge>
+                  </div>
                 </div>
               </AnalyticCard>
             </MotionItem>

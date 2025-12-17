@@ -50,24 +50,25 @@ export default function RecentListing() {
                             </div>
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                         </div>
-
-                        <div className="flex-1 flex flex-col justify-center">
-                            <h3 className="font-semibold text-foreground text-sm">
-                                {item.name}
-                            </h3>
-                            <p className="text-[10px] text-muted-foreground line-clamp-2 mt-1">
-                                {item.university}
-                            </p>
-                        </div>
-
-                        <div className="flex sm:flex-col gap-2 justify-center min-w-[100px]">
-                            <div className="flex items-center justify-between bg-zinc-100 rounded px-2 py-1">
-                                <span className="text-[10px] font-semibold text-zinc-600">Applied</span>
-                                <span className="text-[10px] font-bold text-zinc-800">{item.applied}</span>
+                        <div className="flex gap-4 md:gap-6">
+                            <div className="flex-1 flex flex-col justify-center">
+                                <p className="font-semibold text-neutral-800">
+                                    {item.name}
+                                </p>
+                                <p className="text-xs text-neutral-600 line-clamp-2 mt-1">
+                                    {item.university}
+                                </p>
                             </div>
-                            <div className="flex items-center justify-between bg-zinc-100 rounded px-2 py-1">
-                                <span className="text-[10px] font-semibold text-zinc-600">Finalized</span>
-                                <span className="text-[10px] font-bold text-zinc-800">{item.finalized}</span>
+
+                            <div className="flex sm:flex-col gap-2 justify-center min-w-[100px]">
+                                <div className="flex items-center justify-between bg-neutral-200 rounded-sm px-2 py-1">
+                                    <span className="text-xs text-primary-800">Applied</span>
+                                    <span className="text-xs text-primary-800">{item.applied}</span>
+                                </div>
+                                <div className="flex items-center justify-between bg-neutral-200 rounded-sm px-2 py-1">
+                                    <span className="text-xs text-primary-800">Finalized</span>
+                                    <span className="text-xs text-primary-800">{item.finalized}</span>
+                                </div>
                             </div>
                         </div>
                     </div>

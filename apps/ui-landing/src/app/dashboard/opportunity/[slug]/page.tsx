@@ -76,7 +76,7 @@ export default async function page() {
           {analyticData.map((item, index) => (
             <MotionItem key={index}>
               <AnalyticCard
-                className={`${item.type === "highlight" ? "bg-[radial-gradient(circle_at_top_left,var(--color-primary)_0%,var(--color-foreground)_50%)] text-primary-foreground" : "bg-background"}`}
+                className={`${item.type === "highlight" ? "bg-[radial-gradient(circle_at_top_left,var(--color-primary-700)_0%,var(--color-primary-900)_70%)] text-primary-foreground" : "bg-background"}`}
               >
                 <p className="text-[16px] xl:text-[20px]">{item.title}</p>
                 <h3 className="text-3xl xl:text-4xl font-semibold py-4 xl:py-5">
@@ -88,9 +88,7 @@ export default async function page() {
                   >
                     {item.badge}
                   </p>
-                  <Badge
-                    className={`min-w-[42px] text-xs rounded-full bg-linear-to-r border-0 ${item.type === "normal" ? "from-primary to-foreground" : "from-primary/20 to-foreground/50"}`}
-                  >
+                  <Badge variant={item.type === "highlight" ? "default" : "gradient"}>
                     {item.badgeValue}
                   </Badge>
                 </div>
