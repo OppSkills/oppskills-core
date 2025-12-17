@@ -1,0 +1,113 @@
+name: Run Prisma migrations on EC2 (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "ECR image tag to use (default: latest)"
+        required: false
+        type: string
+
+concurrency:
+  group: "run-migrations-ec2"
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: "us-east-1"
+  ECR_REGISTRY: "443512646680.dkr.ecr.us-east-1.amazonaws.com"
+  ECR_REPOSITORY: "oppskills-core"
+  AWS_SECRETS_ID: "oppskills-env"
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run migrations on EC2 via SSH
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          EC2_SSH_PORT: ${{ secrets.EC2_SSH_PORT }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${EC2_HOST}" ]; then
+            echo "Missing required secret: EC2_HOST"
+            exit 1
+          fi
+          if [ -z "${EC2_USER}" ]; then
+            echo "Missing required secret: EC2_USER"
+            exit 1
+          fi
+          if [ -z "${EC2_SSH_PRIVATE_KEY}" ]; then
+            echo "Missing required secret: EC2_SSH_PRIVATE_KEY"
+            exit 1
+          fi
+
+          SSH_PORT="${EC2_SSH_PORT:-22}"
+
+          TAG="${{ inputs.image_tag }}"
+          if [ -z "${TAG}" ]; then
+            TAG="latest"
+          fi
+
+          ECR_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${TAG}"
+          echo "Using image: ${ECR_IMAGE}"
+
+          mkdir -p "${HOME}/.ssh"
+          chmod 700 "${HOME}/.ssh"
+          echo "${EC2_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/id_rsa"
+          chmod 600 "${HOME}/.ssh/id_rsa"
+          ssh-keyscan -p "${SSH_PORT}" -H "${EC2_HOST}" >> "${HOME}/.ssh/known_hosts"
+          chmod 644 "${HOME}/.ssh/known_hosts"
+
+          ssh -p "${SSH_PORT}" "${EC2_USER}@${EC2_HOST}" \
+            "AWS_REGION='${AWS_REGION}' \
+             ECR_REGISTRY='${ECR_REGISTRY}' \
+             ECR_IMAGE='${ECR_IMAGE}' \
+             AWS_SECRETS_ID='${AWS_SECRETS_ID}' \
+             bash -s" <<'REMOTE'
+          set -euo pipefail
+
+          command -v aws >/dev/null 2>&1 || (echo "aws cli not installed" && exit 1)
+          command -v docker >/dev/null 2>&1 || (echo "docker not installed" && exit 1)
+
+          USE_SUDO_DOCKER="0"
+          if ! docker info >/dev/null 2>&1; then
+            if command -v sudo >/dev/null 2>&1 && sudo -n docker info >/dev/null 2>&1; then
+              USE_SUDO_DOCKER="1"
+            else
+              echo "Docker is installed but this user cannot access /var/run/docker.sock."
+              exit 1
+            fi
+          fi
+
+          docker_cmd() {
+            if [ "${USE_SUDO_DOCKER}" = "1" ]; then
+              sudo -n docker "$@"
+            else
+              docker "$@"
+            fi
+          }
+
+          aws ecr get-login-password --region "${AWS_REGION}" | docker_cmd login --username AWS --password-stdin "${ECR_REGISTRY}"
+          docker_cmd pull "${ECR_IMAGE}"
+
+          # Run ONLY the migration command (no long-running server).
+          docker_cmd run --rm \
+            -e NODE_ENV=production \
+            -e AWS_REGION="${AWS_REGION}" \
+            -e AWS_SECRETS_ID="${AWS_SECRETS_ID}" \
+            --entrypoint sh \
+            "${ECR_IMAGE}" \
+            -lc "node scripts/load-secrets.mjs && pnpm exec prisma migrate deploy --schema packages/database/prisma/schema.prisma"
+          REMOTE
+
+

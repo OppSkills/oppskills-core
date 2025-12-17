@@ -73,9 +73,52 @@ Loader file: `scripts/load-secrets.mjs`
 
 By default the deploy workflow starts the container with:
 
-- `RUN_MIGRATIONS=true`
+- `RUN_MIGRATIONS=false`
 
-If you don’t want migrations on every deploy, set `RUN_MIGRATIONS=false` in the workflow.
+If you want to run migrations, trigger the deploy workflow manually (`workflow_dispatch`) with:
+
+- `run_migrations=true`
+
+Or use the dedicated manual workflow:
+
+- `.github/workflows/run-migrations-ec2.yml`
+
+### Prisma P3009 (failed migration) runbook
+
+If you see:
+
+- `Error: P3009 migrate found failed migrations in the target database`
+
+it means a previous migration **started and failed** on the database, and Prisma will not apply new migrations until it’s resolved.
+
+**Step 1: stop the container crash loop**
+
+- Ensure deploy is running with `RUN_MIGRATIONS=false` (default now).
+
+**Step 2: find the failing migration and root error**
+
+The failing migration name in your logs is:
+
+- `20251106112805_oppskills`
+
+To see the underlying SQL error, connect to the DB and inspect Prisma’s migrations table:
+
+- Table: `_prisma_migrations`
+
+Look at the row for `migration_name='20251106112805_oppskills'` and check `logs`, `finished_at`, `rolled_back_at`.
+
+**Step 3: resolve the migration**
+
+Use `prisma migrate resolve` depending on what happened:
+
+- If the migration **did not actually apply** (no schema changes): mark it rolled back:
+  - `pnpm -C packages/database exec prisma migrate resolve --rolled-back "20251106112805_oppskills" --schema packages/database/prisma/schema.prisma`
+- If the migration **partially applied**: fix the DB manually (or restore from backup), then mark it applied:
+  - `pnpm -C packages/database exec prisma migrate resolve --applied "20251106112805_oppskills" --schema packages/database/prisma/schema.prisma`
+
+**Step 4: run migrations**
+
+Run the manual workflow `.github/workflows/run-migrations-ec2.yml` (or deploy with `run_migrations=true`).
 
 ## Local build
 

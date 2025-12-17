@@ -20,6 +20,14 @@ on:
         description: "ECR image tag to deploy (default: current commit SHA)"
         required: false
         type: string
+      run_migrations:
+        description: "Run `prisma migrate deploy` on container start (default: false)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 concurrency:
   group: "deploy-backend-ec2"
@@ -32,6 +40,9 @@ env:
   CONTAINER_NAME: "oppskills-backend"
   CONTAINER_PORT: "3001"
   AWS_SECRETS_ID: "oppskills-env"
+  # IMPORTANT: leave this disabled by default. Failed production migrations (P3009) will crash the container
+  # and put it into a restart loop. Use workflow_dispatch with run_migrations=true once migration state is healthy.
+  RUN_MIGRATIONS: "${{ github.event.inputs.run_migrations || 'false' }}"
 
 jobs:
   build_and_push:
@@ -132,6 +143,7 @@ jobs:
              CONTAINER_NAME='${CONTAINER_NAME}' \
              CONTAINER_PORT='${CONTAINER_PORT}' \
              AWS_SECRETS_ID='${AWS_SECRETS_ID}' \
+             RUN_MIGRATIONS='${RUN_MIGRATIONS}' \
              bash -s" <<'REMOTE'
           set -euo pipefail
 
@@ -141,10 +153,10 @@ jobs:
           # Resolve a docker command that works for this user:
           # - Prefer plain `docker`
           # - Fall back to `sudo -n docker` (requires NOPASSWD sudo)
-          DOCKER_BIN=(docker)
+          USE_SUDO_DOCKER="0"
           if ! docker info >/dev/null 2>&1; then
             if command -v sudo >/dev/null 2>&1 && sudo -n docker info >/dev/null 2>&1; then
-              DOCKER_BIN=(sudo -n docker)
+              USE_SUDO_DOCKER="1"
             else
               echo "Docker is installed but this user cannot access /var/run/docker.sock."
               echo "Fix options: add user to docker group OR allow sudo docker (NOPASSWD) OR run workflow with a different SSH user."
@@ -152,14 +164,22 @@ jobs:
             fi
           fi
 
-          aws ecr get-login-password --region "${AWS_REGION}" | "${DOCKER_BIN[@]}" login --username AWS --password-stdin "${ECR_REGISTRY}"
-          "${DOCKER_BIN[@]}" pull "${ECR_IMAGE}"
+          docker_cmd() {
+            if [ "${USE_SUDO_DOCKER}" = "1" ]; then
+              sudo -n docker "$@"
+            else
+              docker "$@"
+            fi
+          }
 
-          if "${DOCKER_BIN[@]}" ps -a --format "{{.Names}}" | grep -qx "${CONTAINER_NAME}"; then
-            "${DOCKER_BIN[@]}" rm -f "${CONTAINER_NAME}"
+          aws ecr get-login-password --region "${AWS_REGION}" | docker_cmd login --username AWS --password-stdin "${ECR_REGISTRY}"
+          docker_cmd pull "${ECR_IMAGE}"
+
+          if docker_cmd ps -a --format "{{.Names}}" | grep -qx "${CONTAINER_NAME}"; then
+            docker_cmd rm -f "${CONTAINER_NAME}"
           fi
 
-          "${DOCKER_BIN[@]}" run -d --restart unless-stopped \
+          docker_cmd run -d --restart unless-stopped \
             --name "${CONTAINER_NAME}" \
             -p "${CONTAINER_PORT}:${CONTAINER_PORT}" \
             -e NODE_ENV=production \
@@ -167,10 +187,10 @@ jobs:
             -e AWS_REGION="${AWS_REGION}" \
             -e AWS_SECRETS_ID="${AWS_SECRETS_ID}" \
             -e RUN_SECRETS_LOADER=true \
-            -e RUN_MIGRATIONS=true \
+            -e RUN_MIGRATIONS="${RUN_MIGRATIONS}" \
             "${ECR_IMAGE}"
 
-          "${DOCKER_BIN[@]}" image prune -f >/dev/null 2>&1 || true
+          docker_cmd image prune -f >/dev/null 2>&1 || true
           REMOTE
 
           echo "SSH deploy completed."
