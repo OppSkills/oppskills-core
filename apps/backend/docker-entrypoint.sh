@@ -1,37 +1,36 @@
-#!/bin/sh
-#
+#!/usr/bin/env sh
+
 # Backend container entrypoint
 #
 # Responsibilities:
-# - Generate production `.env` files via `load-secrets.mts`
-#   - /app/.env (Nest ConfigModule loads this when NODE_ENV=production)
-#   - /app/packages/database/.env (Prisma uses this for migrations)
-# - Optionally run Prisma migrations (RUN_MIGRATIONS=true)
-# - Then exec the passed command (the backend server by default)
+# 1) (Optional) Load runtime secrets from AWS Secrets Manager -> writes /app/.env and /app/packages/database/.env
+# 2) (Optional) Run Prisma migrations (deploy-safe)
+# 3) Start NestJS backend
 #
 # Notes:
-# - This script is intentionally POSIX sh compatible (Alpine uses BusyBox `sh`).
-# - If secrets cannot be loaded, we fail fast to avoid running with missing config.
+# - This expects the container to run with an EC2 instance role (or ECS task role) that can read the secret.
+# - This script must be idempotent: you can run it repeatedly on deploys.
 
 set -eu
 
-echo "[entrypoint] NODE_ENV=${NODE_ENV:-}"
-echo "[entrypoint] AWS_REGION=${AWS_REGION:-}"
-
-# Load secrets unless explicitly running in local mode.
-# The load script itself also guards on NODE_ENV.
-echo "[entrypoint] Loading secrets..."
-pnpm load-secrets
+if [ "${RUN_SECRETS_LOADER:-true}" = "true" ]; then
+  echo "[entrypoint] Loading secrets from AWS Secrets Manager..."
+  node scripts/load-secrets.mjs
+else
+  echo "[entrypoint] Skipping secrets loader (RUN_SECRETS_LOADER=false)"
+fi
 
 if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
   echo "[entrypoint] Running Prisma migrations (migrate deploy)..."
-  # Use the pinned Prisma CLI installed in the image and point it at the schema.
-  prisma migrate deploy --schema packages/database/prisma/schema.prisma
+
+  # Prisma will read DATABASE_URL from /app/packages/database/.env (written by secrets loader).
+  # We explicitly set the schema path for safety.
+  pnpm exec prisma migrate deploy --schema packages/database/prisma/schema.prisma
 else
-  echo "[entrypoint] RUN_MIGRATIONS is not true; skipping migrations."
+  echo "[entrypoint] Skipping migrations (RUN_MIGRATIONS=false)"
 fi
 
-echo "[entrypoint] Starting application: $*"
-exec "$@"
+echo "[entrypoint] Starting backend..."
+exec node apps/backend/dist/main.js
 
 

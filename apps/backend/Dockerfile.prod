@@ -1,115 +1,59 @@
-################################################################################
-# Backend Production Dockerfile (EC2/ECR friendly)
-#
-# - Builds the monorepo packages needed by the backend (@oppskills/db, @oppskills/types, @oppskills/backend)
-# - Runs `load-secrets.mts` at container start to generate:
-#   - /app/.env                     (used by Nest ConfigModule in production)
-#   - /app/packages/database/.env   (used by Prisma migrations/client)
-# - Does NOT require Redis/Postgres containers (Neon Postgres is remote via DATABASE_URL)
-################################################################################
+# syntax=docker/dockerfile:1.7
 
-# =============================================================================
-# Stage 1: Builder - Install dependencies and build required packages
-# =============================================================================
-FROM node:22-alpine AS builder
+##
+# Production Docker image for OppSkills backend (NestJS) in this monorepo.
+#
+# Build context: repository root
+# Build command example:
+#   docker build -f apps/backend/Dockerfile.prod -t oppskills-backend:local .
+#
+# Runtime:
+# - Starts via `apps/backend/docker-entrypoint.sh`
+# - Loads secrets from AWS Secrets Manager at boot (EC2/ECS role)
+# - Optionally runs Prisma migrations
+##
+
+FROM node:22-alpine AS base
 
 WORKDIR /app
 
-# Build dependencies + tooling for monorepo build
-RUN apk add --no-cache \
-    openssl \
-    python3 \
-    make \
-    g++ \
-  && corepack enable \
-  && corepack prepare pnpm@10.5.2 --activate \
-  && pnpm add -g turbo tsx
+# Needed by some native deps; also helps Prisma on Alpine.
+RUN apk add --no-cache libc6-compat openssl
 
-# Copy only package manifests first for better layer caching
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-COPY apps/backend/package.json ./apps/backend/package.json
-COPY packages/database/package.json ./packages/database/package.json
-COPY packages/types/package.json ./packages/types/package.json
+# Ensure pnpm is available at runtime (no network fetch during container boot).
+# Repo pins pnpm in `package.json` as `pnpm@10.5.2`.
+RUN corepack enable && corepack prepare pnpm@10.5.2 --activate
 
-# Install all dependencies (dev deps required for build)
+FROM base AS deps
+
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
+COPY apps/backend/package.json apps/backend/package.json
+COPY packages/database/package.json packages/database/package.json
+COPY packages/types/package.json packages/types/package.json
+
 RUN pnpm install --frozen-lockfile
 
-# Copy source code
-COPY apps/backend ./apps/backend
-COPY packages ./packages
-COPY load-secrets.mts ./load-secrets.mts
+FROM deps AS build
 
-# Generate Prisma client before TS builds
-RUN cd packages/database && pnpm exec prisma generate
+# Copy the full repo after deps are installed for better layer caching.
+COPY . .
 
-# Build packages in dependency order
-RUN pnpm build --filter=@oppskills/db
-RUN pnpm build --filter=@oppskills/types
-RUN pnpm build --filter=@oppskills/backend
+# Build backend + its workspace deps (db/types) via turbo.
+RUN pnpm build:backend
 
-# =============================================================================
-# Stage 2: Runtime - Copy only what we need to run
-# =============================================================================
-FROM node:22-alpine AS runtime
-
-WORKDIR /app
-
-# Runtime deps: openssl (node tls), curl (healthcheck), tsx (load-secrets.mts), pnpm (scripts)
-RUN apk add --no-cache \
-    openssl \
-    curl \
-  && corepack enable \
-  && corepack prepare pnpm@10.5.2 --activate \
-  && pnpm add -g tsx
-
-# Prisma CLI is required at runtime (migrations) and for generating the Prisma client
-# during the image build. We pin it to the same major/minor used by the DB package.
-RUN pnpm add -g prisma@6.16.1
-
-# Copy manifests
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-COPY apps/backend/package.json ./apps/backend/package.json
-COPY packages/database/package.json ./packages/database/package.json
-COPY packages/types/package.json ./packages/types/package.json
-
-# Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile --config.ignore-scripts=false
-
-# Prisma client runtime artifacts location under pnpm is not stable to copy
-# between stages (it may live under the pnpm virtual store, symlinked in).
-# Instead, re-run `prisma generate` in the runtime stage after installing
-# production deps. This reliably creates the required `.prisma` artifacts.
-COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
-RUN prisma generate --schema packages/database/prisma/schema.prisma
-
-# Copy built artifacts
-COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
-COPY --from=builder /app/packages/database/dist ./packages/database/dist
-COPY --from=builder /app/packages/types/dist ./packages/types/dist
-
-# Copy secrets loader + entrypoint
-COPY --from=builder /app/load-secrets.mts ./load-secrets.mts
-COPY apps/backend/docker-entrypoint.sh ./docker-entrypoint.sh
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs \
-  && adduser -S nestjs -u 1001 \
-  && chmod +x /app/docker-entrypoint.sh \
-  && chown -R nestjs:nodejs /app
-
-USER nestjs
+FROM base AS runner
 
 ENV NODE_ENV="production"
+ENV PORT="3001"
+
+# Copy built app + node_modules from build stage
+COPY --from=build /app /app
+
+# Ensure entrypoint is executable
+RUN chmod +x /app/apps/backend/docker-entrypoint.sh
+
 EXPOSE 3001
 
-# Health endpoint exists at GET /health (see apps/backend/src/app.controller.ts)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -fsS http://localhost:3001/health || exit 1
-
-# Entrypoint loads secrets (and optionally runs migrations), then execs CMD
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
-
-# Default command: start backend
-CMD ["node", "apps/backend/dist/main.js"]
+ENTRYPOINT ["/app/apps/backend/docker-entrypoint.sh"]
 
 

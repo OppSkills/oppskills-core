@@ -1,70 +1,13 @@
-# Node modules (will be installed in container)
 node_modules
-**/node_modules
-npm-debug.log
-yarn-error.log
-pnpm-debug.log
-
-# Build artifacts (will be built in container)
-dist
-**/dist
 .turbo
-**/.turbo
 .next
-**/.next
-
-# Development and testing
-.git
-.github
-*.test.ts
-*.spec.ts
-test
-**/test
+dist
 coverage
-**/.coverage
-**/__tests__
-
-# Environment files (use AWS Secrets Manager)
+.vercel
 .env
 .env.*
-**/.env
-**/.env.*
-!.env.example
-
-# Documentation
-README.md
-CLAUDE.md
-*.md
-docs
-
-# IDE and editor files
-.vscode
-.idea
-*.swp
-*.swo
-*~
+**/*.log
+**/*.pem
 .DS_Store
 
-# Docker files
-Dockerfile*
-docker-compose.yml
-.dockerignore
 
-# CI/CD
-.github
-
-# Logs
-*.log
-logs
-**/logs
-
-# Vercel
-.vercel
-.verceldeployments
-
-# Prisma
-**/migrations
-
-# Misc
-*.tsbuildinfo
-.eslintcache

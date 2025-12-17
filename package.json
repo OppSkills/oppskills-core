@@ -16,7 +16,7 @@
     "db:push": "cd packages/database && pnpm exec prisma db push",
     "db:studio": "cd packages/database && pnpm exec prisma studio",
     "db:generate": "cd packages/database && pnpm exec prisma generate",
-    "load-secrets": "echo 'loading secrets' && tsx load-secrets.mts",
+    "load-secrets": "echo \"loading secrets\" && node scripts/load-secrets.mjs",
     "start:backend": "node apps/backend/dist/main.js",
     "start:backend:with-migrations": "pnpm -C packages/database exec prisma migrate deploy && node apps/backend/dist/main.js",
     "start:ui-landing": "turbo run start --filter=ui-landing",

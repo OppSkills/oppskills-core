@@ -1,4 +1,4 @@
-name: Deploy Backend to EC2 (ECR)
+name: Deploy backend to EC2 (ECR)
 
 on:
   push:
@@ -7,26 +7,37 @@ on:
     paths:
       - "apps/backend/**"
       - "packages/**"
+      - "scripts/load-secrets.mjs"
       - "load-secrets.mts"
-      - "apps/backend/Dockerfile.prod"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
       - ".github/workflows/deploy-backend-ec2.yml"
   workflow_dispatch:
     inputs:
-      skip_migrations:
-        description: "Skip database migrations"
+      image_tag:
+        description: "ECR image tag to deploy (default: current commit SHA)"
         required: false
-        default: "false"
+        type: string
+
+concurrency:
+  group: "deploy-backend-ec2"
+  cancel-in-progress: true
 
 env:
   AWS_REGION: "us-east-1"
-  AWS_ACCOUNT_ID: "443512646680"
+  ECR_REGISTRY: "443512646680.dkr.ecr.us-east-1.amazonaws.com"
+  ECR_REPOSITORY: "oppskills-core"
+  CONTAINER_NAME: "oppskills-backend"
+  CONTAINER_PORT: "3001"
+  AWS_SECRETS_ID: "oppskills-env"
 
 jobs:
-  build-and-deploy:
+  build_and_push:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,77 +49,107 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to ECR
-        id: login-ecr
+      - name: Login to Amazon ECR
+        id: login_ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and push image
-        id: build
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-          IMAGE_TAG: ${{ github.sha }}
+      - name: Compute image tags
+        id: meta
         run: |
-          set -eu
-          docker build -f apps/backend/Dockerfile.prod -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
-          docker tag "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
-          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          TAG="${{ inputs.image_tag }}"
+          if [ -z "${TAG}" ]; then
+            TAG="${GITHUB_SHA}"
+          fi
 
-      - name: Deploy on EC2 (pull + run container)
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
-          AWS_ACCOUNT_ID: ${{ env.AWS_ACCOUNT_ID }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-          IMAGE_TAG: ${{ github.sha }}
-          RUN_MIGRATIONS: ${{ github.event.inputs.skip_migrations == 'true' && 'false' || 'true' }}
+          IMAGE="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${TAG}"
+          echo "image=${IMAGE}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT }}
-          envs: AWS_REGION,AWS_ACCOUNT_ID,ECR_REPOSITORY,IMAGE_TAG,RUN_MIGRATIONS
-          script: |
-            set -eu
+          context: .
+          file: apps/backend/Dockerfile.prod
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
 
-            if ! command -v aws >/dev/null 2>&1; then
-              echo "AWS CLI is required on EC2. Install it first."
-              exit 1
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy on EC2 via SSH
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          EC2_SSH_PORT: ${{ secrets.EC2_SSH_PORT }}
+          ECR_IMAGE: ${{ needs.build_and_push.outputs.image }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${EC2_HOST}" ]; then
+            echo "Missing required secret: EC2_HOST"
+            exit 1
+          fi
+          if [ -z "${EC2_USER}" ]; then
+            echo "Missing required secret: EC2_USER"
+            exit 1
+          fi
+          if [ -z "${EC2_SSH_PRIVATE_KEY}" ]; then
+            echo "Missing required secret: EC2_SSH_PRIVATE_KEY"
+            exit 1
+          fi
+
+          SSH_PORT="${EC2_SSH_PORT:-22}"
+
+          mkdir -p "${HOME}/.ssh"
+          chmod 700 "${HOME}/.ssh"
+
+          echo "${EC2_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/id_rsa"
+          chmod 600 "${HOME}/.ssh/id_rsa"
+
+          # Add host key to known_hosts (prevents interactive prompt).
+          # If you want strict pinning, we can switch this to a stored `EC2_KNOWN_HOSTS` secret.
+          ssh-keyscan -p "${SSH_PORT}" -H "${EC2_HOST}" >> "${HOME}/.ssh/known_hosts"
+          chmod 644 "${HOME}/.ssh/known_hosts"
+
+          echo "Deploying image: ${ECR_IMAGE}"
+
+          ssh -p "${SSH_PORT}" "${EC2_USER}@${EC2_HOST}" "bash -lc '
+            set -euo pipefail
+
+            command -v docker >/dev/null 2>&1 || (echo \"docker not installed\" && exit 1)
+            command -v aws >/dev/null 2>&1 || (echo \"aws cli not installed\" && exit 1)
+
+            aws ecr get-login-password --region \"${AWS_REGION}\" | docker login --username AWS --password-stdin \"${ECR_REGISTRY}\"
+            docker pull \"${ECR_IMAGE}\"
+
+            if docker ps -a --format \"{{.Names}}\" | grep -qx \"${CONTAINER_NAME}\"; then
+              docker rm -f \"${CONTAINER_NAME}\"
             fi
 
-            if ! command -v docker >/dev/null 2>&1; then
-              echo "Docker is required on EC2."
-              exit 1
-            fi
+            docker run -d --restart unless-stopped \
+              --name \"${CONTAINER_NAME}\" \
+              -p \"${CONTAINER_PORT}:${CONTAINER_PORT}\" \
+              -e NODE_ENV=production \
+              -e PORT=\"${CONTAINER_PORT}\" \
+              -e AWS_REGION=\"${AWS_REGION}\" \
+              -e AWS_SECRETS_ID=\"${AWS_SECRETS_ID}\" \
+              -e RUN_SECRETS_LOADER=true \
+              -e RUN_MIGRATIONS=true \
+              \"${ECR_IMAGE}\"
 
-            docker_cmd() { docker "$@"; }
-            if ! docker ps >/dev/null 2>&1; then
-              if command -v sudo >/dev/null 2>&1; then
-                docker_cmd() { sudo docker "$@"; }
-              fi
-            fi
+            docker image prune -f >/dev/null 2>&1 || true
+          '"
 
-            ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-            IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-
-            aws ecr get-login-password --region "${AWS_REGION}" | docker_cmd login --username AWS --password-stdin "${ECR_REGISTRY}"
-            docker_cmd pull "${IMAGE}"
-
-            docker_cmd stop oppskills-backend || true
-            docker_cmd rm oppskills-backend || true
-
-            docker_cmd run -d \
-              --name oppskills-backend \
-              --restart unless-stopped \
-              -p 127.0.0.1:3001:3001 \
-              -e NODE_ENV="production" \
-              -e AWS_REGION="${AWS_REGION}" \
-              -e PORT="3001" \
-              -e RUN_MIGRATIONS="${RUN_MIGRATIONS}" \
-              "${IMAGE}"
-
-            docker_cmd image prune -f
-
-
+          echo "SSH deploy completed."
