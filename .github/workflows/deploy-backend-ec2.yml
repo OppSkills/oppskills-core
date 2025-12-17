@@ -125,45 +125,52 @@ jobs:
 
           echo "Deploying image: ${ECR_IMAGE}"
 
-          ssh -p "${SSH_PORT}" "${EC2_USER}@${EC2_HOST}" "bash -lc '
-            set -euo pipefail
+          ssh -p "${SSH_PORT}" "${EC2_USER}@${EC2_HOST}" \
+            "AWS_REGION='${AWS_REGION}' \
+             ECR_REGISTRY='${ECR_REGISTRY}' \
+             ECR_IMAGE='${ECR_IMAGE}' \
+             CONTAINER_NAME='${CONTAINER_NAME}' \
+             CONTAINER_PORT='${CONTAINER_PORT}' \
+             AWS_SECRETS_ID='${AWS_SECRETS_ID}' \
+             bash -s" <<'REMOTE'
+          set -euo pipefail
 
-            command -v aws >/dev/null 2>&1 || (echo \"aws cli not installed\" && exit 1)
+          command -v aws >/dev/null 2>&1 || (echo "aws cli not installed" && exit 1)
+          command -v docker >/dev/null 2>&1 || (echo "docker not installed" && exit 1)
 
-            # Resolve a docker command that works for this user:
-            # - Prefer plain `docker`
-            # - Fall back to `sudo -n docker` (requires NOPASSWD sudo)
-            command -v docker >/dev/null 2>&1 || (echo \"docker not installed\" && exit 1)
-            DOCKER_BIN=(docker)
-            if ! docker info >/dev/null 2>&1; then
-              if command -v sudo >/dev/null 2>&1 && sudo -n docker info >/dev/null 2>&1; then
-                DOCKER_BIN=(sudo -n docker)
-              else
-                echo \"Docker is installed but this user cannot access /var/run/docker.sock.\"
-                echo \"Fix options: add user to docker group OR allow sudo docker (NOPASSWD) OR run workflow with a different SSH user.\"
-                exit 1
-              fi
+          # Resolve a docker command that works for this user:
+          # - Prefer plain `docker`
+          # - Fall back to `sudo -n docker` (requires NOPASSWD sudo)
+          DOCKER_BIN=(docker)
+          if ! docker info >/dev/null 2>&1; then
+            if command -v sudo >/dev/null 2>&1 && sudo -n docker info >/dev/null 2>&1; then
+              DOCKER_BIN=(sudo -n docker)
+            else
+              echo "Docker is installed but this user cannot access /var/run/docker.sock."
+              echo "Fix options: add user to docker group OR allow sudo docker (NOPASSWD) OR run workflow with a different SSH user."
+              exit 1
             fi
+          fi
 
-            aws ecr get-login-password --region \"${AWS_REGION}\" | \"${DOCKER_BIN[@]}\" login --username AWS --password-stdin \"${ECR_REGISTRY}\"
-            \"${DOCKER_BIN[@]}\" pull \"${ECR_IMAGE}\"
+          aws ecr get-login-password --region "${AWS_REGION}" | "${DOCKER_BIN[@]}" login --username AWS --password-stdin "${ECR_REGISTRY}"
+          "${DOCKER_BIN[@]}" pull "${ECR_IMAGE}"
 
-            if \"${DOCKER_BIN[@]}\" ps -a --format \"{{.Names}}\" | grep -qx \"${CONTAINER_NAME}\"; then
-              \"${DOCKER_BIN[@]}\" rm -f \"${CONTAINER_NAME}\"
-            fi
+          if "${DOCKER_BIN[@]}" ps -a --format "{{.Names}}" | grep -qx "${CONTAINER_NAME}"; then
+            "${DOCKER_BIN[@]}" rm -f "${CONTAINER_NAME}"
+          fi
 
-            \"${DOCKER_BIN[@]}\" run -d --restart unless-stopped \
-              --name \"${CONTAINER_NAME}\" \
-              -p \"${CONTAINER_PORT}:${CONTAINER_PORT}\" \
-              -e NODE_ENV=production \
-              -e PORT=\"${CONTAINER_PORT}\" \
-              -e AWS_REGION=\"${AWS_REGION}\" \
-              -e AWS_SECRETS_ID=\"${AWS_SECRETS_ID}\" \
-              -e RUN_SECRETS_LOADER=true \
-              -e RUN_MIGRATIONS=true \
-              \"${ECR_IMAGE}\"
+          "${DOCKER_BIN[@]}" run -d --restart unless-stopped \
+            --name "${CONTAINER_NAME}" \
+            -p "${CONTAINER_PORT}:${CONTAINER_PORT}" \
+            -e NODE_ENV=production \
+            -e PORT="${CONTAINER_PORT}" \
+            -e AWS_REGION="${AWS_REGION}" \
+            -e AWS_SECRETS_ID="${AWS_SECRETS_ID}" \
+            -e RUN_SECRETS_LOADER=true \
+            -e RUN_MIGRATIONS=true \
+            "${ECR_IMAGE}"
 
-            \"${DOCKER_BIN[@]}\" image prune -f >/dev/null 2>&1 || true
-          '"
+          "${DOCKER_BIN[@]}" image prune -f >/dev/null 2>&1 || true
+          REMOTE
 
           echo "SSH deploy completed."
