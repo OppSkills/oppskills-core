@@ -42,6 +42,17 @@ The SSH deploy step assumes the EC2 instance has:
 - **Docker installed** and the instance user allowed to run it
 - **AWS CLI installed** (used for `aws ecr get-login-password`)
 
+### If deploy fails with: "permission denied while trying to connect to the docker API"
+
+That means your SSH user can’t access Docker’s socket (`/var/run/docker.sock`).
+
+Fix one of these on the EC2 instance:
+
+- **Add the SSH user to the docker group** (then re-login):
+  - `sudo usermod -aG docker <your-user>`
+- **OR allow non-interactive sudo for docker** (so CI can run `sudo -n docker ...`)
+- **OR use a different SSH user** that already has Docker access
+
 ## Runtime configuration
 
 ### Secrets
@@ -74,5 +85,3 @@ From repo root:
 docker build -f apps/backend/Dockerfile.prod -t oppskills-backend:local .
 docker run --rm -p 3001:3001 oppskills-backend:local
 ```
-
-

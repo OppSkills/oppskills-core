@@ -128,17 +128,31 @@ jobs:
           ssh -p "${SSH_PORT}" "${EC2_USER}@${EC2_HOST}" "bash -lc '
             set -euo pipefail
 
-            command -v docker >/dev/null 2>&1 || (echo \"docker not installed\" && exit 1)
             command -v aws >/dev/null 2>&1 || (echo \"aws cli not installed\" && exit 1)
 
-            aws ecr get-login-password --region \"${AWS_REGION}\" | docker login --username AWS --password-stdin \"${ECR_REGISTRY}\"
-            docker pull \"${ECR_IMAGE}\"
-
-            if docker ps -a --format \"{{.Names}}\" | grep -qx \"${CONTAINER_NAME}\"; then
-              docker rm -f \"${CONTAINER_NAME}\"
+            # Resolve a docker command that works for this user:
+            # - Prefer plain `docker`
+            # - Fall back to `sudo -n docker` (requires NOPASSWD sudo)
+            command -v docker >/dev/null 2>&1 || (echo \"docker not installed\" && exit 1)
+            DOCKER_BIN=(docker)
+            if ! docker info >/dev/null 2>&1; then
+              if command -v sudo >/dev/null 2>&1 && sudo -n docker info >/dev/null 2>&1; then
+                DOCKER_BIN=(sudo -n docker)
+              else
+                echo \"Docker is installed but this user cannot access /var/run/docker.sock.\"
+                echo \"Fix options: add user to docker group OR allow sudo docker (NOPASSWD) OR run workflow with a different SSH user.\"
+                exit 1
+              fi
             fi
 
-            docker run -d --restart unless-stopped \
+            aws ecr get-login-password --region \"${AWS_REGION}\" | \"${DOCKER_BIN[@]}\" login --username AWS --password-stdin \"${ECR_REGISTRY}\"
+            \"${DOCKER_BIN[@]}\" pull \"${ECR_IMAGE}\"
+
+            if \"${DOCKER_BIN[@]}\" ps -a --format \"{{.Names}}\" | grep -qx \"${CONTAINER_NAME}\"; then
+              \"${DOCKER_BIN[@]}\" rm -f \"${CONTAINER_NAME}\"
+            fi
+
+            \"${DOCKER_BIN[@]}\" run -d --restart unless-stopped \
               --name \"${CONTAINER_NAME}\" \
               -p \"${CONTAINER_PORT}:${CONTAINER_PORT}\" \
               -e NODE_ENV=production \
@@ -149,7 +163,7 @@ jobs:
               -e RUN_MIGRATIONS=true \
               \"${ECR_IMAGE}\"
 
-            docker image prune -f >/dev/null 2>&1 || true
+            \"${DOCKER_BIN[@]}\" image prune -f >/dev/null 2>&1 || true
           '"
 
           echo "SSH deploy completed."
