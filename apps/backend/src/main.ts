@@ -18,16 +18,50 @@ async function bootstrap() {
     }),
   );
 
+  /**
+   * CORS
+   *
+   * Production frontend: https://oppskills.com
+   * Keep localhost enabled for development.
+   */
+  const allowedOrigins: string[] =
+    process.env.NODE_ENV === 'production'
+      ? ['https://oppskills.com', 'https://www.oppskills.com']
+      : [
+          'http://localhost:3000',
+          'http://127.0.0.1:3000',
+          'https://oppskills.com',
+          'https://www.oppskills.com',
+        ];
+
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ): void => {
+      // Allow same-origin / server-to-server / tools like curl (no Origin header).
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
-    methods: 'GET,POST,PUT,DELETE,PATCH',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   });
 
   // Swagger Configuration
   const config = new DocumentBuilder()
     .setTitle('OppSkills API')
-    .setDescription('OppSkills API Documentation - Manage hackathons, festivals, and teams')
+    .setDescription(
+      'OppSkills API Documentation - Manage hackathons, festivals, and teams',
+    )
     .setVersion('1.0')
     .addBearerAuth(
       {
