@@ -122,8 +122,16 @@ export default function RegistrationQuestionsModal({
         buildVisibleQuestions(getInitialCustom())
     );
 
+    /**
+     * Default state for the "new question" form.
+     * Keep this centralized so resets always use the same initial values.
+     */
+    const initialNewQuestionType: QuestionType = "Text";
+
     const [newQuestionLabel, setNewQuestionLabel] = useState("");
-    const [newQuestionType, setNewQuestionType] = useState<QuestionType>("Text");
+    const [newQuestionType, setNewQuestionType] = useState<QuestionType>(
+        initialNewQuestionType
+    );
     const [newQuestionRequired, setNewQuestionRequired] = useState<boolean>(false);
 
     const customQuestions = useMemo(
@@ -134,6 +142,10 @@ export default function RegistrationQuestionsModal({
     useEffect(() => {
         if (open) {
             setQuestions(buildVisibleQuestions(getInitialCustom()));
+            // Reset the add-question form each time the modal opens.
+            setNewQuestionLabel("");
+            setNewQuestionType(initialNewQuestionType);
+            setNewQuestionRequired(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, initialQuestions, questionsInput]);
@@ -152,12 +164,17 @@ export default function RegistrationQuestionsModal({
 
         setQuestions([...questions, newQuestion]);
         setNewQuestionLabel("");
-        setNewQuestionType("Text");
+        setNewQuestionType(initialNewQuestionType);
         setNewQuestionRequired(false);
     };
 
     const handleDeleteQuestion = (id: string) => {
-        setQuestions(questions.filter((q) => q.id !== id));
+        setQuestions((prev) => {
+            const target = prev.find((q) => q.id === id);
+            // Fixed questions must never be deleted, even if callers/UI change.
+            if (target?.fixed === true) return prev;
+            return prev.filter((q) => q.id !== id);
+        });
     };
 
     const handleUpdateCustomQuestion = (

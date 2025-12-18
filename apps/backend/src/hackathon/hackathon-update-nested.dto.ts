@@ -1,9 +1,16 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsArray, IsInt, IsOptional, Min, ValidateNested } from 'class-validator';
-import type { PrizeBreakdownDto } from '@oppskills/types';
-import { RegistrationFormDto } from '@oppskills/types';
-import { PrizeBreakdownDto as PrizeBreakdownDtoClass } from '@oppskills/types';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Type } from "class-transformer";
+import {
+  IsArray,
+  IsInt,
+  IsOptional,
+  Min,
+  ValidateIf,
+  ValidateNested,
+} from "class-validator";
+import type { PrizeBreakdownDto } from "@oppskills/types";
+import { RegistrationFormDto } from "@oppskills/types";
+import { PrizeBreakdownDto as PrizeBreakdownDtoClass } from "@oppskills/types";
 
 /**
  * Payload to replace the entire registration form definition for a hackathon.
@@ -37,11 +44,12 @@ export class UpdateHackathonPrizeBreakdownDto {
  */
 export class UpdateHackathonMaxTeamsDto {
   @ApiPropertyOptional({
-    description: 'Maximum number of teams (null = unlimited)',
+    description: "Maximum number of teams (null = unlimited)",
     nullable: true,
     minimum: 1,
   })
   @IsOptional()
+  @ValidateIf((o: UpdateHackathonMaxTeamsDto) => o.maxTeams !== null)
   @IsInt()
   @Min(1)
   maxTeams?: number | null;

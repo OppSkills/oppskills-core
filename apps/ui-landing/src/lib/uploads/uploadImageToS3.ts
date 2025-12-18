@@ -16,9 +16,6 @@ export async function uploadImageToS3PresignedPost(input: {
     form.append(k, v);
   }
 
-  // Ensure Content-Type matches the presigned constraint.
-  form.append("Content-Type", input.file.type);
-
   // The file field must be named "file" for S3 POST uploads.
   form.append("file", input.file);
 

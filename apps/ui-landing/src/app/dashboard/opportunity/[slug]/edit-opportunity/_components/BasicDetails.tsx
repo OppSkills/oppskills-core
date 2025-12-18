@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/popover";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -338,6 +339,55 @@ export default function BasicDetails({
             />
           </div>
 
+          {/* End Date & End Time Row (optional) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <div className="h-full">
+                  <InputBlock
+                    icon={<CalendarIcon className="w-6 h-6" />}
+                    label={
+                      formData.eventEndDate
+                        ? format(formData.eventEndDate, "d MMM yyyy")
+                        : "Select End Date"
+                    }
+                    subLabel="Hackathon End Date (optional)"
+                    className="bg-surface h-full"
+                  />
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.eventEndDate}
+                  onSelect={(date) =>
+                    setFormData({ ...formData, eventEndDate: date })
+                  }
+                />
+              </PopoverContent>
+            </Popover>
+
+            <InputBlock
+              icon={<Clock className="w-6 h-6" />}
+              label={
+                <input
+                  type="time"
+                  value={formData.eventTimeTo ?? ""}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setFormData({
+                      ...formData,
+                      eventTimeTo: next.trim().length > 0 ? next : undefined,
+                    });
+                  }}
+                  className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
+                />
+              }
+              subLabel="Hackathon End Time (optional)"
+              className="bg-surface lg:w-full md:w-full"
+            />
+          </div>
+
           {/* Location */}
           <Dialog>
             <DialogTrigger asChild>
@@ -372,7 +422,9 @@ export default function BasicDetails({
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button">Done</Button>
+                <DialogClose asChild>
+                  <Button type="button">Done</Button>
+                </DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -409,7 +461,9 @@ export default function BasicDetails({
                 }
               />
               <DialogFooter>
-                <Button type="button">Done</Button>
+                <DialogClose asChild>
+                  <Button type="button">Done</Button>
+                </DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>

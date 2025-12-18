@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { S3Client } from "@aws-sdk/client-s3";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
@@ -83,7 +87,8 @@ export class MediaService {
   private getRequiredEnv(key: string): string {
     const value = this.configService.get<string>(key);
     if (typeof value !== "string" || value.trim().length === 0) {
-      throw new BadRequestException(`Missing required env var: ${key}`);
+      // Misconfiguration is a server-side concern; return 500 to avoid blaming clients.
+      throw new InternalServerErrorException(`Missing required env var: ${key}`);
     }
     return value.trim();
   }

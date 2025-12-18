@@ -53,6 +53,7 @@ import Image from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
+import { cn } from "@/lib/utils";
 import type {
   CreateFestivalDto,
   CreateHackathonDto,

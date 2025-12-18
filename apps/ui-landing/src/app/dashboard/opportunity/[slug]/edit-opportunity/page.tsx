@@ -109,8 +109,18 @@ export interface FormData {
   eventFestVisibility: string;
   eventName: string;
   eventDate: Date | undefined;
+  /**
+   * Optional end date for multi-day events.
+   * - When omitted, endDate falls back to `eventDate` when saving.
+   */
+  eventEndDate: Date | undefined;
   eventLocation: string;
   eventTimeFrom: string;
+  /**
+   * Optional end time (HH:mm).
+   * - When omitted, endDate falls back to `eventTimeFrom` when saving.
+   */
+  eventTimeTo: string | undefined;
   eventDescription: string;
   eventThumbnail: string;
   eventRegisterBy: Date | undefined;
@@ -404,6 +414,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
     : null;
 
   const startDate = getDate(hackathon["startDate"]);
+  const endDate = getDate(hackathon["endDate"]);
   const registrationDeadline = getDate(hackathon["registrationDeadline"]);
   const maxTeamsRaw = hackathon["maxTeams"];
   const maxTeamsValue =
@@ -540,8 +551,10 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
     eventFestVisibility: fromVisibility(getString(hackathon, "visibility")),
     eventName: getString(hackathon, "name") ?? "",
     eventDate: startDate,
+    eventEndDate: endDate,
     eventLocation: location,
     eventTimeFrom: startDate ? toTimeHHmm(startDate) : "09:00",
+    eventTimeTo: endDate ? toTimeHHmm(endDate) : undefined,
     eventDescription: getString(hackathon, "description") ?? "",
     eventThumbnail: getString(hackathon, "bannerImageUrl") ?? "",
     eventRegisterBy: registrationDeadline,
@@ -647,8 +660,10 @@ export default function EditOpportunityPage() {
     eventFestVisibility: "Public",
     eventName: "",
     eventDate: undefined,
+    eventEndDate: undefined,
     eventLocation: "",
     eventTimeFrom: "09:00",
+    eventTimeTo: undefined,
     eventDescription: "",
     eventThumbnail: "",
     eventRegisterBy: undefined,
@@ -728,7 +743,10 @@ export default function EditOpportunityPage() {
           ? combineDateAndTimeToIso(formData.eventDate, formData.eventTimeFrom)
           : undefined,
         endDate: formData.eventDate
-          ? combineDateAndTimeToIso(formData.eventDate, formData.eventTimeFrom)
+          ? combineDateAndTimeToIso(
+              formData.eventEndDate ?? formData.eventDate,
+              formData.eventTimeTo ?? formData.eventTimeFrom
+            )
           : undefined,
         prizeCertificate:
           typeof formData.prizes.certificateProvided === "boolean"
@@ -849,8 +867,10 @@ export default function EditOpportunityPage() {
                 email: "",
                 phone: "",
               },
-          // Always replace attachments when saving additional info to support clearing.
-          attachments: [],
+          // NOTE: Attachments uploads/edits are not supported in this UI yet.
+          // We intentionally omit `attachments` so the backend preserves existing ones.
+          // TODO: When attachment management is implemented, send attachments intentionally
+          // (replace/clear) with explicit UX to avoid accidental data loss.
         };
         await updateHackathonAdditionalInfo(token, hackathonId, payload);
         savingAdditionalInfoSnapshotRef.current = additionalInfoSnapshot;
@@ -877,6 +897,72 @@ export default function EditOpportunityPage() {
   useEffect(() => {
     latestFormDataRef.current = formData;
   }, [formData]);
+
+  /**
+   * Executes a save immediately (no debounce).
+   * - Used by the normal debounce timer.
+   * - Also used to flush queued saves after an in-flight save finishes.
+   */
+  const runSaveMutation = React.useCallback((): void => {
+    if (saveMutation.isPending) {
+      saveQueuedRef.current = true;
+      return;
+    }
+
+    setAutoSaveStatus("saving");
+    savingSnapshotRef.current = serializeFormData(latestFormDataRef.current);
+
+    saveMutation.mutate(undefined, {
+      onSuccess: () => {
+        if (typeof savingSnapshotRef.current === "string") {
+          lastSavedSnapshotRef.current = savingSnapshotRef.current;
+        }
+        savingSnapshotRef.current = null;
+
+        if (typeof savingRoundsSnapshotRef.current === "string") {
+          lastSavedRoundsSnapshotRef.current = savingRoundsSnapshotRef.current;
+        }
+        savingRoundsSnapshotRef.current = null;
+
+        if (typeof savingPrizeBreakdownSnapshotRef.current === "string") {
+          lastSavedPrizeBreakdownSnapshotRef.current =
+            savingPrizeBreakdownSnapshotRef.current;
+        }
+        savingPrizeBreakdownSnapshotRef.current = null;
+
+        if (typeof savingAdditionalInfoSnapshotRef.current === "string") {
+          lastSavedAdditionalInfoSnapshotRef.current =
+            savingAdditionalInfoSnapshotRef.current;
+        }
+        savingAdditionalInfoSnapshotRef.current = null;
+
+        const nowSnapshot = serializeFormData(latestFormDataRef.current);
+        if (nowSnapshot === lastSavedSnapshotRef.current) {
+          lastSavedAtRef.current = Date.now();
+          setAutoSaveStatus("saved");
+        } else {
+          setAutoSaveStatus("dirty");
+        }
+
+        if (saveQueuedRef.current) {
+          // Flush any changes that happened during the in-flight save.
+          saveQueuedRef.current = false;
+          setTimeout(() => {
+            runSaveMutation();
+          }, 0);
+        }
+      },
+      onError: () => {
+        setAutoSaveStatus("error");
+        savingSnapshotRef.current = null;
+        const now = Date.now();
+        if (now - lastErrorToastAtRef.current > 10_000) {
+          lastErrorToastAtRef.current = now;
+          toast.error("Autosave failed. Please check your connection.");
+        }
+      },
+    });
+  }, [saveMutation]);
 
   // Establish the initial "saved" snapshot once we hydrate from backend.
   useEffect(() => {
@@ -927,61 +1013,7 @@ export default function EditOpportunityPage() {
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      if (saveMutation.isPending) {
-        saveQueuedRef.current = true;
-        return;
-      }
-
-      setAutoSaveStatus("saving");
-      savingSnapshotRef.current = serializeFormData(latestFormDataRef.current);
-      saveMutation.mutate(undefined, {
-        onSuccess: () => {
-          if (typeof savingSnapshotRef.current === "string") {
-            lastSavedSnapshotRef.current = savingSnapshotRef.current;
-          }
-          savingSnapshotRef.current = null;
-
-          if (typeof savingRoundsSnapshotRef.current === "string") {
-            lastSavedRoundsSnapshotRef.current =
-              savingRoundsSnapshotRef.current;
-          }
-          savingRoundsSnapshotRef.current = null;
-
-          if (typeof savingPrizeBreakdownSnapshotRef.current === "string") {
-            lastSavedPrizeBreakdownSnapshotRef.current =
-              savingPrizeBreakdownSnapshotRef.current;
-          }
-          savingPrizeBreakdownSnapshotRef.current = null;
-
-          if (typeof savingAdditionalInfoSnapshotRef.current === "string") {
-            lastSavedAdditionalInfoSnapshotRef.current =
-              savingAdditionalInfoSnapshotRef.current;
-          }
-          savingAdditionalInfoSnapshotRef.current = null;
-
-          const nowSnapshot = serializeFormData(latestFormDataRef.current);
-          if (nowSnapshot === lastSavedSnapshotRef.current) {
-            lastSavedAtRef.current = Date.now();
-            setAutoSaveStatus("saved");
-          } else {
-            setAutoSaveStatus("dirty");
-          }
-
-          if (saveQueuedRef.current) {
-            saveQueuedRef.current = false;
-            // The effect will run again on the next render and schedule a new save.
-          }
-        },
-        onError: () => {
-          setAutoSaveStatus("error");
-          savingSnapshotRef.current = null;
-          const now = Date.now();
-          if (now - lastErrorToastAtRef.current > 10_000) {
-            lastErrorToastAtRef.current = now;
-            toast.error("Autosave failed. Please check your connection.");
-          }
-        },
-      });
+      runSaveMutation();
     }, 900);
 
     return () => {
@@ -996,6 +1028,7 @@ export default function EditOpportunityPage() {
     hackathonId,
     saveMutation,
     autoSaveStatus,
+    runSaveMutation,
   ]);
 
   if (isLoadingHackathon) {
