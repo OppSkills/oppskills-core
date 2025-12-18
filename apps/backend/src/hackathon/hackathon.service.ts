@@ -11,7 +11,6 @@ import type {
   CreateHackathonDto,
   UpdateHackathonDto,
   UpdateHackathonRoundsDto,
-  UpdateHackathonQuestionsDto,
   UpdateHackathonAdditionalInfoDto,
   HackathonAttendeeEligibilityValue,
   HackathonRoundTypeValue,
@@ -173,19 +172,6 @@ export class HackathonService {
               }
             : undefined,
 
-          // New questions relation
-          questions: dto.questions
-            ? {
-                create: dto.questions.map((q) => ({
-                  questionText: q.questionText,
-                  type: q.type,
-                  required: q.required,
-                  order: q.order,
-                  options: q.options ?? [],
-                })),
-              }
-            : undefined,
-
           // New attachments relation
           attachments: dto.additionalInfo?.attachments
             ? {
@@ -294,11 +280,10 @@ export class HackathonService {
       dto.rounds ||
       dto.prizeBreakdown ||
       dto.registrationForm ||
-      dto.questions ||
       dto.additionalInfo
     ) {
       throw new BadRequestException(
-        'Nested updates (rounds, prizeBreakdown, registrationForm, questions, additionalInfo) are not supported in PUT /hackathons/:id. Use dedicated endpoints.',
+        'Nested updates (rounds, prizeBreakdown, registrationForm, additionalInfo) are not supported in PUT /hackathons/:id. Use dedicated endpoints.',
       );
     }
 
@@ -494,53 +479,6 @@ export class HackathonService {
           submissionConfig: round.submissionConfig
             ? (round.submissionConfig as Prisma.InputJsonValue)
             : Prisma.JsonNull,
-        })),
-      });
-    });
-
-    return prisma.hackathonEntity.findUnique({
-      where: { id },
-      include: this.getHackathonIncludeClause(),
-    });
-  }
-
-  /**
-   * Replace all application questions of a hackathon.
-   * - Allowed only when status is DRAFT.
-   * - Owner-only (or admin).
-   */
-  async updateHackathonQuestions(
-    id: string,
-    dto: UpdateHackathonQuestionsDto,
-    userId: string,
-  ) {
-    await this.assertHackathonEditableByUser(id, userId);
-
-    // Validate MCQ questions have at least 2 options
-    for (const q of dto.questions) {
-      if (q.type === 'MCQ') {
-        if (!q.options || q.options.length < 2) {
-          throw new BadRequestException(
-            `MCQ question "${q.questionText.substring(0, 30)}..." requires at least 2 options.`,
-          );
-        }
-      }
-    }
-
-    // Delete existing questions and create new ones in a transaction
-    await prisma.$transaction(async (tx) => {
-      await tx.hackathonQuestionEntity.deleteMany({
-        where: { hackathonId: id },
-      });
-
-      await tx.hackathonQuestionEntity.createMany({
-        data: dto.questions.map((q) => ({
-          hackathonId: id,
-          questionText: q.questionText,
-          type: q.type,
-          required: q.required,
-          order: q.order,
-          options: q.options ?? [],
         })),
       });
     });
@@ -838,9 +776,6 @@ export class HackathonService {
             orderBy: { order: 'asc' as const },
           },
         },
-      },
-      questions: {
-        orderBy: { order: 'asc' as const },
       },
       attachments: true,
     };

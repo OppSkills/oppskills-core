@@ -28,7 +28,6 @@ import {
   UpdateHackathonDto,
   UpdateHackathonStatusDto,
   UpdateHackathonRoundsDto,
-  UpdateHackathonQuestionsDto,
   UpdateHackathonAdditionalInfoDto,
   RegistrationFormDto,
 } from '@oppskills/types';
@@ -278,50 +277,6 @@ export class HackathonController {
     );
     return {
       message: 'Hackathon rounds updated successfully.',
-      data: hackathon,
-    };
-  }
-
-  /**
-   * Replace all application questions of a hackathon.
-   * - Owner-only (or admin).
-   * - Allowed only when status is DRAFT.
-   */
-  @Put(':id/questions')
-  @ApiOperation({
-    summary: 'Update hackathon questions',
-    description:
-      'Replace all application questions for a hackathon. Only allowed in DRAFT status. Owner only.',
-  })
-  @ApiParam({ name: 'id', description: 'Hackathon ID' })
-  @ApiBody({ type: UpdateHackathonQuestionsDto })
-  @ApiResponse({ status: 200, description: 'Questions updated successfully' })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Not the owner or not in DRAFT status',
-  })
-  @ApiResponse({ status: 404, description: 'Hackathon not found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async updateHackathonQuestions(
-    @Param('id') id: string,
-    @Body() dto: UpdateHackathonQuestionsDto,
-    @Req() req: Request,
-  ) {
-    const userId = req.user?.id;
-    if (!userId) throw new UnauthorizedException('User not found');
-
-    const safeId = assertNonEmptyId(id, 'id');
-    this.logger.log(
-      `Updating questions for hackathon=${safeId} by userId=${userId}`,
-    );
-
-    const hackathon = await this.hackathonService.updateHackathonQuestions(
-      safeId,
-      dto,
-      userId,
-    );
-    return {
-      message: 'Hackathon questions updated successfully.',
       data: hackathon,
     };
   }

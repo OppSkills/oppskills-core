@@ -4,7 +4,6 @@ import type {
   RegistrationFormDto,
   UpdateHackathonAdditionalInfoDto,
   UpdateHackathonDto,
-  UpdateHackathonQuestionsDto,
   UpdateHackathonRoundsDto,
 } from "@oppskills/types";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
@@ -95,20 +94,6 @@ export async function updateHackathonRounds(
   data: UpdateHackathonRoundsDto
 ): Promise<unknown> {
   const res = await API.put(`/${id}/rounds`, data, {
-    headers: buildAuthHeaders(token),
-  });
-  return res.data as unknown;
-}
-
-/**
- * Replaces all application questions of a hackathon (DRAFT-only).
- */
-export async function updateHackathonQuestions(
-  token: string,
-  id: string,
-  data: UpdateHackathonQuestionsDto
-): Promise<unknown> {
-  const res = await API.put(`/${id}/questions`, data, {
     headers: buildAuthHeaders(token),
   });
   return res.data as unknown;
