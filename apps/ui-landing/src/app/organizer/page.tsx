@@ -71,6 +71,8 @@ import {
   updateHackathonRegistrationForm,
 } from "@/lib/api/hackathonApi";
 import { createFestival, getFestivals } from "@/lib/api/festivalApi";
+import { presignImageUpload } from "@/lib/api/mediaApi";
+import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 
 /**
  * Organizer page: creates festivals and hackathons.
@@ -176,6 +178,11 @@ export default function Page() {
     useState<boolean>(false);
 
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
+  const bannerInputId = useMemo(
+    () => `organizer-banner-upload-${crypto.randomUUID()}`,
+    []
+  );
 
   /**
    * Type guard: checks if a value is a non-null object.
@@ -241,6 +248,56 @@ export default function Page() {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Upload banner image to S3 via backend presign, then store CloudFront URL in state.
+   * This updates `formData.eventThumbnail`, which is later persisted as `bannerImageUrl`.
+   */
+  async function handleBannerSelected(file: File | null): Promise<void> {
+    if (!file) return;
+    if (isUploadingBanner) return;
+
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast.error("Image too large. Max size is 10MB.");
+      return;
+    }
+
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedMimeTypes.includes(file.type)) {
+      toast.error("Only JPG, PNG, or WebP images are allowed.");
+      return;
+    }
+
+    setIsUploadingBanner(true);
+    try {
+      const token = await getToken();
+      if (typeof token !== "string" || token.trim().length === 0) {
+        toast.error("Please sign in to upload.");
+        return;
+      }
+
+      const presign = await presignImageUpload(token, {
+        purpose: "HACKATHON_BANNER",
+        mimeType: file.type,
+      });
+
+      await uploadImageToS3PresignedPost({ presign, file });
+
+      setFormData((prev) => ({
+        ...prev,
+        eventThumbnail: presign.publicUrl,
+      }));
+
+      toast.success("Banner uploaded.");
+    } catch (err: unknown) {
+      // eslint-disable-next-line no-console
+      console.error(err);
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setIsUploadingBanner(false);
     }
   }
 
@@ -404,16 +461,41 @@ export default function Page() {
             <Image
               width={371}
               height={371}
-              src="/tmp/hackathon.jpg"
+              src={
+                typeof formData.eventThumbnail === "string" &&
+                formData.eventThumbnail.trim().length > 0
+                  ? formData.eventThumbnail.trim()
+                  : "/tmp/hackathon.jpg"
+              }
               alt="Hackathon Thumbnail"
               className="w-full h-full object-cover"
             />
-            <div className="absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-white/20 hover:bg-background/40 transition-colors cursor-pointer">
+            <label
+              htmlFor={bannerInputId}
+              className={cn(
+                "absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-white/20 hover:bg-background/40 transition-colors cursor-pointer",
+                isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
+              )}
+              aria-disabled={isUploadingBanner}
+            >
               <p className="text-white px-4 py-2 flex items-center gap-2 text-xs font-medium">
                 <Upload className="w-4 h-4" />
-                Upload
+                {isUploadingBanner ? "Uploading…" : "Upload"}
               </p>
-            </div>
+            </label>
+
+            <input
+              id={bannerInputId}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              disabled={isUploadingBanner}
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                e.target.value = "";
+                void handleBannerSelected(f);
+              }}
+            />
           </div>
 
           {/* Preview */}

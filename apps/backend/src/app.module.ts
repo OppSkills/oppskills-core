@@ -7,6 +7,7 @@ import { FestivalModule } from './festival/festival.module';
 import { HackathonModule } from './hackathon/hackathon.module';
 import { TeamModule } from './team/team.module';
 import { UserAccountsModule } from './user-accounts/user-accounts.module';
+import { MediaModule } from "./media/media.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { UserAccountsModule } from './user-accounts/user-accounts.module';
     HackathonModule,
     FestivalModule,
     TeamModule,
+    MediaModule,
   ],
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],

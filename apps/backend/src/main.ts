@@ -26,12 +26,18 @@ async function bootstrap() {
    */
   const allowedOrigins: string[] =
     process.env.NODE_ENV === 'production'
-      ? ['https://oppskills.com', 'https://www.oppskills.com']
+      ? [
+          'https://oppskills.com',
+          'https://www.oppskills.com',
+          // If the app is hosted on a subdomain (common), allow it explicitly.
+          'https://app.oppskills.com',
+        ]
       : [
           'http://localhost:3000',
           'http://127.0.0.1:3000',
           'https://oppskills.com',
           'https://www.oppskills.com',
+          'https://app.oppskills.com',
         ];
 
   app.enableCors({
