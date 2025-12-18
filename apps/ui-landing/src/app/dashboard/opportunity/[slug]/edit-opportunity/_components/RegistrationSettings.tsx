@@ -21,9 +21,14 @@ import { format } from "date-fns";
 interface RegistrationSettingsProps {
     formData: FormData;
     setFormData: (data: React.SetStateAction<FormData>) => void;
+    savedMaxTeams?: number | null;
 }
 
-export default function RegistrationSettings({ formData, setFormData }: RegistrationSettingsProps) {
+export default function RegistrationSettings({
+    formData,
+    setFormData,
+    savedMaxTeams,
+}: RegistrationSettingsProps) {
 
     // --- Handlers ---
     const updateSettings = (updates: Partial<FormData['registrationSettings']>) => {
@@ -225,6 +230,21 @@ export default function RegistrationSettings({ formData, setFormData }: Registra
                             placeholder="e.g. 200"
                             className="bg-background"
                         />
+                        <div className="text-xs">
+                            <span className="text-muted-foreground">Saved: </span>
+                            <span className="font-medium text-foreground">
+                                {savedMaxTeams === null
+                                    ? "Unlimited"
+                                    : typeof savedMaxTeams === "number"
+                                        ? String(savedMaxTeams)
+                                        : "—"}
+                            </span>
+                        </div>
+                        {typeof formData.registrationSettings.maxTeams !== "number" && (
+                            <p className="text-xs text-amber-600">
+                                Please enter a whole number (minimum 1) to save.
+                            </p>
+                        )}
                         <p className="text-xs text-muted-foreground">
                             Must be at least 1. Choose “No Limit” for infinite teams.
                         </p>

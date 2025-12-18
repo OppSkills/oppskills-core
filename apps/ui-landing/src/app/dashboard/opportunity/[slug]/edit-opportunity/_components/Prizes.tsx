@@ -40,6 +40,11 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
         updatePrizes({ list: formData.prizes.list.filter(p => p.id !== id) });
     };
 
+    const handleClearAllPrizes = () => {
+        if (formData.prizes.list.length === 0) return;
+        updatePrizes({ list: [] });
+    };
+
     // Mock edit function - in real app would open dialog
     const handleEditPrize = (id: string) => {
         console.log("Edit prize", id);
@@ -112,14 +117,26 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                             Create prizes and seamlessly send participation or winning certificates via Unstop after your opportunity ends.
                         </p>
                     </div>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={handleAddPrize}
-                        className="rounded-full h-10 w-10 border-dashed border-2 hover:bg-secondary/20"
-                    >
-                        <Plus className="w-5 h-5" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {formData.prizes.list.length > 0 && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleClearAllPrizes}
+                                className="rounded-full"
+                            >
+                                Clear all
+                            </Button>
+                        )}
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={handleAddPrize}
+                            className="rounded-full h-10 w-10 border-dashed border-2 hover:bg-secondary/20"
+                        >
+                            <Plus className="w-5 h-5" />
+                        </Button>
+                    </div>
                 </div>
 
                 {formData.prizes.list.length > 0 && (

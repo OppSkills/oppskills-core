@@ -43,7 +43,7 @@ import RoundsAndStages from "./_components/RoundsAndStages";
 import AdditionalInfo from "./_components/AdditionalInfo";
 import Prizes from "./_components/Prizes";
 import RegistrationSettings from "./_components/RegistrationSettings";
-import CompetitionDetailsPage from "@/app/competitions/[slug]/page";
+import Preview from "./_components/Preview";
 
 /**
  * Shared Types
@@ -305,6 +305,25 @@ function serializeFormData(value: FormData): string {
     return v;
   });
 }
+
+function serializeRounds(value: ReadonlyArray<Round>): string {
+  return JSON.stringify(value, (_key, v: unknown) => {
+    if (v instanceof Date) return v.toISOString();
+    return v;
+  });
+}
+
+function serializePrizeBreakdown(
+  value: ReadonlyArray<PrizeBreakdownDto>
+): string {
+  return JSON.stringify(value);
+}
+
+function serializeAdditionalInfo(value: AdditionalInfoData): string {
+  return JSON.stringify(value);
+}
+
+type AutoSaveUiStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
 function fromVisibility(value: string | undefined): string {
   const v = (value ?? "").toUpperCase();
@@ -586,6 +605,12 @@ export default function EditOpportunityPage() {
   const lastSavedMaxTeamsRef = React.useRef<number | null | undefined>(
     undefined
   );
+  const lastSavedRoundsSnapshotRef = React.useRef<string | null>(null);
+  const savingRoundsSnapshotRef = React.useRef<string | null>(null);
+  const lastSavedPrizeBreakdownSnapshotRef = React.useRef<string | null>(null);
+  const savingPrizeBreakdownSnapshotRef = React.useRef<string | null>(null);
+  const lastSavedAdditionalInfoSnapshotRef = React.useRef<string | null>(null);
+  const savingAdditionalInfoSnapshotRef = React.useRef<string | null>(null);
 
   const tabs = [
     {
@@ -666,6 +691,12 @@ export default function EditOpportunityPage() {
       }
       const token = requireToken(await getToken());
 
+      // Snapshots used to decide whether to call dedicated nested endpoints.
+      const roundsSnapshot = serializeRounds(formData.rounds);
+      const additionalInfoSnapshot = serializeAdditionalInfo(
+        formData.additionalInfo
+      );
+
       const base: UpdateHackathonDto = {
         name:
           formData.eventName.trim().length > 0
@@ -730,7 +761,8 @@ export default function EditOpportunityPage() {
         lastSavedMaxTeamsRef.current = desiredMaxTeams;
       }
 
-      if (formData.rounds.length > 0) {
+      // Rounds: allow clearing by sending an empty array, but only when rounds changed.
+      if (roundsSnapshot !== lastSavedRoundsSnapshotRef.current) {
         const roundsDto: UpdateHackathonRoundsDto = {
           rounds: formData.rounds.map((r, idx) => ({
             name: r.name,
@@ -744,6 +776,7 @@ export default function EditOpportunityPage() {
           })),
         };
         await updateHackathonRounds(token, hackathonId, roundsDto);
+        savingRoundsSnapshotRef.current = roundsSnapshot;
       }
 
       const customRegistrationQuestions = formData.registrationQuestions.filter(
@@ -756,36 +789,71 @@ export default function EditOpportunityPage() {
         registrationForm,
       });
 
-      const prizeItems: PrizeBreakdownDto[] = formData.prizes.list
-        .map((p): PrizeBreakdownDto | null => {
+      // Prize breakdown: allow clearing by sending an empty array, but only when breakdown changed.
+      const prizeItemsResult: {
+        prizeItems: PrizeBreakdownDto[];
+        hasInvalidAmount: boolean;
+      } = formData.prizes.list.reduce(
+        (
+          acc: { prizeItems: PrizeBreakdownDto[]; hasInvalidAmount: boolean },
+          p
+        ) => {
           const amount = parseCurrencyToDecimalString(p.amount);
-          if (amount === null) return null;
+          if (amount === null) {
+            return { ...acc, hasInvalidAmount: true };
+          }
           return {
-            position: p.name,
-            amount,
-            description:
-              p.description.trim().length > 0 ? p.description : undefined,
+            ...acc,
+            prizeItems: [
+              ...acc.prizeItems,
+              {
+                position: p.name,
+                amount,
+                description:
+                  p.description.trim().length > 0 ? p.description : undefined,
+              },
+            ],
           };
-        })
-        .filter((v): v is PrizeBreakdownDto => v !== null);
+        },
+        { prizeItems: [], hasInvalidAmount: false }
+      );
 
-      if (prizeItems.length > 0) {
+      const prizeBreakdownSnapshot = serializePrizeBreakdown(
+        prizeItemsResult.prizeItems
+      );
+      if (
+        prizeItemsResult.hasInvalidAmount === false &&
+        prizeBreakdownSnapshot !== lastSavedPrizeBreakdownSnapshotRef.current
+      ) {
         await updateHackathonPrizeBreakdown(token, hackathonId, {
-          prizeBreakdown: prizeItems,
+          prizeBreakdown: prizeItemsResult.prizeItems,
         });
+        savingPrizeBreakdownSnapshotRef.current = prizeBreakdownSnapshot;
       }
 
-      if (formData.additionalInfo.contacts.length > 0) {
+      // Additional info: allow clearing attachments by sending [] and clearing contact by sending "".
+      // We only send when the section changed.
+      if (
+        additionalInfoSnapshot !== lastSavedAdditionalInfoSnapshotRef.current
+      ) {
         const first = formData.additionalInfo.contacts[0];
         const payload: UpdateHackathonAdditionalInfoDto = {
-          contact: {
-            name: first.name.trim().length > 0 ? first.name : undefined,
-            email: first.email.trim().length > 0 ? first.email : undefined,
-            phone: first.phone.trim().length > 0 ? first.phone : undefined,
-          },
-          attachments: undefined,
+          contact: first
+            ? {
+                name: first.name,
+                email: first.email,
+                phone: first.phone,
+              }
+            : {
+                name: "",
+                email: "",
+                phone: "",
+              },
+          // Always replace attachments when saving additional info to support clearing.
+          attachments: [],
         };
         await updateHackathonAdditionalInfo(token, hackathonId, payload);
+        savingAdditionalInfoSnapshotRef.current = additionalInfoSnapshot;
       }
     },
     onError: (err: unknown) => {
@@ -794,11 +862,11 @@ export default function EditOpportunityPage() {
     },
   });
 
-  const [autoSaveStatus, setAutoSaveStatus] = useState<
-    "idle" | "dirty" | "saving" | "saved" | "error"
-  >("idle");
+  const [autoSaveStatus, setAutoSaveStatus] =
+    useState<AutoSaveUiStatus>("idle");
   const lastSavedSnapshotRef = React.useRef<string | null>(null);
   const savingSnapshotRef = React.useRef<string | null>(null);
+  const lastSavedAtRef = React.useRef<number | null>(null);
   const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -816,6 +884,27 @@ export default function EditOpportunityPage() {
     if (hackathonId === null) return;
     if (lastSavedSnapshotRef.current !== null) return;
     lastSavedSnapshotRef.current = serializeFormData(formData);
+    lastSavedRoundsSnapshotRef.current = serializeRounds(formData.rounds);
+
+    // Saved prize breakdown snapshot is derived from valid numeric values only.
+    const initialPrizeItems: PrizeBreakdownDto[] = formData.prizes.list
+      .map((p): PrizeBreakdownDto | null => {
+        const amount = parseCurrencyToDecimalString(p.amount);
+        if (amount === null) return null;
+        return {
+          position: p.name,
+          amount,
+          description:
+            p.description.trim().length > 0 ? p.description : undefined,
+        };
+      })
+      .filter((v): v is PrizeBreakdownDto => v !== null);
+    lastSavedPrizeBreakdownSnapshotRef.current =
+      serializePrizeBreakdown(initialPrizeItems);
+    lastSavedAdditionalInfoSnapshotRef.current = serializeAdditionalInfo(
+      formData.additionalInfo
+    );
+    lastSavedAtRef.current = Date.now();
     setAutoSaveStatus("saved");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasHydratedFromBackend, hackathonId]);
@@ -852,8 +941,27 @@ export default function EditOpportunityPage() {
           }
           savingSnapshotRef.current = null;
 
+          if (typeof savingRoundsSnapshotRef.current === "string") {
+            lastSavedRoundsSnapshotRef.current =
+              savingRoundsSnapshotRef.current;
+          }
+          savingRoundsSnapshotRef.current = null;
+
+          if (typeof savingPrizeBreakdownSnapshotRef.current === "string") {
+            lastSavedPrizeBreakdownSnapshotRef.current =
+              savingPrizeBreakdownSnapshotRef.current;
+          }
+          savingPrizeBreakdownSnapshotRef.current = null;
+
+          if (typeof savingAdditionalInfoSnapshotRef.current === "string") {
+            lastSavedAdditionalInfoSnapshotRef.current =
+              savingAdditionalInfoSnapshotRef.current;
+          }
+          savingAdditionalInfoSnapshotRef.current = null;
+
           const nowSnapshot = serializeFormData(latestFormDataRef.current);
           if (nowSnapshot === lastSavedSnapshotRef.current) {
+            lastSavedAtRef.current = Date.now();
             setAutoSaveStatus("saved");
           } else {
             setAutoSaveStatus("dirty");
@@ -933,15 +1041,25 @@ export default function EditOpportunityPage() {
         </div>
       </div>
 
-      <div className="w-full flex justify-end px-2">
-        <div className="text-xs text-muted-foreground">
-          {autoSaveStatus === "saving"
-            ? "Saving…"
-            : autoSaveStatus === "dirty"
-              ? "Unsaved changes"
-              : autoSaveStatus === "error"
-                ? "Autosave error"
-                : "Saved"}
+      {/* Sticky Autosave Status */}
+      <div className="w-full sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border">
+        <div className="w-full flex items-center justify-between px-2 py-2">
+          <div className="text-xs font-medium">
+            {autoSaveStatus === "saving" ? (
+              <span className="text-primary">Saving…</span>
+            ) : autoSaveStatus === "dirty" ? (
+              <span className="text-amber-600">Unsaved changes</span>
+            ) : autoSaveStatus === "error" ? (
+              <span className="text-destructive">Autosave error</span>
+            ) : (
+              <span className="text-emerald-600">Saved</span>
+            )}
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            {typeof lastSavedAtRef.current === "number"
+              ? `Last saved: ${new Date(lastSavedAtRef.current).toLocaleTimeString()}`
+              : ""}
+          </div>
         </div>
       </div>
 
@@ -951,7 +1069,11 @@ export default function EditOpportunityPage() {
         )}
 
         {activeTab === "registration-settings" && (
-          <RegistrationSettings formData={formData} setFormData={setFormData} />
+          <RegistrationSettings
+            formData={formData}
+            setFormData={setFormData}
+            savedMaxTeams={lastSavedMaxTeamsRef.current}
+          />
         )}
 
         {activeTab === "rounds-stages" && (
@@ -966,8 +1088,7 @@ export default function EditOpportunityPage() {
           <AdditionalInfo formData={formData} setFormData={setFormData} />
         )}
 
-        {/* Placeholders for other tabs */}
-        {activeTab === "preview" && <CompetitionDetailsPage />}
+        {activeTab === "preview" && <Preview formData={formData} />}
       </div>
     </div>
   );
