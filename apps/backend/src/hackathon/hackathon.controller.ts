@@ -38,6 +38,7 @@ import { HackathonService } from './hackathon.service';
 import {
   UpdateHackathonPrizeBreakdownDto,
   UpdateHackathonRegistrationFormDto,
+  UpdateHackathonMaxTeamsDto,
 } from './hackathon-update-nested.dto';
 
 function assertNonEmptyId(id: string, fieldName: string): string {
@@ -457,6 +458,46 @@ export class HackathonController {
     );
     return {
       message: 'Hackathon prize breakdown updated successfully.',
+      data: hackathon,
+    };
+  }
+
+  /**
+   * Update the max teams limit.
+   * - Owner-only (or admin).
+   * - Allowed only when status is DRAFT.
+   * - `null` means unlimited.
+   */
+  @Put(':id/max-teams')
+  @ApiOperation({
+    summary: 'Update max teams',
+    description:
+      'Update the max teams limit for a hackathon. Only allowed in DRAFT status. Owner only. Use null for unlimited.',
+  })
+  @ApiParam({ name: 'id', description: 'Hackathon ID' })
+  @ApiBody({ type: UpdateHackathonMaxTeamsDto })
+  @ApiResponse({ status: 200, description: 'Max teams updated successfully' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Not the owner or not in DRAFT status',
+  })
+  @ApiResponse({ status: 404, description: 'Hackathon not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async updateHackathonMaxTeams(
+    @Param('id') id: string,
+    @Body() dto: UpdateHackathonMaxTeamsDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+    const safeId = assertNonEmptyId(id, 'id');
+    const hackathon = await this.hackathonService.updateHackathonMaxTeams(
+      safeId,
+      dto.maxTeams ?? null,
+      userId,
+    );
+    return {
+      message: 'Hackathon max teams updated successfully.',
       data: hackathon,
     };
   }

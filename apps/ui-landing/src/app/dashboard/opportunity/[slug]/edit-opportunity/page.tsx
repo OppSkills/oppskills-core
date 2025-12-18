@@ -32,6 +32,7 @@ import type {
 import {
   updateHackathon,
   updateHackathonAdditionalInfo,
+  updateHackathonMaxTeams,
   updateHackathonPrizeBreakdown,
   updateHackathonQuestions,
   updateHackathonRegistrationForm,
@@ -75,6 +76,7 @@ export interface RegistrationSettingsData {
   eventDate: Date | undefined;
   eventTime: string;
   maxTeamsNoLimit: boolean;
+  maxTeams?: number;
   minTeamSize?: number;
   maxTeamSize?: number;
   questions: BasicQuestion[];
@@ -394,6 +396,9 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
 
   const startDate = getDate(hackathon["startDate"]);
   const registrationDeadline = getDate(hackathon["registrationDeadline"]);
+  const maxTeamsRaw = hackathon["maxTeams"];
+  const maxTeamsValue =
+    typeof maxTeamsRaw === "number" ? maxTeamsRaw : undefined;
 
   const locationVirtualLink = getString(hackathon, "locationVirtualLink");
   const locationAddress = getString(hackathon, "locationAddress");
@@ -565,7 +570,8 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
         : "23:59",
       eventDate: startDate,
       eventTime: startDate ? toTimeHHmm(startDate) : "09:00",
-      maxTeamsNoLimit: true,
+      maxTeamsNoLimit: maxTeamsValue === undefined,
+      maxTeams: maxTeamsValue,
       questions: [
         { id: "name", label: "Name", required: true, isStatic: true },
         { id: "email", label: "Email", required: true, isStatic: true },
@@ -624,6 +630,9 @@ export default function EditOpportunityPage() {
   const [hasHydratedFromBackend, setHasHydratedFromBackend] =
     useState<boolean>(false);
   const [hackathonId, setHackathonId] = useState<string | null>(null);
+  const lastSavedMaxTeamsRef = React.useRef<number | null | undefined>(
+    undefined
+  );
 
   const tabs = [
     {
@@ -678,6 +687,7 @@ export default function EditOpportunityPage() {
       eventDate: undefined,
       eventTime: "09:00",
       maxTeamsNoLimit: true,
+      maxTeams: undefined,
       questions: [
         { id: "name", label: "Name", required: true, isStatic: true },
         { id: "email", label: "Email", required: true, isStatic: true },
@@ -707,6 +717,9 @@ export default function EditOpportunityPage() {
     if (!hackathon) return;
     const id = getString(hackathon, "id");
     if (typeof id === "string") setHackathonId(id);
+    const maxTeamsRaw = hackathon["maxTeams"];
+    lastSavedMaxTeamsRef.current =
+      typeof maxTeamsRaw === "number" ? maxTeamsRaw : null;
     setFormData(mapHackathonToFormData(hackathon));
     setHasHydratedFromBackend(true);
   }, [hackathonRaw, hasHydratedFromBackend]);
@@ -763,6 +776,25 @@ export default function EditOpportunityPage() {
 
       await updateHackathon(token, hackathonId, base);
 
+      const desiredMaxTeams =
+        formData.registrationSettings.maxTeamsNoLimit === true
+          ? null
+          : typeof formData.registrationSettings.maxTeams === "number" &&
+              Number.isInteger(formData.registrationSettings.maxTeams) &&
+              formData.registrationSettings.maxTeams >= 1
+            ? formData.registrationSettings.maxTeams
+            : undefined;
+
+      if (
+        desiredMaxTeams !== undefined &&
+        desiredMaxTeams !== lastSavedMaxTeamsRef.current
+      ) {
+        await updateHackathonMaxTeams(token, hackathonId, {
+          maxTeams: desiredMaxTeams,
+        });
+        lastSavedMaxTeamsRef.current = desiredMaxTeams;
+      }
+
       if (formData.rounds.length > 0) {
         const roundsDto: UpdateHackathonRoundsDto = {
           rounds: formData.rounds.map((r, idx) => ({
@@ -779,9 +811,12 @@ export default function EditOpportunityPage() {
         await updateHackathonRounds(token, hackathonId, roundsDto);
       }
 
-      if (formData.registrationQuestions.length > 0) {
+      const customRegistrationQuestions = formData.registrationQuestions.filter(
+        (q) => q.fixed !== true && q.label.trim().length > 0
+      );
+      if (customRegistrationQuestions.length > 0) {
         const registrationForm = mapRegistrationQuestionsToRegistrationForm(
-          formData.registrationQuestions
+          customRegistrationQuestions
         );
         await updateHackathonRegistrationForm(token, hackathonId, {
           registrationForm,

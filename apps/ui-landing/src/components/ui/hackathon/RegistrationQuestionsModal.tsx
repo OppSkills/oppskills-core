@@ -91,10 +91,35 @@ export default function RegistrationQuestionsModal({
         },
     ];
 
+    /**
+     * We intentionally treat `initialQuestions` / `questions` as *custom* questions only.
+     * Fixed (base) questions are always shown in UI but are NOT persisted to DB to avoid redundancy.
+     */
+    const getCustomQuestions = (
+        input: RegistrationQuestion[] | undefined
+    ): RegistrationQuestion[] => {
+        const list = Array.isArray(input) ? input : [];
+        return list.filter((q) => q.fixed !== true);
+    };
+
+    const buildVisibleQuestions = (
+        custom: RegistrationQuestion[]
+    ): RegistrationQuestion[] => {
+        return [...defaultFixedQuestions, ...custom];
+    };
+
+    const getInitialCustom = (): RegistrationQuestion[] => {
+        if (Array.isArray(questionsInput) && questionsInput.length > 0) {
+            return getCustomQuestions(questionsInput);
+        }
+        if (Array.isArray(initialQuestions) && initialQuestions.length > 0) {
+            return getCustomQuestions(initialQuestions);
+        }
+        return [];
+    };
+
     const [questions, setQuestions] = useState<RegistrationQuestion[]>(
-        initialQuestions && initialQuestions.length > 0
-            ? initialQuestions
-            : defaultFixedQuestions
+        buildVisibleQuestions(getInitialCustom())
     );
 
     const [newQuestionLabel, setNewQuestionLabel] = useState("");
@@ -102,13 +127,10 @@ export default function RegistrationQuestionsModal({
 
     useEffect(() => {
         if (open) {
-            setQuestions(
-                initialQuestions && initialQuestions.length > 0
-                    ? initialQuestions
-                    : defaultFixedQuestions
-            );
+            setQuestions(buildVisibleQuestions(getInitialCustom()));
         }
-    }, [open, initialQuestions]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, initialQuestions, questionsInput]);
 
     const handleAddQuestion = () => {
         if (!newQuestionLabel.trim()) return;
@@ -131,7 +153,8 @@ export default function RegistrationQuestionsModal({
     };
 
     const handleSave = () => {
-        onSave(questions);
+        const customOnly = questions.filter((q) => q.fixed !== true);
+        onSave(customOnly);
         onOpenChange(false);
     };
 

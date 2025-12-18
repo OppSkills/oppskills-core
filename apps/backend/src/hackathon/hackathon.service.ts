@@ -735,6 +735,27 @@ export class HackathonService {
   }
 
   /**
+   * Update the max teams limit.
+   * - `null` means unlimited.
+   * - Allowed only when status is DRAFT (permission enforced via assert).
+   */
+  async updateHackathonMaxTeams(
+    id: string,
+    maxTeams: number | null,
+    userId: string,
+  ) {
+    await this.assertHackathonEditableByUser(id, userId);
+
+    return prisma.hackathonEntity.update({
+      where: { id },
+      data: {
+        maxTeams,
+      },
+      include: this.getHackathonIncludeClause(),
+    });
+  }
+
+  /**
    * Assert that a hackathon exists, is editable (DRAFT status),
    * and the user has permission to edit it.
    * @returns The hackathon if all checks pass.

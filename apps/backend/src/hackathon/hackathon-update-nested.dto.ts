@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, ValidateNested } from 'class-validator';
+import { IsArray, IsInt, IsOptional, Min, ValidateNested } from 'class-validator';
 import type { PrizeBreakdownDto } from '@oppskills/types';
 import { RegistrationFormDto } from '@oppskills/types';
 import { PrizeBreakdownDto as PrizeBreakdownDtoClass } from '@oppskills/types';
@@ -29,6 +29,22 @@ export class UpdateHackathonPrizeBreakdownDto {
   @ValidateNested({ each: true })
   @Type(() => PrizeBreakdownDtoClass)
   prizeBreakdown: PrizeBreakdownDto[];
+}
+
+/**
+ * Payload to update max teams.
+ * - `null` means "no limit" (infinite teams).
+ */
+export class UpdateHackathonMaxTeamsDto {
+  @ApiPropertyOptional({
+    description: 'Maximum number of teams (null = unlimited)',
+    nullable: true,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  maxTeams?: number | null;
 }
 
 

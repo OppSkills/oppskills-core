@@ -82,6 +82,10 @@ type UpdateHackathonPrizeBreakdownPayload = {
   prizeBreakdown: PrizeBreakdownDto[];
 };
 
+type UpdateHackathonMaxTeamsPayload = {
+  maxTeams: number | null;
+};
+
 /**
  * Replaces all rounds of a hackathon (DRAFT-only).
  */
@@ -147,6 +151,21 @@ export async function updateHackathonPrizeBreakdown(
   data: UpdateHackathonPrizeBreakdownPayload
 ): Promise<unknown> {
   const res = await API.put(`/${id}/prize-breakdown`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
+}
+
+/**
+ * Updates the max teams limit (DRAFT-only).
+ * - `null` means unlimited.
+ */
+export async function updateHackathonMaxTeams(
+  token: string,
+  id: string,
+  data: UpdateHackathonMaxTeamsPayload
+): Promise<unknown> {
+  const res = await API.put(`/${id}/max-teams`, data, {
     headers: buildAuthHeaders(token),
   });
   return res.data as unknown;
