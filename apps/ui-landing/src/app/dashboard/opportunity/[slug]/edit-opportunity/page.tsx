@@ -43,7 +43,7 @@ import RoundsAndStages from "./_components/RoundsAndStages";
 import AdditionalInfo from "./_components/AdditionalInfo";
 import Prizes from "./_components/Prizes";
 import RegistrationSettings from "./_components/RegistrationSettings";
-import Preview from "./_components/Preview";
+import CompetitionDetailsPage from "@/app/competitions/[slug]/page";
 
 /**
  * Shared Types
@@ -1088,7 +1088,11 @@ export default function EditOpportunityPage() {
           <AdditionalInfo formData={formData} setFormData={setFormData} />
         )}
 
-        {activeTab === "preview" && <Preview formData={formData} />}
+        {activeTab === "preview" && (
+          <div className="w-full flex flex-col gap-4">
+            <CompetitionDetailsPage />
+          </div>
+        )}
       </div>
     </div>
   );
