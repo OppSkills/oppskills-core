@@ -26,12 +26,14 @@ import type {
   RegistrationFormDto,
   UpdateHackathonAdditionalInfoDto,
   UpdateHackathonDto,
+  UpdateHackathonQuestionsDto,
   UpdateHackathonRoundsDto,
 } from "@oppskills/types";
 import {
   updateHackathon,
   updateHackathonAdditionalInfo,
   updateHackathonPrizeBreakdown,
+  updateHackathonQuestions,
   updateHackathonRegistrationForm,
   updateHackathonRounds,
 } from "@/lib/api/hackathonApi";
@@ -337,6 +339,47 @@ function fromParticipantType(value: string | undefined): string {
   return "Individual";
 }
 
+function fromAttendeeEligibility(values: unknown): ReadonlyArray<string> {
+  const raw = Array.isArray(values) ? values : [];
+  const out: string[] = [];
+  const add = (v: string) => {
+    if (!out.includes(v)) out.push(v);
+  };
+  for (const item of raw) {
+    if (typeof item !== "string") continue;
+    const v = item.toUpperCase();
+    if (v === "EVERYONE_CAN_APPLY") add("Everyone can apply");
+    if (v === "SCHOOL_STUDENTS") add("School students");
+    if (v === "COLLEGE_STUDENTS") add("College students");
+    if (v === "FRESHERS") add("Freshers");
+    if (v === "PROFESSIONALS") add("Professionals");
+  }
+  return out;
+}
+
+function formatPrizeAmount(amount: unknown): string {
+  if (typeof amount !== "string") return "";
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return amount;
+  const pretty = n.toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: n % 1 === 0 ? 0 : 2,
+  });
+  return `₹ ${pretty}`;
+}
+
+function fromRegistrationFieldType(
+  value: string | undefined
+): RegistrationQuestion["type"] {
+  const v = (value ?? "").toUpperCase();
+  if (v === "PHONE_NO") return "Phone No.";
+  if (v === "EMAIL") return "Email";
+  if (v === "ATTACHMENTS") return "Attachments";
+  if (v === "NUMBER") return "Number";
+  if (v === "OPTIONS") return "Options";
+  return "Text";
+}
+
 function extractHackathon(input: unknown): Record<string, unknown> | null {
   if (!isRecord(input)) return null;
   const maybeData = input["data"];
@@ -384,6 +427,115 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
     })
     .filter((v): v is Round => v !== null);
 
+  const eligibility = fromAttendeeEligibility(hackathon["attendeeEligibility"]);
+
+  const prizeBreakdownRaw = Array.isArray(hackathon["prizeBreakdown"])
+    ? (hackathon["prizeBreakdown"] as ReadonlyArray<unknown>)
+    : [];
+
+  const prizesList: Prize[] = prizeBreakdownRaw
+    .map((p): Prize | null => {
+      if (!isRecord(p)) return null;
+      const position = getString(p, "position");
+      if (!position) return null;
+      return {
+        id: getString(p, "id") ?? crypto.randomUUID(),
+        name: position,
+        amount: formatPrizeAmount(getString(p, "amount") ?? ""),
+        description: getString(p, "description") ?? "",
+      };
+    })
+    .filter((v): v is Prize => v !== null);
+
+  const prizeCertificate =
+    typeof hackathon["prizeCertificate"] === "boolean"
+      ? hackathon["prizeCertificate"]
+      : null;
+
+  const prizeDescriptionRaw = hackathon["prizeDescription"];
+  const prizeDescription =
+    isRecord(prizeDescriptionRaw) &&
+    typeof prizeDescriptionRaw["summary"] === "string"
+      ? (prizeDescriptionRaw["summary"] as string)
+      : "";
+
+  const registrationFormRaw = isRecord(hackathon["registrationForm"])
+    ? hackathon["registrationForm"]
+    : null;
+  const regFieldsRaw =
+    registrationFormRaw && Array.isArray(registrationFormRaw["fields"])
+      ? (registrationFormRaw["fields"] as ReadonlyArray<unknown>)
+      : [];
+
+  const registrationQuestions: RegistrationQuestion[] = regFieldsRaw
+    .map((f): RegistrationQuestion | null => {
+      if (!isRecord(f)) return null;
+      const label = getString(f, "label");
+      if (!label) return null;
+      const required = f["required"];
+      return {
+        id: getString(f, "id") ?? crypto.randomUUID(),
+        label,
+        type: fromRegistrationFieldType(getString(f, "type")),
+        required: typeof required === "boolean" ? required : false,
+        fixed: false,
+        options: Array.isArray(f["options"])
+          ? (f["options"] as ReadonlyArray<unknown>).filter(
+              (o): o is string => typeof o === "string"
+            )
+          : undefined,
+      };
+    })
+    .filter((v): v is RegistrationQuestion => v !== null);
+
+  const contactName = getString(hackathon, "contactName") ?? "";
+  const contactEmail = getString(hackathon, "contactEmail") ?? "";
+  const contactPhone = getString(hackathon, "contactPhone") ?? "";
+  const contacts: Contact[] =
+    contactName.trim().length > 0 ||
+    contactEmail.trim().length > 0 ||
+    contactPhone.trim().length > 0
+      ? [
+          {
+            id: "contact-1",
+            name: contactName,
+            email: contactEmail,
+            phone: contactPhone,
+          },
+        ]
+      : [];
+
+  const attachmentsRaw = Array.isArray(hackathon["attachments"])
+    ? (hackathon["attachments"] as ReadonlyArray<unknown>)
+    : [];
+  const attachments: Attachment[] = attachmentsRaw
+    .map((a): Attachment | null => {
+      if (!isRecord(a)) return null;
+      const title =
+        getString(a, "fileName") ?? getString(a, "storageKey") ?? "Attachment";
+      const type = getString(a, "mimeType") ?? "File";
+      return { id: getString(a, "id") ?? crypto.randomUUID(), title, type };
+    })
+    .filter((v): v is Attachment => v !== null);
+
+  const questionsRaw = Array.isArray(hackathon["questions"])
+    ? (hackathon["questions"] as ReadonlyArray<unknown>)
+    : [];
+  const additionalBasicQuestions: BasicQuestion[] = questionsRaw
+    .map((q): BasicQuestion | null => {
+      if (!isRecord(q)) return null;
+      const text = getString(q, "questionText");
+      if (!text) return null;
+      const required = q["required"];
+      return {
+        id: getString(q, "id") ?? crypto.randomUUID(),
+        label: text,
+        required: typeof required === "boolean" ? required : false,
+        isStatic: false,
+      };
+    })
+    .filter((v): v is BasicQuestion => v !== null);
+
   return {
     eventFestName: festival
       ? (getString(festival, "name") ?? "Individual Hackathon")
@@ -401,10 +553,10 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
     participantType: fromParticipantType(
       getString(hackathon, "participantType")
     ),
-    registrationQuestions: [],
+    registrationQuestions,
     rounds,
     registrationSettings: {
-      candidateTypes: [],
+      candidateTypes: [...eligibility],
       startDate: undefined,
       startTime: "09:00",
       endDate: registrationDeadline,
@@ -431,16 +583,17 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
           isStatic: true,
         },
         { id: "userType", label: "User Type", required: true, isStatic: true },
+        ...additionalBasicQuestions,
       ],
     },
     prizes: {
-      description: "",
-      certificateProvided: null,
-      list: [],
+      description: prizeDescription,
+      certificateProvided: prizeCertificate,
+      list: prizesList,
     },
     additionalInfo: {
-      contacts: [],
-      attachments: [],
+      contacts,
+      attachments,
     },
   };
 }
@@ -635,6 +788,23 @@ export default function EditOpportunityPage() {
         });
       }
 
+      const additionalQuestions =
+        formData.registrationSettings.questions.filter(
+          (q) => q.isStatic === false && q.label.trim().length > 0
+        );
+      if (additionalQuestions.length > 0) {
+        const payload: UpdateHackathonQuestionsDto = {
+          questions: additionalQuestions.map((q, idx) => ({
+            questionText: q.label,
+            type: "QUESTION_ANSWER",
+            required: q.required,
+            order: idx,
+            options: undefined,
+          })),
+        };
+        await updateHackathonQuestions(token, hackathonId, payload);
+      }
+
       const prizeItems: PrizeBreakdownDto[] = formData.prizes.list
         .map((p): PrizeBreakdownDto | null => {
           const amount = parseCurrencyToDecimalString(p.amount);
@@ -677,11 +847,17 @@ export default function EditOpportunityPage() {
     "idle" | "dirty" | "saving" | "saved" | "error"
   >("idle");
   const lastSavedSnapshotRef = React.useRef<string | null>(null);
+  const savingSnapshotRef = React.useRef<string | null>(null);
   const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
   const saveQueuedRef = React.useRef<boolean>(false);
   const lastErrorToastAtRef = React.useRef<number>(0);
+  const latestFormDataRef = React.useRef<FormData>(formData);
+
+  useEffect(() => {
+    latestFormDataRef.current = formData;
+  }, [formData]);
 
   // Establish the initial "saved" snapshot once we hydrate from backend.
   useEffect(() => {
@@ -717,21 +893,29 @@ export default function EditOpportunityPage() {
       }
 
       setAutoSaveStatus("saving");
+      savingSnapshotRef.current = serializeFormData(latestFormDataRef.current);
       saveMutation.mutate(undefined, {
         onSuccess: () => {
-          lastSavedSnapshotRef.current = serializeFormData(formData);
-          setAutoSaveStatus("saved");
+          if (typeof savingSnapshotRef.current === "string") {
+            lastSavedSnapshotRef.current = savingSnapshotRef.current;
+          }
+          savingSnapshotRef.current = null;
+
+          const nowSnapshot = serializeFormData(latestFormDataRef.current);
+          if (nowSnapshot === lastSavedSnapshotRef.current) {
+            setAutoSaveStatus("saved");
+          } else {
+            setAutoSaveStatus("dirty");
+          }
+
           if (saveQueuedRef.current) {
             saveQueuedRef.current = false;
-            // Trigger another save quickly if changes came in while saving.
-            setTimeout(() => {
-              // Let the effect re-run and schedule correctly.
-              setAutoSaveStatus("dirty");
-            }, 0);
+            // The effect will run again on the next render and schedule a new save.
           }
         },
         onError: () => {
           setAutoSaveStatus("error");
+          savingSnapshotRef.current = null;
           const now = Date.now();
           if (now - lastErrorToastAtRef.current > 10_000) {
             lastErrorToastAtRef.current = now;
