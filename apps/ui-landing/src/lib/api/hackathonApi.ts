@@ -14,8 +14,28 @@ export async function getHackathons(token: string): Promise<unknown> {
 /**
  * Fetches a single hackathon by id.
  */
-export async function getHackathonById(token: string, id: string): Promise<unknown> {
+export async function getHackathonById(
+  token: string,
+  id: string
+): Promise<unknown> {
   const res = await API.get(`/${id}`, { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
+}
+
+/**
+ * Fetches a single hackathon by slug.
+ */
+export async function getHackathonBySlug(
+  token: string,
+  slug: string
+): Promise<unknown> {
+  const safeSlug = slug.trim();
+  if (safeSlug.length === 0) {
+    throw new Error("Hackathon slug is required.");
+  }
+  const res = await API.get(`/by-slug/${encodeURIComponent(safeSlug)}`, {
+    headers: buildAuthHeaders(token),
+  });
   return res.data as unknown;
 }
 
@@ -24,7 +44,7 @@ export async function getHackathonById(token: string, id: string): Promise<unkno
  */
 export async function createHackathon(
   token: string,
-  data: CreateHackathonDto,
+  data: CreateHackathonDto
 ): Promise<unknown> {
   const res = await API.post("", data, { headers: buildAuthHeaders(token) });
   return res.data as unknown;
@@ -38,16 +58,21 @@ export async function createHackathon(
 export async function updateHackathon(
   token: string,
   id: string,
-  data: UpdateHackathonDto,
+  data: UpdateHackathonDto
 ): Promise<unknown> {
-  const res = await API.put(`/${id}`, data, { headers: buildAuthHeaders(token) });
+  const res = await API.put(`/${id}`, data, {
+    headers: buildAuthHeaders(token),
+  });
   return res.data as unknown;
 }
 
 /**
  * Deletes a hackathon.
  */
-export async function deleteHackathon(token: string, id: string): Promise<unknown> {
+export async function deleteHackathon(
+  token: string,
+  id: string
+): Promise<unknown> {
   const res = await API.delete(`/${id}`, { headers: buildAuthHeaders(token) });
   return res.data as unknown;
 }
@@ -55,7 +80,14 @@ export async function deleteHackathon(token: string, id: string): Promise<unknow
 /**
  * Registers the current user for a hackathon.
  */
-export async function registerForHackathon(token: string, id: string): Promise<unknown> {
-  const res = await API.post(`/${id}/register`, {}, { headers: buildAuthHeaders(token) });
+export async function registerForHackathon(
+  token: string,
+  id: string
+): Promise<unknown> {
+  const res = await API.post(
+    `/${id}/register`,
+    {},
+    { headers: buildAuthHeaders(token) }
+  );
   return res.data as unknown;
 }

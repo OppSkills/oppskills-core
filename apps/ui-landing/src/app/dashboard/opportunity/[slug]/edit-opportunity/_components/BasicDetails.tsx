@@ -86,7 +86,7 @@ const InputBlock = ({
 
 interface BasicDetailsProps {
   formData: FormData;
-  setFormData: (data: FormData) => void;
+  setFormData: (data: React.SetStateAction<FormData>) => void;
 }
 
 export default function BasicDetails({
@@ -103,7 +103,12 @@ export default function BasicDetails({
           <Image
             width={371}
             height={220}
-            src="/tmp/hackathon.jpg" // Placeholder
+            src={
+              typeof formData.eventThumbnail === "string" &&
+              formData.eventThumbnail.trim().length > 0
+                ? formData.eventThumbnail.trim()
+                : "/tmp/hackathon.jpg"
+            }
             alt="Hackathon Thumbnail"
             className="w-full h-full object-cover"
           />

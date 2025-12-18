@@ -247,6 +247,19 @@ export class HackathonService {
   }
 
   /**
+   * Get a single hackathon by slug.
+   * Includes all relations: owner, festival, rounds, questions, attachments, etc.
+   */
+  async getHackathonBySlug(slug: string) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug },
+      include: this.getHackathonIncludeClause(),
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    return hackathon;
+  }
+
+  /**
    * Update a hackathon (owner-only).
    * - Allowed only when status is DRAFT.
    * - Nested updates (rounds, questions, additionalInfo, etc.) use dedicated endpoints.
@@ -350,7 +363,7 @@ export class HackathonService {
         // New prize fields
         prizeDescription:
           dto.prizeDescription !== undefined
-            ? dto.prizeDescription ?? Prisma.JsonNull
+            ? (dto.prizeDescription ?? Prisma.JsonNull)
             : undefined,
         prizeCertificate: dto.prizeCertificate,
 
