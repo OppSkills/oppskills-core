@@ -36,11 +36,11 @@ export function MobileSidebarSwitcher({
         Main
       </Button>
       <Button
-        variant={activeMobileTab === "opportunity" ? "default" : "ghost"}
+        variant={activeMobileTab === "secondary" ? "default" : "ghost"}
         size="sm"
         className="flex-1"
         onClick={() => {
-          setActiveMobileTab("opportunity");
+          setActiveMobileTab("secondary");
           setMobileMenuOpen(true);
         }}
       >

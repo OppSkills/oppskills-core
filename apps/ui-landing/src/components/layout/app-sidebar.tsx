@@ -1,7 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { IconDashboard, IconReport, IconUsers } from "@tabler/icons-react";
+import {
+  IconCalendarEvent,
+  IconConfetti,
+  IconDashboard,
+  IconReport,
+  IconUsers,
+} from "@tabler/icons-react";
 
 import { NavMain } from "./nav-main";
 import { MobileSidebarSwitcher } from "./mobile-sidebar-switcher";
@@ -19,6 +25,7 @@ import {
 } from "@/components/ui/sidebar";
 import Image from "next/image";
 import Link from "next/link";
+import { Calendar } from "lucide-react";
 
 const data = {
   navMain: [
@@ -31,6 +38,16 @@ const data = {
       title: "Opportunity",
       url: "/dashboard/opportunity",
       icon: IconReport,
+    },
+    {
+      title: "Events",
+      url: "/dashboard/events",
+      icon: IconCalendarEvent,
+    },
+    {
+      title: "Festivals",
+      url: "/dashboard/festivals",
+      icon: IconConfetti,
     },
     {
       title: "Talent pipeline",

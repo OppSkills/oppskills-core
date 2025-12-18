@@ -11,6 +11,7 @@ import { SiteHeader } from "./layout/site-header";
 import { cn } from "@/lib/utils";
 import React from "react";
 import { OpportunitySidebar } from "./layout/opportunity-sidebar";
+import { EventsSidebar } from "./layout/events-sidebar";
 import { MobileNavigationProvider } from "./layout/mobile-navigation-context";
 
 export default function LayoutProvider({
@@ -33,28 +34,44 @@ export default function LayoutProvider({
   }, [pathname]);
 
   /**
+   * Check if the current route is in the events section
+   * Pattern: /dashboard/events/[slug]...
+   * Excludes the events list page: /dashboard/events
+   */
+  const [isEventsDashboard, eventsSlug] = React.useMemo(() => {
+    const eventsDetailPattern = /^\/dashboard\/events\/([^/]+)/;
+    const match = pathname.match(eventsDetailPattern);
+    if (match) {
+      return [true, match[1]];
+    }
+    return [false, null];
+  }, [pathname]);
+
+  const hasSecondarySidebar = isOpportunityDetail || isEventsDashboard;
+
+  /**
    * Control the main sidebar's open state
-   * When on opportunity detail pages, force collapse to icon mode
+   * When on opportunity detail pages or events dashboard, force collapse to icon mode
    * Hooks must be at the top level, not inside conditionals
    */
   const [mainSidebarOpen, setMainSidebarOpen] =
-    React.useState(!isOpportunityDetail);
+    React.useState(!hasSecondarySidebar);
 
   /**
    * Update main sidebar state when route changes
-   * Collapse main sidebar when entering opportunity detail pages
+   * Collapse main sidebar when entering detailed/secondary sections
    */
   React.useEffect(() => {
-    setMainSidebarOpen(!isOpportunityDetail);
-  }, [isOpportunityDetail]);
+    setMainSidebarOpen(!hasSecondarySidebar);
+  }, [hasSecondarySidebar]);
 
   // Mobile sidebar state management
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [activeMobileTab, setActiveMobileTab] = React.useState<
-    "main" | "opportunity"
-  >("opportunity");
+    "main" | "secondary"
+  >("secondary");
 
-  // Dashboard layout with dual-sidebar support for opportunity details
+  // Dashboard layout with dual-sidebar support
   if (isDashboard) {
     return (
       <MobileNavigationProvider
@@ -63,7 +80,7 @@ export default function LayoutProvider({
           setMobileMenuOpen,
           activeMobileTab,
           setActiveMobileTab,
-          isOpportunityDetail,
+          isOpportunityDetail: hasSecondarySidebar,
         }}
       >
         <main className="">
@@ -83,27 +100,40 @@ export default function LayoutProvider({
               if (open) setActiveMobileTab("main");
             }}
           >
-            {/* Main application sidebar - collapses to icon mode on opportunity details */}
+            {/* Main application sidebar - collapses to icon mode on detail pages */}
             <AppSidebar variant="floating" className="" />
 
-            {/* Secondary opportunity sidebar - only visible on opportunity detail pages */}
-            {isOpportunityDetail ? (
+            {/* Secondary sidebar - only visible on specific detailed pages */}
+            {hasSecondarySidebar ? (
               <SidebarContextProvider
                 defaultOpen={true}
-                openMobile={activeMobileTab === "opportunity" && mobileMenuOpen}
+                openMobile={activeMobileTab === "secondary" && mobileMenuOpen}
                 onOpenMobileChange={(open) => {
                   setMobileMenuOpen(open);
-                  if (open) setActiveMobileTab("opportunity");
+                  if (open) setActiveMobileTab("secondary");
                 }}
               >
-                <OpportunitySidebar
-                  side="left"
-                  variant="floating"
-                  collapsible="icon"
-                  style={{
-                    left: "calc(var(--sidebar-width-icon) + 1rem)",
-                  }}
-                />
+                {isOpportunityDetail && (
+                  <OpportunitySidebar
+                    side="left"
+                    variant="floating"
+                    collapsible="icon"
+                    style={{
+                      left: "calc(var(--sidebar-width-icon) + 1rem)",
+                    }}
+                  />
+                )}
+                {isEventsDashboard && eventsSlug && (
+                  <EventsSidebar
+                    slug={eventsSlug}
+                    side="left"
+                    variant="floating"
+                    collapsible="icon"
+                    style={{
+                      left: "calc(var(--sidebar-width-icon) + 1rem)",
+                    }}
+                  />
+                )}
                 <SidebarInset
                   className={cn("bg-neutral-200 p-2 space-y-4 my-1")}
                 >

@@ -5,8 +5,8 @@ import * as React from "react";
 interface MobileNavigationContextType {
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
-  activeMobileTab: "main" | "opportunity";
-  setActiveMobileTab: (tab: "main" | "opportunity") => void;
+  activeMobileTab: "main" | "secondary";
+  setActiveMobileTab: (tab: "main" | "secondary") => void;
   isOpportunityDetail: boolean;
 }
 
