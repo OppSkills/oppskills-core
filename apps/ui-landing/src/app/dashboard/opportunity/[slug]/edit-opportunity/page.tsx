@@ -9,9 +9,33 @@ import {
   Settings,
 } from "lucide-react";
 import { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQueryState } from "nuqs";
 import { cn } from "@/lib/utils";
+import { useParams } from "next/navigation";
+import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
+import { useAuth } from "@clerk/nextjs";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import type {
+  HackathonAttendeeEligibilityValue,
+  HackathonLocationDto,
+  HackathonModeValue,
+  PrizeBreakdownDto,
+  RegistrationFieldTypeValue,
+  RegistrationFormDto,
+  UpdateHackathonAdditionalInfoDto,
+  UpdateHackathonDto,
+  UpdateHackathonRoundsDto,
+} from "@oppskills/types";
+import {
+  updateHackathon,
+  updateHackathonAdditionalInfo,
+  updateHackathonMaxTeams,
+  updateHackathonPrizeBreakdown,
+  updateHackathonRegistrationForm,
+  updateHackathonRounds,
+} from "@/lib/api/hackathonApi";
 
 // Import new components
 import BasicDetails from "./_components/BasicDetails";
@@ -34,13 +58,6 @@ export interface Round {
   endTime: string;
 }
 
-export interface BasicQuestion {
-  id: string;
-  label: string;
-  required: boolean;
-  isStatic: boolean;
-}
-
 export interface RegistrationSettingsData {
   candidateTypes: string[];
   startDate: Date | undefined;
@@ -50,9 +67,9 @@ export interface RegistrationSettingsData {
   eventDate: Date | undefined;
   eventTime: string;
   maxTeamsNoLimit: boolean;
+  maxTeams?: number;
   minTeamSize?: number;
   maxTeamSize?: number;
-  questions: BasicQuestion[];
 }
 
 export interface Prize {
@@ -92,8 +109,18 @@ export interface FormData {
   eventFestVisibility: string;
   eventName: string;
   eventDate: Date | undefined;
+  /**
+   * Optional end date for multi-day events.
+   * - When omitted, endDate falls back to `eventDate` when saving.
+   */
+  eventEndDate: Date | undefined;
   eventLocation: string;
   eventTimeFrom: string;
+  /**
+   * Optional end time (HH:mm).
+   * - When omitted, endDate falls back to `eventTimeFrom` when saving.
+   */
+  eventTimeTo: string | undefined;
   eventDescription: string;
   eventThumbnail: string;
   eventRegisterBy: Date | undefined;
@@ -107,12 +134,496 @@ export interface FormData {
 }
 
 /**
+ * Type guard: checks if a value is a non-null object.
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getString(
+  obj: Record<string, unknown>,
+  key: string
+): string | undefined {
+  const value = obj[key];
+  return typeof value === "string" && value.trim().length > 0
+    ? value
+    : undefined;
+}
+
+function getDate(value: unknown): Date | undefined {
+  if (typeof value !== "string" || value.trim().length === 0) return undefined;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? undefined : d;
+}
+
+function pad2(input: number): string {
+  return String(input).padStart(2, "0");
+}
+
+function toTimeHHmm(d: Date): string {
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+function requireToken(token: string | null): string {
+  if (typeof token !== "string" || token.trim().length === 0) {
+    throw new Error("Not authenticated.");
+  }
+  return token;
+}
+
+function isValidUrl(value: string): boolean {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return false;
+  try {
+    // eslint-disable-next-line no-new
+    new URL(trimmed);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function toVisibilityValue(
+  label: string
+): "PUBLIC" | "PRIVATE" | "UNIVERSITY_ONLY" | undefined {
+  if (label === "Public") return "PUBLIC";
+  if (label === "Private") return "PRIVATE";
+  if (label === "University only") return "UNIVERSITY_ONLY";
+  return undefined;
+}
+
+function toHackathonTypeValue(
+  label: string
+):
+  | "CODING_HACKATHON"
+  | "IDEA_HACKATHON"
+  | "CASE_STUDY_COMPETITION"
+  | "DESIGN_HACKATHON"
+  | "OPEN_HACKATHON"
+  | undefined {
+  if (label === "Coding Hackathon") return "CODING_HACKATHON";
+  if (label === "Idea Hackathon") return "IDEA_HACKATHON";
+  if (label === "Case Study Competition") return "CASE_STUDY_COMPETITION";
+  if (label === "Design Hackathon") return "DESIGN_HACKATHON";
+  if (label === "Open Hackathon") return "OPEN_HACKATHON";
+  return undefined;
+}
+
+function toParticipantTypeValue(
+  label: string
+):
+  | "INDIVIDUAL"
+  | "TEAM_OF_2"
+  | "TEAM_OF_3"
+  | "TEAM_OF_4"
+  | "TEAM_OF_5"
+  | "TEAM_OF_6"
+  | "MORE_THAN_6"
+  | undefined {
+  if (label === "Individual") return "INDIVIDUAL";
+  if (label === "Team of 2") return "TEAM_OF_2";
+  if (label === "Team of 3") return "TEAM_OF_3";
+  if (label === "Team of 4") return "TEAM_OF_4";
+  if (label === "Team of 5") return "TEAM_OF_5";
+  if (label === "Team of 6") return "TEAM_OF_6";
+  if (label === "More than 6") return "MORE_THAN_6";
+  return undefined;
+}
+
+function toLocationDto(input: string): HackathonLocationDto | undefined {
+  const trimmed = input.trim();
+  if (trimmed.length === 0) return undefined;
+  if (isValidUrl(trimmed)) return { type: "VIRTUAL", virtualLink: trimmed };
+  return { type: "PHYSICAL", address: trimmed };
+}
+
+function toModeValue(locationInput: string): HackathonModeValue {
+  return isValidUrl(locationInput.trim()) ? "ONLINE" : "OFFLINE";
+}
+
+function combineDateAndTimeToIso(date: Date, timeHHmm: string): string {
+  const time = timeHHmm.trim();
+  const [hhRaw, mmRaw] = time.split(":");
+  const hh = Number(hhRaw);
+  const mm = Number(mmRaw);
+  if (!Number.isInteger(hh) || !Number.isInteger(mm)) {
+    throw new Error(`Invalid time value: "${timeHHmm}"`);
+  }
+  const d = new Date(date.getTime());
+  d.setHours(hh, mm, 0, 0);
+  return d.toISOString();
+}
+
+function mapCandidateTypesToEligibility(
+  input: ReadonlyArray<string>
+): HackathonAttendeeEligibilityValue[] {
+  const out: HackathonAttendeeEligibilityValue[] = [];
+  const add = (v: HackathonAttendeeEligibilityValue) => {
+    if (!out.includes(v)) out.push(v);
+  };
+  for (const t of input) {
+    if (t === "Everyone can apply") add("EVERYONE_CAN_APPLY");
+    if (t === "School students") add("SCHOOL_STUDENTS");
+    if (t === "College students") add("COLLEGE_STUDENTS");
+    if (t === "Freshers") add("FRESHERS");
+    if (t === "Professionals") add("PROFESSIONALS");
+  }
+  return out.length > 0 ? out : ["EVERYONE_CAN_APPLY"];
+}
+
+function mapRegistrationQuestionsToRegistrationForm(
+  questions: ReadonlyArray<RegistrationQuestion>
+): RegistrationFormDto {
+  const typeMap: Record<
+    RegistrationQuestion["type"],
+    RegistrationFieldTypeValue
+  > = {
+    Text: "TEXT",
+    "Phone No.": "PHONE_NO",
+    Email: "EMAIL",
+    Attachments: "ATTACHMENTS",
+    Number: "NUMBER",
+    Options: "OPTIONS",
+  };
+
+  return {
+    fields: questions.map((q, idx) => ({
+      label: q.label,
+      type: typeMap[q.type],
+      required: q.required,
+      order: idx,
+      options: q.type === "Options" ? (q.options ?? []) : [],
+      placeholder: undefined,
+    })),
+  };
+}
+
+function parseCurrencyToDecimalString(input: string): string | null {
+  const trimmed = input.trim();
+  if (trimmed.length === 0) return null;
+  if (/[a-zA-Z]/.test(trimmed)) return null;
+  const normalized = trimmed.replace(/[^0-9.]/g, "");
+  if (normalized.length === 0) return null;
+  const n = Number(normalized);
+  if (!Number.isFinite(n)) return null;
+  return n.toFixed(2);
+}
+
+function serializeFormData(value: FormData): string {
+  return JSON.stringify(value, (_key, v: unknown) => {
+    if (v instanceof Date) return v.toISOString();
+    return v;
+  });
+}
+
+function serializeRounds(value: ReadonlyArray<Round>): string {
+  return JSON.stringify(value, (_key, v: unknown) => {
+    if (v instanceof Date) return v.toISOString();
+    return v;
+  });
+}
+
+function serializePrizeBreakdown(
+  value: ReadonlyArray<PrizeBreakdownDto>
+): string {
+  return JSON.stringify(value);
+}
+
+function serializeAdditionalInfo(value: AdditionalInfoData): string {
+  return JSON.stringify(value);
+}
+
+type AutoSaveUiStatus = "idle" | "dirty" | "saving" | "saved" | "error";
+
+function fromVisibility(value: string | undefined): string {
+  const v = (value ?? "").toUpperCase();
+  if (v === "PRIVATE") return "Private";
+  if (v === "UNIVERSITY_ONLY") return "University only";
+  return "Public";
+}
+
+function fromHackathonType(value: string | undefined): string {
+  const v = (value ?? "").toUpperCase();
+  if (v === "IDEA_HACKATHON") return "Idea Hackathon";
+  if (v === "OPEN_HACKATHON") return "Open Hackathon";
+  return "Coding Hackathon";
+}
+
+function fromParticipantType(value: string | undefined): string {
+  const v = (value ?? "").toUpperCase();
+  if (v === "TEAM_OF_2") return "Team of 2";
+  if (v === "TEAM_OF_3") return "Team of 3";
+  if (v === "TEAM_OF_4") return "Team of 4";
+  if (v === "TEAM_OF_5") return "Team of 5";
+  if (v === "TEAM_OF_6") return "Team of 6";
+  if (v === "MORE_THAN_6") return "More than 6";
+  return "Individual";
+}
+
+function fromAttendeeEligibility(values: unknown): ReadonlyArray<string> {
+  const raw = Array.isArray(values) ? values : [];
+  const out: string[] = [];
+  const add = (v: string) => {
+    if (!out.includes(v)) out.push(v);
+  };
+  for (const item of raw) {
+    if (typeof item !== "string") continue;
+    const v = item.toUpperCase();
+    if (v === "EVERYONE_CAN_APPLY") add("Everyone can apply");
+    if (v === "SCHOOL_STUDENTS") add("School students");
+    if (v === "COLLEGE_STUDENTS") add("College students");
+    if (v === "FRESHERS") add("Freshers");
+    if (v === "PROFESSIONALS") add("Professionals");
+  }
+  return out;
+}
+
+function formatPrizeAmount(amount: unknown): string {
+  if (typeof amount !== "string") return "";
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return amount;
+  const pretty = n.toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: n % 1 === 0 ? 0 : 2,
+  });
+  return `₹ ${pretty}`;
+}
+
+function fromRegistrationFieldType(
+  value: string | undefined
+): RegistrationQuestion["type"] {
+  const v = (value ?? "").toUpperCase();
+  if (v === "PHONE_NO") return "Phone No.";
+  if (v === "EMAIL") return "Email";
+  if (v === "ATTACHMENTS") return "Attachments";
+  if (v === "NUMBER") return "Number";
+  if (v === "OPTIONS") return "Options";
+  return "Text";
+}
+
+function extractHackathon(input: unknown): Record<string, unknown> | null {
+  if (!isRecord(input)) return null;
+  const maybeData = input["data"];
+  if (isRecord(maybeData)) return maybeData;
+  return input;
+}
+
+function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
+  const festival = isRecord(hackathon["festival"])
+    ? hackathon["festival"]
+    : null;
+
+  const startDate = getDate(hackathon["startDate"]);
+  const endDate = getDate(hackathon["endDate"]);
+  const registrationDeadline = getDate(hackathon["registrationDeadline"]);
+  const maxTeamsRaw = hackathon["maxTeams"];
+  const maxTeamsValue =
+    typeof maxTeamsRaw === "number" ? maxTeamsRaw : undefined;
+
+  const locationVirtualLink = getString(hackathon, "locationVirtualLink");
+  const locationAddress = getString(hackathon, "locationAddress");
+  const locationCity = getString(hackathon, "locationCity");
+  const location = locationVirtualLink
+    ? locationVirtualLink
+    : [locationAddress, locationCity]
+        .filter((v): v is string => typeof v === "string")
+        .join(", ");
+
+  const roundsRaw = Array.isArray(hackathon["rounds"])
+    ? (hackathon["rounds"] as ReadonlyArray<unknown>)
+    : [];
+
+  const rounds: Round[] = roundsRaw
+    .map((r): Round | null => {
+      if (!isRecord(r)) return null;
+      const startsAt = getDate(r["startsAt"]);
+      const endsAt = getDate(r["endsAt"]);
+      if (!startsAt || !endsAt) return null;
+      const id = getString(r, "id") ?? crypto.randomUUID();
+      return {
+        id,
+        name: getString(r, "name") ?? "Round",
+        description: getString(r, "description") ?? "",
+        startDate: startsAt,
+        endDate: endsAt,
+        startTime: toTimeHHmm(startsAt),
+        endTime: toTimeHHmm(endsAt),
+      };
+    })
+    .filter((v): v is Round => v !== null);
+
+  const eligibility = fromAttendeeEligibility(hackathon["attendeeEligibility"]);
+
+  const prizeBreakdownRaw = Array.isArray(hackathon["prizeBreakdown"])
+    ? (hackathon["prizeBreakdown"] as ReadonlyArray<unknown>)
+    : [];
+
+  const prizesList: Prize[] = prizeBreakdownRaw
+    .map((p): Prize | null => {
+      if (!isRecord(p)) return null;
+      const position = getString(p, "position");
+      if (!position) return null;
+      return {
+        id: getString(p, "id") ?? crypto.randomUUID(),
+        name: position,
+        amount: formatPrizeAmount(getString(p, "amount") ?? ""),
+        description: getString(p, "description") ?? "",
+      };
+    })
+    .filter((v): v is Prize => v !== null);
+
+  const prizeCertificate =
+    typeof hackathon["prizeCertificate"] === "boolean"
+      ? hackathon["prizeCertificate"]
+      : null;
+
+  const prizeDescriptionRaw = hackathon["prizeDescription"];
+  const prizeDescription =
+    isRecord(prizeDescriptionRaw) &&
+    typeof prizeDescriptionRaw["summary"] === "string"
+      ? (prizeDescriptionRaw["summary"] as string)
+      : "";
+
+  const registrationFormRaw = isRecord(hackathon["registrationForm"])
+    ? hackathon["registrationForm"]
+    : null;
+  const regFieldsRaw =
+    registrationFormRaw && Array.isArray(registrationFormRaw["fields"])
+      ? (registrationFormRaw["fields"] as ReadonlyArray<unknown>)
+      : [];
+
+  const registrationQuestions: RegistrationQuestion[] = regFieldsRaw
+    .map((f): RegistrationQuestion | null => {
+      if (!isRecord(f)) return null;
+      const label = getString(f, "label");
+      if (!label) return null;
+      const required = f["required"];
+      return {
+        id: getString(f, "id") ?? crypto.randomUUID(),
+        label,
+        type: fromRegistrationFieldType(getString(f, "type")),
+        required: typeof required === "boolean" ? required : false,
+        fixed: false,
+        options: Array.isArray(f["options"])
+          ? (f["options"] as ReadonlyArray<unknown>).filter(
+              (o): o is string => typeof o === "string"
+            )
+          : undefined,
+      };
+    })
+    .filter((v): v is RegistrationQuestion => v !== null);
+
+  const contactName = getString(hackathon, "contactName") ?? "";
+  const contactEmail = getString(hackathon, "contactEmail") ?? "";
+  const contactPhone = getString(hackathon, "contactPhone") ?? "";
+  const contacts: Contact[] =
+    contactName.trim().length > 0 ||
+    contactEmail.trim().length > 0 ||
+    contactPhone.trim().length > 0
+      ? [
+          {
+            id: "contact-1",
+            name: contactName,
+            email: contactEmail,
+            phone: contactPhone,
+          },
+        ]
+      : [];
+
+  const attachmentsRaw = Array.isArray(hackathon["attachments"])
+    ? (hackathon["attachments"] as ReadonlyArray<unknown>)
+    : [];
+  const attachments: Attachment[] = attachmentsRaw
+    .map((a): Attachment | null => {
+      if (!isRecord(a)) return null;
+      const title =
+        getString(a, "fileName") ?? getString(a, "storageKey") ?? "Attachment";
+      const type = getString(a, "mimeType") ?? "File";
+      return { id: getString(a, "id") ?? crypto.randomUUID(), title, type };
+    })
+    .filter((v): v is Attachment => v !== null);
+
+  return {
+    eventFestName: festival
+      ? (getString(festival, "name") ?? "Individual Hackathon")
+      : "Individual Hackathon",
+    festivalId: festival ? getString(festival, "id") : undefined,
+    eventFestVisibility: fromVisibility(getString(hackathon, "visibility")),
+    eventName: getString(hackathon, "name") ?? "",
+    eventDate: startDate,
+    eventEndDate: endDate,
+    eventLocation: location,
+    eventTimeFrom: startDate ? toTimeHHmm(startDate) : "09:00",
+    eventTimeTo: endDate ? toTimeHHmm(endDate) : undefined,
+    eventDescription: getString(hackathon, "description") ?? "",
+    eventThumbnail: getString(hackathon, "bannerImageUrl") ?? "",
+    eventRegisterBy: registrationDeadline,
+    hackathonType: fromHackathonType(getString(hackathon, "hackathonType")),
+    participantType: fromParticipantType(
+      getString(hackathon, "participantType")
+    ),
+    registrationQuestions,
+    rounds,
+    registrationSettings: {
+      candidateTypes: [...eligibility],
+      startDate: undefined,
+      startTime: "09:00",
+      endDate: registrationDeadline,
+      endTime: registrationDeadline
+        ? toTimeHHmm(registrationDeadline)
+        : "23:59",
+      eventDate: startDate,
+      eventTime: startDate ? toTimeHHmm(startDate) : "09:00",
+      maxTeamsNoLimit: maxTeamsValue === undefined,
+      maxTeams: maxTeamsValue,
+    },
+    prizes: {
+      description: prizeDescription,
+      certificateProvided: prizeCertificate,
+      list: prizesList,
+    },
+    additionalInfo: {
+      contacts,
+      attachments,
+    },
+  };
+}
+
+/**
  * Edit Opportunity Page
  */
 export default function EditOpportunityPage() {
   const [activeTab, setActiveTab] = useQueryState("tab", {
     defaultValue: "basic-details",
   });
+
+  const { getToken } = useAuth();
+  const params = useParams();
+  const slugParam = useMemo(() => {
+    const raw = isRecord(params) ? params["slug"] : undefined;
+    if (typeof raw === "string") return raw;
+    if (Array.isArray(raw) && typeof raw[0] === "string") return raw[0];
+    return null;
+  }, [params]);
+
+  const {
+    data: hackathonRaw,
+    isLoading: isLoadingHackathon,
+    error: hackathonError,
+  } = useHackathonBySlug(slugParam);
+
+  const [hasHydratedFromBackend, setHasHydratedFromBackend] =
+    useState<boolean>(false);
+  const [hackathonId, setHackathonId] = useState<string | null>(null);
+  const lastSavedMaxTeamsRef = React.useRef<number | null | undefined>(
+    undefined
+  );
+  const lastSavedRoundsSnapshotRef = React.useRef<string | null>(null);
+  const savingRoundsSnapshotRef = React.useRef<string | null>(null);
+  const lastSavedPrizeBreakdownSnapshotRef = React.useRef<string | null>(null);
+  const savingPrizeBreakdownSnapshotRef = React.useRef<string | null>(null);
+  const lastSavedAdditionalInfoSnapshotRef = React.useRef<string | null>(null);
+  const savingAdditionalInfoSnapshotRef = React.useRef<string | null>(null);
 
   const tabs = [
     {
@@ -143,115 +654,402 @@ export default function EditOpportunityPage() {
     },
   ];
 
-  const [formData, setFormData] = useState<FormData>({
-    eventFestName: "TechFest 2025",
-    festivalId: "fest-001",
+  const [formData, setFormData] = useState<FormData>(() => ({
+    eventFestName: "Individual Hackathon",
+    festivalId: undefined,
     eventFestVisibility: "Public",
-    eventName: "HackVerse 2025",
-    eventDate: new Date("2025-11-24"),
-    eventLocation: "Bangalore International Exhibition Centre",
+    eventName: "",
+    eventDate: undefined,
+    eventEndDate: undefined,
+    eventLocation: "",
     eventTimeFrom: "09:00",
-    eventDescription:
-      "Join us for the biggest hackathon of the year! Build, learn, and grow with the community.",
-    eventThumbnail:
-      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=2670",
-    hackathonType: "Online",
-    participantType: "Team",
-    eventRegisterBy: new Date("2025-11-20"),
+    eventTimeTo: undefined,
+    eventDescription: "",
+    eventThumbnail: "",
+    eventRegisterBy: undefined,
+    hackathonType: "Coding Hackathon",
+    participantType: "Individual",
     registrationQuestions: [],
-    rounds: [
-      {
-        id: "r1",
-        name: "Ideation Phase",
-        description: "Submit your initial ideas and prototypes.",
-        startDate: new Date("2025-11-01"),
-        endDate: new Date("2025-11-10"),
-        startTime: "10:00",
-        endTime: "23:59",
-      },
-      {
-        id: "r2",
-        name: "Hackathon Finale",
-        description: "24-hour non-stop coding marathon.",
-        startDate: new Date("2025-11-24"),
-        endDate: new Date("2025-11-25"),
-        startTime: "09:00",
-        endTime: "09:00",
-      },
-    ],
+    rounds: [],
     registrationSettings: {
-      candidateTypes: ["College students", "Freshers"],
-      startDate: new Date("2025-10-01"),
+      candidateTypes: [],
+      startDate: undefined,
       startTime: "09:00",
-      endDate: new Date("2025-11-20"),
+      endDate: undefined,
       endTime: "23:59",
-      eventDate: new Date("2025-11-24"),
+      eventDate: undefined,
       eventTime: "09:00",
-      maxTeamsNoLimit: false,
-      questions: [
-        { id: "name", label: "Name", required: true, isStatic: true },
-        { id: "email", label: "Email", required: true, isStatic: true },
-        {
-          id: "mobile",
-          label: "Mobile Number",
-          required: true,
-          isStatic: true,
-        },
-        { id: "gender", label: "Gender", required: true, isStatic: true },
-        {
-          id: "college",
-          label: "Current College/ Organization",
-          required: true,
-          isStatic: true,
-        },
-        { id: "userType", label: "User Type", required: true, isStatic: true },
-        {
-          id: "github",
-          label: "GitHub Profile URL",
-          required: true,
-          isStatic: false,
-        },
-      ],
+      maxTeamsNoLimit: true,
+      maxTeams: undefined,
     },
-    prizes: {
-      description: "Win exciting cash prizes and internship opportunities!",
-      certificateProvided: true,
-      list: [
-        {
-          id: "p1",
-          name: "Star Performer",
-          amount: "₹ 1,00,000",
-          description: "Grand winner of the hackathon",
+    prizes: { description: "", certificateProvided: null, list: [] },
+    additionalInfo: { contacts: [], attachments: [] },
+  }));
+
+  useEffect(() => {
+    if (hasHydratedFromBackend) return;
+    const hackathon = extractHackathon(hackathonRaw);
+    if (!hackathon) return;
+    const id = getString(hackathon, "id");
+    if (typeof id === "string") setHackathonId(id);
+    const maxTeamsRaw = hackathon["maxTeams"];
+    lastSavedMaxTeamsRef.current =
+      typeof maxTeamsRaw === "number" ? maxTeamsRaw : null;
+    setFormData(mapHackathonToFormData(hackathon));
+    setHasHydratedFromBackend(true);
+  }, [hackathonRaw, hasHydratedFromBackend]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (hackathonId === null) {
+        throw new Error("Hackathon id is not loaded yet.");
+      }
+      const token = requireToken(await getToken());
+
+      // Snapshots used to decide whether to call dedicated nested endpoints.
+      const roundsSnapshot = serializeRounds(formData.rounds);
+      const additionalInfoSnapshot = serializeAdditionalInfo(
+        formData.additionalInfo
+      );
+
+      const base: UpdateHackathonDto = {
+        name:
+          formData.eventName.trim().length > 0
+            ? formData.eventName.trim()
+            : undefined,
+        description:
+          formData.eventDescription.trim().length > 0
+            ? formData.eventDescription
+            : undefined,
+        festivalId: formData.festivalId,
+        bannerImageUrl: isValidUrl(formData.eventThumbnail)
+          ? formData.eventThumbnail.trim()
+          : undefined,
+        mode: toModeValue(formData.eventLocation),
+        visibility: toVisibilityValue(formData.eventFestVisibility),
+        hackathonType: toHackathonTypeValue(formData.hackathonType),
+        participantType: toParticipantTypeValue(formData.participantType),
+        location: toLocationDto(formData.eventLocation),
+        attendeeEligibility: mapCandidateTypesToEligibility(
+          formData.registrationSettings.candidateTypes
+        ),
+        registrationDeadline: formData.eventRegisterBy
+          ? combineDateAndTimeToIso(
+              formData.eventRegisterBy,
+              formData.registrationSettings.endTime
+            )
+          : undefined,
+        startDate: formData.eventDate
+          ? combineDateAndTimeToIso(formData.eventDate, formData.eventTimeFrom)
+          : undefined,
+        endDate: formData.eventDate
+          ? combineDateAndTimeToIso(
+              formData.eventEndDate ?? formData.eventDate,
+              formData.eventTimeTo ?? formData.eventTimeFrom
+            )
+          : undefined,
+        prizeCertificate:
+          typeof formData.prizes.certificateProvided === "boolean"
+            ? formData.prizes.certificateProvided
+            : undefined,
+        prizeDescription:
+          formData.prizes.description.trim().length > 0
+            ? { summary: formData.prizes.description.trim() }
+            : undefined,
+      };
+
+      await updateHackathon(token, hackathonId, base);
+
+      const desiredMaxTeams =
+        formData.registrationSettings.maxTeamsNoLimit === true
+          ? null
+          : typeof formData.registrationSettings.maxTeams === "number" &&
+              Number.isInteger(formData.registrationSettings.maxTeams) &&
+              formData.registrationSettings.maxTeams >= 1
+            ? formData.registrationSettings.maxTeams
+            : undefined;
+
+      if (
+        desiredMaxTeams !== undefined &&
+        desiredMaxTeams !== lastSavedMaxTeamsRef.current
+      ) {
+        await updateHackathonMaxTeams(token, hackathonId, {
+          maxTeams: desiredMaxTeams,
+        });
+        lastSavedMaxTeamsRef.current = desiredMaxTeams;
+      }
+
+      // Rounds: allow clearing by sending an empty array, but only when rounds changed.
+      if (roundsSnapshot !== lastSavedRoundsSnapshotRef.current) {
+        const roundsDto: UpdateHackathonRoundsDto = {
+          rounds: formData.rounds.map((r, idx) => ({
+            name: r.name,
+            description:
+              r.description.trim().length > 0 ? r.description : undefined,
+            startsAt: combineDateAndTimeToIso(r.startDate, r.startTime),
+            endsAt: combineDateAndTimeToIso(r.endDate, r.endTime),
+            order: idx,
+            roundType: "ONLINE",
+            submissionConfig: undefined,
+          })),
+        };
+        await updateHackathonRounds(token, hackathonId, roundsDto);
+        savingRoundsSnapshotRef.current = roundsSnapshot;
+      }
+
+      const customRegistrationQuestions = formData.registrationQuestions.filter(
+        (q) => q.fixed !== true && q.label.trim().length > 0
+      );
+      const registrationForm = mapRegistrationQuestionsToRegistrationForm(
+        customRegistrationQuestions
+      );
+      await updateHackathonRegistrationForm(token, hackathonId, {
+        registrationForm,
+      });
+
+      // Prize breakdown: allow clearing by sending an empty array, but only when breakdown changed.
+      const prizeItemsResult: {
+        prizeItems: PrizeBreakdownDto[];
+        hasInvalidAmount: boolean;
+      } = formData.prizes.list.reduce(
+        (
+          acc: { prizeItems: PrizeBreakdownDto[]; hasInvalidAmount: boolean },
+          p
+        ) => {
+          const amount = parseCurrencyToDecimalString(p.amount);
+          if (amount === null) {
+            return { ...acc, hasInvalidAmount: true };
+          }
+          return {
+            ...acc,
+            prizeItems: [
+              ...acc.prizeItems,
+              {
+                position: p.name,
+                amount,
+                description:
+                  p.description.trim().length > 0 ? p.description : undefined,
+              },
+            ],
+          };
         },
-        {
-          id: "p2",
-          name: "Runner Up",
-          amount: "₹ 50,000",
-          description: "Second place winner",
-        },
-      ],
+        { prizeItems: [], hasInvalidAmount: false }
+      );
+
+      const prizeBreakdownSnapshot = serializePrizeBreakdown(
+        prizeItemsResult.prizeItems
+      );
+      if (
+        prizeItemsResult.hasInvalidAmount === false &&
+        prizeBreakdownSnapshot !== lastSavedPrizeBreakdownSnapshotRef.current
+      ) {
+        await updateHackathonPrizeBreakdown(token, hackathonId, {
+          prizeBreakdown: prizeItemsResult.prizeItems,
+        });
+        savingPrizeBreakdownSnapshotRef.current = prizeBreakdownSnapshot;
+      }
+
+      // Additional info: allow clearing attachments by sending [] and clearing contact by sending "".
+      // We only send when the section changed.
+      if (
+        additionalInfoSnapshot !== lastSavedAdditionalInfoSnapshotRef.current
+      ) {
+        const first = formData.additionalInfo.contacts[0];
+        const payload: UpdateHackathonAdditionalInfoDto = {
+          contact: first
+            ? {
+                name: first.name,
+                email: first.email,
+                phone: first.phone,
+              }
+            : {
+                name: "",
+                email: "",
+                phone: "",
+              },
+          // NOTE: Attachments uploads/edits are not supported in this UI yet.
+          // We intentionally omit `attachments` so the backend preserves existing ones.
+          // TODO: When attachment management is implemented, send attachments intentionally
+          // (replace/clear) with explicit UX to avoid accidental data loss.
+        };
+        await updateHackathonAdditionalInfo(token, hackathonId, payload);
+        savingAdditionalInfoSnapshotRef.current = additionalInfoSnapshot;
+      }
     },
-    additionalInfo: {
-      contacts: [
-        {
-          id: "c1",
-          name: "John Doe",
-          phone: "+91 98765 43210",
-          email: "john.doe@example.com",
-        },
-        {
-          id: "c2",
-          name: "Jane Smith",
-          phone: "+91 99887 76655",
-          email: "jane.smith@example.com",
-        },
-      ],
-      attachments: [
-        { id: "a1", title: "Rulebook.pdf", type: "PDF File" },
-        { id: "a2", title: "Problem_Statement.zip", type: "Zip File" },
-      ],
+    onError: (err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error(err);
     },
   });
+
+  const [autoSaveStatus, setAutoSaveStatus] =
+    useState<AutoSaveUiStatus>("idle");
+  const lastSavedSnapshotRef = React.useRef<string | null>(null);
+  const savingSnapshotRef = React.useRef<string | null>(null);
+  const lastSavedAtRef = React.useRef<number | null>(null);
+  const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const saveQueuedRef = React.useRef<boolean>(false);
+  const lastErrorToastAtRef = React.useRef<number>(0);
+  const latestFormDataRef = React.useRef<FormData>(formData);
+
+  useEffect(() => {
+    latestFormDataRef.current = formData;
+  }, [formData]);
+
+  /**
+   * Executes a save immediately (no debounce).
+   * - Used by the normal debounce timer.
+   * - Also used to flush queued saves after an in-flight save finishes.
+   */
+  const runSaveMutation = React.useCallback((): void => {
+    if (saveMutation.isPending) {
+      saveQueuedRef.current = true;
+      return;
+    }
+
+    setAutoSaveStatus("saving");
+    savingSnapshotRef.current = serializeFormData(latestFormDataRef.current);
+
+    saveMutation.mutate(undefined, {
+      onSuccess: () => {
+        if (typeof savingSnapshotRef.current === "string") {
+          lastSavedSnapshotRef.current = savingSnapshotRef.current;
+        }
+        savingSnapshotRef.current = null;
+
+        if (typeof savingRoundsSnapshotRef.current === "string") {
+          lastSavedRoundsSnapshotRef.current = savingRoundsSnapshotRef.current;
+        }
+        savingRoundsSnapshotRef.current = null;
+
+        if (typeof savingPrizeBreakdownSnapshotRef.current === "string") {
+          lastSavedPrizeBreakdownSnapshotRef.current =
+            savingPrizeBreakdownSnapshotRef.current;
+        }
+        savingPrizeBreakdownSnapshotRef.current = null;
+
+        if (typeof savingAdditionalInfoSnapshotRef.current === "string") {
+          lastSavedAdditionalInfoSnapshotRef.current =
+            savingAdditionalInfoSnapshotRef.current;
+        }
+        savingAdditionalInfoSnapshotRef.current = null;
+
+        const nowSnapshot = serializeFormData(latestFormDataRef.current);
+        if (nowSnapshot === lastSavedSnapshotRef.current) {
+          lastSavedAtRef.current = Date.now();
+          setAutoSaveStatus("saved");
+        } else {
+          setAutoSaveStatus("dirty");
+        }
+
+        if (saveQueuedRef.current) {
+          // Flush any changes that happened during the in-flight save.
+          saveQueuedRef.current = false;
+          setTimeout(() => {
+            runSaveMutation();
+          }, 0);
+        }
+      },
+      onError: () => {
+        setAutoSaveStatus("error");
+        savingSnapshotRef.current = null;
+        const now = Date.now();
+        if (now - lastErrorToastAtRef.current > 10_000) {
+          lastErrorToastAtRef.current = now;
+          toast.error("Autosave failed. Please check your connection.");
+        }
+      },
+    });
+  }, [saveMutation]);
+
+  // Establish the initial "saved" snapshot once we hydrate from backend.
+  useEffect(() => {
+    if (!hasHydratedFromBackend) return;
+    if (hackathonId === null) return;
+    if (lastSavedSnapshotRef.current !== null) return;
+    lastSavedSnapshotRef.current = serializeFormData(formData);
+    lastSavedRoundsSnapshotRef.current = serializeRounds(formData.rounds);
+
+    // Saved prize breakdown snapshot is derived from valid numeric values only.
+    const initialPrizeItems: PrizeBreakdownDto[] = formData.prizes.list
+      .map((p): PrizeBreakdownDto | null => {
+        const amount = parseCurrencyToDecimalString(p.amount);
+        if (amount === null) return null;
+        return {
+          position: p.name,
+          amount,
+          description:
+            p.description.trim().length > 0 ? p.description : undefined,
+        };
+      })
+      .filter((v): v is PrizeBreakdownDto => v !== null);
+    lastSavedPrizeBreakdownSnapshotRef.current =
+      serializePrizeBreakdown(initialPrizeItems);
+    lastSavedAdditionalInfoSnapshotRef.current = serializeAdditionalInfo(
+      formData.additionalInfo
+    );
+    lastSavedAtRef.current = Date.now();
+    setAutoSaveStatus("saved");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasHydratedFromBackend, hackathonId]);
+
+  // Debounced autosave on any form changes.
+  useEffect(() => {
+    if (!hasHydratedFromBackend) return;
+    if (hackathonId === null) return;
+
+    const snapshot = serializeFormData(formData);
+    if (snapshot === lastSavedSnapshotRef.current) {
+      if (autoSaveStatus !== "saving") setAutoSaveStatus("saved");
+      return;
+    }
+
+    setAutoSaveStatus("dirty");
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      runSaveMutation();
+    }, 900);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+    };
+  }, [
+    formData,
+    hasHydratedFromBackend,
+    hackathonId,
+    saveMutation,
+    autoSaveStatus,
+    runSaveMutation,
+  ]);
+
+  if (isLoadingHackathon) {
+    return (
+      <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
+        <div className="w-full max-w-3xl text-muted-foreground">
+          Loading opportunity...
+        </div>
+      </div>
+    );
+  }
+
+  if (hackathonError) {
+    return (
+      <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
+        <div className="w-full max-w-3xl text-destructive">
+          Failed to load opportunity.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
@@ -276,13 +1074,39 @@ export default function EditOpportunityPage() {
         </div>
       </div>
 
+      {/* Sticky Autosave Status */}
+      <div className="w-full sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border">
+        <div className="w-full flex items-center justify-between px-2 py-2">
+          <div className="text-xs font-medium">
+            {autoSaveStatus === "saving" ? (
+              <span className="text-primary">Saving…</span>
+            ) : autoSaveStatus === "dirty" ? (
+              <span className="text-amber-600">Unsaved changes</span>
+            ) : autoSaveStatus === "error" ? (
+              <span className="text-destructive">Autosave error</span>
+            ) : (
+              <span className="text-emerald-600">Saved</span>
+            )}
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            {typeof lastSavedAtRef.current === "number"
+              ? `Last saved: ${new Date(lastSavedAtRef.current).toLocaleTimeString()}`
+              : ""}
+          </div>
+        </div>
+      </div>
+
       <div className="w-full">
         {activeTab === "basic-details" && (
           <BasicDetails formData={formData} setFormData={setFormData} />
         )}
 
         {activeTab === "registration-settings" && (
-          <RegistrationSettings formData={formData} setFormData={setFormData} />
+          <RegistrationSettings
+            formData={formData}
+            setFormData={setFormData}
+            savedMaxTeams={lastSavedMaxTeamsRef.current}
+          />
         )}
 
         {activeTab === "rounds-stages" && (
@@ -297,8 +1121,11 @@ export default function EditOpportunityPage() {
           <AdditionalInfo formData={formData} setFormData={setFormData} />
         )}
 
-        {/* Placeholders for other tabs */}
-        {activeTab === "preview" && <CompetitionDetailsPage />}
+        {activeTab === "preview" && (
+          <div className="w-full flex flex-col gap-4">
+            <CompetitionDetailsPage />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -53,9 +53,13 @@ import Image from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
+import { cn } from "@/lib/utils";
 import type {
   CreateFestivalDto,
   CreateHackathonDto,
+  RegistrationFieldDto,
+  RegistrationFieldTypeValue,
+  RegistrationFormDto,
   HackathonLocationDto,
   FestivalLocationDto,
   HackathonModeValue,
@@ -63,8 +67,13 @@ import type {
   ParticipantTypeValue,
   VisibilityValue,
 } from "@oppskills/types";
-import { createHackathon } from "@/lib/api/hackathonApi";
+import {
+  createHackathon,
+  updateHackathonRegistrationForm,
+} from "@/lib/api/hackathonApi";
 import { createFestival, getFestivals } from "@/lib/api/festivalApi";
+import { presignImageUpload } from "@/lib/api/mediaApi";
+import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 
 /**
  * Organizer page: creates festivals and hackathons.
@@ -170,12 +179,36 @@ export default function Page() {
     useState<boolean>(false);
 
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
+  const bannerInputId = useMemo(
+    () => `organizer-banner-upload-${crypto.randomUUID()}`,
+    []
+  );
 
   /**
    * Type guard: checks if a value is a non-null object.
    */
   function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
+  }
+
+  /**
+   * Extracts hackathon id from the backend create response.
+   * Backend can return either `{ data: { id } }` or `{ id }` depending on caller.
+   */
+  function extractHackathonId(input: unknown): string | undefined {
+    if (!isRecord(input)) return undefined;
+    const directId = input["id"];
+    if (typeof directId === "string" && directId.trim().length > 0) {
+      return directId.trim();
+    }
+    const data = input["data"];
+    if (!isRecord(data)) return undefined;
+    const nestedId = data["id"];
+    if (typeof nestedId === "string" && nestedId.trim().length > 0) {
+      return nestedId.trim();
+    }
+    return undefined;
   }
 
   /**
@@ -220,6 +253,56 @@ export default function Page() {
   }
 
   /**
+   * Upload banner image to S3 via backend presign, then store CloudFront URL in state.
+   * This updates `formData.eventThumbnail`, which is later persisted as `bannerImageUrl`.
+   */
+  async function handleBannerSelected(file: File | null): Promise<void> {
+    if (!file) return;
+    if (isUploadingBanner) return;
+
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast.error("Image too large. Max size is 10MB.");
+      return;
+    }
+
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedMimeTypes.includes(file.type)) {
+      toast.error("Only JPG, PNG, or WebP images are allowed.");
+      return;
+    }
+
+    setIsUploadingBanner(true);
+    try {
+      const token = await getToken();
+      if (typeof token !== "string" || token.trim().length === 0) {
+        toast.error("Please sign in to upload.");
+        return;
+      }
+
+      const presign = await presignImageUpload(token, {
+        purpose: "HACKATHON_BANNER",
+        mimeType: file.type,
+      });
+
+      await uploadImageToS3PresignedPost({ presign, file });
+
+      setFormData((prev) => ({
+        ...prev,
+        eventThumbnail: presign.publicUrl,
+      }));
+
+      toast.success("Banner uploaded.");
+    } catch (err: unknown) {
+      // eslint-disable-next-line no-console
+      console.error(err);
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  }
+
+  /**
    * Converts a Date into a backend-friendly ISO date string (`YYYY-MM-DD`).
    */
   function toIsoDateOnly(value: Date): string {
@@ -227,6 +310,57 @@ export default function Page() {
     const m = String(value.getMonth() + 1).padStart(2, "0");
     const d = String(value.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
+  }
+
+  /**
+   * Maps modal question types to backend registration field types.
+   */
+  function toRegistrationFieldTypeValue(
+    type: RegistrationQuestion["type"]
+  ): RegistrationFieldTypeValue {
+    if (type === "Text") return "TEXT";
+    if (type === "Phone No.") return "PHONE_NO";
+    if (type === "Email") return "EMAIL";
+    if (type === "Attachments") return "ATTACHMENTS";
+    if (type === "Number") return "NUMBER";
+    return "OPTIONS";
+  }
+
+  /**
+   * Converts modal questions (custom only) into backend registration form fields.
+   * Validates labels and OPTIONS values.
+   */
+  function mapRegistrationQuestionsToRegistrationFields(
+    questions: ReadonlyArray<RegistrationQuestion>
+  ): ReadonlyArray<RegistrationFieldDto> {
+    const fields: RegistrationFieldDto[] = [];
+
+    questions.forEach((q, index) => {
+      const label = q.label.trim();
+      if (label.length === 0) return;
+
+      const fieldType = toRegistrationFieldTypeValue(q.type);
+
+      let options: string[] | undefined = undefined;
+      if (fieldType === "OPTIONS") {
+        const rawOptions = Array.isArray(q.options) ? q.options : [];
+        const cleaned = rawOptions
+          .map((o) => o.trim())
+          .filter((o) => o.length > 0);
+        const unique = Array.from(new Set(cleaned));
+        options = unique;
+      }
+
+      fields.push({
+        label,
+        type: fieldType,
+        required: Boolean(q.required),
+        order: index,
+        options,
+      });
+    });
+
+    return fields;
   }
 
   /**
@@ -328,16 +462,41 @@ export default function Page() {
             <Image
               width={371}
               height={371}
-              src="/tmp/hackathon.jpg"
+              src={
+                typeof formData.eventThumbnail === "string" &&
+                formData.eventThumbnail.trim().length > 0
+                  ? formData.eventThumbnail.trim()
+                  : "/tmp/hackathon.jpg"
+              }
               alt="Hackathon Thumbnail"
               className="w-full h-full object-cover"
             />
-            <div className="absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-white/20 hover:bg-background/40 transition-colors cursor-pointer">
+            <label
+              htmlFor={bannerInputId}
+              className={cn(
+                "absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-white/20 hover:bg-background/40 transition-colors cursor-pointer",
+                isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
+              )}
+              aria-disabled={isUploadingBanner}
+            >
               <p className="text-white px-4 py-2 flex items-center gap-2 text-xs font-medium">
                 <Upload className="w-4 h-4" />
-                Upload
+                {isUploadingBanner ? "Uploading…" : "Upload"}
               </p>
-            </div>
+            </label>
+
+            <input
+              id={bannerInputId}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              disabled={isUploadingBanner}
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                e.target.value = "";
+                void handleBannerSelected(f);
+              }}
+            />
           </div>
 
           {/* Preview */}
@@ -827,7 +986,43 @@ export default function Page() {
                     ),
                   };
 
-                  await createHackathon(token, payload);
+                  // Pre-validate registration questions (so we don't create a hackathon and then fail saving fields).
+                  const registrationFields = mapRegistrationQuestionsToRegistrationFields(
+                    formData.registrationQuestions
+                  );
+                  const invalidOptions = registrationFields.some((f) => {
+                    if (f.type !== "OPTIONS") return false;
+                    return !Array.isArray(f.options) || f.options.length === 0;
+                  });
+                  if (invalidOptions) {
+                    toast.error(
+                      "Please add at least one option for every Options question."
+                    );
+                    return;
+                  }
+
+                  const created = await createHackathon(token, payload);
+                  const hackathonId = extractHackathonId(created);
+                  if (!hackathonId) {
+                    toast.error(
+                      "Event was created but we couldn't read its id from the server response."
+                    );
+                    return;
+                  }
+
+                  // Persist custom registration questions as internal registration form fields.
+                  // Note: fixed questions are intentionally NOT stored to avoid redundancy.
+                  // If organizer configured any questions, save them right away.
+                  if (registrationFields.length > 0) {
+                    const registrationForm: RegistrationFormDto = {
+                      fields: [...registrationFields],
+                    };
+
+                    await updateHackathonRegistrationForm(token, hackathonId, {
+                      registrationForm,
+                    });
+                  }
+
                   toast.success("Event listed successfully!");
                 } catch (err: unknown) {
                   toast.error("Failed to list event. Please try again.");

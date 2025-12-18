@@ -116,16 +116,6 @@ enum HackathonAttendeeEligibility {
   @@schema("oppskills")
 }
 
-/// Type of application question for hackathon registration.
-enum HackathonQuestionType {
-  QUESTION_ANSWER
-  MCQ
-  TRUE_FALSE
-
-  @@map("HackathonQuestionType")
-  @@schema("oppskills")
-}
-
 /// Type of hackathon round (determines submission requirements).
 enum HackathonRoundType {
   ONLINE
@@ -226,7 +216,6 @@ model HackathonEntity {
 
   // Relations: hackathon structure
   rounds      RoundEntity[]
-  questions   HackathonQuestionEntity[]
   attachments HackathonAttachmentEntity[]
 
   @@map("hackathon")
@@ -389,29 +378,6 @@ model TeamMemberEntity {
   @@unique([userId, teamId])  // one user can't join the same team twice
   @@map("team_member")
   @@schema("oppskills")
-}
-
-/// Application questions for hackathon (separate from registration form).
-model HackathonQuestionEntity {
-  id           String   @id @default(cuid())
-  hackathonId  String   @map("hackathon_id")
-  hackathon    HackathonEntity @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
-
-  questionText String   @map("question_text") @db.Text
-  type         HackathonQuestionType
-  required     Boolean  @default(false)
-  order        Int
-
-  /// Options for MCQ questions (empty for other types)
-  options      String[] @default([])
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@map("hackathon_question")
-  @@schema("oppskills")
-  @@index([hackathonId])
-  @@unique([hackathonId, order])
 }
 
 /// Attachments for hackathon (S3-ready: stores storageKey + optional publicUrl).

@@ -85,6 +85,13 @@ export default function RoundsAndStages({ formData, setFormData }: RoundsAndStag
         toast.success("Round deleted");
     };
 
+    const handleClearAllRounds = () => {
+        if (formData.rounds.length === 0) return;
+        setFormData((prev) => ({ ...prev, rounds: [] }));
+        toast.success("All rounds cleared");
+        handleCancelEdit();
+    };
+
     return (
         <div className="flex flex-col w-full animate-in fade-in slide-in-from-bottom-5 duration-500">
             <div className="flex justify-between items-center mb-6">
@@ -95,13 +102,25 @@ export default function RoundsAndStages({ formData, setFormData }: RoundsAndStag
                         opportunity. Add rounds in order.
                     </p>
                 </div>
-                <Button
-                    onClick={handleAddRound}
-                    className="bg-primary text-white hover:bg-primary/90 font-semibold gap-2 rounded-full shadow-lg shadow-primary/20"
-                >
-                    <Plus className="w-4 h-4" />
-                    Add Round
-                </Button>
+                <div className="flex items-center gap-2">
+                    {formData.rounds.length > 0 && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleClearAllRounds}
+                            className="rounded-full"
+                        >
+                            Clear all
+                        </Button>
+                    )}
+                    <Button
+                        onClick={handleAddRound}
+                        className="bg-primary text-white hover:bg-primary/90 font-semibold gap-2 rounded-full shadow-lg shadow-primary/20"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add Round
+                    </Button>
+                </div>
             </div>
 
             <div className="flex flex-col gap-0 w-full">
@@ -361,10 +380,8 @@ export default function RoundsAndStages({ formData, setFormData }: RoundsAndStag
                 })}
             </div>
 
-            <div className="mt-8">
-                <Button className="w-full bg-primary hover:bg-primary/90 text-white rounded-full py-6 text-lg font-semibold shadow-lg shadow-primary/20">
-                    Save Changes
-                </Button>
+            <div className="mt-8 text-center text-xs text-muted-foreground">
+                Changes are saved automatically.
             </div>
         </div>
     );

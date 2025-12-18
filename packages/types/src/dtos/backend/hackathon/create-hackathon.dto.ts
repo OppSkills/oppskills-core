@@ -85,14 +85,6 @@ const HACKATHON_ATTENDEE_ELIGIBILITY_VALUES = [
 export type HackathonAttendeeEligibilityValue =
   (typeof HACKATHON_ATTENDEE_ELIGIBILITY_VALUES)[number];
 
-/** Type of application question for hackathon registration. */
-const HACKATHON_QUESTION_TYPE_VALUES = [
-  "QUESTION_ANSWER",
-  "MCQ",
-  "TRUE_FALSE",
-] as const;
-export type HackathonQuestionTypeValue =
-  (typeof HACKATHON_QUESTION_TYPE_VALUES)[number];
 
 /** Type of hackathon round (determines submission requirements). */
 const HACKATHON_ROUND_TYPE_VALUES = ["ONLINE", "OFFLINE", "PRESENTATION"] as const;
@@ -153,39 +145,6 @@ export class PrizeBreakdownDto {
  * Application question for hackathon registration.
  * Separate from registration form fields.
  */
-export class HackathonQuestionDto {
-  /** The question text */
-  @IsString()
-  @MaxLength(1000)
-  questionText: string;
-
-  /** Type of question (QUESTION_ANSWER, MCQ, TRUE_FALSE) */
-  @IsString()
-  @IsIn(HACKATHON_QUESTION_TYPE_VALUES)
-  type: HackathonQuestionTypeValue;
-
-  /** Whether this question is required */
-  @IsBoolean()
-  required: boolean;
-
-  /** Order of the question (0-indexed) */
-  @IsInt()
-  @Min(0)
-  order: number;
-
-  /**
-   * Options for MCQ questions.
-   * Required when type=MCQ (minimum 2 options).
-   * Ignored for other question types.
-   */
-  @IsOptional()
-  @ValidateIf((obj: HackathonQuestionDto) => obj.type === "MCQ")
-  @IsArray()
-  @ArrayMinSize(2)
-  @IsString({ each: true })
-  options?: string[];
-}
-
 /**
  * Contact person information for hackathon additional info.
  */
@@ -575,18 +534,6 @@ export class CreateHackathonDto {
   @Type(() => RoundDto)
   rounds?: RoundDto[];
 
-  // Application Questions
-  /**
-   * Application questions (separate from registration form).
-   * Q/A, MCQ, or True/False questions.
-   */
-  @ApiPropertyOptional({ description: 'Application questions for registration', type: [HackathonQuestionDto] })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => HackathonQuestionDto)
-  questions?: HackathonQuestionDto[];
-
   // Additional Info
   /**
    * Additional info including contact person and attachments.
@@ -743,13 +690,6 @@ export class UpdateHackathonDto {
   @Type(() => RoundDto)
   rounds?: RoundDto[];
 
-  // Application Questions
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => HackathonQuestionDto)
-  questions?: HackathonQuestionDto[];
-
   // Additional Info
   @IsOptional()
   @ValidateNested()
@@ -765,16 +705,6 @@ export class UpdateHackathonRoundsDto {
   @ValidateNested({ each: true })
   @Type(() => RoundDto)
   rounds: RoundDto[];
-}
-
-/**
- * DTO for replacing all questions of a hackathon.
- */
-export class UpdateHackathonQuestionsDto {
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => HackathonQuestionDto)
-  questions: HackathonQuestionDto[];
 }
 
 /**
