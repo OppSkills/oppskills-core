@@ -26,7 +26,6 @@ import type {
   RegistrationFormDto,
   UpdateHackathonAdditionalInfoDto,
   UpdateHackathonDto,
-  UpdateHackathonQuestionsDto,
   UpdateHackathonRoundsDto,
 } from "@oppskills/types";
 import {
@@ -34,7 +33,6 @@ import {
   updateHackathonAdditionalInfo,
   updateHackathonMaxTeams,
   updateHackathonPrizeBreakdown,
-  updateHackathonQuestions,
   updateHackathonRegistrationForm,
   updateHackathonRounds,
 } from "@/lib/api/hackathonApi";
@@ -60,13 +58,6 @@ export interface Round {
   endTime: string;
 }
 
-export interface BasicQuestion {
-  id: string;
-  label: string;
-  required: boolean;
-  isStatic: boolean;
-}
-
 export interface RegistrationSettingsData {
   candidateTypes: string[];
   startDate: Date | undefined;
@@ -79,7 +70,6 @@ export interface RegistrationSettingsData {
   maxTeams?: number;
   minTeamSize?: number;
   maxTeamSize?: number;
-  questions: BasicQuestion[];
 }
 
 export interface Prize {
@@ -523,24 +513,6 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
     })
     .filter((v): v is Attachment => v !== null);
 
-  const questionsRaw = Array.isArray(hackathon["questions"])
-    ? (hackathon["questions"] as ReadonlyArray<unknown>)
-    : [];
-  const additionalBasicQuestions: BasicQuestion[] = questionsRaw
-    .map((q): BasicQuestion | null => {
-      if (!isRecord(q)) return null;
-      const text = getString(q, "questionText");
-      if (!text) return null;
-      const required = q["required"];
-      return {
-        id: getString(q, "id") ?? crypto.randomUUID(),
-        label: text,
-        required: typeof required === "boolean" ? required : false,
-        isStatic: false,
-      };
-    })
-    .filter((v): v is BasicQuestion => v !== null);
-
   return {
     eventFestName: festival
       ? (getString(festival, "name") ?? "Individual Hackathon")
@@ -572,25 +544,6 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
       eventTime: startDate ? toTimeHHmm(startDate) : "09:00",
       maxTeamsNoLimit: maxTeamsValue === undefined,
       maxTeams: maxTeamsValue,
-      questions: [
-        { id: "name", label: "Name", required: true, isStatic: true },
-        { id: "email", label: "Email", required: true, isStatic: true },
-        {
-          id: "mobile",
-          label: "Mobile Number",
-          required: true,
-          isStatic: true,
-        },
-        { id: "gender", label: "Gender", required: true, isStatic: true },
-        {
-          id: "college",
-          label: "Current College/ Organization",
-          required: true,
-          isStatic: true,
-        },
-        { id: "userType", label: "User Type", required: true, isStatic: true },
-        ...additionalBasicQuestions,
-      ],
     },
     prizes: {
       description: prizeDescription,
@@ -688,24 +641,6 @@ export default function EditOpportunityPage() {
       eventTime: "09:00",
       maxTeamsNoLimit: true,
       maxTeams: undefined,
-      questions: [
-        { id: "name", label: "Name", required: true, isStatic: true },
-        { id: "email", label: "Email", required: true, isStatic: true },
-        {
-          id: "mobile",
-          label: "Mobile Number",
-          required: true,
-          isStatic: true,
-        },
-        { id: "gender", label: "Gender", required: true, isStatic: true },
-        {
-          id: "college",
-          label: "Current College/ Organization",
-          required: true,
-          isStatic: true,
-        },
-        { id: "userType", label: "User Type", required: true, isStatic: true },
-      ],
     },
     prizes: { description: "", certificateProvided: null, list: [] },
     additionalInfo: { contacts: [], attachments: [] },
@@ -821,23 +756,6 @@ export default function EditOpportunityPage() {
         await updateHackathonRegistrationForm(token, hackathonId, {
           registrationForm,
         });
-      }
-
-      const additionalQuestions =
-        formData.registrationSettings.questions.filter(
-          (q) => q.isStatic === false && q.label.trim().length > 0
-        );
-      if (additionalQuestions.length > 0) {
-        const payload: UpdateHackathonQuestionsDto = {
-          questions: additionalQuestions.map((q, idx) => ({
-            questionText: q.label,
-            type: "QUESTION_ANSWER",
-            required: q.required,
-            order: idx,
-            options: undefined,
-          })),
-        };
-        await updateHackathonQuestions(token, hackathonId, payload);
       }
 
       const prizeItems: PrizeBreakdownDto[] = formData.prizes.list
