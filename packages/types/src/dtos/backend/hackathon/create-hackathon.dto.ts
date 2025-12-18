@@ -658,8 +658,7 @@ export class CreateHackathonDto {
    * Stored as JSON in database.
    */
   @ApiPropertyOptional({ 
-    description: 'Rich text description for prizes (JSON format from editor like TipTap/Slate)', 
-    type: 'object',
+    description: 'Rich text description for prizes (JSON format from editor like TipTap/Slate)',
     example: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Exciting prizes await!' }] }] }
   })
   @IsOptional()
