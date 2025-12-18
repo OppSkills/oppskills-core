@@ -14,6 +14,27 @@ import { useQueryState } from "nuqs";
 import { cn } from "@/lib/utils";
 import { useParams } from "next/navigation";
 import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
+import { useAuth } from "@clerk/nextjs";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import type {
+  HackathonAttendeeEligibilityValue,
+  HackathonLocationDto,
+  HackathonModeValue,
+  PrizeBreakdownDto,
+  RegistrationFieldTypeValue,
+  RegistrationFormDto,
+  UpdateHackathonAdditionalInfoDto,
+  UpdateHackathonDto,
+  UpdateHackathonRoundsDto,
+} from "@oppskills/types";
+import {
+  updateHackathon,
+  updateHackathonAdditionalInfo,
+  updateHackathonPrizeBreakdown,
+  updateHackathonRegistrationForm,
+  updateHackathonRounds,
+} from "@/lib/api/hackathonApi";
 
 // Import new components
 import BasicDetails from "./_components/BasicDetails";
@@ -137,6 +158,158 @@ function pad2(input: number): string {
 
 function toTimeHHmm(d: Date): string {
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+function requireToken(token: string | null): string {
+  if (typeof token !== "string" || token.trim().length === 0) {
+    throw new Error("Not authenticated.");
+  }
+  return token;
+}
+
+function isValidUrl(value: string): boolean {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return false;
+  try {
+    // eslint-disable-next-line no-new
+    new URL(trimmed);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function toVisibilityValue(
+  label: string
+): "PUBLIC" | "PRIVATE" | "UNIVERSITY_ONLY" | undefined {
+  if (label === "Public") return "PUBLIC";
+  if (label === "Private") return "PRIVATE";
+  if (label === "University only") return "UNIVERSITY_ONLY";
+  return undefined;
+}
+
+function toHackathonTypeValue(
+  label: string
+):
+  | "CODING_HACKATHON"
+  | "IDEA_HACKATHON"
+  | "CASE_STUDY_COMPETITION"
+  | "DESIGN_HACKATHON"
+  | "OPEN_HACKATHON"
+  | undefined {
+  if (label === "Coding Hackathon") return "CODING_HACKATHON";
+  if (label === "Idea Hackathon") return "IDEA_HACKATHON";
+  if (label === "Case Study Competition") return "CASE_STUDY_COMPETITION";
+  if (label === "Design Hackathon") return "DESIGN_HACKATHON";
+  if (label === "Open Hackathon") return "OPEN_HACKATHON";
+  return undefined;
+}
+
+function toParticipantTypeValue(
+  label: string
+):
+  | "INDIVIDUAL"
+  | "TEAM_OF_2"
+  | "TEAM_OF_3"
+  | "TEAM_OF_4"
+  | "TEAM_OF_5"
+  | "TEAM_OF_6"
+  | "MORE_THAN_6"
+  | undefined {
+  if (label === "Individual") return "INDIVIDUAL";
+  if (label === "Team of 2") return "TEAM_OF_2";
+  if (label === "Team of 3") return "TEAM_OF_3";
+  if (label === "Team of 4") return "TEAM_OF_4";
+  if (label === "Team of 5") return "TEAM_OF_5";
+  if (label === "Team of 6") return "TEAM_OF_6";
+  if (label === "More than 6") return "MORE_THAN_6";
+  return undefined;
+}
+
+function toLocationDto(input: string): HackathonLocationDto | undefined {
+  const trimmed = input.trim();
+  if (trimmed.length === 0) return undefined;
+  if (isValidUrl(trimmed)) return { type: "VIRTUAL", virtualLink: trimmed };
+  return { type: "PHYSICAL", address: trimmed };
+}
+
+function toModeValue(locationInput: string): HackathonModeValue {
+  return isValidUrl(locationInput.trim()) ? "ONLINE" : "OFFLINE";
+}
+
+function combineDateAndTimeToIso(date: Date, timeHHmm: string): string {
+  const time = timeHHmm.trim();
+  const [hhRaw, mmRaw] = time.split(":");
+  const hh = Number(hhRaw);
+  const mm = Number(mmRaw);
+  if (!Number.isInteger(hh) || !Number.isInteger(mm)) {
+    throw new Error(`Invalid time value: "${timeHHmm}"`);
+  }
+  const d = new Date(date.getTime());
+  d.setHours(hh, mm, 0, 0);
+  return d.toISOString();
+}
+
+function mapCandidateTypesToEligibility(
+  input: ReadonlyArray<string>
+): HackathonAttendeeEligibilityValue[] {
+  const out: HackathonAttendeeEligibilityValue[] = [];
+  const add = (v: HackathonAttendeeEligibilityValue) => {
+    if (!out.includes(v)) out.push(v);
+  };
+  for (const t of input) {
+    if (t === "Everyone can apply") add("EVERYONE_CAN_APPLY");
+    if (t === "School students") add("SCHOOL_STUDENTS");
+    if (t === "College students") add("COLLEGE_STUDENTS");
+    if (t === "Freshers") add("FRESHERS");
+    if (t === "Professionals") add("PROFESSIONALS");
+  }
+  return out.length > 0 ? out : ["EVERYONE_CAN_APPLY"];
+}
+
+function mapRegistrationQuestionsToRegistrationForm(
+  questions: ReadonlyArray<RegistrationQuestion>
+): RegistrationFormDto {
+  const typeMap: Record<
+    RegistrationQuestion["type"],
+    RegistrationFieldTypeValue
+  > = {
+    Text: "TEXT",
+    "Phone No.": "PHONE_NO",
+    Email: "EMAIL",
+    Attachments: "ATTACHMENTS",
+    Number: "NUMBER",
+    Options: "OPTIONS",
+  };
+
+  return {
+    fields: questions.map((q, idx) => ({
+      label: q.label,
+      type: typeMap[q.type],
+      required: q.required,
+      order: idx,
+      options: q.type === "Options" ? (q.options ?? []) : [],
+      placeholder: undefined,
+    })),
+  };
+}
+
+function parseCurrencyToDecimalString(input: string): string | null {
+  const trimmed = input.trim();
+  if (trimmed.length === 0) return null;
+  if (/[a-zA-Z]/.test(trimmed)) return null;
+  const normalized = trimmed.replace(/[^0-9.]/g, "");
+  if (normalized.length === 0) return null;
+  const n = Number(normalized);
+  if (!Number.isFinite(n)) return null;
+  return n.toFixed(2);
+}
+
+function serializeFormData(value: FormData): string {
+  return JSON.stringify(value, (_key, v: unknown) => {
+    if (v instanceof Date) return v.toISOString();
+    return v;
+  });
 }
 
 function fromVisibility(value: string | undefined): string {
@@ -280,6 +453,7 @@ export default function EditOpportunityPage() {
     defaultValue: "basic-details",
   });
 
+  const { getToken } = useAuth();
   const params = useParams();
   const slugParam = useMemo(() => {
     const raw = isRecord(params) ? params["slug"] : undefined;
@@ -296,6 +470,7 @@ export default function EditOpportunityPage() {
 
   const [hasHydratedFromBackend, setHasHydratedFromBackend] =
     useState<boolean>(false);
+  const [hackathonId, setHackathonId] = useState<string | null>(null);
 
   const tabs = [
     {
@@ -377,9 +552,208 @@ export default function EditOpportunityPage() {
     if (hasHydratedFromBackend) return;
     const hackathon = extractHackathon(hackathonRaw);
     if (!hackathon) return;
+    const id = getString(hackathon, "id");
+    if (typeof id === "string") setHackathonId(id);
     setFormData(mapHackathonToFormData(hackathon));
     setHasHydratedFromBackend(true);
   }, [hackathonRaw, hasHydratedFromBackend]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (hackathonId === null) {
+        throw new Error("Hackathon id is not loaded yet.");
+      }
+      const token = requireToken(await getToken());
+
+      const base: UpdateHackathonDto = {
+        name:
+          formData.eventName.trim().length > 0
+            ? formData.eventName.trim()
+            : undefined,
+        description:
+          formData.eventDescription.trim().length > 0
+            ? formData.eventDescription
+            : undefined,
+        festivalId: formData.festivalId,
+        bannerImageUrl: isValidUrl(formData.eventThumbnail)
+          ? formData.eventThumbnail.trim()
+          : undefined,
+        mode: toModeValue(formData.eventLocation),
+        visibility: toVisibilityValue(formData.eventFestVisibility),
+        hackathonType: toHackathonTypeValue(formData.hackathonType),
+        participantType: toParticipantTypeValue(formData.participantType),
+        location: toLocationDto(formData.eventLocation),
+        attendeeEligibility: mapCandidateTypesToEligibility(
+          formData.registrationSettings.candidateTypes
+        ),
+        registrationDeadline: formData.eventRegisterBy
+          ? combineDateAndTimeToIso(
+              formData.eventRegisterBy,
+              formData.registrationSettings.endTime
+            )
+          : undefined,
+        startDate: formData.eventDate
+          ? combineDateAndTimeToIso(formData.eventDate, formData.eventTimeFrom)
+          : undefined,
+        endDate: formData.eventDate
+          ? combineDateAndTimeToIso(formData.eventDate, formData.eventTimeFrom)
+          : undefined,
+        prizeCertificate:
+          typeof formData.prizes.certificateProvided === "boolean"
+            ? formData.prizes.certificateProvided
+            : undefined,
+        prizeDescription:
+          formData.prizes.description.trim().length > 0
+            ? { summary: formData.prizes.description.trim() }
+            : undefined,
+      };
+
+      await updateHackathon(token, hackathonId, base);
+
+      if (formData.rounds.length > 0) {
+        const roundsDto: UpdateHackathonRoundsDto = {
+          rounds: formData.rounds.map((r, idx) => ({
+            name: r.name,
+            description:
+              r.description.trim().length > 0 ? r.description : undefined,
+            startsAt: combineDateAndTimeToIso(r.startDate, r.startTime),
+            endsAt: combineDateAndTimeToIso(r.endDate, r.endTime),
+            order: idx,
+            roundType: "ONLINE",
+            submissionConfig: undefined,
+          })),
+        };
+        await updateHackathonRounds(token, hackathonId, roundsDto);
+      }
+
+      if (formData.registrationQuestions.length > 0) {
+        const registrationForm = mapRegistrationQuestionsToRegistrationForm(
+          formData.registrationQuestions
+        );
+        await updateHackathonRegistrationForm(token, hackathonId, {
+          registrationForm,
+        });
+      }
+
+      const prizeItems: PrizeBreakdownDto[] = formData.prizes.list
+        .map((p): PrizeBreakdownDto | null => {
+          const amount = parseCurrencyToDecimalString(p.amount);
+          if (amount === null) return null;
+          return {
+            position: p.name,
+            amount,
+            description:
+              p.description.trim().length > 0 ? p.description : undefined,
+          };
+        })
+        .filter((v): v is PrizeBreakdownDto => v !== null);
+
+      if (prizeItems.length > 0) {
+        await updateHackathonPrizeBreakdown(token, hackathonId, {
+          prizeBreakdown: prizeItems,
+        });
+      }
+
+      if (formData.additionalInfo.contacts.length > 0) {
+        const first = formData.additionalInfo.contacts[0];
+        const payload: UpdateHackathonAdditionalInfoDto = {
+          contact: {
+            name: first.name.trim().length > 0 ? first.name : undefined,
+            email: first.email.trim().length > 0 ? first.email : undefined,
+            phone: first.phone.trim().length > 0 ? first.phone : undefined,
+          },
+          attachments: undefined,
+        };
+        await updateHackathonAdditionalInfo(token, hackathonId, payload);
+      }
+    },
+    onError: (err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error(err);
+    },
+  });
+
+  const [autoSaveStatus, setAutoSaveStatus] = useState<
+    "idle" | "dirty" | "saving" | "saved" | "error"
+  >("idle");
+  const lastSavedSnapshotRef = React.useRef<string | null>(null);
+  const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const saveQueuedRef = React.useRef<boolean>(false);
+  const lastErrorToastAtRef = React.useRef<number>(0);
+
+  // Establish the initial "saved" snapshot once we hydrate from backend.
+  useEffect(() => {
+    if (!hasHydratedFromBackend) return;
+    if (hackathonId === null) return;
+    if (lastSavedSnapshotRef.current !== null) return;
+    lastSavedSnapshotRef.current = serializeFormData(formData);
+    setAutoSaveStatus("saved");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasHydratedFromBackend, hackathonId]);
+
+  // Debounced autosave on any form changes.
+  useEffect(() => {
+    if (!hasHydratedFromBackend) return;
+    if (hackathonId === null) return;
+
+    const snapshot = serializeFormData(formData);
+    if (snapshot === lastSavedSnapshotRef.current) {
+      if (autoSaveStatus !== "saving") setAutoSaveStatus("saved");
+      return;
+    }
+
+    setAutoSaveStatus("dirty");
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      if (saveMutation.isPending) {
+        saveQueuedRef.current = true;
+        return;
+      }
+
+      setAutoSaveStatus("saving");
+      saveMutation.mutate(undefined, {
+        onSuccess: () => {
+          lastSavedSnapshotRef.current = serializeFormData(formData);
+          setAutoSaveStatus("saved");
+          if (saveQueuedRef.current) {
+            saveQueuedRef.current = false;
+            // Trigger another save quickly if changes came in while saving.
+            setTimeout(() => {
+              // Let the effect re-run and schedule correctly.
+              setAutoSaveStatus("dirty");
+            }, 0);
+          }
+        },
+        onError: () => {
+          setAutoSaveStatus("error");
+          const now = Date.now();
+          if (now - lastErrorToastAtRef.current > 10_000) {
+            lastErrorToastAtRef.current = now;
+            toast.error("Autosave failed. Please check your connection.");
+          }
+        },
+      });
+    }, 900);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+    };
+  }, [
+    formData,
+    hasHydratedFromBackend,
+    hackathonId,
+    saveMutation,
+    autoSaveStatus,
+  ]);
 
   if (isLoadingHackathon) {
     return (
@@ -421,6 +795,18 @@ export default function EditOpportunityPage() {
               {tab.label}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="w-full flex justify-end px-2">
+        <div className="text-xs text-muted-foreground">
+          {autoSaveStatus === "saving"
+            ? "Saving…"
+            : autoSaveStatus === "dirty"
+              ? "Unsaved changes"
+              : autoSaveStatus === "error"
+                ? "Autosave error"
+                : "Saved"}
         </div>
       </div>
 

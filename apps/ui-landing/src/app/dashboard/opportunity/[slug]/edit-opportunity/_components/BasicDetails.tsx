@@ -291,7 +291,7 @@ export default function BasicDetails({
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Save Changes</Button>
+                <Button type="button">Done</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -328,7 +328,7 @@ export default function BasicDetails({
                 }
               />
               <DialogFooter>
-                <Button>Save</Button>
+                <Button type="button">Done</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -398,9 +398,9 @@ export default function BasicDetails({
           </div>
         </div>
         <div className="mt-4">
-          <Button className="w-full bg-primary hover:bg-primary/90 text-white rounded-full py-6 text-lg font-semibold shadow-lg shadow-primary/20">
-            List Event
-          </Button>
+          <div className="w-full text-center text-xs text-muted-foreground py-4">
+            Changes are saved automatically.
+          </div>
         </div>
       </div>
       <RegistrationQuestionsModal

@@ -15,7 +15,10 @@ import type {
   UpdateHackathonAdditionalInfoDto,
   HackathonAttendeeEligibilityValue,
   HackathonRoundTypeValue,
+  PrizeBreakdownDto,
+  RegistrationFormDto,
 } from '@oppskills/types';
+import type { UpdateHackathonPrizeBreakdownDto } from './hackathon-update-nested.dto';
 
 type LifecycleStatus =
   | 'DRAFT'
@@ -591,6 +594,138 @@ export class HackathonService {
           });
         }
       }
+    });
+
+    return prisma.hackathonEntity.findUnique({
+      where: { id },
+      include: this.getHackathonIncludeClause(),
+    });
+  }
+
+  /**
+   * Replace the registration form for a hackathon.
+   *
+   * Semantics:
+   * - If `externalFormLink` is provided (non-empty), the hackathon uses an external form
+   *   and we clear internal `fields`.
+   * - Otherwise `fields` must be provided and will fully replace existing fields.
+   */
+  async updateHackathonRegistrationForm(
+    id: string,
+    dto: RegistrationFormDto,
+    userId: string,
+  ) {
+    await this.assertHackathonEditableByUser(id, userId);
+
+    const externalFormLink =
+      typeof dto.externalFormLink === 'string' && dto.externalFormLink.trim().length > 0
+        ? dto.externalFormLink.trim()
+        : undefined;
+
+    const fields = Array.isArray(dto.fields) ? dto.fields : undefined;
+
+    if (!externalFormLink && (!fields || fields.length === 0)) {
+      throw new BadRequestException(
+        'registrationForm must include either externalFormLink or a non-empty fields array.',
+      );
+    }
+
+    // Validate uniqueness of field order values (DB enforces uniqueness per form).
+    if (!externalFormLink && fields) {
+      const seen = new Set<number>();
+      for (const f of fields) {
+        if (seen.has(f.order)) {
+          throw new BadRequestException(
+            `registrationForm.fields has duplicate order value: ${f.order}`,
+          );
+        }
+        seen.add(f.order);
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const form = await tx.registrationFormEntity.upsert({
+        where: { hackathonId: id },
+        create: {
+          hackathonId: id,
+          externalFormLink: externalFormLink ?? null,
+        },
+        update: {
+          externalFormLink: externalFormLink ?? null,
+        },
+      });
+
+      // Always clear existing fields; we'll re-create if needed.
+      await tx.registrationFieldEntity.deleteMany({
+        where: { registrationFormId: form.id },
+      });
+
+      // If external form link is used, no internal fields are stored.
+      if (externalFormLink) return;
+
+      if (!fields || fields.length === 0) {
+        // Defensive: should be unreachable due to validation above.
+        throw new BadRequestException('registrationForm.fields is required.');
+      }
+
+      await tx.registrationFieldEntity.createMany({
+        data: fields.map((f) => ({
+          registrationFormId: form.id,
+          label: f.label,
+          type: f.type,
+          required: f.required,
+          order: f.order,
+          options: f.options ?? [],
+          placeholder: f.placeholder,
+        })),
+      });
+    });
+
+    return prisma.hackathonEntity.findUnique({
+      where: { id },
+      include: this.getHackathonIncludeClause(),
+    });
+  }
+
+  /**
+   * Replace the prize breakdown list for a hackathon.
+   */
+  async updateHackathonPrizeBreakdown(
+    id: string,
+    dto: UpdateHackathonPrizeBreakdownDto,
+    userId: string,
+  ) {
+    await this.assertHackathonEditableByUser(id, userId);
+
+    const items: PrizeBreakdownDto[] = Array.isArray(dto.prizeBreakdown)
+      ? dto.prizeBreakdown
+      : [];
+
+    // Validate amounts are parseable decimals (Prisma will also validate at the DB boundary).
+    for (const item of items) {
+      const amountNumber = Number(item.amount);
+      if (!Number.isFinite(amountNumber)) {
+        throw new BadRequestException(
+          `Invalid prizeBreakdown.amount for position "${item.position}": "${item.amount}"`,
+        );
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.prizeBreakdownEntity.deleteMany({
+        where: { hackathonId: id },
+      });
+
+      if (items.length === 0) return;
+
+      await tx.prizeBreakdownEntity.createMany({
+        data: items.map((p) => ({
+          hackathonId: id,
+          position: p.position,
+          amount: p.amount,
+          description: p.description,
+        })),
+      });
     });
 
     return prisma.hackathonEntity.findUnique({

@@ -361,10 +361,8 @@ export default function RoundsAndStages({ formData, setFormData }: RoundsAndStag
                 })}
             </div>
 
-            <div className="mt-8">
-                <Button className="w-full bg-primary hover:bg-primary/90 text-white rounded-full py-6 text-lg font-semibold shadow-lg shadow-primary/20">
-                    Save Changes
-                </Button>
+            <div className="mt-8 text-center text-xs text-muted-foreground">
+                Changes are saved automatically.
             </div>
         </div>
     );

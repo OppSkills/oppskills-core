@@ -30,10 +30,15 @@ import {
   UpdateHackathonRoundsDto,
   UpdateHackathonQuestionsDto,
   UpdateHackathonAdditionalInfoDto,
+  RegistrationFormDto,
 } from '@oppskills/types';
 import { Logger } from '../_utils/logger';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { HackathonService } from './hackathon.service';
+import {
+  UpdateHackathonPrizeBreakdownDto,
+  UpdateHackathonRegistrationFormDto,
+} from './hackathon-update-nested.dto';
 
 function assertNonEmptyId(id: string, fieldName: string): string {
   const trimmed = id.trim();
@@ -363,6 +368,95 @@ export class HackathonController {
     );
     return {
       message: 'Hackathon additional info updated successfully.',
+      data: hackathon,
+    };
+  }
+
+  /**
+   * Replace the registration form (external form link OR internal fields).
+   * - Owner-only (or admin).
+   * - Allowed only when status is DRAFT.
+   */
+  @Put(':id/registration-form')
+  @ApiOperation({
+    summary: 'Update hackathon registration form',
+    description:
+      'Replace the registration form for a hackathon. Only allowed in DRAFT status. Owner only.',
+  })
+  @ApiParam({ name: 'id', description: 'Hackathon ID' })
+  @ApiBody({ type: UpdateHackathonRegistrationFormDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Registration form updated successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Not the owner or not in DRAFT status',
+  })
+  @ApiResponse({ status: 404, description: 'Hackathon not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async updateHackathonRegistrationForm(
+    @Param('id') id: string,
+    @Body() dto: UpdateHackathonRegistrationFormDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+    const safeId = assertNonEmptyId(id, 'id');
+
+    const safeForm: RegistrationFormDto = dto.registrationForm;
+    const hackathon =
+      await this.hackathonService.updateHackathonRegistrationForm(
+        safeId,
+        safeForm,
+        userId,
+      );
+
+    return {
+      message: 'Hackathon registration form updated successfully.',
+      data: hackathon,
+    };
+  }
+
+  /**
+   * Replace the prize breakdown list of a hackathon.
+   * - Owner-only (or admin).
+   * - Allowed only when status is DRAFT.
+   */
+  @Put(':id/prize-breakdown')
+  @ApiOperation({
+    summary: 'Update hackathon prize breakdown',
+    description:
+      'Replace the prize breakdown list for a hackathon. Only allowed in DRAFT status. Owner only.',
+  })
+  @ApiParam({ name: 'id', description: 'Hackathon ID' })
+  @ApiBody({ type: UpdateHackathonPrizeBreakdownDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Prize breakdown updated successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Not the owner or not in DRAFT status',
+  })
+  @ApiResponse({ status: 404, description: 'Hackathon not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async updateHackathonPrizeBreakdown(
+    @Param('id') id: string,
+    @Body() dto: UpdateHackathonPrizeBreakdownDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+    const safeId = assertNonEmptyId(id, 'id');
+
+    const hackathon = await this.hackathonService.updateHackathonPrizeBreakdown(
+      safeId,
+      dto,
+      userId,
+    );
+    return {
+      message: 'Hackathon prize breakdown updated successfully.',
       data: hackathon,
     };
   }

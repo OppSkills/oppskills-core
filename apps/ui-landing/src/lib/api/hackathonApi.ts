@@ -1,4 +1,12 @@
-import type { CreateHackathonDto, UpdateHackathonDto } from "@oppskills/types";
+import type {
+  CreateHackathonDto,
+  PrizeBreakdownDto,
+  RegistrationFormDto,
+  UpdateHackathonAdditionalInfoDto,
+  UpdateHackathonDto,
+  UpdateHackathonQuestionsDto,
+  UpdateHackathonRoundsDto,
+} from "@oppskills/types";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/hackathons");
@@ -61,6 +69,84 @@ export async function updateHackathon(
   data: UpdateHackathonDto
 ): Promise<unknown> {
   const res = await API.put(`/${id}`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
+}
+
+type UpdateHackathonRegistrationFormPayload = {
+  registrationForm: RegistrationFormDto;
+};
+
+type UpdateHackathonPrizeBreakdownPayload = {
+  prizeBreakdown: PrizeBreakdownDto[];
+};
+
+/**
+ * Replaces all rounds of a hackathon (DRAFT-only).
+ */
+export async function updateHackathonRounds(
+  token: string,
+  id: string,
+  data: UpdateHackathonRoundsDto
+): Promise<unknown> {
+  const res = await API.put(`/${id}/rounds`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
+}
+
+/**
+ * Replaces all application questions of a hackathon (DRAFT-only).
+ */
+export async function updateHackathonQuestions(
+  token: string,
+  id: string,
+  data: UpdateHackathonQuestionsDto
+): Promise<unknown> {
+  const res = await API.put(`/${id}/questions`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
+}
+
+/**
+ * Updates contact + optionally replaces attachments (DRAFT-only).
+ */
+export async function updateHackathonAdditionalInfo(
+  token: string,
+  id: string,
+  data: UpdateHackathonAdditionalInfoDto
+): Promise<unknown> {
+  const res = await API.put(`/${id}/additional-info`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
+}
+
+/**
+ * Replaces the registration form (externalFormLink OR internal fields) (DRAFT-only).
+ */
+export async function updateHackathonRegistrationForm(
+  token: string,
+  id: string,
+  data: UpdateHackathonRegistrationFormPayload
+): Promise<unknown> {
+  const res = await API.put(`/${id}/registration-form`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
+}
+
+/**
+ * Replaces the prize breakdown list (DRAFT-only).
+ */
+export async function updateHackathonPrizeBreakdown(
+  token: string,
+  id: string,
+  data: UpdateHackathonPrizeBreakdownPayload
+): Promise<unknown> {
+  const res = await API.put(`/${id}/prize-breakdown`, data, {
     headers: buildAuthHeaders(token),
   });
   return res.data as unknown;
