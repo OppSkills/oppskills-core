@@ -257,7 +257,7 @@ export default function EditOpportunityPage() {
     <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
       {/* Tabs Navigation */}
       <div className="w-full overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-4 min-w-max px-2">
+        <div className="flex items-center gap-4 px-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}

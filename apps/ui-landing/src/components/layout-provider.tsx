@@ -108,7 +108,7 @@ export default function LayoutProvider({
                   className={cn("bg-neutral-200 p-2 space-y-4 my-1")}
                 >
                   <SiteHeader />
-                  <div className="rounded-[20px] overflow-hidden">
+                  <div className="rounded-[20px] overflow-hidden w-full min-w-0">
                     {children}
                   </div>
                 </SidebarInset>
@@ -116,7 +116,9 @@ export default function LayoutProvider({
             ) : (
               <SidebarInset className={cn("bg-neutral-200 p-2 space-y-4 my-1")}>
                 <SiteHeader />
-                <div className="rounded-[20px] overflow-hidden">{children}</div>
+                <div className="rounded-[20px] overflow-hidden w-full min-w-0">
+                  {children}
+                </div>
               </SidebarInset>
             )}
           </SidebarProvider>
