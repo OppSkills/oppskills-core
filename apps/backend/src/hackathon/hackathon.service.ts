@@ -546,7 +546,8 @@ export class HackathonService {
    * Semantics:
    * - If `externalFormLink` is provided (non-empty), the hackathon uses an external form
    *   and we clear internal `fields`.
-   * - Otherwise `fields` must be provided and will fully replace existing fields.
+   * - Otherwise, `fields` (if provided) fully replaces existing fields.
+   *   Passing an empty fields array clears custom registration fields.
    */
   async updateHackathonRegistrationForm(
     id: string,
@@ -560,16 +561,10 @@ export class HackathonService {
         ? dto.externalFormLink.trim()
         : undefined;
 
-    const fields = Array.isArray(dto.fields) ? dto.fields : undefined;
-
-    if (!externalFormLink && (!fields || fields.length === 0)) {
-      throw new BadRequestException(
-        'registrationForm must include either externalFormLink or a non-empty fields array.',
-      );
-    }
+    const fields = Array.isArray(dto.fields) ? dto.fields : [];
 
     // Validate uniqueness of field order values (DB enforces uniqueness per form).
-    if (!externalFormLink && fields) {
+    if (!externalFormLink && fields.length > 0) {
       const seen = new Set<number>();
       for (const f of fields) {
         if (seen.has(f.order)) {
@@ -600,11 +595,7 @@ export class HackathonService {
 
       // If external form link is used, no internal fields are stored.
       if (externalFormLink) return;
-
-      if (!fields || fields.length === 0) {
-        // Defensive: should be unreachable due to validation above.
-        throw new BadRequestException('registrationForm.fields is required.');
-      }
+      if (fields.length === 0) return;
 
       await tx.registrationFieldEntity.createMany({
         data: fields.map((f) => ({

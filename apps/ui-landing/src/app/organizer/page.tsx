@@ -56,6 +56,9 @@ import { useAuth } from "@clerk/nextjs";
 import type {
   CreateFestivalDto,
   CreateHackathonDto,
+  RegistrationFieldDto,
+  RegistrationFieldTypeValue,
+  RegistrationFormDto,
   HackathonLocationDto,
   FestivalLocationDto,
   HackathonModeValue,
@@ -63,7 +66,10 @@ import type {
   ParticipantTypeValue,
   VisibilityValue,
 } from "@oppskills/types";
-import { createHackathon } from "@/lib/api/hackathonApi";
+import {
+  createHackathon,
+  updateHackathonRegistrationForm,
+} from "@/lib/api/hackathonApi";
 import { createFestival, getFestivals } from "@/lib/api/festivalApi";
 
 /**
@@ -179,6 +185,25 @@ export default function Page() {
   }
 
   /**
+   * Extracts hackathon id from the backend create response.
+   * Backend can return either `{ data: { id } }` or `{ id }` depending on caller.
+   */
+  function extractHackathonId(input: unknown): string | undefined {
+    if (!isRecord(input)) return undefined;
+    const directId = input["id"];
+    if (typeof directId === "string" && directId.trim().length > 0) {
+      return directId.trim();
+    }
+    const data = input["data"];
+    if (!isRecord(data)) return undefined;
+    const nestedId = data["id"];
+    if (typeof nestedId === "string" && nestedId.trim().length > 0) {
+      return nestedId.trim();
+    }
+    return undefined;
+  }
+
+  /**
    * Extracts `[{id,name}]` from a backend response that can be either:
    * - an array directly, OR
    * - an object with a `data` array.
@@ -227,6 +252,57 @@ export default function Page() {
     const m = String(value.getMonth() + 1).padStart(2, "0");
     const d = String(value.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
+  }
+
+  /**
+   * Maps modal question types to backend registration field types.
+   */
+  function toRegistrationFieldTypeValue(
+    type: RegistrationQuestion["type"]
+  ): RegistrationFieldTypeValue {
+    if (type === "Text") return "TEXT";
+    if (type === "Phone No.") return "PHONE_NO";
+    if (type === "Email") return "EMAIL";
+    if (type === "Attachments") return "ATTACHMENTS";
+    if (type === "Number") return "NUMBER";
+    return "OPTIONS";
+  }
+
+  /**
+   * Converts modal questions (custom only) into backend registration form fields.
+   * Validates labels and OPTIONS values.
+   */
+  function mapRegistrationQuestionsToRegistrationFields(
+    questions: ReadonlyArray<RegistrationQuestion>
+  ): ReadonlyArray<RegistrationFieldDto> {
+    const fields: RegistrationFieldDto[] = [];
+
+    questions.forEach((q, index) => {
+      const label = q.label.trim();
+      if (label.length === 0) return;
+
+      const fieldType = toRegistrationFieldTypeValue(q.type);
+
+      let options: string[] | undefined = undefined;
+      if (fieldType === "OPTIONS") {
+        const rawOptions = Array.isArray(q.options) ? q.options : [];
+        const cleaned = rawOptions
+          .map((o) => o.trim())
+          .filter((o) => o.length > 0);
+        const unique = Array.from(new Set(cleaned));
+        options = unique;
+      }
+
+      fields.push({
+        label,
+        type: fieldType,
+        required: Boolean(q.required),
+        order: index,
+        options,
+      });
+    });
+
+    return fields;
   }
 
   /**
@@ -827,7 +903,43 @@ export default function Page() {
                     ),
                   };
 
-                  await createHackathon(token, payload);
+                  // Pre-validate registration questions (so we don't create a hackathon and then fail saving fields).
+                  const registrationFields = mapRegistrationQuestionsToRegistrationFields(
+                    formData.registrationQuestions
+                  );
+                  const invalidOptions = registrationFields.some((f) => {
+                    if (f.type !== "OPTIONS") return false;
+                    return !Array.isArray(f.options) || f.options.length === 0;
+                  });
+                  if (invalidOptions) {
+                    toast.error(
+                      "Please add at least one option for every Options question."
+                    );
+                    return;
+                  }
+
+                  const created = await createHackathon(token, payload);
+                  const hackathonId = extractHackathonId(created);
+                  if (!hackathonId) {
+                    toast.error(
+                      "Event was created but we couldn't read its id from the server response."
+                    );
+                    return;
+                  }
+
+                  // Persist custom registration questions as internal registration form fields.
+                  // Note: fixed questions are intentionally NOT stored to avoid redundancy.
+                  // If organizer configured any questions, save them right away.
+                  if (registrationFields.length > 0) {
+                    const registrationForm: RegistrationFormDto = {
+                      fields: [...registrationFields],
+                    };
+
+                    await updateHackathonRegistrationForm(token, hackathonId, {
+                      registrationForm,
+                    });
+                  }
+
                   toast.success("Event listed successfully!");
                 } catch (err: unknown) {
                   toast.error("Failed to list event. Please try again.");

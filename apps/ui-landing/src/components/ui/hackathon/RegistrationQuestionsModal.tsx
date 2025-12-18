@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -17,7 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Check, GripVertical, Menu, Plus, Trash2, X } from "lucide-react";
+import { Check, Menu, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export type QuestionType =
@@ -124,6 +124,12 @@ export default function RegistrationQuestionsModal({
 
     const [newQuestionLabel, setNewQuestionLabel] = useState("");
     const [newQuestionType, setNewQuestionType] = useState<QuestionType>("Text");
+    const [newQuestionRequired, setNewQuestionRequired] = useState<boolean>(false);
+
+    const customQuestions = useMemo(
+        () => questions.filter((q) => q.fixed !== true),
+        [questions]
+    );
 
     useEffect(() => {
         if (open) {
@@ -139,17 +145,79 @@ export default function RegistrationQuestionsModal({
             id: `custom-${Date.now()}`,
             label: newQuestionLabel,
             type: newQuestionType,
-            required: false, // Default to false for custom questions as per UI implication
+            required: newQuestionRequired,
             fixed: false,
+            options: newQuestionType === "Options" ? [] : undefined,
         };
 
         setQuestions([...questions, newQuestion]);
         setNewQuestionLabel("");
         setNewQuestionType("Text");
+        setNewQuestionRequired(false);
     };
 
     const handleDeleteQuestion = (id: string) => {
         setQuestions(questions.filter((q) => q.id !== id));
+    };
+
+    const handleUpdateCustomQuestion = (
+        id: string,
+        updates: Partial<RegistrationQuestion>
+    ) => {
+        setQuestions((prev) =>
+            prev.map((q) => {
+                if (q.id !== id) return q;
+                if (q.fixed) return q;
+                const next: RegistrationQuestion = { ...q, ...updates };
+                if (next.type !== "Options") {
+                    next.options = undefined;
+                } else if (!Array.isArray(next.options)) {
+                    next.options = [];
+                }
+                return next;
+            })
+        );
+    };
+
+    const handleMoveCustomQuestion = (id: string, direction: "up" | "down") => {
+        setQuestions((prev) => {
+            const fixed = prev.filter((q) => q.fixed === true);
+            const custom = prev.filter((q) => q.fixed !== true);
+            const idx = custom.findIndex((q) => q.id === id);
+            if (idx < 0) return prev;
+            const swapWith = direction === "up" ? idx - 1 : idx + 1;
+            if (swapWith < 0 || swapWith >= custom.length) return prev;
+            const nextCustom = [...custom];
+            const tmp = nextCustom[idx];
+            nextCustom[idx] = nextCustom[swapWith];
+            nextCustom[swapWith] = tmp;
+            return [...fixed, ...nextCustom];
+        });
+    };
+
+    const handleAddOption = (questionId: string, option: string) => {
+        const trimmed = option.trim();
+        if (trimmed.length === 0) return;
+        setQuestions((prev) =>
+            prev.map((q) => {
+                if (q.id !== questionId) return q;
+                if (q.fixed || q.type !== "Options") return q;
+                const existing = Array.isArray(q.options) ? q.options : [];
+                if (existing.includes(trimmed)) return q;
+                return { ...q, options: [...existing, trimmed] };
+            })
+        );
+    };
+
+    const handleRemoveOption = (questionId: string, option: string) => {
+        setQuestions((prev) =>
+            prev.map((q) => {
+                if (q.id !== questionId) return q;
+                if (q.fixed || q.type !== "Options") return q;
+                const existing = Array.isArray(q.options) ? q.options : [];
+                return { ...q, options: existing.filter((o) => o !== option) };
+            })
+        );
     };
 
     const handleSave = () => {
@@ -168,45 +236,183 @@ export default function RegistrationQuestionsModal({
                 </DialogHeader>
 
                 <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
-                    {questions.map((question) => (
-                        <div
-                            key={question.id}
-                            className="bg-white rounded-lg p-3 flex items-center gap-3 shadow-sm border border-transparent hover:border-gray-200 transition-colors"
-                        >
-                            <Menu className="text-gray-400 w-5 h-5 cursor-grab" />
-                            <div className="flex-1 font-medium text-[15px]">
-                                {question.label}
-                            </div>
+                    {questions.map((question) => {
+                        const customIdx = customQuestions.findIndex(
+                            (q) => q.id === question.id
+                        );
+                        const isCustom = question.fixed !== true;
+                        const canMoveUp = isCustom && customIdx > 0;
+                        const canMoveDown =
+                            isCustom &&
+                            customIdx >= 0 &&
+                            customIdx < customQuestions.length - 1;
 
-                            {question.fixed ? (
-                                <>
-                                    <Badge
-                                        variant="secondary"
-                                        className="bg-gray-100 text-gray-600 hover:bg-gray-100 font-normal px-3 py-1 h-8 flex items-center"
-                                    >
-                                        Required
-                                    </Badge>
-                                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                                        <Check className="w-5 h-5 text-white" />
+                        return (
+                            <div
+                                key={question.id}
+                                className="bg-white rounded-lg p-3 flex flex-col gap-2 shadow-sm border border-transparent hover:border-gray-200 transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Menu className="text-gray-400 w-5 h-5 cursor-default" />
+                                    <div className="flex-1">
+                                        {question.fixed ? (
+                                            <div className="font-medium text-[15px]">
+                                                {question.label}
+                                            </div>
+                                        ) : (
+                                            <Input
+                                                value={question.label}
+                                                onChange={(e) =>
+                                                    handleUpdateCustomQuestion(question.id, {
+                                                        label: e.target.value,
+                                                    })
+                                                }
+                                                placeholder="Question label"
+                                                className="h-9"
+                                            />
+                                        )}
                                     </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="text-sm text-gray-500 px-3 py-1 bg-gray-50 rounded-md border border-gray-100">
-                                        {question.type}
+
+                                    {question.fixed ? (
+                                        <>
+                                            <Badge
+                                                variant="secondary"
+                                                className="bg-gray-100 text-gray-600 hover:bg-gray-100 font-normal px-3 py-1 h-8 flex items-center"
+                                            >
+                                                Required
+                                            </Badge>
+                                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                                                <Check className="w-5 h-5 text-white" />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                disabled={!canMoveUp}
+                                                onClick={() =>
+                                                    handleMoveCustomQuestion(question.id, "up")
+                                                }
+                                                className="h-8 w-8"
+                                                aria-label="Move question up"
+                                            >
+                                                <ArrowUp className="w-4 h-4" />
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                disabled={!canMoveDown}
+                                                onClick={() =>
+                                                    handleMoveCustomQuestion(question.id, "down")
+                                                }
+                                                className="h-8 w-8"
+                                                aria-label="Move question down"
+                                            >
+                                                <ArrowDown className="w-4 h-4" />
+                                            </Button>
+
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                onClick={() => handleDeleteQuestion(question.id)}
+                                                aria-label="Delete question"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {!question.fixed && (
+                                    <div className="flex flex-col gap-2 pl-8">
+                                        <div className="flex items-center gap-3">
+                                            <Select
+                                                value={question.type}
+                                                onValueChange={(value) =>
+                                                    handleUpdateCustomQuestion(question.id, {
+                                                        type: value as QuestionType,
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger className="w-[160px] h-9">
+                                                    <SelectValue placeholder="Type" />
+                                                </SelectTrigger>
+                                                <SelectContent align="start" className="w-[200px]">
+                                                    <SelectItem value="Text">Text</SelectItem>
+                                                    <SelectItem value="Number">Number</SelectItem>
+                                                    <SelectItem value="Phone No.">
+                                                        Phone No.
+                                                    </SelectItem>
+                                                    <SelectItem value="Email">Email</SelectItem>
+                                                    <SelectItem value="Attachments">
+                                                        Attachments
+                                                    </SelectItem>
+                                                    <SelectItem value="Options">Options</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+
+                                            <label className="flex items-center gap-2 text-sm text-gray-700">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={question.required}
+                                                    onChange={() =>
+                                                        handleUpdateCustomQuestion(question.id, {
+                                                            required: !question.required,
+                                                        })
+                                                    }
+                                                />
+                                                Required
+                                            </label>
+                                        </div>
+
+                                        {question.type === "Options" && (
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Input
+                                                        defaultValue=""
+                                                        placeholder="Add option and press Enter"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key !== "Enter") return;
+                                                            const target = e.target;
+                                                            if (!(target instanceof HTMLInputElement)) return;
+                                                            handleAddOption(question.id, target.value);
+                                                            target.value = "";
+                                                        }}
+                                                        className="h-9"
+                                                    />
+                                                </div>
+                                                {Array.isArray(question.options) &&
+                                                    question.options.length > 0 && (
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {question.options.map((opt) => (
+                                                                <button
+                                                                    type="button"
+                                                                    key={opt}
+                                                                    onClick={() =>
+                                                                        handleRemoveOption(
+                                                                            question.id,
+                                                                            opt
+                                                                        )
+                                                                    }
+                                                                    className="text-xs px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100"
+                                                                >
+                                                                    {opt} ×
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                            </div>
+                                        )}
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                        onClick={() => handleDeleteQuestion(question.id)}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                </>
-                            )}
-                        </div>
-                    ))}
+                                )}
+                            </div>
+                        );
+                    })}
 
                     {/* Add New Question Row */}
                     <div className="bg-white rounded-lg p-2 flex items-center gap-2 shadow-sm">
@@ -236,6 +442,15 @@ export default function RegistrationQuestionsModal({
                                 <SelectItem value="Options">Options</SelectItem>
                             </SelectContent>
                         </Select>
+
+                        <label className="flex items-center gap-2 text-xs text-gray-600 px-2">
+                            <input
+                                type="checkbox"
+                                checked={newQuestionRequired}
+                                onChange={() => setNewQuestionRequired((v) => !v)}
+                            />
+                            Required
+                        </label>
 
                         <Button
                             onClick={handleAddQuestion}

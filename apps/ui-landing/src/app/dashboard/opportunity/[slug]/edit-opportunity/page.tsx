@@ -749,14 +749,12 @@ export default function EditOpportunityPage() {
       const customRegistrationQuestions = formData.registrationQuestions.filter(
         (q) => q.fixed !== true && q.label.trim().length > 0
       );
-      if (customRegistrationQuestions.length > 0) {
-        const registrationForm = mapRegistrationQuestionsToRegistrationForm(
-          customRegistrationQuestions
-        );
-        await updateHackathonRegistrationForm(token, hackathonId, {
-          registrationForm,
-        });
-      }
+      const registrationForm = mapRegistrationQuestionsToRegistrationForm(
+        customRegistrationQuestions
+      );
+      await updateHackathonRegistrationForm(token, hackathonId, {
+        registrationForm,
+      });
 
       const prizeItems: PrizeBreakdownDto[] = formData.prizes.list
         .map((p): PrizeBreakdownDto | null => {
