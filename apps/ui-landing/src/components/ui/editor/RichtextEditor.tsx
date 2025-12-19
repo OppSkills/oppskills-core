@@ -14,12 +14,14 @@ interface Props {
   value?: any;
   onChange?: (content: any) => void;
   placeholder?: string;
+  className?: string;
 }
 
 export default function RichTextEditor({
   value,
   onChange,
   placeholder,
+  className,
 }: Props) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -55,10 +57,12 @@ export default function RichTextEditor({
   if (!editor) return null;
 
   return (
-    <div className="border rounded-lg bg-white overflow-hidden flex flex-col w-full">
+    <div
+      className={`border rounded-lg bg-white overflow-hidden flex flex-col w-full ${className || ""}`}
+    >
       <Toolbar editor={editor} />
       <div
-        className="flex-1 overflow-y-auto max-h-[600px] cursor-text"
+        className="flex-1 overflow-y-auto cursor-text"
         onClick={() => editor.chain().focus().run()}
       >
         <EditorContent editor={editor} className="min-h-[200px]" />

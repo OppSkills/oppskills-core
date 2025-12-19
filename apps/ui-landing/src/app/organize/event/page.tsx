@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import DescriptionEditorModal from "@/components/ui/derived/DescriptionEditorModal";
 import dynamic from "next/dynamic";
 const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
@@ -143,6 +144,10 @@ export default function Page() {
     eventRegisterBy: undefined,
     registrationQuestions: [],
   });
+
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
+  const [showFestivalDescriptionModal, setShowFestivalDescriptionModal] =
+    useState(false);
 
   const [showFestivalModal, setShowFestivalModal] = useState(false);
 
@@ -778,49 +783,38 @@ export default function Page() {
             </div>
 
             {/* Description */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <div className="h-full">
-                  <InputBlock
-                    icon={<AlignLeft className="w-6 h-6" />}
-                    label={
-                      formData.eventDescription
-                        ? "Description"
-                        : "Add Description"
-                    }
-                    subLabel={
-                      formData.eventDescription
-                        ? formData.eventDescription.replace(/<[^>]*>?/gm, "") +
-                          (formData.eventDescription.length > 50 ? "..." : "")
-                        : undefined
-                    }
-                    className="h-full"
-                  />
-                </div>
-              </DialogTrigger>
-              <DialogContent className="w-screen h-screen max-w-none flex flex-col">
-                <DialogHeader>
-                  <DialogTitle>Event Description</DialogTitle>
-                </DialogHeader>
-                <div className="overflow-auto">
-                  <RichTextEditor
-                    value={formData.eventDescription}
-                    onChange={(content: string) => {
-                      setFormData({ ...formData, eventDescription: content });
-                    }}
-                  />
-                </div>
-                <DialogFooter>
-                  <Button
-                    onClick={() => {
-                      /* It's already in state */
-                    }}
-                  >
-                    Save
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <div
+              onClick={() => setShowDescriptionModal(true)}
+              className="cursor-pointer"
+            >
+              <div className="h-full">
+                <InputBlock
+                  icon={<AlignLeft className="w-6 h-6" />}
+                  label={
+                    formData.eventDescription
+                      ? "Description"
+                      : "Add Description"
+                  }
+                  subLabel={
+                    formData.eventDescription
+                      ? formData.eventDescription.replace(/<[^>]*>?/gm, "") +
+                        (formData.eventDescription.length > 50 ? "..." : "")
+                      : undefined
+                  }
+                  className="h-full"
+                />
+              </div>
+            </div>
+
+            <DescriptionEditorModal
+              open={showDescriptionModal}
+              onOpenChange={setShowDescriptionModal}
+              initialValue={formData.eventDescription}
+              onSave={(val) =>
+                setFormData({ ...formData, eventDescription: val })
+              }
+              title="Event Description"
+            />
 
             {/* Event Details */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1145,46 +1139,38 @@ export default function Page() {
                 </DialogContent>
               </Dialog>
 
-              <Dialog>
-                <DialogTrigger asChild>
-                  <div>
-                    <InputBlock
-                      icon={<AlignLeft className="w-6 h-6" />}
-                      label={
-                        festivalFormData.description
-                          ? "Description"
-                          : "Add Description"
-                      }
-                      subLabel={
-                        festivalFormData.description
-                          ? festivalFormData.description
-                              .replace(/<[^>]*>?/gm, "")
-                              .substring(0, 50) + "..."
-                          : undefined
-                      }
-                    />
-                  </div>
-                </DialogTrigger>
-                <DialogContent className="w-screen h-screen max-w-none flex flex-col">
-                  <DialogHeader>
-                    <DialogTitle>Festival Description</DialogTitle>
-                  </DialogHeader>
-                  <div className="flex-1 overflow-auto border rounded-md">
-                    <RichTextEditor
-                      value={festivalFormData.description}
-                      onChange={(content: string) =>
-                        setFestivalFormData({
-                          ...festivalFormData,
-                          description: content,
-                        })
-                      }
-                    />
-                  </div>
-                  <DialogFooter>
-                    <Button>Save</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <div
+                onClick={() => setShowFestivalDescriptionModal(true)}
+                className="cursor-pointer"
+              >
+                <div>
+                  <InputBlock
+                    icon={<AlignLeft className="w-6 h-6" />}
+                    label={
+                      festivalFormData.description
+                        ? "Description"
+                        : "Add Description"
+                    }
+                    subLabel={
+                      festivalFormData.description
+                        ? festivalFormData.description
+                            .replace(/<[^>]*>?/gm, "")
+                            .substring(0, 50) + "..."
+                        : undefined
+                    }
+                  />
+                </div>
+              </div>
+
+              <DescriptionEditorModal
+                open={showFestivalDescriptionModal}
+                onOpenChange={setShowFestivalDescriptionModal}
+                initialValue={festivalFormData.description}
+                onSave={(val) =>
+                  setFestivalFormData({ ...festivalFormData, description: val })
+                }
+                title="Festival Description"
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <Popover>
