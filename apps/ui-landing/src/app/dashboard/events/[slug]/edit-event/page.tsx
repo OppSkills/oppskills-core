@@ -177,11 +177,6 @@ export default function EditEventPage() {
       label: "Registration Settings",
       icon: <Settings className="w-4 h-4" />,
     },
-    {
-      id: "rounds-stages",
-      label: "Schedule",
-      icon: <LayoutTemplate className="w-4 h-4" />,
-    },
     { id: "prizes", label: "Prizes", icon: <Trophy className="w-4 h-4" /> },
     {
       id: "additional-info",
