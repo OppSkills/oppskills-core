@@ -1,157 +1,188 @@
 "use client";
 
-import React from "react";
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { UserPlus, Trash2, Mail } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import React, { useState } from "react";
+import RoleCard from "./_components/RoleCard";
+import AddEditRoleModal, { RoleData } from "./_components/AddEditRoleModal";
+import EmptyState from "./_components/EmptyState";
+import { cn } from "@/lib/utils";
 
-type RoleUser = {
-  id: string;
-  name: string;
-  email: string;
-  role: "Organizer" | "Moderator" | "Check-in Staff";
-  avatarUrl?: string;
+// Mock Data for Owner
+const MOCK_OWNER = {
+  id: "owner-1",
+  name: "Vijay Krishna",
+  email: "vijay.krishna@events.com",
+  phone: "+91 98765 43210",
 };
 
-const MOCK_USERS: RoleUser[] = [
+// Initial Mock Data for Managers
+const INITIAL_MANAGERS: RoleData[] = [
   {
-    id: "1",
-    name: "John Admin",
-    email: "john@oppskills.com",
-    role: "Organizer",
+    id: "manager-1",
+    name: "Sarah Jenkins",
+    email: "sarah.j@events.com",
+    phone: "+91 98989 89898",
   },
   {
-    id: "2",
-    name: "Sarah Staff",
-    email: "sarah@oppskills.com",
-    role: "Check-in Staff",
-  },
-  {
-    id: "3",
-    name: "Mike Moderator",
-    email: "mike@oppskills.com",
-    role: "Moderator",
+    id: "manager-2",
+    name: "David Ross",
+    email: "david.ross@events.com",
+    phone: "+91 97777 66666",
   },
 ];
 
-const columnHelper = createColumnHelper<RoleUser>();
-
-const columns = [
-  columnHelper.accessor("name", {
-    header: "User",
-    cell: (info) => (
-      <div className="flex items-center gap-3">
-        <Avatar>
-          <AvatarImage src={info.row.original.avatarUrl} />
-          <AvatarFallback>{info.row.original.name.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div className="flex flex-col">
-          <span className="font-medium">{info.getValue()}</span>
-          <span className="text-xs text-muted-foreground">
-            {info.row.original.email}
-          </span>
-        </div>
-      </div>
-    ),
-  }),
-  columnHelper.accessor("role", {
-    header: "Role",
-    cell: (info) => (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-        {info.getValue()}
-      </span>
-    ),
-  }),
-  columnHelper.display({
-    id: "actions",
-    header: "",
-    cell: () => (
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-muted-foreground"
-        >
-          <Mail className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
-      </div>
-    ),
-  }),
+// Initial Mock Data for Evaluators
+const INITIAL_EVALUATORS: RoleData[] = [
+  {
+    id: "eval-1",
+    name: "Dr. Emily Chen",
+    email: "emily.chen@university.edu",
+    phone: "+91 91234 56789",
+  },
+  {
+    id: "eval-2",
+    name: "Michael Chang",
+    email: "michael.chang@techcorp.com",
+    phone: "+91 90000 11111",
+  },
+  {
+    id: "eval-3",
+    name: "Priya Patel",
+    email: "priya.p@consulting.com",
+    phone: "+91 99887 76655",
+  },
 ];
 
 export default function ManageRolesPage() {
-  const [data] = React.useState(MOCK_USERS);
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
+  const [activeTab, setActiveTab] = useState<"Manager" | "Evaluator">(
+    "Manager"
+  );
+
+  // State for roles initialized with mock data
+  const [managers, setManagers] = useState<RoleData[]>(INITIAL_MANAGERS);
+  const [evaluators, setEvaluators] = useState<RoleData[]>(INITIAL_EVALUATORS);
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<RoleData | null>(null);
+
+  const handleAddClick = () => {
+    setEditingRole(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditClick = (role: RoleData) => {
+    setEditingRole(role);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    if (confirm("Are you sure you want to delete this role?")) {
+      if (activeTab === "Manager") {
+        setManagers(managers.filter((m) => m.id !== id));
+      } else {
+        setEvaluators(evaluators.filter((e) => e.id !== id));
+      }
+    }
+  };
+
+  const handleSaveRole = (data: RoleData) => {
+    const list = activeTab === "Manager" ? managers : evaluators;
+    const setList = activeTab === "Manager" ? setManagers : setEvaluators;
+
+    if (editingRole) {
+      // Update
+      setList(
+        list.map((item) =>
+          item.id === editingRole.id ? { ...data, id: editingRole.id } : item
+        )
+      );
+    } else {
+      // Add
+      const newRole = { ...data, id: crypto.randomUUID() };
+      setList([...list, newRole]);
+    }
+  };
+
+  const currentList = activeTab === "Manager" ? managers : evaluators;
 
   return (
-    <div className="w-full bg-neutral-200 min-h-screen p-6 flex justify-center">
-      <div className="w-full max-w-4xl bg-background rounded-2xl p-6 shadow-sm flex flex-col gap-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-semibold font-poppins">
-              Manage Roles
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              Assign roles and permissions to your team.
-            </p>
-          </div>
-          <Button className="rounded-full gap-2">
-            <UserPlus className="w-4 h-4" /> Invite Member
-          </Button>
+    <div className="flex w-full justify-center bg-surface min-h-[calc(100vh-100px)]">
+      <div className="w-full max-w-[1200px] p-6 md:p-10 rounded-[20px] bg-background flex flex-col gap-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-muted-foreground text-base font-normal">
+            Manage user roles, set permissions, and control access for a secure
+            system.
+          </h1>
         </div>
 
-        <div className="rounded-xl border border-border overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-muted/50 text-muted-foreground font-medium">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th key={header.id} className="p-4">
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody className="divide-y divide-border">
-              {table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="hover:bg-muted/10 transition-colors"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="p-4">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Owner Section */}
+        <div>
+          <RoleCard
+            name={MOCK_OWNER.name}
+            email={MOCK_OWNER.email}
+            phone={MOCK_OWNER.phone}
+            type="Owner"
+          />
         </div>
+
+        <div className="h-[1px] w-full bg-border" />
+
+        {/* Tabs */}
+        <div className="flex items-center gap-4">
+          {["Manager", "Evaluator"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab as "Manager" | "Evaluator")}
+              className={cn(
+                "px-6 py-2 rounded-full text-sm font-medium transition-all",
+                activeTab === tab
+                  ? "bg-[#A020F0] text-white shadow-md shadow-purple-900/20"
+                  : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
+              )}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Interactive Role List */}
+        <div className="flex flex-col gap-4 min-h-[400px]">
+          {currentList.length > 0 ? (
+            <>
+              {currentList.map((role) => (
+                <RoleCard
+                  key={role.id}
+                  name={role.name}
+                  email={role.email}
+                  phone={role.phone}
+                  type={activeTab}
+                  onEdit={() => handleEditClick(role)}
+                  onDelete={() => role.id && handleDeleteClick(role.id)}
+                />
+              ))}
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={handleAddClick}
+                  className="flex items-center gap-2 px-6 py-2 rounded-full border border-border text-[#A020F0] font-medium hover:bg-[#F3E8FF] transition-colors"
+                >
+                  <span className="text-xl leading-none mb-0.5">+</span> Add{" "}
+                  {activeTab}
+                </button>
+              </div>
+            </>
+          ) : (
+            <EmptyState roleName={activeTab} onAdd={handleAddClick} />
+          )}
+        </div>
+
+        <AddEditRoleModal
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          initialData={editingRole}
+          roleType={activeTab}
+          onSave={handleSaveRole}
+        />
       </div>
     </div>
   );

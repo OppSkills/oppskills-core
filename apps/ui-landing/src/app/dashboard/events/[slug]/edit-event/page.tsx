@@ -12,7 +12,9 @@ import {
 import { cn } from "@/lib/utils";
 import { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
 import BasicDetails from "./_components/BasicDetails";
+import RegistrationSettings from "./_components/RegistrationSettings";
 import CompetitionDetailsPage from "@/app/competitions/[slug]/page";
+import { useQueryState } from "nuqs";
 
 // Types
 export interface Round {
@@ -99,7 +101,9 @@ export interface FormData {
 }
 
 export default function EditEventPage() {
-  const [activeTab, setActiveTab] = useState("basic-details");
+  const [activeTab, setActiveTab] = useQueryState("activeTab", {
+    defaultValue: "basic-details",
+  });
 
   const [formData, setFormData] = useState<FormData>({
     eventFestName: "Detailed Event",
@@ -127,7 +131,24 @@ export default function EditEventPage() {
       eventDate: new Date("2024-03-15"),
       eventTime: "09:00",
       maxTeamsNoLimit: true,
-      questions: [],
+      questions: [
+        { id: "name", label: "Name", required: true, isStatic: true },
+        { id: "email", label: "Email", required: true, isStatic: true },
+        {
+          id: "mobile",
+          label: "Mobile Number",
+          required: true,
+          isStatic: true,
+        },
+        { id: "gender", label: "Gender", required: true, isStatic: true },
+        {
+          id: "college",
+          label: "Current College/ Organization",
+          required: true,
+          isStatic: true,
+        },
+        { id: "userType", label: "User Type", required: true, isStatic: true },
+      ],
     },
     prizes: {
       description: "",
@@ -170,7 +191,7 @@ export default function EditEventPage() {
   ];
 
   return (
-    <div className="w-full flex flex-col items-center p-6 gap-6 bg-neutral-200 min-h-screen">
+    <div className="w-full flex flex-col items-center p-6 gap-6 bg-background min-h-screen">
       <div className="w-full max-w-6xl flex flex-col gap-6">
         {/* Tabs Navigation */}
         <div className="w-full overflow-x-auto no-scrollbar">
@@ -199,16 +220,26 @@ export default function EditEventPage() {
           )}
 
           {/* Placeholders for other tabs to prevent errors if clicked */}
-          {activeTab !== "basic-details" && activeTab !== "preview" && (
-            <div className="bg-background rounded-2xl p-12 flex flex-col items-center justify-center text-muted-foreground">
-              <Settings className="w-12 h-12 mb-4 opacity-50" />
-              <p className="text-lg font-medium">Coming Soon</p>
-              <p>
-                {tabs.find((t) => t.id === activeTab)?.label} configuration is
-                under development.
-              </p>
-            </div>
+          {activeTab === "registration-settings" && (
+            <RegistrationSettings
+              formData={formData}
+              setFormData={setFormData}
+            />
           )}
+
+          {/* Placeholders for other tabs to prevent errors if clicked */}
+          {activeTab !== "basic-details" &&
+            activeTab !== "preview" &&
+            activeTab !== "registration-settings" && (
+              <div className="bg-background rounded-2xl p-12 flex flex-col items-center justify-center text-muted-foreground">
+                <Settings className="w-12 h-12 mb-4 opacity-50" />
+                <p className="text-lg font-medium">Coming Soon</p>
+                <p>
+                  {tabs.find((t) => t.id === activeTab)?.label} configuration is
+                  under development.
+                </p>
+              </div>
+            )}
 
           {activeTab === "preview" && (
             <div className="bg-background rounded-2xl overflow-hidden min-h-[500px]">

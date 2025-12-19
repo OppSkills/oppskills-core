@@ -49,7 +49,7 @@ export default function EventDashboardPage({
   ];
 
   return (
-    <div className="flex justify-center w-full bg-neutral-200 min-h-screen">
+    <div className="flex justify-center w-full min-h-screen">
       <div className="w-full bg-background p-4 sm:p-6 flex flex-col gap-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">

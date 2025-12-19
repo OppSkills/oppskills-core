@@ -12,15 +12,22 @@ import {
   Circle,
 } from "lucide-react";
 import PaymentFormModal from "@/components/ui/payment-side/PaymentFormModal";
-import CreateTicketModal from "@/components/ui/payment-side/create-ticket-modal";
+import CreateTicketModal, {
+  TicketData,
+} from "@/components/ui/payment-side/create-ticket-modal";
 
 export default function TicketsPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isCreateTicketModalOpen, setIsCreateTicketModalOpen] = useState(false);
   const [isPaid, setIsPaid] = useState<boolean>(true); // Defaulting to true based on typical event needs, or false to match mockup
+  const [tickets, setTickets] = useState<TicketData[]>([]);
   const [serviceChargePayer, setServiceChargePayer] = useState<
     "player" | "organizer"
   >("player");
+
+  const handleCreateTicket = (newTicket: TicketData) => {
+    setTickets([...tickets, newTicket]);
+  };
 
   const payoutFields = [
     "Account Holder Name",
@@ -90,6 +97,7 @@ export default function TicketsPage() {
           <CreateTicketModal
             isOpen={isCreateTicketModalOpen}
             onClose={() => setIsCreateTicketModalOpen(false)}
+            onCreate={handleCreateTicket}
           />
           <PaymentFormModal
             isOpen={isPaymentModalOpen}
@@ -117,55 +125,73 @@ export default function TicketsPage() {
               </div>
             </div>
 
-            {/* Ticket Card */}
-            <div className="flex p-3 justify-between items-center self-stretch rounded-xl border border-primary/50 bg-input">
-              <div className="flex w-full max-w-[607px] items-center gap-4">
-                <div className="flex flex-col justify-center items-start gap-1">
-                  <span className="font-sans text-foreground text-xl font-medium leading-relaxed">
-                    Ticket name
-                  </span>
-                  <div className="flex items-center gap-2.5">
-                    <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-                      ₹ 4,000 per team
-                    </span>
-                    <div className="w-[1px] h-6 bg-muted-foreground/50"></div>
-                    <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-                      Limit: 10,000
-                    </span>
+            {tickets.length > 0 ? (
+              <div className="flex flex-col gap-4 w-full">
+                {tickets.map((ticket, index) => (
+                  <div
+                    key={index}
+                    className="flex p-3 justify-between items-center self-stretch rounded-xl border border-primary/50 bg-input"
+                  >
+                    <div className="flex w-full max-w-[607px] items-center gap-4">
+                      <div className="flex flex-col justify-center items-start gap-1">
+                        <span className="font-sans text-foreground text-xl font-medium leading-relaxed">
+                          {ticket.title}
+                        </span>
+                        <div className="flex items-center gap-2.5">
+                          <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
+                            ₹ {ticket.amount} per{" "}
+                            {ticket.feeType === "Team fee" ? "team" : "person"}
+                          </span>
+                          {ticket.limit && (
+                            <>
+                              <div className="w-[1px] h-6 bg-muted-foreground/50"></div>
+                              <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
+                                Limit: {ticket.limit}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <button className="flex px-4 py-2 justify-center items-center gap-3 rounded-[37px] hover:bg-primary/10 transition-colors group">
+                        <Pencil className="w-[18px] h-[18px] text-primary" />
+                        <span className="font-sans text-primary text-xs font-medium leading-relaxed">
+                          Edit
+                        </span>
+                      </button>
+                      <button
+                        className="flex px-4 py-2 justify-center items-center gap-3 rounded-[37px] hover:bg-primary/10 transition-colors group"
+                        onClick={() =>
+                          setTickets(tickets.filter((_, i) => i !== index))
+                        }
+                      >
+                        <Trash2 className="w-[18px] h-[18px] text-primary" />
+                        <span className="font-sans text-primary text-xs font-medium leading-relaxed">
+                          Delete
+                        </span>
+                      </button>
+                    </div>
                   </div>
+                ))}
+              </div>
+            ) : (
+              /* Create New Prompt */
+              <div className="flex p-3 items-center gap-2.5 self-stretch rounded-xl border border-primary/50 bg-input">
+                <div className="flex items-center gap-2.5">
+                  <Ticket className="w-6 h-6 text-foreground" />
+                  <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
+                    Don&apos;t have any ticket generated as of now.
+                  </span>
                 </div>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <button className="flex px-4 py-2 justify-center items-center gap-3 rounded-[37px] hover:bg-primary/10 transition-colors group">
-                  <Pencil className="w-[18px] h-[18px] text-primary" />
-                  <span className="font-sans text-primary text-xs font-medium leading-relaxed">
-                    Edit
-                  </span>
-                </button>
-                <button className="flex px-4 py-2 justify-center items-center gap-3 rounded-[37px] hover:bg-primary/10 transition-colors group">
-                  <Trash2 className="w-[18px] h-[18px] text-primary" />
-                  <span className="font-sans text-primary text-xs font-medium leading-relaxed">
-                    Delete
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            {/* Create New Prompt */}
-            <div className="flex p-3 items-center gap-2.5 self-stretch rounded-xl border border-primary/50 bg-input">
-              <div className="flex items-center gap-2.5">
-                <Ticket className="w-6 h-6 text-foreground" />
-                <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-                  Don&apos;t have any ticket generated as of now.
+                <span
+                  className="font-sans text-primary text-base font-normal leading-relaxed underline decoration-solid cursor-pointer decoration-auto underline-offset-auto"
+                  onClick={() => setIsCreateTicketModalOpen(true)}
+                >
+                  Click here to generate one
                 </span>
               </div>
-              <span
-                className="font-sans text-primary text-base font-normal leading-relaxed underline decoration-solid cursor-pointer decoration-auto underline-offset-auto"
-                onClick={() => setIsCreateTicketModalOpen(true)}
-              >
-                Click here to generate one
-              </span>
-            </div>
+            )}
           </div>
 
           {/* --- SECTION 3: SERVICE CHARGE --- */}
@@ -294,7 +320,7 @@ const CalculationCard = ({
         </span>
         {/* Check Icon */}
         {isSelected ? (
-          <CheckCircle className="w-6 h-6 text-primary fill-primary text-white" />
+          <CheckCircle className="w-6 h-6 fill-primary text-white" />
         ) : (
           <Circle className="w-6 h-6 text-primary/30" />
         )}
