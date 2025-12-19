@@ -1,40 +1,40 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import RichTextEditor from "@/components/ui/editor/RichtextEditor";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 interface CreateTeamFormProps {
-  hackathonId: string
+  hackathonId: string;
 }
 
 export function CreateTeamForm({ hackathonId }: CreateTeamFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const [teamData, setTeamData] = useState({
     name: "",
     description: "",
-    maxMembers: "4"
-  })
+    maxMembers: "4",
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!teamData.name || !teamData.description) {
-      toast.error("Please fill in all fields")
-      return
+      toast.error("Please fill in all fields");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    setIsLoading(false)
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setIsLoading(false);
 
-    console.log("Creating team for hackathon:", hackathonId, teamData)
-    toast.success("Team created successfully! (Mock)")
-  }
+    console.log("Creating team for hackathon:", hackathonId, teamData);
+    toast.success("Team created successfully! (Mock)");
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-md">
@@ -51,11 +51,12 @@ export function CreateTeamForm({ hackathonId }: CreateTeamFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
+        <RichTextEditor
           placeholder="What is your team building?"
           value={teamData.description}
-          onChange={(e) => setTeamData({ ...teamData, description: e.target.value })}
+          onChange={(content) =>
+            setTeamData({ ...teamData, description: content })
+          }
         />
       </div>
 
@@ -67,7 +68,9 @@ export function CreateTeamForm({ hackathonId }: CreateTeamFormProps) {
           min="2"
           max="6"
           value={teamData.maxMembers}
-          onChange={(e) => setTeamData({ ...teamData, maxMembers: e.target.value })}
+          onChange={(e) =>
+            setTeamData({ ...teamData, maxMembers: e.target.value })
+          }
         />
       </div>
 
@@ -76,5 +79,5 @@ export function CreateTeamForm({ hackathonId }: CreateTeamFormProps) {
         Create Team
       </Button>
     </form>
-  )
+  );
 }

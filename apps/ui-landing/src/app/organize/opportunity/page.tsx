@@ -47,7 +47,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import RichTextEditor from "@/components/ui/editor/RichtextEditor";
+import dynamic from "next/dynamic";
+const RichTextEditor = dynamic(
+  () => import("@/components/ui/editor/RichtextEditor"),
+  { ssr: false }
+);
 import { format } from "date-fns";
 import Image from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
@@ -787,14 +791,14 @@ export default function Page() {
                     subLabel={
                       formData.eventDescription
                         ? formData.eventDescription.replace(/<[^>]*>?/gm, "") +
-                        (formData.eventDescription.length > 50 ? "..." : "")
+                          (formData.eventDescription.length > 50 ? "..." : "")
                         : undefined
                     }
                     className="h-full"
                   />
                 </div>
               </DialogTrigger>
-              <DialogContent className="max-w-3xl flex flex-col">
+              <DialogContent className="w-screen h-screen max-w-none flex flex-col">
                 <DialogHeader>
                   <DialogTitle>Event Description</DialogTitle>
                 </DialogHeader>
@@ -987,9 +991,10 @@ export default function Page() {
                   };
 
                   // Pre-validate registration questions (so we don't create a hackathon and then fail saving fields).
-                  const registrationFields = mapRegistrationQuestionsToRegistrationFields(
-                    formData.registrationQuestions
-                  );
+                  const registrationFields =
+                    mapRegistrationQuestionsToRegistrationFields(
+                      formData.registrationQuestions
+                    );
                   const invalidOptions = registrationFields.some((f) => {
                     if (f.type !== "OPTIONS") return false;
                     return !Array.isArray(f.options) || f.options.length === 0;
@@ -1153,14 +1158,14 @@ export default function Page() {
                       subLabel={
                         festivalFormData.description
                           ? festivalFormData.description
-                            .replace(/<[^>]*>?/gm, "")
-                            .substring(0, 50) + "..."
+                              .replace(/<[^>]*>?/gm, "")
+                              .substring(0, 50) + "..."
                           : undefined
                       }
                     />
                   </div>
                 </DialogTrigger>
-                <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
+                <DialogContent className="w-screen h-screen max-w-none flex flex-col">
                   <DialogHeader>
                     <DialogTitle>Festival Description</DialogTitle>
                   </DialogHeader>
