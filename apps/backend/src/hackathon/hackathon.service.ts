@@ -11,11 +11,13 @@ import type {
   CreateHackathonDto,
   UpdateHackathonDto,
   UpdateHackathonRoundsDto,
-  UpdateHackathonQuestionsDto,
   UpdateHackathonAdditionalInfoDto,
   HackathonAttendeeEligibilityValue,
   HackathonRoundTypeValue,
+  PrizeBreakdownDto,
+  RegistrationFormDto,
 } from '@oppskills/types';
+import type { UpdateHackathonPrizeBreakdownDto } from './hackathon-update-nested.dto';
 
 type LifecycleStatus =
   | 'DRAFT'
@@ -170,19 +172,6 @@ export class HackathonService {
               }
             : undefined,
 
-          // New questions relation
-          questions: dto.questions
-            ? {
-                create: dto.questions.map((q) => ({
-                  questionText: q.questionText,
-                  type: q.type,
-                  required: q.required,
-                  order: q.order,
-                  options: q.options ?? [],
-                })),
-              }
-            : undefined,
-
           // New attachments relation
           attachments: dto.additionalInfo?.attachments
             ? {
@@ -247,6 +236,19 @@ export class HackathonService {
   }
 
   /**
+   * Get a single hackathon by slug.
+   * Includes all relations: owner, festival, rounds, questions, attachments, etc.
+   */
+  async getHackathonBySlug(slug: string) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug },
+      include: this.getHackathonIncludeClause(),
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+    return hackathon;
+  }
+
+  /**
    * Update a hackathon (owner-only).
    * - Allowed only when status is DRAFT.
    * - Nested updates (rounds, questions, additionalInfo, etc.) use dedicated endpoints.
@@ -278,11 +280,10 @@ export class HackathonService {
       dto.rounds ||
       dto.prizeBreakdown ||
       dto.registrationForm ||
-      dto.questions ||
       dto.additionalInfo
     ) {
       throw new BadRequestException(
-        'Nested updates (rounds, prizeBreakdown, registrationForm, questions, additionalInfo) are not supported in PUT /hackathons/:id. Use dedicated endpoints.',
+        'Nested updates (rounds, prizeBreakdown, registrationForm, additionalInfo) are not supported in PUT /hackathons/:id. Use dedicated endpoints.',
       );
     }
 
@@ -350,7 +351,7 @@ export class HackathonService {
         // New prize fields
         prizeDescription:
           dto.prizeDescription !== undefined
-            ? dto.prizeDescription ?? Prisma.JsonNull
+            ? (dto.prizeDescription ?? Prisma.JsonNull)
             : undefined,
         prizeCertificate: dto.prizeCertificate,
 
@@ -489,53 +490,6 @@ export class HackathonService {
   }
 
   /**
-   * Replace all application questions of a hackathon.
-   * - Allowed only when status is DRAFT.
-   * - Owner-only (or admin).
-   */
-  async updateHackathonQuestions(
-    id: string,
-    dto: UpdateHackathonQuestionsDto,
-    userId: string,
-  ) {
-    await this.assertHackathonEditableByUser(id, userId);
-
-    // Validate MCQ questions have at least 2 options
-    for (const q of dto.questions) {
-      if (q.type === 'MCQ') {
-        if (!q.options || q.options.length < 2) {
-          throw new BadRequestException(
-            `MCQ question "${q.questionText.substring(0, 30)}..." requires at least 2 options.`,
-          );
-        }
-      }
-    }
-
-    // Delete existing questions and create new ones in a transaction
-    await prisma.$transaction(async (tx) => {
-      await tx.hackathonQuestionEntity.deleteMany({
-        where: { hackathonId: id },
-      });
-
-      await tx.hackathonQuestionEntity.createMany({
-        data: dto.questions.map((q) => ({
-          hackathonId: id,
-          questionText: q.questionText,
-          type: q.type,
-          required: q.required,
-          order: q.order,
-          options: q.options ?? [],
-        })),
-      });
-    });
-
-    return prisma.hackathonEntity.findUnique({
-      where: { id },
-      include: this.getHackathonIncludeClause(),
-    });
-  }
-
-  /**
    * Update additional info (contact + attachments) of a hackathon.
    * - Allowed only when status is DRAFT.
    * - Owner-only (or admin).
@@ -582,6 +536,150 @@ export class HackathonService {
 
     return prisma.hackathonEntity.findUnique({
       where: { id },
+      include: this.getHackathonIncludeClause(),
+    });
+  }
+
+  /**
+   * Replace the registration form for a hackathon.
+   *
+   * Semantics:
+   * - If `externalFormLink` is provided (non-empty), the hackathon uses an external form
+   *   and we clear internal `fields`.
+   * - Otherwise, `fields` (if provided) fully replaces existing fields.
+   *   Passing an empty fields array clears custom registration fields.
+   */
+  async updateHackathonRegistrationForm(
+    id: string,
+    dto: RegistrationFormDto,
+    userId: string,
+  ) {
+    await this.assertHackathonEditableByUser(id, userId);
+
+    const externalFormLink =
+      typeof dto.externalFormLink === 'string' && dto.externalFormLink.trim().length > 0
+        ? dto.externalFormLink.trim()
+        : undefined;
+
+    const fields = Array.isArray(dto.fields) ? dto.fields : [];
+
+    // Validate uniqueness of field order values (DB enforces uniqueness per form).
+    if (!externalFormLink && fields.length > 0) {
+      const seen = new Set<number>();
+      for (const f of fields) {
+        if (seen.has(f.order)) {
+          throw new BadRequestException(
+            `registrationForm.fields has duplicate order value: ${f.order}`,
+          );
+        }
+        seen.add(f.order);
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const form = await tx.registrationFormEntity.upsert({
+        where: { hackathonId: id },
+        create: {
+          hackathonId: id,
+          externalFormLink: externalFormLink ?? null,
+        },
+        update: {
+          externalFormLink: externalFormLink ?? null,
+        },
+      });
+
+      // Always clear existing fields; we'll re-create if needed.
+      await tx.registrationFieldEntity.deleteMany({
+        where: { registrationFormId: form.id },
+      });
+
+      // If external form link is used, no internal fields are stored.
+      if (externalFormLink) return;
+      if (fields.length === 0) return;
+
+      await tx.registrationFieldEntity.createMany({
+        data: fields.map((f) => ({
+          registrationFormId: form.id,
+          label: f.label,
+          type: f.type,
+          required: f.required,
+          order: f.order,
+          options: f.options ?? [],
+          placeholder: f.placeholder,
+        })),
+      });
+    });
+
+    return prisma.hackathonEntity.findUnique({
+      where: { id },
+      include: this.getHackathonIncludeClause(),
+    });
+  }
+
+  /**
+   * Replace the prize breakdown list for a hackathon.
+   */
+  async updateHackathonPrizeBreakdown(
+    id: string,
+    dto: UpdateHackathonPrizeBreakdownDto,
+    userId: string,
+  ) {
+    await this.assertHackathonEditableByUser(id, userId);
+
+    const items: PrizeBreakdownDto[] = Array.isArray(dto.prizeBreakdown)
+      ? dto.prizeBreakdown
+      : [];
+
+    // Validate amounts are parseable decimals (Prisma will also validate at the DB boundary).
+    for (const item of items) {
+      const amountNumber = Number(item.amount);
+      if (!Number.isFinite(amountNumber)) {
+        throw new BadRequestException(
+          `Invalid prizeBreakdown.amount for position "${item.position}": "${item.amount}"`,
+        );
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.prizeBreakdownEntity.deleteMany({
+        where: { hackathonId: id },
+      });
+
+      if (items.length === 0) return;
+
+      await tx.prizeBreakdownEntity.createMany({
+        data: items.map((p) => ({
+          hackathonId: id,
+          position: p.position,
+          amount: p.amount,
+          description: p.description,
+        })),
+      });
+    });
+
+    return prisma.hackathonEntity.findUnique({
+      where: { id },
+      include: this.getHackathonIncludeClause(),
+    });
+  }
+
+  /**
+   * Update the max teams limit.
+   * - `null` means unlimited.
+   * - Allowed only when status is DRAFT (permission enforced via assert).
+   */
+  async updateHackathonMaxTeams(
+    id: string,
+    maxTeams: number | null,
+    userId: string,
+  ) {
+    await this.assertHackathonEditableByUser(id, userId);
+
+    return prisma.hackathonEntity.update({
+      where: { id },
+      data: {
+        maxTeams,
+      },
       include: this.getHackathonIncludeClause(),
     });
   }
@@ -669,9 +767,6 @@ export class HackathonService {
             orderBy: { order: 'asc' as const },
           },
         },
-      },
-      questions: {
-        orderBy: { order: 'asc' as const },
       },
       attachments: true,
     };

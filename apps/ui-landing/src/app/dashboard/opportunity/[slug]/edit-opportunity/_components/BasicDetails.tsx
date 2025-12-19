@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/popover";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -44,9 +45,13 @@ import { Label } from "@/components/ui/label";
 import RichTextEditor from "@/components/ui/editor/RichtextEditor";
 import { format } from "date-fns";
 import Image from "next/image";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { FormData } from "../page";
+import { useAuth } from "@clerk/nextjs";
+import { toast } from "sonner";
+import { presignImageUpload } from "@/lib/api/mediaApi";
+import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 
 // Reusing the InputBlock logic
 const InputBlock = ({
@@ -86,7 +91,7 @@ const InputBlock = ({
 
 interface BasicDetailsProps {
   formData: FormData;
-  setFormData: (data: FormData) => void;
+  setFormData: (data: React.SetStateAction<FormData>) => void;
 }
 
 export default function BasicDetails({
@@ -94,6 +99,62 @@ export default function BasicDetails({
   setFormData,
 }: BasicDetailsProps) {
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const { getToken } = useAuth();
+  const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
+  const fileInputId = useMemo(() => `banner-upload-${crypto.randomUUID()}`, []);
+
+  /**
+   * Upload banner image:
+   * - Backend generates S3 presigned POST (bucket stays private; CloudFront serves public URL).
+   * - Browser uploads file directly to S3.
+   * - We store the returned CloudFront URL into `eventThumbnail` (autosave persists it).
+   */
+  async function handleBannerSelected(file: File | null): Promise<void> {
+    if (!file) return;
+    if (isUploadingBanner) return;
+
+    // Client-side validation (backend presign also enforces size and MIME type).
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast.error("Image too large. Max size is 10MB.");
+      return;
+    }
+
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedMimeTypes.includes(file.type)) {
+      toast.error("Only JPG, PNG, or WebP images are allowed.");
+      return;
+    }
+
+    setIsUploadingBanner(true);
+    try {
+      const token = await getToken();
+      if (typeof token !== "string" || token.trim().length === 0) {
+        toast.error("Please sign in to upload.");
+        return;
+      }
+
+      const presign = await presignImageUpload(token, {
+        purpose: "HACKATHON_BANNER",
+        mimeType: file.type,
+      });
+
+      await uploadImageToS3PresignedPost({ presign, file });
+
+      setFormData((prev) => ({
+        ...prev,
+        eventThumbnail: presign.publicUrl,
+      }));
+
+      toast.success("Banner uploaded.");
+    } catch (err: unknown) {
+      // eslint-disable-next-line no-console
+      console.error(err);
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  }
 
   return (
     <div className="flex flex-col lg:flex-row p-2 gap-6 animate-in fade-in duration-500">
@@ -103,7 +164,12 @@ export default function BasicDetails({
           <Image
             width={371}
             height={220}
-            src="/tmp/hackathon.jpg" // Placeholder
+            src={
+              typeof formData.eventThumbnail === "string" &&
+              formData.eventThumbnail.trim().length > 0
+                ? formData.eventThumbnail.trim()
+                : "/tmp/hackathon.jpg"
+            }
             alt="Hackathon Thumbnail"
             className="w-full h-full object-cover"
           />
@@ -122,12 +188,33 @@ export default function BasicDetails({
             </div>
           </div>
 
-          <div className="absolute bottom-3 right-3 rounded-full bg-black/30 backdrop-blur-md border border-white/20 hover:bg-black/50 transition-colors cursor-pointer">
+          <label
+            htmlFor={fileInputId}
+            className={cn(
+              "absolute bottom-3 right-3 rounded-full bg-black/30 backdrop-blur-md border border-white/20 hover:bg-black/50 transition-colors cursor-pointer",
+              isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
+            )}
+            aria-disabled={isUploadingBanner}
+          >
             <p className="text-white px-4 py-1.5 flex items-center gap-2 text-xs font-medium">
               <Upload className="w-3 h-3" />
-              Upload
+              {isUploadingBanner ? "Uploading…" : "Upload"}
             </p>
-          </div>
+          </label>
+
+          <input
+            id={fileInputId}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            disabled={isUploadingBanner}
+            onChange={(e) => {
+              const f = e.target.files?.[0] ?? null;
+              // Reset input so selecting the same file again still triggers onChange.
+              e.target.value = "";
+              void handleBannerSelected(f);
+            }}
+          />
         </div>
       </div>
 
@@ -252,6 +339,55 @@ export default function BasicDetails({
             />
           </div>
 
+          {/* End Date & End Time Row (optional) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <div className="h-full">
+                  <InputBlock
+                    icon={<CalendarIcon className="w-6 h-6" />}
+                    label={
+                      formData.eventEndDate
+                        ? format(formData.eventEndDate, "d MMM yyyy")
+                        : "Select End Date"
+                    }
+                    subLabel="Hackathon End Date (optional)"
+                    className="bg-surface h-full"
+                  />
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.eventEndDate}
+                  onSelect={(date) =>
+                    setFormData({ ...formData, eventEndDate: date })
+                  }
+                />
+              </PopoverContent>
+            </Popover>
+
+            <InputBlock
+              icon={<Clock className="w-6 h-6" />}
+              label={
+                <input
+                  type="time"
+                  value={formData.eventTimeTo ?? ""}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setFormData({
+                      ...formData,
+                      eventTimeTo: next.trim().length > 0 ? next : undefined,
+                    });
+                  }}
+                  className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
+                />
+              }
+              subLabel="Hackathon End Time (optional)"
+              className="bg-surface lg:w-full md:w-full"
+            />
+          </div>
+
           {/* Location */}
           <Dialog>
             <DialogTrigger asChild>
@@ -286,7 +422,9 @@ export default function BasicDetails({
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Save Changes</Button>
+                <DialogClose asChild>
+                  <Button type="button">Done</Button>
+                </DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -323,7 +461,9 @@ export default function BasicDetails({
                 }
               />
               <DialogFooter>
-                <Button>Save</Button>
+                <DialogClose asChild>
+                  <Button type="button">Done</Button>
+                </DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -393,9 +533,9 @@ export default function BasicDetails({
           </div>
         </div>
         <div className="mt-4">
-          <Button className="w-full bg-primary hover:bg-primary/90 text-white rounded-full py-6 text-lg font-semibold shadow-lg shadow-primary/20">
-            List Event
-          </Button>
+          <div className="w-full text-center text-xs text-muted-foreground py-4">
+            Changes are saved automatically.
+          </div>
         </div>
       </div>
       <RegistrationQuestionsModal
