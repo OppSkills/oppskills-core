@@ -3,11 +3,11 @@ import { CompetitionSidebar } from "./_components/CompetitionSidebar";
 import { CompetitionTabs } from "./_components/CompetitionTabs";
 import { RoundsTimeline } from "./_components/RoundsTimeline";
 import { AboutSection } from "./_components/AboutSection";
-import { Organizers } from "./_components/Organizers";
 import { Prizes } from "./_components/Prizes";
 import { CompetitionDetails } from "./_components/types";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Organizers } from "./_components/Organizers";
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

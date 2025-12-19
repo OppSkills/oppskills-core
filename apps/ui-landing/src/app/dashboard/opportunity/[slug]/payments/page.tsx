@@ -3,7 +3,14 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Plus, Pencil, Trash2, Ticket, CheckCircle, Circle } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Ticket,
+  CheckCircle,
+  Circle,
+} from "lucide-react";
 import PaymentFormModal from "@/components/ui/payment-side/PaymentFormModal";
 import CreateTicketModal from "@/components/ui/payment-side/create-ticket-modal";
 
@@ -11,17 +18,28 @@ export default function Page() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isCreateTicketModalOpen, setIsCreateTicketModalOpen] = useState(false);
   const [isPaid, setIsPaid] = useState<boolean>(false);
-  const [serviceChargePayer, setServiceChargePayer] = useState<"player" | "organizer">("player");
+  const [serviceChargePayer, setServiceChargePayer] = useState<
+    "player" | "organizer"
+  >("player");
 
   const payoutFields = [
-    "Account Holder Name", "Phone Number", "Email", "Bank Name",
-    "Bank Account Number", "IFSC Code", "Pan Number", "GST Tin Number",
-    "Address 1", "Address 2", "State", "City", "Pin Code",
+    "Account Holder Name",
+    "Phone Number",
+    "Email",
+    "Bank Name",
+    "Bank Account Number",
+    "IFSC Code",
+    "Pan Number",
+    "GST Tin Number",
+    "Address 1",
+    "Address 2",
+    "State",
+    "City",
+    "Pin Code",
   ];
 
   return (
     <div className="flex flex-col items-start gap-5 p-10 w-full flex-1 self-stretch min-h-[600px] rounded-[20px] bg-background border border-transparent shadow-sm">
-
       {/* DESCRIPTION */}
       <p className="font-sans text-muted-foreground text-sm font-normal">
         Set up opportunity fees for participants (if applicable). Add payment
@@ -68,13 +86,14 @@ export default function Page() {
       {/* --- CONDITIONAL SECTIONS --- */}
       {isPaid && (
         <div className="flex flex-col gap-6 w-full animate-in fade-in slide-in-from-top-2 duration-300">
-
           {/* Modals */}
           <CreateTicketModal
+            onCreate={() => setIsCreateTicketModalOpen(false)}
             isOpen={isCreateTicketModalOpen}
             onClose={() => setIsCreateTicketModalOpen(false)}
           />
           <PaymentFormModal
+            onSave={() => setIsPaymentModalOpen(false)}
             isOpen={isPaymentModalOpen}
             onClose={() => setIsPaymentModalOpen(false)}
           />
@@ -88,7 +107,8 @@ export default function Page() {
                   Ticket Type
                 </h6>
                 <p className="font-sans text-muted-foreground text-base font-normal leading-normal">
-                  You can create different types of tickets from here for participants
+                  You can create different types of tickets from here for
+                  participants
                 </p>
               </div>
               <div
@@ -152,7 +172,6 @@ export default function Page() {
 
           {/* --- SECTION 3: SERVICE CHARGE --- */}
           <div className="flex flex-col items-start gap-[15px] p-6 self-stretch rounded-2xl border border-border bg-transparent">
-
             {/* Header */}
             <div className="flex justify-between items-center self-stretch">
               <div className="flex flex-col items-start gap-3">
@@ -176,7 +195,7 @@ export default function Page() {
                   service: "₹ 2(2%)",
                   tax: "₹ 0.36(18% GST of 2%)",
                   userPay: "₹ 102.36",
-                  youGet: "₹ 100"
+                  youGet: "₹ 100",
                 }}
               />
 
@@ -189,7 +208,7 @@ export default function Page() {
                   service: "₹ 2(2%)",
                   tax: "₹ 0.36(18% GST of 2%)",
                   userPay: "₹ 100",
-                  youGet: "₹ 97.64"
+                  youGet: "₹ 97.64",
                 }}
               />
             </div>
@@ -197,7 +216,6 @@ export default function Page() {
 
           {/* --- SECTION 4: PAYOUT ACCOUNT DETAILS --- */}
           <div className="flex flex-col items-start gap-[15px] p-6 self-stretch rounded-2xl border border-border bg-transparent">
-
             {/* Header */}
             <div className="flex justify-between items-center self-stretch">
               <div className="flex flex-col items-start gap-3">
@@ -205,7 +223,8 @@ export default function Page() {
                   Payout Account Details
                 </h6>
                 <p className="font-sans text-muted-foreground text-base font-normal leading-normal">
-                  Details of the account in which all the amount will be given out
+                  Details of the account in which all the amount will be given
+                  out
                 </p>
               </div>
 
@@ -213,7 +232,10 @@ export default function Page() {
                 className="flex w-9 h-9 justify-center items-center rounded-full hover:bg-muted transition-colors"
                 onClick={() => setIsPaymentModalOpen(true)}
               >
-                <Pencil className="w-5 h-5 text-muted-foreground" strokeWidth={2} />
+                <Pencil
+                  className="w-5 h-5 text-muted-foreground"
+                  strokeWidth={2}
+                />
               </button>
             </div>
 
@@ -230,11 +252,9 @@ export default function Page() {
                 </React.Fragment>
               ))}
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }
@@ -250,10 +270,15 @@ interface CalculationCardProps {
     tax: string;
     userPay: string;
     youGet: string;
-  }
+  };
 }
 
-const CalculationCard = ({ title, isSelected, onClick, values }: CalculationCardProps) => {
+const CalculationCard = ({
+  title,
+  isSelected,
+  onClick,
+  values,
+}: CalculationCardProps) => {
   return (
     <div
       onClick={onClick}
@@ -288,23 +313,39 @@ const CalculationCard = ({ title, isSelected, onClick, values }: CalculationCard
       {/* Calculation Rows */}
       <div className="flex flex-col w-full gap-3">
         <div className="flex justify-between items-center self-stretch">
-          <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">Registration Amount:</span>
-          <span className="font-sans text-primary text-base font-normal leading-relaxed">{values.reg}</span>
+          <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
+            Registration Amount:
+          </span>
+          <span className="font-sans text-primary text-base font-normal leading-relaxed">
+            {values.reg}
+          </span>
         </div>
 
         <div className="flex justify-between items-center self-stretch">
-          <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">Service Charge:</span>
-          <span className="font-sans text-primary text-base font-normal leading-relaxed">{values.service}</span>
+          <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
+            Service Charge:
+          </span>
+          <span className="font-sans text-primary text-base font-normal leading-relaxed">
+            {values.service}
+          </span>
         </div>
 
         <div className="flex justify-between items-center self-stretch">
-          <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">Tax:</span>
-          <span className="font-sans text-primary text-base font-normal leading-relaxed">{values.tax}</span>
+          <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
+            Tax:
+          </span>
+          <span className="font-sans text-primary text-base font-normal leading-relaxed">
+            {values.tax}
+          </span>
         </div>
 
         <div className="flex justify-between items-center self-stretch">
-          <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">User Pay:</span>
-          <span className="font-sans text-primary text-base font-normal leading-relaxed">{values.userPay}</span>
+          <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
+            User Pay:
+          </span>
+          <span className="font-sans text-primary text-base font-normal leading-relaxed">
+            {values.userPay}
+          </span>
         </div>
       </div>
 
@@ -313,10 +354,13 @@ const CalculationCard = ({ title, isSelected, onClick, values }: CalculationCard
 
       {/* You Get */}
       <div className="flex justify-between items-center self-stretch">
-        <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">You get</span>
-        <span className="font-sans text-primary text-base font-normal leading-relaxed">{values.youGet}</span>
+        <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
+          You get
+        </span>
+        <span className="font-sans text-primary text-base font-normal leading-relaxed">
+          {values.youGet}
+        </span>
       </div>
-
     </div>
   );
 };

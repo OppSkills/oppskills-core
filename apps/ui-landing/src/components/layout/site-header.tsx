@@ -7,6 +7,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, Bell } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+const MOCK_USER = {
+  name: "E-Cell NoC",
+  email: "Rohanvats12@gmail.com",
+  avatar: "https://github.com/shadcn.png",
+  initials: "EC",
+};
+
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
@@ -78,17 +85,17 @@ export function SiteHeader() {
               </Button>
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10 border border-slate-200">
-                  <AvatarImage src="https://github.com/shadcn.png" />
+                  <AvatarImage src={MOCK_USER.avatar} />
                   <AvatarFallback className="bg-primary text-white">
-                    EC
+                    {MOCK_USER.initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden flex-col md:flex items-start">
                   <span className="text-sm font-bold text-[#1A1A1A]">
-                    E-Cell NoC
+                    {MOCK_USER.name}
                   </span>
                   <span className="text-xs text-[#5F6368]">
-                    Rohanvats12@gmail.com
+                    {MOCK_USER.email}
                   </span>
                 </div>
               </div>

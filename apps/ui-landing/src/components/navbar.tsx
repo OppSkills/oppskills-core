@@ -67,7 +67,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-3">
             {/* Logic for Authenticated Users */}
             <SignedIn>
-              <Link href="/organizer">
+              <Link href="/organize">
                 <Button
                   variant="outline"
                   className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
@@ -84,7 +84,12 @@ const Navbar = () => {
 
             {/* Logic for Guests */}
             <SignedOut>
-              <Button onClick={() => { setIsOpenLogin(true) }} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button
+                onClick={() => {
+                  setIsOpenLogin(true);
+                }}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
                 Sign In / Sign Up
               </Button>
             </SignedOut>
@@ -120,7 +125,7 @@ const Navbar = () => {
             {/* Mobile Action Buttons */}
             <div className="flex flex-col gap-3 mt-4">
               <SignedIn>
-                <Link href="/organizer" onClick={() => setIsOpen(false)}>
+                <Link href="/organize" onClick={() => setIsOpen(false)}>
                   <Button
                     variant="outline"
                     className="w-full border-primary text-primary"
@@ -139,7 +144,7 @@ const Navbar = () => {
               </SignedIn>
 
               <SignedOut>
-                <Link href="/organizer" onClick={() => setIsOpen(false)}>
+                <Link href="/organize" onClick={() => setIsOpen(false)}>
                   <Button
                     variant="outline"
                     className="w-full border-primary text-primary"
@@ -147,7 +152,12 @@ const Navbar = () => {
                     <Plus className="w-4 h-4 mr-2" /> Host
                   </Button>
                 </Link>
-                <Button onClick={() => { setIsOpenLogin(true) }} className="w-full bg-primary text-foreground">
+                <Button
+                  onClick={() => {
+                    setIsOpenLogin(true);
+                  }}
+                  className="w-full bg-primary text-foreground"
+                >
                   Sign In / Sign Up
                 </Button>
               </SignedOut>
@@ -161,4 +171,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-

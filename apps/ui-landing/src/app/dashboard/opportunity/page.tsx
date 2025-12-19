@@ -311,8 +311,8 @@ export default function OpportunityPage() {
         const filtered =
           typeof userId === "string"
             ? rows.filter(
-              (r) => typeof r.ownerId === "string" && r.ownerId === userId
-            )
+                (r) => typeof r.ownerId === "string" && r.ownerId === userId
+              )
             : rows;
 
         if (!cancelled) {
@@ -377,7 +377,7 @@ export default function OpportunityPage() {
           </div>
           <button
             type="button"
-            onClick={() => router.push("/organizer")}
+            onClick={() => router.push("/organize/opportunity")}
             className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full font-medium shadow-md hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-5 h-5" />
@@ -396,9 +396,9 @@ export default function OpportunityPage() {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </div>
                 ))}
               </React.Fragment>
