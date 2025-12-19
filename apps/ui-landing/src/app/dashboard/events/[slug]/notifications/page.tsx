@@ -3,7 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/editor/RichtextEditor";
 import {
   Select,
   SelectContent,
@@ -96,12 +96,12 @@ export default function NotificationsPage() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Message</label>
-            <Textarea
+            <RichTextEditor
               placeholder="Type your message here..."
-              className="min-h-[200px]"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(content) => setMessage(content)}
             />
+
             <p className="text-xs text-muted-foreground text-right">
               {message.length}/500 characters
             </p>
