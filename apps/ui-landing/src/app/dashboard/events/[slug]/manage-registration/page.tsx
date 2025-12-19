@@ -25,6 +25,11 @@ interface Participant {
   university: string;
   avatarUrl: string;
   status: RegistrationStatus;
+  // Extra fields for detail view
+  role?: string; // e.g., "Team Leader"
+  location?: string;
+  course?: string; // e.g., "College Student | Management..."
+  registeredOn?: string;
 }
 
 // --- Mock Data ---
@@ -32,50 +37,76 @@ const MOCK_PARTICIPANTS: Participant[] = [
   {
     id: "1",
     name: "Bessie Cooper",
-    email: "esther.williamson@five9.com",
-    university: "Standford University",
+    email: "esther.williamson@gmail.com",
+    university: "Stanford University",
     avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
     status: "Completed",
+    role: "Team Leader",
+    location: "Lucknow, Uttar Pradesh, India",
+    course:
+      "College Student | Management | 2-Year MBA (Master of Business Administration) | Full Time | 2nd Year",
+    registeredOn: "20 Dec 2025, 02:02 PM",
   },
   {
     id: "2",
     name: "Ronald Richards",
-    email: "cody.cooper@five9.com",
+    email: "cody.cooper@gmail.com",
     university: "Niagara University",
     avatarUrl: "https://images.unsplash.com/photo-1599566150163-29194dcaad36",
     status: "Completed",
+    role: "Member",
+    location: "Mumbai, Maharashtra, India",
+    course: "College Student | Engineering | B.Tech | Full Time | 3rd Year",
+    registeredOn: "21 Dec 2025, 10:45 AM",
   },
   {
     id: "3",
     name: "Cody Fisher",
-    email: "aubrey.flores@five9.com",
+    email: "aubrey.flores@gmail.com",
     university: "Brown University",
     avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde",
     status: "Completed",
+    role: "Member",
+    location: "Delhi, India",
+    course: "College Student | Arts | BA | Full Time | 1st Year",
+    registeredOn: "22 Dec 2025, 04:15 PM",
   },
   {
     id: "4",
     name: "Guy Hawkins",
-    email: "shane.webb@five9.com",
-    university: "Massachusetts Institute of Technology",
+    email: "shane.webb@gmail.com",
+    university: "MIT",
     avatarUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12",
     status: "Incomplete",
+    role: "Team Leader",
+    location: "Bangalore, Karnataka, India",
+    course:
+      "College Student | Computer Science | M.Tech | Full Time | 1st Year",
+    registeredOn: "23 Dec 2025, 09:30 AM",
   },
   {
     id: "5",
     name: "Theresa Webb",
-    email: "arthur.russel@five9.com",
+    email: "arthur.russel@gmail.com",
     university: "Villanova University",
     avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80",
     status: "Completed",
+    role: "Member",
+    location: "Pune, Maharashtra, India",
+    course: "College Student | Commerce | B.Com | Full Time | 2nd Year",
+    registeredOn: "24 Dec 2025, 01:20 PM",
   },
   {
     id: "6",
     name: "Kathryn Murphy",
-    email: "arthur.russel@five9.com",
+    email: "kathryn.murphy@gmail.com",
     university: "Villanova University",
     avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2",
     status: "Completed",
+    role: "Team Leader",
+    location: "Hyderabad, Telangana, India",
+    course: "College Student | Science | B.Sc | Full Time | 3rd Year",
+    registeredOn: "25 Dec 2025, 11:10 AM",
   },
 ];
 
@@ -101,6 +132,113 @@ const StatusBadge = ({ status }: { status: RegistrationStatus }) => {
   );
 };
 
+// --- User Detail Modal ---
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Building2,
+  Mail,
+  MapPin,
+  GraduationCap,
+  CalendarDays,
+  X,
+} from "lucide-react";
+
+const UserDetailModal = ({
+  participant,
+  isOpen,
+  onClose,
+}: {
+  participant: Participant | null;
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  if (!participant) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-[700px] p-0 overflow-hidden rounded-[20px] border-none bg-white">
+        <div className="flex flex-col p-6 sm:p-8 gap-6">
+          <div className="flex flex-col sm:flex-row gap-6 items-start">
+            {/* Avatar */}
+            <Avatar className="w-24 h-24 sm:w-28 sm:h-28 border-4 border-white shadow-lg">
+              <AvatarImage
+                src={participant.avatarUrl}
+                className="object-cover"
+              />
+              <AvatarFallback className="text-2xl">
+                {participant.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+
+            {/* Info */}
+            <div className="flex flex-col gap-3 flex-1">
+              <div className="flex items-center gap-3 flex-wrap">
+                {participant.role && (
+                  <span className="bg-primary/20 text-primary px-3 py-1 rounded text-xs font-medium">
+                    {participant.role}
+                  </span>
+                )}
+              </div>
+
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+                {participant.name}
+              </h2>
+
+              <div className="flex flex-col gap-2.5 mt-1">
+                <div className="flex items-center gap-2.5 text-muted-foreground">
+                  <Building2 className="w-4 h-4 translate-y-[1px]" />
+                  <span className="text-sm font-medium">
+                    {participant.university}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2.5 text-muted-foreground">
+                  <Mail className="w-4 h-4 translate-y-[1px]" />
+                  <span className="text-sm font-medium">
+                    {participant.email}
+                  </span>
+                </div>
+
+                {participant.location && (
+                  <div className="flex items-center gap-2.5 text-muted-foreground">
+                    <MapPin className="w-4 h-4 translate-y-[1px]" />
+                    <span className="text-sm font-medium">
+                      {participant.location}
+                    </span>
+                  </div>
+                )}
+
+                {participant.course && (
+                  <div className="flex items-start gap-2.5 text-muted-foreground">
+                    <GraduationCap className="w-4 h-4 translate-y-[3px] shrink-0" />
+                    <span className="text-sm font-medium leading-relaxed">
+                      {participant.course}
+                    </span>
+                  </div>
+                )}
+
+                {participant.registeredOn && (
+                  <div className="flex items-center gap-2.5 text-muted-foreground">
+                    <CalendarDays className="w-4 h-4 translate-y-[1px]" />
+                    <span className="text-sm font-medium">
+                      Registered on: {participant.registeredOn}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default function ManageRegistrationPage() {
   const [data] = useState(() => MOCK_PARTICIPANTS);
   const [rowSelection, setRowSelection] = useState({});
@@ -108,6 +246,8 @@ export default function ManageRegistrationPage() {
   const [activeTab, setActiveTab] = useState<
     "All" | "Completed" | "Incomplete"
   >("All");
+  const [selectedParticipant, setSelectedParticipant] =
+    useState<Participant | null>(null);
 
   const columns = useMemo<ColumnDef<Participant, any>[]>(
     () => [
@@ -124,12 +264,16 @@ export default function ManageRegistrationPage() {
           />
         ),
         cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-            className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-          />
+          <div
+            onClick={(e) => e.stopPropagation()} // Prevent row click when selecting
+          >
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(value) => row.toggleSelected(!!value)}
+              aria-label="Select row"
+              className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+            />
+          </div>
         ),
         enableSorting: false,
         enableHiding: false,
@@ -185,8 +329,13 @@ export default function ManageRegistrationPage() {
     []
   );
 
+  const filteredData = useMemo(() => {
+    if (activeTab === "All") return data;
+    return data.filter((participant) => participant.status === activeTab);
+  }, [data, activeTab]);
+
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     state: {
       rowSelection,
@@ -201,6 +350,13 @@ export default function ManageRegistrationPage() {
 
   return (
     <div className="w-full bg-white min-h-screen p-8 flex flex-col items-center gap-8">
+      {/* Modal */}
+      <UserDetailModal
+        isOpen={!!selectedParticipant}
+        onClose={() => setSelectedParticipant(null)}
+        participant={selectedParticipant}
+      />
+
       {/* Header Controls */}
       <div className="w-full max-w-5xl flex flex-col md:flex-row justify-between items-center gap-4">
         {/* Tabs */}
@@ -209,24 +365,22 @@ export default function ManageRegistrationPage() {
             {
               label: `All (${data.length})`,
               value: "All",
-              color: "bg-[#A855F7]",
             },
             {
               label: "Completed",
               value: "Completed",
-              color: "bg-transparent text-foreground border border-border",
             },
             {
               label: "Incomplete",
               value: "Incomplete",
-              color: "bg-transparent text-foreground border border-border",
             },
           ].map((tab) => (
             <button
               key={tab.value}
+              onClick={() => setActiveTab(tab.value as any)}
               className={cn(
                 "px-4 py-2 rounded-full text-sm font-medium transition-colors",
-                tab.value === "All"
+                activeTab === tab.value
                   ? "bg-primary-500 text-primary-foreground"
                   : "bg-primary-100 text-foreground hover:bg-primary-200"
               )}
@@ -281,9 +435,13 @@ export default function ManageRegistrationPage() {
           {table.getRowModel().rows.map((row) => (
             <div
               key={row.id}
-              className="grid grid-cols-[50px_80px_1fr_200px] items-center px-4 py-4 border-b border-border/40 hover:bg-muted/5 transition-colors"
+              onClick={() => setSelectedParticipant(row.original)}
+              className="grid grid-cols-[50px_80px_1fr_200px] items-center px-4 py-4 border-b border-border/40 hover:bg-muted/5 transition-colors cursor-pointer"
             >
-              <div className="flex justify-center">
+              <div
+                className="flex justify-center"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Checkbox
                   checked={row.getIsSelected()}
                   onCheckedChange={(value) => row.toggleSelected(!!value)}

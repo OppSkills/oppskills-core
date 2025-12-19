@@ -25,24 +25,46 @@ export default function TicketsPage() {
     "player" | "organizer"
   >("player");
 
+  const [payoutDetails, setPayoutDetails] = useState({
+    accountHolderName: "",
+    email: "",
+    phone: "",
+    bankName: "",
+    accountNumber: "",
+    confirmAccountNumber: "",
+    panNumber: "",
+    ifscCode: "",
+    gstTin: "",
+    pincode: "",
+    state: "",
+    city: "",
+    address1: "",
+    address2: "",
+  });
+
   const handleCreateTicket = (newTicket: TicketData) => {
     setTickets([...tickets, newTicket]);
   };
 
+  const handleSavePaymentDetails = (data: typeof payoutDetails) => {
+    setPayoutDetails(data);
+    setIsPaymentModalOpen(false);
+  };
+
   const payoutFields = [
-    "Account Holder Name",
-    "Phone Number",
-    "Email",
-    "Bank Name",
-    "Bank Account Number",
-    "IFSC Code",
-    "Pan Number",
-    "GST Tin Number",
-    "Address 1",
-    "Address 2",
-    "State",
-    "City",
-    "Pin Code",
+    { label: "Account Holder Name", value: payoutDetails.accountHolderName },
+    { label: "Phone Number", value: payoutDetails.phone },
+    { label: "Email", value: payoutDetails.email },
+    { label: "Bank Name", value: payoutDetails.bankName },
+    { label: "Bank Account Number", value: payoutDetails.accountNumber },
+    { label: "IFSC Code", value: payoutDetails.ifscCode },
+    { label: "Pan Number", value: payoutDetails.panNumber },
+    { label: "GST Tin Number", value: payoutDetails.gstTin },
+    { label: "Address 1", value: payoutDetails.address1 },
+    { label: "Address 2", value: payoutDetails.address2 },
+    { label: "State", value: payoutDetails.state },
+    { label: "City", value: payoutDetails.city },
+    { label: "Pin Code", value: payoutDetails.pincode },
   ];
 
   return (
@@ -102,6 +124,8 @@ export default function TicketsPage() {
           <PaymentFormModal
             isOpen={isPaymentModalOpen}
             onClose={() => setIsPaymentModalOpen(false)}
+            onSave={handleSavePaymentDetails}
+            initialData={payoutDetails}
           />
 
           {/* --- SECTION 2: TICKET TYPE --- */}
@@ -268,10 +292,10 @@ export default function TicketsPage() {
               {payoutFields.map((field, index) => (
                 <React.Fragment key={index}>
                   <div className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-                    {field}
+                    {field.label}
                   </div>
-                  <div className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-                    --
+                  <div className="font-sans text-foreground text-base font-normal leading-relaxed break-all">
+                    {field.value || "--"}
                   </div>
                 </React.Fragment>
               ))}

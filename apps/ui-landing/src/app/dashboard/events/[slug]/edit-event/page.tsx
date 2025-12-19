@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
 import BasicDetails from "./_components/BasicDetails";
 import RegistrationSettings from "./_components/RegistrationSettings";
+import Prizes from "./_components/Prizes";
+import AdditionalInfo from "./_components/AdditionalInfo";
 import CompetitionDetailsPage from "@/app/competitions/[slug]/page";
 import { useQueryState } from "nuqs";
 
@@ -72,7 +74,6 @@ export interface Attachment {
   id: string;
   title: string;
   type: string;
-  layout: string;
 }
 
 export interface AdditionalInfoData {
@@ -222,10 +223,20 @@ export default function EditEventPage() {
             />
           )}
 
+          {activeTab === "prizes" && (
+            <Prizes formData={formData} setFormData={setFormData} />
+          )}
+
+          {activeTab === "additional-info" && (
+            <AdditionalInfo formData={formData} setFormData={setFormData} />
+          )}
+
           {/* Placeholders for other tabs to prevent errors if clicked */}
           {activeTab !== "basic-details" &&
             activeTab !== "preview" &&
-            activeTab !== "registration-settings" && (
+            activeTab !== "registration-settings" &&
+            activeTab !== "prizes" &&
+            activeTab !== "additional-info" && (
               <div className="bg-background rounded-2xl p-12 flex flex-col items-center justify-center text-muted-foreground">
                 <Settings className="w-12 h-12 mb-4 opacity-50" />
                 <p className="text-lg font-medium">Coming Soon</p>

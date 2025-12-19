@@ -1,3 +1,6 @@
+"use client";
+
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import GenderDiversityChart from "@/app/dashboard/_components/GenderDiversityChart";
@@ -15,9 +18,10 @@ import DomainsChart from "@/app/dashboard/_components/DomainsChart";
 export default function EventDashboardPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const analyticData = [
+  const { slug } = React.use(params);
+  const [analyticData] = useState([
     {
       type: "highlight",
       title: "Tickets Sold",
@@ -46,7 +50,7 @@ export default function EventDashboardPage({
       badge: "Last Week",
       badgeValue: "45",
     },
-  ];
+  ]);
 
   return (
     <div className="flex justify-center w-full min-h-screen">
@@ -58,7 +62,7 @@ export default function EventDashboardPage({
               Event Dashboard
             </h1>
             <p className="text-sm md:text-[16px] text-muted-foreground pt-1 md:pt-2">
-              Overview for {params.slug}
+              Overview for {slug}
             </p>
           </div>
           <div className="right self-end md:self-auto">
