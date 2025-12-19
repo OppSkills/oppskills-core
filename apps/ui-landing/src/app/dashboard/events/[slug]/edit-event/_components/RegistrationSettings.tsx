@@ -407,7 +407,7 @@ export default function RegistrationSettings({
                     <div className="w-[1px] h-6 bg-border mx-1"></div>
                     <button
                       onClick={() => handleDeleteQuestion(question.id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                      className="text-muted-foreground hover:text-destructive-foreground transition-colors p-1"
                       title="Delete Question"
                     >
                       <Trash2 className="w-4 h-4" />

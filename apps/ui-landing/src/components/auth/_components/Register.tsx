@@ -528,7 +528,7 @@ export default function Register({
                     {skill}
                     <button
                       onClick={() => removeSkill(skill)}
-                      className="hover:text-destructive"
+                      className="hover:text-destructive-foreground"
                     >
                       <X className="h-3 w-3" />
                     </button>

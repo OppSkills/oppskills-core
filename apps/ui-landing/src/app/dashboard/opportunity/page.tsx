@@ -19,6 +19,7 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
 
 /**
  * Converts stored rich-text HTML into a human-friendly plain-text snippet.
@@ -375,72 +376,74 @@ export default function OpportunityPage() {
             />
             <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
           </div>
-          <button
-            type="button"
-            onClick={() => router.push("/organize/opportunity")}
-            className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full font-medium shadow-md hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Host
-          </button>
+          <Link href={"/organize/opportunity"} className="w-full sm:w-auto">
+            <Button className="rounded-full" size={"lg"}>
+              <Plus className="h-5 w-5" />
+              Host
+            </Button>
+          </Link>
         </div>
 
         {/* List Container */}
-        <div className="bg-muted/30 rounded-[20px] border border-border p-2 overflow-hidden shadow-sm">
-          {/* Header Row - Desktop Only */}
-          <div className="hidden lg:grid grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 items-center bg-secondary/30 p-4 rounded-t-xl text-sm font-semibold text-foreground border-b border-border/50">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <React.Fragment key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <div key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </div>
-                ))}
-              </React.Fragment>
-            ))}
-          </div>
+        <div className="bg-muted/30 rounded-[20px] border border-border p-2 overflow-x-auto shadow-sm">
+          <div className="min-w-[1200px]">
+            {/* Header Row */}
+            <div className="grid grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 items-center bg-secondary/30 p-4 rounded-t-xl text-sm font-semibold text-foreground border-b border-border/50">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <React.Fragment key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <div key={header.id} className="whitespace-nowrap">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </div>
+                  ))}
+                </React.Fragment>
+              ))}
+            </div>
 
-          {/* Data Rows */}
-          <div className="flex flex-col bg-white rounded-b-xl">
-            {isLoading ? (
-              <div className="h-24 flex items-center justify-center text-muted-foreground">
-                Loading hackathons...
-              </div>
-            ) : table.getRowModel().rows.length === 0 ? (
-              <div className="h-24 flex items-center justify-center text-muted-foreground">
-                No results found.
-              </div>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <div
-                  key={row.id}
-                  className={cn(
-                    "flex flex-col lg:grid lg:grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 p-6 items-center border-b border-border last:border-0 hover:bg-muted/10 transition-colors",
-                    "lg:h-32"
-                  )}
-                >
-                  {row.getVisibleCells().map((cell, index) => {
-                    const isSno = index === 0;
-                    return (
-                      <div
-                        key={cell.id}
-                        className={cn(isSno && "hidden lg:block text-center")}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </div>
-                    );
-                  })}
+            {/* Data Rows */}
+            <div className="flex flex-col bg-white rounded-b-xl">
+              {isLoading ? (
+                <div className="h-24 flex items-center justify-center text-muted-foreground">
+                  Loading hackathons...
                 </div>
-              ))
-            )}
+              ) : table.getRowModel().rows.length === 0 ? (
+                <div className="h-24 flex items-center justify-center text-muted-foreground">
+                  No results found.
+                </div>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <div
+                    key={row.id}
+                    className={cn(
+                      "grid grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 p-6 items-center border-b border-border last:border-0 hover:bg-muted/10 transition-colors"
+                    )}
+                  >
+                    {row.getVisibleCells().map((cell, index) => {
+                      const isSno = index === 0;
+                      return (
+                        <div
+                          key={cell.id}
+                          className={cn(
+                            "whitespace-nowrap overflow-hidden text-ellipsis",
+                            isSno && "text-center"
+                          )}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

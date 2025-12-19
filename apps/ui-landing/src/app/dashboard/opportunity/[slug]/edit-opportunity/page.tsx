@@ -1044,7 +1044,7 @@ export default function EditOpportunityPage() {
   if (hackathonError) {
     return (
       <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
-        <div className="w-full max-w-3xl text-destructive">
+        <div className="w-full max-w-3xl text-destructive-foreground">
           Failed to load opportunity.
         </div>
       </div>
@@ -1052,7 +1052,7 @@ export default function EditOpportunityPage() {
   }
 
   return (
-    <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
+    <div className="w-full flex flex-col items-center p-2 sm:p-4 md:p-6 lg:p-10 gap-6 bg-background">
       {/* Tabs Navigation */}
       <div className="w-full overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-4 px-2">
@@ -1083,7 +1083,9 @@ export default function EditOpportunityPage() {
             ) : autoSaveStatus === "dirty" ? (
               <span className="text-amber-600">Unsaved changes</span>
             ) : autoSaveStatus === "error" ? (
-              <span className="text-destructive">Autosave error</span>
+              <span className="text-destructive-foreground">
+                Autosave error
+              </span>
             ) : (
               <span className="text-emerald-600">Saved</span>
             )}

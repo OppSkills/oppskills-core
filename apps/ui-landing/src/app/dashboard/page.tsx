@@ -6,7 +6,7 @@ import RegistrationLineChart from "./_components/RegistrationChart";
 import Alerts from "./_components/Alerts";
 import DomainsChart from "./_components/DomainsChart";
 import RecentListing from "./_components/RecentListing";
-import { Plus } from "lucide-react";
+import { Link, Plus } from "lucide-react";
 
 import {
   MotionContainer,
@@ -65,10 +65,12 @@ export default async function page() {
             </p>
           </div>
           <div className="right self-end md:self-auto w-full sm:w-auto">
-            <Button className="w-full rounded-full px-6 h-12 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-purple-200">
-              <Plus className="mr-2 h-5 w-5" />
-              Host
-            </Button>
+            <Link href="/dashboard/host">
+              <Button className="w-full rounded-full px-6 h-12 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-purple-200">
+                <Plus className="mr-2 h-5 w-5" />
+                Host
+              </Button>
+            </Link>
           </div>
         </div>
 

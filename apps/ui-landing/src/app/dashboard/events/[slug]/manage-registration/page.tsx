@@ -118,7 +118,7 @@ const StatusBadge = ({ status }: { status: RegistrationStatus }) => {
   const styles =
     status === "Completed"
       ? "bg-primary-100 text-primary-700"
-      : "bg-destructive text-destructive-foreground";
+      : "bg-destructive text-destructive-foreground-foreground";
 
   return (
     <div
@@ -408,74 +408,78 @@ export default function ManageRegistrationPage() {
       </div>
 
       {/* Table Container */}
-      <div className="w-full max-w-5xl rounded-xl overflow-hidden border border-border/50 shadow-sm">
-        {/* Custom Header with Purple Background */}
-        <div className="bg-primary-600 text-white px-4 py-3 grid grid-cols-[50px_80px_1fr_200px] items-center text-sm font-medium">
-          <div className="flex justify-center">
-            <Checkbox
-              className="border-white data-[state=checked]:bg-white data-[state=checked]:text-primary-600"
-              checked={table.getIsAllPageRowsSelected()}
-              onCheckedChange={(value) =>
-                table.toggleAllPageRowsSelected(!!value)
-              }
-            />
+      <div className="w-full max-w-5xl rounded-xl overflow-x-auto border border-border/50 shadow-sm">
+        <div className="min-w-[800px]">
+          {/* Custom Header with Purple Background */}
+          <div className="bg-primary-600 text-white px-4 py-3 grid grid-cols-[50px_80px_1fr_200px] items-center text-sm font-medium">
+            <div className="flex justify-center">
+              <Checkbox
+                className="border-white data-[state=checked]:bg-white data-[state=checked]:text-primary-600"
+                checked={table.getIsAllPageRowsSelected()}
+                onCheckedChange={(value) =>
+                  table.toggleAllPageRowsSelected(!!value)
+                }
+              />
+            </div>
+            <div>S. No.</div>
+            <div className="flex items-center gap-2">
+              240 Team/ Participated <SlidersHorizontal className="w-4 h-4" />
+            </div>
+            <div className="flex items-center justify-end gap-2 text-right">
+              <Filter className="w-4 h-4" /> Reg. Status{" "}
+              <SlidersHorizontal className="w-4 h-4" />
+            </div>
           </div>
-          <div>S. No.</div>
-          <div className="flex items-center gap-2">
-            240 Team/ Participated <SlidersHorizontal className="w-4 h-4" />
-          </div>
-          <div className="flex items-center justify-end gap-2 text-right">
-            <Filter className="w-4 h-4" /> Reg. Status{" "}
-            <SlidersHorizontal className="w-4 h-4" />
-          </div>
-        </div>
 
-        {/* Table Body */}
-        <div className="bg-white">
-          {table.getRowModel().rows.map((row) => (
-            <div
-              key={row.id}
-              onClick={() => setSelectedParticipant(row.original)}
-              className="grid grid-cols-[50px_80px_1fr_200px] items-center px-4 py-4 border-b border-border/40 hover:bg-muted/5 transition-colors cursor-pointer"
-            >
+          {/* Table Body */}
+          <div className="bg-white">
+            {table.getRowModel().rows.map((row) => (
               <div
-                className="flex justify-center"
-                onClick={(e) => e.stopPropagation()}
+                key={row.id}
+                onClick={() => setSelectedParticipant(row.original)}
+                className="grid grid-cols-[50px_80px_1fr_200px] items-center px-4 py-4 border-b border-border/40 hover:bg-muted/5 transition-colors cursor-pointer"
               >
-                <Checkbox
-                  checked={row.getIsSelected()}
-                  onCheckedChange={(value) => row.toggleSelected(!!value)}
-                  className="border-muted-foreground/30 data-[state=checked]:bg-primary-600 data-[state=checked]:text-white"
-                />
-              </div>
-              <div className="text-muted-foreground text-sm font-medium pl-2">
-                {row.index + 1}
-              </div>
-              <div className="flex items-center gap-4">
-                <Avatar className="w-10 h-10 border border-border/50">
-                  <AvatarImage
-                    src={row.original.avatarUrl}
-                    className="object-cover"
+                <div
+                  className="flex justify-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    className="border-muted-foreground/30 data-[state=checked]:bg-primary-600 data-[state=checked]:text-white"
                   />
-                  <AvatarFallback>{row.original.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-bold text-foreground">
-                    {row.original.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {row.original.email}
-                  </span>
-                  <span className="text-[11px] text-muted-foreground/70">
-                    {row.original.university}
-                  </span>
+                </div>
+                <div className="text-muted-foreground text-sm font-medium pl-2">
+                  {row.index + 1}
+                </div>
+                <div className="flex items-center gap-4">
+                  <Avatar className="w-10 h-10 border border-border/50">
+                    <AvatarImage
+                      src={row.original.avatarUrl}
+                      className="object-cover"
+                    />
+                    <AvatarFallback>
+                      {row.original.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-bold text-foreground">
+                      {row.original.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {row.original.email}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground/70">
+                      {row.original.university}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <StatusBadge status={row.original.status} />
                 </div>
               </div>
-              <div className="flex justify-end">
-                <StatusBadge status={row.original.status} />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
