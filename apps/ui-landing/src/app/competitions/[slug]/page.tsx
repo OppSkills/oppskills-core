@@ -3,12 +3,12 @@ import { CompetitionSidebar } from "./_components/CompetitionSidebar";
 import { CompetitionTabs } from "./_components/CompetitionTabs";
 import { RoundsTimeline } from "./_components/RoundsTimeline";
 import { AboutSection } from "./_components/AboutSection";
+import { Organizers } from "./_components/Organizers";
 import { Prizes } from "./_components/Prizes";
 import { CompetitionDetails } from "./_components/types";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
-import { Organizers } from "./_components/Organizers";
 
 /**
  * Type guard: checks if a value is a non-null object.
@@ -121,14 +121,6 @@ export default function CompetitionDetailsPage() {
 
   const { data: hackathonRaw, isLoading, error } = useHackathonBySlug(slug);
 
-  const params = useParams();
-  const slug = useMemo(
-    () => normalizeSlug(isRecord(params) ? params["slug"] : params),
-    [params]
-  );
-
-  const { data: hackathonRaw, isLoading, error } = useHackathonBySlug(slug);
-
   const [curTab, setCurTab] = useState<string | null>(null);
   useEffect(() => {
     if (curTab) {
@@ -141,177 +133,6 @@ export default function CompetitionDetailsPage() {
       }
     }
   }, [curTab]);
-
-  const competition = useMemo<CompetitionDetails | null>(() => {
-    const hackathon = extractHackathon(hackathonRaw);
-    if (!hackathon) return null;
-
-    const startDate = getDate(hackathon["startDate"]);
-    const endDate = getDate(hackathon["endDate"]);
-    const registrationDeadline = getDate(hackathon["registrationDeadline"]);
-
-    const locationVirtualLink = getString(hackathon, "locationVirtualLink");
-    const locationAddress = getString(hackathon, "locationAddress");
-    const locationCity = getString(hackathon, "locationCity");
-    const location = locationVirtualLink
-      ? locationVirtualLink
-      : [locationAddress, locationCity]
-          .filter((v): v is string => typeof v === "string" && v.length > 0)
-          .join(", ");
-
-    const owner = isRecord(hackathon["owner"]) ? hackathon["owner"] : null;
-    const ownerName =
-      owner &&
-      (getString(owner, "firstName") ||
-        getString(owner, "email") ||
-        getString(owner, "id"))
-        ? [getString(owner, "firstName"), getString(owner, "lastName")]
-            .filter((v): v is string => typeof v === "string" && v.length > 0)
-            .join(" ")
-            .trim() ||
-          (getString(owner, "email") ?? "Organizer")
-        : "Organizer";
-
-    const festival = isRecord(hackathon["festival"])
-      ? hackathon["festival"]
-      : null;
-    const featuredIn = festival ? getString(festival, "name") : undefined;
-
-    const hackathonType = getString(hackathon, "hackathonType");
-    const participantType = getString(hackathon, "participantType");
-    const mode = getString(hackathon, "mode");
-
-    const tags = [hackathonType, participantType, mode]
-      .filter((v): v is string => typeof v === "string" && v.length > 0)
-      .slice(0, 6);
-
-    const roundsRaw = Array.isArray(hackathon["rounds"])
-      ? (hackathon["rounds"] as ReadonlyArray<unknown>)
-      : [];
-    const rounds = roundsRaw
-      .map((r, idx) => {
-        if (!isRecord(r)) return null;
-        const startsAt = getDate(r["startsAt"]);
-        const endsAt = getDate(r["endsAt"]);
-        if (!startsAt || !endsAt) return null;
-        const now = Date.now();
-        const status =
-          endsAt.getTime() < now
-            ? "completed"
-            : startsAt.getTime() <= now
-              ? "live"
-              : "upcoming";
-        return {
-          id: getString(r, "id") ?? `${idx}`,
-          name: getString(r, "name") ?? `Round ${idx + 1}`,
-          description: getString(r, "description") ?? "",
-          startDate: formatDateTime(startsAt),
-          endDate: formatDateTime(endsAt),
-          status,
-        } as const;
-      })
-      .filter((v): v is NonNullable<typeof v> => v !== null);
-
-    const prizesRaw = Array.isArray(hackathon["prizeBreakdown"])
-      ? (hackathon["prizeBreakdown"] as ReadonlyArray<unknown>)
-      : [];
-    const currency = getString(hackathon, "currency");
-    const prizes = prizesRaw
-      .map((p, idx) => {
-        if (!isRecord(p)) return null;
-        const position = getString(p, "position");
-        const amount = getString(p, "amount");
-        if (!position || !amount) return null;
-        const icon = idx === 0 ? "trophy" : idx === 1 ? "medal" : "star";
-        return {
-          id: getString(p, "id") ?? `${idx}`,
-          title: position,
-          amount: formatMoney(amount, currency),
-          description: getString(p, "description") ?? "",
-          icon,
-        } as const;
-      })
-      .filter((v): v is NonNullable<typeof v> => v !== null);
-
-    const impressions = getNumber(hackathon, "impressions");
-
-    return {
-      id: getString(hackathon, "id") ?? "unknown",
-      slug: getString(hackathon, "slug") ?? slug ?? "unknown",
-      title: getString(hackathon, "name") ?? "Untitled",
-      thumbnail: getString(hackathon, "bannerImageUrl") ?? "/tmp/hackathon.jpg",
-      location: location.length > 0 ? location : "—",
-      dateRange: formatDateRange(startDate, endDate),
-      tags,
-      about:
-        getString(hackathon, "description") ??
-        "<p>No description provided yet.</p>",
-      rounds,
-      organizers: [
-        {
-          id: owner ? (getString(owner, "id") ?? "owner") : "owner",
-          name: ownerName,
-          role: "Organizer",
-          avatar: owner ? (getString(owner, "imageUrl") ?? "") : "",
-          company: undefined,
-        },
-      ],
-      prizes,
-      featuredIn,
-      specificDate: startDate
-        ? startDate.toLocaleDateString(undefined, {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "2-digit",
-          })
-        : undefined,
-      specificTime: startDate
-        ? startDate.toLocaleTimeString(undefined, {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        : undefined,
-      venueName: undefined,
-      venueAddress: locationAddress ?? locationCity,
-      teamSize: participantType ?? undefined,
-      impressions,
-      registrationDeadline:
-        computeRegistrationDeadlineLabel(registrationDeadline),
-    };
-  }, [hackathonRaw, slug]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-transparent py-8">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="p-6 text-muted-foreground">Loading…</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to load competition.";
-    return (
-      <div className="min-h-screen bg-transparent py-8">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="p-6 text-destructive">{message}</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!competition) {
-    return (
-      <div className="min-h-screen bg-transparent py-8">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="p-6 text-muted-foreground">No data found.</div>
-        </div>
-      </div>
-    );
-  }
 
   const competition = useMemo<CompetitionDetails | null>(() => {
     const hackathon = extractHackathon(hackathonRaw);
