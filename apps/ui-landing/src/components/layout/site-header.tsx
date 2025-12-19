@@ -38,35 +38,16 @@ export function SiteHeader() {
 
   const title = getTitle();
   const showProfile = pathname.includes("/dashboard");
-  const showBackButton =
-    pathname.includes("/dashboard/events/") ||
-    pathname.includes("/dashboard/opportunity/") ||
-    pathname.includes("/dashboard/festivals/");
 
   return (
     <header className="flex bg-white shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear rounded-xl px-4 lg:px-6">
       <div className="flex w-full items-center justify-between p-5">
         <div className="flex items-center gap-2">
-          {(!showBackButton || !pathname.includes("/manage-registration")) && (
-            <SidebarTrigger className="-ml-1" />
-          )}
-          {(!showBackButton || !pathname.includes("/manage-registration")) && (
-            <Separator
-              orientation="vertical"
-              className="mx-2 data-[orientation=vertical]:h-4"
-            />
-          )}
-
-          {showBackButton && !pathname.includes("/manage-registration") && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => router.back()}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          )}
+          <SidebarTrigger className="-ml-1" />
+          <Separator
+            orientation="vertical"
+            className="mx-2 data-[orientation=vertical]:h-4"
+          />
 
           <h1 className="text-2xl font-semibold tracking-tight text-primary-900">
             {title}

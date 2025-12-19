@@ -288,7 +288,7 @@ export default function TicketsPage() {
             </div>
 
             {/* Data Grid */}
-            <div className="grid grid-cols-[1fr_2fr] gap-2.5 p-2.5 self-stretch">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-2.5 p-2.5 self-stretch">
               {payoutFields.map((field, index) => (
                 <React.Fragment key={index}>
                   <div className="font-sans text-muted-foreground text-base font-normal leading-relaxed">

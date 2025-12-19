@@ -71,7 +71,7 @@ const allRegistrations: Participant[] = [
     avatarUrl: "https://i.pravatar.cc/150?u=6",
     status: "Completed",
     currentRound: "Registered",
-  }
+  },
 ];
 
 const round1Data: Participant[] = [
@@ -118,7 +118,7 @@ const round1Data: Participant[] = [
     avatarUrl: "https://i.pravatar.cc/150?u=5",
     status: "Completed",
     currentRound: "Evaluated",
-  }
+  },
 ];
 
 const round2Data: Participant[] = [
@@ -143,7 +143,7 @@ const round2Data: Participant[] = [
     avatarUrl: "https://i.pravatar.cc/150?u=3",
     status: "Completed",
     currentRound: "Completed",
-  }
+  },
 ];
 
 const round3Data: Participant[] = [
@@ -157,7 +157,7 @@ const round3Data: Participant[] = [
     avatarUrl: "https://i.pravatar.cc/150?u=1",
     status: "Completed",
     currentRound: "Winner",
-  }
+  },
 ];
 
 export default function Page() {
@@ -180,7 +180,7 @@ export default function Page() {
 
   return (
     <div className="flex w-full justify-center bg-surface">
-      <div className="w-full p-10 rounded-[20px] bg-background">
+      <div className="w-full p-2 sm:p-4 md:p-6 lg:p-10 rounded-[20px] bg-background">
         <Stages selectedStage={currentStage} onSelectStage={setCurrentStage} />
         <div className="h-px my-6 w-full bg-foreground/30" />
         <Participants data={getStageData()} />
