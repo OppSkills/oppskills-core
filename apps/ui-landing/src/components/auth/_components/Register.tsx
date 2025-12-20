@@ -4,28 +4,10 @@ import { useState } from "react";
 import { useSignUp } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  Check,
-  CheckIcon,
-  GraduationCap,
-  Loader2,
-  Mail,
-  Settings,
-  User,
-  X,
-} from "lucide-react";
+import { Check, CheckIcon, Loader2, Mail, User } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { generateClerkUsername, getClerkErrorMessage } from "@/lib/utils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 import RTooltip from "@/components/ui/Rtooltip";
 import { FloatingLabelInput } from "@/components/ui/derived/FloatingInput";
@@ -51,20 +33,6 @@ export default function Register({
     password: "",
     phone: "",
   });
-
-  // Education States
-  const [educationDetails, setEducationDetails] = useState({
-    collegeName: "",
-    course: "",
-    specialisation: "",
-    fromYear: "",
-    toYear: "",
-    gender: "",
-    rollNumber: "",
-  });
-
-  const [currentSkill, setCurrentSkill] = useState("");
-  const [skills, setSkills] = useState<string[]>([]);
 
   // Handlers
   const handleSendOtp = async () => {
@@ -116,44 +84,13 @@ export default function Register({
 
   const handleDetailsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLoaded) return;
+
     if (!userDetails.firstName || !userDetails.password) {
       toast.error("Please fill in all required fields");
       return;
     }
-    setStep(4);
-  };
 
-  const handleEducationSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simple validation
-    if (
-      !educationDetails.collegeName ||
-      !educationDetails.course ||
-      !educationDetails.gender
-    ) {
-      toast.error("Please fill in required education fields");
-      return;
-    }
-    setStep(5);
-  };
-
-  const handleAddSkill = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && currentSkill.trim()) {
-      e.preventDefault();
-      const skill = currentSkill.trim();
-      if (!skills.includes(skill)) {
-        setSkills([...skills, skill]);
-      }
-      setCurrentSkill("");
-    }
-  };
-
-  const removeSkill = (skillToRemove: string) => {
-    setSkills(skills.filter((skill) => skill !== skillToRemove));
-  };
-
-  const handleFinalRegister = async () => {
-    if (!isLoaded) return;
     setIsLoading(true);
     try {
       const username = generateClerkUsername({
@@ -161,27 +98,34 @@ export default function Register({
         lastName: userDetails.lastName,
       });
 
-      // Update user details
-      await signUp.update({
+      // Update user details and complete registration
+      // Capture the return value to get the fresh status
+      const updatedSignUp = await signUp.update({
         firstName: userDetails.firstName,
         lastName: userDetails.lastName,
         password: userDetails.password,
         username,
         unsafeMetadata: {
           phone: userDetails.phone,
-          education: educationDetails,
-          skills: skills,
         },
       });
 
-      // Check status
-      if (signUp.status === "complete") {
-        await setActive({ session: signUp.createdSessionId });
-        toast.success("Registration Successful!");
-        setIsOpenLogin(false);
-        router.push("/dashboard");
+      // Check status from the returned object (not the potentially stale signUp)
+      if (updatedSignUp.status === "complete") {
+        const sessionId = updatedSignUp.createdSessionId;
+        // Validate sessionId before calling setActive
+        if (typeof sessionId === "string" && sessionId.length > 0) {
+          await setActive({ session: sessionId });
+          toast.success("Registration Successful!");
+          setIsOpenLogin(false);
+          router.push("/dashboard");
+        } else {
+          console.log("Session ID is missing:", sessionId);
+          toast.error("Registration completed but session could not be created. Please sign in.");
+          setIsOpenLogin(false);
+        }
       } else {
-        console.log("Signup status:", signUp.status);
+        console.log("Signup status:", updatedSignUp.status);
         toast.error("Need more information to complete registration");
       }
     } catch (err: unknown) {
@@ -212,14 +156,6 @@ export default function Register({
       name: "Details",
       icon: <User />,
     },
-    4: {
-      name: "Education",
-      icon: <GraduationCap />,
-    },
-    5: {
-      name: "Skills",
-      icon: <Settings />,
-    },
   };
 
   return (
@@ -235,12 +171,12 @@ export default function Register({
           className="absolute top-1/2 left-0 h-0.5 bg-primary -translate-y-1/2 -z-0"
           initial={{ width: "0%" }}
           animate={{
-            width: `${(step / 4) * 100 > 100 ? 100 : (step / 4) * 100}%`,
+            width: `${((step - 1) / 2) * 100}%`,
           }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
         />
 
-        {[1, 2, 3, 4, 5].map((i) => (
+        {[1, 2, 3].map((i) => (
           <RTooltip content={stepName[i].name} key={i}>
             <button
               onClick={() => handleStepClick(i)}
@@ -321,7 +257,7 @@ export default function Register({
         </div>
       )}
 
-      {/* Step 3: Personal Details */}
+      {/* Step 3: Personal Details - Final Step */}
       {step === 3 && (
         <form
           onSubmit={handleDetailsSubmit}
@@ -373,181 +309,8 @@ export default function Register({
               required
             />
           </div>
-          <Button type="submit" className="w-full rounded-full py-6">
-            Next: Education
-          </Button>
-        </form>
-      )}
-
-      {/* Step 4: Educational Details */}
-      {step === 4 && (
-        <form
-          onSubmit={handleEducationSubmit}
-          className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300"
-        >
-          <div className="space-y-2">
-            <Label htmlFor="college">College Name</Label>
-            <Select
-              value={educationDetails.collegeName}
-              onValueChange={(val) =>
-                setEducationDetails({ ...educationDetails, collegeName: val })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select your college" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mit">MIT</SelectItem>
-                <SelectItem value="stanford">Stanford University</SelectItem>
-                <SelectItem value="iit_bombay">IIT Bombay</SelectItem>
-                <SelectItem value="bits_pilani">BITS Pilani</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <FloatingLabelInput
-                id="course"
-                label="Course"
-                value={educationDetails.course}
-                onChange={(e) =>
-                  setEducationDetails({
-                    ...educationDetails,
-                    course: e.target.value,
-                  })
-                }
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <FloatingLabelInput
-                id="specialisation"
-                label="Specialisation"
-                value={educationDetails.specialisation}
-                onChange={(e) =>
-                  setEducationDetails({
-                    ...educationDetails,
-                    specialisation: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <FloatingLabelInput
-                id="fromYear"
-                type="number"
-                label="From Year"
-                value={educationDetails.fromYear}
-                onChange={(e) =>
-                  setEducationDetails({
-                    ...educationDetails,
-                    fromYear: e.target.value,
-                  })
-                }
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <FloatingLabelInput
-                id="toYear"
-                type="number"
-                label="To Year"
-                value={educationDetails.toYear}
-                onChange={(e) =>
-                  setEducationDetails({
-                    ...educationDetails,
-                    toYear: e.target.value,
-                  })
-                }
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="gender">Gender</Label>
-              <Select
-                value={educationDetails.gender}
-                onValueChange={(val) =>
-                  setEducationDetails({ ...educationDetails, gender: val })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <FloatingLabelInput
-                id="rollNumber"
-                label="Roll Number"
-                value={educationDetails.rollNumber}
-                onChange={(e) =>
-                  setEducationDetails({
-                    ...educationDetails,
-                    rollNumber: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <Button type="submit" className="w-full rounded-full py-6">
-            Next: Skills
-          </Button>
-        </form>
-      )}
-
-      {/* Step 5: Skills */}
-      {step === 5 && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-          <div className="space-y-2">
-            <Label>Add Your Skills</Label>
-            <p className="text-xs text-muted-foreground">
-              Type a skill and press Enter to add it.
-            </p>
-            <div className="min-h-[100px] p-3 border rounded-md bg-background focus-within:ring-1 focus-within:ring-ring">
-              <div className="flex flex-wrap gap-2 mb-2">
-                {skills.map((skill) => (
-                  <Badge
-                    key={skill}
-                    variant="secondary"
-                    className="pl-2 pr-1 py-1 gap-1"
-                  >
-                    {skill}
-                    <button
-                      onClick={() => removeSkill(skill)}
-                      className="hover:text-destructive-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-              <input
-                className="flex-1 bg-transparent outline-none text-sm min-w-[120px]"
-                placeholder={
-                  skills.length === 0 ? "e.g. React, UX Design..." : ""
-                }
-                value={currentSkill}
-                onChange={(e) => setCurrentSkill(e.target.value)}
-                onKeyDown={handleAddSkill}
-              />
-            </div>
-          </div>
           <Button
-            onClick={handleFinalRegister}
+            type="submit"
             disabled={isLoading}
             className="w-full rounded-full py-6"
           >
@@ -556,7 +319,7 @@ export default function Register({
             ) : null}
             Complete Registration
           </Button>
-        </div>
+        </form>
       )}
     </div>
   );
