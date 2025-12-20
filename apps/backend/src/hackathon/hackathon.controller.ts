@@ -30,6 +30,8 @@ import {
   UpdateHackathonRoundsDto,
   UpdateHackathonAdditionalInfoDto,
   RegistrationFormDto,
+  AddHackathonRoleDto,
+  RemoveHackathonRoleDto,
 } from '@oppskills/types';
 import { Logger } from '../_utils/logger';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
@@ -645,5 +647,168 @@ export class HackathonController {
       message: 'Hackathon max teams updated successfully.',
       data: hackathon,
     };
+  }
+
+  // =====================
+  // Role Management
+  // =====================
+
+  /**
+   * Get all roles for a hackathon (owner + managers + evaluators).
+   */
+  @Get(':id/roles')
+  @ApiOperation({
+    summary: 'Get hackathon roles',
+    description:
+      'Retrieve all roles for a hackathon including owner, managers, and evaluators.',
+  })
+  @ApiParam({ name: 'id', description: 'Hackathon ID', type: 'string', format: 'uuid' })
+  @ApiResponse({
+    status: 200,
+    description: 'Roles retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        owner: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            email: { type: 'string' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+            imageUrl: { type: 'string' },
+          },
+        },
+        managers: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              email: { type: 'string' },
+              firstName: { type: 'string' },
+              lastName: { type: 'string' },
+              imageUrl: { type: 'string' },
+              role: { type: 'string', enum: ['MANAGER', 'EVALUATOR'] },
+              assignedAt: { type: 'string', format: 'date-time' },
+            },
+          },
+        },
+        evaluators: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              email: { type: 'string' },
+              firstName: { type: 'string' },
+              lastName: { type: 'string' },
+              imageUrl: { type: 'string' },
+              role: { type: 'string', enum: ['MANAGER', 'EVALUATOR'] },
+              assignedAt: { type: 'string', format: 'date-time' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Hackathon not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
+  async getHackathonRoles(@Param('id') id: string) {
+    const safeId = assertNonEmptyId(id, 'id');
+    return this.hackathonService.getHackathonRoles(safeId);
+  }
+
+  /**
+   * Add a role to a hackathon (owner/admin only).
+   */
+  @Post(':id/roles')
+  @ApiOperation({
+    summary: 'Add hackathon role',
+    description:
+      'Add a manager or evaluator to a hackathon. Only the owner or admin can perform this action.',
+  })
+  @ApiParam({ name: 'id', description: 'Hackathon ID', type: 'string', format: 'uuid' })
+  @ApiBody({ type: AddHackathonRoleDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Role added successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        alreadyExists: { type: 'boolean' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - User not found or invalid input' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Only owner or admin can add roles' })
+  @ApiResponse({ status: 404, description: 'Hackathon not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
+  async addHackathonRole(
+    @Param('id') id: string,
+    @Body() dto: AddHackathonRoleDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+
+    const safeId = assertNonEmptyId(id, 'id');
+    this.logger.log(
+      `Adding role ${dto.role} for hackathon=${safeId} by userId=${userId}`,
+    );
+
+    return this.hackathonService.addHackathonRole(
+      safeId,
+      dto.email,
+      dto.role,
+      userId,
+    );
+  }
+
+  /**
+   * Remove a role from a hackathon (owner/admin only).
+   */
+  @Delete(':id/roles')
+  @ApiOperation({
+    summary: 'Remove hackathon role',
+    description:
+      'Remove a manager or evaluator from a hackathon. Only the owner or admin can perform this action.',
+  })
+  @ApiParam({ name: 'id', description: 'Hackathon ID', type: 'string', format: 'uuid' })
+  @ApiBody({ type: RemoveHackathonRoleDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Role removed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - User not found or invalid input' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Only owner or admin can remove roles' })
+  @ApiResponse({ status: 404, description: 'Hackathon or role not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
+  async removeHackathonRole(
+    @Param('id') id: string,
+    @Body() dto: RemoveHackathonRoleDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+
+    const safeId = assertNonEmptyId(id, 'id');
+    this.logger.log(
+      `Removing role ${dto.role} for hackathon=${safeId} by userId=${userId}`,
+    );
+
+    return this.hackathonService.removeHackathonRole(
+      safeId,
+      dto.email,
+      dto.role,
+      userId,
+    );
   }
 }

@@ -126,6 +126,34 @@ enum HackathonRoundType {
   @@schema("oppskills")
 }
 
+/// Per-hackathon user roles (assigned by owner/admin).
+enum HackathonUserRole {
+  MANAGER
+  EVALUATOR
+
+  @@map("HackathonUserRole")
+  @@schema("oppskills")
+}
+
+/// Join table for per-hackathon user roles (Manager, Evaluator).
+model HackathonUserRoleEntity {
+  id          String            @id @default(cuid())
+  hackathonId String            @map("hackathon_id")
+  hackathon   HackathonEntity   @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  userId      String            @map("user_id")
+  user        UserEntity        @relation("UserHackathonRoles", fields: [userId], references: [id], onDelete: Cascade)
+  role        HackathonUserRole
+  createdAt   DateTime          @default(now()) @map("created_at")
+  createdById String?           @map("created_by_id")
+  createdBy   UserEntity?       @relation("HackathonRoleCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([hackathonId, userId, role])
+  @@map("hackathon_user_role")
+  @@schema("oppskills")
+  @@index([hackathonId])
+  @@index([userId])
+}
+
 model UserEntity {
   id         String   @id @default(cuid())
   email      String   @unique
@@ -141,6 +169,10 @@ model UserEntity {
   festivals    FestivalEntity[]    @relation("UserFestivals")   // created festivals
   teams        TeamEntity[]        @relation("UserTeams")       // teams this user has created
   teamMembers  TeamMemberEntity[]                             // teams they are part of
+
+  // Per-hackathon roles (Manager/Evaluator)
+  hackathonRoles        HackathonUserRoleEntity[] @relation("UserHackathonRoles")
+  hackathonRolesCreated HackathonUserRoleEntity[] @relation("HackathonRoleCreator")
 
   @@map("user")
   @@schema("oppskills")
@@ -217,6 +249,9 @@ model HackathonEntity {
   // Relations: hackathon structure
   rounds      RoundEntity[]
   attachments HackathonAttachmentEntity[]
+
+  // Per-hackathon user roles (Manager/Evaluator)
+  userRoles   HackathonUserRoleEntity[]
 
   @@map("hackathon")
   @@schema("oppskills")

@@ -3,20 +3,50 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft, Bell } from "lucide-react";
+import { useParams, usePathname } from "next/navigation";
+import { Bell } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useUser, SignOutButton } from "@clerk/nextjs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogOut, User } from "lucide-react";
 
-const MOCK_USER = {
-  name: "E-Cell NoC",
-  email: "Rohanvats12@gmail.com",
-  avatar: "https://github.com/shadcn.png",
-  initials: "EC",
-};
+function getInitials(firstName: string | null, lastName: string | null, email: string): string {
+  if (firstName && lastName) {
+    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  }
+  if (firstName) {
+    return firstName.slice(0, 2).toUpperCase();
+  }
+  if (lastName) {
+    return lastName.slice(0, 2).toUpperCase();
+  }
+  return email.slice(0, 2).toUpperCase();
+}
+
+function getDisplayName(firstName: string | null, lastName: string | null, email: string): string {
+  if (firstName && lastName) {
+    return `${firstName} ${lastName}`;
+  }
+  if (firstName) {
+    return firstName;
+  }
+  if (lastName) {
+    return lastName;
+  }
+  return email.split("@")[0];
+}
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const router = useRouter();
+  const params = useParams();
+  const slug = params?.slug as string;
+  const { user, isLoaded } = useUser();
 
   // Helper to determine title
   const getTitle = () => {
@@ -29,7 +59,8 @@ export function SiteHeader() {
 
     // Check main sections
     if (pathname.includes("/dashboard/events")) return "Events";
-    if (pathname.includes("/dashboard/opportunity")) return "Opportunities";
+    if (pathname.includes("/dashboard/opportunity"))
+      return slug ? slug.split("-").join(" ").toUpperCase() : "Opportunities";
     if (pathname.includes("/dashboard/festivals")) return "Festivals";
 
     // Default
@@ -38,6 +69,14 @@ export function SiteHeader() {
 
   const title = getTitle();
   const showProfile = pathname.includes("/dashboard");
+
+  // Extract user info
+  const userEmail = user?.primaryEmailAddress?.emailAddress ?? "";
+  const userFirstName = user?.firstName ?? null;
+  const userLastName = user?.lastName ?? null;
+  const userImageUrl = user?.imageUrl ?? null;
+  const displayName = getDisplayName(userFirstName, userLastName, userEmail);
+  const initials = getInitials(userFirstName, userLastName, userEmail);
 
   return (
     <header className="flex bg-white shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear rounded-xl px-4 lg:px-6">
@@ -55,7 +94,7 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-4">
-          {showProfile ? (
+          {showProfile && isLoaded && user ? (
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
@@ -64,21 +103,64 @@ export function SiteHeader() {
               >
                 <Bell className="h-5 w-5 text-neutral-700" />
               </Button>
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 border border-slate-200">
-                  <AvatarImage src={MOCK_USER.avatar} />
-                  <AvatarFallback className="bg-primary text-white">
-                    {MOCK_USER.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden flex-col md:flex items-start">
-                  <span className="text-sm font-bold text-[#1A1A1A]">
-                    {MOCK_USER.name}
-                  </span>
-                  <span className="text-xs text-[#5F6368]">
-                    {MOCK_USER.email}
-                  </span>
-                </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-3 cursor-pointer outline-none">
+                    <Avatar className="h-10 w-10 border border-slate-200">
+                      <AvatarImage src={userImageUrl ?? undefined} />
+                      <AvatarFallback className="bg-primary text-white">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="hidden flex-col md:flex items-start">
+                      <span className="text-sm font-bold text-[#1A1A1A]">
+                        {displayName}
+                      </span>
+                      <span className="text-xs text-[#5F6368]">
+                        {userEmail}
+                      </span>
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="flex items-center gap-2 p-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={userImageUrl ?? undefined} />
+                      <AvatarFallback className="bg-primary text-white text-xs">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{displayName}</span>
+                      <span className="text-xs text-muted-foreground truncate max-w-[160px]">
+                        {userEmail}
+                      </span>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <a href="/dashboard/profile" className="flex items-center cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <SignOutButton>
+                    <DropdownMenuItem className="text-red-600 focus:text-red-600 cursor-pointer">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign out
+                    </DropdownMenuItem>
+                  </SignOutButton>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ) : showProfile ? (
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-neutral-200 animate-pulse" />
+              <div className="hidden md:flex flex-col gap-1">
+                <div className="h-4 w-24 bg-neutral-200 rounded animate-pulse" />
+                <div className="h-3 w-32 bg-neutral-200 rounded animate-pulse" />
               </div>
             </div>
           ) : (
