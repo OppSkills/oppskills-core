@@ -96,7 +96,7 @@ jobs:
           set -euo pipefail
 
           echo "Testing Docker image before pushing to ECR..."
-          
+
           # Create a minimal env file for testing (no real secrets needed)
           cat > /tmp/test.env <<EOF
           NODE_ENV=production
