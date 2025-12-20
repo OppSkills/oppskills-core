@@ -1,19 +1,29 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Trash2, Pencil } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import Image from "next/image";
 import React from "react";
 
 interface RoleCardProps {
     name: string;
-    phone: string;
     email: string;
+    imageUrl?: string | null;
     type: "Owner" | "Manager" | "Evaluator";
-    onEdit?: () => void;
     onDelete?: () => void;
 }
 
-export default function RoleCard({ name, phone, email, type, onEdit, onDelete }: RoleCardProps) {
+export default function RoleCard({ name, email, imageUrl, type, onDelete }: RoleCardProps) {
     const isOwner = type === "Owner";
+
+    // Generate initials from name
+    const getInitials = (name: string) => {
+        return name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .substring(0, 2)
+            .toUpperCase();
+    };
 
     return (
         <div className={cn(
@@ -21,41 +31,54 @@ export default function RoleCard({ name, phone, email, type, onEdit, onDelete }:
             isOwner ? "bg-[#FCF0FF] border-[#F3E8FF]" : "bg-white border-border hover:shadow-sm"
         )}>
             <div className="flex items-center gap-4">
-                <div className={cn(
-                    "flex items-center justify-center w-14 h-14 rounded-full text-white text-xl font-bold shrink-0",
-                    "bg-[#3b0764]" // darker purple for avatar
-                )}>
-                    {name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                </div>
-                <div className="flex flex-col gap-1">
-                    <h3 className="font-bold text-lg text-foreground">{name}</h3>
-                    <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 text-sm text-muted-foreground">
-                        <span>{phone}</span>
-                        <span className="hidden md:block w-[1px] h-4 bg-muted-foreground/30"></span>
-                        <span>{email}</span>
+                {imageUrl ? (
+                    <Image
+                        src={imageUrl}
+                        alt={name}
+                        width={56}
+                        height={56}
+                        className="w-14 h-14 rounded-full object-cover shrink-0"
+                    />
+                ) : (
+                    <div className={cn(
+                        "flex items-center justify-center w-14 h-14 rounded-full text-white text-xl font-bold shrink-0",
+                        "bg-[#3b0764]" // darker purple for avatar
+                    )}>
+                        {getInitials(name)}
                     </div>
+                )}
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-lg text-foreground">{name}</h3>
+                        {isOwner && (
+                            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#A020F0] text-white">
+                                Owner
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-sm text-muted-foreground">{email}</span>
                 </div>
             </div>
 
-            {!isOwner && (
+            {!isOwner && onDelete && (
                 <div className="flex items-center gap-2 self-end md:self-center">
-                    <Button variant="ghost" size="sm" onClick={onEdit} className="text-[#A020F0] hover:text-[#8e1cd6] hover:bg-[#F3E8FF]">
-                        <Pencil className="w-4 h-4 mr-2" />
-                        Edit
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={onDelete} className="text-[#A020F0] hover:text-[#8e1cd6] hover:bg-[#F3E8FF]">
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={onDelete} 
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                    >
                         <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
+                        Remove
                     </Button>
                 </div>
             )}
 
             {isOwner && (
-                <div className="flex items-center gap-2 self-end md:self-center opacity-50 cursor-pointer text-sm text-[#A020F0]">
-                    <Pencil className="w-4 h-4 mr-2" />
-                    Edit
-                    <Trash2 className="w-4 h-4 ml-4 mr-2" />
-                    Delete
+                <div className="flex items-center gap-2 self-end md:self-center">
+                    <span className="text-xs text-muted-foreground italic">
+                        Cannot be modified
+                    </span>
                 </div>
             )}
         </div>

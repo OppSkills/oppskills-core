@@ -5,6 +5,9 @@ import type {
   UpdateHackathonAdditionalInfoDto,
   UpdateHackathonDto,
   UpdateHackathonRoundsDto,
+  AddHackathonRoleDto,
+  RemoveHackathonRoleDto,
+  HackathonRolesResponse,
 } from "@oppskills/types";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
@@ -180,4 +183,50 @@ export async function registerForHackathon(
     { headers: buildAuthHeaders(token) }
   );
   return res.data as unknown;
+}
+
+// =====================
+// Role Management
+// =====================
+
+/**
+ * Get all roles for a hackathon (owner + managers + evaluators).
+ */
+export async function getHackathonRoles(
+  token: string,
+  id: string
+): Promise<HackathonRolesResponse> {
+  const res = await API.get(`/${id}/roles`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as HackathonRolesResponse;
+}
+
+/**
+ * Add a role to a hackathon (owner/admin only).
+ */
+export async function addHackathonRole(
+  token: string,
+  id: string,
+  data: AddHackathonRoleDto
+): Promise<{ message: string; alreadyExists: boolean }> {
+  const res = await API.post(`/${id}/roles`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as { message: string; alreadyExists: boolean };
+}
+
+/**
+ * Remove a role from a hackathon (owner/admin only).
+ */
+export async function removeHackathonRole(
+  token: string,
+  id: string,
+  data: RemoveHackathonRoleDto
+): Promise<{ message: string }> {
+  const res = await API.delete(`/${id}/roles`, {
+    headers: buildAuthHeaders(token),
+    data, // axios supports body in DELETE via data property
+  });
+  return res.data as { message: string };
 }

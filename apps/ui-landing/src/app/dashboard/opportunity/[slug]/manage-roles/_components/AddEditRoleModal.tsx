@@ -5,101 +5,115 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
+    DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
-export interface RoleData {
-    id?: string;
-    name: string;
-    email: string;
-    phone: string;
-}
-
-interface AddEditRoleModalProps {
+interface AddRoleModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    initialData?: RoleData | null;
     roleType: "Manager" | "Evaluator";
-    onSave: (data: RoleData) => void;
+    onAdd: (email: string) => Promise<void>;
+    isLoading?: boolean;
 }
 
-export default function AddEditRoleModal({
+export default function AddRoleModal({
     open,
     onOpenChange,
-    initialData,
     roleType,
-    onSave,
-}: AddEditRoleModalProps) {
-    const [formData, setFormData] = useState<RoleData>({
-        name: "",
-        email: "",
-        phone: "",
-    });
+    onAdd,
+    isLoading = false,
+}: AddRoleModalProps) {
+    const [email, setEmail] = useState("");
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (open) {
-            setFormData(initialData || { name: "", email: "", phone: "" });
+            setEmail("");
+            setError(null);
         }
-    }, [open, initialData]);
+    }, [open]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
-        onOpenChange(false);
+        setError(null);
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+            setError("Please enter a valid email address.");
+            return;
+        }
+
+        try {
+            await onAdd(email.trim().toLowerCase());
+            onOpenChange(false);
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("Failed to add role. Please try again.");
+            }
+        }
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>{initialData ? "Edit" : "Add"} {roleType}</DialogTitle>
+                    <DialogTitle>Add {roleType}</DialogTitle>
+                    <DialogDescription>
+                        Enter the email address of the user you want to add as a {roleType.toLowerCase()}.
+                        The user must already have an account in the system.
+                    </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-4">
                     <div className="flex flex-col gap-2">
-                        <Label htmlFor="name" className="text-left">
-                            Name
-                        </Label>
-                        <Input
-                            id="name"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder={`Enter ${roleType}'s Name`}
-                            className="col-span-3"
-                            required
-                        />
-                    </div>
-                    <div className="flex flex-col gap-2">
                         <Label htmlFor="email" className="text-left">
-                            Email
+                            Email Address
                         </Label>
                         <Input
                             id="email"
                             type="email"
-                            value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            placeholder={`Enter ${roleType}'s Email`}
+                            value={email}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                setError(null);
+                            }}
+                            placeholder={`Enter ${roleType.toLowerCase()}'s email`}
                             className="col-span-3"
                             required
+                            disabled={isLoading}
                         />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="phone" className="text-left">
-                            Phone Number
-                        </Label>
-                        <Input
-                            id="phone"
-                            value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            placeholder="+91 99999 99999"
-                            className="col-span-3"
-                            required
-                        />
+                        {error && (
+                            <p className="text-sm text-red-500">{error}</p>
+                        )}
                     </div>
                     <DialogFooter className="mt-4">
-                        <Button type="submit" className="bg-[#A020F0] hover:bg-[#8e1cd6] w-full">
-                            {initialData ? "Save Changes" : "Add " + roleType}
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => onOpenChange(false)}
+                            disabled={isLoading}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            type="submit" 
+                            className="bg-[#A020F0] hover:bg-[#8e1cd6]"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Adding...
+                                </>
+                            ) : (
+                                `Add ${roleType}`
+                            )}
                         </Button>
                     </DialogFooter>
                 </form>

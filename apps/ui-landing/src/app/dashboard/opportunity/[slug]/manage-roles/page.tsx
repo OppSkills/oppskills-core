@@ -1,103 +1,184 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import RoleCard from "./_components/RoleCard";
-import AddEditRoleModal, { RoleData } from "./_components/AddEditRoleModal";
+import AddRoleModal from "./_components/AddEditRoleModal";
 import EmptyState from "./_components/EmptyState";
 import { cn } from "@/lib/utils";
+import { 
+  getHackathonRoles, 
+  addHackathonRole, 
+  removeHackathonRole,
+  getHackathonBySlug,
+} from "@/lib/api/hackathonApi";
+import type { 
+  HackathonRolesResponse, 
+  HackathonRoleUserResponse,
+  HackathonUserRoleValue,
+} from "@oppskills/types";
+import { Loader2, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
-// Mock Data for Owner
-const MOCK_OWNER = {
-  id: "owner-1",
-  name: "Vijay Krishna",
-  email: "vijay.krishna@opportunity.com",
-  phone: "+91 98765 43210",
-};
-
-// Initial Mock Data for Managers
-const INITIAL_MANAGERS: RoleData[] = [
-  {
-    id: "manager-1",
-    name: "Sarah Jenkins",
-    email: "sarah.j@opportunity.com",
-    phone: "+91 98989 89898",
-  },
-  {
-    id: "manager-2",
-    name: "David Ross",
-    email: "david.ross@opportunity.com",
-    phone: "+91 97777 66666",
+// Helper to format display name
+function formatDisplayName(user: { firstName: string | null; lastName: string | null; email: string }): string {
+  if (user.firstName && user.lastName) {
+    return `${user.firstName} ${user.lastName}`;
   }
-];
-
-// Initial Mock Data for Evaluators
-const INITIAL_EVALUATORS: RoleData[] = [
-  {
-    id: "eval-1",
-    name: "Dr. Emily Chen",
-    email: "emily.chen@university.edu",
-    phone: "+91 91234 56789",
-  },
-  {
-    id: "eval-2",
-    name: "Michael Chang",
-    email: "michael.chang@techcorp.com",
-    phone: "+91 90000 11111",
-  },
-  {
-    id: "eval-3",
-    name: "Priya Patel",
-    email: "priya.p@consulting.com",
-    phone: "+91 99887 76655",
+  if (user.firstName) {
+    return user.firstName;
   }
-];
+  return user.email.split("@")[0];
+}
 
 export default function ManageRolesPage() {
-  const [activeTab, setActiveTab] = useState<"Manager" | "Evaluator">("Manager");
+  const params = useParams();
+  const slug = params.slug as string;
+  const { getToken } = useAuth();
 
-  // State for roles initialized with mock data
-  const [managers, setManagers] = useState<RoleData[]>(INITIAL_MANAGERS);
-  const [evaluators, setEvaluators] = useState<RoleData[]>(INITIAL_EVALUATORS);
+  const [activeTab, setActiveTab] = useState<"Manager" | "Evaluator">("Manager");
+  const [hackathonId, setHackathonId] = useState<string | null>(null);
+  const [roles, setRoles] = useState<HackathonRolesResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAddingRole, setIsAddingRole] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<RoleData | null>(null);
+
+  // Fetch hackathon ID from slug first
+  const fetchHackathonId = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const hackathon = await getHackathonBySlug(token, slug) as { id: string };
+      setHackathonId(hackathon.id);
+      return hackathon.id;
+    } catch (err) {
+      console.error("Error fetching hackathon:", err);
+      throw err;
+    }
+  }, [getToken, slug]);
+
+  // Fetch roles
+  const fetchRoles = useCallback(async (id?: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const hackId = id || hackathonId;
+      if (!hackId) {
+        // Need to fetch hackathon ID first
+        const fetchedId = await fetchHackathonId();
+        const rolesData = await getHackathonRoles(token, fetchedId);
+        setRoles(rolesData);
+      } else {
+        const rolesData = await getHackathonRoles(token, hackId);
+        setRoles(rolesData);
+      }
+    } catch (err) {
+      console.error("Error fetching roles:", err);
+      setError(err instanceof Error ? err.message : "Failed to load roles");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getToken, hackathonId, fetchHackathonId]);
+
+  useEffect(() => {
+    fetchRoles();
+  }, [fetchRoles]);
 
   const handleAddClick = () => {
-    setEditingRole(null);
     setIsModalOpen(true);
   };
 
-  const handleEditClick = (role: RoleData) => {
-    setEditingRole(role);
-    setIsModalOpen(true);
-  };
+  const handleAddRole = async (email: string) => {
+    if (!hackathonId) return;
+    
+    setIsAddingRole(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
 
-  const handleDeleteClick = (id: string) => {
-    if (confirm("Are you sure you want to delete this role?")) {
-      if (activeTab === "Manager") {
-        setManagers(managers.filter(m => m.id !== id));
+      const role: HackathonUserRoleValue = activeTab === "Manager" ? "MANAGER" : "EVALUATOR";
+      const result = await addHackathonRole(token, hackathonId, { email, role });
+      
+      if (result.alreadyExists) {
+        toast.info(result.message);
       } else {
-        setEvaluators(evaluators.filter(e => e.id !== id));
+        toast.success(result.message);
       }
+      
+      // Refresh roles list
+      await fetchRoles();
+    } catch (err) {
+      console.error("Error adding role:", err);
+      const message = err instanceof Error ? err.message : "Failed to add role";
+      toast.error(message);
+      throw err;
+    } finally {
+      setIsAddingRole(false);
     }
   };
 
-  const handleSaveRole = (data: RoleData) => {
-    const list = activeTab === "Manager" ? managers : evaluators;
-    const setList = activeTab === "Manager" ? setManagers : setEvaluators;
+  const handleDeleteClick = async (user: HackathonRoleUserResponse) => {
+    if (!hackathonId) return;
+    
+    const displayName = formatDisplayName(user);
+    if (!confirm(`Are you sure you want to remove ${displayName} as a ${activeTab.toLowerCase()}?`)) {
+      return;
+    }
 
-    if (editingRole) {
-      // Update
-      setList(list.map(item => item.id === editingRole.id ? { ...data, id: editingRole.id } : item));
-    } else {
-      // Add
-      const newRole = { ...data, id: crypto.randomUUID() };
-      setList([...list, newRole]);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const role: HackathonUserRoleValue = activeTab === "Manager" ? "MANAGER" : "EVALUATOR";
+      const result = await removeHackathonRole(token, hackathonId, { email: user.email, role });
+      
+      toast.success(result.message);
+      
+      // Refresh roles list
+      await fetchRoles();
+    } catch (err) {
+      console.error("Error removing role:", err);
+      const message = err instanceof Error ? err.message : "Failed to remove role";
+      toast.error(message);
     }
   };
 
-  const currentList = activeTab === "Manager" ? managers : evaluators;
+  const currentList = activeTab === "Manager" 
+    ? (roles?.managers ?? []) 
+    : (roles?.evaluators ?? []);
+
+  if (isLoading) {
+    return (
+      <div className="flex w-full justify-center bg-surface min-h-[calc(100vh-100px)]">
+        <div className="w-full max-w-[1200px] p-6 md:p-10 rounded-[20px] bg-background flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#A020F0]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex w-full justify-center bg-surface min-h-[calc(100vh-100px)]">
+        <div className="w-full max-w-[1200px] p-6 md:p-10 rounded-[20px] bg-background flex flex-col items-center justify-center gap-4">
+          <p className="text-red-500">{error}</p>
+          <Button onClick={() => fetchRoles()} variant="outline">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full justify-center bg-surface min-h-[calc(100vh-100px)]">
@@ -111,23 +192,25 @@ export default function ManageRolesPage() {
         </div>
 
         {/* Owner Section */}
-        <div>
-          <RoleCard
-            name={MOCK_OWNER.name}
-            email={MOCK_OWNER.email}
-            phone={MOCK_OWNER.phone}
-            type="Owner"
-          />
-        </div>
+        {roles?.owner && (
+          <div>
+            <RoleCard
+              name={formatDisplayName(roles.owner)}
+              email={roles.owner.email}
+              imageUrl={roles.owner.imageUrl}
+              type="Owner"
+            />
+          </div>
+        )}
 
         <div className="h-[1px] w-full bg-border" />
 
         {/* Tabs */}
         <div className="flex items-center gap-4">
-          {["Manager", "Evaluator"].map((tab) => (
+          {(["Manager", "Evaluator"] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab as "Manager" | "Evaluator")}
+              onClick={() => setActiveTab(tab)}
               className={cn(
                 "px-6 py-2 rounded-full text-sm font-medium transition-all",
                 activeTab === tab
@@ -136,6 +219,9 @@ export default function ManageRolesPage() {
               )}
             >
               {tab}
+              <span className="ml-2 text-xs opacity-70">
+                ({tab === "Manager" ? roles?.managers.length : roles?.evaluators.length})
+              </span>
             </button>
           ))}
         </div>
@@ -144,15 +230,14 @@ export default function ManageRolesPage() {
         <div className="flex flex-col gap-4 min-h-[400px]">
           {currentList.length > 0 ? (
             <>
-              {currentList.map((role) => (
+              {currentList.map((user) => (
                 <RoleCard
-                  key={role.id}
-                  name={role.name}
-                  email={role.email}
-                  phone={role.phone}
+                  key={`${user.id}-${user.role}`}
+                  name={formatDisplayName(user)}
+                  email={user.email}
+                  imageUrl={user.imageUrl}
                   type={activeTab}
-                  onEdit={() => handleEditClick(role)}
-                  onDelete={() => role.id && handleDeleteClick(role.id)}
+                  onDelete={() => handleDeleteClick(user)}
                 />
               ))}
               <div className="flex justify-end mt-4">
@@ -172,12 +257,12 @@ export default function ManageRolesPage() {
           )}
         </div>
 
-        <AddEditRoleModal
+        <AddRoleModal
           open={isModalOpen}
           onOpenChange={setIsModalOpen}
-          initialData={editingRole}
           roleType={activeTab}
-          onSave={handleSaveRole}
+          onAdd={handleAddRole}
+          isLoading={isAddingRole}
         />
       </div>
     </div>

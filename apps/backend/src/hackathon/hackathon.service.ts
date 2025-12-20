@@ -249,7 +249,7 @@ export class HackathonService {
   }
 
   /**
-   * Update a hackathon (owner-only).
+   * Update a hackathon (owner, admin, or manager).
    * - Allowed only when status is DRAFT.
    * - Nested updates (rounds, questions, additionalInfo, etc.) use dedicated endpoints.
    */
@@ -259,12 +259,16 @@ export class HackathonService {
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
+    // Check permission: owner OR admin OR manager
     if (hackathon.ownerId !== userId) {
       const isAdmin = await this.isAdminUser(userId);
       if (!isAdmin) {
-        throw new ForbiddenException(
-          'You are not allowed to edit this hackathon.',
-        );
+        const isManager = await this.isHackathonManager(id, userId);
+        if (!isManager) {
+          throw new ForbiddenException(
+            'You are not allowed to edit this hackathon.',
+          );
+        }
       }
     }
 
@@ -398,13 +402,16 @@ export class HackathonService {
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
-    // Permission: owner OR admin
+    // Permission: owner OR admin OR manager
     if (hackathon.ownerId !== userId) {
       const isAdmin = await this.isAdminUser(userId);
       if (!isAdmin) {
-        throw new ForbiddenException(
-          'You are not allowed to change this hackathon status.',
-        );
+        const isManager = await this.isHackathonManager(id, userId);
+        if (!isManager) {
+          throw new ForbiddenException(
+            'You are not allowed to change this hackathon status.',
+          );
+        }
       }
     }
 
@@ -686,7 +693,7 @@ export class HackathonService {
 
   /**
    * Assert that a hackathon exists, is editable (DRAFT status),
-   * and the user has permission to edit it.
+   * and the user has permission to edit it (owner OR admin OR manager).
    * @returns The hackathon if all checks pass.
    */
   private async assertHackathonEditableByUser(id: string, userId: string) {
@@ -695,12 +702,16 @@ export class HackathonService {
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
+    // Check permission: owner OR admin OR manager
     if (hackathon.ownerId !== userId) {
       const isAdmin = await this.isAdminUser(userId);
       if (!isAdmin) {
-        throw new ForbiddenException(
-          'You are not allowed to edit this hackathon.',
-        );
+        const isManager = await this.isHackathonManager(id, userId);
+        if (!isManager) {
+          throw new ForbiddenException(
+            'You are not allowed to edit this hackathon.',
+          );
+        }
       }
     }
 
@@ -917,5 +928,271 @@ export class HackathonService {
         `Invalid ${entityName} status transition: ${currentStatus} -> ${nextStatus}.`,
       );
     }
+  }
+
+  // =====================
+  // Role Management
+  // =====================
+
+  /**
+   * Check if a user is a manager for a given hackathon.
+   */
+  async isHackathonManager(hackathonId: string, userId: string): Promise<boolean> {
+    const role = await prisma.hackathonUserRoleEntity.findFirst({
+      where: {
+        hackathonId,
+        userId,
+        role: 'MANAGER',
+      },
+      select: { id: true },
+    });
+    return !!role;
+  }
+
+  /**
+   * Assert that a hackathon exists, is editable (DRAFT status),
+   * and the user has permission to write (owner OR admin OR manager).
+   * @returns The hackathon if all checks pass.
+   */
+  async assertHackathonWritableByUser(id: string, userId: string) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id },
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    // Check permission: owner OR admin OR manager
+    if (hackathon.ownerId !== userId) {
+      const isAdmin = await this.isAdminUser(userId);
+      if (!isAdmin) {
+        const isManager = await this.isHackathonManager(id, userId);
+        if (!isManager) {
+          throw new ForbiddenException(
+            'You are not allowed to edit this hackathon.',
+          );
+        }
+      }
+    }
+
+    const status = hackathon.status as LifecycleStatus;
+    if (status !== 'DRAFT') {
+      throw new ForbiddenException(
+        'You can only edit a hackathon in DRAFT status.',
+      );
+    }
+
+    return hackathon;
+  }
+
+  /**
+   * Get all roles for a hackathon (owner + managers + evaluators).
+   */
+  async getHackathonRoles(hackathonId: string) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id: hackathonId },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+        userRoles: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                imageUrl: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    const managers = hackathon.userRoles
+      .filter((r) => r.role === 'MANAGER')
+      .map((r) => ({
+        id: r.user.id,
+        email: r.user.email,
+        firstName: r.user.firstName,
+        lastName: r.user.lastName,
+        imageUrl: r.user.imageUrl,
+        role: r.role as 'MANAGER' | 'EVALUATOR',
+        assignedAt: r.createdAt.toISOString(),
+      }));
+
+    const evaluators = hackathon.userRoles
+      .filter((r) => r.role === 'EVALUATOR')
+      .map((r) => ({
+        id: r.user.id,
+        email: r.user.email,
+        firstName: r.user.firstName,
+        lastName: r.user.lastName,
+        imageUrl: r.user.imageUrl,
+        role: r.role as 'MANAGER' | 'EVALUATOR',
+        assignedAt: r.createdAt.toISOString(),
+      }));
+
+    return {
+      owner: hackathon.owner,
+      managers,
+      evaluators,
+    };
+  }
+
+  /**
+   * Add a role to a hackathon (owner/admin only).
+   * @param hackathonId The hackathon ID
+   * @param email The email of the user to add
+   * @param role The role to assign (MANAGER or EVALUATOR)
+   * @param currentUserId The user performing the action
+   */
+  async addHackathonRole(
+    hackathonId: string,
+    email: string,
+    role: 'MANAGER' | 'EVALUATOR',
+    currentUserId: string,
+  ) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id: hackathonId },
+      select: { id: true, ownerId: true },
+    });
+
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    // Only owner or admin can add roles
+    if (hackathon.ownerId !== currentUserId) {
+      const isAdmin = await this.isAdminUser(currentUserId);
+      if (!isAdmin) {
+        throw new ForbiddenException(
+          'Only the owner or admin can manage roles.',
+        );
+      }
+    }
+
+    // Lookup user by email
+    const normalizedEmail = email.toLowerCase().trim();
+    const targetUser = await prisma.userEntity.findUnique({
+      where: { email: normalizedEmail },
+      select: { id: true, email: true, firstName: true, lastName: true },
+    });
+
+    if (!targetUser) {
+      throw new BadRequestException(
+        `No user found with email: ${normalizedEmail}`,
+      );
+    }
+
+    // Cannot add owner as manager/evaluator
+    if (targetUser.id === hackathon.ownerId) {
+      throw new BadRequestException(
+        'Cannot assign a role to the hackathon owner.',
+      );
+    }
+
+    // Check if role already exists (idempotent - return success)
+    const existingRole = await prisma.hackathonUserRoleEntity.findUnique({
+      where: {
+        hackathonId_userId_role: {
+          hackathonId,
+          userId: targetUser.id,
+          role,
+        },
+      },
+    });
+
+    if (existingRole) {
+      // Return early, already exists
+      return {
+        message: `User is already a ${role.toLowerCase()} for this hackathon.`,
+        alreadyExists: true,
+      };
+    }
+
+    await prisma.hackathonUserRoleEntity.create({
+      data: {
+        hackathonId,
+        userId: targetUser.id,
+        role,
+        createdById: currentUserId,
+      },
+    });
+
+    return {
+      message: `Successfully added ${targetUser.firstName || targetUser.email} as ${role.toLowerCase()}.`,
+      alreadyExists: false,
+    };
+  }
+
+  /**
+   * Remove a role from a hackathon (owner/admin only).
+   * @param hackathonId The hackathon ID
+   * @param email The email of the user to remove
+   * @param role The role to remove (MANAGER or EVALUATOR)
+   * @param currentUserId The user performing the action
+   */
+  async removeHackathonRole(
+    hackathonId: string,
+    email: string,
+    role: 'MANAGER' | 'EVALUATOR',
+    currentUserId: string,
+  ) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id: hackathonId },
+      select: { id: true, ownerId: true },
+    });
+
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    // Only owner or admin can remove roles
+    if (hackathon.ownerId !== currentUserId) {
+      const isAdmin = await this.isAdminUser(currentUserId);
+      if (!isAdmin) {
+        throw new ForbiddenException(
+          'Only the owner or admin can manage roles.',
+        );
+      }
+    }
+
+    // Lookup user by email
+    const normalizedEmail = email.toLowerCase().trim();
+    const targetUser = await prisma.userEntity.findUnique({
+      where: { email: normalizedEmail },
+      select: { id: true, email: true, firstName: true, lastName: true },
+    });
+
+    if (!targetUser) {
+      throw new BadRequestException(
+        `No user found with email: ${normalizedEmail}`,
+      );
+    }
+
+    // Attempt to delete the role
+    const deleteResult = await prisma.hackathonUserRoleEntity.deleteMany({
+      where: {
+        hackathonId,
+        userId: targetUser.id,
+        role,
+      },
+    });
+
+    if (deleteResult.count === 0) {
+      throw new NotFoundException(
+        `User does not have the ${role.toLowerCase()} role for this hackathon.`,
+      );
+    }
+
+    return {
+      message: `Successfully removed ${targetUser.firstName || targetUser.email} as ${role.toLowerCase()}.`,
+    };
   }
 }
