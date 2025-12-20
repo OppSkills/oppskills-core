@@ -61,7 +61,9 @@ async function bootstrap() {
         return;
       }
 
-      callback(new Error(`CORS blocked for origin: ${origin}`));
+      // Properly reject CORS request with false, not an error
+      console.warn(`CORS blocked for origin: ${origin}`);
+      callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
