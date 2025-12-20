@@ -17,14 +17,29 @@ export type PresignImageUploadResponse = Readonly<{
   maxBytes: number;
 }>;
 
+export type PresignDocumentUploadPurpose =
+  | "EVENT_ATTACHMENT"
+  | "OPPORTUNITY_ATTACHMENT";
+
+export type PresignDocumentUploadRequest = Readonly<{
+  purpose: PresignDocumentUploadPurpose;
+  mimeType: string;
+  fileName: string;
+}>;
+
+export type PresignDocumentUploadResponse = Readonly<{
+  uploadUrl: string;
+  fields: Readonly<Record<string, string>>;
+  key: string;
+  publicUrl: string;
+  maxBytes: number;
+}>;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function requireString(
-  obj: Record<string, unknown>,
-  key: string
-): string {
+function requireString(obj: Record<string, unknown>, key: string): string {
   const value = obj[key];
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new Error(`Invalid response: missing "${key}"`);
@@ -81,4 +96,27 @@ export async function presignImageUpload(
   };
 }
 
+/**
+ * Requests a presigned POST for document upload (PDF, DOC, etc.)
+ */
+export async function presignDocumentUpload(
+  token: string,
+  data: PresignDocumentUploadRequest
+): Promise<PresignDocumentUploadResponse> {
+  const res = await API.post("/presign-document", data, {
+    headers: buildAuthHeaders(token),
+  });
 
+  const raw = res.data as unknown;
+  if (!isRecord(raw)) {
+    throw new Error("Invalid response: expected object.");
+  }
+
+  return {
+    uploadUrl: requireString(raw, "uploadUrl"),
+    fields: requireStringRecord(raw, "fields"),
+    key: requireString(raw, "key"),
+    publicUrl: requireString(raw, "publicUrl"),
+    maxBytes: requireNumber(raw, "maxBytes"),
+  };
+}

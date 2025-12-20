@@ -2,16 +2,17 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
-} from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { S3Client } from "@aws-sdk/client-s3";
-import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
-import type { PresignedPost } from "@aws-sdk/s3-presigned-post";
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { S3Client } from '@aws-sdk/client-s3';
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
+import type { PresignedPost } from '@aws-sdk/s3-presigned-post';
 import type {
   MediaUploadPurposeValue,
   PresignImageUploadResponse,
-} from "./media.dto";
-import crypto from "crypto";
+  PresignDocumentUploadResponse,
+} from './media.dto';
+import crypto from 'crypto';
 
 /**
  * MediaService
@@ -29,7 +30,7 @@ export class MediaService {
      * - env vars (fallback)
      */
     this.s3 = new S3Client({
-      region: this.configService.get<string>("AWS_REGION") ?? "us-east-1",
+      region: this.configService.get<string>('AWS_REGION') ?? 'us-east-1',
     });
   }
 
@@ -41,9 +42,9 @@ export class MediaService {
     purpose: MediaUploadPurposeValue;
     mimeType: string;
   }): Promise<PresignImageUploadResponse> {
-    const bucket = this.getRequiredEnv("MEDIA_S3_BUCKET");
+    const bucket = this.getRequiredEnv('MEDIA_S3_BUCKET');
     const cloudfrontBaseUrl = this.normalizeBaseUrl(
-      this.getRequiredEnv("MEDIA_CLOUDFRONT_BASE_URL")
+      this.getRequiredEnv('MEDIA_CLOUDFRONT_BASE_URL'),
     );
 
     const maxBytes = this.getMaxUploadBytes();
@@ -53,8 +54,8 @@ export class MediaService {
     if (!allowedMimeTypes.includes(mimeType)) {
       throw new BadRequestException(
         `Unsupported image type "${mimeType}". Allowed: ${allowedMimeTypes.join(
-          ", "
-        )}`
+          ', ',
+        )}`,
       );
     }
 
@@ -66,12 +67,72 @@ export class MediaService {
       Key: key,
       Expires: 60, // seconds
       Conditions: [
-        ["content-length-range", 1, maxBytes],
-        ["eq", "$Content-Type", mimeType],
+        ['content-length-range', 1, maxBytes],
+        ['eq', '$Content-Type', mimeType],
       ],
       Fields: {
-        "Content-Type": mimeType,
-        success_action_status: "201",
+        'Content-Type': mimeType,
+        success_action_status: '201',
+      },
+    });
+
+    return {
+      uploadUrl: presigned.url,
+      fields: presigned.fields,
+      key,
+      publicUrl: `${cloudfrontBaseUrl}/${encodeURI(key)}`,
+      maxBytes,
+    };
+  }
+
+  /**
+   * Generates a presigned POST policy for uploading documents (PDF, DOC, etc.)
+   */
+  async presignDocumentUpload(input: {
+    userId: string;
+    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT';
+    mimeType: string;
+    fileName: string;
+  }): Promise<PresignDocumentUploadResponse> {
+    const bucket = this.getRequiredEnv('MEDIA_S3_BUCKET');
+    const cloudfrontBaseUrl = this.normalizeBaseUrl(
+      this.getRequiredEnv('MEDIA_CLOUDFRONT_BASE_URL'),
+    );
+
+    const maxBytes = this.getMaxDocumentUploadBytes();
+    const allowedMimeTypes = this.getAllowedDocumentMimeTypes();
+
+    const mimeType = input.mimeType.trim().toLowerCase();
+    if (!allowedMimeTypes.includes(mimeType)) {
+      throw new BadRequestException(
+        `Unsupported document type "${mimeType}". Allowed: ${allowedMimeTypes.join(
+          ', ',
+        )}`,
+      );
+    }
+
+    const extension = this.extensionForDocumentMimeType(
+      mimeType,
+      input.fileName,
+    );
+    const key = this.buildDocumentObjectKey(
+      input.purpose,
+      input.userId,
+      input.fileName,
+      extension,
+    );
+
+    const presigned: PresignedPost = await createPresignedPost(this.s3, {
+      Bucket: bucket,
+      Key: key,
+      Expires: 60, // seconds
+      Conditions: [
+        ['content-length-range', 1, maxBytes],
+        ['eq', '$Content-Type', mimeType],
+      ],
+      Fields: {
+        'Content-Type': mimeType,
+        success_action_status: '201',
       },
     });
 
@@ -86,52 +147,54 @@ export class MediaService {
 
   private getRequiredEnv(key: string): string {
     const value = this.configService.get<string>(key);
-    if (typeof value !== "string" || value.trim().length === 0) {
+    if (typeof value !== 'string' || value.trim().length === 0) {
       // Misconfiguration is a server-side concern; return 500 to avoid blaming clients.
-      throw new InternalServerErrorException(`Missing required env var: ${key}`);
+      throw new InternalServerErrorException(
+        `Missing required env var: ${key}`,
+      );
     }
     return value.trim();
   }
 
   private normalizeBaseUrl(value: string): string {
     // Remove trailing slashes so `${base}/${key}` is correct.
-    return value.replace(/\/+$/g, "");
+    return value.replace(/\/+$/g, '');
   }
 
   private getMaxUploadBytes(): number {
-    const raw = this.configService.get<string>("MEDIA_MAX_UPLOAD_BYTES");
-    if (typeof raw !== "string" || raw.trim().length === 0) {
+    const raw = this.configService.get<string>('MEDIA_MAX_UPLOAD_BYTES');
+    if (typeof raw !== 'string' || raw.trim().length === 0) {
       // Default: 10MB
       return 10 * 1024 * 1024;
     }
     const parsed = Number(raw);
     if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 1) {
-      throw new BadRequestException(
-        `Invalid MEDIA_MAX_UPLOAD_BYTES: "${raw}"`
-      );
+      throw new BadRequestException(`Invalid MEDIA_MAX_UPLOAD_BYTES: "${raw}"`);
     }
     return parsed;
   }
 
   private getAllowedImageMimeTypes(): ReadonlyArray<string> {
-    const raw = this.configService.get<string>("MEDIA_ALLOWED_IMAGE_MIME_TYPES");
-    if (typeof raw !== "string" || raw.trim().length === 0) {
-      return ["image/jpeg", "image/png", "image/webp"];
+    const raw = this.configService.get<string>(
+      'MEDIA_ALLOWED_IMAGE_MIME_TYPES',
+    );
+    if (typeof raw !== 'string' || raw.trim().length === 0) {
+      return ['image/jpeg', 'image/png', 'image/webp'];
     }
     const list = raw
-      .split(",")
+      .split(',')
       .map((v) => v.trim().toLowerCase())
       .filter((v) => v.length > 0);
     if (list.length === 0) {
-      return ["image/jpeg", "image/png", "image/webp"];
+      return ['image/jpeg', 'image/png', 'image/webp'];
     }
     return list;
   }
 
   private extensionForMimeType(mimeType: string): string {
-    if (mimeType === "image/jpeg") return "jpg";
-    if (mimeType === "image/png") return "png";
-    if (mimeType === "image/webp") return "webp";
+    if (mimeType === 'image/jpeg') return 'jpg';
+    if (mimeType === 'image/png') return 'png';
+    if (mimeType === 'image/webp') return 'webp';
     // Should be unreachable due to allowlist validation.
     throw new BadRequestException(`Unsupported image type "${mimeType}".`);
   }
@@ -139,18 +202,133 @@ export class MediaService {
   private buildObjectKey(
     purpose: MediaUploadPurposeValue,
     userId: string,
-    extension: string
+    extension: string,
   ): string {
     const safeUserId = userId.trim();
     if (safeUserId.length === 0) {
-      throw new BadRequestException("Invalid user id for upload key.");
+      throw new BadRequestException('Invalid user id for upload key.');
     }
 
     const uuid = crypto.randomUUID();
     const prefix =
-      purpose === "HACKATHON_BANNER" ? "public/hackathon-banners" : "public";
+      purpose === 'HACKATHON_BANNER' ? 'public/hackathon-banners' : 'public';
     return `${prefix}/${encodeURIComponent(safeUserId)}/${uuid}.${extension}`;
   }
+
+  /**
+   * Gets max upload size for documents (default 100MB)
+   */
+  private getMaxDocumentUploadBytes(): number {
+    const raw = this.configService.get<string>(
+      'MEDIA_MAX_DOCUMENT_UPLOAD_BYTES',
+    );
+    if (typeof raw !== 'string' || raw.trim().length === 0) {
+      // Default: 100MB
+      return 100 * 1024 * 1024;
+    }
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 1) {
+      throw new BadRequestException(
+        `Invalid MEDIA_MAX_DOCUMENT_UPLOAD_BYTES: "${raw}"`,
+      );
+    }
+    return parsed;
+  }
+
+  /**
+   * Returns allowed document MIME types
+   */
+  private getAllowedDocumentMimeTypes(): ReadonlyArray<string> {
+    const raw = this.configService.get<string>(
+      'MEDIA_ALLOWED_DOCUMENT_MIME_TYPES',
+    );
+    if (typeof raw !== 'string' || raw.trim().length === 0) {
+      return [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain',
+        'image/jpeg',
+        'image/png',
+      ];
+    }
+    const list = raw
+      .split(',')
+      .map((v) => v.trim().toLowerCase())
+      .filter((v) => v.length > 0);
+    if (list.length === 0) {
+      return [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ];
+    }
+    return list;
+  }
+
+  /**
+   * Determines file extension from MIME type and filename
+   */
+  private extensionForDocumentMimeType(
+    mimeType: string,
+    fileName: string,
+  ): string {
+    // Try to extract from filename first
+    const fileExt = fileName.split('.').pop()?.toLowerCase();
+    if (fileExt && fileExt.length > 0 && fileExt.length <= 5) {
+      return fileExt;
+    }
+
+    // Fallback to MIME type mapping
+    const mimeMap: Record<string, string> = {
+      'application/pdf': 'pdf',
+      'application/msword': 'doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        'docx',
+      'application/vnd.ms-excel': 'xls',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        'xlsx',
+      'application/vnd.ms-powerpoint': 'ppt',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+        'pptx',
+      'text/plain': 'txt',
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+    };
+
+    return mimeMap[mimeType] || 'bin';
+  }
+
+  /**
+   * Builds S3 object key for document uploads
+   */
+  private buildDocumentObjectKey(
+    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT',
+    userId: string,
+    fileName: string,
+    extension: string,
+  ): string {
+    const safeUserId = userId.trim();
+    if (safeUserId.length === 0) {
+      throw new BadRequestException('Invalid user id for upload key.');
+    }
+
+    // Sanitize filename - remove special characters, keep only alphanumeric, dash, underscore
+    const safeFileName = fileName
+      .replace(/\.[^/.]+$/, '') // Remove extension
+      .replace(/[^a-zA-Z0-9-_]/g, '-') // Replace special chars with dash
+      .substring(0, 50); // Limit length
+
+    const uuid = crypto.randomUUID();
+    const prefix =
+      purpose === 'EVENT_ATTACHMENT'
+        ? 'public/event-attachments'
+        : 'public/opportunity-attachments';
+
+    return `${prefix}/${encodeURIComponent(safeUserId)}/${safeFileName}-${uuid}.${extension}`;
+  }
 }
-
-

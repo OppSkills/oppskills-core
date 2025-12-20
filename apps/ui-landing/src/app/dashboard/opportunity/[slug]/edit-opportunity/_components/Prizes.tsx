@@ -2,11 +2,19 @@
 
 import { Button } from "@/components/ui/button";
 import { Plus, Trophy, Edit2, Trash2, AlertTriangle } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { FormData, Prize } from "../page";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PrizesProps {
   formData: FormData;
@@ -14,6 +22,9 @@ interface PrizesProps {
 }
 
 export default function Prizes({ formData, setFormData }: PrizesProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPrize, setEditingPrize] = useState<Prize | null>(null);
+
   const updatePrizes = (updates: Partial<FormData["prizes"]>) => {
     setFormData((prev) => ({
       ...prev,
@@ -25,14 +36,14 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
   };
 
   const handleAddPrize = () => {
-    // Ideally open a modal, but for now let's add a placeholder prize to edit
     const newPrize: Prize = {
       id: crypto.randomUUID(),
-      name: "New Prize",
+      name: "",
       amount: "₹ 0",
-      description: "Description",
+      description: "",
     };
-    updatePrizes({ list: [...formData.prizes.list, newPrize] });
+    setEditingPrize(newPrize);
+    setIsModalOpen(true);
   };
 
   const handleDeletePrize = (id: string) => {
@@ -44,10 +55,31 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
     updatePrizes({ list: [] });
   };
 
-  // Mock edit function - in real app would open dialog
   const handleEditPrize = (id: string) => {
-    console.log("Edit prize", id);
-    // Logic to open edit modal would go here
+    const prize = formData.prizes.list.find((p) => p.id === id);
+    if (prize) {
+      setEditingPrize({ ...prize });
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleSavePrize = () => {
+    if (!editingPrize) return;
+
+    const exists = formData.prizes.list.some((p) => p.id === editingPrize.id);
+    if (exists) {
+      updatePrizes({
+        list: formData.prizes.list.map((p) =>
+          p.id === editingPrize.id ? editingPrize : p
+        ),
+      });
+    } else {
+      updatePrizes({
+        list: [...formData.prizes.list, editingPrize],
+      });
+    }
+    setIsModalOpen(false);
+    setEditingPrize(null);
   };
 
   return (
@@ -187,6 +219,72 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
           </div>
         )}
       </div>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {formData.prizes.list.some((p) => p.id === editingPrize?.id)
+                ? "Edit Prize"
+                : "Add Prize"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="prize-name">Prize Name</Label>
+              <Input
+                id="prize-name"
+                value={editingPrize?.name ?? ""}
+                onChange={(e) =>
+                  setEditingPrize((prev) =>
+                    prev ? { ...prev, name: e.target.value } : null
+                  )
+                }
+                placeholder="e.g. Winner, Runner Up"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="prize-amount">Prize Amount</Label>
+              <Input
+                id="prize-amount"
+                value={editingPrize?.amount ?? ""}
+                onChange={(e) =>
+                  setEditingPrize((prev) =>
+                    prev ? { ...prev, amount: e.target.value } : null
+                  )
+                }
+                placeholder="₹ 0"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="prize-description">Description</Label>
+              <Textarea
+                id="prize-description"
+                value={editingPrize?.description ?? ""}
+                onChange={(e) =>
+                  setEditingPrize((prev) =>
+                    prev ? { ...prev, description: e.target.value } : null
+                  )
+                }
+                placeholder="Enter prize description"
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsModalOpen(false);
+                setEditingPrize(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSavePrize}>Save Prize</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

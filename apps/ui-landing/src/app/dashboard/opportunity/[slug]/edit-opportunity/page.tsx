@@ -96,6 +96,8 @@ export interface Attachment {
   id: string;
   title: string;
   type: string;
+  url?: string;
+  size?: number;
 }
 
 export interface AdditionalInfoData {
@@ -858,19 +860,21 @@ export default function EditOpportunityPage() {
         const payload: UpdateHackathonAdditionalInfoDto = {
           contact: first
             ? {
-                name: first.name,
-                email: first.email,
-                phone: first.phone,
+                name: first.name.trim(),
+                email:
+                  first.email.trim().length > 0
+                    ? first.email.trim()
+                    : undefined,
+                phone: first.phone.trim(),
               }
             : {
                 name: "",
-                email: "",
+                email: undefined,
                 phone: "",
               },
-          // NOTE: Attachments uploads/edits are not supported in this UI yet.
+          // NOTE: Attachments uploads/edits are not fully supported in this UI yet.
           // We intentionally omit `attachments` so the backend preserves existing ones.
-          // TODO: When attachment management is implemented, send attachments intentionally
-          // (replace/clear) with explicit UX to avoid accidental data loss.
+          // TODO: When attachment management/upload is implemented, send attachments intentionally.
         };
         await updateHackathonAdditionalInfo(token, hackathonId, payload);
         savingAdditionalInfoSnapshotRef.current = additionalInfoSnapshot;
