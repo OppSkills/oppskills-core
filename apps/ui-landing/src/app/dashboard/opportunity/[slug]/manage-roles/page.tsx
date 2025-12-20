@@ -1,20 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { useParams } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
 import RoleCard from "./_components/RoleCard";
 import AddRoleModal from "./_components/AddEditRoleModal";
 import EmptyState from "./_components/EmptyState";
 import { cn } from "@/lib/utils";
-import { 
-  getHackathonRoles, 
-  addHackathonRole, 
-  removeHackathonRole,
-  getHackathonBySlug,
-} from "@/lib/api/hackathonApi";
-import type { 
-  HackathonRolesResponse, 
+import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
+import {
+  useHackathonRoles,
+  useAddHackathonRoleMutation,
+  useRemoveHackathonRoleMutation,
+} from "@/hooks/useHackathonRoles";
+import type {
   HackathonRoleUserResponse,
   HackathonUserRoleValue,
 } from "@oppskills/types";
@@ -23,7 +21,11 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 // Helper to format display name
-function formatDisplayName(user: { firstName: string | null; lastName: string | null; email: string }): string {
+function formatDisplayName(user: {
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+}): string {
   if (user.firstName && user.lastName) {
     return `${user.firstName} ${user.lastName}`;
   }
@@ -33,128 +35,112 @@ function formatDisplayName(user: { firstName: string | null; lastName: string | 
   return user.email.split("@")[0];
 }
 
+// Type guard to safely extract hackathon with id
+function isHackathonWithId(value: unknown): value is { id: string } {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  return "id" in value && typeof (value as { id: unknown }).id === "string";
+}
+
+// Helper to extract error message safely
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "An unexpected error occurred";
+}
+
 export default function ManageRolesPage() {
   const params = useParams();
-  const slug = params.slug as string;
-  const { getToken } = useAuth();
+  const slug = typeof params.slug === "string" ? params.slug : null;
 
   const [activeTab, setActiveTab] = useState<"Manager" | "Evaluator">("Manager");
-  const [hackathonId, setHackathonId] = useState<string | null>(null);
-  const [roles, setRoles] = useState<HackathonRolesResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAddingRole, setIsAddingRole] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Fetch hackathon ID from slug first
-  const fetchHackathonId = useCallback(async () => {
-    try {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+  // Query for hackathon data (reusing existing hook)
+  const hackathonQuery = useHackathonBySlug(slug);
 
-      const hackathon = await getHackathonBySlug(token, slug) as { id: string };
-      setHackathonId(hackathon.id);
-      return hackathon.id;
-    } catch (err) {
-      console.error("Error fetching hackathon:", err);
-      throw err;
-    }
-  }, [getToken, slug]);
+  // Derive hackathonId safely using type guard
+  const hackathonId = isHackathonWithId(hackathonQuery.data)
+    ? hackathonQuery.data.id
+    : null;
 
-  // Fetch roles
-  const fetchRoles = useCallback(async (id?: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+  // Query for roles
+  const rolesQuery = useHackathonRoles(hackathonId);
 
-      const hackId = id || hackathonId;
-      if (!hackId) {
-        // Need to fetch hackathon ID first
-        const fetchedId = await fetchHackathonId();
-        const rolesData = await getHackathonRoles(token, fetchedId);
-        setRoles(rolesData);
-      } else {
-        const rolesData = await getHackathonRoles(token, hackId);
-        setRoles(rolesData);
-      }
-    } catch (err) {
-      console.error("Error fetching roles:", err);
-      setError(err instanceof Error ? err.message : "Failed to load roles");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [getToken, hackathonId, fetchHackathonId]);
-
-  useEffect(() => {
-    fetchRoles();
-  }, [fetchRoles]);
+  // Mutations for add/remove roles
+  const addMutation = useAddHackathonRoleMutation(hackathonId);
+  const removeMutation = useRemoveHackathonRoleMutation(hackathonId);
 
   const handleAddClick = () => {
     setIsModalOpen(true);
   };
 
   const handleAddRole = async (email: string) => {
-    if (!hackathonId) return;
-    
-    setIsAddingRole(true);
-    try {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+    const role: HackathonUserRoleValue =
+      activeTab === "Manager" ? "MANAGER" : "EVALUATOR";
 
-      const role: HackathonUserRoleValue = activeTab === "Manager" ? "MANAGER" : "EVALUATOR";
-      const result = await addHackathonRole(token, hackathonId, { email, role });
-      
+    try {
+      const result = await addMutation.mutateAsync({ email, role });
+
       if (result.alreadyExists) {
         toast.info(result.message);
       } else {
         toast.success(result.message);
       }
-      
-      // Refresh roles list
-      await fetchRoles();
     } catch (err) {
-      console.error("Error adding role:", err);
-      const message = err instanceof Error ? err.message : "Failed to add role";
+      const message = getErrorMessage(err);
       toast.error(message);
       throw err;
-    } finally {
-      setIsAddingRole(false);
     }
   };
 
   const handleDeleteClick = async (user: HackathonRoleUserResponse) => {
-    if (!hackathonId) return;
-    
     const displayName = formatDisplayName(user);
-    if (!confirm(`Are you sure you want to remove ${displayName} as a ${activeTab.toLowerCase()}?`)) {
+    if (
+      !confirm(
+        `Are you sure you want to remove ${displayName} as a ${activeTab.toLowerCase()}?`
+      )
+    ) {
       return;
     }
 
-    try {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+    const role: HackathonUserRoleValue =
+      activeTab === "Manager" ? "MANAGER" : "EVALUATOR";
 
-      const role: HackathonUserRoleValue = activeTab === "Manager" ? "MANAGER" : "EVALUATOR";
-      const result = await removeHackathonRole(token, hackathonId, { email: user.email, role });
-      
+    try {
+      const result = await removeMutation.mutateAsync({
+        email: user.email,
+        role,
+      });
       toast.success(result.message);
-      
-      // Refresh roles list
-      await fetchRoles();
     } catch (err) {
-      console.error("Error removing role:", err);
-      const message = err instanceof Error ? err.message : "Failed to remove role";
+      const message = getErrorMessage(err);
       toast.error(message);
     }
   };
 
-  const currentList = activeTab === "Manager" 
-    ? (roles?.managers ?? []) 
-    : (roles?.evaluators ?? []);
+  const handleRetry = () => {
+    if (hackathonQuery.error) {
+      hackathonQuery.refetch();
+    }
+    if (rolesQuery.error) {
+      rolesQuery.refetch();
+    }
+  };
+
+  // Derive roles data
+  const roles = rolesQuery.data;
+
+  const currentList =
+    activeTab === "Manager" ? (roles?.managers ?? []) : (roles?.evaluators ?? []);
+
+  // Loading state
+  const isLoading = hackathonQuery.isLoading || rolesQuery.isLoading;
+
+  // Error state
+  const queryError = hackathonQuery.error ?? rolesQuery.error;
 
   if (isLoading) {
     return (
@@ -166,12 +152,12 @@ export default function ManageRolesPage() {
     );
   }
 
-  if (error) {
+  if (queryError) {
     return (
       <div className="flex w-full justify-center bg-surface min-h-[calc(100vh-100px)]">
         <div className="w-full max-w-[1200px] p-6 md:p-10 rounded-[20px] bg-background flex flex-col items-center justify-center gap-4">
-          <p className="text-red-500">{error}</p>
-          <Button onClick={() => fetchRoles()} variant="outline">
+          <p className="text-red-500">{getErrorMessage(queryError)}</p>
+          <Button onClick={handleRetry} variant="outline">
             <RefreshCw className="w-4 h-4 mr-2" />
             Retry
           </Button>
@@ -183,11 +169,11 @@ export default function ManageRolesPage() {
   return (
     <div className="flex w-full justify-center bg-surface min-h-[calc(100vh-100px)]">
       <div className="w-full max-w-[1200px] p-6 md:p-10 rounded-[20px] bg-background flex flex-col gap-8">
-
         {/* Header */}
         <div>
           <h1 className="text-muted-foreground text-base font-normal">
-            Manage user roles, set permissions, and control access for a secure system.
+            Manage user roles, set permissions, and control access for a secure
+            system.
           </h1>
         </div>
 
@@ -245,15 +231,13 @@ export default function ManageRolesPage() {
                   onClick={handleAddClick}
                   className="flex items-center gap-2 px-6 py-2 rounded-full border border-border text-[#A020F0] font-medium hover:bg-[#F3E8FF] transition-colors"
                 >
-                  <span className="text-xl leading-none mb-0.5">+</span> Add {activeTab}
+                  <span className="text-xl leading-none mb-0.5">+</span> Add{" "}
+                  {activeTab}
                 </button>
               </div>
             </>
           ) : (
-            <EmptyState
-              roleName={activeTab}
-              onAdd={handleAddClick}
-            />
+            <EmptyState roleName={activeTab} onAdd={handleAddClick} />
           )}
         </div>
 
@@ -262,7 +246,7 @@ export default function ManageRolesPage() {
           onOpenChange={setIsModalOpen}
           roleType={activeTab}
           onAdd={handleAddRole}
-          isLoading={isAddingRole}
+          isLoading={addMutation.isPending}
         />
       </div>
     </div>
