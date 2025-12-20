@@ -149,6 +149,30 @@ export class HackathonController {
     return this.hackathonService.listHackathons({ festivalId });
   }
 
+  /**
+   * List hackathons visible in the dashboard for the authenticated user.
+   * - Includes hackathons the user OWNS
+   * - Includes hackathons where the user is a MANAGER
+   *
+   * Note: Evaluators are intentionally excluded (read-only future feature).
+   */
+  @Get('my')
+  @ApiOperation({
+    summary: 'List my hackathons (owner or manager)',
+    description:
+      'Retrieve hackathons where the authenticated user is the owner or a manager.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of hackathons retrieved successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
+  async listMyHackathons(@Req() req: Request) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+    return this.hackathonService.listMyHackathons(userId);
+  }
+
   @Get('by-slug/:slug')
   @ApiOperation({
     summary: 'Get hackathon by slug',

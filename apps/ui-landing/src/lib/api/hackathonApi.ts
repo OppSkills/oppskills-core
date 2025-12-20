@@ -22,6 +22,18 @@ export async function getHackathons(token: string): Promise<unknown> {
 }
 
 /**
+ * Fetches hackathons visible on the dashboard for the current user:
+ * - Owned hackathons
+ * - Hackathons where the user is a MANAGER
+ *
+ * Note: Evaluator-only hackathons are intentionally excluded for now.
+ */
+export async function getMyHackathons(token: string): Promise<unknown> {
+  const res = await API.get("/my", { headers: buildAuthHeaders(token) });
+  return res.data as unknown;
+}
+
+/**
  * Fetches a single hackathon by id.
  */
 export async function getHackathonById(

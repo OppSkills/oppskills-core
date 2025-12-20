@@ -223,6 +223,63 @@ export class HackathonService {
   }
 
   /**
+   * List hackathons for the dashboard for a given user.
+   *
+   * Visibility rules:
+   * - Owner can see their hackathons
+   * - Managers can see hackathons they manage
+   * - Evaluators are intentionally excluded for now
+   *
+   * This method returns a lightweight shape suitable for dashboard listing.
+   */
+  async listMyHackathons(userId: string) {
+    const safeUserId = userId.trim();
+    if (safeUserId.length === 0) {
+      throw new BadRequestException('userId is required.');
+    }
+
+    return prisma.hackathonEntity.findMany({
+      where: {
+        OR: [
+          { ownerId: safeUserId },
+          {
+            userRoles: {
+              some: {
+                userId: safeUserId,
+                role: 'MANAGER',
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        status: true,
+        mode: true,
+        startDate: true,
+        endDate: true,
+        registrationDeadline: true,
+        bannerImageUrl: true,
+        festivalId: true,
+        ownerId: true,
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
    * Get a single hackathon by ID.
    * Includes all relations: owner, festival, rounds, questions, attachments, etc.
    */

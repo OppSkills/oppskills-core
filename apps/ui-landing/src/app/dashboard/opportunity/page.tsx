@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { getHackathons } from "@/lib/api/hackathonApi";
+import { getMyHackathons } from "@/lib/api/hackathonApi";
 import {
   createColumnHelper,
   flexRender,
@@ -302,23 +302,12 @@ export default function OpportunityPage() {
           return;
         }
 
-        const res = await getHackathons(token);
+        const res = await getMyHackathons(token);
         const rows = extractHackathonRows(res);
 
-        /**
-         * Dashboard default: show only hackathons owned by the current user.
-         * If you want "all hackathons", remove this filter.
-         */
-        const filtered =
-          typeof userId === "string"
-            ? rows.filter(
-                (r) => typeof r.ownerId === "string" && r.ownerId === userId
-              )
-            : rows;
-
         if (!cancelled) {
-          setAllRows(filtered);
-          setTableData(filtered);
+          setAllRows(rows);
+          setTableData(rows);
         }
       } catch (err: unknown) {
         toast.error("Failed to load hackathons.");
