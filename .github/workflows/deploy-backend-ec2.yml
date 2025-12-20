@@ -77,15 +77,105 @@ jobs:
           echo "image=${IMAGE}" >> "${GITHUB_OUTPUT}"
           echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
 
-      - name: Build and push Docker image
+      - name: Build Docker image (without pushing)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/backend/Dockerfile.prod
-          push: true
+          push: false
+          load: true
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Test Docker image locally
+        env:
+          ECR_IMAGE: ${{ steps.meta.outputs.image }}
+          CONTAINER_PORT: ${{ env.CONTAINER_PORT }}
+        run: |
+          set -euo pipefail
+
+          echo "Testing Docker image before pushing to ECR..."
+
+          # Create a minimal env file for testing (no real secrets needed)
+          cat > /tmp/test.env <<EOF
+          NODE_ENV=production
+          PORT=${CONTAINER_PORT}
+          DATABASE_URL=postgresql://test:test@localhost:5432/test?schema=oppskills
+          REDIS_URL=redis://localhost:6379
+          CLERK_SECRET_KEY=sk_test_dummy
+          CLERK_WEBHOOK_SECRET=whsec_dummy
+          MEDIA_S3_BUCKET=test-bucket
+          MEDIA_CLOUDFRONT_BASE_URL=https://test.cloudfront.net
+          MEDIA_MAX_UPLOAD_BYTES=10485760
+          EOF
+
+          # Run container in test mode (skip secrets loader and migrations)
+          docker run -d \
+            --name test-backend \
+            -p ${CONTAINER_PORT}:${CONTAINER_PORT} \
+            --env-file /tmp/test.env \
+            -e RUN_SECRETS_LOADER=false \
+            -e RUN_MIGRATIONS=false \
+            "${ECR_IMAGE}"
+
+          # Wait for container to be ready (max 30 seconds)
+          echo "Waiting for container to start..."
+          for i in {1..30}; do
+            if docker ps | grep -q test-backend; then
+              echo "✓ Container is running"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "✗ Container failed to start"
+              docker logs test-backend
+              docker rm -f test-backend 2>/dev/null || true
+              exit 1
+            fi
+            sleep 1
+          done
+
+          # Wait for health endpoint (max 45 seconds)
+          echo "Testing health endpoint..."
+          HEALTH_OK=false
+          for i in {1..45}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${CONTAINER_PORT}/health || echo "000")
+            if [ "${HTTP_CODE}" = "200" ]; then
+              echo "✓ Health check passed!"
+              HEALTH_RESPONSE=$(curl -s http://localhost:${CONTAINER_PORT}/health)
+              echo "Response: ${HEALTH_RESPONSE}"
+              HEALTH_OK=true
+              break
+            fi
+            if [ $i -eq 45 ]; then
+              echo "✗ Health check failed after 45 seconds (HTTP ${HTTP_CODE})"
+              echo "Container logs:"
+              docker logs test-backend
+              docker rm -f test-backend
+              exit 1
+            fi
+            echo "Waiting for health endpoint... ($i/45) [HTTP ${HTTP_CODE}]"
+            sleep 1
+          done
+
+          # Cleanup
+          docker rm -f test-backend
+          rm -f /tmp/test.env
+
+          if [ "${HEALTH_OK}" = "true" ]; then
+            echo "✓ Docker image is healthy and ready to push!"
+          else
+            echo "✗ Docker image failed health check"
+            exit 1
+          fi
+
+      - name: Push Docker image to ECR
+        run: |
+          set -euo pipefail
+          echo "Health check passed! Pushing image to ECR..."
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          echo "✓ Image pushed successfully!"
 
   deploy:
     runs-on: ubuntu-latest
@@ -194,3 +284,63 @@ jobs:
           REMOTE
 
           echo "SSH deploy completed."
+
+      - name: Health check
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          EC2_SSH_PORT: ${{ secrets.EC2_SSH_PORT }}
+          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
+          CONTAINER_PORT: ${{ env.CONTAINER_PORT }}
+        run: |
+          set -euo pipefail
+
+          SSH_PORT="${EC2_SSH_PORT:-22}"
+
+          echo "Waiting for backend to be healthy..."
+
+          ssh -p "${SSH_PORT}" "${EC2_USER}@${EC2_HOST}" \
+            "CONTAINER_NAME='${CONTAINER_NAME}' \
+             CONTAINER_PORT='${CONTAINER_PORT}' \
+             bash -s" <<'HEALTH_CHECK'
+          set -euo pipefail
+
+          # Wait for container to be running (max 30 seconds)
+          echo "Checking if container is running..."
+          for i in {1..30}; do
+            if docker ps --format "{{.Names}}" | grep -qx "${CONTAINER_NAME}"; then
+              echo "Container is running"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "ERROR: Container failed to start within 30 seconds"
+              docker logs --tail 50 "${CONTAINER_NAME}"
+              exit 1
+            fi
+            echo "Waiting for container to start... ($i/30)"
+            sleep 1
+          done
+
+          # Wait for health endpoint to respond (max 60 seconds)
+          echo "Checking health endpoint..."
+          for i in {1..60}; do
+            if curl -f -s -o /dev/null -w "%{http_code}" "http://localhost:${CONTAINER_PORT}/health" | grep -q "200"; then
+              echo "✓ Health check passed!"
+              curl -s "http://localhost:${CONTAINER_PORT}/health"
+              exit 0
+            fi
+            if [ $i -eq 60 ]; then
+              echo "ERROR: Health check failed after 60 seconds"
+              echo "Container logs:"
+              docker logs --tail 100 "${CONTAINER_NAME}"
+              echo "Container status:"
+              docker ps -a | grep "${CONTAINER_NAME}"
+              exit 1
+            fi
+            echo "Waiting for backend to be healthy... ($i/60)"
+            sleep 1
+          done
+          HEALTH_CHECK
+
+          echo "✓ Deployment successful and backend is healthy!"
