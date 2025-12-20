@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { MoreVertical } from "lucide-react";
+import ActionDropdown from "./ActionDropdown";
 
 export interface FestivalItem {
   id: string;
@@ -79,7 +79,7 @@ export default function FestivalsTable({
                 <div className="flex flex-col gap-1">
                   <span className="font-semibold text-base">{item.name}</span>
                   {item.description && (
-                    <span className="text-muted-foreground text-xs line-clamp-1 max-w-[250px]">
+                    <span className="text-muted-foreground text-xs">
                       {item.description}
                     </span>
                   )}
@@ -154,14 +154,10 @@ export default function FestivalsTable({
                 </div>
               </TableCell>
               <TableCell className="text-right pr-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full h-8 w-8 hover:bg-muted"
-                  onClick={() => onEdit?.(item.id)}
-                >
-                  <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                </Button>
+                <ActionDropdown
+                  onEdit={() => onEdit?.(item.id)}
+                  className="border-none hover:bg-muted"
+                />
               </TableCell>
             </TableRow>
           ))}
