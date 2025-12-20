@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Patch,
   Param,
@@ -10,6 +11,7 @@ import {
   Logger,
   Query,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,8 +19,10 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { UserAccountsService } from './user-accounts.service';
+import { CreateOnboardingDto } from '@oppskills/types';
 import type { ClerkWebhookRequestDto } from '@oppskills/types';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 
@@ -46,6 +50,88 @@ export class UserAccountsController {
       svixTimestamp,
       svixSignature,
     );
+  }
+
+  /**
+   * Get current user profile with onboarding status.
+   */
+  @Get('/me')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({
+    summary: 'Get current user profile',
+    description:
+      'Returns the current user profile including onboarding status and profile data.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile with onboarding data',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        email: { type: 'string' },
+        imageUrl: { type: 'string', nullable: true },
+        firstName: { type: 'string', nullable: true },
+        lastName: { type: 'string', nullable: true },
+        accessLevel: { type: 'string' },
+        onboarded: { type: 'boolean' },
+        onboardingProfile: {
+          type: 'object',
+          nullable: true,
+        },
+        createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getMe(@Request() req: { user: { id: string } }) {
+    return this.userAccountsService.getMe(req.user.id);
+  }
+
+  /**
+   * Submit or update onboarding profile.
+   */
+  @Put('/onboarding')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({
+    summary: 'Submit onboarding profile',
+    description:
+      'Create or update user onboarding profile. Sets user as onboarded after successful submission.',
+  })
+  @ApiBody({
+    description: 'Onboarding profile data',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Onboarding profile saved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        onboardingProfile: { type: 'object' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid onboarding data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async submitOnboarding(
+    @Request() req: { user: { id: string } },
+    @Body() onboardingData: CreateOnboardingDto,
+  ) {
+    return this.userAccountsService.submitOnboarding(req.user.id, onboardingData);
   }
 
   /**

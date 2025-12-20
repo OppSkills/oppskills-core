@@ -8,7 +8,7 @@ import {
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
-import type { CreateTeamDto } from "@oppskills/types";
+import type { CreateTeamDto } from "@oppskills/types/frontend";
 
 /**
  * Ensures we have a token for authenticated API calls.

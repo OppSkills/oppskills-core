@@ -1,4 +1,8 @@
 import { buildAuthHeaders, createApiClient } from "./apiClient";
+import type {
+  MeResponseDto,
+  CreateOnboardingDto,
+} from "@oppskills/types/frontend";
 
 const API = createApiClient("/user-accounts");
 
@@ -36,5 +40,40 @@ export async function searchUsers(
   } catch (error) {
     console.error("Error searching users:", error);
     throw new Error("Failed to search users. Please try again.");
+  }
+}
+
+/**
+ * Get current user profile with onboarding status.
+ */
+export async function getMe(token: string): Promise<MeResponseDto> {
+  try {
+    const res = await API.get("/me", {
+      headers: buildAuthHeaders(token),
+    });
+
+    return res.data as MeResponseDto;
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    throw new Error("Failed to fetch user profile. Please try again.");
+  }
+}
+
+/**
+ * Submit or update onboarding profile.
+ */
+export async function submitOnboarding(
+  token: string,
+  data: CreateOnboardingDto
+): Promise<{ success: boolean; message: string; onboardingProfile: unknown }> {
+  try {
+    const res = await API.put("/onboarding", data, {
+      headers: buildAuthHeaders(token),
+    });
+
+    return res.data;
+  } catch (error) {
+    console.error("Error submitting onboarding:", error);
+    throw new Error("Failed to submit onboarding. Please try again.");
   }
 }

@@ -1,6 +1,21 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides quick reference guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Comprehensive Documentation
+
+For detailed documentation, see the `docs/` folder:
+
+- **[Documentation Index](./docs/README.md)** - Start here for navigation
+- **[Architecture Overview](./docs/architecture.md)** - System design, tech stack, and data flow
+- **[Development Guide](./docs/development.md)** - Local setup, commands, and workflows
+- **[Database Schema](./docs/database.md)** - Complete schema reference with all entities and relationships
+- **[Backend Documentation](./docs/backend.md)** - NestJS modules, services, and business logic
+- **[Frontend Documentation](./docs/frontend.md)** - Next.js app structure, components, and hooks
+- **[API Reference](./docs/api.md)** - All endpoints with request/response examples
+- **[Authentication & Authorization](./docs/authentication.md)** - Clerk integration and security
+- **[Features & Business Logic](./docs/features.md)** - Key workflows and implementation patterns
+- **[Deployment Guide](./docs/deployment.md)** - Infrastructure, CI/CD, and production deployment
 
 ## Project Overview
 
@@ -264,3 +279,19 @@ Frontend runs on http://localhost:3000
 - Clerk webhook needs proper signature verification in production
 - Auth bypass only works in development/test environments
 - Custom PostgreSQL schema name is "oppskills" (not "public")
+
+---
+
+## Need More Information?
+
+This file provides a quick reference. For comprehensive documentation on any topic, see the **[docs/](./docs/)** folder:
+
+- Architecture & Design → [docs/architecture.md](./docs/architecture.md)
+- Development Setup → [docs/development.md](./docs/development.md)
+- Database Schema → [docs/database.md](./docs/database.md)
+- Backend Implementation → [docs/backend.md](./docs/backend.md)
+- Frontend Implementation → [docs/frontend.md](./docs/frontend.md)
+- API Endpoints → [docs/api.md](./docs/api.md)
+- Authentication → [docs/authentication.md](./docs/authentication.md)
+- Features & Workflows → [docs/features.md](./docs/features.md)
+- Deployment → [docs/deployment.md](./docs/deployment.md)

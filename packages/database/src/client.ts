@@ -1,11 +1,19 @@
-export * from '@prisma/client';
+export * from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-export const prisma =
-  globalForPrisma.prisma || new PrismaClient();   
+/**
+ * Prisma singleton for Node.js (prevents exhausting DB connections in dev with hot reload).
+ * Avoids `as unknown as ...` per repo TypeScript rules.
+ */
+const globalForPrisma = globalThis as typeof globalThis & {
+  prisma?: PrismaClient;
+};
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
 
 
 

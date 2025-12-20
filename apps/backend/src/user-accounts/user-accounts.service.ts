@@ -6,6 +6,8 @@ import * as crypto from 'crypto';
 import {
   ClerkWebhookRequestDto,
   ClerkWebhookEventType,
+  CreateOnboardingDto,
+  UserCategoryValue,
 } from '@oppskills/types';
 
 @Injectable()
@@ -132,6 +134,187 @@ export class UserAccountsService {
     });
 
     return users;
+  }
+
+  /**
+   * Get current user profile with onboarding status.
+   */
+  async getMe(userId: string) {
+    const user = await prisma.userEntity.findUnique({
+      where: { id: userId },
+      include: {
+        onboardingProfile: true,
+      },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    return user;
+  }
+
+  /**
+   * Submit or update onboarding profile.
+   * Validates conditional fields and upserts the profile.
+   */
+  async submitOnboarding(userId: string, data: CreateOnboardingDto) {
+    // Validate conditional requirements
+    this.validateOnboardingData(data);
+
+    try {
+      // Use transaction to ensure atomic update
+      const result = await prisma.$transaction(async (tx) => {
+        // Upsert the onboarding profile
+        const onboardingProfile = await tx.userOnboardingProfileEntity.upsert({
+          where: { userId },
+          update: {
+            gender: data.gender,
+            userCategory: data.userCategory,
+            schoolName: data.schoolName || null,
+            schoolClass: data.schoolClass || null,
+            schoolAddress: data.schoolAddress || null,
+            collegeId: data.collegeId || null,
+            collegeCurrentYear: data.collegeCurrentYear || null,
+            collegePassoutYear: data.collegePassoutYear || null,
+            collegeSkipped: data.collegeSkipped || false,
+            companyName: data.companyName || null,
+            jobTitle: data.jobTitle || null,
+            locationCity: data.locationCity,
+            locationState: data.locationState,
+            locationCountry: data.locationCountry,
+            interests: data.interests || [],
+            skills: data.skills || [],
+            experienceLevel: data.experienceLevel || null,
+            teamPreference: data.teamPreference || null,
+          },
+          create: {
+            userId,
+            gender: data.gender,
+            userCategory: data.userCategory,
+            schoolName: data.schoolName || null,
+            schoolClass: data.schoolClass || null,
+            schoolAddress: data.schoolAddress || null,
+            collegeId: data.collegeId || null,
+            collegeCurrentYear: data.collegeCurrentYear || null,
+            collegePassoutYear: data.collegePassoutYear || null,
+            collegeSkipped: data.collegeSkipped || false,
+            companyName: data.companyName || null,
+            jobTitle: data.jobTitle || null,
+            locationCity: data.locationCity,
+            locationState: data.locationState,
+            locationCountry: data.locationCountry,
+            interests: data.interests || [],
+            skills: data.skills || [],
+            experienceLevel: data.experienceLevel || null,
+            teamPreference: data.teamPreference || null,
+          },
+        });
+
+        // Set user as onboarded
+        await tx.userEntity.update({
+          where: { id: userId },
+          data: { onboarded: true },
+        });
+
+        return onboardingProfile;
+      });
+
+      return {
+        success: true,
+        message: 'Onboarding completed successfully',
+        onboardingProfile: result,
+      };
+    } catch (error) {
+      this.logger.error(`Error submitting onboarding for user ${userId}:`, error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Failed to save onboarding profile',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Validates onboarding data based on user category and common required fields.
+   */
+  private validateOnboardingData(data: CreateOnboardingDto) {
+    // 1. Common required fields for everyone
+    if (!data.locationCity || data.locationCity.trim().length === 0) {
+      throw new HttpException("City is required", HttpStatus.BAD_REQUEST);
+    }
+    if (!data.locationState || data.locationState.trim().length === 0) {
+      throw new HttpException("State is required", HttpStatus.BAD_REQUEST);
+    }
+    if (!data.locationCountry || data.locationCountry.trim().length === 0) {
+      throw new HttpException("Country is required", HttpStatus.BAD_REQUEST);
+    }
+
+    // 2. Interests and Skills (at least 1 non-empty item each)
+    if (!data.interests || !Array.isArray(data.interests) || data.interests.length === 0) {
+      throw new HttpException("At least one interest is required", HttpStatus.BAD_REQUEST);
+    }
+    const sanitizedInterests = data.interests.filter(i => typeof i === "string" && i.trim().length > 0);
+    if (sanitizedInterests.length === 0) {
+      throw new HttpException("Interests cannot be empty strings", HttpStatus.BAD_REQUEST);
+    }
+
+    if (!data.skills || !Array.isArray(data.skills) || data.skills.length === 0) {
+      throw new HttpException("At least one skill is required", HttpStatus.BAD_REQUEST);
+    }
+    const sanitizedSkills = data.skills.filter(s => typeof s === "string" && s.trim().length > 0);
+    if (sanitizedSkills.length === 0) {
+      throw new HttpException("Skills cannot be empty strings", HttpStatus.BAD_REQUEST);
+    }
+
+    // 3. Category specific rules
+    switch (data.userCategory) {
+      case UserCategoryValue.SCHOOL_STUDENT:
+        if (!data.schoolName || data.schoolName.trim().length === 0) {
+          throw new HttpException("School name is required for school students", HttpStatus.BAD_REQUEST);
+        }
+        if (!data.schoolClass || data.schoolClass.trim().length === 0) {
+          throw new HttpException("School class is required for school students", HttpStatus.BAD_REQUEST);
+        }
+        if (!data.schoolAddress || data.schoolAddress.trim().length === 0) {
+          throw new HttpException("School address is required for school students", HttpStatus.BAD_REQUEST);
+        }
+        break;
+
+      case UserCategoryValue.COLLEGE_STUDENT:
+      case UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT:
+        if (!data.collegeSkipped && (!data.collegeId || data.collegeId.trim().length === 0)) {
+          throw new HttpException("College is required unless skipped", HttpStatus.BAD_REQUEST);
+        }
+        if (!data.collegeCurrentYear || data.collegeCurrentYear.trim().length === 0) {
+          throw new HttpException("Current year of study is required", HttpStatus.BAD_REQUEST);
+        }
+        break;
+
+      case UserCategoryValue.FRESHER:
+        // Freshers cannot skip college details
+        if (!data.collegeId || data.collegeId.trim().length === 0) {
+          throw new HttpException("College selection is required for freshers", HttpStatus.BAD_REQUEST);
+        }
+        if (!data.collegePassoutYear || typeof data.collegePassoutYear !== 'number' || data.collegePassoutYear < 1900 || data.collegePassoutYear > 2100) {
+          throw new HttpException("Valid college passout year is required for freshers", HttpStatus.BAD_REQUEST);
+        }
+        break;
+
+      case UserCategoryValue.WORKING_PROFESSIONAL:
+        // Professionals can skip college, but if not skipped, they need collegeId and passout year
+        if (!data.collegeSkipped) {
+          if (!data.collegeId || data.collegeId.trim().length === 0) {
+            throw new HttpException("College is required unless you choose to skip education details", HttpStatus.BAD_REQUEST);
+          }
+          if (!data.collegePassoutYear || typeof data.collegePassoutYear !== 'number' || data.collegePassoutYear < 1900 || data.collegePassoutYear > 2100) {
+            throw new HttpException("Valid college passout year is required if education is provided", HttpStatus.BAD_REQUEST);
+          }
+        }
+        break;
+    }
   }
 
   private async verifyWebhookSignature(

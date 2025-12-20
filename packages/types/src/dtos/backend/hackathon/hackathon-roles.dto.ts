@@ -12,11 +12,11 @@ export type HackathonUserRoleValue = (typeof HackathonUserRoleValues)[number];
 export class AddHackathonRoleDto {
   @IsNotEmpty()
   @IsEmail()
-  email!: string;
+  email: string;
 
   @IsNotEmpty()
   @IsEnum(HackathonUserRoleValues)
-  role!: HackathonUserRoleValue;
+  role: HackathonUserRoleValue;
 }
 
 /**
@@ -25,11 +25,11 @@ export class AddHackathonRoleDto {
 export class RemoveHackathonRoleDto {
   @IsNotEmpty()
   @IsEmail()
-  email!: string;
+  email: string;
 
   @IsNotEmpty()
   @IsEnum(HackathonUserRoleValues)
-  role!: HackathonUserRoleValue;
+  role: HackathonUserRoleValue;
 }
 
 /**

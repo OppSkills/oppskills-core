@@ -9,7 +9,7 @@ import type {
   HackathonRolesResponse,
   AddHackathonRoleDto,
   RemoveHackathonRoleDto,
-} from "@oppskills/types";
+} from "@oppskills/types/frontend";
 
 /**
  * Ensures we have a token for authenticated API calls.
