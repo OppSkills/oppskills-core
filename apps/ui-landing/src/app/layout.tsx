@@ -6,7 +6,8 @@ import ClientProviders from "../../src/client-providers";
 
 import { ClerkProvider } from "@clerk/nextjs";
 import LayoutProvider from "@/components/layout-provider";
-import { NuqsAdapter } from 'nuqs/adapters/next/app'
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Suspense } from "react";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -35,18 +36,20 @@ export default function RootLayout({
       <html lang="en" suppressHydrationWarning>
         <head />
         <body className={`${inter.variable} ${poppins.variable} antialiased`}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <ClientProviders>
-              <NuqsAdapter>
-                <LayoutProvider>{children}</LayoutProvider>
-              </NuqsAdapter>
-            </ClientProviders>
-          </ThemeProvider>
+          <Suspense>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <ClientProviders>
+                <NuqsAdapter>
+                  <LayoutProvider>{children}</LayoutProvider>
+                </NuqsAdapter>
+              </ClientProviders>
+            </ThemeProvider>
+          </Suspense>
         </body>
       </html>
     </ClerkProvider>
