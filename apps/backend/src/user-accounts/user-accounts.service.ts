@@ -252,21 +252,31 @@ export class UserAccountsService {
       throw new HttpException("Country is required", HttpStatus.BAD_REQUEST);
     }
 
-    // 2. Interests and Skills (at least 1 non-empty item each)
-    if (!data.interests || !Array.isArray(data.interests) || data.interests.length === 0) {
-      throw new HttpException("At least one interest is required", HttpStatus.BAD_REQUEST);
-    }
-    const sanitizedInterests = data.interests.filter(i => typeof i === "string" && i.trim().length > 0);
-    if (sanitizedInterests.length === 0) {
-      throw new HttpException("Interests cannot be empty strings", HttpStatus.BAD_REQUEST);
+    // 2. Interests and Skills (optional - sanitize if provided)
+    // If interests are provided, ensure they are valid strings and sanitize
+    if (data.interests !== undefined && data.interests !== null) {
+      if (!Array.isArray(data.interests)) {
+        throw new HttpException("Interests must be an array", HttpStatus.BAD_REQUEST);
+      }
+      // Sanitize: filter out empty strings and non-string values
+      const sanitizedInterests = data.interests
+        .filter((i) => typeof i === "string" && i.trim().length > 0)
+        .map((i) => (i as string).trim());
+      // Replace with sanitized array (can be empty)
+      data.interests = sanitizedInterests;
     }
 
-    if (!data.skills || !Array.isArray(data.skills) || data.skills.length === 0) {
-      throw new HttpException("At least one skill is required", HttpStatus.BAD_REQUEST);
-    }
-    const sanitizedSkills = data.skills.filter(s => typeof s === "string" && s.trim().length > 0);
-    if (sanitizedSkills.length === 0) {
-      throw new HttpException("Skills cannot be empty strings", HttpStatus.BAD_REQUEST);
+    // If skills are provided, ensure they are valid strings and sanitize
+    if (data.skills !== undefined && data.skills !== null) {
+      if (!Array.isArray(data.skills)) {
+        throw new HttpException("Skills must be an array", HttpStatus.BAD_REQUEST);
+      }
+      // Sanitize: filter out empty strings and non-string values
+      const sanitizedSkills = data.skills
+        .filter((s) => typeof s === "string" && s.trim().length > 0)
+        .map((s) => (s as string).trim());
+      // Replace with sanitized array (can be empty)
+      data.skills = sanitizedSkills;
     }
 
     // 3. Category specific rules
