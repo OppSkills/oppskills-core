@@ -102,6 +102,38 @@ export class UserAccountsService {
     }
   }
 
+  /**
+   * Search users by email (case-insensitive, partial match).
+   * Returns up to 10 matching users.
+   */
+  async searchUsers(query: string) {
+    const normalizedQuery = query.toLowerCase().trim();
+
+    if (normalizedQuery.length === 0) {
+      return [];
+    }
+
+    const users = await prisma.userEntity.findMany({
+      where: {
+        email: {
+          contains: normalizedQuery,
+          mode: 'insensitive',
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        imageUrl: true,
+      },
+      take: 10,
+      orderBy: { email: 'asc' },
+    });
+
+    return users;
+  }
+
   private async verifyWebhookSignature(
     payload: string,
     svixId: string,
