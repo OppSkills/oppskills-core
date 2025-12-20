@@ -26,10 +26,15 @@ export async function searchUsers(
     return [];
   }
 
-  const res = await API.get("/search", {
-    headers: buildAuthHeaders(token),
-    params: { q: safeQuery },
-  });
+  try {
+    const res = await API.get("/search", {
+      headers: buildAuthHeaders(token),
+      params: { q: safeQuery },
+    });
 
-  return res.data as UserSearchResult[];
+    return res.data as UserSearchResult[];
+  } catch (error) {
+    console.error("Error searching users:", error);
+    throw new Error("Failed to search users. Please try again.");
+  }
 }

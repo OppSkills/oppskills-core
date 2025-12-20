@@ -22,10 +22,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Loader2, CheckIcon, ChevronsUpDownIcon, UserIcon } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
-import { searchUsers, type UserSearchResult } from "@/lib/api/usersApi";
+import { useUserSearch } from "@/hooks/useUserSearch";
+import { type UserSearchResult } from "@/lib/api/usersApi";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -59,63 +59,33 @@ export default function AddRoleModal({
   isLoading = false,
   ownerId,
 }: AddRoleModalProps) {
-  const { getToken } = useAuth();
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Use React Query for user search
+  const userSearchQuery = useUserSearch(searchQuery, comboboxOpen);
+
+  // Filter out the owner from search results
+  const searchResults = useMemo(() => {
+    const results = userSearchQuery.data ?? [];
+    if (ownerId) {
+      return results.filter((user) => user.id !== ownerId);
+    }
+    return results;
+  }, [userSearchQuery.data, ownerId]);
+
+  const isSearching = userSearchQuery.isFetching;
 
   // Reset state when modal opens/closes
   useEffect(() => {
     if (open) {
       setSelectedUser(null);
       setSearchQuery("");
-      setSearchResults([]);
       setError(null);
     }
   }, [open]);
-
-  // Debounced search
-  useEffect(() => {
-    const trimmedQuery = searchQuery.trim();
-    if (trimmedQuery.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const token = await getToken();
-        if (token && !controller.signal.aborted) {
-          const results = await searchUsers(token, trimmedQuery);
-          if (!controller.signal.aborted) {
-            // Filter out the owner from search results
-            const filtered = ownerId
-              ? results.filter((user) => user.id !== ownerId)
-              : results;
-            setSearchResults(filtered);
-          }
-        }
-      } catch (err) {
-        if (!controller.signal.aborted) {
-          console.error("Error searching users:", err);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsSearching(false);
-        }
-      }
-    }, 300);
-
-    return () => {
-      controller.abort();
-      clearTimeout(timeoutId);
-    };
-  }, [searchQuery, getToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
