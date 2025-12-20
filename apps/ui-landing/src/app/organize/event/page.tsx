@@ -71,7 +71,7 @@ import type {
   HackathonTypeValue,
   ParticipantTypeValue,
   VisibilityValue,
-} from "@oppskills/types";
+} from "@oppskills/types/frontend";
 import {
   createHackathon,
   updateHackathonRegistrationForm,

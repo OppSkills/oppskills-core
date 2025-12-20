@@ -112,7 +112,29 @@ export class ClerkAuthGuard implements CanActivate {
         throw new UnauthorizedException('Invalid claims payload.');
       }
 
-      // 3. Attach the relevant user information to the request for the controller
+      // 3. Upsert user in DB (ensures user exists even if webhook hasn't fired)
+      if (primaryEmail) {
+        try {
+          await prisma.userEntity.upsert({
+            where: { id: userId },
+            update: {
+              email: primaryEmail,
+            },
+            create: {
+              id: userId,
+              email: primaryEmail,
+            },
+          });
+        } catch (upsertError) {
+          // Log but don't fail - the user might still be able to complete their request
+          this.logger.warn('[canActivate] Failed to upsert user:', {
+            userId,
+            error: upsertError instanceof Error ? upsertError.message : `${upsertError}`,
+          });
+        }
+      }
+
+      // 4. Attach the relevant user information to the request for the controller
       request.user = {
         id: userId,
         email: primaryEmail,

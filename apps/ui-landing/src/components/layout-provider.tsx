@@ -22,6 +22,17 @@ export default function LayoutProvider({
   const pathname = usePathname();
 
   const isDashboard = pathname.startsWith("/dashboard");
+  const isOnboarding = pathname.startsWith("/onboarding");
+
+  // Onboarding page - no header, footer, or sidebar
+  if (isOnboarding) {
+    return (
+      <main className="min-h-screen bg-background">
+        {children}
+        <Toaster position="bottom-right" duration={5000} richColors />
+      </main>
+    );
+  }
 
   /**
    * Check if the current route is an opportunity detail page

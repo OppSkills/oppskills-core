@@ -27,7 +27,7 @@ import type {
   UpdateHackathonAdditionalInfoDto,
   UpdateHackathonDto,
   UpdateHackathonRoundsDto,
-} from "@oppskills/types";
+} from "@oppskills/types/frontend";
 import {
   updateHackathon,
   updateHackathonAdditionalInfo,

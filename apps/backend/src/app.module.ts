@@ -8,6 +8,7 @@ import { HackathonModule } from './hackathon/hackathon.module';
 import { TeamModule } from './team/team.module';
 import { UserAccountsModule } from './user-accounts/user-accounts.module';
 import { MediaModule } from "./media/media.module";
+import { CollegesModule } from './colleges/colleges.module';
 
 @Module({
   imports: [
@@ -21,8 +22,10 @@ import { MediaModule } from "./media/media.module";
     FestivalModule,
     TeamModule,
     MediaModule,
+    CollegesModule,
   ],
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],
 })
 export class AppModule {}
+

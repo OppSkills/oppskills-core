@@ -15,7 +15,7 @@ import {
 import type {
   HackathonRoleUserResponse,
   HackathonUserRoleValue,
-} from "@oppskills/types";
+} from "@oppskills/types/frontend";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";

@@ -2,9 +2,14 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Increase body parser limits for large file uploads (bulk import)
+  app.use(json({ limit: '150mb' }));
+  app.use(urlencoded({ extended: true, limit: '150mb' }));
 
   // Global DTO validation
   app.useGlobalPipes(

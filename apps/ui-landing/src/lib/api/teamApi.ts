@@ -1,4 +1,4 @@
-import type { CreateTeamDto } from "@oppskills/types";
+import type { CreateTeamDto } from "@oppskills/types/frontend";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/hackathons");

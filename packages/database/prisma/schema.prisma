@@ -135,6 +135,51 @@ enum HackathonUserRole {
   @@schema("oppskills")
 }
 
+/// Gender values for onboarding profile.
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+
+  @@map("Gender")
+  @@schema("oppskills")
+}
+
+/// User category for onboarding profile.
+enum UserCategory {
+  SCHOOL_STUDENT
+  COLLEGE_STUDENT
+  WORKING_PROFESSIONAL
+  FRESHER
+  PROFESSIONAL_SCHOOL_STUDENT
+
+  @@map("UserCategory")
+  @@schema("oppskills")
+}
+
+/// Experience level for onboarding profile.
+enum ExperienceLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+
+  @@map("ExperienceLevel")
+  @@schema("oppskills")
+}
+
+/// Team preference for onboarding profile.
+enum TeamPreference {
+  LOOKING_FOR_TEAM
+  HAVE_TEAM
+  OPEN_TO_EITHER
+  PREFER_SOLO
+
+  @@map("TeamPreference")
+  @@schema("oppskills")
+}
+
 /// Join table for per-hackathon user roles (Manager, Evaluator).
 model HackathonUserRoleEntity {
   id          String            @id @default(cuid())
@@ -161,6 +206,7 @@ model UserEntity {
   firstName  String?
   lastName   String?
   accessLevel AccessLevel @default(USER) @map("access_level")
+  onboarded  Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -173,6 +219,9 @@ model UserEntity {
   // Per-hackathon roles (Manager/Evaluator)
   hackathonRoles        HackathonUserRoleEntity[] @relation("UserHackathonRoles")
   hackathonRolesCreated HackathonUserRoleEntity[] @relation("HackathonRoleCreator")
+
+  // Onboarding profile (1:1 relation)
+  onboardingProfile UserOnboardingProfileEntity?
 
   @@map("user")
   @@schema("oppskills")
@@ -443,6 +492,75 @@ model HackathonAttachmentEntity {
   @@index([hackathonId])
 }
 
+/// College entity for storing colleges in the system.
+model CollegeEntity {
+  id       String  @id
+  name     String
+  country  String
+  state    String
+  city     String
+  address  String
+  website  String?
+  logo     String?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  // Users who selected this college
+  onboardingProfiles UserOnboardingProfileEntity[]
 
+  @@map("college")
+  @@schema("oppskills")
+  @@index([name])
+  @@index([city])
+  @@index([state])
+}
+
+/// User onboarding profile entity (1:1 with UserEntity).
+model UserOnboardingProfileEntity {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+  user   UserEntity @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Step 1: Primary Identity
+  gender       Gender
+  userCategory UserCategory @map("user_category")
+
+  // Step 2: Education/Work Details
+  // School fields (for SCHOOL_STUDENT)
+  schoolName    String? @map("school_name")
+  schoolClass   String? @map("school_class")
+  schoolAddress String? @map("school_address")
+
+  // College fields (for COLLEGE_STUDENT, PROFESSIONAL_SCHOOL_STUDENT)
+  collegeId          String?        @map("college_id")
+  college            CollegeEntity? @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+  collegeCurrentYear String?        @map("college_current_year")
+  collegePassoutYear Int?           @map("college_passout_year")
+  collegeSkipped     Boolean        @default(false) @map("college_skipped")
+
+  // Working professional fields
+  companyName  String? @map("company_name")
+  jobTitle     String? @map("job_title")
+
+  // Step 3: Location
+  locationCity    String  @map("location_city")
+  locationState   String  @map("location_state")
+  locationCountry String  @map("location_country")
+
+  // Step 4: Interests and Skills
+  interests String[] @default([])
+  skills    String[] @default([])
+
+  // Step 5: Experience Level (optional)
+  experienceLevel ExperienceLevel? @map("experience_level")
+
+  // Step 6: Team Preference (optional)
+  teamPreference TeamPreference? @map("team_preference")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_onboarding_profile")
+  @@schema("oppskills")
+}

@@ -8,7 +8,7 @@ import type {
   AddHackathonRoleDto,
   RemoveHackathonRoleDto,
   HackathonRolesResponse,
-} from "@oppskills/types";
+} from "@oppskills/types/frontend";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/hackathons");
