@@ -35,6 +35,7 @@ interface AddRoleModalProps {
   roleType: "Manager" | "Evaluator";
   onAdd: (email: string) => Promise<void>;
   isLoading?: boolean;
+  ownerId?: string;
 }
 
 function formatUserLabel(user: UserSearchResult): string {
@@ -43,6 +44,9 @@ function formatUserLabel(user: UserSearchResult): string {
   }
   if (user.firstName) {
     return user.firstName;
+  }
+  if (user.lastName) {
+    return user.lastName;
   }
   return user.email.split("@")[0];
 }
@@ -53,6 +57,7 @@ export default function AddRoleModal({
   roleType,
   onAdd,
   isLoading = false,
+  ownerId,
 }: AddRoleModalProps) {
   const { getToken } = useAuth();
   const [comboboxOpen, setComboboxOpen] = useState(false);
@@ -88,7 +93,11 @@ export default function AddRoleModal({
         if (token && !controller.signal.aborted) {
           const results = await searchUsers(token, trimmedQuery);
           if (!controller.signal.aborted) {
-            setSearchResults(results);
+            // Filter out the owner from search results
+            const filtered = ownerId
+              ? results.filter((user) => user.id !== ownerId)
+              : results;
+            setSearchResults(filtered);
           }
         }
       } catch (err) {

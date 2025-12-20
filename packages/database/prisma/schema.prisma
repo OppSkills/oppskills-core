@@ -144,8 +144,8 @@ model HackathonUserRoleEntity {
   user        UserEntity        @relation("UserHackathonRoles", fields: [userId], references: [id], onDelete: Cascade)
   role        HackathonUserRole
   createdAt   DateTime          @default(now()) @map("created_at")
-  createdById String            @map("created_by_id")
-  createdBy   UserEntity        @relation("HackathonRoleCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String?           @map("created_by_id")
+  createdBy   UserEntity?       @relation("HackathonRoleCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@unique([hackathonId, userId, role])
   @@map("hackathon_user_role")

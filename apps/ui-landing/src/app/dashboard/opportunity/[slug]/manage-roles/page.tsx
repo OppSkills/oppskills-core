@@ -32,6 +32,9 @@ function formatDisplayName(user: {
   if (user.firstName) {
     return user.firstName;
   }
+  if (user.lastName) {
+    return user.lastName;
+  }
   return user.email.split("@")[0];
 }
 
@@ -247,6 +250,7 @@ export default function ManageRolesPage() {
           roleType={activeTab}
           onAdd={handleAddRole}
           isLoading={addMutation.isPending}
+          ownerId={roles?.owner.id}
         />
       </div>
     </div>
