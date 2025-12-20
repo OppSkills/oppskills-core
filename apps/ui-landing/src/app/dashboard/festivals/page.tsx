@@ -1,73 +1,76 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import FestivalsTable, { FestivalItem } from "../_components/FestivalsTable";
 import { toast } from "sonner";
+import { useAuth } from "@clerk/nextjs";
+import { getFestivals } from "@/lib/api/festivalApi";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
 
 export default function FestivalsDashboardPage() {
-  // Mock data as requested by the user
-  const [data, setData] = useState<FestivalItem[]>([
-    {
-      id: "1",
-      name: "Hackverse",
-      description:
-        "Some so called big engg. college name will come up here who is trying to be tier 1",
-      tag: "Hackathon",
-      status: "Completed",
-      startDate: new Date("2026-01-01T00:00:00"),
-      endDate: new Date("2026-01-01T00:00:00"),
-      candidates: 1243,
-      registrationOpen: false,
-    },
-    {
-      id: "2",
-      name: "HackInfy",
-      description:
-        "Some so called big engg. college name will come up here who is trying to be tier 1",
-      tag: "Hackathon",
-      status: "Completed",
-      startDate: new Date("2026-01-01T00:00:00"),
-      endDate: new Date("2026-01-01T00:00:00"),
-      candidates: 12000,
-      registrationOpen: false,
-    },
-    {
-      id: "3",
-      name: "HackWipro",
-      description:
-        "Some so called big engg. college name will come up here who is trying to be tier 1",
-      tag: "Hackathon",
-      status: "Completed",
-      startDate: new Date("2026-01-01T00:00:00"),
-      endDate: new Date("2026-01-01T00:00:00"),
-      candidates: 1300,
-      registrationOpen: false,
-    },
-    {
-      id: "4",
-      name: "Bas kar",
-      description:
-        "Some so called big engg. college name will come up here who is trying to be tier 1",
-      tag: "Hackathon",
-      status: "In Progress",
-      startDate: new Date("2026-01-01T00:00:00"),
-      endDate: new Date("2026-01-01T00:00:00"),
-      candidates: 12232,
-      registrationOpen: true,
-    },
-    {
-      id: "5",
-      name: "Enough of Hack",
-      description:
-        "Some so called big engg. college name will come up here who is trying to be tier 1",
-      tag: "Hackathon",
-      status: "In Progress",
-      startDate: new Date("2026-01-01T00:00:00"),
-      endDate: new Date("2026-01-01T00:00:00"),
-      candidates: 23000,
-      registrationOpen: true,
-    },
-  ]);
+  const [data, setData] = useState<FestivalItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const { getToken, isLoaded } = useAuth();
+
+  // Create a ref for getToken to avoid useEffect dependency on it changing
+  const getTokenRef = useRef(getToken);
+  useEffect(() => {
+    getTokenRef.current = getToken;
+  }, [getToken]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    let cancelled = false;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const token = await getTokenRef.current();
+        if (!token) return;
+
+        const res = await getFestivals(token);
+
+        // Transform the data
+        let rows: FestivalItem[] = [];
+        if (isRecord(res) && Array.isArray(res["data"])) {
+          rows = res["data"].map((item: any) => {
+            // Mapping logic based on expected API response - adjusting as needed
+            // Assuming backend structure similar to what we mocked or standard DTO
+            return {
+              id: item.id,
+              name: item.name,
+              description: item.description,
+              tag: "Festival", // Default tag
+              status: item.status || "Upcoming",
+              startDate: item.startDate || new Date().toISOString(),
+              endDate: item.endDate || new Date().toISOString(),
+              candidates: 0, // Placeholder if backend doesn't send this yet
+              registrationOpen: false, // Placeholder
+            };
+          });
+        }
+
+        if (!cancelled) {
+          setData(rows);
+        }
+      } catch (error) {
+        console.error("Failed to fetch festivals", error);
+        toast.error("Failed to load festivals");
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded]);
 
   const handleToggleRegistration = (id: string, isOpen: boolean) => {
     setData((prev) =>

@@ -20,6 +20,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
+import ActionDropdown from "../_components/ActionDropdown";
 
 /**
  * Converts stored rich-text HTML into a human-friendly plain-text snippet.
@@ -102,7 +103,7 @@ const columns = [
             </Badge>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed max-w-[90%]">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           {stripHtmlToText(info.row.original.description)}
         </p>
       </Link>
@@ -171,13 +172,9 @@ const columns = [
     header: () => <div className="text-center">Edit</div>,
     cell: (info) => (
       <div className="flex justify-center">
-        <Link
-          href={`/dashboard/opportunity/${info.row.original.dashboardSlug}/edit-opportunity`}
-          aria-label={`Edit ${info.row.original.name}`}
-          className="p-2 rounded-full hover:bg-muted transition-colors border border-gray-300"
-        >
-          <MoreVertical className="w-5 h-5 text-gray-600" />
-        </Link>
+        <ActionDropdown
+          editHref={`/dashboard/opportunity/${info.row.original.dashboardSlug}/edit-opportunity`}
+        />
       </div>
     ),
   }),
@@ -305,10 +302,6 @@ export default function OpportunityPage() {
         const res = await getHackathons(token);
         const rows = extractHackathonRows(res);
 
-        /**
-         * Dashboard default: show only hackathons owned by the current user.
-         * If you want "all hackathons", remove this filter.
-         */
         const filtered =
           typeof userId === "string"
             ? rows.filter(
@@ -326,7 +319,6 @@ export default function OpportunityPage() {
           setAllRows([]);
           setTableData([]);
         }
-        // eslint-disable-next-line no-console
         console.error(err);
       } finally {
         if (!cancelled) {

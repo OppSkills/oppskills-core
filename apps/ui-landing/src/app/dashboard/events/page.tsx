@@ -1,7 +1,12 @@
 "use client";
 
+import { Search, Plus } from "lucide-react";
 import * as React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { format } from "date-fns";
 import {
   createColumnHelper,
   flexRender,
@@ -10,194 +15,245 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import {
-  IconCalendar,
-  IconClock,
-  IconMapPin,
-  IconPencil,
-  IconDotsVertical,
-  IconChevronRight,
-} from "@tabler/icons-react";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import ActionDropdown from "../_components/ActionDropdown";
+import { getEvents } from "@/lib/api/eventApi";
+import { useAuth } from "@clerk/nextjs";
+import { toast } from "sonner";
 
-// --- Types ---
+/**
+ * Converts stored rich-text HTML into a human-friendly plain-text snippet.
+ */
+function stripHtmlToText(input: string): string {
+  const value = input.trim();
+  if (value.length === 0) return "";
+  if (typeof window !== "undefined" && typeof document !== "undefined") {
+    const el = document.createElement("div");
+    el.innerHTML = value;
+    return (el.textContent ?? el.innerText ?? "").replace(/\s+/g, " ").trim();
+  }
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 type EventRow = {
   id: string;
-  name: string;
   slug: string;
-  thumbnail: string; // URL or placeholder color
-  startDate: string;
-  endDate: string;
-  location: string;
-  status: "Draft" | "Published" | "Past";
+  name: string;
   description: string;
+  type: "Event";
+  status: string;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  candidates: string;
+  isOpen: boolean;
+  registrationLabel: "Open" | "Closed";
 };
-
-// --- Mock Data ---
-
-const MOCK_EVENTS: EventRow[] = [
-  {
-    id: "1",
-    name: "Tech Innovators Summit 2024",
-    slug: "tech-innovators-summit-2024",
-    thumbnail: "bg-purple-100",
-    startDate: "2024-03-15",
-    endDate: "2024-03-16",
-    location: "San Francisco, CA",
-    status: "Published",
-    description: "The leading summit for technology innovation and startups.",
-  },
-  {
-    id: "2",
-    name: "Global Hackathon Series: Asia",
-    slug: "global-hackathon-asia",
-    thumbnail: "bg-blue-100",
-    startDate: "2024-04-10",
-    endDate: "2024-04-12",
-    location: "Singapore",
-    status: "Draft",
-    description:
-      "A 48-hour hackathon bringing together the best minds in Asia.",
-  },
-  {
-    id: "3",
-    name: "Creative Design Workshop",
-    slug: "creative-design-workshop",
-    thumbnail: "bg-pink-100",
-    startDate: "2024-05-20",
-    endDate: "2024-05-20",
-    location: "Online",
-    status: "Published",
-    description:
-      "Learn the fundamentals of UI/UX design in this intensive workshop.",
-  },
-  {
-    id: "4",
-    name: "Future of AI Conference",
-    slug: "future-of-ai",
-    thumbnail: "bg-yellow-100",
-    startDate: "2024-06-05",
-    endDate: "2024-06-07",
-    location: "London, UK",
-    status: "Draft",
-    description:
-      "Exploring the boundaries of Artificial Intelligence and Machine Learning.",
-  },
-  {
-    id: "5",
-    name: "Startup Pitch Night",
-    slug: "startup-pitch-night",
-    thumbnail: "bg-green-100",
-    startDate: "2024-02-28",
-    endDate: "2024-02-28",
-    location: "New York, NY",
-    status: "Past",
-    description:
-      "Watch early-stage startups pitch their ideas to top investors.",
-  },
-];
-
-// --- Column Definitions ---
 
 const columnHelper = createColumnHelper<EventRow>();
 
 const columns = [
-  columnHelper.accessor("thumbnail", {
-    header: "",
+  columnHelper.display({
+    id: "sno",
+    header: () => <div className="text-center">S. No.</div>,
     cell: (info) => (
-      <div
-        className={cn(
-          "w-12 h-12 rounded-lg flex items-center justify-center text-xl font-bold text-muted-foreground/50",
-          info.getValue()
-        )}
-      >
-        {info.row.original.name.charAt(0)}
-      </div>
-    ),
-    enableSorting: false,
-  }),
-  columnHelper.accessor("name", {
-    header: "Event Info",
-    cell: (info) => (
-      <div className="flex flex-col gap-1">
+      <div className="text-center font-medium text-lg">
         <Link
           href={`/dashboard/events/${info.row.original.slug}`}
-          className="font-semibold text-foreground hover:text-primary transition-colors text-base"
+          className="inline-flex w-full justify-center hover:underline"
         >
-          {info.getValue()}
+          {info.row.index + 1}
         </Link>
-        <p className="text-sm text-muted-foreground line-clamp-1 max-w-[300px]">
-          {info.row.original.description}
+      </div>
+    ),
+  }),
+  columnHelper.accessor("name", {
+    header: "Name",
+    cell: (info) => (
+      <Link
+        href={`/dashboard/events/${info.row.original.slug}`}
+        className="flex flex-col gap-1 hover:underline"
+      >
+        <div className="flex gap-2 items-start">
+          <span className="font-semibold text-base lg:text-lg">
+            {info.getValue()}
+          </span>
+          <div>
+            <Badge className="bg-muted text-muted-foreground text-[10px] px-1">
+              {info.row.original.type}
+            </Badge>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {stripHtmlToText(info.row.original.description)}
         </p>
-      </div>
-    ),
-  }),
-  columnHelper.accessor("startDate", {
-    header: "Date & Time",
-    cell: (info) => (
-      <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <IconCalendar className="w-4 h-4" />
-          <span>{info.getValue()}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <IconClock className="w-4 h-4" />
-          <span>- {info.row.original.endDate}</span>
-        </div>
-      </div>
-    ),
-  }),
-  columnHelper.accessor("location", {
-    header: "Location",
-    cell: (info) => (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <IconMapPin className="w-4 h-4" />
-        <span>{info.getValue()}</span>
-      </div>
+      </Link>
     ),
   }),
   columnHelper.accessor("status", {
     header: "Status",
-    cell: (info) => {
-      const status = info.getValue();
-      let variant: "default" | "secondary" | "destructive" | "outline" =
-        "secondary";
-      if (status === "Published") variant = "default";
-      if (status === "Draft") variant = "outline";
-
-      return <Badge variant={variant}>{status}</Badge>;
-    },
+    cell: (info) => (
+      <Badge
+        variant="secondary"
+        className="bg-secondary/50 text-secondary-foreground font-normal"
+      >
+        {info.getValue()}
+      </Badge>
+    ),
+  }),
+  columnHelper.accessor("startDate", {
+    header: "Start Date",
+    cell: (info) => (
+      <div className="flex flex-col text-sm">
+        <span className="font-medium text-base">{info.getValue()}</span>
+        <span className="text-xs text-muted-foreground">
+          {info.row.original.startTime}
+        </span>
+      </div>
+    ),
+  }),
+  columnHelper.accessor("endDate", {
+    header: "End Date",
+    cell: (info) => (
+      <div className="flex flex-col text-sm">
+        <span className="font-medium text-base">{info.getValue()}</span>
+        <span className="text-xs text-muted-foreground">
+          {info.row.original.endTime}
+        </span>
+      </div>
+    ),
+  }),
+  columnHelper.accessor("candidates", {
+    header: "Candidates",
+    cell: (info) => (
+      <div className="text-base font-medium">{info.getValue()}</div>
+    ),
+  }),
+  columnHelper.accessor("isOpen", {
+    header: () => <div className="text-center">Registration</div>,
+    cell: (info) => (
+      <div className="flex items-center justify-center gap-3">
+        <Switch checked={info.getValue()} />
+        <span
+          className={cn(
+            "px-3 py-1 rounded text-xs font-medium w-16 text-center shadow-sm",
+            info.getValue()
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          )}
+        >
+          {info.row.original.registrationLabel}
+        </span>
+      </div>
+    ),
   }),
   columnHelper.display({
     id: "actions",
-    header: "",
+    header: () => <div className="text-center">Edit</div>,
     cell: (info) => (
-      <div className="flex justify-end pr-4">
-        <Link href={`/dashboard/events/${info.row.original.slug}`}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hover:bg-muted/50 rounded-full"
-          >
-            <IconChevronRight className="w-5 h-5 text-muted-foreground" />
-          </Button>
-        </Link>
+      <div className="flex justify-center">
+        <ActionDropdown
+          editHref={`/dashboard/events/${info.row.original.slug}/edit-event`}
+        />
       </div>
     ),
   }),
 ];
 
-// --- Page Component ---
-
 export default function EventsPage() {
-  const [data] = React.useState<EventRow[]>(MOCK_EVENTS);
+  const { getToken, isLoaded } = useAuth();
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [allRows, setAllRows] = React.useState<EventRow[]>([]);
+  const [tableData, setTableData] = React.useState<EventRow[]>([]);
+  const [searchTerm, setSearchTerm] = React.useState<string>("");
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+
+  // Create a ref for getToken to avoid useEffect dependency on it changing
+  const getTokenRef = React.useRef(getToken);
+  React.useEffect(() => {
+    getTokenRef.current = getToken;
+  }, [getToken]);
+
+  React.useEffect(() => {
+    if (!isLoaded) return;
+    let cancelled = false;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const token = await getTokenRef.current();
+        if (!token) return;
+
+        const res = await getEvents(token);
+
+        // Transform the data
+        let rows: EventRow[] = [];
+        // Assuming response structure similar to standard API response, e.g. { data: [...] }
+        if (
+          typeof res === "object" &&
+          res !== null &&
+          "data" in res &&
+          Array.isArray((res as any).data)
+        ) {
+          rows = (res as any).data.map((item: any) => ({
+            id: item.id,
+            slug: item.slug || item.id,
+            name: item.name,
+            description: item.description || "",
+            type: "Event",
+            status: item.status || "Draft",
+            startDate: item.startDate
+              ? format(new Date(item.startDate), "dd MMM yy")
+              : "—",
+            startTime: item.startDate
+              ? format(new Date(item.startDate), "hh:mm a")
+              : "—",
+            endDate: item.endDate
+              ? format(new Date(item.endDate), "dd MMM yy")
+              : "—",
+            endTime: item.endDate
+              ? format(new Date(item.endDate), "hh:mm a")
+              : "—",
+            candidates: "0", // Placeholder
+            isOpen: false, // Placeholder
+            registrationLabel: "Closed", // Placeholder
+          }));
+        }
+
+        if (!cancelled) {
+          setAllRows(rows);
+          setTableData(rows);
+        }
+      } catch (error) {
+        console.error("Failed to fetch events", error);
+        toast.error("Failed to load events");
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded]);
+
+  React.useEffect(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (q.length === 0) {
+      setTableData(allRows);
+      return;
+    }
+    setTableData(allRows.filter((item) => item.name.toLowerCase().includes(q)));
+  }, [searchTerm, allRows]);
 
   const table = useReactTable({
-    data,
+    data: tableData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -209,27 +265,32 @@ export default function EventsPage() {
 
   return (
     <div className="w-full min-h-screen bg-background p-6 flex flex-col items-center">
-      <div className="w-full max-w-[1200px] space-y-6">
-        {/* Header Section */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground font-poppins">
-              Events
-            </h1>
-            <p className="text-muted-foreground text-sm font-inter">
-              Manage your upcoming events and workshops.
-            </p>
+      <div className="w-full max-w-[1150px] space-y-6">
+        {/* Top Search Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
+          <div className="relative w-full sm:max-w-md">
+            <input
+              type="text"
+              placeholder="Search events"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-12 pl-4 pr-12 rounded-full border border-border bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-sm"
+            />
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
           </div>
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-inter rounded-full">
-            Create Event
-          </Button>
+          <Link href={"/organize/event"} className="w-full sm:w-auto">
+            <Button className="rounded-full" size={"lg"}>
+              <Plus className="h-5 w-5" />
+              Create Event
+            </Button>
+          </Link>
         </div>
 
-        {/* Table Container */}
+        {/* List Container */}
         <div className="bg-muted/30 rounded-[20px] border border-border p-2 overflow-x-auto shadow-sm">
-          <div className="min-w-[1000px]">
-            {/* Table Header */}
-            <div className="grid grid-cols-[80px_2fr_1.5fr_1.5fr_1fr_60px] gap-4 items-center bg-secondary/30 p-4 rounded-t-xl text-sm font-semibold text-foreground border-b border-border/50 font-inter">
+          <div className="min-w-[1200px]">
+            {/* Header Row */}
+            <div className="grid grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 items-center bg-secondary/30 p-4 rounded-t-xl text-sm font-semibold text-foreground border-b border-border/50">
               {table.getHeaderGroups().map((headerGroup) => (
                 <React.Fragment key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
@@ -246,29 +307,39 @@ export default function EventsPage() {
               ))}
             </div>
 
-            {/* Table Body */}
+            {/* Data Rows */}
             <div className="flex flex-col bg-white rounded-b-xl">
-              {table.getRowModel().rows.length === 0 ? (
-                <div className="h-40 flex items-center justify-center text-muted-foreground">
+              {isLoading ? (
+                <div className="h-24 flex items-center justify-center text-muted-foreground">
+                  Loading events...
+                </div>
+              ) : table.getRowModel().rows.length === 0 ? (
+                <div className="h-24 flex items-center justify-center text-muted-foreground">
                   No events found.
                 </div>
               ) : (
                 table.getRowModel().rows.map((row) => (
                   <div
                     key={row.id}
-                    className="grid grid-cols-[80px_2fr_1.5fr_1.5fr_1fr_60px] gap-4 p-4 items-center border-b border-border last:border-0 hover:bg-muted/10 transition-colors cursor-pointer group"
+                    className="grid grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 p-6 items-center border-b border-border last:border-0 hover:bg-muted/10 transition-colors"
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <div
-                        key={cell.id}
-                        className="whitespace-nowrap overflow-hidden text-ellipsis"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </div>
-                    ))}
+                    {row.getVisibleCells().map((cell, index) => {
+                      const isSno = index === 0;
+                      return (
+                        <div
+                          key={cell.id}
+                          className={cn(
+                            "whitespace-nowrap overflow-hidden text-ellipsis",
+                            isSno && "text-center"
+                          )}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 ))
               )}
