@@ -24,11 +24,11 @@ import {
 } from "@/components/ui/sidebar";
 
 const getEventNavItems = (slug: string) => [
-  {
-    title: "Dashboard",
-    url: `/dashboard/events/${slug}`,
-    icon: IconDashboard,
-  },
+  // {
+  //   title: "Dashboard",
+  //   url: `/dashboard/events/${slug}`,
+  //   icon: IconDashboard,
+  // },
   {
     title: "Manage Registration",
     url: `/dashboard/events/${slug}/manage-registration`,
@@ -39,21 +39,21 @@ const getEventNavItems = (slug: string) => [
     url: `/dashboard/events/${slug}/edit-event`,
     icon: IconPencil,
   },
-  {
-    title: "Tickets",
-    url: `/dashboard/events/${slug}/tickets`,
-    icon: IconTicket,
-  },
+  // {
+  //   title: "Tickets",
+  //   url: `/dashboard/events/${slug}/tickets`,
+  //   icon: IconTicket,
+  // },
   {
     title: "Manage Roles",
     url: `/dashboard/events/${slug}/manage-roles`,
     icon: IconUsers,
   },
-  {
-    title: "Send Notifications",
-    url: `/dashboard/events/${slug}/notifications`,
-    icon: IconBell,
-  },
+  // {
+  //   title: "Send Notifications",
+  //   url: `/dashboard/events/${slug}/notifications`,
+  //   icon: IconBell,
+  // },
   {
     title: "Settings",
     url: `/dashboard/events/${slug}/settings`,

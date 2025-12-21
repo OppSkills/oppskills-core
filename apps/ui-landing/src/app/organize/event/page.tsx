@@ -42,12 +42,23 @@ import dynamic from "next/dynamic";
 
 const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
-  { ssr: false, loading: () => <div className="h-[200px] bg-muted animate-pulse rounded-lg" /> }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[200px] bg-muted animate-pulse rounded-lg" />
+    ),
+  }
 );
 
 import { format } from "date-fns";
 import Image from "next/image";
-import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
@@ -110,7 +121,10 @@ export default function Page() {
   const eventFormSchema = z.object({
     eventFestName: z.string(),
     festivalId: z.string().optional(),
-    eventName: z.string().min(3, "Event name must be at least 3 characters").max(160, "Event name must be less than 160 characters"),
+    eventName: z
+      .string()
+      .min(3, "Event name must be at least 3 characters")
+      .max(160, "Event name must be less than 160 characters"),
     eventDate: z.date({ message: "Start date is required" }),
     eventEndDate: z.date().optional(),
     eventLocation: z.string().min(1, "Location is required"),
@@ -181,7 +195,9 @@ export default function Page() {
   });
 
   type FestivalListItem = { id: string; name: string };
-  const [festivals, setFestivals] = useState<ReadonlyArray<FestivalListItem>>([]);
+  const [festivals, setFestivals] = useState<ReadonlyArray<FestivalListItem>>(
+    []
+  );
   const [isLoadingFestivals, setIsLoadingFestivals] = useState(false);
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
   const [isSubmittingFestival, setIsSubmittingFestival] = useState(false);
@@ -219,7 +235,9 @@ export default function Page() {
     return undefined;
   }
 
-  function extractFestivalList(input: unknown): ReadonlyArray<FestivalListItem> {
+  function extractFestivalList(
+    input: unknown
+  ): ReadonlyArray<FestivalListItem> {
     const listRaw = Array.isArray(input)
       ? input
       : isRecord(input) && Array.isArray(input["data"])
@@ -256,7 +274,9 @@ export default function Page() {
     return `${y}-${m}-${d}`;
   }
 
-  function toLocationDto(input: string): EventLocationDto | FestivalLocationDto | undefined {
+  function toLocationDto(
+    input: string
+  ): EventLocationDto | FestivalLocationDto | undefined {
     const trimmed = input.trim();
     if (trimmed.length === 0) return undefined;
     if (isValidUrl(trimmed)) {
@@ -269,44 +289,47 @@ export default function Page() {
   // BANNER UPLOAD
   // ============================================================================
 
-  const handleBannerSelected = useCallback(async (file: File | null) => {
-    if (!file || isUploadingBanner) return;
+  const handleBannerSelected = useCallback(
+    async (file: File | null) => {
+      if (!file || isUploadingBanner) return;
 
-    const maxBytes = 10 * 1024 * 1024;
-    if (file.size > maxBytes) {
-      toast.error("Image too large. Max size is 10MB.");
-      return;
-    }
-
-    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowedMimeTypes.includes(file.type)) {
-      toast.error("Only JPG, PNG, or WebP images are allowed.");
-      return;
-    }
-
-    setIsUploadingBanner(true);
-    try {
-      const token = await getToken();
-      if (typeof token !== "string" || token.trim().length === 0) {
-        toast.error("Please sign in to upload.");
+      const maxBytes = 10 * 1024 * 1024;
+      if (file.size > maxBytes) {
+        toast.error("Image too large. Max size is 10MB.");
         return;
       }
 
-      const presign = await presignImageUpload(token, {
-        purpose: "HACKATHON_BANNER", // Reusing hackathon banner purpose for now
-        mimeType: file.type,
-      });
+      const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+      if (!allowedMimeTypes.includes(file.type)) {
+        toast.error("Only JPG, PNG, or WebP images are allowed.");
+        return;
+      }
 
-      await uploadImageToS3PresignedPost({ presign, file });
-      form.setFieldValue("eventThumbnail", presign.publicUrl);
-      toast.success("Banner uploaded.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Upload failed. Please try again.");
-    } finally {
-      setIsUploadingBanner(false);
-    }
-  }, [getToken, isUploadingBanner, form]);
+      setIsUploadingBanner(true);
+      try {
+        const token = await getToken();
+        if (typeof token !== "string" || token.trim().length === 0) {
+          toast.error("Please sign in to upload.");
+          return;
+        }
+
+        const presign = await presignImageUpload(token, {
+          purpose: "HACKATHON_BANNER", // Reusing hackathon banner purpose for now
+          mimeType: file.type,
+        });
+
+        await uploadImageToS3PresignedPost({ presign, file });
+        form.setFieldValue("eventThumbnail", presign.publicUrl);
+        toast.success("Banner uploaded.");
+      } catch (err) {
+        console.error(err);
+        toast.error("Upload failed. Please try again.");
+      } finally {
+        setIsUploadingBanner(false);
+      }
+    },
+    [getToken, isUploadingBanner, form]
+  );
 
   // ============================================================================
   // LOAD/SAVE FROM LOCALSTORAGE
@@ -319,13 +342,23 @@ export default function Page() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.eventName) form.setFieldValue("eventName", parsed.eventName);
-        if (parsed.eventDescription) form.setFieldValue("eventDescription", parsed.eventDescription);
-        if (parsed.eventThumbnail) form.setFieldValue("eventThumbnail", parsed.eventThumbnail);
-        if (parsed.eventLocation) form.setFieldValue("eventLocation", parsed.eventLocation);
-        if (parsed.eventTimeFrom) form.setFieldValue("eventTimeFrom", parsed.eventTimeFrom);
-        if (parsed.eventDate) form.setFieldValue("eventDate", new Date(parsed.eventDate));
-        if (parsed.eventRegisterBy) form.setFieldValue("eventRegisterBy", new Date(parsed.eventRegisterBy));
-        if (parsed.organizationName) form.setFieldValue("organizationName", parsed.organizationName);
+        if (parsed.eventDescription)
+          form.setFieldValue("eventDescription", parsed.eventDescription);
+        if (parsed.eventThumbnail)
+          form.setFieldValue("eventThumbnail", parsed.eventThumbnail);
+        if (parsed.eventLocation)
+          form.setFieldValue("eventLocation", parsed.eventLocation);
+        if (parsed.eventTimeFrom)
+          form.setFieldValue("eventTimeFrom", parsed.eventTimeFrom);
+        if (parsed.eventDate)
+          form.setFieldValue("eventDate", new Date(parsed.eventDate));
+        if (parsed.eventRegisterBy)
+          form.setFieldValue(
+            "eventRegisterBy",
+            new Date(parsed.eventRegisterBy)
+          );
+        if (parsed.organizationName)
+          form.setFieldValue("organizationName", parsed.organizationName);
       }
     } catch (err) {
       console.error("Error loading saved form:", err);
@@ -337,11 +370,14 @@ export default function Page() {
     if (!hasLoadedFromStorage.current) return;
     try {
       const values = form.state.values;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        ...values,
-        eventDate: values.eventDate?.toISOString(),
-        eventRegisterBy: values.eventRegisterBy?.toISOString(),
-      }));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          ...values,
+          eventDate: values.eventDate?.toISOString(),
+          eventRegisterBy: values.eventRegisterBy?.toISOString(),
+        })
+      );
     } catch (err) {
       console.error("Error saving form:", err);
     }
@@ -418,30 +454,39 @@ export default function Page() {
 
       const payload: CreateEventDto = {
         name: values.eventName,
-        description: values.eventDescription.trim().length > 0
-          ? values.eventDescription
-          : undefined,
+        description:
+          values.eventDescription.trim().length > 0
+            ? values.eventDescription
+            : undefined,
         festivalId: values.festivalId,
         bannerImageUrl: isValidUrl(values.eventThumbnail)
           ? values.eventThumbnail.trim()
           : undefined,
         startDate: toIsoDateOnly(values.eventDate),
         endDate: toIsoDateOnly(values.eventDate),
-        location: toLocationDto(values.eventLocation) as EventLocationDto | undefined,
+        location: toLocationDto(values.eventLocation) as
+          | EventLocationDto
+          | undefined,
         registrationDeadline: values.eventRegisterBy
           ? toIsoDateOnly(values.eventRegisterBy)
           : undefined,
         maxUsers: values.maxUsers,
         isFree: values.isFree,
-        entryFeeAmount: !values.isFree && values.entryFeeAmount ? values.entryFeeAmount : undefined,
-        currency: !values.isFree && values.currency ? values.currency : undefined,
+        entryFeeAmount:
+          !values.isFree && values.entryFeeAmount
+            ? values.entryFeeAmount
+            : undefined,
+        currency:
+          !values.isFree && values.currency ? values.currency : undefined,
         organizationName: values.organizationName || undefined,
       };
 
       const created = await createEvent(token, payload);
       const eventId = extractEventId(created);
       if (!eventId) {
-        toast.error("Event was created but we couldn't read its id from the server response.");
+        toast.error(
+          "Event was created but we couldn't read its id from the server response."
+        );
         return;
       }
 
@@ -466,60 +511,67 @@ export default function Page() {
         {/* Left Sidebar */}
         <div className="w-full lg:max-w-[371px] flex flex-col gap-6">
           <h2 className="text-3xl font-semibold">Event Details</h2>
-          <div className="w-full relative h-[220px] overflow-hidden rounded-xl flex items-center justify-center bg-muted">
-            <Image
-              width={371}
-              height={371}
-              src={
-                typeof formValues.eventThumbnail === "string" &&
-                formValues.eventThumbnail.trim().length > 0
-                  ? formValues.eventThumbnail.trim()
-                  : "/tmp/hackathon.jpg"
-              }
-              alt="Event Thumbnail"
-              className="w-full h-full object-cover"
-            />
-            <label
-              htmlFor={bannerInputId}
-              className={cn(
-                "absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-white/20 hover:bg-background/40 transition-colors cursor-pointer",
-                isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
-              )}
-              aria-disabled={isUploadingBanner}
-            >
-              <p className="text-white px-4 py-2 flex items-center gap-2 text-xs font-medium">
-                <Upload className="w-4 h-4" />
-                {isUploadingBanner ? "Uploading…" : "Upload"}
-              </p>
-            </label>
+          <form.Subscribe
+            selector={(state) => state.values}
+            children={(values) => (
+              <>
+                <div className="w-full relative h-[220px] overflow-hidden rounded-xl flex items-center justify-center bg-muted">
+                  <Image
+                    width={371}
+                    height={371}
+                    src={
+                      typeof values.eventThumbnail === "string" &&
+                      values.eventThumbnail.trim().length > 0
+                        ? values.eventThumbnail.trim()
+                        : "/tmp/hackathon.jpg"
+                    }
+                    alt="Event Thumbnail"
+                    className="w-full h-full object-cover"
+                  />
+                  <label
+                    htmlFor={bannerInputId}
+                    className={cn(
+                      "absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-white/20 hover:bg-background/40 transition-colors cursor-pointer",
+                      isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
+                    )}
+                    aria-disabled={isUploadingBanner}
+                  >
+                    <p className="text-white px-4 py-2 flex items-center gap-2 text-xs font-medium">
+                      <Upload className="w-4 h-4" />
+                      {isUploadingBanner ? "Uploading…" : "Upload"}
+                    </p>
+                  </label>
 
-            <input
-              id={bannerInputId}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              disabled={isUploadingBanner}
-              onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                e.target.value = "";
-                void handleBannerSelected(f);
-              }}
-            />
-          </div>
+                  <input
+                    id={bannerInputId}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    disabled={isUploadingBanner}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] ?? null;
+                      e.target.value = "";
+                      void handleBannerSelected(f);
+                    }}
+                  />
+                </div>
 
-          {/* Preview */}
-          <div className="flex flex-col gap-2">
-            <p className="text-muted-foreground text-sm font-medium">
-              How your card will look
-            </p>
-            <div className="pointer-events-none opacity-80 hover:opacity-100 transition-opacity">
-              <EventCard
-                thumbnail={formValues.eventThumbnail}
-                title={formValues.eventName}
-                location={formValues.eventLocation}
-              />
-            </div>
-          </div>
+                {/* Preview */}
+                <div className="flex flex-col gap-2">
+                  <p className="text-muted-foreground text-sm font-medium">
+                    How your card will look
+                  </p>
+                  <div className="pointer-events-none opacity-80 hover:opacity-100 transition-opacity">
+                    <EventCard
+                      thumbnail={values.eventThumbnail}
+                      title={values.eventName}
+                      location={values.eventLocation}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          />
         </div>
 
         {/* Main Content */}
@@ -546,7 +598,9 @@ export default function Page() {
                     form.setFieldValue("festivalId", undefined);
                   }}
                 >
-                  <span className="font-medium text-base">Individual Event</span>
+                  <span className="font-medium text-base">
+                    Individual Event
+                  </span>
                   <span className="text-muted-foreground text-xs">
                     Doesn't show up under any festivals.
                   </span>
@@ -555,11 +609,17 @@ export default function Page() {
                 <DropdownMenuSeparator />
 
                 {isLoadingFestivals ? (
-                  <DropdownMenuItem className="p-3 text-muted-foreground" disabled>
+                  <DropdownMenuItem
+                    className="p-3 text-muted-foreground"
+                    disabled
+                  >
                     Loading festivals...
                   </DropdownMenuItem>
                 ) : festivals.length === 0 ? (
-                  <DropdownMenuItem className="p-3 text-muted-foreground" disabled>
+                  <DropdownMenuItem
+                    className="p-3 text-muted-foreground"
+                    disabled
+                  >
                     No festivals found.
                   </DropdownMenuItem>
                 ) : (
@@ -572,7 +632,9 @@ export default function Page() {
                         form.setFieldValue("festivalId", festival.id);
                       }}
                     >
-                      <span className="font-medium text-base">{festival.name}</span>
+                      <span className="font-medium text-base">
+                        {festival.name}
+                      </span>
                       <span className="text-muted-foreground text-xs">
                         Events will be shown under {festival.name}.
                       </span>
@@ -631,7 +693,10 @@ export default function Page() {
                       <ChevronDown className="w-4 h-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                  <PopoverContent
+                    className="w-auto overflow-hidden p-0"
+                    align="start"
+                  >
                     <Calendar
                       mode="single"
                       selected={formValues.eventDate}
@@ -679,7 +744,10 @@ export default function Page() {
                       <ChevronDown className="w-4 h-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                  <PopoverContent
+                    className="w-auto overflow-hidden p-0"
+                    align="start"
+                  >
                     <Calendar
                       mode="single"
                       selected={formValues.eventRegisterBy}
@@ -742,7 +810,11 @@ export default function Page() {
                       type="number"
                       min={1}
                       value={field.state.value ?? ""}
-                      onChange={(e) => field.handleChange(e.target.value ? Number(e.target.value) : undefined)}
+                      onChange={(e) =>
+                        field.handleChange(
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
+                      }
                       placeholder="Unlimited"
                       className="w-32 bg-background"
                     />
@@ -785,7 +857,9 @@ export default function Page() {
       <Dialog open={showFestivalModal} onOpenChange={setShowFestivalModal}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Create New Festival</DialogTitle>
+            <DialogTitle className="text-xl font-bold">
+              Create New Festival
+            </DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-col gap-4 mt-4">
@@ -794,7 +868,10 @@ export default function Page() {
               <Input
                 value={festivalFormData.name}
                 onChange={(e) =>
-                  setFestivalFormData({ ...festivalFormData, name: e.target.value })
+                  setFestivalFormData({
+                    ...festivalFormData,
+                    name: e.target.value,
+                  })
                 }
                 placeholder="Enter festival name"
               />
@@ -805,7 +882,10 @@ export default function Page() {
               <Input
                 value={festivalFormData.location}
                 onChange={(e) =>
-                  setFestivalFormData({ ...festivalFormData, location: e.target.value })
+                  setFestivalFormData({
+                    ...festivalFormData,
+                    location: e.target.value,
+                  })
                 }
                 placeholder="City, Country"
               />
@@ -816,7 +896,10 @@ export default function Page() {
                 <Label>Start Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start font-normal">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start font-normal"
+                    >
                       {festivalFormData.startDate
                         ? format(festivalFormData.startDate, "PPP")
                         : "Select date"}
@@ -827,7 +910,10 @@ export default function Page() {
                       mode="single"
                       selected={festivalFormData.startDate}
                       onSelect={(date) =>
-                        setFestivalFormData({ ...festivalFormData, startDate: date })
+                        setFestivalFormData({
+                          ...festivalFormData,
+                          startDate: date,
+                        })
                       }
                     />
                   </PopoverContent>
@@ -838,7 +924,10 @@ export default function Page() {
                 <Label>End Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start font-normal">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start font-normal"
+                    >
                       {festivalFormData.endDate
                         ? format(festivalFormData.endDate, "PPP")
                         : "Select date"}
@@ -849,7 +938,10 @@ export default function Page() {
                       mode="single"
                       selected={festivalFormData.endDate}
                       onSelect={(date) =>
-                        setFestivalFormData({ ...festivalFormData, endDate: date })
+                        setFestivalFormData({
+                          ...festivalFormData,
+                          endDate: date,
+                        })
                       }
                     />
                   </PopoverContent>
@@ -862,7 +954,10 @@ export default function Page() {
               <Textarea
                 value={festivalFormData.description}
                 onChange={(e) =>
-                  setFestivalFormData({ ...festivalFormData, description: e.target.value })
+                  setFestivalFormData({
+                    ...festivalFormData,
+                    description: e.target.value,
+                  })
                 }
                 placeholder="Describe your festival..."
                 className="min-h-[100px]"
@@ -871,7 +966,10 @@ export default function Page() {
           </div>
 
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setShowFestivalModal(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowFestivalModal(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -898,7 +996,9 @@ export default function Page() {
                     description: festivalFormData.description || undefined,
                     startDate: toIsoDateOnly(festivalFormData.startDate),
                     endDate: toIsoDateOnly(festivalFormData.endDate),
-                    location: toLocationDto(festivalFormData.location) as FestivalLocationDto | undefined,
+                    location: toLocationDto(festivalFormData.location) as
+                      | FestivalLocationDto
+                      | undefined,
                   };
 
                   await createFestival(token, payload);

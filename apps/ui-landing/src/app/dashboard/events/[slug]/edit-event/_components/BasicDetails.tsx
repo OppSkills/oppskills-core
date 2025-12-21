@@ -172,20 +172,6 @@ export default function BasicDetails({
             alt="Event Thumbnail"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-4">
-            <div className="self-center mt-auto mb-auto">
-              <h2 className="text-white text-3xl font-bold tracking-[0.2em] text-center">
-                EVENT
-              </h2>
-              <p className="text-white/80 text-[10px] text-center tracking-widest mt-1">
-                WWW.TECHEVENT.COM
-              </p>
-            </div>
-            <div className="flex justify-between items-end w-full">
-              <div className="h-[1px] w-12 bg-white/50 mb-1"></div>
-              <span className="text-white/80 text-[10px]">19/12/2024</span>
-            </div>
-          </div>
 
           <label
             htmlFor={fileInputId}
