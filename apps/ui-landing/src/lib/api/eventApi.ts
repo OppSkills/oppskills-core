@@ -325,3 +325,48 @@ export async function updateEventRegistrationPaused(
   return res.data as unknown;
 }
 
+// =====================
+// Registration / Join
+// =====================
+
+export interface JoinEventPayload {
+  answers?: Array<{
+    fieldId: string;
+    value: string | number | string[];
+  }>;
+}
+
+/**
+ * Join an event with optional registration form answers.
+ */
+export async function joinEvent(
+  token: string,
+  id: string,
+  data?: JoinEventPayload
+): Promise<unknown> {
+  const res = await API.post(`/${id}/join`, data ?? {}, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
+}
+
+/**
+ * Response from the my-registration check endpoint.
+ */
+export interface MyRegistrationResponse {
+  isRegistered: boolean;
+  registeredAt: string | null;
+}
+
+/**
+ * Check if the current user is registered for an event.
+ */
+export async function checkMyRegistration(
+  token: string,
+  id: string
+): Promise<MyRegistrationResponse> {
+  const res = await API.get(`/${id}/my-registration`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as MyRegistrationResponse;
+}

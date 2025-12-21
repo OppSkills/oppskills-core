@@ -14,8 +14,8 @@ export default function SSOCallbackPage() {
       {/* Clerk CAPTCHA widget container for bot protection during OAuth flow */}
       <div id="clerk-captcha"></div>
       <AuthenticateWithRedirectCallback
-        afterSignInUrl="/dashboard"
-        afterSignUpUrl="/dashboard"
+        afterSignInUrl="/"
+        afterSignUpUrl="/"
         /**
          * When Clerk sign-up requires additional info (e.g. username is required),
          * route the user back into our app instead of Clerk-hosted completion UI.

@@ -31,13 +31,6 @@ import {
 import { EventPreview } from "./_components/EventPreview";
 
 // Types
-export interface BasicQuestion {
-  id: string;
-  label: string;
-  required: boolean;
-  isStatic: boolean;
-}
-
 export interface RegistrationSettingsData {
   candidateTypes: string[];
   startDate: Date | undefined;
@@ -48,7 +41,6 @@ export interface RegistrationSettingsData {
   eventTime: string;
   maxTeamsNoLimit: boolean;
   maxUsers?: number;
-  questions: BasicQuestion[];
 }
 
 export interface Contact {
@@ -304,17 +296,23 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
     NUMBER: "Number",
     OPTIONS: "Options",
   };
+  const fixedLabels = ["Name", "Phone No.", "Email", "Gender", "College Name"];
+
   const registrationQuestions: RegistrationQuestion[] = Array.isArray(fieldsRaw)
     ? fieldsRaw
         .filter((f): f is Record<string, unknown> => isRecord(f))
-        .map((f, idx) => ({
-          id: getString(f, "id") ?? `custom-${idx}-${Date.now()}`,
-          label: getString(f, "label") ?? "",
-          type: backToUiTypeMap[getString(f, "type") ?? "TEXT"] ?? "Text",
-          required: typeof f["required"] === "boolean" ? f["required"] : true,
-          fixed: false,
-          options: Array.isArray(f["options"]) ? f["options"].filter((o): o is string => typeof o === "string") : undefined,
-        }))
+        .map((f, idx) => {
+          const label = getString(f, "label") ?? "";
+          const isFixed = fixedLabels.includes(label);
+          return {
+            id: getString(f, "id") ?? (isFixed ? `fixed-${idx}` : `custom-${idx}-${Date.now()}`),
+            label,
+            type: backToUiTypeMap[getString(f, "type") ?? "TEXT"] ?? "Text",
+            required: typeof f["required"] === "boolean" ? f["required"] : true,
+            fixed: isFixed,
+            options: Array.isArray(f["options"]) ? f["options"].filter((o): o is string => typeof o === "string") : undefined,
+          };
+        })
     : [];
 
   return {
@@ -341,13 +339,6 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
       eventTime: startDate ? toTimeHHmm(startDate) : "09:00",
       maxTeamsNoLimit: maxUsersValue === undefined,
       maxUsers: maxUsersValue,
-      questions: [
-        { id: "name", label: "Name", required: true, isStatic: true },
-        { id: "email", label: "Email", required: true, isStatic: true },
-        { id: "mobile", label: "Mobile Number", required: true, isStatic: true },
-        { id: "gender", label: "Gender", required: true, isStatic: true },
-        { id: "college", label: "Current College/ Organization", required: true, isStatic: true },
-      ],
     },
     prizes,
     additionalInfo: {
@@ -436,7 +427,6 @@ export default function EditEventPage() {
       eventTime: "09:00",
       maxTeamsNoLimit: true,
       maxUsers: undefined,
-      questions: [],
     },
     prizes: {
       description: "",

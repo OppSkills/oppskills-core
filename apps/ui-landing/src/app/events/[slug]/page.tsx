@@ -1,14 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { EventRegistrationCard } from "./_components/EventRegistrationCard";
 import { EventTabs } from "./_components/EventTabs";
+import { EventRegistrationModal, RegistrationField, UserDataForPrefill } from "./_components/EventRegistrationModal";
 import Image from "next/image";
 import { MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { usePublicEventBySlug } from "@/hooks/usePublicEventBySlug";
+import { useAuth, useClerk } from "@clerk/nextjs";
+import { joinEvent, checkMyRegistration } from "@/lib/api/eventApi";
+import { getMe } from "@/lib/api/usersApi";
+import { useQuery } from "@tanstack/react-query";
 
 /**
  * Get initials from a name for avatar fallback.
@@ -43,30 +48,130 @@ function formatLocation(event: {
 
 export default function EventDetailsPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = typeof params.slug === "string" ? params.slug : null;
+  const { isSignedIn, getToken } = useAuth();
+  const { openSignIn, user } = useClerk();
 
-  const { data: event, isLoading, error } = usePublicEventBySlug(slug);
+  const { data: event, isLoading, error, refetch } = usePublicEventBySlug(slug);
 
   const [activeTab, setActiveTab] = useState("About Event");
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [userDataForPrefill, setUserDataForPrefill] = useState<UserDataForPrefill | undefined>(undefined);
+
+  // Fetch registration status if logged in
+  const { data: registrationStatus, refetch: refetchRegistrationStatus } = useQuery({
+    queryKey: ["event-registration-status", event?.id, user?.id],
+    enabled: !!event?.id && !!user?.id && isSignedIn,
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token || !event?.id) return null;
+      return checkMyRegistration(token, event.id);
+    },
+  });
+
+  const isUserRegistered = !!registrationStatus?.isRegistered;
 
   const TABS = ["About Event", "Contact Details"];
 
   const handleRegistration = async () => {
     if (!event) return;
 
-    setIsRegistering(true);
+    // If not signed in, open Clerk sign-in modal
+    if (!isSignedIn) {
+      openSignIn({
+        afterSignInUrl: window.location.href,
+        afterSignUpUrl: window.location.href,
+      });
+      return;
+    }
 
-    // TODO: Implement actual registration via API
-    setTimeout(() => {
-      setIsRegistering(false);
-      if (event.isFree) {
-        toast.success("Successfully registered for the event!");
-      } else {
-        toast.success("Redirecting to payment...");
+    // Check if user is onboarded
+    setIsCheckingOnboarding(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Please sign in to register.");
+        return;
       }
-    }, 1500);
+
+      const meData = await getMe(token);
+      
+      if (!meData.onboarded) {
+        // User not onboarded - redirect to onboarding with return URL
+        const returnUrl = encodeURIComponent(window.location.href);
+        router.push(`/onboarding?returnUrl=${returnUrl}`);
+        return;
+      }
+
+      // Build prefill data from user profile and onboarding data
+      const onboardingProfile = meData.onboardingProfile;
+      const fullName = [meData.firstName, meData.lastName].filter(Boolean).join(" ") || undefined;
+      
+      const prefillData: UserDataForPrefill = {
+        name: fullName,
+        email: meData.email,
+        phone: user?.primaryPhoneNumber?.phoneNumber,
+        gender: onboardingProfile?.gender,
+        // Note: College name would need to be added to the backend response
+        // Currently only collegeId is available
+      };
+      
+      setUserDataForPrefill(prefillData);
+
+      // User is onboarded - proceed with registration
+      const hasFields = event.registrationForm && event.registrationForm.fields.length > 0;
+      if (hasFields) {
+        setIsModalOpen(true);
+      } else {
+        // No registration form - join directly
+        handleJoinEvent([]);
+      }
+    } catch (err) {
+      console.error("Error checking onboarding status:", err);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsCheckingOnboarding(false);
+    }
+  };
+
+  const handleJoinEvent = async (
+    answers: Array<{ fieldId: string; value: string | number | string[] }>
+  ) => {
+    if (!event) return;
+
+    setIsRegistering(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Please sign in to register.");
+        return;
+      }
+
+      await joinEvent(token, event.id, { answers });
+      
+      toast.success("Successfully registered for the event!");
+      setIsModalOpen(false);
+      // Refetch both event details and registration status
+      refetch();
+      await refetchRegistrationStatus();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to register. Please try again.";
+      // Check for axios error response
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const axiosErr = err as { response?: { data?: { message?: string } } };
+        if (axiosErr.response?.data?.message) {
+          toast.error(axiosErr.response.data.message);
+          return;
+        }
+      }
+      toast.error(message);
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   // Loading state
@@ -298,11 +403,28 @@ export default function EventDetailsPage() {
               selectedTicketId={effectiveSelectedTicketId}
               onSelectTicket={setSelectedTicketId}
               onRegister={handleRegistration}
-              isRegistering={isRegistering}
+              isRegistering={isRegistering || isCheckingOnboarding}
+              isRegistered={isUserRegistered}
+              user={user ? {
+                name: user.firstName ?? user.username ?? "User",
+                email: user.primaryEmailAddress?.emailAddress ?? "",
+                avatar: user.imageUrl ?? "",
+              } : undefined}
             />
           </div>
         </div>
       </div>
+
+      {/* Registration Modal */}
+      <EventRegistrationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleJoinEvent}
+        fields={(event?.registrationForm?.fields ?? []) as RegistrationField[]}
+        eventName={event?.name ?? ""}
+        isSubmitting={isRegistering}
+        userData={userDataForPrefill}
+      />
     </div>
   );
 }
