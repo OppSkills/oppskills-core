@@ -8,6 +8,7 @@ import { EventTabs } from "./_components/EventTabs";
 import { EventDetails } from "./_components/types";
 import Image from "next/image";
 import { Mail, Phone, Globe, Linkedin, Twitter, MapPin } from "lucide-react";
+import { toast } from "sonner"; // Ensure sonner is installed/available or use standard alert/console for mock
 
 // Mock Data
 const MOCK_EVENT: EventDetails = {
@@ -76,10 +77,38 @@ const MOCK_EVENT: EventDetails = {
 export default function EventDetailsPage() {
   const { slug } = useParams();
   const [activeTab, setActiveTab] = useState("About Event");
+  const [isRegistering, setIsRegistering] = useState(false);
 
   // In a real app, fetch data based on slug.
   const event = MOCK_EVENT;
   const TABS = ["About Event", "Contact Details", "Speaker"];
+
+  // Default to first ticket if available
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(
+    event.tickets.length > 0 ? event.tickets[0].id : null
+  );
+
+  const handleRegistration = async () => {
+    if (!selectedTicketId) {
+      toast.error("Please select a ticket first");
+      return;
+    }
+
+    const ticket = event.tickets.find((t) => t.id === selectedTicketId);
+    if (!ticket) return;
+
+    setIsRegistering(true);
+
+    // Simulate API Call
+    setTimeout(() => {
+      setIsRegistering(false);
+      if (ticket.price === 0) {
+        toast.success(`Successfully registered for ${ticket.name}!`);
+      } else {
+        toast.success(`Redirecting to payment for ${ticket.name}...`);
+      }
+    }, 1500);
+  };
 
   return (
     <div className="min-h-screen bg-transparent py-8 font-sans">
@@ -236,7 +265,13 @@ export default function EventDetailsPage() {
 
           {/* Right Column: Registration (Sticky) */}
           <div className="lg:col-span-1 lg:sticky lg:top-24 order-1 lg:order-2 h-fit">
-            <EventRegistrationCard tickets={event.tickets} />
+            <EventRegistrationCard
+              tickets={event.tickets}
+              selectedTicketId={selectedTicketId}
+              onSelectTicket={setSelectedTicketId}
+              onRegister={handleRegistration}
+              isRegistering={isRegistering}
+            />
           </div>
         </div>
       </div>
