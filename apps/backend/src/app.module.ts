@@ -9,6 +9,7 @@ import { TeamModule } from './team/team.module';
 import { UserAccountsModule } from './user-accounts/user-accounts.module';
 import { MediaModule } from "./media/media.module";
 import { CollegesModule } from './colleges/colleges.module';
+import { EventModule } from './event/event.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CollegesModule } from './colleges/colleges.module';
     TeamModule,
     MediaModule,
     CollegesModule,
+    EventModule,
   ],
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],

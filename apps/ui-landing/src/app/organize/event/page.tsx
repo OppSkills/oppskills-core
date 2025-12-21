@@ -7,21 +7,13 @@ import {
   CalendarDays,
   ChevronDown,
   Clock,
-  FileEdit,
-  Globe,
-  Lock,
   MapPin,
   Plus,
-  University,
   Upload,
-  Users,
-  Wand2,
 } from "lucide-react";
+import { z } from "zod";
 import EventCard from "@/components/ui/derived/EventCard";
 import HackathonInput from "@/components/ui/hackathon/Input";
-import RegistrationQuestionsModal, {
-  RegistrationQuestion,
-} from "@/components/ui/hackathon/RegistrationQuestionsModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,53 +31,51 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import DescriptionEditorModal from "@/components/ui/derived/DescriptionEditorModal";
+import { Textarea } from "@/components/ui/textarea";
 import dynamic from "next/dynamic";
+
 const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
-  { ssr: false }
+  { ssr: false, loading: () => <div className="h-[200px] bg-muted animate-pulse rounded-lg" /> }
 );
+
 import { format } from "date-fns";
 import Image from "next/image";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
+import { useForm } from "@tanstack/react-form";
 import { cn } from "@/lib/utils";
 import type {
   CreateFestivalDto,
-  CreateHackathonDto,
-  RegistrationFieldDto,
-  RegistrationFieldTypeValue,
-  RegistrationFormDto,
-  HackathonLocationDto,
+  CreateEventDto,
   FestivalLocationDto,
-  HackathonModeValue,
-  HackathonTypeValue,
-  ParticipantTypeValue,
-  VisibilityValue,
+  EventLocationDto,
 } from "@oppskills/types/frontend";
-import {
-  createHackathon,
-  updateHackathonRegistrationForm,
-} from "@/lib/api/hackathonApi";
+import { createEvent } from "@/lib/api/eventApi";
 import { createFestival, getFestivals } from "@/lib/api/festivalApi";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 
 /**
- * Organizer page: creates festivals and hackathons.
- *
- * Image upload is intentionally NOT implemented yet (S3 integration later).
+ * Organizer page for creating Events.
+ * Uses TanStack Form for form state management.
  */
 export default function Page() {
+  const router = useRouter();
+  const { getToken } = useAuth();
+
+  // ============================================================================
+  // UI COMPONENTS
+  // ============================================================================
+
   const InputBlock = ({
     icon,
     label,
@@ -113,99 +103,108 @@ export default function Page() {
     </div>
   );
 
-  interface FormData {
-    eventFestName: string;
-    festivalId?: string;
-    eventFestVisibility: string;
-    eventName: string;
-    eventDate: Date | undefined;
-    eventLocation: string;
-    eventTimeFrom: string;
-    eventDescription: string;
-    eventThumbnail: string;
-    eventRegisterBy: Date | undefined;
-    hackathonType: string;
-    participantType: string;
-    registrationQuestions: RegistrationQuestion[];
-  }
+  // ============================================================================
+  // ZOD SCHEMA
+  // ============================================================================
 
-  const [formData, setFormData] = useState<FormData>({
-    eventFestName: "",
-    festivalId: undefined,
-    eventFestVisibility: "",
-    eventName: "",
-    eventDate: undefined,
-    eventLocation: "",
-    eventTimeFrom: "",
-    eventDescription: "",
-    eventThumbnail: "",
-    hackathonType: "",
-    participantType: "",
-    eventRegisterBy: undefined,
-    registrationQuestions: [],
+  const eventFormSchema = z.object({
+    eventFestName: z.string(),
+    festivalId: z.string().optional(),
+    eventName: z.string().min(3, "Event name must be at least 3 characters").max(160, "Event name must be less than 160 characters"),
+    eventDate: z.date({ message: "Start date is required" }),
+    eventEndDate: z.date().optional(),
+    eventLocation: z.string().min(1, "Location is required"),
+    eventTimeFrom: z.string(),
+    eventDescription: z.string().optional(),
+    eventThumbnail: z.string().optional(),
+    eventRegisterBy: z.date().optional(),
+    maxUsers: z.number().int().min(1).optional(),
+    isFree: z.boolean(),
+    entryFeeAmount: z.string().optional(),
+    currency: z.string().max(8).optional(),
+    organizationName: z.string().max(180).optional(),
   });
 
-  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
-  const [showFestivalDescriptionModal, setShowFestivalDescriptionModal] =
-    useState(false);
+  // ============================================================================
+  // TANSTACK FORM
+  // ============================================================================
+
+  // Date picker open states
+  const [eventDateOpen, setEventDateOpen] = useState(false);
+  const [registerByOpen, setRegisterByOpen] = useState(false);
+
+  const form = useForm({
+    defaultValues: {
+      eventFestName: "",
+      festivalId: undefined as string | undefined,
+      eventName: "",
+      eventDate: undefined as Date | undefined,
+      eventEndDate: undefined as Date | undefined,
+      eventLocation: "",
+      eventTimeFrom: "10:00",
+      eventDescription: "",
+      eventThumbnail: "",
+      eventRegisterBy: undefined as Date | undefined,
+      maxUsers: undefined as number | undefined,
+      isFree: true,
+      entryFeeAmount: "",
+      currency: "INR",
+      organizationName: "",
+    },
+    onSubmit: async ({ value }) => {
+      // Validate with Zod before submitting
+      const result = eventFormSchema.safeParse(value);
+      if (!result.success) {
+        const firstError = result.error.issues[0];
+        toast.error(firstError?.message || "Validation failed");
+        return;
+      }
+      await handleSubmitEvent(value);
+    },
+  });
+
+  const formValues = form.state.values;
+
+  // ============================================================================
+  // LOCAL STATE
+  // ============================================================================
 
   const [showFestivalModal, setShowFestivalModal] = useState(false);
-
-  interface FestivalFormData {
-    poster: string;
-    website: string;
-    name: string;
-    location: string;
-    description: string;
-    startDate: Date | undefined;
-    endDate: Date | undefined;
-  }
-
-  const [festivalFormData, setFestivalFormData] = useState<FestivalFormData>({
+  const [festivalFormData, setFestivalFormData] = useState({
     poster: "",
     website: "",
     name: "",
     location: "",
     description: "",
-    startDate: undefined,
-    endDate: undefined,
+    startDate: undefined as Date | undefined,
+    endDate: undefined as Date | undefined,
   });
 
-  const { getToken } = useAuth();
-
-  /**
-   * Minimal festival shape used for the dropdown.
-   */
   type FestivalListItem = { id: string; name: string };
+  const [festivals, setFestivals] = useState<ReadonlyArray<FestivalListItem>>([]);
+  const [isLoadingFestivals, setIsLoadingFestivals] = useState(false);
+  const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
+  const [isSubmittingFestival, setIsSubmittingFestival] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
-  const [festivals, setFestivals] = useState<ReadonlyArray<FestivalListItem>>(
-    []
-  );
-  const [isLoadingFestivals, setIsLoadingFestivals] = useState<boolean>(false);
-  const [isSubmittingHackathon, setIsSubmittingHackathon] =
-    useState<boolean>(false);
-  const [isSubmittingFestival, setIsSubmittingFestival] =
-    useState<boolean>(false);
-
-  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
-  const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
   const bannerInputId = useMemo(
     () => `organizer-banner-upload-${crypto.randomUUID()}`,
     []
   );
 
-  /**
-   * Type guard: checks if a value is a non-null object.
-   */
+  // LocalStorage persistence
+  const STORAGE_KEY = "oppskills_create_event_form";
+  const hasLoadedFromStorage = useRef(false);
+
+  // ============================================================================
+  // HELPERS
+  // ============================================================================
+
   function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
   }
 
-  /**
-   * Extracts hackathon id from the backend create response.
-   * Backend can return either `{ data: { id } }` or `{ id }` depending on caller.
-   */
-  function extractHackathonId(input: unknown): string | undefined {
+  function extractEventId(input: unknown): string | undefined {
     if (!isRecord(input)) return undefined;
     const directId = input["id"];
     if (typeof directId === "string" && directId.trim().length > 0) {
@@ -220,14 +219,7 @@ export default function Page() {
     return undefined;
   }
 
-  /**
-   * Extracts `[{id,name}]` from a backend response that can be either:
-   * - an array directly, OR
-   * - an object with a `data` array.
-   */
-  function extractFestivalList(
-    input: unknown
-  ): ReadonlyArray<FestivalListItem> {
+  function extractFestivalList(input: unknown): ReadonlyArray<FestivalListItem> {
     const listRaw = Array.isArray(input)
       ? input
       : isRecord(input) && Array.isArray(input["data"])
@@ -246,14 +238,10 @@ export default function Page() {
       .filter((v): v is FestivalListItem => v !== null);
   }
 
-  /**
-   * Best-effort check for URL strings.
-   */
   function isValidUrl(value: string): boolean {
     const trimmed = value.trim();
     if (trimmed.length === 0) return false;
     try {
-      // eslint-disable-next-line no-new
       new URL(trimmed);
       return true;
     } catch {
@@ -261,13 +249,28 @@ export default function Page() {
     }
   }
 
-  /**
-   * Upload banner image to S3 via backend presign, then store CloudFront URL in state.
-   * This updates `formData.eventThumbnail`, which is later persisted as `bannerImageUrl`.
-   */
-  async function handleBannerSelected(file: File | null): Promise<void> {
-    if (!file) return;
-    if (isUploadingBanner) return;
+  function toIsoDateOnly(value: Date): string {
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, "0");
+    const d = String(value.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  function toLocationDto(input: string): EventLocationDto | FestivalLocationDto | undefined {
+    const trimmed = input.trim();
+    if (trimmed.length === 0) return undefined;
+    if (isValidUrl(trimmed)) {
+      return { type: "VIRTUAL", virtualLink: trimmed };
+    }
+    return { type: "PHYSICAL", address: trimmed };
+  }
+
+  // ============================================================================
+  // BANNER UPLOAD
+  // ============================================================================
+
+  const handleBannerSelected = useCallback(async (file: File | null) => {
+    if (!file || isUploadingBanner) return;
 
     const maxBytes = 10 * 1024 * 1024;
     if (file.size > maxBytes) {
@@ -290,152 +293,73 @@ export default function Page() {
       }
 
       const presign = await presignImageUpload(token, {
-        purpose: "HACKATHON_BANNER",
+        purpose: "HACKATHON_BANNER", // Reusing hackathon banner purpose for now
         mimeType: file.type,
       });
 
       await uploadImageToS3PresignedPost({ presign, file });
-
-      setFormData((prev) => ({
-        ...prev,
-        eventThumbnail: presign.publicUrl,
-      }));
-
+      form.setFieldValue("eventThumbnail", presign.publicUrl);
       toast.success("Banner uploaded.");
-    } catch (err: unknown) {
-      // eslint-disable-next-line no-console
+    } catch (err) {
       console.error(err);
       toast.error("Upload failed. Please try again.");
     } finally {
       setIsUploadingBanner(false);
     }
-  }
+  }, [getToken, isUploadingBanner, form]);
 
-  /**
-   * Converts a Date into a backend-friendly ISO date string (`YYYY-MM-DD`).
-   */
-  function toIsoDateOnly(value: Date): string {
-    const y = value.getFullYear();
-    const m = String(value.getMonth() + 1).padStart(2, "0");
-    const d = String(value.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }
+  // ============================================================================
+  // LOAD/SAVE FROM LOCALSTORAGE
+  // ============================================================================
 
-  /**
-   * Maps modal question types to backend registration field types.
-   */
-  function toRegistrationFieldTypeValue(
-    type: RegistrationQuestion["type"]
-  ): RegistrationFieldTypeValue {
-    if (type === "Text") return "TEXT";
-    if (type === "Phone No.") return "PHONE_NO";
-    if (type === "Email") return "EMAIL";
-    if (type === "Attachments") return "ATTACHMENTS";
-    if (type === "Number") return "NUMBER";
-    return "OPTIONS";
-  }
-
-  /**
-   * Converts modal questions (custom only) into backend registration form fields.
-   * Validates labels and OPTIONS values.
-   */
-  function mapRegistrationQuestionsToRegistrationFields(
-    questions: ReadonlyArray<RegistrationQuestion>
-  ): ReadonlyArray<RegistrationFieldDto> {
-    const fields: RegistrationFieldDto[] = [];
-
-    questions.forEach((q, index) => {
-      const label = q.label.trim();
-      if (label.length === 0) return;
-
-      const fieldType = toRegistrationFieldTypeValue(q.type);
-
-      let options: string[] | undefined = undefined;
-      if (fieldType === "OPTIONS") {
-        const rawOptions = Array.isArray(q.options) ? q.options : [];
-        const cleaned = rawOptions
-          .map((o) => o.trim())
-          .filter((o) => o.length > 0);
-        const unique = Array.from(new Set(cleaned));
-        options = unique;
+  useEffect(() => {
+    if (hasLoadedFromStorage.current) return;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.eventName) form.setFieldValue("eventName", parsed.eventName);
+        if (parsed.eventDescription) form.setFieldValue("eventDescription", parsed.eventDescription);
+        if (parsed.eventThumbnail) form.setFieldValue("eventThumbnail", parsed.eventThumbnail);
+        if (parsed.eventLocation) form.setFieldValue("eventLocation", parsed.eventLocation);
+        if (parsed.eventTimeFrom) form.setFieldValue("eventTimeFrom", parsed.eventTimeFrom);
+        if (parsed.eventDate) form.setFieldValue("eventDate", new Date(parsed.eventDate));
+        if (parsed.eventRegisterBy) form.setFieldValue("eventRegisterBy", new Date(parsed.eventRegisterBy));
+        if (parsed.organizationName) form.setFieldValue("organizationName", parsed.organizationName);
       }
-
-      fields.push({
-        label,
-        type: fieldType,
-        required: Boolean(q.required),
-        order: index,
-        options,
-      });
-    });
-
-    return fields;
-  }
-
-  /**
-   * Converts a free-form location input into a DTO location object.
-   * If the input is a URL, we treat it as VIRTUAL; otherwise PHYSICAL.
-   */
-  function toLocationDto(
-    input: string
-  ): HackathonLocationDto | FestivalLocationDto | undefined {
-    const trimmed = input.trim();
-    if (trimmed.length === 0) return undefined;
-
-    if (isValidUrl(trimmed)) {
-      return { type: "VIRTUAL", virtualLink: trimmed };
+    } catch (err) {
+      console.error("Error loading saved form:", err);
     }
-    return { type: "PHYSICAL", address: trimmed };
-  }
+    hasLoadedFromStorage.current = true;
+  }, [form]);
 
-  /**
-   * Maps UI visibility labels to backend enum values.
-   */
-  function toVisibilityValue(label: string): VisibilityValue | undefined {
-    if (label === "Public") return "PUBLIC";
-    if (label === "Private") return "PRIVATE";
-    if (label === "University only") return "UNIVERSITY_ONLY";
-    return undefined;
-  }
+  useEffect(() => {
+    if (!hasLoadedFromStorage.current) return;
+    try {
+      const values = form.state.values;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        ...values,
+        eventDate: values.eventDate?.toISOString(),
+        eventRegisterBy: values.eventRegisterBy?.toISOString(),
+      }));
+    } catch (err) {
+      console.error("Error saving form:", err);
+    }
+  }, [form.state.values]);
 
-  /**
-   * Maps UI hackathon type labels to backend enum values.
-   */
-  function toHackathonTypeValue(label: string): HackathonTypeValue | undefined {
-    if (label === "Coding Hackathon") return "CODING_HACKATHON";
-    if (label === "Idea Hackathon") return "IDEA_HACKATHON";
-    if (label === "Case Study Competition") return "CASE_STUDY_COMPETITION";
-    if (label === "Design Hackathon") return "DESIGN_HACKATHON";
-    if (label === "Open Hackathon") return "OPEN_HACKATHON";
-    return undefined;
-  }
+  const clearStorage = useCallback(() => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (err) {
+      console.error("Error clearing storage:", err);
+    }
+  }, []);
 
-  /**
-   * Maps UI participant type labels to backend enum values.
-   */
-  function toParticipantTypeValue(
-    label: string
-  ): ParticipantTypeValue | undefined {
-    if (label === "Individual Participants") return "INDIVIDUAL";
-    if (label === "Team of 2") return "TEAM_OF_2";
-    if (label === "Team of 3") return "TEAM_OF_3";
-    if (label === "Team of 4") return "TEAM_OF_4";
-    if (label === "Team of 5") return "TEAM_OF_5";
-    if (label === "Team of 6") return "TEAM_OF_6";
-    if (label === "More than 6") return "MORE_THAN_6";
-    return undefined;
-  }
+  // ============================================================================
+  // FESTIVALS
+  // ============================================================================
 
-  /**
-   * Hackathon mode is required by the backend.
-   * We infer it from whether the location looks virtual.
-   */
-  const inferredMode: HackathonModeValue = useMemo(() => {
-    const loc = formData.eventLocation.trim();
-    return isValidUrl(loc) ? "ONLINE" : "OFFLINE";
-  }, [formData.eventLocation]);
-
-  async function loadFestivals(): Promise<void> {
+  const loadFestivals = useCallback(async () => {
     setIsLoadingFestivals(true);
     try {
       const token = await getToken();
@@ -445,39 +369,114 @@ export default function Page() {
       }
       const res = await getFestivals(token);
       setFestivals(extractFestivalList(res));
-    } catch (err: unknown) {
+    } catch (err) {
       setFestivals([]);
       toast.error("Failed to load festivals.");
-      // Keep console log for debugging; avoids crashing the page.
-      // eslint-disable-next-line no-console
       console.error(err);
     } finally {
       setIsLoadingFestivals(false);
     }
-  }
+  }, [getToken]);
 
   useEffect(() => {
     void loadFestivals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadFestivals]);
+
+  // ============================================================================
+  // SUBMIT EVENT
+  // ============================================================================
+
+  const handleSubmitEvent = async (values: typeof formValues) => {
+    if (!values.eventName) {
+      toast.error("Event Name is required");
+      return;
+    }
+    if (!values.eventDate) {
+      toast.error("Event Date is required");
+      return;
+    }
+    if (!values.eventLocation) {
+      toast.error("Location is required");
+      return;
+    }
+    if (
+      values.eventRegisterBy &&
+      values.eventDate &&
+      values.eventRegisterBy > values.eventDate
+    ) {
+      toast.error("Registration deadline must be before the Event Date");
+      return;
+    }
+
+    setIsSubmittingEvent(true);
+    try {
+      const token = await getToken();
+      if (typeof token !== "string" || token.trim().length === 0) {
+        toast.error("Please sign in to list an event.");
+        return;
+      }
+
+      const payload: CreateEventDto = {
+        name: values.eventName,
+        description: values.eventDescription.trim().length > 0
+          ? values.eventDescription
+          : undefined,
+        festivalId: values.festivalId,
+        bannerImageUrl: isValidUrl(values.eventThumbnail)
+          ? values.eventThumbnail.trim()
+          : undefined,
+        startDate: toIsoDateOnly(values.eventDate),
+        endDate: toIsoDateOnly(values.eventDate),
+        location: toLocationDto(values.eventLocation) as EventLocationDto | undefined,
+        registrationDeadline: values.eventRegisterBy
+          ? toIsoDateOnly(values.eventRegisterBy)
+          : undefined,
+        maxUsers: values.maxUsers,
+        isFree: values.isFree,
+        entryFeeAmount: !values.isFree && values.entryFeeAmount ? values.entryFeeAmount : undefined,
+        currency: !values.isFree && values.currency ? values.currency : undefined,
+        organizationName: values.organizationName || undefined,
+      };
+
+      const created = await createEvent(token, payload);
+      const eventId = extractEventId(created);
+      if (!eventId) {
+        toast.error("Event was created but we couldn't read its id from the server response.");
+        return;
+      }
+
+      clearStorage();
+      toast.success("Event listed successfully!");
+      router.push("/dashboard/events");
+    } catch (err) {
+      toast.error("Failed to list event. Please try again.");
+      console.error(err);
+    } finally {
+      setIsSubmittingEvent(false);
+    }
+  };
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
     <div className="w-full flex justify-center py-8 px-6 md:px-0">
       <div className="w-full xl:max-w-[1161px] flex flex-col lg:flex-row p-2 gap-6">
         {/* Left Sidebar */}
         <div className="w-full lg:max-w-[371px] flex flex-col gap-6">
-          <h2 className="text-3xl font-semibold">Hackathon Details</h2>
+          <h2 className="text-3xl font-semibold">Event Details</h2>
           <div className="w-full relative h-[220px] overflow-hidden rounded-xl flex items-center justify-center bg-muted">
             <Image
               width={371}
               height={371}
               src={
-                typeof formData.eventThumbnail === "string" &&
-                formData.eventThumbnail.trim().length > 0
-                  ? formData.eventThumbnail.trim()
+                typeof formValues.eventThumbnail === "string" &&
+                formValues.eventThumbnail.trim().length > 0
+                  ? formValues.eventThumbnail.trim()
                   : "/tmp/hackathon.jpg"
               }
-              alt="Hackathon Thumbnail"
+              alt="Event Thumbnail"
               className="w-full h-full object-cover"
             />
             <label
@@ -515,9 +514,9 @@ export default function Page() {
             </p>
             <div className="pointer-events-none opacity-80 hover:opacity-100 transition-opacity">
               <EventCard
-                thumbnail={formData.eventThumbnail}
-                title={formData.eventName}
-                location={formData.eventLocation}
+                thumbnail={formValues.eventThumbnail}
+                title={formValues.eventName}
+                location={formValues.eventLocation}
               />
             </div>
           </div>
@@ -527,12 +526,12 @@ export default function Page() {
         <div className="flex-1 flex flex-col gap-6">
           {/* Header Dropdowns */}
           <div className="flex w-full justify-between items-center">
-            {/* Event Context Dropdown */}
+            {/* Festival Context Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div className="cursor-pointer">
                   <HackathonInput>
-                    {formData.eventFestName || "Individual Hackathon"}{" "}
+                    {formValues.eventFestName || "Individual Event"}{" "}
                     <ChevronDown className="w-4 h-4" />
                   </HackathonInput>
                 </div>
@@ -542,36 +541,25 @@ export default function Page() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="flex flex-col items-start gap-1 p-3 cursor-pointer"
-                  onClick={() =>
-                    setFormData({
-                      ...formData,
-                      eventFestName: "Individual Hackathon",
-                      festivalId: undefined,
-                    })
-                  }
+                  onClick={() => {
+                    form.setFieldValue("eventFestName", "Individual Event");
+                    form.setFieldValue("festivalId", undefined);
+                  }}
                 >
-                  <span className="font-medium text-base">
-                    Individual Hackathon
-                  </span>
+                  <span className="font-medium text-base">Individual Event</span>
                   <span className="text-muted-foreground text-xs">
-                    Doesn’t show up under any festivals.
+                    Doesn't show up under any festivals.
                   </span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
 
                 {isLoadingFestivals ? (
-                  <DropdownMenuItem
-                    className="p-3 text-muted-foreground"
-                    disabled
-                  >
+                  <DropdownMenuItem className="p-3 text-muted-foreground" disabled>
                     Loading festivals...
                   </DropdownMenuItem>
                 ) : festivals.length === 0 ? (
-                  <DropdownMenuItem
-                    className="p-3 text-muted-foreground"
-                    disabled
-                  >
+                  <DropdownMenuItem className="p-3 text-muted-foreground" disabled>
                     No festivals found.
                   </DropdownMenuItem>
                 ) : (
@@ -579,17 +567,12 @@ export default function Page() {
                     <DropdownMenuItem
                       key={festival.id}
                       className="flex flex-col items-start gap-1 p-3 cursor-pointer"
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          eventFestName: festival.name,
-                          festivalId: festival.id,
-                        })
-                      }
+                      onClick={() => {
+                        form.setFieldValue("eventFestName", festival.name);
+                        form.setFieldValue("festivalId", festival.id);
+                      }}
                     >
-                      <span className="font-medium text-base">
-                        {festival.name}
-                      </span>
+                      <span className="font-medium text-base">{festival.name}</span>
                       <span className="text-muted-foreground text-xs">
                         Events will be shown under {festival.name}.
                       </span>
@@ -611,712 +594,340 @@ export default function Page() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
-            {/* Visibility Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div className="cursor-pointer">
-                  <HackathonInput>
-                    {formData.eventFestVisibility === "Public" ? (
-                      <Globe className="w-4 h-4" />
-                    ) : formData.eventFestVisibility === "Private" ? (
-                      <Lock className="w-4 h-4" />
-                    ) : (
-                      <University className="w-4 h-4" />
-                    )}
-                    {formData.eventFestVisibility || "Public"}{" "}
-                    <ChevronDown className="w-4 h-4" />
-                  </HackathonInput>
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[300px]">
-                <DropdownMenuLabel>Visibility</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {[
-                  {
-                    title: "Public",
-                    description:
-                      "Shown on platform any one can register for the event.",
-                    value: "Public",
-                  },
-                  {
-                    title: "Private",
-                    description:
-                      "Unlisted. Only with People with link can register",
-                    value: "Private",
-                  },
-                  {
-                    title: "University only",
-                    description:
-                      "Only students from your college can register for the event.",
-                    value: "University only",
-                  },
-                ].map((item) => (
-                  <DropdownMenuItem
-                    key={item.value}
-                    className="flex flex-col items-start gap-1 p-3 cursor-pointer"
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        eventFestVisibility: item.value,
-                      })
-                    }
-                  >
-                    <span className="font-medium text-base">{item.title}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {item.description}
-                    </span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
 
           {/* Form Grid */}
-          <div className="flex flex-col gap-4">
-            {/* Name and Date */}
-            <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4">
-              <div className="flex items-center min-h-[100px]">
-                <input
-                  value={formData.eventName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, eventName: e.target.value })
-                  }
-                  className="text-4xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50 w-full"
-                  placeholder="Hackathon Name"
-                />
-              </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <div className="h-full">
-                    <InputBlock
-                      icon={<CalendarIcon className="w-6 h-6" />}
-                      label={
-                        formData.eventDate
-                          ? format(formData.eventDate, "PPP")
-                          : "Select Date"
-                      }
-                      subLabel="Hackathon Date"
-                      className="bg-muted h-full"
-                    />
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Event Date</label>
-
-                    <div className="not-prose border rounded-md p-2">
-                      <Calendar
-                        mode="single"
-                        selected={formData.eventDate}
-                        onSelect={(date) =>
-                          setFormData({ ...formData, eventDate: date })
-                        }
-                      />
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Location and Time */}
-            <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <div className="h-full">
-                    <InputBlock
-                      icon={<MapPin className="w-6 h-6" />}
-                      label={formData.eventLocation || "Add Hackathon Location"}
-                      subLabel="Offline location or virtual link"
-                      className="h-full"
-                    />
-                  </div>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Event Location</DialogTitle>
-                    <DialogDescription>
-                      Enter the location where the event will take place.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="location">Location</Label>
-                      <Input
-                        id="location"
-                        value={formData.eventLocation}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            eventLocation: e.target.value,
-                          })
-                        }
-                        placeholder="e.g. San Francisco, CA or https://zoom.us/..."
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit">Save changes</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              <div className="bg-muted-foreground/5 rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group">
-                <div className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
-                  <Clock className="w-6 h-6" />
+          <div className="flex flex-col gap-6">
+            {/* Event Name */}
+            <div className="flex items-center min-h-[80px]">
+              <form.Field name="eventName">
+                {(field) => (
                   <input
-                    type="time"
-                    value={formData.eventTimeFrom}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        eventTimeFrom: e.target.value,
-                      })
-                    }
-                    className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    className="text-4xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50 w-full"
+                    placeholder="Event Name"
                   />
-                </div>
-                <p className="text-muted-foreground/60 text-sm pl-9">
-                  Hackathon Time
-                </p>
+                )}
+              </form.Field>
+            </div>
+
+            {/* Date and Time Row */}
+            <div className="flex flex-wrap gap-4">
+              {/* Event Date */}
+              <div className="flex flex-col gap-2">
+                <Label className="px-1 text-sm font-medium text-muted-foreground">
+                  Event Date
+                </Label>
+                <Popover open={eventDateOpen} onOpenChange={setEventDateOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-40 justify-between font-normal"
+                    >
+                      {formValues.eventDate
+                        ? format(formValues.eventDate, "PP")
+                        : "Select date"}
+                      <ChevronDown className="w-4 h-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formValues.eventDate}
+                      captionLayout="dropdown"
+                      onSelect={(date) => {
+                        form.setFieldValue("eventDate", date);
+                        setEventDateOpen(false);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Event Time */}
+              <div className="flex flex-col gap-2">
+                <Label className="px-1 text-sm font-medium text-muted-foreground">
+                  Time
+                </Label>
+                <form.Field name="eventTimeFrom">
+                  {(field) => (
+                    <Input
+                      type="time"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      className="w-32 h-9 bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                    />
+                  )}
+                </form.Field>
+              </div>
+
+              {/* Registration Deadline */}
+              <div className="flex flex-col gap-2">
+                <Label className="px-1 text-sm font-medium text-muted-foreground">
+                  Registration Deadline
+                </Label>
+                <Popover open={registerByOpen} onOpenChange={setRegisterByOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-40 justify-between font-normal"
+                    >
+                      {formValues.eventRegisterBy
+                        ? format(formValues.eventRegisterBy, "PP")
+                        : "Select date"}
+                      <ChevronDown className="w-4 h-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formValues.eventRegisterBy}
+                      captionLayout="dropdown"
+                      onSelect={(date) => {
+                        form.setFieldValue("eventRegisterBy", date);
+                        setRegisterByOpen(false);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
-            {/* Description */}
-            <div
-              onClick={() => setShowDescriptionModal(true)}
-              className="cursor-pointer"
-            >
-              <div className="h-full">
-                <InputBlock
-                  icon={<AlignLeft className="w-6 h-6" />}
-                  label={
-                    formData.eventDescription
-                      ? "Description"
-                      : "Add Description"
-                  }
-                  subLabel={
-                    formData.eventDescription
-                      ? formData.eventDescription.replace(/<[^>]*>?/gm, "") +
-                        (formData.eventDescription.length > 50 ? "..." : "")
-                      : undefined
-                  }
-                  className="h-full"
-                />
+            {/* Location */}
+            <div className="flex flex-col gap-2">
+              <Label className="px-1 text-sm font-medium text-muted-foreground">
+                Location
+              </Label>
+              <form.Field name="eventLocation">
+                {(field) => (
+                  <Input
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="e.g. San Francisco, CA or https://zoom.us/..."
+                    className="bg-background"
+                  />
+                )}
+              </form.Field>
+            </div>
+
+            {/* Description - INLINE with RichTextEditor */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3 text-muted-foreground px-1">
+                <AlignLeft className="w-5 h-5" />
+                <span className="font-medium">Description</span>
+              </div>
+              <form.Field name="eventDescription">
+                {(field) => (
+                  <RichTextEditor
+                    value={field.state.value}
+                    onChange={(content: string) => field.handleChange(content)}
+                    placeholder="Describe your event..."
+                    className="min-h-[200px]"
+                  />
+                )}
+              </form.Field>
+            </div>
+
+            {/* Additional Fields Row */}
+            <div className="flex flex-wrap gap-4">
+              {/* Max Users */}
+              <div className="flex flex-col gap-2">
+                <Label className="px-1 text-sm font-medium text-muted-foreground">
+                  Max Attendees
+                </Label>
+                <form.Field name="maxUsers">
+                  {(field) => (
+                    <Input
+                      type="number"
+                      min={1}
+                      value={field.state.value ?? ""}
+                      onChange={(e) => field.handleChange(e.target.value ? Number(e.target.value) : undefined)}
+                      placeholder="Unlimited"
+                      className="w-32 bg-background"
+                    />
+                  )}
+                </form.Field>
+              </div>
+
+              {/* Organization Name */}
+              <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
+                <Label className="px-1 text-sm font-medium text-muted-foreground">
+                  Organization Name
+                </Label>
+                <form.Field name="organizationName">
+                  {(field) => (
+                    <Input
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Your organization or club name"
+                      className="bg-background"
+                    />
+                  )}
+                </form.Field>
               </div>
             </div>
 
-            <DescriptionEditorModal
-              open={showDescriptionModal}
-              onOpenChange={setShowDescriptionModal}
-              initialValue={formData.eventDescription}
-              onSave={(val) =>
-                setFormData({ ...formData, eventDescription: val })
-              }
-              title="Event Description"
-            />
-
-            {/* Event Details */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div className="h-full">
-                    <InputBlock
-                      icon={<Wand2 className="w-5 h-5" />}
-                      label="Hackathon Type"
-                      subLabel={formData.hackathonType}
-                      className="h-full"
-                    />
-                  </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[250px]">
-                  {[
-                    "Coding Hackathon",
-                    "Idea Hackathon",
-                    "Case Study Competition",
-                    "Design Hackathon",
-                    "Open Hackathon",
-                  ].map((type) => (
-                    <DropdownMenuItem
-                      key={type}
-                      className="cursor-pointer py-2 font-medium"
-                      onClick={() =>
-                        setFormData({ ...formData, hackathonType: type })
-                      }
-                    >
-                      {type}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div className="h-full">
-                    <InputBlock
-                      icon={<Users className="w-5 h-5" />}
-                      label="Participant Type"
-                      subLabel={formData.participantType}
-                      className="h-full"
-                    />
-                  </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[250px]">
-                  {[
-                    "Individual Participants",
-                    "Team of 2",
-                    "Team of 3",
-                    "Team of 4",
-                    "Team of 5",
-                    "Team of 6",
-                    "More than 6",
-                  ].map((type) => (
-                    <DropdownMenuItem
-                      key={type}
-                      className="cursor-pointer py-2 font-medium"
-                      onClick={() =>
-                        setFormData({ ...formData, participantType: type })
-                      }
-                    >
-                      {type}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <div className="h-full">
-                    <InputBlock
-                      icon={<CalendarDays className="w-5 h-5" />}
-                      label={
-                        formData.eventRegisterBy
-                          ? format(formData.eventRegisterBy, "PPP")
-                          : "Select Date"
-                      }
-                      subLabel="Last Date"
-                      className="bg-muted h-full"
-                    />
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.eventRegisterBy}
-                    onSelect={(date) =>
-                      setFormData({ ...formData, eventRegisterBy: date })
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Registration Form Setup */}
-            <div onClick={() => setShowRegistrationModal(true)}>
-              <InputBlock
-                icon={<FileEdit className="w-6 h-6" />}
-                label="Registration Form"
-                subLabel="Customize registration questions"
-              />
-            </div>
-
+            {/* Submit Button */}
             <Button
-              className="w-full font-semibold rounded-full"
-              size={"lg"}
-              onClick={async () => {
-                if (!formData.eventName) {
-                  toast.error("Event Name is required");
-                  return;
-                }
-                if (!formData.eventDate) {
-                  toast.error("Event Date is required");
-                  return;
-                }
-                if (!formData.eventLocation) {
-                  toast.error("Event Location is required");
-                  return;
-                }
-                if (!formData.eventRegisterBy) {
-                  toast.error("Registration Last Date is required");
-                  return;
-                }
-
-                // Validate dates
-                if (formData.eventRegisterBy > formData.eventDate) {
-                  toast.error(
-                    "Registration Last Date must be before the Event Date"
-                  );
-                  return;
-                }
-
-                setIsSubmittingHackathon(true);
-                try {
-                  const token = await getToken();
-                  if (typeof token !== "string" || token.trim().length === 0) {
-                    toast.error("Please sign in to list an event.");
-                    return;
-                  }
-
-                  const payload: CreateHackathonDto = {
-                    name: formData.eventName,
-                    description:
-                      formData.eventDescription.trim().length > 0
-                        ? formData.eventDescription
-                        : undefined,
-                    festivalId: formData.festivalId,
-                    bannerImageUrl: isValidUrl(formData.eventThumbnail)
-                      ? formData.eventThumbnail.trim()
-                      : undefined,
-                    startDate: toIsoDateOnly(formData.eventDate),
-                    endDate: toIsoDateOnly(formData.eventDate),
-                    mode: inferredMode,
-                    visibility: toVisibilityValue(formData.eventFestVisibility),
-                    hackathonType: toHackathonTypeValue(formData.hackathonType),
-                    participantType: toParticipantTypeValue(
-                      formData.participantType
-                    ),
-                    location: toLocationDto(formData.eventLocation) as
-                      | HackathonLocationDto
-                      | undefined,
-                    registrationDeadline: toIsoDateOnly(
-                      formData.eventRegisterBy
-                    ),
-                  };
-
-                  // Pre-validate registration questions (so we don't create a hackathon and then fail saving fields).
-                  const registrationFields =
-                    mapRegistrationQuestionsToRegistrationFields(
-                      formData.registrationQuestions
-                    );
-                  const invalidOptions = registrationFields.some((f) => {
-                    if (f.type !== "OPTIONS") return false;
-                    return !Array.isArray(f.options) || f.options.length === 0;
-                  });
-                  if (invalidOptions) {
-                    toast.error(
-                      "Please add at least one option for every Options question."
-                    );
-                    return;
-                  }
-
-                  const created = await createHackathon(token, payload);
-                  const hackathonId = extractHackathonId(created);
-                  if (!hackathonId) {
-                    toast.error(
-                      "Event was created but we couldn't read its id from the server response."
-                    );
-                    return;
-                  }
-
-                  // Persist custom registration questions as internal registration form fields.
-                  // Note: fixed questions are intentionally NOT stored to avoid redundancy.
-                  // If organizer configured any questions, save them right away.
-                  if (registrationFields.length > 0) {
-                    const registrationForm: RegistrationFormDto = {
-                      fields: [...registrationFields],
-                    };
-
-                    await updateHackathonRegistrationForm(token, hackathonId, {
-                      registrationForm,
-                    });
-                  }
-
-                  toast.success("Event listed successfully!");
-                } catch (err: unknown) {
-                  toast.error("Failed to list event. Please try again.");
-                  // eslint-disable-next-line no-console
-                  console.error(err);
-                } finally {
-                  setIsSubmittingHackathon(false);
-                }
-              }}
-              disabled={isSubmittingHackathon}
+              className="w-full font-semibold rounded-full mt-4"
+              size="lg"
+              onClick={() => form.handleSubmit()}
+              disabled={isSubmittingEvent}
             >
-              {isSubmittingHackathon ? "Listing..." : "List Event"}
+              {isSubmittingEvent ? "Listing..." : "List Event"}
             </Button>
           </div>
         </div>
       </div>
+
       {/* Create Festival Modal */}
       <Dialog open={showFestivalModal} onOpenChange={setShowFestivalModal}>
-        <DialogContent className="max-w-5xl">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">
-              Festivals Details
-            </DialogTitle>
+            <DialogTitle className="text-xl font-bold">Create New Festival</DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr] gap-8 mt-4">
-            {/* Left Column */}
-            <div className="flex flex-col gap-4">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">
-                  Add Festival Poster
-                </Label>
-                <div className="relative w-full aspect-video bg-muted rounded-xl overflow-hidden group cursor-pointer border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-colors">
-                  {festivalFormData.poster ? (
-                    <Image
-                      src={festivalFormData.poster}
-                      alt="Poster"
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
-                      <Image
-                        src="/tmp/hackathon.jpg"
-                        alt="Preview"
-                        fill
-                        className="object-cover opacity-50"
-                      />
-                      <div className="absolute inset-0 bg-black/40" />
-                      <div className="z-10 bg-black/40 backdrop-blur-md text-white px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium border border-white/20">
-                        <Upload className="w-4 h-4" /> Upload
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+          <div className="flex flex-col gap-4 mt-4">
+            <div className="space-y-2">
+              <Label>Festival Name</Label>
               <Input
-                placeholder="Website"
-                className="rounded-full h-12 px-6 bg-muted/50 border-transparent focus:bg-background transition-colors"
-                value={festivalFormData.website}
+                value={festivalFormData.name}
                 onChange={(e) =>
-                  setFestivalFormData({
-                    ...festivalFormData,
-                    website: e.target.value,
-                  })
+                  setFestivalFormData({ ...festivalFormData, name: e.target.value })
                 }
+                placeholder="Enter festival name"
               />
             </div>
 
-            {/* Right Column */}
-            <div className="flex flex-col gap-4">
-              <div>
-                <Label className="text-muted-foreground mb-1 block">
-                  Festival Name
-                </Label>
-                <input
-                  value={festivalFormData.name}
-                  onChange={(e) =>
-                    setFestivalFormData({
-                      ...festivalFormData,
-                      name: e.target.value,
-                    })
-                  }
-                  className="text-3xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50 w-full"
-                  placeholder="Festival Name"
-                />
-              </div>
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <div>
-                    <InputBlock
-                      icon={<MapPin className="w-6 h-6" />}
-                      label={
-                        festivalFormData.location || "Add Festival Location"
-                      }
-                      subLabel="Offline location or virtual link"
-                    />
-                  </div>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Festival Location</DialogTitle>
-                  </DialogHeader>
-                  <Input
-                    value={festivalFormData.location}
-                    onChange={(e) =>
-                      setFestivalFormData({
-                        ...festivalFormData,
-                        location: e.target.value,
-                      })
-                    }
-                    placeholder="Enter location"
-                  />
-                </DialogContent>
-              </Dialog>
-
-              <div
-                onClick={() => setShowFestivalDescriptionModal(true)}
-                className="cursor-pointer"
-              >
-                <div>
-                  <InputBlock
-                    icon={<AlignLeft className="w-6 h-6" />}
-                    label={
-                      festivalFormData.description
-                        ? "Description"
-                        : "Add Description"
-                    }
-                    subLabel={
-                      festivalFormData.description
-                        ? festivalFormData.description
-                            .replace(/<[^>]*>?/gm, "")
-                            .substring(0, 50) + "..."
-                        : undefined
-                    }
-                  />
-                </div>
-              </div>
-
-              <DescriptionEditorModal
-                open={showFestivalDescriptionModal}
-                onOpenChange={setShowFestivalDescriptionModal}
-                initialValue={festivalFormData.description}
-                onSave={(val) =>
-                  setFestivalFormData({ ...festivalFormData, description: val })
+            <div className="space-y-2">
+              <Label>Location</Label>
+              <Input
+                value={festivalFormData.location}
+                onChange={(e) =>
+                  setFestivalFormData({ ...festivalFormData, location: e.target.value })
                 }
-                title="Festival Description"
+                placeholder="City, Country"
               />
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Start Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <div>
-                      <InputBlock
-                        icon={<CalendarIcon className="w-6 h-6" />}
-                        label={
-                          festivalFormData.startDate
-                            ? format(festivalFormData.startDate, "PPP")
-                            : "Start Date"
-                        }
-                        subLabel="Start Date"
-                        className="bg-muted"
-                      />
-                    </div>
+                    <Button variant="outline" className="w-full justify-start font-normal">
+                      {festivalFormData.startDate
+                        ? format(festivalFormData.startDate, "PPP")
+                        : "Select date"}
+                    </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
                       selected={festivalFormData.startDate}
                       onSelect={(date) =>
-                        setFestivalFormData({
-                          ...festivalFormData,
-                          startDate: date,
-                        })
-                      }
-                    />
-                  </PopoverContent>
-                </Popover>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <div>
-                      <InputBlock
-                        icon={<CalendarIcon className="w-6 h-6" />}
-                        label={
-                          festivalFormData.endDate
-                            ? format(festivalFormData.endDate, "PPP")
-                            : "End Date"
-                        }
-                        subLabel="End Date"
-                        className="bg-muted"
-                      />
-                    </div>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={festivalFormData.endDate}
-                      onSelect={(date) =>
-                        setFestivalFormData({
-                          ...festivalFormData,
-                          endDate: date,
-                        })
+                        setFestivalFormData({ ...festivalFormData, startDate: date })
                       }
                     />
                   </PopoverContent>
                 </Popover>
               </div>
 
-              <Button
-                className="w-full rounded-full mt-4 font-semibold text-lg h-12"
-                onClick={async () => {
-                  if (!festivalFormData.name.trim()) {
-                    toast.error("Festival Name is required");
-                    return;
-                  }
-                  if (!festivalFormData.startDate) {
-                    toast.error("Start Date is required");
-                    return;
-                  }
-                  if (!festivalFormData.endDate) {
-                    toast.error("End Date is required");
-                    return;
-                  }
-                  if (festivalFormData.endDate < festivalFormData.startDate) {
-                    toast.error("End Date must be after Start Date");
-                    return;
-                  }
+              <div className="space-y-2">
+                <Label>End Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start font-normal">
+                      {festivalFormData.endDate
+                        ? format(festivalFormData.endDate, "PPP")
+                        : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={festivalFormData.endDate}
+                      onSelect={(date) =>
+                        setFestivalFormData({ ...festivalFormData, endDate: date })
+                      }
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
 
-                  setIsSubmittingFestival(true);
-                  try {
-                    const token = await getToken();
-                    if (
-                      typeof token !== "string" ||
-                      token.trim().length === 0
-                    ) {
-                      toast.error("Please sign in to list a festival.");
-                      return;
-                    }
-
-                    const payload: CreateFestivalDto = {
-                      name: festivalFormData.name.trim(),
-                      description:
-                        festivalFormData.description.trim().length > 0
-                          ? festivalFormData.description
-                          : undefined,
-                      websiteUrl: isValidUrl(festivalFormData.website)
-                        ? festivalFormData.website.trim()
-                        : undefined,
-                      posterImageUrl: isValidUrl(festivalFormData.poster)
-                        ? festivalFormData.poster.trim()
-                        : undefined,
-                      location: toLocationDto(festivalFormData.location) as
-                        | FestivalLocationDto
-                        | undefined,
-                      startDate: toIsoDateOnly(festivalFormData.startDate),
-                      endDate: toIsoDateOnly(festivalFormData.endDate),
-                    };
-
-                    const res = await createFestival(token, payload);
-                    toast.success("Festival listed!");
-                    setShowFestivalModal(false);
-
-                    // Refresh dropdown list; ensures the new festival appears.
-                    setFestivals(
-                      extractFestivalList(res).length > 0
-                        ? extractFestivalList(res)
-                        : festivals
-                    );
-                    await loadFestivals();
-                  } catch (err: unknown) {
-                    toast.error("Failed to list festival. Please try again.");
-                    // eslint-disable-next-line no-console
-                    console.error(err);
-                  } finally {
-                    setIsSubmittingFestival(false);
-                  }
-                }}
-                disabled={isSubmittingFestival}
-              >
-                {isSubmittingFestival ? "Listing..." : "List Festival"}
-              </Button>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={festivalFormData.description}
+                onChange={(e) =>
+                  setFestivalFormData({ ...festivalFormData, description: e.target.value })
+                }
+                placeholder="Describe your festival..."
+                className="min-h-[100px]"
+              />
             </div>
           </div>
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowFestivalModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!festivalFormData.name) {
+                  toast.error("Festival name is required");
+                  return;
+                }
+                if (!festivalFormData.startDate || !festivalFormData.endDate) {
+                  toast.error("Start and end dates are required");
+                  return;
+                }
+
+                setIsSubmittingFestival(true);
+                try {
+                  const token = await getToken();
+                  if (!token) {
+                    toast.error("Please sign in to create a festival");
+                    return;
+                  }
+
+                  const payload: CreateFestivalDto = {
+                    name: festivalFormData.name,
+                    description: festivalFormData.description || undefined,
+                    startDate: toIsoDateOnly(festivalFormData.startDate),
+                    endDate: toIsoDateOnly(festivalFormData.endDate),
+                    location: toLocationDto(festivalFormData.location) as FestivalLocationDto | undefined,
+                  };
+
+                  await createFestival(token, payload);
+                  toast.success("Festival created successfully!");
+                  setShowFestivalModal(false);
+                  setFestivalFormData({
+                    poster: "",
+                    website: "",
+                    name: "",
+                    location: "",
+                    description: "",
+                    startDate: undefined,
+                    endDate: undefined,
+                  });
+                  await loadFestivals();
+                } catch (err) {
+                  toast.error("Failed to create festival");
+                  console.error(err);
+                } finally {
+                  setIsSubmittingFestival(false);
+                }
+              }}
+              disabled={isSubmittingFestival}
+            >
+              {isSubmittingFestival ? "Creating..." : "Create Festival"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-      <RegistrationQuestionsModal
-        open={showRegistrationModal}
-        onOpenChange={setShowRegistrationModal}
-        initialQuestions={formData.registrationQuestions}
-        onSave={(questions) =>
-          setFormData({ ...formData, registrationQuestions: questions })
-        }
-      />
     </div>
   );
 }

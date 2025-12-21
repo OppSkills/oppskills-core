@@ -22,6 +22,10 @@ interface User {
 interface EventRegistrationCardProps {
   tickets: Ticket[];
   user?: User; // Optional, might not be logged in, but design shows user info
+  selectedTicketId?: string | null; // Controlled: parent manages selection
+  onSelectTicket?: (ticketId: string | null) => void; // Controlled: parent handles selection change
+  onRegister?: () => Promise<void> | void; // Controlled: parent handles registration
+  isRegistering?: boolean; // Controlled: parent manages loading state
 }
 
 export function EventRegistrationCard({
@@ -31,10 +35,25 @@ export function EventRegistrationCard({
     email: "tstrohittiwari@gmail.com",
     avatar: "https://github.com/shadcn.png", // Placeholder avatar
   },
+  selectedTicketId: controlledSelectedTicketId,
+  onSelectTicket,
+  onRegister,
+  isRegistering = false,
 }: EventRegistrationCardProps) {
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(
+  // Use controlled state if provided, otherwise fall back to internal state
+  const [internalSelectedTicketId, setInternalSelectedTicketId] = useState<string | null>(
     tickets.length > 0 ? tickets[0].id : null
   );
+  
+  const selectedTicketId = controlledSelectedTicketId ?? internalSelectedTicketId;
+  
+  const handleTicketSelect = (ticketId: string) => {
+    if (onSelectTicket) {
+      onSelectTicket(ticketId);
+    } else {
+      setInternalSelectedTicketId(ticketId);
+    }
+  };
 
   const hasPaidTickets = tickets.some((t) => t.price > 0);
 
@@ -79,8 +98,12 @@ export function EventRegistrationCard({
             </div>
           </div>
 
-          <Button className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-white font-semibold text-[18px]">
-            One Click RSVP
+          <Button 
+            className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-white font-semibold text-[18px]"
+            onClick={onRegister}
+            disabled={isRegistering}
+          >
+            {isRegistering ? "Registering..." : "One Click RSVP"}
           </Button>
         </div>
       </div>
@@ -106,7 +129,7 @@ export function EventRegistrationCard({
             return (
               <div
                 key={ticket.id}
-                onClick={() => setSelectedTicketId(ticket.id)}
+                onClick={() => handleTicketSelect(ticket.id)}
                 className={cn(
                   "cursor-pointer rounded-2xl border p-4 transition-all duration-200 relative",
                   isSelected
@@ -158,8 +181,12 @@ export function EventRegistrationCard({
           </div>
         </div>
 
-        <Button className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-white font-semibold text-[18px]">
-          Click To Book
+        <Button 
+          className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-white font-semibold text-[18px]"
+          onClick={onRegister}
+          disabled={isRegistering || !selectedTicketId}
+        >
+          {isRegistering ? "Registering..." : "Click To Book"}
         </Button>
       </div>
     </div>

@@ -27,7 +27,7 @@ export function getApiRootUrl(): string {
   const trimmed = raw.trim().replace(/\/+$/g, "");
 
   // Backwards-compat: if env mistakenly ends with a resource path, strip it.
-  const knownResourceSuffixes = ["/hackathons", "/festivals"] as const;
+  const knownResourceSuffixes = ["/hackathons", "/festivals", "/events"] as const;
   const matched = knownResourceSuffixes.find((suffix) =>
     trimmed.endsWith(suffix)
   );
