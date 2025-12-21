@@ -206,8 +206,8 @@ export default function RegistrationQuestionsModal({
   };
 
   const handleSave = () => {
-    const customOnly = questions.filter((q) => q.fixed !== true);
-    onSave(customOnly);
+    // Save ALL questions (both fixed and custom) so they appear in registration form
+    onSave(questions);
     onOpenChange(false);
   };
 

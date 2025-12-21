@@ -5,16 +5,10 @@ import {
   Calendar as CalendarIcon,
   Clock,
   Infinity as InfinityIcon,
-  Menu,
-  CheckCircle2,
-  PlusCircle,
-  Trash2,
-  Lock,
 } from "lucide-react";
 import React from "react";
 import { cn } from "@/lib/utils";
-import { FormData, BasicQuestion } from "../page";
-import { Input } from "@/components/ui/input";
+import { FormData } from "../page";
 import {
   Popover,
   PopoverContent,
@@ -52,36 +46,6 @@ export default function RegistrationSettings({
     } else {
       updateSettings({ candidateTypes: [...current, type] });
     }
-  };
-
-  // Questions Handlers
-  const handleAddQuestion = () => {
-    const newQuestion: BasicQuestion = {
-      id: crypto.randomUUID(),
-      label: "",
-      required: false,
-      isStatic: false,
-    };
-    updateSettings({
-      questions: [...formData.registrationSettings.questions, newQuestion],
-    });
-  };
-
-  const handleUpdateQuestion = (
-    id: string,
-    updates: Partial<BasicQuestion>
-  ) => {
-    const updatedQuestions = formData.registrationSettings.questions.map((q) =>
-      q.id === id ? { ...q, ...updates } : q
-    );
-    updateSettings({ questions: updatedQuestions });
-  };
-
-  const handleDeleteQuestion = (id: string) => {
-    const updatedQuestions = formData.registrationSettings.questions.filter(
-      (q) => q.id !== id
-    );
-    updateSettings({ questions: updatedQuestions });
   };
 
   const candidateTypes = [
@@ -307,126 +271,6 @@ export default function RegistrationSettings({
                 : "Limit set"}
             </span>
           </button>
-        </div>
-      </div>
-
-      {/* Basic Questions */}
-      <div className="w-full border rounded-2xl p-6 bg-card shadow-sm">
-        <h3 className="text-lg font-bold mb-1">Basic Questions</h3>
-        <p className="text-muted-foreground text-sm mb-6">
-          Filled by all team members
-        </p>
-
-        <div className="flex flex-col gap-3">
-          {formData.registrationSettings.questions.map((question) => {
-            if (question.isStatic) {
-              return (
-                <div
-                  key={question.id}
-                  className="group flex items-center gap-3 bg-muted/30 p-3 rounded-lg border border-transparent"
-                >
-                  <div className="text-muted-foreground/50 p-1 cursor-default">
-                    <Menu className="w-4 h-4" />
-                  </div>
-
-                  <div className="flex-1">
-                    <span className="font-medium text-sm text-foreground">
-                      {question.label}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="bg-white px-3 py-1 rounded text-xs font-medium text-muted-foreground shadow-sm flex items-center gap-1">
-                      Required
-                      <Lock className="w-3 h-3 text-muted-foreground/50" />
-                    </div>
-                    <div className="p-1">
-                      <CheckCircle2 className="w-6 h-6 text-green-600 fill-green-100" />
-                    </div>
-                  </div>
-                </div>
-              );
-            } else {
-              return (
-                <div
-                  key={question.id}
-                  className="group flex items-center gap-3 bg-white p-3 rounded-lg border border-border/60 hover:border-primary/30 transition-all shadow-sm"
-                >
-                  <div className="text-muted-foreground cursor-grab active:cursor-grabbing p-1">
-                    <Menu className="w-4 h-4" />
-                  </div>
-
-                  <div className="flex-1">
-                    <Input
-                      value={question.label}
-                      onChange={(e) =>
-                        handleUpdateQuestion(question.id, {
-                          label: e.target.value,
-                        })
-                      }
-                      placeholder="Type your question here..."
-                      className="bg-transparent border-0 border-b rounded-none px-0 h-8 focus-visible:ring-0 focus-visible:border-primary placeholder:text-muted-foreground/50"
-                      autoFocus={!question.label}
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() =>
-                        handleUpdateQuestion(question.id, {
-                          required: !question.required,
-                        })
-                      }
-                      className={cn(
-                        "px-3 py-1 rounded text-xs font-medium border transition-colors",
-                        question.required
-                          ? "bg-white text-foreground border-border shadow-sm"
-                          : "bg-transparent text-muted-foreground/50 border-transparent hover:bg-muted"
-                      )}
-                    >
-                      Required?
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleUpdateQuestion(question.id, {
-                          required: !question.required,
-                        })
-                      }
-                      className="focus:outline-none"
-                      title="Toggle Required"
-                    >
-                      <CheckCircle2
-                        className={cn(
-                          "w-6 h-6 transition-colors",
-                          question.required
-                            ? "text-green-600 fill-green-100"
-                            : "text-muted-foreground/30"
-                        )}
-                      />
-                    </button>
-                    <div className="w-[1px] h-6 bg-border mx-1"></div>
-                    <button
-                      onClick={() => handleDeleteQuestion(question.id)}
-                      className="text-muted-foreground hover:text-destructive-foreground transition-colors p-1"
-                      title="Delete Question"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            }
-          })}
-
-          {/* Add Additional Questions Button */}
-          <Button
-            variant="outline"
-            onClick={handleAddQuestion}
-            className="w-full mt-2 h-12 bg-white border hover:bg-muted/20 gap-2 text-muted-foreground font-normal justify-start px-4"
-          >
-            <PlusCircle className="w-5 h-5" />
-            Add Additional Questions
-          </Button>
         </div>
       </div>
     </div>

@@ -33,6 +33,7 @@ import {
   SubmitForApprovalDto,
   UpdateApprovalStatusDto,
   UpdateEventRegistrationPausedDto,
+  JoinEventDto,
 } from '@oppskills/types';
 import {
   UpdateEventAdditionalInfoDto,
@@ -297,21 +298,42 @@ export class EventController {
 
   @Post(':id/join')
   @UseGuards(ClerkAuthGuard)
-  @ApiOperation({ summary: 'Join an event' })
+  @ApiOperation({ summary: 'Join an event with optional registration answers' })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({ status: 201, description: 'Successfully joined event' })
-  @ApiResponse({ status: 400, description: 'Cannot join event' })
+  @ApiResponse({ status: 400, description: 'Cannot join event or invalid answers' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Event not found' })
   @ApiResponse({ status: 409, description: 'Already joined' })
-  async joinEvent(@Param('id') id: string, @Req() req: Request) {
+  async joinEvent(
+    @Param('id') id: string,
+    @Body() dto: JoinEventDto,
+    @Req() req: Request
+  ) {
     const userId = req.user?.id;
     if (!userId) {
       throw new BadRequestException('User ID is required.');
     }
 
     const validId = assertNonEmptyId(id, 'id');
-    return this.eventService.joinEvent(validId, userId);
+    return this.eventService.joinEvent(validId, userId, dto.answers);
+  }
+
+  @Get(':id/my-registration')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({ summary: 'Check if current user is registered for an event' })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  @ApiResponse({ status: 200, description: 'Registration status returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async checkMyRegistration(@Param('id') id: string, @Req() req: Request) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+
+    const validId = assertNonEmptyId(id, 'id');
+    return this.eventService.checkUserRegistration(validId, userId);
   }
 
   @Delete(':id/leave')

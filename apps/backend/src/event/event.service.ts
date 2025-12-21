@@ -430,8 +430,13 @@ export class EventService {
    * - Only allowed for PUBLISHED or ONGOING events.
    * - Must be APPROVED.
    * - Must not have registrations paused.
+   * - Optionally accepts registration form answers.
    */
-  async joinEvent(eventId: string, userId: string) {
+  async joinEvent(
+    eventId: string,
+    userId: string,
+    answers?: Array<{ fieldId: string; value: string | number | string[] }>
+  ) {
     const event = await prisma.eventEntity.findUnique({
       where: { id: eventId },
       select: {
@@ -482,6 +487,99 @@ export class EventService {
       throw new ConflictException('You have already joined this event.');
     }
 
+    // Fetch registration form if answers provided
+    let registrationFields: Array<{
+      id: string;
+      label: string;
+      type: string;
+      required: boolean;
+      options: string[];
+    }> = [];
+
+    if (answers && answers.length > 0) {
+      const regForm = await prisma.eventRegistrationFormEntity.findUnique({
+        where: { eventId },
+        include: {
+          fields: {
+            select: {
+              id: true,
+              label: true,
+              type: true,
+              required: true,
+              options: true,
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+      });
+
+      if (regForm) {
+        registrationFields = regForm.fields;
+      }
+    }
+
+    // Validate answers if form fields exist
+    if (registrationFields.length > 0 && answers) {
+      const fieldMap = new Map(registrationFields.map((f) => [f.id, f]));
+      const providedFieldIds = new Set(answers.map((a) => a.fieldId));
+
+      // Check for required fields
+      for (const field of registrationFields) {
+        if (field.required && !providedFieldIds.has(field.id)) {
+          throw new BadRequestException(`Field "${field.label}" is required.`);
+        }
+      }
+
+      // Validate each answer
+      for (const answer of answers) {
+        const field = fieldMap.get(answer.fieldId);
+        if (!field) {
+          throw new BadRequestException(`Unknown field ID: ${answer.fieldId}`);
+        }
+
+        // Reject ATTACHMENTS type for now
+        if (field.type === 'ATTACHMENTS') {
+          throw new BadRequestException(`Attachments are not supported yet.`);
+        }
+
+        // Type validation
+        const value = answer.value;
+        switch (field.type) {
+          case 'TEXT':
+          case 'EMAIL':
+          case 'PHONE_NO':
+            if (typeof value !== 'string') {
+              throw new BadRequestException(`Field "${field.label}" must be a string.`);
+            }
+            if (field.type === 'EMAIL' && value.length > 0) {
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!emailRegex.test(value)) {
+                throw new BadRequestException(`Field "${field.label}" must be a valid email.`);
+              }
+            }
+            break;
+          case 'NUMBER':
+            if (typeof value !== 'number' && typeof value !== 'string') {
+              throw new BadRequestException(`Field "${field.label}" must be a number.`);
+            }
+            break;
+          case 'OPTIONS':
+            if (Array.isArray(value)) {
+              for (const v of value) {
+                if (!field.options.includes(v)) {
+                  throw new BadRequestException(`Invalid option "${v}" for field "${field.label}".`);
+                }
+              }
+            } else if (typeof value === 'string') {
+              if (value.length > 0 && !field.options.includes(value)) {
+                throw new BadRequestException(`Invalid option "${value}" for field "${field.label}".`);
+              }
+            }
+            break;
+        }
+      }
+    }
+
     // Check capacity (use transaction for atomic update)
     return prisma.$transaction(async (tx) => {
       // Re-fetch within transaction to ensure consistency
@@ -499,7 +597,7 @@ export class EventService {
       }
 
       // Create participant and increment count
-      await tx.eventParticipantEntity.create({
+      const participant = await tx.eventParticipantEntity.create({
         data: {
           eventId,
           userId,
@@ -510,6 +608,29 @@ export class EventService {
         where: { id: eventId },
         data: { registrationCount: { increment: 1 } },
       });
+
+      // Create submission and answers if provided
+      if (answers && answers.length > 0 && registrationFields.length > 0) {
+        const submission = await tx.eventRegistrationSubmissionEntity.create({
+          data: {
+            eventId,
+            userId,
+            participantId: participant.id,
+          },
+        });
+
+        // Create answers
+        const answerData = answers.map((a) => ({
+          submissionId: submission.id,
+          fieldId: a.fieldId,
+          valueText: typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
+          valueJson: a.value,
+        }));
+
+        await tx.eventRegistrationAnswerEntity.createMany({
+          data: answerData,
+        });
+      }
 
       return { message: 'Successfully joined the event.' };
     });
@@ -555,6 +676,32 @@ export class EventService {
 
       return { message: 'Successfully left the event.' };
     });
+  }
+
+  /**
+   * Check if a user is registered for an event.
+   */
+  async checkUserRegistration(eventId: string, userId: string) {
+    const event = await prisma.eventEntity.findUnique({
+      where: { id: eventId },
+      select: { id: true },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    const participant = await prisma.eventParticipantEntity.findUnique({
+      where: {
+        eventId_userId: { eventId, userId },
+      },
+      select: {
+        id: true,
+        joinedAt: true,
+      },
+    });
+
+    return {
+      isRegistered: !!participant,
+      registeredAt: participant?.joinedAt ?? null,
+    };
   }
 
   /**

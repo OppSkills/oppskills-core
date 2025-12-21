@@ -884,3 +884,45 @@ export class UpdateEventRegistrationPausedDto {
   isRegistrationPaused: boolean;
 }
 
+// =====================
+// Event Registration DTOs
+// =====================
+
+/**
+ * Single answer to a registration field.
+ */
+export class EventRegistrationAnswerDto {
+  @ApiProperty({
+    description: "ID of the registration field being answered",
+    example: "clxx1234abcd",
+  })
+  @IsString()
+  fieldId: string;
+
+  @ApiProperty({
+    description: "The answer value - string for TEXT/EMAIL/PHONE_NO, number for NUMBER, string[] for OPTIONS",
+    oneOf: [
+      { type: "string" },
+      { type: "number" },
+      { type: "array", items: { type: "string" } },
+    ],
+    example: "john@example.com",
+  })
+  value: string | number | string[];
+}
+
+/**
+ * DTO for joining an event with optional registration answers.
+ */
+export class JoinEventDto {
+  @ApiPropertyOptional({
+    description: "Array of answers to registration form fields (required if event has registration form)",
+    type: [EventRegistrationAnswerDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EventRegistrationAnswerDto)
+  answers?: EventRegistrationAnswerDto[];
+}
+

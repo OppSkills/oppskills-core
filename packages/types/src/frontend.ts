@@ -118,6 +118,9 @@ export type {
   SubmitForApprovalDto,
   UpdateApprovalStatusDto,
   UpdateEventRegistrationPausedDto,
+  // Registration DTOs
+  EventRegistrationAnswerDto,
+  JoinEventDto,
 } from './dtos/backend/event/create-event.dto';
 
 export type {

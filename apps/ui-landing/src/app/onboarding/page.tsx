@@ -220,6 +220,10 @@ export default function OnboardingPage() {
     defaultValue: "1",
     parse: (value) => value || "1",
   });
+  const [returnUrl] = useQueryState("returnUrl", {
+    defaultValue: "",
+    parse: (value) => value || "",
+  });
   const currentStep = parseInt(step || "1", 10);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -395,7 +399,10 @@ export default function OnboardingPage() {
       await submitOnboarding(token, onboardingData);
       clearSavedFormData(); // Clear localStorage on successful submission
       toast.success("Onboarding completed! Welcome to OppSkills!");
-      router.push("/dashboard");
+      
+      // Redirect to returnUrl if provided, otherwise go to dashboard
+      const redirectTo = returnUrl && returnUrl.length > 0 ? returnUrl : "/dashboard";
+      router.push(redirectTo);
     } catch (error) {
       console.error("Error submitting onboarding:", error);
       toast.error("Failed to complete onboarding. Please try again.");

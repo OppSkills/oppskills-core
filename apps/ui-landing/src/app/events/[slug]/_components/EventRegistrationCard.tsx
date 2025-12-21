@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Check, Circle } from "lucide-react";
+import { Check, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Ticket {
@@ -21,24 +21,22 @@ interface User {
 
 interface EventRegistrationCardProps {
   tickets: Ticket[];
-  user?: User; // Optional, might not be logged in, but design shows user info
-  selectedTicketId?: string | null; // Controlled: parent manages selection
-  onSelectTicket?: (ticketId: string | null) => void; // Controlled: parent handles selection change
-  onRegister?: () => Promise<void> | void; // Controlled: parent handles registration
-  isRegistering?: boolean; // Controlled: parent manages loading state
+  user?: User; // Optional - undefined when not logged in
+  selectedTicketId?: string | null;
+  onSelectTicket?: (ticketId: string | null) => void;
+  onRegister?: () => Promise<void> | void;
+  isRegistering?: boolean;
+  isRegistered?: boolean; // If true, shows "Registered" state
 }
 
 export function EventRegistrationCard({
   tickets,
-  user = {
-    name: "Rohit",
-    email: "tstrohittiwari@gmail.com",
-    avatar: "https://github.com/shadcn.png", // Placeholder avatar
-  },
+  user,
   selectedTicketId: controlledSelectedTicketId,
   onSelectTicket,
   onRegister,
   isRegistering = false,
+  isRegistered = false,
 }: EventRegistrationCardProps) {
   // Use controlled state if provided, otherwise fall back to internal state
   const [internalSelectedTicketId, setInternalSelectedTicketId] = useState<string | null>(
@@ -68,6 +66,31 @@ export function EventRegistrationCard({
 
   const isSimpleRSVP = tickets.length === 1 && tickets[0].price === 0;
 
+  if (isRegistered) {
+    return (
+      <div className="w-full bg-white dark:bg-zinc-900 rounded-[20px] border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm font-sans">
+        <div className="bg-[#F0FDF4] dark:bg-[#14532D]/20 px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
+          <h3 className="text-[#166534] dark:text-[#4ADE80] font-semibold text-lg flex items-center gap-2">
+            <CheckCircle className="w-5 h-5" />
+            Registered
+          </h3>
+        </div>
+        <div className="p-6 space-y-6">
+          <p className="text-zinc-600 dark:text-zinc-400 text-[15px]">
+            You have successfully registered for this event. We look forward to seeing you!
+          </p>
+
+          <Button 
+            className="w-full h-[52px] rounded-full bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-[18px]"
+            onClick={() => window.location.href = "/dashboard"}
+          >
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (isSimpleRSVP) {
     return (
       <div className="w-full bg-white dark:bg-zinc-900 rounded-[20px] border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm font-sans">
@@ -78,32 +101,36 @@ export function EventRegistrationCard({
         </div>
         <div className="p-6 space-y-6">
           <p className="text-zinc-600 dark:text-zinc-400 text-[15px]">
-            Welcome! to join event please register below.
+            {user ? "Welcome! To join this event, please register below." : "Sign in to register for this event."}
           </p>
 
-          <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10 rounded-full overflow-hidden">
-              <Image
-                src={user.avatar}
-                alt={user.name}
-                fill
-                className="object-cover"
-              />
+          {user && (
+            <div className="flex items-center gap-3">
+              <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-200">
+                {user.avatar && (
+                  <Image
+                    src={user.avatar}
+                    alt={user.name}
+                    fill
+                    className="object-cover"
+                  />
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-[16px]">
+                  {user.name}
+                </span>
+                <span className="text-zinc-500 text-sm">{user.email}</span>
+              </div>
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-[16px]">
-                {user.name}
-              </span>
-              <span className="text-zinc-500 text-sm">{user.email}</span>
-            </div>
-          </div>
+          )}
 
           <Button 
             className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-white font-semibold text-[18px]"
             onClick={onRegister}
             disabled={isRegistering}
           >
-            {isRegistering ? "Registering..." : "One Click RSVP"}
+            {isRegistering ? "Registering..." : (user ? "One Click RSVP" : "Sign In to Register")}
           </Button>
         </div>
       </div>
@@ -164,29 +191,33 @@ export function EventRegistrationCard({
           })}
         </div>
 
-        <div className="flex items-center gap-3 pt-2">
-          <div className="relative w-10 h-10 rounded-full overflow-hidden">
-            <Image
-              src={user.avatar}
-              alt={user.name}
-              fill
-              className="object-cover"
-            />
+        {user && (
+          <div className="flex items-center gap-3 pt-2">
+            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-200">
+              {user.avatar && (
+                <Image
+                  src={user.avatar}
+                  alt={user.name}
+                  fill
+                  className="object-cover"
+                />
+              )}
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-[16px]">
+                {user.name}
+              </span>
+              <span className="text-zinc-500 text-sm">{user.email}</span>
+            </div>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
-            <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-[16px]">
-              {user.name}
-            </span>
-            <span className="text-zinc-500 text-sm">{user.email}</span>
-          </div>
-        </div>
+        )}
 
         <Button 
           className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-white font-semibold text-[18px]"
           onClick={onRegister}
           disabled={isRegistering || !selectedTicketId}
         >
-          {isRegistering ? "Registering..." : "Click To Book"}
+          {isRegistering ? "Registering..." : (user ? "Click To Book" : "Sign In to Register")}
         </Button>
       </div>
     </div>
