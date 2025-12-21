@@ -1,27 +1,6 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-
-// Mock data based on the reference image
-const MOCK_COMPETITIONS = [
-  {
-    id: 1,
-    title: "Hackathon 1.0",
-    organizer: "Kalinga Institute of Management",
-    tags: ["Free", "Offline"],
-    image: "/tmp/hackathon.jpg",
-    registerBy: "20 Dec 2024",
-    prizes: "₹ 20,000",
-  },
-];
 
 export default function UpcomingCompetitions() {
   return (
@@ -37,79 +16,55 @@ export default function UpcomingCompetitions() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {MOCK_COMPETITIONS.map((comp) => (
-            <Card
-              key={comp.id}
-              className="p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card"
-            >
-              {/* Image Section */}
-              <div className="relative w-full h-48 sm:h-56 overflow-hidden">
-                <Image
-                  src={comp.image}
-                  alt={comp.title}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-
-              {/* Content Section */}
-              <CardContent className="p-5 space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {comp.tags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant="secondary"
-                      className={`text-xs font-normal px-2 py-0.5 rounded-sm ${
-                        tag === "Free"
-                          ? "bg-purple-100 text-purple-600 hover:bg-purple-200"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {tag}
-                      {tag === "Offline" && " • Offline"}
-                      {tag === "Online" && " • Online"}
-                    </Badge>
-                  ))}
-                </div>
-
-                <div className="space-y-1">
-                  <h3 className="text-xl font-semibold leading-tight poppins text-foreground">
-                    {comp.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground inter line-clamp-1">
-                    {comp.organizer}
-                  </p>
-                </div>
-              </CardContent>
-
-              {/* Footer Section */}
-              <CardFooter className="p-5 pt-0 flex justify-between items-center text-sm border-t border-border/40 mt-auto bg-muted/5">
-                <div className="flex flex-col gap-0.5 mt-3">
-                  <span className="text-[10px] uppercase text-muted-foreground font-medium tracking-wider">
-                    Register by
-                  </span>
-                  <span className="font-semibold text-foreground inter">
-                    {comp.registerBy}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-0.5 mt-3 text-right">
-                  <span className="text-[10px] uppercase text-muted-foreground font-medium tracking-wider">
-                    Prizes worth
-                  </span>
-                  <span className="font-semibold text-foreground inter">
-                    {comp.prizes}
-                  </span>
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
-
-          {/* "Coming Soon" styling matching the reference image's right side graphic if possible? 
-              The reference had a "Work" illustration. 
-              For now, let's just render the cards. 
-          */}
+        {/* Coming Soon State */}
+        <div className="flex flex-col items-center justify-center py-16 px-4 rounded-2xl border border-dashed border-border bg-muted/20">
+          <div className="relative mb-6">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-purple-600 dark:text-purple-400"
+              >
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                <path d="M4 22h16" />
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+              </svg>
+            </div>
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-amber-900"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-2xl font-bold text-foreground poppins mb-2">
+            Coming Soon
+          </h3>
+          <p className="text-muted-foreground text-center max-w-md inter">
+            We&apos;re preparing exciting hackathons and coding competitions for you.
+            Stay tuned for amazing opportunities to showcase your skills!
+          </p>
         </div>
       </div>
     </section>

@@ -12,6 +12,36 @@ import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/events");
 
+// =====================
+// Public API Functions (no auth required)
+// =====================
+
+/**
+ * Lists all published/public events (no auth required).
+ * This is used for the public /events listing page.
+ */
+export async function getPublicEvents(): Promise<unknown> {
+  const res = await API.get("");
+  return res.data as unknown;
+}
+
+/**
+ * Fetches a single event by slug (no auth required).
+ * This is used for the public /events/[slug] detail page.
+ */
+export async function getPublicEventBySlug(slug: string): Promise<unknown> {
+  const safeSlug = slug.trim();
+  if (safeSlug.length === 0) {
+    throw new Error("Event slug is required.");
+  }
+  const res = await API.get(`/by-slug/${encodeURIComponent(safeSlug)}`);
+  return res.data as unknown;
+}
+
+// =====================
+// Authenticated API Functions
+// =====================
+
 /**
  * Lists all events visible to the current user.
  */

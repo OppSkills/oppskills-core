@@ -2,133 +2,139 @@
 
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
-import { EventSidebar } from "./_components/EventSidebar";
 import { EventRegistrationCard } from "./_components/EventRegistrationCard";
 import { EventTabs } from "./_components/EventTabs";
-import { EventDetails } from "./_components/types";
 import Image from "next/image";
-import { Mail, Phone, Globe, Linkedin, Twitter, MapPin } from "lucide-react";
-import { toast } from "sonner"; // Ensure sonner is installed/available or use standard alert/console for mock
+import { MapPin, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { usePublicEventBySlug } from "@/hooks/usePublicEventBySlug";
 
-// Mock Data
-const MOCK_EVENT: EventDetails = {
-  id: "1",
-  slug: "karan-aujla-music-concery",
-  title: "Karan Aujla - It Was All A Dream (World Tour)",
-  thumbnail:
-    "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2670&auto=format&fit=crop",
-  date: "Sunday, 15 Dec 2024",
-  time: "6:00 PM Onwards",
-  venueName: "JLN Stadium",
-  venueAddress: "Delhi, India",
-  tickets: [
-    {
-      id: "t1",
-      name: "Standard Ticket",
-      price: 0,
-      description:
-        "Get ready for the ultimate musical experience as Karan Aujla, the global Punjabi sensation, takes over India with the P Pop Culture Tour in a free entry zone!",
-    },
-    {
-      id: "t2",
-      name: "Deluxe Ticket",
-      price: 4000,
-      description:
-        "Get ready for the ultimate musical experience as Karan Aujla, the global Punjabi sensation, takes over India with the P Pop Culture Tour. VIP Access.",
-    },
-  ],
-  about: `
-    <p>Get ready for the ultimate musical experience as Karan Aujla, the global Punjabi sensation, takes over India with the <b>It Was All A Dream</b> World Tour! Known for his chart-topping hits and electrifying stage presence, Karan Aujla is set to deliver a performance like never before.</p>
-    <br/>
-    <p>This massive tour will span multiple cities, bringing fans closer to the magic of his music. Expect high-energy performances, stunning visuals, and an atmosphere buzzing with excitement. Whether you're a die-hard fan or just love great music, this is one event you don't want to miss!</p>
-    <br/>
-    <p><b>Highlights:</b></p>
-    <ul>
-      <li>Live performance by Karan Aujla</li>
-      <li>State-of-the-art stage setup & audio-visuals</li>
-      <li>Exclusive merchandise stalls</li>
-      <li>Food & Beverage zones</li>
-    </ul>
-  `,
-  contact: {
-    email: "contact@eventmanager.com",
-    phone: "+91 98765 43210",
-    website: "https://karanaujlatour.com",
-  },
-  speakers: [
-    {
-      id: "s1",
-      name: "Someone Famous",
-      role: "Main Artist",
-      company: "Geetan Di Machine",
-      avatar:
-        "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=800&auto=format&fit=crop&q=60",
-    },
-  ],
-  organizers: [
-    {
-      id: "o1",
-      name: "Event Co.",
-      role: "Organizer",
-    },
-  ],
-};
+/**
+ * Get initials from a name for avatar fallback.
+ */
+function getInitials(firstName: string | null, lastName: string | null): string {
+  const first = (firstName ?? "").trim().charAt(0).toUpperCase();
+  const last = (lastName ?? "").trim().charAt(0).toUpperCase();
+  return first + last || "??";
+}
+
+/**
+ * Format the location display from event data.
+ */
+function formatLocation(event: {
+  locationType: string | null;
+  locationCity: string | null;
+  locationAddress: string | null;
+  locationVirtualLink: string | null;
+}): { venueName: string; venueAddress: string } {
+  if (event.locationType === "VIRTUAL" || event.locationType === "ONLINE") {
+    return {
+      venueName: "Virtual Event",
+      venueAddress: event.locationVirtualLink || "Online",
+    };
+  }
+
+  return {
+    venueName: event.locationAddress || "TBA",
+    venueAddress: event.locationCity || "",
+  };
+}
 
 export default function EventDetailsPage() {
-  const { slug } = useParams();
+  const params = useParams();
+  const slug = typeof params.slug === "string" ? params.slug : null;
+
+  const { data: event, isLoading, error } = usePublicEventBySlug(slug);
+
   const [activeTab, setActiveTab] = useState("About Event");
   const [isRegistering, setIsRegistering] = useState(false);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
-  // In a real app, fetch data based on slug.
-  const event = MOCK_EVENT;
-  const TABS = ["About Event", "Contact Details", "Speaker"];
-
-  // Default to first ticket if available
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(
-    event.tickets.length > 0 ? event.tickets[0].id : null
-  );
+  const TABS = ["About Event", "Contact Details"];
 
   const handleRegistration = async () => {
-    if (!selectedTicketId) {
-      toast.error("Please select a ticket first");
-      return;
-    }
-
-    const ticket = event.tickets.find((t) => t.id === selectedTicketId);
-    if (!ticket) return;
+    if (!event) return;
 
     setIsRegistering(true);
 
-    // Simulate API Call
+    // TODO: Implement actual registration via API
     setTimeout(() => {
       setIsRegistering(false);
-      if (ticket.price === 0) {
-        toast.success(`Successfully registered for ${ticket.name}!`);
+      if (event.isFree) {
+        toast.success("Successfully registered for the event!");
       } else {
-        toast.success(`Redirecting to payment for ${ticket.name}...`);
+        toast.success("Redirecting to payment...");
       }
     }, 1500);
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !event) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <h1 className="text-2xl font-bold text-foreground">Event Not Found</h1>
+        <p className="text-muted-foreground">
+          The event you&apos;re looking for doesn&apos;t exist or has been removed.
+        </p>
+      </div>
+    );
+  }
+
+  // Format dates
+  const startDate = new Date(event.startDate);
+  const formattedDate = format(startDate, "EEEE, d MMM yyyy");
+  const formattedTime = format(startDate, "h:mm a") + " Onwards";
+  const monthShort = format(startDate, "MMM");
+  const dayNum = format(startDate, "dd");
+
+  // Location info
+  const { venueName, venueAddress } = formatLocation(event);
+
+  // Build tickets array for registration card
+  const tickets = [
+    {
+      id: "standard",
+      name: event.isFree ? "Free Entry" : "Standard Ticket",
+      price: event.isFree ? 0 : (event.entryFeeAmount ?? 0),
+      description: event.description || "Join this amazing event!",
+    },
+  ];
+
+  // Default to first ticket
+  const effectiveSelectedTicketId = selectedTicketId ?? tickets[0]?.id ?? null;
 
   return (
     <div className="min-h-screen bg-transparent py-8 font-sans">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* TOP HEADER SECTION */}
         <div className="mb-8">
-          <div className="flex flex-wrap gap-2 mb-4">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-full text-xs text-zinc-600 dark:text-zinc-400">
-              <span className="font-normal text-muted-foreground">
-                Featured in
-              </span>
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                FestName
-              </span>
-              <span className="text-zinc-400">&gt;</span>
+          {/* Festival badge if applicable */}
+          {event.festival && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-full text-xs text-zinc-600 dark:text-zinc-400">
+                <span className="font-normal text-muted-foreground">
+                  Featured in
+                </span>
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                  {event.festival.name}
+                </span>
+                <span className="text-zinc-400">&gt;</span>
+              </div>
             </div>
-          </div>
+          )}
 
           <h1 className="text-3xl md:text-5xl font-extrabold text-foreground leading-tight mb-6 poppins tracking-tight">
-            {event.title}
+            {event.name}
           </h1>
 
           <div className="flex flex-wrap gap-6 md:gap-12">
@@ -136,17 +142,17 @@ export default function EventDetailsPage() {
             <div className="flex gap-4 items-center">
               <div className="flex-shrink-0 w-12 h-12 bg-zinc-50 dark:bg-zinc-800 rounded-xl border border-zinc-100 dark:border-zinc-700 flex flex-col items-center justify-center">
                 <span className="text-[10px] uppercase text-zinc-500 font-medium leading-none mb-0.5">
-                  Jan
+                  {monthShort}
                 </span>
                 <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100 leading-none">
-                  05
+                  {dayNum}
                 </span>
               </div>
               <div>
                 <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 text-[15px]">
-                  {event.date}
+                  {formattedDate}
                 </h4>
-                <p className="text-sm text-zinc-500">{event.time}</p>
+                <p className="text-sm text-zinc-500">{formattedTime}</p>
               </div>
             </div>
 
@@ -157,9 +163,9 @@ export default function EventDetailsPage() {
               </div>
               <div>
                 <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 text-[15px]">
-                  {event.venueName}
+                  {venueName}
                 </h4>
-                <p className="text-sm text-zinc-500">{event.venueAddress}</p>
+                <p className="text-sm text-zinc-500">{venueAddress}</p>
               </div>
             </div>
           </div>
@@ -169,15 +175,17 @@ export default function EventDetailsPage() {
           {/* Left Column: Image, Tabs, Content */}
           <div className="lg:col-span-2 order-2 lg:order-1 space-y-8">
             {/* Thumbnail */}
-            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-sm">
-              <Image
-                src={event.thumbnail}
-                alt={event.title}
-                fill
-                className="object-cover"
-                priority
-              />
-            </div>
+            {event.bannerImageUrl && (
+              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-sm">
+                <Image
+                  src={event.bannerImageUrl}
+                  alt={event.name}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </div>
+            )}
 
             {/* Tabs */}
             <EventTabs
@@ -194,7 +202,11 @@ export default function EventDetailsPage() {
                   About Event
                 </h2>
                 <div className="prose dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-300 inter">
-                  <div dangerouslySetInnerHTML={{ __html: event.about }} />
+                  {event.description ? (
+                    <div dangerouslySetInnerHTML={{ __html: event.description }} />
+                  ) : (
+                    <p>No description available.</p>
+                  )}
                 </div>
               </section>
 
@@ -204,70 +216,86 @@ export default function EventDetailsPage() {
                   Contact Details
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Owner Cards Mockup */}
+                  {/* Owner Card */}
                   <div className="p-4 bg-[#FDF2FF] dark:bg-[#3E1A45]/30 rounded-xl border border-purple-100 dark:border-purple-900/50 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
-                      TM
-                    </div>
+                    {event.owner.imageUrl ? (
+                      <Image
+                        src={event.owner.imageUrl}
+                        alt={`${event.owner.firstName || ""} ${event.owner.lastName || ""}`}
+                        width={48}
+                        height={48}
+                        className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
+                        {getInitials(event.owner.firstName, event.owner.lastName)}
+                      </div>
+                    )}
                     <div>
-                      <h4 className="font-bold text-foreground">Owner Name</h4>
-                      <p className="text-xs text-zinc-500">+91 99999 99999</p>
+                      <h4 className="font-bold text-foreground">
+                        {event.owner.firstName || ""} {event.owner.lastName || "Organizer"}
+                      </h4>
+                      {event.contactPhone && (
+                        <p className="text-xs text-zinc-500">{event.contactPhone}</p>
+                      )}
                       <p className="text-xs text-zinc-500">
-                        {event.contact.email}
+                        {event.contactEmail || event.owner.email}
                       </p>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-[#FDF2FF] dark:bg-[#3E1A45]/30 rounded-xl border border-purple-100 dark:border-purple-900/50 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
-                      TM
+                  {/* Contact person card (if different from owner) */}
+                  {event.contactName && (
+                    <div className="p-4 bg-[#FDF2FF] dark:bg-[#3E1A45]/30 rounded-xl border border-purple-100 dark:border-purple-900/50 flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
+                        {event.contactName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-foreground">{event.contactName}</h4>
+                        {event.contactPhone && (
+                          <p className="text-xs text-zinc-500">{event.contactPhone}</p>
+                        )}
+                        {event.contactEmail && (
+                          <p className="text-xs text-zinc-500">{event.contactEmail}</p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-foreground">Owner Name</h4>
-                      <p className="text-xs text-zinc-500">+91 99999 99999</p>
-                      <p className="text-xs text-zinc-500">
-                        {event.contact.email}
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </section>
 
-              {/* SPEAKER SECTION */}
-              <section id="speaker" className="scroll-mt-48">
-                <h2 className="text-2xl font-bold mb-6 text-foreground poppins">
-                  Speaker&rsquo;s
-                </h2>
-                <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col md:flex-row gap-6 items-center">
-                  <div className="relative w-32 h-40 rounded-xl overflow-hidden flex-shrink-0">
-                    <Image
-                      src={event.speakers[0].avatar}
-                      alt={event.speakers[0].name}
-                      fill
-                      className="object-cover"
-                    />
+              {/* PRIZES SECTION (if any) */}
+              {event.prizeBreakdown && event.prizeBreakdown.length > 0 && (
+                <section id="prizes" className="scroll-mt-48">
+                  <h2 className="text-2xl font-bold mb-6 text-foreground poppins">
+                    Prizes
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {event.prizeBreakdown.map((prize) => (
+                      <div
+                        key={prize.id}
+                        className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl"
+                      >
+                        <h4 className="font-bold text-foreground">{prize.position}</h4>
+                        <p className="text-xl font-bold text-primary">
+                          {event.currency} {prize.amount.toLocaleString()}
+                        </p>
+                        {prize.description && (
+                          <p className="text-sm text-zinc-500 mt-2">{prize.description}</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground mb-1">
-                      Someone Famous
-                    </h3>
-                    <p className="text-zinc-500 text-sm mb-4">Speaker</p>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-sm">
-                      Known for his chart-topping hits and electrifying stage
-                      presence, Karan Aujla is set to deliver a performance like
-                      never before.
-                    </p>
-                  </div>
-                </div>
-              </section>
+                </section>
+              )}
             </div>
           </div>
 
           {/* Right Column: Registration (Sticky) */}
           <div className="lg:col-span-1 lg:sticky lg:top-24 order-1 lg:order-2 h-fit">
             <EventRegistrationCard
-              tickets={event.tickets}
-              selectedTicketId={selectedTicketId}
+              tickets={tickets}
+              selectedTicketId={effectiveSelectedTicketId}
               onSelectTicket={setSelectedTicketId}
               onRegister={handleRegistration}
               isRegistering={isRegistering}

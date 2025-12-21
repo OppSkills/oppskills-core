@@ -28,7 +28,7 @@ import {
   updateEventPrizeBreakdown,
   updateEventRegistrationForm,
 } from "@/lib/api/eventApi";
-import CompetitionDetailsPage from "@/app/competitions/[slug]/page";
+import { EventPreview } from "./_components/EventPreview";
 
 // Types
 export interface BasicQuestion {
@@ -818,7 +818,7 @@ export default function EditEventPage() {
 
         {activeTab === "preview" && slugParam && (
           <div className="bg-background rounded-2xl overflow-hidden">
-            <CompetitionDetailsPage />
+            <EventPreview slug={slugParam} />
           </div>
         )}
       </div>
