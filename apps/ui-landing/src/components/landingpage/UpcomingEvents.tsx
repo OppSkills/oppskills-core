@@ -174,12 +174,17 @@ export const UpcomingEvents = () => {
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
-                      {["Free", "Offline"].map((item, index) => (
-                        <div key={index} className="flex gap-0.5 items-center">
-                          {index > 0 && <Dot />}
-                          <span>{item}</span>
-                        </div>
-                      ))}
+                      {[event.eventType, event.locationType].map(
+                        (item, index) => (
+                          <div
+                            key={index}
+                            className="flex gap-0.5 items-center"
+                          >
+                            {index > 0 && <Dot />}
+                            <span>{item}</span>
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
 
