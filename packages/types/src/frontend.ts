@@ -97,6 +97,7 @@ export type {
   EventTypeValue,
   EventAttendeeEligibilityValue,
   EventRegistrationFieldTypeValue,
+  ApprovalStatusValue,
   // Nested DTOs
   EventLocationDto,
   EventPrizeBreakdownDto,
@@ -113,6 +114,10 @@ export type {
   UpdateEventRegistrationFormDto,
   UpdateEventPrizeBreakdownDto,
   UpdateEventMaxUsersDto,
+  // Approval DTOs
+  SubmitForApprovalDto,
+  UpdateApprovalStatusDto,
+  UpdateEventRegistrationPausedDto,
 } from './dtos/backend/event/create-event.dto';
 
 export type {

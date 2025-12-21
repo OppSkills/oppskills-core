@@ -210,8 +210,14 @@ export class MediaService {
     }
 
     const uuid = crypto.randomUUID();
-    const prefix =
-      purpose === 'HACKATHON_BANNER' ? 'public/hackathon-banners' : 'public';
+    let prefix: string;
+    if (purpose === 'HACKATHON_BANNER') {
+      prefix = 'public/hackathon-banners';
+    } else if (purpose === 'EVENT_BANNER') {
+      prefix = 'public/event-banners';
+    } else {
+      prefix = 'public';
+    }
     return `${prefix}/${encodeURIComponent(safeUserId)}/${uuid}.${extension}`;
   }
 

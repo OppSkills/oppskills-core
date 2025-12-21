@@ -248,3 +248,80 @@ export async function removeEventRole(
   return res.data as { message: string };
 }
 
+// =====================
+// Approval Workflow Functions
+// =====================
+
+type SubmitForApprovalPayload = {
+  note?: string;
+};
+
+type UpdateApprovalStatusPayload = {
+  approvalStatus: "APPROVED" | "REJECTED";
+  note?: string;
+};
+
+type UpdateEventStatusPayload = {
+  status: "DRAFT" | "PUBLISHED" | "ONGOING" | "COMPLETED" | "CANCELLED";
+};
+
+type UpdateRegistrationPausedPayload = {
+  isRegistrationPaused: boolean;
+};
+
+/**
+ * Submit event for approval (sets status to PUBLISHED, approvalStatus to PENDING).
+ */
+export async function submitEventForApproval(
+  token: string,
+  id: string,
+  data?: SubmitForApprovalPayload
+): Promise<unknown> {
+  const res = await API.post(`/${id}/submit-approval`, data ?? {}, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
+}
+
+/**
+ * Update event approval status (admin only).
+ */
+export async function updateEventApprovalStatus(
+  token: string,
+  id: string,
+  data: UpdateApprovalStatusPayload
+): Promise<unknown> {
+  const res = await API.patch(`/${id}/approval`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
+}
+
+/**
+ * Update event status (lifecycle).
+ */
+export async function updateEventStatus(
+  token: string,
+  id: string,
+  data: UpdateEventStatusPayload
+): Promise<unknown> {
+  const res = await API.patch(`/${id}/status`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
+}
+
+/**
+ * Pause/unpause event registrations.
+ */
+export async function updateEventRegistrationPaused(
+  token: string,
+  id: string,
+  data: UpdateRegistrationPausedPayload
+): Promise<unknown> {
+  const res = await API.patch(`/${id}/registration`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
+}
+

@@ -30,6 +30,9 @@ import {
   UpdateEventStatusDto,
   AddEventRoleDto,
   RemoveEventRoleDto,
+  SubmitForApprovalDto,
+  UpdateApprovalStatusDto,
+  UpdateEventRegistrationPausedDto,
 } from '@oppskills/types';
 import {
   UpdateEventAdditionalInfoDto,
@@ -394,6 +397,97 @@ export class EventController {
       validId,
       dto.email,
       dto.role,
+      userId,
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Approval Workflow Endpoints
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post(':id/submit-approval')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Submit event for approval',
+    description: 'Sets status to PUBLISHED and approvalStatus to PENDING. Requires owner/admin/manager.',
+  })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  @ApiResponse({ status: 200, description: 'Event submitted for approval' })
+  @ApiResponse({ status: 400, description: 'Invalid state' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async submitEventForApproval(
+    @Param('id') id: string,
+    @Body() dto: SubmitForApprovalDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+
+    const validId = assertNonEmptyId(id, 'id');
+    return this.eventService.submitForApproval(validId, userId, dto.note);
+  }
+
+  @Patch(':id/approval')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Update event approval status (admin only)',
+    description: 'Approve or reject an event. Admin-only endpoint.',
+  })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  @ApiResponse({ status: 200, description: 'Approval status updated' })
+  @ApiResponse({ status: 400, description: 'Invalid status' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async updateEventApprovalStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateApprovalStatusDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+
+    const validId = assertNonEmptyId(id, 'id');
+    return this.eventService.updateApprovalStatus(
+      validId,
+      dto.approvalStatus,
+      userId,
+      dto.note,
+    );
+  }
+
+  @Patch(':id/registration')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Pause/unpause event registrations',
+    description: 'Toggle registration pause status. Event remains publicly visible.',
+  })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  @ApiResponse({ status: 200, description: 'Registration status updated' })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async updateEventRegistrationPaused(
+    @Param('id') id: string,
+    @Body() dto: UpdateEventRegistrationPausedDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+
+    const validId = assertNonEmptyId(id, 'id');
+    return this.eventService.updateRegistrationPaused(
+      validId,
+      dto.isRegistrationPaused,
       userId,
     );
   }

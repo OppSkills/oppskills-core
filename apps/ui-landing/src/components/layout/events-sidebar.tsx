@@ -8,6 +8,7 @@ import {
   IconPencil,
   IconUsers,
   IconBell,
+  IconSettings,
 } from "@tabler/icons-react";
 
 import { MobileSidebarSwitcher } from "./mobile-sidebar-switcher";
@@ -52,6 +53,11 @@ const getEventNavItems = (slug: string) => [
     title: "Send Notifications",
     url: `/dashboard/events/${slug}/notifications`,
     icon: IconBell,
+  },
+  {
+    title: "Settings",
+    url: `/dashboard/events/${slug}/settings`,
+    icon: IconSettings,
   },
 ];
 
