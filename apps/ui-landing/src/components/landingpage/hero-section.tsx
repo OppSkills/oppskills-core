@@ -8,11 +8,44 @@ import { toast } from "sonner";
 
 export default function HeroSection() {
   const router = useRouter();
+
+  const HERO_CARDS = [
+    {
+      title: "Competitions",
+      items: ["Idea Comp", "Hackathons", "Quizzes"],
+      image: "/character-competitions.png",
+      styles: {
+        bg: "bg-[#C4CAFF]",
+        circle: "bg-[#8390FF]",
+      },
+      alt: "Competitions character",
+    },
+    {
+      title: "Events",
+      items: ["Workshops", "Tech events", "Innovation meets"],
+      image: "/character-events.png",
+      styles: {
+        bg: "bg-[#FFEFA7]",
+        circle: "bg-[#F7CF04]",
+      },
+      alt: "Events character",
+    },
+    {
+      title: "Communities",
+      items: ["Tech", "Design", "Fitness"],
+      image: "/character-communities.png",
+      styles: {
+        bg: "bg-[#FDC5F5]",
+        circle: "bg-[#F675D1]",
+      },
+      alt: "Communities character",
+    },
+  ];
+
   return (
     <section className="relative min-h-[90vh] flex flex-col items-center justify-between pt-16 md:pt-30 bg-background overflow-hidden">
       <div className="relative z-40 max-w-[1159px] px-4 text-center space-y-6">
         <div className="space-y-2">
-
           <h1 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
             Opportunities Made{" "}
             <span className="text-primary kaushan-script font-normal">
@@ -27,14 +60,13 @@ export default function HeroSection() {
 
         <p className="w-full max-w-[993px] mx-auto text-center text-muted-foreground text-[18px] md:text-[28px] font-normal leading-normal px-2 inter">
           Connect with events, hackathons, and communities worldwide. Build
-          skills, network with professionals, and accelerate your career journey.
+          skills, network with professionals, and accelerate your career
+          journey.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8 w-full max-w-lg mx-auto">
-
-
           <Button
-            onClick={() => router.push("/participants")}
+            onClick={() => router.push("/competitions")}
             className="
       inline-flex items-center justify-center gap-3
       px-6 py-3
@@ -45,7 +77,6 @@ export default function HeroSection() {
     "
           >
             Find Opportunities
-            {/* If you have an arrow icon, put it here */}
           </Button>
 
           {/* BUTTON 2: Join Communities (Ghost) */}
@@ -62,54 +93,50 @@ export default function HeroSection() {
           >
             Join Communities
           </Button>
-
         </div>
       </div>
 
-      <div className="w-full flex justify-center items-center py-6 md:py-10">
-        <Image
-          src="/hero-banner.png"
-          alt="Hero Banner"
-          width={1200}
-          height={600}
-          className="w-full max-w-[1200px] h-auto object-contain px-2 md:px-6"
-          priority
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full justify-center gap-4 px-4 py-8 md:py-12 lg:py-15 max-w-[1400px]">
+        {HERO_CARDS.map((card, index) => (
+          <div
+            key={index}
+            className={`relative w-full h-[182px] rounded-[24px] overflow-hidden ${card.styles.bg} flex p-6 transition-transform hover:scale-105 shadow-sm group mx-auto max-w-md md:max-w-none`}
+          >
+            <div className="relative z-10 flex flex-col gap-2">
+              <h3
+                className={`poppins font-semibold text-[24px] leading-[125%] text-neutral-900`}
+              >
+                {card.title}
+              </h3>
+              <ul
+                className={`inter font-normal text-[16px] leading-[150%] text-neutral-800 space-y-0.5`}
+              >
+                {card.items.map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="absolute bottom-[-10px] right-0">
+              <div
+                className={`w-[120px] h-[120px] rounded-full ${card.styles.circle} absolute -top-3 right-3`}
+              ></div>
+              <Image
+                src={card.image}
+                alt={card.alt}
+                width={171}
+                height={171}
+                className="object-contain"
+                style={{
+                  width: "170.45px",
+                  height: "170.45px",
+                  filter:
+                    "drop-shadow(0px 6.619px 6.619px rgba(0, 0, 0, 0.25))",
+                }}
+              />
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

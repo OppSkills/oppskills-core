@@ -1,20 +1,17 @@
-import ActiveCommunitypage from '@/components/landingpage/ActiveCommunitypage'
-import HeroSection from '@/components/landingpage/hero-section'
-import ParticipateSection from '@/components/landingpage/ParticipateSection'
-import UpcomingCompetitions from '@/components/landingpage/UpcomingCompetitions'
-import { UpcomingEvents } from '@/components/landingpage/UpcomingEvents'
+import ActiveCommunitypage from "@/components/landingpage/ActiveCommunitypage";
+import HeroSection from "@/components/landingpage/hero-section";
+import UpcomingCompetitions from "@/components/landingpage/UpcomingCompetitions";
+import { UpcomingEvents } from "@/components/landingpage/UpcomingEvents";
 
 const Home = () => {
-
   return (
-    <div className='poppins'>
+    <div className="px-2 sm:px-4 md:px-10 lg:px-20 xl:px-25">
       <HeroSection />
-      <ParticipateSection />
       <UpcomingCompetitions />
       <UpcomingEvents />
       {/* <ActiveCommunitypage /> */}
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;
