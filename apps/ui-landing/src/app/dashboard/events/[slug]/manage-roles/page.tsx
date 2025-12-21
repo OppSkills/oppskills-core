@@ -1,109 +1,173 @@
 "use client";
 
 import React, { useState } from "react";
+import { useParams } from "next/navigation";
 import RoleCard from "./_components/RoleCard";
-import AddEditRoleModal, { RoleData } from "./_components/AddEditRoleModal";
+import AddRoleModal from "./_components/AddEditRoleModal";
 import EmptyState from "./_components/EmptyState";
 import { cn } from "@/lib/utils";
+import { useEventBySlug } from "@/hooks/useEventBySlug";
+import {
+  useEventRoles,
+  useAddEventRoleMutation,
+  useRemoveEventRoleMutation,
+} from "@/hooks/useEventRoles";
+import type {
+  EventRoleUserResponse,
+  EventUserRoleValue,
+} from "@oppskills/types/frontend";
+import { Loader2, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
-// Mock Data for Owner
-const MOCK_OWNER = {
-  id: "owner-1",
-  name: "Vijay Krishna",
-  email: "vijay.krishna@events.com",
-  phone: "+91 98765 43210",
-};
+// Helper to format display name
+function formatDisplayName(user: {
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+}): string {
+  if (user.firstName && user.lastName) {
+    return `${user.firstName} ${user.lastName}`;
+  }
+  if (user.firstName) {
+    return user.firstName;
+  }
+  if (user.lastName) {
+    return user.lastName;
+  }
+  return user.email.split("@")[0];
+}
 
-// Initial Mock Data for Managers
-const INITIAL_MANAGERS: RoleData[] = [
-  {
-    id: "manager-1",
-    name: "Sarah Jenkins",
-    email: "sarah.j@events.com",
-    phone: "+91 98989 89898",
-  },
-  {
-    id: "manager-2",
-    name: "David Ross",
-    email: "david.ross@events.com",
-    phone: "+91 97777 66666",
-  },
-];
+// Type guard to safely extract event with id
+function isEventWithId(value: unknown): value is { id: string } {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  return "id" in value && typeof (value as { id: unknown }).id === "string";
+}
 
-// Initial Mock Data for Evaluators
-const INITIAL_EVALUATORS: RoleData[] = [
-  {
-    id: "eval-1",
-    name: "Dr. Emily Chen",
-    email: "emily.chen@university.edu",
-    phone: "+91 91234 56789",
-  },
-  {
-    id: "eval-2",
-    name: "Michael Chang",
-    email: "michael.chang@techcorp.com",
-    phone: "+91 90000 11111",
-  },
-  {
-    id: "eval-3",
-    name: "Priya Patel",
-    email: "priya.p@consulting.com",
-    phone: "+91 99887 76655",
-  },
-];
+// Helper to extract error message safely
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "An unexpected error occurred";
+}
 
 export default function ManageRolesPage() {
-  const [activeTab, setActiveTab] = useState<"Manager" | "Evaluator">(
-    "Manager"
-  );
+  const params = useParams();
+  const slug = typeof params.slug === "string" ? params.slug : null;
 
-  // State for roles initialized with mock data
-  const [managers, setManagers] = useState<RoleData[]>(INITIAL_MANAGERS);
-  const [evaluators, setEvaluators] = useState<RoleData[]>(INITIAL_EVALUATORS);
-
-  // Modal State
+  const [activeTab, setActiveTab] = useState<"Manager" | "Evaluator">("Manager");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<RoleData | null>(null);
+
+  // Query for event data
+  const eventQuery = useEventBySlug(slug);
+
+  // Derive eventId safely using type guard
+  const eventId = isEventWithId(eventQuery.data)
+    ? eventQuery.data.id
+    : null;
+
+  // Query for roles
+  const rolesQuery = useEventRoles(eventId);
+
+  // Mutations for add/remove roles
+  const addMutation = useAddEventRoleMutation(eventId);
+  const removeMutation = useRemoveEventRoleMutation(eventId);
 
   const handleAddClick = () => {
-    setEditingRole(null);
     setIsModalOpen(true);
   };
 
-  const handleEditClick = (role: RoleData) => {
-    setEditingRole(role);
-    setIsModalOpen(true);
-  };
+  const handleAddRole = async (email: string) => {
+    const role: EventUserRoleValue =
+      activeTab === "Manager" ? "MANAGER" : "EVALUATOR";
 
-  const handleDeleteClick = (id: string) => {
-    if (confirm("Are you sure you want to delete this role?")) {
-      if (activeTab === "Manager") {
-        setManagers(managers.filter((m) => m.id !== id));
+    try {
+      const result = await addMutation.mutateAsync({ email, role });
+
+      if (result.alreadyExists) {
+        toast.info(result.message);
       } else {
-        setEvaluators(evaluators.filter((e) => e.id !== id));
+        toast.success(result.message);
       }
+    } catch (err) {
+      const message = getErrorMessage(err);
+      toast.error(message);
+      throw err;
     }
   };
 
-  const handleSaveRole = (data: RoleData) => {
-    const list = activeTab === "Manager" ? managers : evaluators;
-    const setList = activeTab === "Manager" ? setManagers : setEvaluators;
+  const handleDeleteClick = async (user: EventRoleUserResponse) => {
+    const displayName = formatDisplayName(user);
+    if (
+      !confirm(
+        `Are you sure you want to remove ${displayName} as a ${activeTab.toLowerCase()}?`
+      )
+    ) {
+      return;
+    }
 
-    if (editingRole) {
-      // Update
-      setList(
-        list.map((item) =>
-          item.id === editingRole.id ? { ...data, id: editingRole.id } : item
-        )
-      );
-    } else {
-      // Add
-      const newRole = { ...data, id: crypto.randomUUID() };
-      setList([...list, newRole]);
+    const role: EventUserRoleValue =
+      activeTab === "Manager" ? "MANAGER" : "EVALUATOR";
+
+    try {
+      const result = await removeMutation.mutateAsync({
+        email: user.email,
+        role,
+      });
+      toast.success(result.message);
+    } catch (err) {
+      const message = getErrorMessage(err);
+      toast.error(message);
     }
   };
 
-  const currentList = activeTab === "Manager" ? managers : evaluators;
+  const handleRetry = () => {
+    if (eventQuery.error) {
+      eventQuery.refetch();
+    }
+    if (rolesQuery.error) {
+      rolesQuery.refetch();
+    }
+  };
+
+  // Derive roles data
+  const roles = rolesQuery.data;
+
+  const currentList =
+    activeTab === "Manager" ? (roles?.managers ?? []) : (roles?.evaluators ?? []);
+
+  // Loading state
+  const isLoading = eventQuery.isLoading || rolesQuery.isLoading;
+
+  // Error state
+  const queryError = eventQuery.error ?? rolesQuery.error;
+
+  if (isLoading) {
+    return (
+      <div className="flex w-full justify-center bg-surface min-h-[calc(100vh-100px)]">
+        <div className="w-full max-w-[1200px] p-6 md:p-10 rounded-[20px] bg-background flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#A020F0]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (queryError) {
+    return (
+      <div className="flex w-full justify-center bg-surface min-h-[calc(100vh-100px)]">
+        <div className="w-full max-w-[1200px] p-6 md:p-10 rounded-[20px] bg-background flex flex-col items-center justify-center gap-4">
+          <p className="text-red-500">{getErrorMessage(queryError)}</p>
+          <Button onClick={handleRetry} variant="outline">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full justify-center bg-surface min-h-[calc(100vh-100px)]">
@@ -117,23 +181,25 @@ export default function ManageRolesPage() {
         </div>
 
         {/* Owner Section */}
-        <div>
-          <RoleCard
-            name={MOCK_OWNER.name}
-            email={MOCK_OWNER.email}
-            phone={MOCK_OWNER.phone}
-            type="Owner"
-          />
-        </div>
+        {roles?.owner && (
+          <div>
+            <RoleCard
+              name={formatDisplayName(roles.owner)}
+              email={roles.owner.email}
+              imageUrl={roles.owner.imageUrl}
+              type="Owner"
+            />
+          </div>
+        )}
 
         <div className="h-[1px] w-full bg-border" />
 
         {/* Tabs */}
         <div className="flex items-center gap-4">
-          {["Manager", "Evaluator"].map((tab) => (
+          {(["Manager", "Evaluator"] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab as "Manager" | "Evaluator")}
+              onClick={() => setActiveTab(tab)}
               className={cn(
                 "px-6 py-2 rounded-full text-sm font-medium transition-all",
                 activeTab === tab
@@ -142,6 +208,9 @@ export default function ManageRolesPage() {
               )}
             >
               {tab}
+              <span className="ml-2 text-xs opacity-70">
+                ({tab === "Manager" ? roles?.managers.length : roles?.evaluators.length})
+              </span>
             </button>
           ))}
         </div>
@@ -150,15 +219,14 @@ export default function ManageRolesPage() {
         <div className="flex flex-col gap-4 min-h-[400px]">
           {currentList.length > 0 ? (
             <>
-              {currentList.map((role) => (
+              {currentList.map((user) => (
                 <RoleCard
-                  key={role.id}
-                  name={role.name}
-                  email={role.email}
-                  phone={role.phone}
+                  key={`${user.id}-${user.role}`}
+                  name={formatDisplayName(user)}
+                  email={user.email}
+                  imageUrl={user.imageUrl}
                   type={activeTab}
-                  onEdit={() => handleEditClick(role)}
-                  onDelete={() => role.id && handleDeleteClick(role.id)}
+                  onDelete={() => handleDeleteClick(user)}
                 />
               ))}
               <div className="flex justify-end mt-4">
@@ -176,12 +244,13 @@ export default function ManageRolesPage() {
           )}
         </div>
 
-        <AddEditRoleModal
+        <AddRoleModal
           open={isModalOpen}
           onOpenChange={setIsModalOpen}
-          initialData={editingRole}
           roleType={activeTab}
-          onSave={handleSaveRole}
+          onAdd={handleAddRole}
+          isLoading={addMutation.isPending}
+          ownerId={roles?.owner.id}
         />
       </div>
     </div>

@@ -17,7 +17,7 @@ import {
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import ActionDropdown from "../_components/ActionDropdown";
-import { getEvents } from "@/lib/api/eventApi";
+import { getMyEvents } from "@/lib/api/eventApi";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 
@@ -38,6 +38,60 @@ function stripHtmlToText(input: string): string {
     .trim();
 }
 
+/**
+ * Type guard: checks if a value is a non-null object.
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getString(
+  obj: Record<string, unknown>,
+  key: string
+): string | undefined {
+  const value = obj[key];
+  return typeof value === "string" && value.trim().length > 0
+    ? value
+    : undefined;
+}
+
+function getNumber(
+  obj: Record<string, unknown>,
+  key: string
+): number | undefined {
+  const value = obj[key];
+  return typeof value === "number" ? value : undefined;
+}
+
+function formatDate(value: string | undefined): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return format(d, "dd MMM yy");
+}
+
+function formatTime(value: string | undefined): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return format(d, "hh:mm a");
+}
+
+function isRegistrationOpen(input: {
+  status?: string;
+  registrationDeadline?: string;
+}): boolean {
+  const status = (input.status ?? "").toUpperCase();
+  if (status === "CANCELLED" || status === "COMPLETED") return false;
+
+  const deadlineStr = input.registrationDeadline;
+  if (!deadlineStr) return false;
+  const deadline = new Date(deadlineStr);
+  if (Number.isNaN(deadline.getTime())) return false;
+
+  return Date.now() <= deadline.getTime();
+}
+
 type EventRow = {
   id: string;
   slug: string;
@@ -53,6 +107,52 @@ type EventRow = {
   isOpen: boolean;
   registrationLabel: "Open" | "Closed";
 };
+
+function extractEventRows(input: unknown): EventRow[] {
+  const raw = Array.isArray(input)
+    ? input
+    : isRecord(input) && Array.isArray(input["data"])
+      ? input["data"]
+      : [];
+
+  return raw
+    .map((row): EventRow | null => {
+      if (!isRecord(row)) return null;
+
+      const id = getString(row, "id");
+      const name = getString(row, "name");
+      if (!id || !name) return null;
+
+      const slug = getString(row, "slug");
+      const status = getString(row, "status") ?? "DRAFT";
+      const registrationDeadline = getString(row, "registrationDeadline");
+      const open = isRegistrationOpen({ status, registrationDeadline });
+
+      // Try to get registration count from different possible fields
+      const registrationCount = getNumber(row, "registrationCount");
+      const participantsArray = row["participants"];
+      const candidatesCount =
+        registrationCount ??
+        (Array.isArray(participantsArray) ? participantsArray.length : 0);
+
+      return {
+        id,
+        slug: slug ?? id,
+        name,
+        description: getString(row, "description") ?? "",
+        type: "Event",
+        status,
+        startDate: formatDate(getString(row, "startDate")),
+        startTime: formatTime(getString(row, "startDate")),
+        endDate: formatDate(getString(row, "endDate")),
+        endTime: formatTime(getString(row, "endDate")),
+        candidates: String(candidatesCount),
+        isOpen: open,
+        registrationLabel: open ? "Open" : "Closed",
+      };
+    })
+    .filter((v): v is EventRow => v !== null);
+}
 
 const columnHelper = createColumnHelper<EventRow>();
 
@@ -186,43 +286,16 @@ export default function EventsPage() {
       setIsLoading(true);
       try {
         const token = await getTokenRef.current();
-        if (!token) return;
-
-        const res = await getEvents(token);
-
-        // Transform the data
-        let rows: EventRow[] = [];
-        // Assuming response structure similar to standard API response, e.g. { data: [...] }
-        if (
-          typeof res === "object" &&
-          res !== null &&
-          "data" in res &&
-          Array.isArray((res as any).data)
-        ) {
-          rows = (res as any).data.map((item: any) => ({
-            id: item.id,
-            slug: item.slug || item.id,
-            name: item.name,
-            description: item.description || "",
-            type: "Event",
-            status: item.status || "Draft",
-            startDate: item.startDate
-              ? format(new Date(item.startDate), "dd MMM yy")
-              : "—",
-            startTime: item.startDate
-              ? format(new Date(item.startDate), "hh:mm a")
-              : "—",
-            endDate: item.endDate
-              ? format(new Date(item.endDate), "dd MMM yy")
-              : "—",
-            endTime: item.endDate
-              ? format(new Date(item.endDate), "hh:mm a")
-              : "—",
-            candidates: "0", // Placeholder
-            isOpen: false, // Placeholder
-            registrationLabel: "Closed", // Placeholder
-          }));
+        if (typeof token !== "string" || token.trim().length === 0) {
+          if (!cancelled) {
+            setAllRows([]);
+            setTableData([]);
+          }
+          return;
         }
+
+        const res = await getMyEvents(token);
+        const rows = extractEventRows(res);
 
         if (!cancelled) {
           setAllRows(rows);
@@ -231,6 +304,10 @@ export default function EventsPage() {
       } catch (error) {
         console.error("Failed to fetch events", error);
         toast.error("Failed to load events");
+        if (!cancelled) {
+          setAllRows([]);
+          setTableData([]);
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }

@@ -50,6 +50,7 @@ export class FestivalService {
       },
       include: {
         hackathons: true,
+        events: true,
       },
     });
   }
@@ -58,6 +59,9 @@ export class FestivalService {
     return prisma.festivalEntity.findMany({
       include: {
         hackathons: {
+          select: { id: true, slug: true, name: true },
+        },
+        events: {
           select: { id: true, slug: true, name: true },
         },
       },
@@ -74,6 +78,7 @@ export class FestivalService {
             rounds: true,
           },
         },
+        events: true,
       },
     });
     if (!festival) throw new NotFoundException('Festival not found');
@@ -141,6 +146,7 @@ export class FestivalService {
       },
       include: {
         hackathons: true,
+        events: true,
       },
     });
   }

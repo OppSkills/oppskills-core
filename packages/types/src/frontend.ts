@@ -86,3 +86,45 @@ export type {
   CreateTeamDto,
 } from './dtos/backend/team/team.dto';
 
+// =====================
+// Event DTOs (type-only)
+// =====================
+export type {
+  // Value types
+  EventLocationTypeValue,
+  EventLifecycleStatusValue,
+  EventVisibilityValue,
+  EventTypeValue,
+  EventAttendeeEligibilityValue,
+  EventRegistrationFieldTypeValue,
+  // Nested DTOs
+  EventLocationDto,
+  EventPrizeBreakdownDto,
+  EventContactDto,
+  EventAttachmentDto,
+  EventAdditionalInfoDto,
+  EventRegistrationFieldDto,
+  EventRegistrationFormDto,
+  // Main DTOs
+  CreateEventDto,
+  UpdateEventDto,
+  UpdateEventStatusDto,
+  UpdateEventAdditionalInfoDto,
+  UpdateEventRegistrationFormDto,
+  UpdateEventPrizeBreakdownDto,
+  UpdateEventMaxUsersDto,
+} from './dtos/backend/event/create-event.dto';
+
+export type {
+  EventUserRoleValue,
+  AddEventRoleDto,
+  RemoveEventRoleDto,
+  EventRoleUserResponse,
+  EventOwnerResponse,
+  EventRolesResponse,
+} from './dtos/backend/event/event-roles.dto';
+
+// Also export the value constant (it's just an array, no NestJS deps)
+export { EventUserRoleValues } from './dtos/backend/event/event-roles.dto';
+
+

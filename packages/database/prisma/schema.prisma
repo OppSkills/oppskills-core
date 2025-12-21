@@ -116,6 +116,32 @@ enum HackathonAttendeeEligibility {
   @@schema("oppskills")
 }
 
+/// Type of event.
+enum EventType {
+  WORKSHOP
+  CONFERENCE
+  MEETUP
+  NETWORKING
+  SEMINAR
+  WEBINAR
+  OTHER
+
+  @@map("EventType")
+  @@schema("oppskills")
+}
+
+/// Who can attend the event (multi-select).
+enum EventAttendeeEligibility {
+  EVERYONE_CAN_APPLY
+  SCHOOL_STUDENTS
+  COLLEGE_STUDENTS
+  FRESHERS
+  PROFESSIONALS
+
+  @@map("EventAttendeeEligibility")
+  @@schema("oppskills")
+}
+
 /// Type of hackathon round (determines submission requirements).
 enum HackathonRoundType {
   ONLINE
@@ -132,6 +158,15 @@ enum HackathonUserRole {
   EVALUATOR
 
   @@map("HackathonUserRole")
+  @@schema("oppskills")
+}
+
+/// Per-event user roles (assigned by owner/admin).
+enum EventUserRole {
+  MANAGER
+  EVALUATOR
+
+  @@map("EventUserRole")
   @@schema("oppskills")
 }
 
@@ -219,6 +254,12 @@ model UserEntity {
   // Per-hackathon roles (Manager/Evaluator)
   hackathonRoles        HackathonUserRoleEntity[] @relation("UserHackathonRoles")
   hackathonRolesCreated HackathonUserRoleEntity[] @relation("HackathonRoleCreator")
+
+  // Event relations
+  events               EventEntity[]           @relation("UserEvents")           // created events
+  eventRoles           EventUserRoleEntity[]   @relation("UserEventRoles")       // event role assignments
+  eventRolesCreated    EventUserRoleEntity[]   @relation("EventRoleCreator")     // event roles user assigned to others
+  eventParticipations  EventParticipantEntity[]                                  // events user is participating in
 
   // Onboarding profile (1:1 relation)
   onboardingProfile UserOnboardingProfileEntity?
@@ -339,10 +380,130 @@ model FestivalEntity {
 
   // Relations
   hackathons HackathonEntity[]
+  events     EventEntity[]
 
   @@map("festival")
   @@schema("oppskills")
   @@index([organizerId])
+}
+
+/// Event entity - simpler than Hackathon, for individual user participation.
+model EventEntity {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?  @db.Text
+  bannerImageUrl String? @map("banner_image_url")
+
+  // Dates
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+
+  // Festival link (optional - can be standalone)
+  festivalId  String?         @map("festival_id")
+  festival    FestivalEntity? @relation(fields: [festivalId], references: [id], onDelete: SetNull)
+
+  // ---------------------------
+  // Extended Event Details (matching Hackathon pattern)
+  // ---------------------------
+  visibility               Visibility       @default(PUBLIC)
+  eventType                EventType        @default(CONFERENCE) @map("event_type")
+
+  // Location (reuse existing pattern)
+  locationType        LocationType? @map("location_type")
+  locationAddress     String?       @map("location_address")
+  locationCity        String?       @map("location_city")
+  locationVirtualLink String?       @map("location_virtual_link")
+
+  // Pricing (metadata only, no payment integration)
+  isFree          Boolean  @default(true) @map("is_free")
+  entryFeeAmount  Decimal? @db.Decimal(12, 2) @map("entry_fee_amount")
+  currency        String   @default("INR")
+
+  // Capacity
+  maxUsers          Int? @map("max_users")
+  registrationCount Int  @default(0) @map("registration_count")
+
+  // Registration
+  registrationDeadline     DateTime?        @map("registration_deadline")
+  externalRegistrationLink String?          @map("external_registration_link")
+  registrationForm         EventRegistrationFormEntity?
+
+  // Eligibility
+  attendeeEligibility      EventAttendeeEligibility[] @default([]) @map("attendee_eligibility")
+
+  // Prizes
+  prizeTotalWorthAmount    Decimal?         @db.Decimal(12, 2) @map("prize_total_worth_amount")
+  prizeBreakdown           EventPrizeBreakdownEntity[]
+  prizeDescription         Json?            @map("prize_description")
+  prizeCertificate         Boolean          @default(false) @map("prize_certificate")
+
+  // Contact Info
+  contactName              String?          @map("contact_name")
+  contactEmail             String?          @map("contact_email")
+  contactPhone             String?          @map("contact_phone")
+
+  // Lifecycle
+  status LifecycleStatus @default(DRAFT)
+
+  // Metadata
+  impressions              Int              @default(0)
+
+  // Ownership
+  ownerId String     @map("owner_id")
+  owner   UserEntity @relation("UserEvents", fields: [ownerId], references: [id])
+
+  // Organizer info
+  organizationName    String? @map("organization_name")
+  organizationLogoUrl String? @map("organization_logo_url")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  participants EventParticipantEntity[]
+  userRoles    EventUserRoleEntity[]
+  attachments  EventAttachmentEntity[]
+
+  @@map("event")
+  @@schema("oppskills")
+  @@index([festivalId])
+  @@index([ownerId])
+}
+
+/// Join table for event participants (individual user registration).
+model EventParticipantEntity {
+  id       String   @id @default(cuid())
+  eventId  String   @map("event_id")
+  event    EventEntity @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId   String   @map("user_id")
+  user     UserEntity  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  @@unique([eventId, userId])
+  @@map("event_participant")
+  @@schema("oppskills")
+  @@index([eventId])
+  @@index([userId])
+}
+
+/// Join table for per-event user roles (Manager, Evaluator).
+model EventUserRoleEntity {
+  id        String        @id @default(cuid())
+  eventId   String        @map("event_id")
+  event     EventEntity   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String        @map("user_id")
+  user      UserEntity    @relation("UserEventRoles", fields: [userId], references: [id], onDelete: Cascade)
+  role      EventUserRole
+  createdAt DateTime      @default(now()) @map("created_at")
+  createdById String?     @map("created_by_id")
+  createdBy   UserEntity? @relation("EventRoleCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([eventId, userId, role])
+  @@map("event_user_role")
+  @@schema("oppskills")
+  @@index([eventId])
+  @@index([userId])
 }
 
 model RoundEntity {
@@ -490,6 +651,92 @@ model HackathonAttachmentEntity {
   @@map("hackathon_attachment")
   @@schema("oppskills")
   @@index([hackathonId])
+}
+
+/// Registration form for events (separate from hackathon forms).
+model EventRegistrationFormEntity {
+  id               String   @id @default(cuid())
+  externalFormLink String?  @map("external_form_link")
+
+  // Event registration form (optional; one per event)
+  eventId String? @unique @map("event_id")
+  event   EventEntity? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  fields    EventRegistrationFieldEntity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("event_registration_form")
+  @@schema("oppskills")
+}
+
+/// Registration field for event forms.
+model EventRegistrationFieldEntity {
+  id                 String                     @id @default(cuid())
+  registrationFormId String                     @map("registration_form_id")
+  registrationForm   EventRegistrationFormEntity @relation(fields: [registrationFormId], references: [id], onDelete: Cascade)
+
+  label       String
+  type        RegistrationFieldType
+  required    Boolean @default(false)
+  order       Int
+  options     String[] @default([])
+  placeholder String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("event_registration_field")
+  @@schema("oppskills")
+  @@index([registrationFormId])
+  @@unique([registrationFormId, order])
+}
+
+/// Prize breakdown for events.
+model EventPrizeBreakdownEntity {
+  id          String      @id @default(cuid())
+  eventId     String      @map("event_id")
+  event       EventEntity @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  position    String
+  amount      Decimal     @db.Decimal(12, 2)
+  description String?     @db.Text
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("event_prize_breakdown")
+  @@schema("oppskills")
+  @@index([eventId])
+}
+
+/// Attachments for events (S3-ready: stores storageKey + optional publicUrl).
+model EventAttachmentEntity {
+  id           String      @id @default(cuid())
+  eventId      String      @map("event_id")
+  event        EventEntity @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  /// Storage key for S3 or other storage provider
+  storageKey   String   @map("storage_key")
+
+  /// Optional public URL (for direct access or CDN)
+  publicUrl    String?  @map("public_url")
+
+  /// Original file name
+  fileName     String?  @map("file_name")
+
+  /// MIME type of the file
+  mimeType     String?  @map("mime_type")
+
+  /// File size in bytes
+  sizeBytes    Int?     @map("size_bytes")
+
+  createdAt    DateTime @default(now())
+
+  @@map("event_attachment")
+  @@schema("oppskills")
+  @@index([eventId])
 }
 
 /// College entity for storing colleges in the system.

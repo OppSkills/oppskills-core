@@ -9,6 +9,7 @@
 - [Endpoints](#endpoints)
   - [Health Check](#health-check)
   - [Hackathons](#hackathons)
+  - [Events](#events)
   - [Festivals](#festivals)
   - [Teams](#teams)
   - [Media](#media)
@@ -899,6 +900,400 @@ Content-Type: application/json
 **Error Responses:**
 - `403 Forbidden`: Only owner or admin can remove roles
 - `404 Not Found`: Hackathon or role not found
+
+---
+
+### Events
+
+Events are simpler than hackathons - they support individual user participation without teams or rounds.
+
+#### Create Event
+
+Create a new event in DRAFT status.
+
+```http
+POST /events
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "name": "Tech Meetup 2025",
+  "slug": "tech-meetup-2025",
+  "description": "Monthly tech community meetup",
+  "startDate": "2025-03-15T18:00:00Z",
+  "endDate": "2025-03-15T21:00:00Z",
+  "location": {
+    "type": "PHYSICAL",
+    "address": "123 Tech Hub, San Francisco, CA",
+    "city": "San Francisco"
+  },
+  "maxUsers": 100,
+  "isFree": true,
+  "organizationName": "Tech Community",
+  "registrationDeadline": "2025-03-14T23:59:59Z"
+}
+```
+
+**Response (201):**
+```json
+{
+  "message": "Event created successfully (DRAFT).",
+  "data": {
+    "id": "clxx123abc",
+    "name": "Tech Meetup 2025",
+    "slug": "tech-meetup-2025",
+    "status": "DRAFT",
+    "ownerId": "user_abc123",
+    "createdAt": "2025-01-15T10:00:00Z"
+  }
+}
+```
+
+---
+
+#### List All Events
+
+Retrieve a list of all events, optionally filtered by festival.
+
+```http
+GET /events?festival_id=<uuid>
+```
+
+**Query Parameters:**
+- `festival_id` (optional): Filter events by festival ID
+
+**Response (200):**
+```json
+[
+  {
+    "id": "clxx123abc",
+    "name": "Tech Meetup 2025",
+    "slug": "tech-meetup-2025",
+    "description": "Monthly tech community meetup",
+    "status": "PUBLISHED",
+    "startDate": "2025-03-15T18:00:00Z",
+    "endDate": "2025-03-15T21:00:00Z",
+    "registrationCount": 45,
+    "maxUsers": 100
+  }
+]
+```
+
+---
+
+#### List My Events
+
+Retrieve events where the authenticated user is the owner or a manager.
+
+```http
+GET /events/my
+Authorization: Bearer <token>
+```
+
+**Response (200):**
+```json
+[
+  {
+    "id": "clxx123abc",
+    "name": "Tech Meetup 2025",
+    "slug": "tech-meetup-2025",
+    "status": "PUBLISHED",
+    "role": "OWNER",
+    "registrationCount": 45,
+    "maxUsers": 100
+  }
+]
+```
+
+---
+
+#### Get Event by ID
+
+Retrieve detailed information about a specific event.
+
+```http
+GET /events/:id
+```
+
+**Response (200):**
+```json
+{
+  "id": "clxx123abc",
+  "name": "Tech Meetup 2025",
+  "slug": "tech-meetup-2025",
+  "description": "Monthly tech community meetup",
+  "status": "PUBLISHED",
+  "startDate": "2025-03-15T18:00:00Z",
+  "endDate": "2025-03-15T21:00:00Z",
+  "locationType": "PHYSICAL",
+  "locationAddress": "123 Tech Hub, San Francisco, CA",
+  "locationCity": "San Francisco",
+  "maxUsers": 100,
+  "registrationCount": 45,
+  "isFree": true,
+  "owner": {
+    "id": "user_abc123",
+    "email": "organizer@example.com",
+    "firstName": "John",
+    "lastName": "Doe"
+  },
+  "participants": [
+    {
+      "id": "participant_1",
+      "user": {
+        "id": "user_def456",
+        "email": "participant@example.com",
+        "firstName": "Jane",
+        "lastName": "Smith"
+      },
+      "joinedAt": "2025-01-10T15:30:00Z"
+    }
+  ]
+}
+```
+
+---
+
+#### Get Event by Slug
+
+Retrieve event information using its URL-friendly slug.
+
+```http
+GET /events/by-slug/:slug
+```
+
+**Example:**
+```http
+GET /events/by-slug/tech-meetup-2025
+```
+
+**Response:** Same as "Get Event by ID"
+
+---
+
+#### Update Event
+
+Update event details. Only the owner, admin, or manager can perform this action. Only allowed for DRAFT events.
+
+```http
+PUT /events/:id
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:** (All fields optional)
+```json
+{
+  "name": "Updated Meetup Name",
+  "description": "Updated description",
+  "maxUsers": 150
+}
+```
+
+**Response (200):** Updated event object
+
+**Error Responses:**
+- `403 Forbidden`: Not the owner/admin/manager or not in DRAFT status
+- `404 Not Found`: Event not found
+
+---
+
+#### Update Event Status
+
+Change event lifecycle status. Owner, admin, or manager only.
+
+```http
+PATCH /events/:id/status
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "status": "PUBLISHED"
+}
+```
+
+**Response (200):**
+```json
+{
+  "id": "clxx123abc",
+  "status": "PUBLISHED",
+  "updatedAt": "2025-01-15T11:00:00Z"
+}
+```
+
+---
+
+#### Delete Event
+
+Delete an event. Only the owner or admin can perform this action.
+
+```http
+DELETE /events/:id
+Authorization: Bearer <token>
+```
+
+**Response (200):**
+```json
+{
+  "message": "Event deleted successfully."
+}
+```
+
+---
+
+#### Join Event
+
+Register the authenticated user for an event.
+
+```http
+POST /events/:id/join
+Authorization: Bearer <token>
+```
+
+**Response (201):**
+```json
+{
+  "message": "Successfully joined the event."
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Event not accepting registrations, deadline passed, or at full capacity
+- `409 Conflict`: Already joined
+
+---
+
+#### Leave Event
+
+Remove the authenticated user's registration from an event.
+
+```http
+DELETE /events/:id/leave
+Authorization: Bearer <token>
+```
+
+**Response (200):**
+```json
+{
+  "message": "Successfully left the event."
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Not a participant or event is completed/cancelled
+
+---
+
+#### Get Event Roles
+
+Retrieve all roles for an event (owner, managers, evaluators).
+
+```http
+GET /events/:id/roles
+```
+
+**Response (200):**
+```json
+{
+  "owner": {
+    "id": "user_abc123",
+    "email": "owner@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "imageUrl": "https://example.com/avatar.jpg"
+  },
+  "managers": [
+    {
+      "id": "user_def456",
+      "email": "manager@example.com",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "imageUrl": null,
+      "role": "MANAGER",
+      "assignedAt": "2025-01-10T10:00:00Z"
+    }
+  ],
+  "evaluators": []
+}
+```
+
+---
+
+#### Add Event Role
+
+Assign a role to a user for an event. Owner or admin only.
+
+```http
+POST /events/:id/roles
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "email": "manager@example.com",
+  "role": "MANAGER"
+}
+```
+
+**Response (201):**
+```json
+{
+  "message": "Role MANAGER added successfully.",
+  "user": {
+    "id": "user_def456",
+    "email": "manager@example.com",
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "role": "MANAGER"
+  }
+}
+```
+
+**Role Values:** `MANAGER`, `EVALUATOR`
+
+**Error Responses:**
+- `403 Forbidden`: Only owner or admin can assign roles
+- `404 Not Found`: Event or user not found
+- `409 Conflict`: User already has this role
+
+---
+
+#### Remove Event Role
+
+Remove a role from a user for an event. Owner or admin only.
+
+```http
+DELETE /events/:id/roles
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "email": "manager@example.com",
+  "role": "MANAGER"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Role MANAGER removed successfully."
+}
+```
+
+**Error Responses:**
+- `403 Forbidden`: Only owner or admin can remove roles
+- `404 Not Found`: Event or role not found
 
 ---
 
