@@ -339,14 +339,10 @@ export default function EventSettingsPage({
               </p>
             )}
 
-            {isLive && !isTerminal && (
-              <Button
-                variant="outline"
-                onClick={() => updateStatusMutation.mutate("DRAFT")}
-                disabled={updateStatusMutation.isPending}
-              >
-                Unpublish (Move to Draft)
-              </Button>
+            {isLive && (
+              <p className="text-sm text-muted-foreground">
+                Your event is live and accepting registrations.
+              </p>
             )}
           </CardContent>
         </Card>
