@@ -4,12 +4,8 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Loader2 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import { Dot, Loader2 } from "lucide-react";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEvents, type EventListItem } from "@/hooks/useEvents";
 
@@ -135,12 +131,13 @@ export const UpcomingEvents = () => {
   return (
     <section className="w-full py-12 md:py-16 lg:py-20 bg-background">
       <div className="container px-4 md:px-6 mx-auto">
-        <div className="mb-8 space-y-2">
+        <div className="mb-8 space-y-2 flex flex-col gap-2">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
             Upcoming Events
           </h2>
           <p className="text-muted-foreground text-lg inter">
-            Stay ahead with the latest events, workshops, and conferences.
+            Don’t miss what’s next, stay updated with upcoming events and
+            sessions.
           </p>
         </div>
 
@@ -148,13 +145,17 @@ export const UpcomingEvents = () => {
           {displayEvents.map((event) => {
             const startDate = new Date(event.startDate);
             const formattedDate = format(startDate, "dd MMM yyyy");
+            const formattedDeadLineDate = format(
+              new Date(event.registrationDeadline),
+              "dd MMM yyyy"
+            );
             const mode = formatMode(event.locationType);
             const entryFee = formatEntryFee(event);
             const isFree = event.isFree;
 
             return (
               <Link key={event.id} href={`/events/${event.slug}`}>
-                <Card className="p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
+                <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
                   {/* Image Section */}
                   <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
                     {event.bannerImageUrl ? (
@@ -172,70 +173,62 @@ export const UpcomingEvents = () => {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
+                      {["Free", "Offline"].map((item, index) => (
+                        <div key={index} className="flex gap-0.5 items-center">
+                          {index > 0 && <Dot />}
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Content Section */}
-                  <CardContent className="p-5 space-y-3 flex-grow">
-                    <div className="flex flex-wrap gap-2">
-                      <Badge
-                        variant="secondary"
-                        className={`text-xs font-normal px-2 py-0.5 rounded-sm ${
-                          isFree
-                            ? "bg-purple-100 text-purple-600 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {entryFee}
-                      </Badge>
-                      <Badge
-                        variant="secondary"
-                        className="text-xs font-normal px-2 py-0.5 rounded-sm bg-muted text-muted-foreground"
-                      >
-                        {mode}
-                      </Badge>
-                      {event.eventType && (
-                        <Badge
-                          variant="secondary"
-                          className="text-xs font-normal px-2 py-0.5 rounded-sm bg-muted text-muted-foreground"
-                        >
-                          {event.eventType}
-                        </Badge>
+                  <CardContent className="space-y-2 flex-grow">
+                    <div className="flex gap-0.5 items-center overflow-ellipsis inter text-xs text-neutral-600">
+                      {["Every Tue", formattedDate, "10:00AM"].map(
+                        (item, index) => (
+                          <p key={index} className="gap-0.5 flex items-center">
+                            {index > 0 && <Dot />}
+                            {item}
+                          </p>
+                        )
                       )}
                     </div>
+                    <h3 className="font-semibold text-xl text-neutral-900">
+                      {event.name}
+                    </h3>
 
-                    <div className="space-y-1">
-                      <h3 className="text-xl font-semibold leading-tight poppins text-foreground line-clamp-2">
-                        {event.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground inter line-clamp-1">
-                        {event.organizationName || "Event Organizer"}
-                      </p>
+                    <div className="flex justify-between items-center text-sm pb-3">
+                      <div className="flex flex-col gap-2 ">
+                        <span className="text-xs text-neutral-500">
+                          Attendees
+                        </span>
+                        <span className="text-neutral-700">0</span>
+                      </div>
+                      <div className="flex flex-col gap-2 ">
+                        <span className="text-xs text-neutral-500">
+                          Register By
+                        </span>
+                        <span className="text-neutral-700">
+                          {formattedDeadLineDate}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-2  text-right">
+                        <span className="text-xs text-neutral-500">
+                          Entry Fee
+                        </span>
+                        <span className="text-neutral-700">{entryFee}</span>
+                      </div>
                     </div>
                   </CardContent>
-
-                  {/* Footer Section */}
-                  <CardFooter className="p-5 pt-0 flex justify-between items-center text-sm border-t border-border/40 mt-auto bg-muted/5">
-                    <div className="flex flex-col gap-0.5 mt-3">
-                      <span className="text-[10px] uppercase text-muted-foreground font-medium tracking-wider">
-                        Event Date
-                      </span>
-                      <span className="font-semibold text-foreground inter">
-                        {formattedDate}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-0.5 mt-3 text-right">
-                      <span className="text-[10px] uppercase text-muted-foreground font-medium tracking-wider">
-                        Registrations
-                      </span>
-                      <span className="font-semibold text-foreground inter">
-                        {event.registrationCount} joined
-                      </span>
-                    </div>
-                  </CardFooter>
                 </Card>
               </Link>
             );
           })}
+          {displayEvents.length == 1 && (
+            <div className="col-span-2 bg-[url('/competition_placeholder.png')] bg-cover bg-center bg-no-repeat"></div>
+          )}
         </div>
       </div>
     </section>

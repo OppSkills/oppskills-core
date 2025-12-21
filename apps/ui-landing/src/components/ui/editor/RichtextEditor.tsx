@@ -58,11 +58,11 @@ export default function RichTextEditor({
 
   return (
     <div
-      className={`border rounded-lg bg-white overflow-hidden flex flex-col w-full ${className || ""}`}
+      className={`border rounded-lg bg-white overflow-hidden flex flex-col w-full max-h-[600px] ${className || ""}`}
     >
       <Toolbar editor={editor} />
       <div
-        className="flex-1 overflow-y-auto cursor-text"
+        className="flex-1 overflow-y-auto cursor-text scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
         onClick={() => editor.chain().focus().run()}
       >
         <EditorContent editor={editor} className="min-h-[200px]" />

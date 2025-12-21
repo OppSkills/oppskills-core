@@ -73,7 +73,7 @@ export default function DescriptionEditorModal({
             <RichTextEditor
               value={value}
               onChange={setValue}
-              className="h-full border-0 rounded-none"
+              className="h-full max-h-none border-0 rounded-none"
             />
           </div>
         </div>

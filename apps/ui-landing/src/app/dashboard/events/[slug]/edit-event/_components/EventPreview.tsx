@@ -59,7 +59,10 @@ interface EventData {
 /**
  * Get initials from a name for avatar fallback.
  */
-function getInitials(firstName: string | null, lastName: string | null): string {
+function getInitials(
+  firstName: string | null,
+  lastName: string | null
+): string {
   const first = (firstName ?? "").trim().charAt(0).toUpperCase();
   const last = (lastName ?? "").trim().charAt(0).toUpperCase();
   return first + last || "??";
@@ -122,7 +125,9 @@ export function EventPreview({ slug }: EventPreviewProps) {
   if (error || !eventRaw) {
     return (
       <div className="min-h-[400px] flex flex-col items-center justify-center gap-4">
-        <h1 className="text-xl font-bold text-foreground">Preview Unavailable</h1>
+        <h1 className="text-xl font-bold text-foreground">
+          Preview Unavailable
+        </h1>
         <p className="text-muted-foreground">
           Unable to load event preview. Please save your changes and try again.
         </p>
@@ -241,9 +246,11 @@ export function EventPreview({ slug }: EventPreviewProps) {
                 <h2 className="text-2xl font-bold mb-4 text-foreground poppins">
                   About Event
                 </h2>
-                <div className="prose dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-300 inter">
+                <div className="prose dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-300 inter whitespace-pre-line">
                   {event.description ? (
-                    <div dangerouslySetInnerHTML={{ __html: event.description }} />
+                    <div
+                      dangerouslySetInnerHTML={{ __html: event.description }}
+                    />
                   ) : (
                     <p>No description available.</p>
                   )}
@@ -268,15 +275,21 @@ export function EventPreview({ slug }: EventPreviewProps) {
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
-                        {getInitials(event.owner.firstName, event.owner.lastName)}
+                        {getInitials(
+                          event.owner.firstName,
+                          event.owner.lastName
+                        )}
                       </div>
                     )}
                     <div>
                       <h4 className="font-bold text-foreground">
-                        {event.owner.firstName || ""} {event.owner.lastName || "Organizer"}
+                        {event.owner.firstName || ""}{" "}
+                        {event.owner.lastName || "Organizer"}
                       </h4>
                       {event.contactPhone && (
-                        <p className="text-xs text-zinc-500">{event.contactPhone}</p>
+                        <p className="text-xs text-zinc-500">
+                          {event.contactPhone}
+                        </p>
                       )}
                       <p className="text-xs text-zinc-500">
                         {event.contactEmail || event.owner.email}
@@ -291,12 +304,18 @@ export function EventPreview({ slug }: EventPreviewProps) {
                         {event.contactName.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <h4 className="font-bold text-foreground">{event.contactName}</h4>
+                        <h4 className="font-bold text-foreground">
+                          {event.contactName}
+                        </h4>
                         {event.contactPhone && (
-                          <p className="text-xs text-zinc-500">{event.contactPhone}</p>
+                          <p className="text-xs text-zinc-500">
+                            {event.contactPhone}
+                          </p>
                         )}
                         {event.contactEmail && (
-                          <p className="text-xs text-zinc-500">{event.contactEmail}</p>
+                          <p className="text-xs text-zinc-500">
+                            {event.contactEmail}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -316,12 +335,16 @@ export function EventPreview({ slug }: EventPreviewProps) {
                         key={prize.id}
                         className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl"
                       >
-                        <h4 className="font-bold text-foreground">{prize.position}</h4>
+                        <h4 className="font-bold text-foreground">
+                          {prize.position}
+                        </h4>
                         <p className="text-xl font-bold text-primary">
                           {event.currency} {prize.amount.toLocaleString()}
                         </p>
                         {prize.description && (
-                          <p className="text-sm text-zinc-500 mt-2">{prize.description}</p>
+                          <p className="text-sm text-zinc-500 mt-2">
+                            {prize.description}
+                          </p>
                         )}
                       </div>
                     ))}

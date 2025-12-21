@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import './main.css';
+import "./main.css";
 
 interface AboutSectionProps {
   content: string;
@@ -12,8 +12,8 @@ export function AboutSection({ content }: AboutSectionProps) {
       <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
         About Hackathon
       </h2>
-      <div 
-        className="html-content"
+      <div
+        className="html-content whitespace-pre-line"
         dangerouslySetInnerHTML={{ __html: content }}
       />
     </div>

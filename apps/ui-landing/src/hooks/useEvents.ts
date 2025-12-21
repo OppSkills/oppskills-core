@@ -12,6 +12,7 @@ export interface EventListItem {
   bannerImageUrl: string | null;
   startDate: string;
   endDate: string;
+  registrationDeadline: string;
   status: string;
   locationType: string | null;
   locationCity: string | null;
