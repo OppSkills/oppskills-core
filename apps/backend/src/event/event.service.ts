@@ -91,10 +91,19 @@ export class EventService {
 
   /**
    * List events, optionally filtered by festival.
+   * Public endpoint: only returns PUBLISHED + APPROVED events.
    */
   async listEvents(input: { festivalId?: string } = {}) {
+    const baseWhere: Record<string, unknown> = {
+      status: 'PUBLISHED',
+      approvalStatus: 'APPROVED',
+    };
+    if (input.festivalId) {
+      baseWhere.festivalId = input.festivalId;
+    }
+
     return prisma.eventEntity.findMany({
-      where: input.festivalId ? { festivalId: input.festivalId } : {},
+      where: baseWhere,
       include: {
         owner: {
           select: { id: true, email: true, firstName: true, lastName: true },
@@ -244,10 +253,46 @@ export class EventService {
 
   /**
    * Update an event (owner, admin, or manager).
-   * - Allowed only when status is DRAFT.
+   * - DRAFT events can be fully edited.
+   * - PUBLISHED+APPROVED events can have basic info edited, but this triggers re-approval.
    */
   async updateEvent(id: string, dto: UpdateEventDto, userId: string) {
-    const event = await this.assertEventEditableByUser(id, userId);
+    const event = await prisma.eventEntity.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        ownerId: true,
+        status: true,
+        approvalStatus: true,
+        name: true,
+        slug: true,
+        description: true,
+        bannerImageUrl: true,
+        startDate: true,
+        endDate: true,
+      },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    const hasPermission = await this.hasEditPermission(event.ownerId, userId, id);
+    if (!hasPermission) {
+      throw new ForbiddenException('You are not allowed to edit this event.');
+    }
+
+    // Determine if basic info is being changed (triggers re-approval)
+    const isBasicInfoChange =
+      (dto.name !== undefined && dto.name !== event.name) ||
+      (dto.slug !== undefined && dto.slug !== event.slug) ||
+      (dto.description !== undefined && dto.description !== event.description) ||
+      (dto.bannerImageUrl !== undefined && dto.bannerImageUrl !== event.bannerImageUrl);
+
+    // For non-DRAFT events, only allow edits if they are basic info changes (which will reset approval)
+    const isDraft = event.status === 'DRAFT';
+    const isApproved = event.approvalStatus === 'APPROVED';
+
+    if (!isDraft && !isBasicInfoChange) {
+      throw new ForbiddenException('Only DRAFT events can be fully edited. For published events, only basic info changes are allowed.');
+    }
 
     // Parse dates if provided
     const startDate = dto.startDate
@@ -272,38 +317,50 @@ export class EventService {
       ? this.parseDate(dto.registrationDeadline, 'registrationDeadline')
       : undefined;
 
+    // Build update data
+    const updateData: Record<string, unknown> = {
+      slug,
+      name: dto.name,
+      description: dto.description,
+      bannerImageUrl: dto.bannerImageUrl,
+      festivalId: dto.festivalId,
+
+      startDate,
+      endDate,
+
+      locationType: dto.location?.type,
+      locationAddress: dto.location?.address,
+      locationCity: dto.location?.city,
+      locationVirtualLink: dto.location?.virtualLink,
+
+      registrationDeadline,
+
+      maxUsers: dto.maxUsers,
+
+      isFree: dto.isFree,
+      entryFeeAmount: dto.entryFeeAmount,
+      currency: dto.currency,
+
+      visibility: dto.visibility,
+      eventType: dto.eventType,
+      attendeeEligibility: dto.attendeeEligibility,
+
+      organizationName: dto.organizationName,
+      organizationLogoUrl: dto.organizationLogoUrl,
+    };
+
+    // If an approved event's basic info is being changed, reset approval status
+    if (!isDraft && isApproved && isBasicInfoChange) {
+      updateData.approvalStatus = 'PENDING';
+      updateData.approvalSubmittedAt = new Date();
+      updateData.approvalApprovedAt = null;
+      updateData.approvalRejectedAt = null;
+      updateData.approvalNote = null;
+    }
+
     return prisma.eventEntity.update({
       where: { id },
-      data: {
-        slug,
-        name: dto.name,
-        description: dto.description,
-        bannerImageUrl: dto.bannerImageUrl,
-        festivalId: dto.festivalId,
-
-        startDate,
-        endDate,
-
-        locationType: dto.location?.type,
-        locationAddress: dto.location?.address,
-        locationCity: dto.location?.city,
-        locationVirtualLink: dto.location?.virtualLink,
-
-        registrationDeadline,
-
-        maxUsers: dto.maxUsers,
-
-        isFree: dto.isFree,
-        entryFeeAmount: dto.entryFeeAmount,
-        currency: dto.currency,
-
-        visibility: dto.visibility,
-        eventType: dto.eventType,
-        attendeeEligibility: dto.attendeeEligibility,
-
-        organizationName: dto.organizationName,
-        organizationLogoUrl: dto.organizationLogoUrl,
-      },
+      data: updateData,
       include: {
         owner: {
           select: { id: true, email: true, firstName: true, lastName: true },
@@ -371,6 +428,8 @@ export class EventService {
    * - Cannot double-join.
    * - Enforces maxUsers limit.
    * - Only allowed for PUBLISHED or ONGOING events.
+   * - Must be APPROVED.
+   * - Must not have registrations paused.
    */
   async joinEvent(eventId: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
@@ -379,6 +438,8 @@ export class EventService {
         id: true,
         ownerId: true,
         status: true,
+        approvalStatus: true,
+        isRegistrationPaused: true,
         maxUsers: true,
         registrationCount: true,
         registrationDeadline: true,
@@ -389,6 +450,16 @@ export class EventService {
     // Check status
     if (event.status !== 'PUBLISHED' && event.status !== 'ONGOING') {
       throw new BadRequestException('Event is not accepting registrations.');
+    }
+
+    // Check approval status
+    if (event.approvalStatus !== 'APPROVED') {
+      throw new BadRequestException('Event has not been approved yet.');
+    }
+
+    // Check if registrations are paused
+    if (event.isRegistrationPaused) {
+      throw new BadRequestException('Event registrations are currently paused.');
     }
 
     // Check deadline
@@ -834,6 +905,120 @@ export class EventService {
     });
 
     return { message: 'Max users limit updated successfully.' };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Approval Workflow Methods
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Submit an event for approval.
+   * - Sets status to PUBLISHED.
+   * - Sets approvalStatus to PENDING.
+   * - Requires owner/admin/manager permission.
+   */
+  async submitForApproval(id: string, userId: string, note?: string) {
+    const event = await prisma.eventEntity.findUnique({
+      where: { id },
+      select: { id: true, ownerId: true, status: true, approvalStatus: true },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    const hasPermission = await this.hasEditPermission(event.ownerId, userId, id);
+    if (!hasPermission) {
+      throw new ForbiddenException('You are not allowed to submit this event for approval.');
+    }
+
+    // Update status to PUBLISHED and approvalStatus to PENDING
+    return prisma.eventEntity.update({
+      where: { id },
+      data: {
+        status: 'PUBLISHED',
+        approvalStatus: 'PENDING',
+        approvalSubmittedAt: new Date(),
+        approvalApprovedAt: null,
+        approvalRejectedAt: null,
+        approvalNote: note,
+      },
+      select: {
+        id: true,
+        status: true,
+        approvalStatus: true,
+        approvalSubmittedAt: true,
+      },
+    });
+  }
+
+  /**
+   * Update approval status (admin only).
+   * - Approves or rejects an event.
+   */
+  async updateApprovalStatus(
+    id: string,
+    approvalStatus: 'APPROVED' | 'REJECTED',
+    userId: string,
+    note?: string,
+  ) {
+    const event = await prisma.eventEntity.findUnique({
+      where: { id },
+      select: { id: true, approvalStatus: true },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    // Admin-only check
+    const isAdmin = await this.isAdminUser(userId);
+    if (!isAdmin) {
+      throw new ForbiddenException('Only admins can approve or reject events.');
+    }
+
+    const now = new Date();
+    return prisma.eventEntity.update({
+      where: { id },
+      data: {
+        approvalStatus,
+        approvalApprovedAt: approvalStatus === 'APPROVED' ? now : null,
+        approvalRejectedAt: approvalStatus === 'REJECTED' ? now : null,
+        approvalNote: note,
+      },
+      select: {
+        id: true,
+        status: true,
+        approvalStatus: true,
+        approvalApprovedAt: true,
+        approvalRejectedAt: true,
+        approvalNote: true,
+      },
+    });
+  }
+
+  /**
+   * Update registration paused status.
+   * - Requires owner/admin/manager permission.
+   */
+  async updateRegistrationPaused(
+    id: string,
+    isRegistrationPaused: boolean,
+    userId: string,
+  ) {
+    const event = await prisma.eventEntity.findUnique({
+      where: { id },
+      select: { id: true, ownerId: true },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    const hasPermission = await this.hasEditPermission(event.ownerId, userId, id);
+    if (!hasPermission) {
+      throw new ForbiddenException('You are not allowed to modify this event.');
+    }
+
+    return prisma.eventEntity.update({
+      where: { id },
+      data: { isRegistrationPaused },
+      select: {
+        id: true,
+        isRegistrationPaused: true,
+      },
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

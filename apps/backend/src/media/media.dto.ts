@@ -6,6 +6,7 @@ import { IsIn, IsString } from 'class-validator';
  */
 const MEDIA_UPLOAD_PURPOSE_VALUES = [
   'HACKATHON_BANNER',
+  'EVENT_BANNER',
   'EVENT_ATTACHMENT',
   'OPPORTUNITY_ATTACHMENT',
 ] as const;

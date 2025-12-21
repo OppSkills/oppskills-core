@@ -215,6 +215,16 @@ enum TeamPreference {
   @@schema("oppskills")
 }
 
+/// Approval status for platform-wide publish approval workflow.
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("ApprovalStatus")
+  @@schema("oppskills")
+}
+
 /// Join table for per-hackathon user roles (Manager, Evaluator).
 model HackathonUserRoleEntity {
   id          String            @id @default(cuid())
@@ -329,6 +339,13 @@ model HackathonEntity {
   registrationCount        Int              @default(0) @map("registration_count")
   status                   LifecycleStatus  @default(DRAFT)
 
+  // Approval workflow fields
+  approvalStatus           ApprovalStatus   @default(PENDING) @map("approval_status")
+  approvalSubmittedAt      DateTime?        @map("approval_submitted_at")
+  approvalApprovedAt       DateTime?        @map("approval_approved_at")
+  approvalRejectedAt       DateTime?        @map("approval_rejected_at")
+  approvalNote             String?          @map("approval_note") @db.Text
+
   // Relation: only the creator (organizer) can edit/delete
   ownerId     String
   owner       UserEntity   @relation("UserHackathons", fields: [ownerId], references: [id])
@@ -374,6 +391,13 @@ model FestivalEntity {
 
   // Lifecycle
   status        LifecycleStatus @default(DRAFT)
+
+  // Approval workflow fields
+  approvalStatus           ApprovalStatus   @default(PENDING) @map("approval_status")
+  approvalSubmittedAt      DateTime?        @map("approval_submitted_at")
+  approvalApprovedAt       DateTime?        @map("approval_approved_at")
+  approvalRejectedAt       DateTime?        @map("approval_rejected_at")
+  approvalNote             String?          @map("approval_note") @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -445,6 +469,16 @@ model EventEntity {
 
   // Lifecycle
   status LifecycleStatus @default(DRAFT)
+
+  // Approval workflow fields
+  approvalStatus           ApprovalStatus   @default(PENDING) @map("approval_status")
+  approvalSubmittedAt      DateTime?        @map("approval_submitted_at")
+  approvalApprovedAt       DateTime?        @map("approval_approved_at")
+  approvalRejectedAt       DateTime?        @map("approval_rejected_at")
+  approvalNote             String?          @map("approval_note") @db.Text
+
+  // Registration controls
+  isRegistrationPaused     Boolean          @default(false) @map("is_registration_paused")
 
   // Metadata
   impressions              Int              @default(0)

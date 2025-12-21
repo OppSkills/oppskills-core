@@ -826,3 +826,61 @@ export class UpdateEventMaxUsersDto {
   maxUsers: number | null;
 }
 
+// =====================
+// Approval Workflow DTOs
+// =====================
+
+const APPROVAL_STATUS_VALUES = ["PENDING", "APPROVED", "REJECTED"] as const;
+export type ApprovalStatusValue = (typeof APPROVAL_STATUS_VALUES)[number];
+
+/**
+ * DTO for submitting an entity for approval.
+ */
+export class SubmitForApprovalDto {
+  @ApiPropertyOptional({
+    description: "Optional note for the approval request",
+    maxLength: 2000,
+    example: "Ready for review - all content finalized.",
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  note?: string;
+}
+
+/**
+ * DTO for admin approval/rejection of an entity.
+ */
+export class UpdateApprovalStatusDto {
+  @ApiProperty({
+    description: "New approval status",
+    enum: ["APPROVED", "REJECTED"],
+    example: "APPROVED",
+  })
+  @IsString()
+  @IsIn(["APPROVED", "REJECTED"])
+  approvalStatus: "APPROVED" | "REJECTED";
+
+  @ApiPropertyOptional({
+    description: "Optional note (e.g., rejection reason)",
+    maxLength: 2000,
+    example: "Content needs revision: please update the description.",
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  note?: string;
+}
+
+/**
+ * DTO for updating registration paused status.
+ */
+export class UpdateEventRegistrationPausedDto {
+  @ApiProperty({
+    description: "Whether registrations are paused",
+    example: true,
+  })
+  @IsBoolean()
+  isRegistrationPaused: boolean;
+}
+

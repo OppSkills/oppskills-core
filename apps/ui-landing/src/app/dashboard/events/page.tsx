@@ -258,6 +258,7 @@ const columns = [
       <div className="flex justify-center">
         <ActionDropdown
           editHref={`/dashboard/events/${info.row.original.slug}/edit-event`}
+          settingsHref={`/dashboard/events/${info.row.original.slug}/settings`}
         />
       </div>
     ),
