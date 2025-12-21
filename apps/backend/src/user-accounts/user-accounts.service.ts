@@ -139,19 +139,70 @@ export class UserAccountsService {
   /**
    * Get current user profile with onboarding status.
    */
-  async getMe(userId: string) {
-    const user = await prisma.userEntity.findUnique({
-      where: { id: userId },
-      include: {
-        onboardingProfile: true,
-      },
-    });
+  async getMe(input: {
+    userId: string | undefined;
+    email: string | undefined;
+  }) {
+    const userId =
+      typeof input.userId === "string" ? input.userId.trim() : "";
+    const email = typeof input.email === "string" ? input.email.trim() : "";
 
-    if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    if (userId.length === 0) {
+      throw new HttpException("Missing authenticated user id.", HttpStatus.UNAUTHORIZED);
     }
 
-    return user;
+    const include = { onboardingProfile: true } as const;
+
+    // 1) Primary lookup: DB primary key should ideally be the Clerk user id.
+    const byId = await prisma.userEntity.findUnique({
+      where: { id: userId },
+      include,
+    });
+    if (byId) return byId;
+
+    // 2) Backwards-compat: some environments may have users created with cuid() ids.
+    // In that case, the only stable linkage we have is email (unique).
+    if (email.length > 0) {
+      const byEmail = await prisma.userEntity.findUnique({
+        where: { email },
+        include,
+      });
+      if (byEmail) return byEmail;
+
+      // 3) If neither exists, create the row so downstream flows work.
+      // Note: if a race/dup happens, we re-fetch by email.
+      try {
+        const created = await prisma.userEntity.create({
+          data: {
+            id: userId,
+            email,
+            // Optional profile fields are unknown here; webhook can fill later.
+            firstName: null,
+            lastName: null,
+            imageUrl: null,
+          },
+          include,
+        });
+        return created;
+      } catch (error) {
+        this.logger.warn("[getMe] Failed to create user; retrying by email.", {
+          userId,
+          email,
+          error: error instanceof Error ? error.message : `${error}`,
+        });
+
+        const retry = await prisma.userEntity.findUnique({
+          where: { email },
+          include,
+        });
+        if (retry) return retry;
+      }
+    }
+
+    throw new HttpException(
+      `User not found for id "${userId}"${email.length > 0 ? ` or email "${email}"` : ""}`,
+      HttpStatus.NOT_FOUND,
+    );
   }
 
   /**
@@ -226,7 +277,10 @@ export class UserAccountsService {
         onboardingProfile: result,
       };
     } catch (error) {
-      this.logger.error(`Error submitting onboarding for user ${userId}:`, error);
+      this.logger.error(
+        `Error submitting onboarding for user ${userId}:`,
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
@@ -243,24 +297,27 @@ export class UserAccountsService {
   private validateOnboardingData(data: CreateOnboardingDto) {
     // 1. Common required fields for everyone
     if (!data.locationCity || data.locationCity.trim().length === 0) {
-      throw new HttpException("City is required", HttpStatus.BAD_REQUEST);
+      throw new HttpException('City is required', HttpStatus.BAD_REQUEST);
     }
     if (!data.locationState || data.locationState.trim().length === 0) {
-      throw new HttpException("State is required", HttpStatus.BAD_REQUEST);
+      throw new HttpException('State is required', HttpStatus.BAD_REQUEST);
     }
     if (!data.locationCountry || data.locationCountry.trim().length === 0) {
-      throw new HttpException("Country is required", HttpStatus.BAD_REQUEST);
+      throw new HttpException('Country is required', HttpStatus.BAD_REQUEST);
     }
 
     // 2. Interests and Skills (optional - sanitize if provided)
     // If interests are provided, ensure they are valid strings and sanitize
     if (data.interests !== undefined && data.interests !== null) {
       if (!Array.isArray(data.interests)) {
-        throw new HttpException("Interests must be an array", HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Interests must be an array',
+          HttpStatus.BAD_REQUEST,
+        );
       }
       // Sanitize: filter out empty strings and non-string values
       const sanitizedInterests = data.interests
-        .filter((i) => typeof i === "string" && i.trim().length > 0)
+        .filter((i) => typeof i === 'string' && i.trim().length > 0)
         .map((i) => (i as string).trim());
       // Replace with sanitized array (can be empty)
       data.interests = sanitizedInterests;
@@ -269,11 +326,14 @@ export class UserAccountsService {
     // If skills are provided, ensure they are valid strings and sanitize
     if (data.skills !== undefined && data.skills !== null) {
       if (!Array.isArray(data.skills)) {
-        throw new HttpException("Skills must be an array", HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Skills must be an array',
+          HttpStatus.BAD_REQUEST,
+        );
       }
       // Sanitize: filter out empty strings and non-string values
       const sanitizedSkills = data.skills
-        .filter((s) => typeof s === "string" && s.trim().length > 0)
+        .filter((s) => typeof s === 'string' && s.trim().length > 0)
         .map((s) => (s as string).trim());
       // Replace with sanitized array (can be empty)
       data.skills = sanitizedSkills;
@@ -283,33 +343,65 @@ export class UserAccountsService {
     switch (data.userCategory) {
       case UserCategoryValue.SCHOOL_STUDENT:
         if (!data.schoolName || data.schoolName.trim().length === 0) {
-          throw new HttpException("School name is required for school students", HttpStatus.BAD_REQUEST);
+          throw new HttpException(
+            'School name is required for school students',
+            HttpStatus.BAD_REQUEST,
+          );
         }
         if (!data.schoolClass || data.schoolClass.trim().length === 0) {
-          throw new HttpException("School class is required for school students", HttpStatus.BAD_REQUEST);
+          throw new HttpException(
+            'School class is required for school students',
+            HttpStatus.BAD_REQUEST,
+          );
         }
         if (!data.schoolAddress || data.schoolAddress.trim().length === 0) {
-          throw new HttpException("School address is required for school students", HttpStatus.BAD_REQUEST);
+          throw new HttpException(
+            'School address is required for school students',
+            HttpStatus.BAD_REQUEST,
+          );
         }
         break;
 
       case UserCategoryValue.COLLEGE_STUDENT:
       case UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT:
-        if (!data.collegeSkipped && (!data.collegeId || data.collegeId.trim().length === 0)) {
-          throw new HttpException("College is required unless skipped", HttpStatus.BAD_REQUEST);
+        if (
+          !data.collegeSkipped &&
+          (!data.collegeId || data.collegeId.trim().length === 0)
+        ) {
+          throw new HttpException(
+            'College is required unless skipped',
+            HttpStatus.BAD_REQUEST,
+          );
         }
-        if (!data.collegeCurrentYear || data.collegeCurrentYear.trim().length === 0) {
-          throw new HttpException("Current year of study is required", HttpStatus.BAD_REQUEST);
+        if (
+          !data.collegeCurrentYear ||
+          data.collegeCurrentYear.trim().length === 0
+        ) {
+          throw new HttpException(
+            'Current year of study is required',
+            HttpStatus.BAD_REQUEST,
+          );
         }
         break;
 
       case UserCategoryValue.FRESHER:
         // Freshers cannot skip college details
         if (!data.collegeId || data.collegeId.trim().length === 0) {
-          throw new HttpException("College selection is required for freshers", HttpStatus.BAD_REQUEST);
+          throw new HttpException(
+            'College selection is required for freshers',
+            HttpStatus.BAD_REQUEST,
+          );
         }
-        if (!data.collegePassoutYear || typeof data.collegePassoutYear !== 'number' || data.collegePassoutYear < 1900 || data.collegePassoutYear > 2100) {
-          throw new HttpException("Valid college passout year is required for freshers", HttpStatus.BAD_REQUEST);
+        if (
+          !data.collegePassoutYear ||
+          typeof data.collegePassoutYear !== 'number' ||
+          data.collegePassoutYear < 1900 ||
+          data.collegePassoutYear > 2100
+        ) {
+          throw new HttpException(
+            'Valid college passout year is required for freshers',
+            HttpStatus.BAD_REQUEST,
+          );
         }
         break;
 
@@ -317,10 +409,21 @@ export class UserAccountsService {
         // Professionals can skip college, but if not skipped, they need collegeId and passout year
         if (!data.collegeSkipped) {
           if (!data.collegeId || data.collegeId.trim().length === 0) {
-            throw new HttpException("College is required unless you choose to skip education details", HttpStatus.BAD_REQUEST);
+            throw new HttpException(
+              'College is required unless you choose to skip education details',
+              HttpStatus.BAD_REQUEST,
+            );
           }
-          if (!data.collegePassoutYear || typeof data.collegePassoutYear !== 'number' || data.collegePassoutYear < 1900 || data.collegePassoutYear > 2100) {
-            throw new HttpException("Valid college passout year is required if education is provided", HttpStatus.BAD_REQUEST);
+          if (
+            !data.collegePassoutYear ||
+            typeof data.collegePassoutYear !== 'number' ||
+            data.collegePassoutYear < 1900 ||
+            data.collegePassoutYear > 2100
+          ) {
+            throw new HttpException(
+              'Valid college passout year is required if education is provided',
+              HttpStatus.BAD_REQUEST,
+            );
           }
         }
         break;

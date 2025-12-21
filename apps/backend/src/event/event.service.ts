@@ -12,6 +12,7 @@ import type {
   EventLifecycleStatusValue,
   EventUserRoleValue,
 } from '@oppskills/types';
+import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 type LifecycleStatus =
@@ -23,6 +24,7 @@ type LifecycleStatus =
 
 @Injectable()
 export class EventService {
+  constructor(private readonly googleSheetsService: GoogleSheetsService) {}
   /**
    * Create an event as a user.
    * - If `festivalId` is null/undefined => standalone event.
@@ -632,8 +634,65 @@ export class EventService {
         });
       }
 
+      // After successful registration, log to Google Sheets asynchronously
+      this.logToGoogleSheets(eventId, userId, answers ?? []).catch((err) => {
+        console.error('Failed to log to Google Sheets:', err);
+      });
+
       return { message: 'Successfully joined the event.' };
     });
+  }
+
+  /**
+   * Logs event registration to Google Sheets.
+   */
+  private async logToGoogleSheets(
+    eventId: string,
+    userId: string,
+    answers: Array<{ fieldId: string; value: string | number | string[] }>,
+  ) {
+    try {
+      const user = await prisma.userEntity.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      const event = await prisma.eventEntity.findUnique({
+        where: { id: eventId },
+        select: { name: true },
+      });
+
+      if (!user || !event) return;
+
+      const regForm = await prisma.eventRegistrationFormEntity.findUnique({
+        where: { eventId },
+        include: { fields: true },
+      });
+
+      const fieldLabelsMap = new Map();
+      if (regForm) {
+        regForm.fields.forEach((f) => fieldLabelsMap.set(f.id, f.label));
+      }
+
+      const answersFormatted = answers
+        .map((a) => {
+          const label = fieldLabelsMap.get(a.fieldId) || a.fieldId;
+          const val = Array.isArray(a.value) ? a.value.join(', ') : a.value;
+          return `${label}: ${val}`;
+        })
+        .join(' | ');
+
+      const row = [
+        new Date().toISOString(),
+        event.name,
+        `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+        user.email,
+        answersFormatted,
+      ];
+
+      await this.googleSheetsService.appendRow('Sheet1!A1', row);
+    } catch (error) {
+      console.error('Error in logToGoogleSheets:', error);
+    }
   }
 
   /**

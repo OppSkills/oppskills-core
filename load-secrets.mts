@@ -66,7 +66,11 @@ function parseSecretsJson(secretString: string): SecretsRecord {
 
 function writeEnvFile(envPath: string, envVars: SecretsRecord): void {
   const envContent: string = Object.entries(envVars)
-    .map(([key, value]) => `${key}=${value}`)
+    .map(([key, value]) => {
+      // Wrap values in quotes and escape internal quotes to handle multi-line secrets (like Private Keys)
+      const escapedValue = value.replace(/"/g, '\\"');
+      return `${key}="${escapedValue}"`;
+    })
     .join("\n");
 
   fs.writeFileSync(envPath, `${envContent}\n`, "utf8");

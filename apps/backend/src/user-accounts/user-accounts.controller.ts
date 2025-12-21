@@ -89,8 +89,19 @@ export class UserAccountsController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  async getMe(@Request() req: { user: { id: string } }) {
-    return this.userAccountsService.getMe(req.user.id);
+  async getMe(
+    @Request()
+    req: {
+      user?: {
+        id?: string;
+        email?: string;
+      };
+    },
+  ) {
+    const userId = req.user?.id;
+    const email = req.user?.email;
+    // Delegate validation + fallback logic to the service (single source of truth).
+    return this.userAccountsService.getMe({ userId, email });
   }
 
   /**
@@ -131,7 +142,10 @@ export class UserAccountsController {
     @Request() req: { user: { id: string } },
     @Body() onboardingData: CreateOnboardingDto,
   ) {
-    return this.userAccountsService.submitOnboarding(req.user.id, onboardingData);
+    return this.userAccountsService.submitOnboarding(
+      req.user.id,
+      onboardingData,
+    );
   }
 
   /**
