@@ -191,14 +191,16 @@ export const UpcomingEvents = () => {
                   {/* Content Section */}
                   <CardContent className="space-y-2 flex-grow">
                     <div className="flex gap-0.5 items-center overflow-ellipsis inter text-xs text-neutral-600">
-                      {["Every Tue", formattedDate, "10:00AM"].map(
-                        (item, index) => (
-                          <p key={index} className="gap-0.5 flex items-center">
-                            {index > 0 && <Dot />}
-                            {item}
-                          </p>
-                        )
-                      )}
+                      {[
+                        event.isFree ? "Free" : "Paid",
+                        formattedDate,
+                        mode,
+                      ].map((item, index) => (
+                        <p key={index} className="gap-0.5 flex items-center">
+                          {index > 0 && <Dot />}
+                          {item}
+                        </p>
+                      ))}
                     </div>
                     <h3 className="font-semibold text-xl text-neutral-900">
                       {event.name}
