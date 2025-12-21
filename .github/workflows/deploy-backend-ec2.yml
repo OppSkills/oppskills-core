@@ -229,6 +229,7 @@ jobs:
           ssh -p "${SSH_PORT}" "${EC2_USER}@${EC2_HOST}" \
             "AWS_REGION='${AWS_REGION}' \
              ECR_REGISTRY='${ECR_REGISTRY}' \
+             ECR_REPOSITORY='${ECR_REPOSITORY}' \
              ECR_IMAGE='${ECR_IMAGE}' \
              CONTAINER_NAME='${CONTAINER_NAME}' \
              CONTAINER_PORT='${CONTAINER_PORT}' \
@@ -292,7 +293,17 @@ jobs:
           docker_cmd container prune -f >/dev/null 2>&1 || true
 
           # Remove old images from the same repository (keep only current and latest)
-          REPO_NAME="${ECR_REGISTRY}/${ECR_REPOSITORY}"
+          # NOTE: This runs with `set -u`, so always use safe expansions for optional vars.
+          # Prefer explicit `ECR_REPOSITORY` (passed from the workflow). If absent, derive
+          # the repository from the image string (e.g. `REGISTRY/repo:tag` -> `REGISTRY/repo`).
+          ECR_REPOSITORY_SAFE="${ECR_REPOSITORY:-}"
+          if [ -n "${ECR_REPOSITORY_SAFE}" ]; then
+            REPO_NAME="${ECR_REGISTRY}/${ECR_REPOSITORY_SAFE}"
+          else
+            # Strip the tag/digest, then keep `registry/repo` portion.
+            REPO_NAME="${ECR_IMAGE%%@*}"
+            REPO_NAME="${REPO_NAME%%:*}"
+          fi
           echo "Removing old local images from ${REPO_NAME}..."
           docker_cmd images "${REPO_NAME}" --format "{{.Repository}}:{{.Tag}}" 2>/dev/null | while read -r img; do
             if [ "${img}" != "${ECR_IMAGE}" ] && [ "${img}" != "${REPO_NAME}:latest" ]; then
