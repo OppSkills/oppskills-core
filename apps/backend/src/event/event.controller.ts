@@ -59,7 +59,55 @@ export class EventController {
   constructor(private readonly eventService: EventService) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // CRUD Endpoints
+  // PUBLIC Endpoints (no auth required) - sanitized data only
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * GET /events/public - List public events (PUBLISHED + APPROVED only).
+   * Returns sanitized data without participants or roles.
+   */
+  @Get('public')
+  @ApiOperation({ summary: 'List public events (PUBLISHED/ONGOING + APPROVED only)' })
+  @ApiQuery({
+    name: 'festival_id',
+    required: false,
+    description: 'Filter events by festival ID',
+  })
+  @ApiResponse({ status: 200, description: 'List of public events (sanitized)' })
+  async listPublicEvents(@Query('festival_id') festivalId?: string) {
+    return this.eventService.listPublicEvents({ festivalId });
+  }
+
+  /**
+   * GET /events/public/by-slug/:slug - Get public event by slug.
+   * Returns sanitized data without participants, roles, or registrant PII.
+   */
+  @Get('public/by-slug/:slug')
+  @ApiOperation({ summary: 'Get public event by slug (sanitized, no PII)' })
+  @ApiParam({ name: 'slug', description: 'Event slug' })
+  @ApiResponse({ status: 200, description: 'Public event details (sanitized)' })
+  @ApiResponse({ status: 404, description: 'Event not found or not publicly visible' })
+  async getPublicEventBySlug(@Param('slug') slug: string) {
+    const validSlug = assertNonEmptyId(slug, 'slug');
+    return this.eventService.getPublicEventBySlug(validSlug);
+  }
+
+  /**
+   * GET /events/public/:id - Get public event by ID.
+   * Returns sanitized data without participants, roles, or registrant PII.
+   */
+  @Get('public/:id')
+  @ApiOperation({ summary: 'Get public event by ID (sanitized, no PII)' })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  @ApiResponse({ status: 200, description: 'Public event details (sanitized)' })
+  @ApiResponse({ status: 404, description: 'Event not found or not publicly visible' })
+  async getPublicEvent(@Param('id') id: string) {
+    const validId = assertNonEmptyId(id, 'id');
+    return this.eventService.getPublicEventById(validId);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CRUD Endpoints (auth required for dashboard)
   // ─────────────────────────────────────────────────────────────────────────────
 
   @Post()
@@ -92,7 +140,8 @@ export class EventController {
   })
   @ApiResponse({ status: 200, description: 'List of events' })
   async listEvents(@Query('festival_id') festivalId?: string) {
-    return this.eventService.listEvents({ festivalId });
+    // This endpoint is used for public listings - delegates to listPublicEvents
+    return this.eventService.listPublicEvents({ festivalId });
   }
 
   @Get('my')
@@ -108,14 +157,24 @@ export class EventController {
     return this.eventService.listMyEvents(userId);
   }
 
+  /**
+   * GET /events/by-slug/:slug - Dashboard endpoint (auth required).
+   * Returns full event data including participants for owner/manager/admin.
+   */
   @Get('by-slug/:slug')
-  @ApiOperation({ summary: 'Get event by slug' })
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({ summary: 'Get event by slug (dashboard, auth required)' })
   @ApiParam({ name: 'slug', description: 'Event slug' })
-  @ApiResponse({ status: 200, description: 'Event details' })
+  @ApiResponse({ status: 200, description: 'Full event details' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Event not found' })
-  async getEventBySlug(@Param('slug') slug: string) {
+  async getEventBySlug(@Param('slug') slug: string, @Req() req: Request) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
     const validSlug = assertNonEmptyId(slug, 'slug');
-    return this.eventService.getEventBySlug(validSlug);
+    return this.eventService.getEventBySlugForDashboard(validSlug, userId);
   }
 
   @Get('by-slug/:slug/registrations')
@@ -136,14 +195,24 @@ export class EventController {
     return this.eventService.listEventRegistrationsBySlug(validSlug, userId);
   }
 
+  /**
+   * GET /events/:id - Dashboard endpoint (auth required).
+   * Returns full event data for owner/manager/admin.
+   */
   @Get(':id')
-  @ApiOperation({ summary: 'Get event by ID' })
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({ summary: 'Get event by ID (dashboard, auth required)' })
   @ApiParam({ name: 'id', description: 'Event ID' })
-  @ApiResponse({ status: 200, description: 'Event details' })
+  @ApiResponse({ status: 200, description: 'Full event details' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Event not found' })
-  async getEvent(@Param('id') id: string) {
+  async getEvent(@Param('id') id: string, @Req() req: Request) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
     const validId = assertNonEmptyId(id, 'id');
-    return this.eventService.getEventById(validId);
+    return this.eventService.getEventByIdForDashboard(validId, userId);
   }
 
   @Put(':id')
@@ -376,17 +445,28 @@ export class EventController {
   // Roles Endpoints
   // ─────────────────────────────────────────────────────────────────────────────
 
+  /**
+   * GET /events/:id/roles - Get event roles (auth required, owner/manager/admin only).
+   * Returns role assignments including manager/evaluator emails.
+   */
   @Get(':id/roles')
-  @ApiOperation({ summary: 'Get event roles' })
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({ summary: 'Get event roles (owner/manager/admin only)' })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({
     status: 200,
     description: 'Event roles (owner, managers, evaluators)',
   })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Owner/Manager/Admin only' })
   @ApiResponse({ status: 404, description: 'Event not found' })
-  async getEventRoles(@Param('id') id: string) {
+  async getEventRoles(@Param('id') id: string, @Req() req: Request) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
     const validId = assertNonEmptyId(id, 'id');
-    return this.eventService.getEventRoles(validId);
+    return this.eventService.getEventRolesWithPermission(validId, userId);
   }
 
   @Post(':id/roles')

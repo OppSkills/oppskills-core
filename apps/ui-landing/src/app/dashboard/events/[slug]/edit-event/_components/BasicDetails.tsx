@@ -91,11 +91,14 @@ const InputBlock = ({
 interface BasicDetailsProps {
   formData: FormData;
   setFormData: (data: React.SetStateAction<FormData>) => void;
+  /** Whether the event is in DRAFT status (allows registration form editing) */
+  isDraftEvent?: boolean;
 }
 
 export default function BasicDetails({
   formData,
   setFormData,
+  isDraftEvent = true, // Default to true for backwards compatibility
 }: BasicDetailsProps) {
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const { getToken } = useAuth();
@@ -458,18 +461,33 @@ export default function BasicDetails({
             </DropdownMenu>
           </div>
 
-          {/* Registration Form */}
-          <div onClick={() => setShowRegistrationModal(true)}>
+          {/* Registration Form - Only editable in DRAFT status */}
+          <div
+            onClick={() => {
+              if (isDraftEvent) {
+                setShowRegistrationModal(true);
+              }
+            }}
+            className={!isDraftEvent ? "opacity-50 cursor-not-allowed" : ""}
+            title={!isDraftEvent ? "Registration form can only be edited for DRAFT events" : undefined}
+          >
             <InputBlock
               icon={<FileEdit className="w-6 h-6" />}
               label="Registration Form"
-              subLabel="Customize registration questions"
+              subLabel={isDraftEvent ? "Customize registration questions" : "Locked (event is not in DRAFT)"}
             />
           </div>
         </div>
         <div className="mt-4">
-          <Button className="w-full bg-primary hover:bg-primary/90 text-white rounded-full py-6 text-lg font-semibold shadow-lg shadow-primary/20">
-            List Event
+          <p className="text-sm text-muted-foreground text-center mb-3">
+            Visit the Settings page to publish or manage your event status.
+          </p>
+          <Button
+            variant="outline"
+            className="w-full rounded-full py-6 text-lg font-semibold"
+            disabled
+          >
+            Event status is managed in Settings
           </Button>
         </div>
       </div>

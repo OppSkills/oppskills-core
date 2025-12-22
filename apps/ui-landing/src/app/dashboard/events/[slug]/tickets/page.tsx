@@ -10,6 +10,7 @@ import {
   Ticket,
   CheckCircle,
   Circle,
+  AlertTriangle,
 } from "lucide-react";
 import PaymentFormModal from "@/components/ui/payment-side/PaymentFormModal";
 import CreateTicketModal, {
@@ -69,6 +70,20 @@ export default function TicketsPage() {
 
   return (
     <div className="flex flex-col items-start gap-5 p-10 w-full flex-1 self-stretch min-h-[600px] rounded-[20px] bg-background border border-transparent shadow-sm">
+      {/* WARNING BANNER - UI Only Feature */}
+      <div className="flex items-center gap-3 p-4 w-full rounded-lg border border-amber-500/30 bg-amber-500/10">
+        <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-amber-700">
+            Feature Under Development
+          </span>
+          <span className="text-xs text-amber-600">
+            This page is a UI preview only. Ticket and payment data entered here
+            is not saved to the server. Full functionality coming soon.
+          </span>
+        </div>
+      </div>
+
       {/* DESCRIPTION */}
       <p className="font-sans text-muted-foreground text-sm font-normal">
         Set up event fees for participants (if applicable). Add payment methods,

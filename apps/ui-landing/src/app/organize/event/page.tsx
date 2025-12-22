@@ -274,6 +274,19 @@ export default function Page() {
     return `${y}-${m}-${d}`;
   }
 
+  /**
+   * Combines a Date object and a time string (HH:mm format) into an ISO datetime string.
+   * This ensures the time component is preserved in the API payload.
+   */
+  function combineDateAndTimeToIso(date: Date, timeHHmm: string): string {
+    const [hoursRaw, minutesRaw] = timeHHmm.split(":");
+    const hours = Number(hoursRaw) || 0;
+    const minutes = Number(minutesRaw) || 0;
+    const combined = new Date(date.getTime());
+    combined.setHours(hours, minutes, 0, 0);
+    return combined.toISOString();
+  }
+
   function toLocationDto(
     input: string
   ): EventLocationDto | FestivalLocationDto | undefined {
@@ -462,13 +475,15 @@ export default function Page() {
         bannerImageUrl: isValidUrl(values.eventThumbnail)
           ? values.eventThumbnail.trim()
           : undefined,
-        startDate: toIsoDateOnly(values.eventDate),
-        endDate: toIsoDateOnly(values.eventDate),
+        // Use combineDateAndTimeToIso to preserve time component
+        startDate: combineDateAndTimeToIso(values.eventDate, values.eventTimeFrom),
+        endDate: combineDateAndTimeToIso(values.eventDate, values.eventTimeFrom),
         location: toLocationDto(values.eventLocation) as
           | EventLocationDto
           | undefined,
+        // Use end of day (23:59) for registration deadline if not otherwise specified
         registrationDeadline: values.eventRegisterBy
-          ? toIsoDateOnly(values.eventRegisterBy)
+          ? combineDateAndTimeToIso(values.eventRegisterBy, "23:59")
           : undefined,
         maxUsers: values.maxUsers,
         isFree: values.isFree,

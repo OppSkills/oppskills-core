@@ -145,10 +145,11 @@ export const UpcomingEvents = () => {
           {displayEvents.map((event) => {
             const startDate = new Date(event.startDate);
             const formattedDate = format(startDate, "dd MMM yyyy");
-            const formattedDeadLineDate = format(
-              new Date(event.registrationDeadline),
-              "dd MMM yyyy"
-            );
+            const formattedTime = format(startDate, "hh:mm a");
+            // Safely handle null registrationDeadline
+            const formattedDeadLineDate = event.registrationDeadline
+              ? format(new Date(event.registrationDeadline), "dd MMM yyyy")
+              : "N/A";
             const mode = formatMode(event.locationType);
             const entryFee = formatEntryFee(event);
             const isFree = event.isFree;
@@ -174,7 +175,7 @@ export const UpcomingEvents = () => {
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
-                      {["Free", "Offline"].map((item, index) => (
+                      {[entryFee, mode].map((item, index) => (
                         <div key={index} className="flex gap-0.5 items-center">
                           {index > 0 && <Dot />}
                           <span>{item}</span>
@@ -186,7 +187,7 @@ export const UpcomingEvents = () => {
                   {/* Content Section */}
                   <CardContent className="space-y-2 flex-grow">
                     <div className="flex gap-0.5 items-center overflow-ellipsis inter text-xs text-neutral-600">
-                      {["Every Tue", formattedDate, "10:00AM"].map(
+                      {[formattedDate, formattedTime].map(
                         (item, index) => (
                           <p key={index} className="gap-0.5 flex items-center">
                             {index > 0 && <Dot />}
@@ -204,7 +205,7 @@ export const UpcomingEvents = () => {
                         <span className="text-xs text-neutral-500">
                           Attendees
                         </span>
-                        <span className="text-neutral-700">0</span>
+                        <span className="text-neutral-700">{event.registrationCount}</span>
                       </div>
                       <div className="flex flex-col gap-2 ">
                         <span className="text-xs text-neutral-500">

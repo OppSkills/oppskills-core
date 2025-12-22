@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Send, Bell } from "lucide-react";
+import { Send, Bell, AlertTriangle } from "lucide-react";
 
 export default function NotificationsPage() {
   const [recipientGroup, setRecipientGroup] = React.useState<string>("");
@@ -53,6 +53,20 @@ export default function NotificationsPage() {
   return (
     <div className="w-full bg-neutral-200 min-h-screen p-6 flex flex-col items-center gap-6">
       <div className="w-full max-w-3xl bg-background rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+        {/* WARNING BANNER - UI Only Feature */}
+        <div className="flex items-center gap-3 p-4 w-full rounded-lg border border-amber-500/30 bg-amber-500/10">
+          <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-amber-700">
+              Feature Under Development
+            </span>
+            <span className="text-xs text-amber-600">
+              This page is a UI preview only. Notifications sent here are not
+              actually delivered. Full functionality coming soon.
+            </span>
+          </div>
+        </div>
+
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-primary/10 rounded-lg text-primary">

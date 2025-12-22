@@ -343,9 +343,11 @@ export default function EventDetailsPage() {
                       {event.contactPhone && (
                         <p className="text-xs text-zinc-500">{event.contactPhone}</p>
                       )}
-                      <p className="text-xs text-zinc-500">
-                        {event.contactEmail || event.owner.email}
-                      </p>
+                      {event.contactEmail && (
+                        <p className="text-xs text-zinc-500">
+                          {event.contactEmail}
+                        </p>
+                      )}
                     </div>
                   </div>
 

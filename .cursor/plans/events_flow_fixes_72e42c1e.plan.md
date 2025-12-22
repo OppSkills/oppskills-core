@@ -165,5 +165,3 @@ todos:
 - [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/page.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/page.tsx)
 - [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx)
 - [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/_components/BasicDetails.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/_components/BasicDetails.tsx)
-- [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/components/landingpage/UpcomingEvents.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/components/landingpage/UpcomingEvents.tsx)
-- Tickets/Notifications banner-only:
