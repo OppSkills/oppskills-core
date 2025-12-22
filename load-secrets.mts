@@ -67,9 +67,19 @@ function parseSecretsJson(secretString: string): SecretsRecord {
 function writeEnvFile(envPath: string, envVars: SecretsRecord): void {
   const envContent: string = Object.entries(envVars)
     .map(([key, value]) => {
-      // Wrap values in quotes and escape internal quotes to handle multi-line secrets (like Private Keys)
-      const escapedValue = value.replace(/"/g, '\\"');
-      return `${key}="${escapedValue}"`;
+      /**
+       * Serialize as JSON string literal to ensure values are safely escaped.
+       *
+       * This handles:
+       * - Backslashes (e.g. `\"` sequences)
+       * - Quotes
+       * - Newlines and other control characters
+       *
+       * Example output:
+       *   KEY="line1\nline2"
+       */
+      const jsonSerializedValue: string = JSON.stringify(value);
+      return `${key}=${jsonSerializedValue}`;
     })
     .join("\n");
 

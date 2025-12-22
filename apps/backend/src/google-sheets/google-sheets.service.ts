@@ -9,18 +9,20 @@ export class GoogleSheetsService {
   private spreadsheetId: string;
 
   constructor(private configService: ConfigService) {
-    const clientEmail = this.configService.get<string>('GOOGLE_SHEETS_CLIENT_EMAIL');
-    const privateKey = this.configService.get<string>('GOOGLE_SHEETS_PRIVATE_KEY')?.replace(/\\n/g, '\n');
-    this.spreadsheetId = this.configService.get<string>('GOOGLE_SHEETS_SPREADSHEET_ID') || '';
+    const clientEmail = this.configService.get<string>(
+      'GOOGLE_SHEETS_CLIENT_EMAIL',
+    );
+    const privateKey = this.configService
+      .get<string>('GOOGLE_SHEETS_PRIVATE_KEY')
+      ?.replace(/\\n/g, '\n');
+    this.spreadsheetId =
+      this.configService.get<string>('GOOGLE_SHEETS_SPREADSHEET_ID') || '';
 
     if (clientEmail && privateKey && this.spreadsheetId) {
       try {
-        const auth = new google.auth.JWT(
-          clientEmail,
-          undefined,
-          privateKey,
-          ['https://www.googleapis.com/auth/spreadsheets'],
-        );
+        const auth = new google.auth.JWT(clientEmail, undefined, privateKey, [
+          'https://www.googleapis.com/auth/spreadsheets',
+        ]);
         this.sheets = google.sheets({ version: 'v4', auth });
         this.logger.log('Google Sheets API initialized successfully.');
       } catch (error) {
@@ -28,7 +30,9 @@ export class GoogleSheetsService {
         this.logger.error(`Failed to initialize Google Sheets API: ${errMsg}`);
       }
     } else {
-      this.logger.warn('Google Sheets configuration is missing (GOOGLE_SHEETS_CLIENT_EMAIL, GOOGLE_SHEETS_PRIVATE_KEY, or GOOGLE_SHEETS_SPREADSHEET_ID). Logging to spreadsheet will be disabled.');
+      this.logger.warn(
+        'Google Sheets configuration is missing (GOOGLE_SHEETS_CLIENT_EMAIL, GOOGLE_SHEETS_PRIVATE_KEY, or GOOGLE_SHEETS_SPREADSHEET_ID). Logging to spreadsheet will be disabled.',
+      );
     }
   }
 
@@ -42,9 +46,14 @@ export class GoogleSheetsService {
   /**
    * Appends a row to the specified range.
    */
-  async appendRow(range: string, values: (string | number | null | undefined)[]) {
+  async appendRow(
+    range: string,
+    values: (string | number | null | undefined)[],
+  ) {
     if (!this.sheets) {
-      this.logger.warn('Google Sheets service not initialized. Skipping append.');
+      this.logger.warn(
+        'Google Sheets service not initialized. Skipping append.',
+      );
       return;
     }
 
@@ -57,7 +66,9 @@ export class GoogleSheetsService {
           values: [values.map((v) => v ?? '')],
         },
       });
-      this.logger.log(`Successfully appended row to Google Sheets at range: ${range}`);
+      this.logger.log(
+        `Successfully appended row to Google Sheets at range: ${range}`,
+      );
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to append row to Google Sheets: ${errMsg}`);
@@ -131,7 +142,7 @@ export class GoogleSheetsService {
 
       const existingSheets = spreadsheet.data.sheets ?? [];
       const tabExists = existingSheets.some(
-        (sheet) => sheet.properties?.title === tabName
+        (sheet) => sheet.properties?.title === tabName,
       );
 
       if (tabExists) {
@@ -172,10 +183,12 @@ export class GoogleSheetsService {
   async appendRegistrationRow(
     tabName: string,
     fixedColumns: Record<string, string | number | null>,
-    questionColumns: Record<string, string | number | null>
+    questionColumns: Record<string, string | number | null>,
   ): Promise<void> {
     if (!this.sheets) {
-      this.logger.warn('Google Sheets service not initialized. Skipping registration log.');
+      this.logger.warn(
+        'Google Sheets service not initialized. Skipping registration log.',
+      );
       return;
     }
 
@@ -183,7 +196,9 @@ export class GoogleSheetsService {
       // Ensure tab exists
       const tabReady = await this.ensureTabExists(tabName);
       if (!tabReady) {
-        this.logger.error(`Cannot append to ${tabName}: tab could not be created.`);
+        this.logger.error(
+          `Cannot append to ${tabName}: tab could not be created.`,
+        );
         return;
       }
 
@@ -192,22 +207,42 @@ export class GoogleSheetsService {
 
       // Fixed column headers in order
       const fixedKeys = Object.keys(fixedColumns);
-      
+
       // Build header list: fixed columns first, then question columns
       let headersNeedUpdate = false;
-      const finalHeaders: string[] = [...currentHeaders];
+      let finalHeaders: string[] = [...currentHeaders];
 
-      // Ensure fixed columns are at the start
-      for (let i = 0; i < fixedKeys.length; i++) {
-        const key = fixedKeys[i];
-        if (finalHeaders.length <= i || finalHeaders[i] !== key) {
-          // If header doesn't match or doesn't exist at this position
-          if (!finalHeaders.includes(key)) {
-            // Insert at position if missing
-            finalHeaders.splice(i, 0, key);
-            headersNeedUpdate = true;
+      /**
+       * Normalize fixed headers to avoid:
+       * - Duplicates (fixed key present multiple times)
+       * - Wrong fixed-header positions (fixed key present but not at the intended index)
+       *
+       * Steps:
+       * 1) Remove *all* occurrences of each fixed key from the existing headers.
+       * 2) Prepend fixed keys in their required order.
+       * 3) If the rebuilt header list differs, mark an update and adopt it.
+       */
+      const fixedKeySet: ReadonlySet<string> = new Set<string>(fixedKeys);
+      const remainingHeaders: string[] = finalHeaders.filter(
+        (header) => !fixedKeySet.has(header),
+      );
+      const newHeaders: string[] = [...fixedKeys, ...remainingHeaders];
+
+      // Compare arrays by length and by position (preserves order correctness).
+      let fixedHeadersDiffer: boolean =
+        newHeaders.length !== finalHeaders.length;
+      if (!fixedHeadersDiffer) {
+        for (let i = 0; i < newHeaders.length; i++) {
+          if (newHeaders[i] !== finalHeaders[i]) {
+            fixedHeadersDiffer = true;
+            break;
           }
         }
+      }
+
+      if (fixedHeadersDiffer) {
+        headersNeedUpdate = true;
+        finalHeaders = newHeaders;
       }
 
       // Ensure question columns exist (append new ones, never reorder)
@@ -224,15 +259,17 @@ export class GoogleSheetsService {
       }
 
       // Build row aligned to final headers
-      const rowValues: (string | number | null)[] = finalHeaders.map((header) => {
-        if (header in fixedColumns) {
-          return fixedColumns[header] ?? '';
-        }
-        if (header in questionColumns) {
-          return questionColumns[header] ?? '';
-        }
-        return '';
-      });
+      const rowValues: (string | number | null)[] = finalHeaders.map(
+        (header) => {
+          if (header in fixedColumns) {
+            return fixedColumns[header] ?? '';
+          }
+          if (header in questionColumns) {
+            return questionColumns[header] ?? '';
+          }
+          return '';
+        },
+      );
 
       // Append to tab (starting from row 2)
       await this.sheets.spreadsheets.values.append({
