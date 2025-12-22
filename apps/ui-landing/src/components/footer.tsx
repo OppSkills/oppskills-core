@@ -2,10 +2,12 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Twitter, Linkedin, Facebook, Instagram } from "lucide-react";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 
 interface FooterLink {
   name: string;
   href: string;
+  scroll?: boolean;
 }
 
 interface SocialLink {
@@ -20,30 +22,24 @@ interface FooterLinks {
 
 const Footer = () => {
   const footerLinks: FooterLinks = {
-    "Your Account": [
-      { name: "Sign up", href: "/signup" },
-      { name: "Sign in", href: "/signin" },
-      { name: "Help", href: "/help" },
-    ],
     Discover: [
-      { name: "Competitions", href: "/competitions" },
-      { name: "Events", href: "/events" },
-      { name: "Communities", href: "/communities" },
+      { name: "Competitions", href: "#competitions" },
+      { name: "Events", href: "#events" },
     ],
-    OppSkills: [
-      { name: "About", href: "/about" },
-      { name: "Team", href: "/team" },
-      { name: "Blogs", href: "/blogs" },
-      { name: "Market Mafiyaa", href: "/market-mafiyaa" },
-      { name: "Impact", href: "/impact" },
-    ],
+    OppSkills: [{ name: "Market Mafiaa", href: "https://marketmafiaa.com" }],
   };
 
   const socialLinks: SocialLink[] = [
-    { icon: Facebook, href: "https://facebook.com/oppskills", label: "Facebook" },
-    { icon: Instagram, href: "https://instagram.com/oppskills", label: "Instagram" },
-    { icon: Linkedin, href: "https://linkedin.com/company/oppskills", label: "LinkedIn" },
-    { icon: Twitter, href: "https://twitter.com/oppskills", label: "Twitter" },
+    {
+      icon: Linkedin,
+      href: "https://www.linkedin.com/company/oppskills",
+      label: "LinkedIn",
+    },
+    {
+      icon: Instagram,
+      href: "https://www.instagram.com/oppskills.global/",
+      label: "Instagram",
+    },
   ];
 
   return (
@@ -73,7 +69,10 @@ const Footer = () => {
 
           <div className="flex items-center gap-2 text-lg md:text-xl font-medium">
             <span>Create your events.</span>
-            <Link href="/create-event" className="text-[#d946ef] hover:underline">
+            <Link
+              href="/create-event"
+              className="text-[#d946ef] hover:underline"
+            >
               Click here
             </Link>
           </div>
@@ -86,6 +85,45 @@ const Footer = () => {
         <div className="flex flex-col lg:flex-row justify-between gap-12 lg:gap-8">
           {/* Links Columns */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-16 lg:gap-24 grow">
+            {/* Account Links */}
+            <div className="space-y-6">
+              <h4 className="text-lg font-semibold text-gray-200">
+                Your Account
+              </h4>
+              <ul className="space-y-4">
+                <SignedOut>
+                  <li>
+                    <Link
+                      href="?auth=signup"
+                      scroll={false}
+                      className="text-gray-400 hover:text-white transition-colors text-base"
+                    >
+                      Sign up
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="?auth=login"
+                      scroll={false}
+                      className="text-gray-400 hover:text-white transition-colors text-base"
+                    >
+                      Sign in
+                    </Link>
+                  </li>
+                </SignedOut>
+                <SignedIn>
+                  <li>
+                    <Link
+                      href="/dashboard"
+                      className="text-gray-400 hover:text-white transition-colors text-base"
+                    >
+                      Profile
+                    </Link>
+                  </li>
+                </SignedIn>
+              </ul>
+            </div>
+
             {Object.entries(footerLinks).map(([category, links]) => (
               <div key={category} className="space-y-6">
                 <h4 className="text-lg font-semibold text-gray-200">
@@ -96,6 +134,7 @@ const Footer = () => {
                     <li key={index}>
                       <Link
                         href={link.href}
+                        scroll={link.scroll}
                         className="text-gray-400 hover:text-white transition-colors text-base"
                       >
                         {link.name}

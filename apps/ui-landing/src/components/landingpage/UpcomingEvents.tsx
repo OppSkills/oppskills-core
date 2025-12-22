@@ -63,7 +63,10 @@ export const UpcomingEvents = () => {
   // Loading state
   if (isLoading) {
     return (
-      <section className="w-full py-12 md:py-16 lg:py-20 bg-background">
+      <section
+        className="w-full py-12 md:py-16 lg:py-20 bg-background"
+        id="events"
+      >
         <div className="container px-4 md:px-6 mx-auto">
           <div className="mb-8 space-y-2">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
@@ -84,7 +87,10 @@ export const UpcomingEvents = () => {
   // Empty state
   if (error || displayEvents.length === 0) {
     return (
-      <section className="w-full py-12 md:py-16 lg:py-20 bg-background">
+      <section
+        className="w-full py-12 md:py-16 lg:py-20 bg-background"
+        id="events"
+      >
         <div className="container px-4 md:px-6 mx-auto">
           <div className="mb-8 space-y-2">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
@@ -129,7 +135,10 @@ export const UpcomingEvents = () => {
   }
 
   return (
-    <section className="w-full py-12 md:py-16 lg:py-20 bg-background">
+    <section
+      className="w-full py-12 md:py-16 lg:py-20 bg-background"
+      id="events"
+    >
       <div className="container px-4 md:px-6 mx-auto">
         <div className="mb-8 space-y-2 flex flex-col gap-2">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
@@ -175,26 +184,33 @@ export const UpcomingEvents = () => {
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
-                      {[entryFee, mode].map((item, index) => (
-                        <div key={index} className="flex gap-0.5 items-center">
-                          {index > 0 && <Dot />}
-                          <span>{item}</span>
-                        </div>
-                      ))}
+                      {[event.eventType, event.locationType].map(
+                        (item, index) => (
+                          <div
+                            key={index}
+                            className="flex gap-0.5 items-center"
+                          >
+                            {index > 0 && <Dot />}
+                            <span>{item}</span>
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
 
                   {/* Content Section */}
                   <CardContent className="space-y-2 flex-grow">
                     <div className="flex gap-0.5 items-center overflow-ellipsis inter text-xs text-neutral-600">
-                      {[formattedDate, formattedTime].map(
-                        (item, index) => (
-                          <p key={index} className="gap-0.5 flex items-center">
-                            {index > 0 && <Dot />}
-                            {item}
-                          </p>
-                        )
-                      )}
+                      {[
+                        event.isFree ? "Free" : "Paid",
+                        formattedDate,
+                        mode,
+                      ].map((item, index) => (
+                        <p key={index} className="gap-0.5 flex items-center">
+                          {index > 0 && <Dot />}
+                          {item}
+                        </p>
+                      ))}
                     </div>
                     <h3 className="font-semibold text-xl text-neutral-900">
                       {event.name}

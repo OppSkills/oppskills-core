@@ -597,10 +597,15 @@ export default function Page() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div className="cursor-pointer">
-                  <HackathonInput>
-                    {formValues.eventFestName || "Individual Event"}{" "}
-                    <ChevronDown className="w-4 h-4" />
-                  </HackathonInput>
+                  <form.Subscribe
+                    selector={(state) => state.values.eventFestName}
+                    children={(eventFestName) => (
+                      <HackathonInput>
+                        {eventFestName || "Individual Event"}{" "}
+                        <ChevronDown className="w-4 h-4" />
+                      </HackathonInput>
+                    )}
+                  />
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-[300px]">
@@ -702,9 +707,12 @@ export default function Page() {
                       variant="outline"
                       className="w-40 justify-between font-normal"
                     >
-                      {formValues.eventDate
-                        ? format(formValues.eventDate, "PP")
-                        : "Select date"}
+                      <form.Subscribe
+                        selector={(state) => state.values.eventDate}
+                        children={(eventDate) =>
+                          eventDate ? format(eventDate, "PP") : "Select date"
+                        }
+                      />
                       <ChevronDown className="w-4 h-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -712,14 +720,19 @@ export default function Page() {
                     className="w-auto overflow-hidden p-0"
                     align="start"
                   >
-                    <Calendar
-                      mode="single"
-                      selected={formValues.eventDate}
-                      captionLayout="dropdown"
-                      onSelect={(date) => {
-                        form.setFieldValue("eventDate", date);
-                        setEventDateOpen(false);
-                      }}
+                    <form.Subscribe
+                      selector={(state) => state.values.eventDate}
+                      children={(eventDate) => (
+                        <Calendar
+                          mode="single"
+                          selected={eventDate}
+                          captionLayout="dropdown"
+                          onSelect={(date) => {
+                            form.setFieldValue("eventDate", date);
+                            setEventDateOpen(false);
+                          }}
+                        />
+                      )}
                     />
                   </PopoverContent>
                 </Popover>
@@ -753,9 +766,14 @@ export default function Page() {
                       variant="outline"
                       className="w-40 justify-between font-normal"
                     >
-                      {formValues.eventRegisterBy
-                        ? format(formValues.eventRegisterBy, "PP")
-                        : "Select date"}
+                      <form.Subscribe
+                        selector={(state) => state.values.eventRegisterBy}
+                        children={(eventRegisterBy) =>
+                          eventRegisterBy
+                            ? format(eventRegisterBy, "PP")
+                            : "Select date"
+                        }
+                      />
                       <ChevronDown className="w-4 h-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -763,14 +781,19 @@ export default function Page() {
                     className="w-auto overflow-hidden p-0"
                     align="start"
                   >
-                    <Calendar
-                      mode="single"
-                      selected={formValues.eventRegisterBy}
-                      captionLayout="dropdown"
-                      onSelect={(date) => {
-                        form.setFieldValue("eventRegisterBy", date);
-                        setRegisterByOpen(false);
-                      }}
+                    <form.Subscribe
+                      selector={(state) => state.values.eventRegisterBy}
+                      children={(eventRegisterBy) => (
+                        <Calendar
+                          mode="single"
+                          selected={eventRegisterBy}
+                          captionLayout="dropdown"
+                          onSelect={(date) => {
+                            form.setFieldValue("eventRegisterBy", date);
+                            setRegisterByOpen(false);
+                          }}
+                        />
+                      )}
                     />
                   </PopoverContent>
                 </Popover>
