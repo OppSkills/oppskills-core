@@ -82,6 +82,8 @@ export default function RegistrationQuestionsModal({
         type: "Options",
         required: true,
         fixed: true,
+        // Default gender options matching backend enum
+        options: ["Male", "Female", "Other", "Prefer not to say"],
       },
       {
         id: "fixed-5",
@@ -206,8 +208,11 @@ export default function RegistrationQuestionsModal({
   };
 
   const handleSave = () => {
-    // Save ALL questions (both fixed and custom) so they appear in registration form
-    onSave(questions);
+    // Only save CUSTOM questions to the backend.
+    // Fixed/default questions are UI-only and will be lazy-created by the backend
+    // at registration time. This prevents persisting broken defaults (e.g., Gender with no options).
+    const customOnly = questions.filter((q) => !q.fixed);
+    onSave(customOnly);
     onOpenChange(false);
   };
 

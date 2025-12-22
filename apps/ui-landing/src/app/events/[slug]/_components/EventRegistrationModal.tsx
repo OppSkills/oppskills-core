@@ -21,6 +21,17 @@ import {
 import { Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Default gender options matching Prisma Gender enum
+const DEFAULT_GENDER_OPTIONS = ["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"];
+
+// Labels for display (more user-friendly)
+const GENDER_OPTION_LABELS: Record<string, string> = {
+  MALE: "Male",
+  FEMALE: "Female",
+  OTHER: "Other",
+  PREFER_NOT_TO_SAY: "Prefer not to say",
+};
+
 export interface RegistrationField {
   id: string;
   label: string;
@@ -37,6 +48,8 @@ export interface UserDataForPrefill {
   phone?: string;
   gender?: string;
   collegeName?: string;
+  companyName?: string;
+  schoolName?: string;
 }
 
 export interface EventRegistrationModalProps {
@@ -60,7 +73,7 @@ function getPrefilledValue(field: RegistrationField, userData: UserDataForPrefil
   
   const label = field.label.toLowerCase();
   
-  // Name matching
+  // Name matching (but not college/school/company name)
   if (label.includes("name") && !label.includes("college") && !label.includes("school") && !label.includes("company")) {
     return userData.name;
   }
@@ -83,6 +96,16 @@ function getPrefilledValue(field: RegistrationField, userData: UserDataForPrefil
   // College matching
   if (label.includes("college") || label.includes("university") || label.includes("institution")) {
     return userData.collegeName;
+  }
+  
+  // Company matching
+  if (label.includes("company") || label.includes("organization") || label.includes("employer")) {
+    return userData.companyName;
+  }
+  
+  // School matching
+  if (label.includes("school")) {
+    return userData.schoolName;
   }
   
   return undefined;
@@ -215,7 +238,14 @@ export function EventRegistrationModal({
     const value = values[field.id] ?? "";
 
     switch (field.type) {
-      case "OPTIONS":
+      case "OPTIONS": {
+        // For Gender field with empty options, inject default gender options
+        const isGenderField = field.label.toLowerCase() === "gender";
+        const effectiveOptions = 
+          isGenderField && (!field.options || field.options.length === 0)
+            ? DEFAULT_GENDER_OPTIONS
+            : field.options;
+        
         return (
           <div key={field.id} className="space-y-2">
             <Label htmlFor={field.id} className="text-sm font-medium">
@@ -233,9 +263,9 @@ export function EventRegistrationModal({
                 <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />
               </SelectTrigger>
               <SelectContent>
-                {field.options.map((option) => (
+                {effectiveOptions.map((option) => (
                   <SelectItem key={option} value={option}>
-                    {option}
+                    {isGenderField ? (GENDER_OPTION_LABELS[option] || option) : option}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -243,6 +273,7 @@ export function EventRegistrationModal({
             {error && <p className="text-xs text-red-500">{error}</p>}
           </div>
         );
+      }
 
       case "NUMBER":
         return (

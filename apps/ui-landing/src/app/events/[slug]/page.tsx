@@ -46,6 +46,135 @@ function formatLocation(event: {
   };
 }
 
+/**
+ * User category values (matching backend enum)
+ */
+type UserCategory =
+  | "SCHOOL_STUDENT"
+  | "COLLEGE_STUDENT"
+  | "WORKING_PROFESSIONAL"
+  | "FRESHER"
+  | "PROFESSIONAL_SCHOOL_STUDENT";
+
+/**
+ * Build default registration fields based on user category.
+ * These are UI-only placeholders with temporary IDs (prefixed with "default-").
+ * The backend will lazy-create real DB fields when the user submits.
+ */
+function buildDefaultFields(userCategory?: string): RegistrationField[] {
+  const fields: RegistrationField[] = [
+    {
+      id: "default-name",
+      label: "Name",
+      type: "TEXT",
+      required: true,
+      order: -50,
+      options: [],
+      placeholder: "Your full name",
+    },
+    {
+      id: "default-email",
+      label: "Email",
+      type: "EMAIL",
+      required: true,
+      order: -40,
+      options: [],
+      placeholder: "email@example.com",
+    },
+    {
+      id: "default-phone",
+      label: "Phone No.",
+      type: "PHONE_NO",
+      required: true,
+      order: -30,
+      options: [],
+      placeholder: "+91 XXXXX XXXXX",
+    },
+    {
+      id: "default-gender",
+      label: "Gender",
+      type: "OPTIONS",
+      required: true,
+      order: -20,
+      options: [], // Modal will inject default gender options
+      placeholder: "Select gender",
+    },
+  ];
+
+  // Add conditional identity field based on user category
+  const category = userCategory as UserCategory | undefined;
+  
+  if (category === "SCHOOL_STUDENT") {
+    fields.push({
+      id: "default-school-name",
+      label: "School Name",
+      type: "TEXT",
+      required: true,
+      order: -10,
+      options: [],
+      placeholder: "Your school name",
+    });
+  } else if (
+    category === "COLLEGE_STUDENT" ||
+    category === "PROFESSIONAL_SCHOOL_STUDENT" ||
+    category === "FRESHER"
+  ) {
+    fields.push({
+      id: "default-college-name",
+      label: "College Name",
+      type: "TEXT",
+      required: true,
+      order: -10,
+      options: [],
+      placeholder: "Your college name",
+    });
+  } else if (category === "WORKING_PROFESSIONAL") {
+    fields.push({
+      id: "default-company-name",
+      label: "Company Name",
+      type: "TEXT",
+      required: true,
+      order: -10,
+      options: [],
+      placeholder: "Your company name",
+    });
+  } else {
+    // Fallback: if category unknown, ask for College Name
+    fields.push({
+      id: "default-college-name",
+      label: "College Name",
+      type: "TEXT",
+      required: true,
+      order: -10,
+      options: [],
+      placeholder: "Your college/institution name",
+    });
+  }
+
+  return fields;
+}
+
+/**
+ * Merge default fields with custom fields from the event registration form.
+ * Default fields come first (negative order), then custom fields.
+ */
+function mergeDefaultAndCustomFields(
+  customFields: RegistrationField[] | undefined,
+  userCategory?: string
+): RegistrationField[] {
+  const defaults = buildDefaultFields(userCategory);
+  const customs = customFields ?? [];
+  
+  // Filter out custom fields that duplicate default labels
+  const defaultLabels = new Set(defaults.map((f) => f.label.toLowerCase()));
+  const filteredCustoms = customs.filter(
+    (f) => !defaultLabels.has(f.label.toLowerCase())
+  );
+  
+  // Merge and sort by order
+  return [...defaults, ...filteredCustoms].sort((a, b) => a.order - b.order);
+}
+
 export default function EventDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -61,6 +190,7 @@ export default function EventDetailsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [userDataForPrefill, setUserDataForPrefill] = useState<UserDataForPrefill | undefined>(undefined);
+  const [registrationFields, setRegistrationFields] = useState<RegistrationField[]>([]);
 
   // Fetch registration status if logged in
   const { data: registrationStatus, refetch: refetchRegistrationStatus } = useQuery({
@@ -113,23 +243,28 @@ export default function EventDetailsPage() {
       
       const prefillData: UserDataForPrefill = {
         name: fullName,
-        email: meData.email,
+        email: meData.email ?? undefined,
         phone: user?.primaryPhoneNumber?.phoneNumber,
         gender: onboardingProfile?.gender,
-        // Note: College name would need to be added to the backend response
-        // Currently only collegeId is available
+        // Note: collegeName is not directly available from onboarding profile (only collegeId)
+        // User will need to fill it in manually
+        collegeName: undefined,
+        companyName: onboardingProfile?.companyName ?? undefined,
+        schoolName: onboardingProfile?.schoolName ?? undefined,
       };
       
       setUserDataForPrefill(prefillData);
 
-      // User is onboarded - proceed with registration
-      const hasFields = event.registrationForm && event.registrationForm.fields.length > 0;
-      if (hasFields) {
-        setIsModalOpen(true);
-      } else {
-        // No registration form - join directly
-        handleJoinEvent([]);
-      }
+      // Always build merged fields (defaults + custom) and open modal
+      // Never skip registration form - always ask at least the default questions
+      const customFields = (event.registrationForm?.fields ?? []) as RegistrationField[];
+      const mergedFields = mergeDefaultAndCustomFields(
+        customFields,
+        onboardingProfile?.userCategory
+      );
+      
+      setRegistrationFields(mergedFields);
+      setIsModalOpen(true);
     } catch (err) {
       console.error("Error checking onboarding status:", err);
       toast.error("Something went wrong. Please try again.");
@@ -422,7 +557,7 @@ export default function EventDetailsPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleJoinEvent}
-        fields={(event?.registrationForm?.fields ?? []) as RegistrationField[]}
+        fields={registrationFields}
         eventName={event?.name ?? ""}
         isSubmitting={isRegistering}
         userData={userDataForPrefill}

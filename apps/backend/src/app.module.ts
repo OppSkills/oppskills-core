@@ -10,6 +10,7 @@ import { UserAccountsModule } from './user-accounts/user-accounts.module';
 import { MediaModule } from "./media/media.module";
 import { CollegesModule } from './colleges/colleges.module';
 import { EventModule } from './event/event.module';
+import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { EventModule } from './event/event.module';
     MediaModule,
     CollegesModule,
     EventModule,
+    GoogleSheetsModule,
   ],
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],

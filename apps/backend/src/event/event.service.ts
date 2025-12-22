@@ -738,7 +738,8 @@ export class EventService {
    * - Only allowed for PUBLISHED or ONGOING events.
    * - Must be APPROVED.
    * - Must not have registrations paused.
-   * - Optionally accepts registration form answers.
+   * - Lazy-creates default registration fields at registration time.
+   * - Optionally accepts registration form answers (for both defaults and custom questions).
    */
   async joinEvent(
     eventId: string,
@@ -795,17 +796,153 @@ export class EventService {
       throw new ConflictException('You have already joined this event.');
     }
 
-    // Always load registration form to enforce required field validation
-    // This prevents clients from bypassing required questions by sending empty answers
-    let registrationFields: Array<{
-      id: string;
+    // Fetch user's onboarding profile to determine userCategory
+    const userOnboardingProfile = await prisma.userOnboardingProfileEntity.findUnique({
+      where: { userId },
+      select: { userCategory: true },
+    });
+    const userCategory = userOnboardingProfile?.userCategory;
+
+    // Default gender options matching Prisma Gender enum
+    const DEFAULT_GENDER_OPTIONS = ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'];
+
+    // Define default fields that should be lazy-created
+    // Order is negative so they sort before custom fields (which use 0+)
+    type DefaultFieldDef = {
       label: string;
-      type: string;
+      type: 'TEXT' | 'EMAIL' | 'PHONE_NO' | 'OPTIONS';
+      order: number;
       required: boolean;
       options: string[];
-    }> = [];
+      frontendId: string; // The ID sent by frontend (e.g., "default-name")
+    };
 
-    const regForm = await prisma.eventRegistrationFormEntity.findUnique({
+    const defaultFieldDefs: DefaultFieldDef[] = [
+      { frontendId: 'default-name', label: 'Name', type: 'TEXT', order: -50, required: true, options: [] },
+      { frontendId: 'default-email', label: 'Email', type: 'EMAIL', order: -40, required: true, options: [] },
+      { frontendId: 'default-phone', label: 'Phone No.', type: 'PHONE_NO', order: -30, required: true, options: [] },
+      { frontendId: 'default-gender', label: 'Gender', type: 'OPTIONS', order: -20, required: true, options: DEFAULT_GENDER_OPTIONS },
+    ];
+
+    // Add conditional identity field based on userCategory
+    if (userCategory === 'SCHOOL_STUDENT') {
+      defaultFieldDefs.push({
+        frontendId: 'default-school-name',
+        label: 'School Name',
+        type: 'TEXT',
+        order: -10,
+        required: true,
+        options: [],
+      });
+    } else if (
+      userCategory === 'COLLEGE_STUDENT' ||
+      userCategory === 'PROFESSIONAL_SCHOOL_STUDENT' ||
+      userCategory === 'FRESHER'
+    ) {
+      defaultFieldDefs.push({
+        frontendId: 'default-college-name',
+        label: 'College Name',
+        type: 'TEXT',
+        order: -10,
+        required: true,
+        options: [],
+      });
+    } else if (userCategory === 'WORKING_PROFESSIONAL') {
+      defaultFieldDefs.push({
+        frontendId: 'default-company-name',
+        label: 'Company Name',
+        type: 'TEXT',
+        order: -10,
+        required: true,
+        options: [],
+      });
+    } else {
+      // Fallback: if no category, ask for College Name
+      defaultFieldDefs.push({
+        frontendId: 'default-college-name',
+        label: 'College Name',
+        type: 'TEXT',
+        order: -10,
+        required: true,
+        options: [],
+      });
+    }
+
+    // Upsert registration form if missing
+    let regForm = await prisma.eventRegistrationFormEntity.findUnique({
+      where: { eventId },
+      include: {
+        fields: {
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    if (!regForm) {
+      regForm = await prisma.eventRegistrationFormEntity.create({
+        data: { eventId },
+        include: {
+          fields: {
+            orderBy: { order: 'asc' },
+          },
+        },
+      });
+    }
+
+    const registrationFormId = regForm.id;
+
+    // Lazy-create missing default fields
+    // Build a map of existing fields by label for matching
+    const existingFieldsByLabel = new Map(
+      regForm.fields.map((f) => [f.label.toLowerCase(), f])
+    );
+
+    // Map frontend field IDs to real DB field IDs
+    const frontendIdToDbId = new Map<string, string>();
+
+    for (const def of defaultFieldDefs) {
+      const existingField = existingFieldsByLabel.get(def.label.toLowerCase());
+
+      if (existingField) {
+        // Field already exists - map the frontend ID to the existing DB ID
+        frontendIdToDbId.set(def.frontendId, existingField.id);
+
+        // If it's the Gender field and options are empty, update with default options
+        if (
+          def.label.toLowerCase() === 'gender' &&
+          existingField.type === 'OPTIONS' &&
+          (!existingField.options || existingField.options.length === 0)
+        ) {
+          await prisma.eventRegistrationFieldEntity.update({
+            where: { id: existingField.id },
+            data: { options: DEFAULT_GENDER_OPTIONS },
+          });
+        }
+      } else {
+        // Field doesn't exist - create it
+        const newField = await prisma.eventRegistrationFieldEntity.create({
+          data: {
+            registrationFormId,
+            label: def.label,
+            type: def.type,
+            required: def.required,
+            order: def.order,
+            options: def.options,
+          },
+        });
+        frontendIdToDbId.set(def.frontendId, newField.id);
+      }
+    }
+
+    // Update existing field IDs for non-default fields (already in DB with real IDs)
+    for (const existingField of regForm.fields) {
+      if (!existingField.id.startsWith('default-')) {
+        frontendIdToDbId.set(existingField.id, existingField.id);
+      }
+    }
+
+    // Re-fetch the fields after potential creations/updates
+    const updatedRegForm = await prisma.eventRegistrationFormEntity.findUnique({
       where: { eventId },
       include: {
         fields: {
@@ -815,19 +952,22 @@ export class EventService {
             type: true,
             required: true,
             options: true,
+            order: true,
           },
           orderBy: { order: 'asc' },
         },
       },
     });
 
-    if (regForm) {
-      registrationFields = regForm.fields;
-    }
+    const registrationFields = updatedRegForm?.fields ?? [];
 
-    // Validate required fields - even if client sends empty answers
-    const providedFieldIds = new Set((answers ?? []).map((a) => a.fieldId));
-    const providedAnswers = answers ?? [];
+    // Transform answers: replace frontend "default-*" IDs with real DB IDs
+    const providedAnswers = (answers ?? []).map((a) => ({
+      fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
+      value: a.value,
+    }));
+
+    const providedFieldIds = new Set(providedAnswers.map((a) => a.fieldId));
 
     // Check for required fields
     for (const field of registrationFields) {
@@ -887,19 +1027,26 @@ export class EventService {
               throw new BadRequestException(`Field "${field.label}" must be a number.`);
             }
             break;
-          case 'OPTIONS':
+          case 'OPTIONS': {
+            // Use field options, or default gender options for Gender field
+            const effectiveOptions =
+              field.label.toLowerCase() === 'gender' && (!field.options || field.options.length === 0)
+                ? DEFAULT_GENDER_OPTIONS
+                : field.options;
+
             if (Array.isArray(value)) {
               for (const v of value) {
-                if (!field.options.includes(v)) {
+                if (!effectiveOptions.includes(v)) {
                   throw new BadRequestException(`Invalid option "${v}" for field "${field.label}".`);
                 }
               }
             } else if (typeof value === 'string') {
-              if (value.length > 0 && !field.options.includes(value)) {
+              if (value.length > 0 && !effectiveOptions.includes(value)) {
                 throw new BadRequestException(`Invalid option "${value}" for field "${field.label}".`);
               }
             }
             break;
+          }
         }
       }
     }
@@ -935,7 +1082,7 @@ export class EventService {
 
       // Create submission and answers if provided
       let submissionId: string | undefined;
-      if (answers && answers.length > 0 && registrationFields.length > 0) {
+      if (providedAnswers.length > 0 && registrationFields.length > 0) {
         const submission = await tx.eventRegistrationSubmissionEntity.create({
           data: {
             eventId,
@@ -946,7 +1093,7 @@ export class EventService {
         submissionId = submission.id;
 
         // Create answers
-        const answerData = answers.map((a) => ({
+        const answerData = providedAnswers.map((a) => ({
           submissionId: submission.id,
           fieldId: a.fieldId,
           valueText: typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
@@ -960,7 +1107,7 @@ export class EventService {
 
       // After successful registration, log to Google Sheets asynchronously
       // Pass submissionId so it can read from DB-saved answers for consistency
-      this.logToGoogleSheets(eventId, userId, answers ?? [], submissionId).catch((err) => {
+      this.logToGoogleSheets(eventId, userId, providedAnswers, submissionId).catch((err) => {
         console.error('Failed to log to Google Sheets:', err);
       });
 
