@@ -63,7 +63,10 @@ export const UpcomingEvents = () => {
   // Loading state
   if (isLoading) {
     return (
-      <section className="w-full py-12 md:py-16 lg:py-20 bg-background">
+      <section
+        className="w-full py-12 md:py-16 lg:py-20 bg-background"
+        id="events"
+      >
         <div className="container px-4 md:px-6 mx-auto">
           <div className="mb-8 space-y-2">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
@@ -84,7 +87,10 @@ export const UpcomingEvents = () => {
   // Empty state
   if (error || displayEvents.length === 0) {
     return (
-      <section className="w-full py-12 md:py-16 lg:py-20 bg-background">
+      <section
+        className="w-full py-12 md:py-16 lg:py-20 bg-background"
+        id="events"
+      >
         <div className="container px-4 md:px-6 mx-auto">
           <div className="mb-8 space-y-2">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
@@ -129,7 +135,10 @@ export const UpcomingEvents = () => {
   }
 
   return (
-    <section className="w-full py-12 md:py-16 lg:py-20 bg-background">
+    <section
+      className="w-full py-12 md:py-16 lg:py-20 bg-background"
+      id="events"
+    >
       <div className="container px-4 md:px-6 mx-auto">
         <div className="mb-8 space-y-2 flex flex-col gap-2">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
@@ -211,7 +220,9 @@ export const UpcomingEvents = () => {
                         <span className="text-xs text-neutral-500">
                           Attendees
                         </span>
-                        <span className="text-neutral-700">0</span>
+                        <span className="text-neutral-700">
+                          {event.registrationCount}
+                        </span>
                       </div>
                       <div className="flex flex-col gap-2 ">
                         <span className="text-xs text-neutral-500">

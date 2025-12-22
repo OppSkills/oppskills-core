@@ -4,7 +4,10 @@ import React from "react";
 
 export default function UpcomingCompetitions() {
   return (
-    <section className="w-full py-12 md:py-16 lg:py-20 bg-background">
+    <section
+      className="w-full py-12 md:py-16 lg:py-20 bg-background"
+      id="competitions"
+    >
       <div className="container px-4 md:px-6 mx-auto">
         <div className="mb-8 space-y-2">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
@@ -62,8 +65,8 @@ export default function UpcomingCompetitions() {
             Coming Soon
           </h3>
           <p className="text-muted-foreground text-center max-w-md inter">
-            We&apos;re preparing exciting hackathons and coding competitions for you.
-            Stay tuned for amazing opportunities to showcase your skills!
+            We&apos;re preparing exciting hackathons and coding competitions for
+            you. Stay tuned for amazing opportunities to showcase your skills!
           </p>
         </div>
       </div>

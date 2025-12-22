@@ -6,10 +6,11 @@ import { Menu, X, Plus } from "lucide-react";
 import Link from "next/link";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import Auth from "./auth/Auth";
+import { useQueryState } from "nuqs";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isOpenLogin, setIsOpenLogin] = useState(false);
+  const [authMode, setAuthMode] = useQueryState("auth");
 
   const navLinks = [
     { name: "Home", href: "/" },
@@ -20,7 +21,7 @@ const Navbar = () => {
   ];
 
   useEffect(() => {
-    if (isOpenLogin) {
+    if (authMode) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "auto";
@@ -29,7 +30,7 @@ const Navbar = () => {
     return () => {
       document.body.style.overflow = "auto";
     };
-  }, [isOpenLogin]);
+  }, [authMode]);
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 px-4 md:px-8 py-4">
@@ -86,7 +87,7 @@ const Navbar = () => {
             <SignedOut>
               <Button
                 onClick={() => {
-                  setIsOpenLogin(true);
+                  setAuthMode("login");
                 }}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
@@ -154,7 +155,8 @@ const Navbar = () => {
                 </Link>
                 <Button
                   onClick={() => {
-                    setIsOpenLogin(true);
+                    setAuthMode("login");
+                    setIsOpen(false);
                   }}
                   className="w-full bg-primary text-foreground"
                 >
@@ -165,7 +167,7 @@ const Navbar = () => {
           </div>
         </div>
       )}
-      {isOpenLogin && <Auth setIsOpenLogin={setIsOpenLogin} />}
+      {authMode && <Auth onClose={() => setAuthMode(null)} />}
     </nav>
   );
 };
