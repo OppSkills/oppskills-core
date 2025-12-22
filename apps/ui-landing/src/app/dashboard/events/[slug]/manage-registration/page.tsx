@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useParams } from "next/navigation";
 import {
-  createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
@@ -11,9 +11,11 @@ import {
 } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, MoreVertical, SlidersHorizontal } from "lucide-react";
+import { Search, Filter, MoreVertical, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useEventRegistrationsBySlug } from "@/hooks/useEventRegistrationsBySlug";
+import type { EventRegistration } from "@/lib/api/eventApi";
 
 // --- Types ---
 type RegistrationStatus = "Completed" | "Incomplete";
@@ -23,94 +25,12 @@ interface Participant {
   name: string;
   email: string;
   university: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
   status: RegistrationStatus;
-  // Extra fields for detail view
-  role?: string; // e.g., "Team Leader"
-  location?: string;
-  course?: string; // e.g., "College Student | Management..."
-  registeredOn?: string;
+  location: string;
+  course: string;
+  registeredOn: string;
 }
-
-// --- Mock Data ---
-const MOCK_PARTICIPANTS: Participant[] = [
-  {
-    id: "1",
-    name: "Bessie Cooper",
-    email: "esther.williamson@gmail.com",
-    university: "Stanford University",
-    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
-    status: "Completed",
-    role: "Team Leader",
-    location: "Lucknow, Uttar Pradesh, India",
-    course:
-      "College Student | Management | 2-Year MBA (Master of Business Administration) | Full Time | 2nd Year",
-    registeredOn: "20 Dec 2025, 02:02 PM",
-  },
-  {
-    id: "2",
-    name: "Ronald Richards",
-    email: "cody.cooper@gmail.com",
-    university: "Niagara University",
-    avatarUrl: "https://images.unsplash.com/photo-1599566150163-29194dcaad36",
-    status: "Completed",
-    role: "Member",
-    location: "Mumbai, Maharashtra, India",
-    course: "College Student | Engineering | B.Tech | Full Time | 3rd Year",
-    registeredOn: "21 Dec 2025, 10:45 AM",
-  },
-  {
-    id: "3",
-    name: "Cody Fisher",
-    email: "aubrey.flores@gmail.com",
-    university: "Brown University",
-    avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde",
-    status: "Completed",
-    role: "Member",
-    location: "Delhi, India",
-    course: "College Student | Arts | BA | Full Time | 1st Year",
-    registeredOn: "22 Dec 2025, 04:15 PM",
-  },
-  {
-    id: "4",
-    name: "Guy Hawkins",
-    email: "shane.webb@gmail.com",
-    university: "MIT",
-    avatarUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12",
-    status: "Incomplete",
-    role: "Team Leader",
-    location: "Bangalore, Karnataka, India",
-    course:
-      "College Student | Computer Science | M.Tech | Full Time | 1st Year",
-    registeredOn: "23 Dec 2025, 09:30 AM",
-  },
-  {
-    id: "5",
-    name: "Theresa Webb",
-    email: "arthur.russel@gmail.com",
-    university: "Villanova University",
-    avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80",
-    status: "Completed",
-    role: "Member",
-    location: "Pune, Maharashtra, India",
-    course: "College Student | Commerce | B.Com | Full Time | 2nd Year",
-    registeredOn: "24 Dec 2025, 01:20 PM",
-  },
-  {
-    id: "6",
-    name: "Kathryn Murphy",
-    email: "kathryn.murphy@gmail.com",
-    university: "Villanova University",
-    avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2",
-    status: "Completed",
-    role: "Team Leader",
-    location: "Hyderabad, Telangana, India",
-    course: "College Student | Science | B.Sc | Full Time | 3rd Year",
-    registeredOn: "25 Dec 2025, 11:10 AM",
-  },
-];
-
-const columnHelper = createColumnHelper<Participant>();
 
 // --- Components ---
 
@@ -167,7 +87,7 @@ const UserDetailModal = ({
             {/* Avatar */}
             <Avatar className="w-24 h-24 sm:w-28 sm:h-28 border-4 border-white shadow-lg">
               <AvatarImage
-                src={participant.avatarUrl}
+                src={participant.avatarUrl || undefined}
                 className="object-cover"
               />
               <AvatarFallback className="text-2xl">
@@ -177,14 +97,6 @@ const UserDetailModal = ({
 
             {/* Info */}
             <div className="flex flex-col gap-3 flex-1">
-              <div className="flex items-center gap-3 flex-wrap">
-                {participant.role && (
-                  <span className="bg-primary/20 text-primary px-3 py-1 rounded text-xs font-medium">
-                    {participant.role}
-                  </span>
-                )}
-              </div>
-
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
                 {participant.name}
               </h2>
@@ -193,7 +105,7 @@ const UserDetailModal = ({
                 <div className="flex items-center gap-2.5 text-muted-foreground">
                   <Building2 className="w-4 h-4 translate-y-[1px]" />
                   <span className="text-sm font-medium">
-                    {participant.university}
+                    {participant.university || "N/A"}
                   </span>
                 </div>
 
@@ -226,7 +138,14 @@ const UserDetailModal = ({
                   <div className="flex items-center gap-2.5 text-muted-foreground">
                     <CalendarDays className="w-4 h-4 translate-y-[1px]" />
                     <span className="text-sm font-medium">
-                      Registered on: {participant.registeredOn}
+                      Registered on: {new Date(participant.registeredOn).toLocaleString('en-US', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
                     </span>
                   </div>
                 )}
@@ -240,7 +159,11 @@ const UserDetailModal = ({
 };
 
 export default function ManageRegistrationPage() {
-  const [data] = useState(() => MOCK_PARTICIPANTS);
+  const params = useParams();
+  const slug = typeof params.slug === "string" ? params.slug : null;
+
+  const { data: registrations, isLoading, error } = useEventRegistrationsBySlug(slug);
+
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
   const [activeTab, setActiveTab] = useState<
@@ -249,7 +172,22 @@ export default function ManageRegistrationPage() {
   const [selectedParticipant, setSelectedParticipant] =
     useState<Participant | null>(null);
 
-  const columns = useMemo<ColumnDef<Participant, any>[]>(
+  const data: Participant[] = useMemo(() => {
+    if (!registrations) return [];
+    return registrations.map((reg) => ({
+      id: reg.id,
+      name: reg.name,
+      email: reg.email,
+      university: reg.university,
+      avatarUrl: reg.avatarUrl,
+      status: reg.status,
+      location: reg.location,
+      course: reg.course,
+      registeredOn: reg.registeredOn,
+    }));
+  }, [registrations]);
+
+  const columns = useMemo<ColumnDef<Participant>[]>(
     () => [
       {
         id: "select",
@@ -278,41 +216,43 @@ export default function ManageRegistrationPage() {
         enableSorting: false,
         enableHiding: false,
       },
-      columnHelper.display({
+      {
         id: "sno",
         header: () => <span>S. No.</span>,
         cell: (info) => (
           <span className="text-muted-foreground">{info.row.index + 1}</span>
         ),
-      }),
-      columnHelper.accessor("name", {
+      },
+      {
+        accessorKey: "name",
         header: () => (
           <div className="flex items-center gap-2 cursor-pointer">
-            240 Team/ Participated{" "}
+            {data.length} Participated{" "}
             <SlidersHorizontal className="w-4 h-4 ml-2" />
           </div>
         ),
         cell: (info) => (
           <div className="flex items-center gap-3">
             <Avatar className="w-10 h-10">
-              <AvatarImage src={info.row.original.avatarUrl} />
-              <AvatarFallback>{info.getValue().charAt(0)}</AvatarFallback>
+              <AvatarImage src={info.row.original.avatarUrl || undefined} />
+              <AvatarFallback>{String(info.getValue()).charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
               <span className="font-semibold text-foreground text-sm">
-                {info.getValue()}
+                {String(info.getValue())}
               </span>
               <span className="text-xs text-muted-foreground">
                 {info.row.original.email}
               </span>
               <span className="text-xs text-muted-foreground mt-0.5">
-                {info.row.original.university}
+                {info.row.original.university || "N/A"}
               </span>
             </div>
           </div>
         ),
-      }),
-      columnHelper.accessor("status", {
+      },
+      {
+        accessorKey: "status",
         header: () => (
           <div className="flex items-center gap-2 cursor-pointer justify-end">
             <Filter className="w-4 h-4" /> Reg. Status{" "}
@@ -321,12 +261,12 @@ export default function ManageRegistrationPage() {
         ),
         cell: (info) => (
           <div className="flex justify-end">
-            <StatusBadge status={info.getValue()} />
+            <StatusBadge status={info.getValue() as RegistrationStatus} />
           </div>
         ),
-      }),
+      },
     ],
-    []
+    [data.length]
   );
 
   const filteredData = useMemo(() => {
@@ -348,6 +288,30 @@ export default function ManageRegistrationPage() {
     getFilteredRowModel: getFilteredRowModel(),
   });
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="w-full bg-white min-h-screen p-8 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="w-full bg-white min-h-screen p-8 flex flex-col items-center justify-center gap-4">
+        <h1 className="text-2xl font-bold text-foreground">Error Loading Registrations</h1>
+        <p className="text-muted-foreground">
+          {error instanceof Error ? error.message : "Failed to load registrations. Please try again."}
+        </p>
+      </div>
+    );
+  }
+
+  const completedCount = data.filter(p => p.status === "Completed").length;
+  const incompleteCount = data.filter(p => p.status === "Incomplete").length;
+
   return (
     <div className="w-full bg-white min-h-screen p-8 flex flex-col items-center gap-8">
       {/* Modal */}
@@ -367,17 +331,17 @@ export default function ManageRegistrationPage() {
               value: "All",
             },
             {
-              label: "Completed",
+              label: `Completed (${completedCount})`,
               value: "Completed",
             },
             {
-              label: "Incomplete",
+              label: `Incomplete (${incompleteCount})`,
               value: "Incomplete",
             },
           ].map((tab) => (
             <button
               key={tab.value}
-              onClick={() => setActiveTab(tab.value as any)}
+              onClick={() => setActiveTab(tab.value as "All" | "Completed" | "Incomplete")}
               className={cn(
                 "px-4 py-2 rounded-full text-sm font-medium transition-colors",
                 activeTab === tab.value
@@ -423,7 +387,7 @@ export default function ManageRegistrationPage() {
             </div>
             <div>S. No.</div>
             <div className="flex items-center gap-2">
-              240 Team/ Participated <SlidersHorizontal className="w-4 h-4" />
+              {data.length} Participated <SlidersHorizontal className="w-4 h-4" />
             </div>
             <div className="flex items-center justify-end gap-2 text-right">
               <Filter className="w-4 h-4" /> Reg. Status{" "}
@@ -433,52 +397,58 @@ export default function ManageRegistrationPage() {
 
           {/* Table Body */}
           <div className="bg-white">
-            {table.getRowModel().rows.map((row) => (
-              <div
-                key={row.id}
-                onClick={() => setSelectedParticipant(row.original)}
-                className="grid grid-cols-[50px_80px_1fr_200px] items-center px-4 py-4 border-b border-border/40 hover:bg-muted/5 transition-colors cursor-pointer"
-              >
+            {table.getRowModel().rows.length === 0 ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                No registrations found
+              </div>
+            ) : (
+              table.getRowModel().rows.map((row) => (
                 <div
-                  className="flex justify-center"
-                  onClick={(e) => e.stopPropagation()}
+                  key={row.id}
+                  onClick={() => setSelectedParticipant(row.original)}
+                  className="grid grid-cols-[50px_80px_1fr_200px] items-center px-4 py-4 border-b border-border/40 hover:bg-muted/5 transition-colors cursor-pointer"
                 >
-                  <Checkbox
-                    checked={row.getIsSelected()}
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    className="border-muted-foreground/30 data-[state=checked]:bg-primary-600 data-[state=checked]:text-white"
-                  />
-                </div>
-                <div className="text-muted-foreground text-sm font-medium pl-2">
-                  {row.index + 1}
-                </div>
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-10 h-10 border border-border/50">
-                    <AvatarImage
-                      src={row.original.avatarUrl}
-                      className="object-cover"
+                  <div
+                    className="flex justify-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={row.getIsSelected()}
+                      onCheckedChange={(value) => row.toggleSelected(!!value)}
+                      className="border-muted-foreground/30 data-[state=checked]:bg-primary-600 data-[state=checked]:text-white"
                     />
-                    <AvatarFallback>
-                      {row.original.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-bold text-foreground">
-                      {row.original.name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {row.original.email}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground/70">
-                      {row.original.university}
-                    </span>
+                  </div>
+                  <div className="text-muted-foreground text-sm font-medium pl-2">
+                    {row.index + 1}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Avatar className="w-10 h-10 border border-border/50">
+                      <AvatarImage
+                        src={row.original.avatarUrl || undefined}
+                        className="object-cover"
+                      />
+                      <AvatarFallback>
+                        {row.original.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-bold text-foreground">
+                        {row.original.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {row.original.email}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground/70">
+                        {row.original.university || "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <StatusBadge status={row.original.status} />
                   </div>
                 </div>
-                <div className="flex justify-end">
-                  <StatusBadge status={row.original.status} />
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

@@ -17,16 +17,18 @@ const API = createApiClient("/events");
 // =====================
 
 /**
- * Lists all published/public events (no auth required).
- * This is used for the public /events listing page.
+ * Lists all public events (PUBLISHED/ONGOING + APPROVED, no auth required).
+ * Returns sanitized data without participants or registrant PII.
+ * This is used for the public /events listing page and landing page.
  */
 export async function getPublicEvents(): Promise<unknown> {
-  const res = await API.get("");
+  const res = await API.get("/public");
   return res.data as unknown;
 }
 
 /**
- * Fetches a single event by slug (no auth required).
+ * Fetches a single public event by slug (no auth required).
+ * Returns sanitized data without participants or registrant PII.
  * This is used for the public /events/[slug] detail page.
  */
 export async function getPublicEventBySlug(slug: string): Promise<unknown> {
@@ -34,7 +36,20 @@ export async function getPublicEventBySlug(slug: string): Promise<unknown> {
   if (safeSlug.length === 0) {
     throw new Error("Event slug is required.");
   }
-  const res = await API.get(`/by-slug/${encodeURIComponent(safeSlug)}`);
+  const res = await API.get(`/public/by-slug/${encodeURIComponent(safeSlug)}`);
+  return res.data as unknown;
+}
+
+/**
+ * Fetches a single public event by ID (no auth required).
+ * Returns sanitized data without participants or registrant PII.
+ */
+export async function getPublicEventById(id: string): Promise<unknown> {
+  const safeId = id.trim();
+  if (safeId.length === 0) {
+    throw new Error("Event ID is required.");
+  }
+  const res = await API.get(`/public/${encodeURIComponent(safeId)}`);
   return res.data as unknown;
 }
 
@@ -369,4 +384,32 @@ export async function checkMyRegistration(
     headers: buildAuthHeaders(token),
   });
   return res.data as MyRegistrationResponse;
+}
+
+/**
+ * Single registration record for event dashboard.
+ */
+export interface EventRegistration {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  university: string;
+  location: string;
+  course: string;
+  status: "Completed" | "Incomplete";
+  registeredOn: string;
+}
+
+/**
+ * Get all registrations for an event by slug (owner/manager/admin only).
+ */
+export async function getEventRegistrationsBySlug(
+  token: string,
+  slug: string
+): Promise<EventRegistration[]> {
+  const res = await API.get(`/by-slug/${slug}/registrations`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as EventRegistration[];
 }

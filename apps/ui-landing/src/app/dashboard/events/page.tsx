@@ -77,19 +77,44 @@ function formatTime(value: string | undefined): string {
   return format(d, "hh:mm a");
 }
 
+/**
+ * Determines if registration is currently open for an event.
+ * Aligns with backend logic in EventService.joinEvent():
+ * - Event must be PUBLISHED or ONGOING (DRAFT is NOT open for registration)
+ * - Approval status must be APPROVED
+ * - Registration must not be paused
+ * - Must not be past deadline (if set)
+ * - Must have capacity (checked separately)
+ */
 function isRegistrationOpen(input: {
   status?: string;
-  registrationDeadline?: string;
+  approvalStatus?: string | null;
+  registrationDeadline?: string | null;
+  isRegistrationPaused?: boolean;
 }): boolean {
   const status = (input.status ?? "").toUpperCase();
-  if (status === "CANCELLED" || status === "COMPLETED") return false;
-
+  
+  // Only PUBLISHED or ONGOING events accept registrations
+  // DRAFT, CANCELLED, COMPLETED events never accept registrations
+  if (status !== "PUBLISHED" && status !== "ONGOING") return false;
+  
+  // Must be APPROVED
+  const approval = (input.approvalStatus ?? "").toUpperCase();
+  if (approval !== "APPROVED") return false;
+  
+  // If registration is paused, it's closed
+  if (input.isRegistrationPaused === true) return false;
+  
+  // Check deadline (if set)
   const deadlineStr = input.registrationDeadline;
-  if (!deadlineStr) return false;
-  const deadline = new Date(deadlineStr);
-  if (Number.isNaN(deadline.getTime())) return false;
-
-  return Date.now() <= deadline.getTime();
+  if (deadlineStr) {
+    const deadline = new Date(deadlineStr);
+    if (!Number.isNaN(deadline.getTime()) && Date.now() > deadline.getTime()) {
+      return false;
+    }
+  }
+  
+  return true;
 }
 
 type EventRow = {
@@ -125,8 +150,15 @@ function extractEventRows(input: unknown): EventRow[] {
 
       const slug = getString(row, "slug");
       const status = getString(row, "status") ?? "DRAFT";
-      const registrationDeadline = getString(row, "registrationDeadline");
-      const open = isRegistrationOpen({ status, registrationDeadline });
+      const approvalStatus = getString(row, "approvalStatus") ?? null;
+      const registrationDeadline = getString(row, "registrationDeadline") ?? null;
+      const isRegistrationPaused = row["isRegistrationPaused"] === true;
+      const open = isRegistrationOpen({
+        status,
+        approvalStatus,
+        registrationDeadline,
+        isRegistrationPaused,
+      });
 
       // Try to get registration count from different possible fields
       const registrationCount = getNumber(row, "registrationCount");

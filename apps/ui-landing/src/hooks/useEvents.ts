@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { getPublicEvents } from "@/lib/api/eventApi";
 
 /**
- * Event data type for the listing page.
+ * Event data type for the public listing page.
+ * Matches the sanitized response from GET /events/public.
+ * Note: owner.email is NOT included for privacy (sanitized from public endpoints).
  */
 export interface EventListItem {
   id: string;
@@ -12,7 +14,7 @@ export interface EventListItem {
   bannerImageUrl: string | null;
   startDate: string;
   endDate: string;
-  registrationDeadline: string;
+  registrationDeadline: string | null;
   status: string;
   locationType: string | null;
   locationCity: string | null;
@@ -27,11 +29,12 @@ export interface EventListItem {
   maxUsers: number | null;
   organizationName: string | null;
   organizationLogoUrl: string | null;
+  /** Owner info - email is NOT included for privacy */
   owner: {
     id: string;
-    email: string;
     firstName: string | null;
     lastName: string | null;
+    imageUrl: string | null;
   };
   festival: {
     id: string;

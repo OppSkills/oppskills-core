@@ -8,6 +8,7 @@ import {
   FileText,
   Settings,
   Trophy,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
@@ -370,6 +371,7 @@ export default function EditEventPage() {
 
   const [hasHydratedFromBackend, setHasHydratedFromBackend] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
+  const [eventStatus, setEventStatus] = useState<string>("DRAFT");
 
   const [activeTab, setActiveTab] = useQueryState("tab", {
     defaultValue: "basic-details",
@@ -380,28 +382,39 @@ export default function EditEventPage() {
       id: "preview",
       label: "Preview",
       icon: <CheckCircle2 className="w-4 h-4" />,
+      draftOnly: false,
     },
     {
       id: "basic-details",
       label: "Basic Details",
       icon: <FileEdit className="w-4 h-4" />,
+      draftOnly: false,
     },
     {
       id: "registration-settings",
       label: "Registration Settings",
       icon: <Settings className="w-4 h-4" />,
+      draftOnly: true, // DRAFT-only: maxUsers, eligibility settings
     },
     {
       id: "prizes",
       label: "Prizes",
       icon: <Trophy className="w-4 h-4" />,
+      draftOnly: true, // DRAFT-only: prize breakdown updates
     },
     {
       id: "additional-info",
       label: "Additional Info",
       icon: <FileText className="w-4 h-4" />,
+      draftOnly: true, // DRAFT-only: contacts, attachments
     },
   ];
+
+  // Filter tabs based on event status - hide DRAFT-only tabs for non-DRAFT events
+  const isDraftEvent = eventStatus === "DRAFT";
+  const availableTabs = isDraftEvent
+    ? tabs
+    : tabs.filter((tab) => !tab.draftOnly);
 
   const [formData, setFormData] = useState<FormData>(() => ({
     eventFestName: "Standalone Event",
@@ -458,6 +471,10 @@ export default function EditEventPage() {
 
     const id = getString(event, "id");
     if (typeof id === "string") setEventId(id);
+
+    // Track event status for editing restrictions
+    const status = getString(event, "status");
+    if (typeof status === "string") setEventStatus(status);
 
     setFormData(mapEventToFormData(event));
     setHasHydratedFromBackend(true);
@@ -529,75 +546,79 @@ export default function EditEventPage() {
 
       await updateEvent(token, eventId, payload);
 
-      // Save additional info (contact + attachments) if changed
-      const currentAdditionalInfoSnapshot = serializeAdditionalInfo(formData.additionalInfo);
-      if (currentAdditionalInfoSnapshot !== lastSavedAdditionalInfoSnapshotRef.current) {
-        const primaryContact = formData.additionalInfo.contacts[0];
-        const contact = primaryContact
-          ? {
-              name: primaryContact.name || undefined,
-              email: primaryContact.email || undefined,
-              phone: primaryContact.phone || undefined,
-            }
-          : undefined;
+      // DRAFT-only updates: Only call these when event is in DRAFT status
+      // Backend enforces DRAFT-only via assertEventEditableByUser() for nested updates
+      const isDraft = eventStatus === "DRAFT";
 
-        const attachments = formData.additionalInfo.attachments.map((a) => ({
-          storageKey: a.url ?? a.id, // Use URL as storage key or ID as fallback
-          publicUrl: a.url,
-          fileName: a.title,
-          mimeType: a.type,
-          sizeBytes: a.size,
-        }));
+      // Save additional info (contact + attachments) if changed - DRAFT only
+      if (isDraft) {
+        const currentAdditionalInfoSnapshot = serializeAdditionalInfo(formData.additionalInfo);
+        if (currentAdditionalInfoSnapshot !== lastSavedAdditionalInfoSnapshotRef.current) {
+          const primaryContact = formData.additionalInfo.contacts[0];
+          const contact = primaryContact
+            ? {
+                name: primaryContact.name || undefined,
+                email: primaryContact.email || undefined,
+                phone: primaryContact.phone || undefined,
+              }
+            : undefined;
 
-        await updateEventAdditionalInfo(token, eventId, {
-          additionalInfo: {
-            contact,
-            attachments,
-          },
-        });
-      }
+          const attachments = formData.additionalInfo.attachments.map((a) => ({
+            storageKey: a.url ?? a.id, // Use URL as storage key or ID as fallback
+            publicUrl: a.url,
+            fileName: a.title,
+            mimeType: a.type,
+            sizeBytes: a.size,
+          }));
 
-      // Save prizes if changed
-      const currentPrizesSnapshot = serializePrizes(formData.prizes);
-      if (currentPrizesSnapshot !== lastSavedPrizesSnapshotRef.current) {
-        await updateEventPrizeBreakdown(token, eventId, {
-          prizeBreakdown: formData.prizes.list.map((p) => ({
-            position: p.name,
-            amount: p.amount,
-            description: p.description,
-          })),
-        });
-      }
+          await updateEventAdditionalInfo(token, eventId, {
+            additionalInfo: {
+              contact,
+              attachments,
+            },
+          });
+          savingAdditionalInfoSnapshotRef.current = currentAdditionalInfoSnapshot;
+        }
 
-      // Save registration questions if changed
-      const currentRegQuestionsSnapshot = serializeRegistrationQuestions(formData.registrationQuestions);
-      if (currentRegQuestionsSnapshot !== lastSavedRegistrationQuestionsSnapshotRef.current) {
-        const typeMap: Record<RegistrationQuestion["type"], "TEXT" | "PHONE_NO" | "EMAIL" | "NUMBER" | "ATTACHMENTS" | "OPTIONS"> = {
-          Text: "TEXT",
-          "Phone No.": "PHONE_NO",
-          Email: "EMAIL",
-          Number: "NUMBER",
-          Attachments: "ATTACHMENTS",
-          Options: "OPTIONS",
-        };
-
-        await updateEventRegistrationForm(token, eventId, {
-          registrationForm: {
-            fields: formData.registrationQuestions.map((q, idx) => ({
-              label: q.label,
-              type: typeMap[q.type],
-              required: q.required,
-              order: idx,
-              options: q.options ?? [],
+        // Save prizes if changed - DRAFT only
+        const currentPrizesSnapshot = serializePrizes(formData.prizes);
+        if (currentPrizesSnapshot !== lastSavedPrizesSnapshotRef.current) {
+          await updateEventPrizeBreakdown(token, eventId, {
+            prizeBreakdown: formData.prizes.list.map((p) => ({
+              position: p.name,
+              amount: p.amount,
+              description: p.description,
             })),
-          },
-        });
-      }
+          });
+          savingPrizesSnapshotRef.current = currentPrizesSnapshot;
+        }
 
-      // Track snapshots
-      savingAdditionalInfoSnapshotRef.current = currentAdditionalInfoSnapshot;
-      savingPrizesSnapshotRef.current = currentPrizesSnapshot;
-      savingRegistrationQuestionsSnapshotRef.current = currentRegQuestionsSnapshot;
+        // Save registration questions if changed - DRAFT only
+        const currentRegQuestionsSnapshot = serializeRegistrationQuestions(formData.registrationQuestions);
+        if (currentRegQuestionsSnapshot !== lastSavedRegistrationQuestionsSnapshotRef.current) {
+          const typeMap: Record<RegistrationQuestion["type"], "TEXT" | "PHONE_NO" | "EMAIL" | "NUMBER" | "ATTACHMENTS" | "OPTIONS"> = {
+            Text: "TEXT",
+            "Phone No.": "PHONE_NO",
+            Email: "EMAIL",
+            Number: "NUMBER",
+            Attachments: "ATTACHMENTS",
+            Options: "OPTIONS",
+          };
+
+          await updateEventRegistrationForm(token, eventId, {
+            registrationForm: {
+              fields: formData.registrationQuestions.map((q, idx) => ({
+                label: q.label,
+                type: typeMap[q.type],
+                required: q.required,
+                order: idx,
+                options: q.options ?? [],
+              })),
+            },
+          });
+          savingRegistrationQuestionsSnapshotRef.current = currentRegQuestionsSnapshot;
+        }
+      }
     },
     onError: (err: unknown) => {
       console.error(err);
@@ -741,12 +762,33 @@ export default function EditEventPage() {
     );
   }
 
+  // Determine if event is non-DRAFT (limited editing)
+  const isNonDraft = eventStatus !== "DRAFT";
+  const isPublishedOrOngoing = eventStatus === "PUBLISHED" || eventStatus === "ONGOING";
+
   return (
     <div className="w-full flex flex-col items-center p-2 sm:p-4 md:p-6 lg:p-10 gap-6 bg-background">
+      {/* Warning Banner for Non-DRAFT Events */}
+      {isNonDraft && (
+        <div className="w-full max-w-4xl flex items-start gap-3 p-4 rounded-lg border border-amber-500/30 bg-amber-500/10">
+          <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-amber-700">
+              Limited Editing Mode
+            </span>
+            <span className="text-xs text-amber-600">
+              {isPublishedOrOngoing
+                ? "This event is live. You can only edit basic details (name, description, banner). Changes to registration settings, prizes, or questions are disabled to maintain data integrity for participants."
+                : `This event is in ${eventStatus} status. Some editing features may be restricted.`}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Tabs Navigation */}
       <div className="w-full overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-4 px-2">
-          {tabs.map((tab) => (
+          {availableTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -791,7 +833,7 @@ export default function EditEventPage() {
       {/* Content */}
       <div className="w-full max-w-6xl flex flex-col gap-6">
         {activeTab === "basic-details" && (
-          <BasicDetails formData={formData} setFormData={setFormData} />
+          <BasicDetails formData={formData} setFormData={setFormData} isDraftEvent={isDraftEvent} />
         )}
 
         {activeTab === "registration-settings" && (

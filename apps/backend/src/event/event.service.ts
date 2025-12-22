@@ -12,6 +12,7 @@ import type {
   EventLifecycleStatusValue,
   EventUserRoleValue,
 } from '@oppskills/types';
+import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 type LifecycleStatus =
@@ -23,6 +24,7 @@ type LifecycleStatus =
 
 @Injectable()
 export class EventService {
+  constructor(private readonly googleSheetsService: GoogleSheetsService) {}
   /**
    * Create an event as a user.
    * - If `festivalId` is null/undefined => standalone event.
@@ -90,30 +92,245 @@ export class EventService {
   }
 
   /**
-   * List events, optionally filtered by festival.
-   * Public endpoint: only returns PUBLISHED + APPROVED events.
+   * List public events (PUBLISHED/ONGOING + APPROVED only).
+   * Returns sanitized data without participants or roles.
    */
-  async listEvents(input: { festivalId?: string } = {}) {
+  async listPublicEvents(input: { festivalId?: string } = {}) {
     const baseWhere: Record<string, unknown> = {
-      status: 'PUBLISHED',
+      status: { in: ['PUBLISHED', 'ONGOING'] },
       approvalStatus: 'APPROVED',
     };
     if (input.festivalId) {
       baseWhere.festivalId = input.festivalId;
     }
 
-    return prisma.eventEntity.findMany({
+    // Query events with sanitized fields - no participants or registrant PII
+    const events = await prisma.eventEntity.findMany({
       where: baseWhere,
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        bannerImageUrl: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        approvalStatus: true,
+        locationType: true,
+        locationCity: true,
+        locationAddress: true,
+        locationVirtualLink: true,
+        isFree: true,
+        entryFeeAmount: true,
+        currency: true,
+        visibility: true,
+        eventType: true,
+        registrationCount: true,
+        maxUsers: true,
+        registrationDeadline: true,
+        isRegistrationPaused: true,
+        organizationName: true,
+        organizationLogoUrl: true,
+        contactName: true,
+        contactEmail: true,
+        contactPhone: true,
+        attendeeEligibility: true,
+        createdAt: true,
+        // Owner info (public: name only, no email exposed in list)
         owner: {
-          select: { id: true, email: true, firstName: true, lastName: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
         },
         festival: {
           select: { id: true, name: true, slug: true },
         },
+        // Prize breakdown is public
+        prizeBreakdown: {
+          select: { id: true, position: true, amount: true, description: true },
+          orderBy: { amount: 'desc' },
+        },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { startDate: 'asc' },
     });
+
+    return events;
+  }
+
+  /**
+   * Get a public event by slug (PUBLISHED/ONGOING + APPROVED only).
+   * Returns sanitized data without participants, roles, or registrant PII.
+   */
+  async getPublicEventBySlug(slug: string) {
+    const event = await prisma.eventEntity.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        bannerImageUrl: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        approvalStatus: true,
+        locationType: true,
+        locationCity: true,
+        locationAddress: true,
+        locationVirtualLink: true,
+        isFree: true,
+        entryFeeAmount: true,
+        currency: true,
+        visibility: true,
+        eventType: true,
+        registrationCount: true,
+        maxUsers: true,
+        registrationDeadline: true,
+        isRegistrationPaused: true,
+        organizationName: true,
+        organizationLogoUrl: true,
+        contactName: true,
+        contactEmail: true,
+        contactPhone: true,
+        attendeeEligibility: true,
+        createdAt: true,
+        // Owner info (public: first/last name, imageUrl; NOT email)
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+        festival: {
+          select: { id: true, name: true, slug: true },
+        },
+        // Attachments are public
+        attachments: {
+          select: {
+            id: true,
+            storageKey: true,
+            publicUrl: true,
+            fileName: true,
+            mimeType: true,
+            sizeBytes: true,
+          },
+        },
+        // Registration form fields are public (for registration UI)
+        registrationForm: {
+          include: { fields: { orderBy: { order: 'asc' } } },
+        },
+        // Prize breakdown is public
+        prizeBreakdown: {
+          select: { id: true, position: true, amount: true, description: true },
+          orderBy: { amount: 'desc' },
+        },
+        // NOTE: NO participants - this is the key security fix
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    // Only return PUBLISHED/ONGOING + APPROVED events publicly
+    const isPubliclyVisible =
+      (event.status === 'PUBLISHED' || event.status === 'ONGOING') &&
+      event.approvalStatus === 'APPROVED';
+
+    if (!isPubliclyVisible) {
+      throw new NotFoundException('Event not found or not publicly visible');
+    }
+
+    return event;
+  }
+
+  /**
+   * Get a public event by ID (PUBLISHED/ONGOING + APPROVED only).
+   * Returns sanitized data without participants, roles, or registrant PII.
+   */
+  async getPublicEventById(id: string) {
+    const event = await prisma.eventEntity.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        bannerImageUrl: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        approvalStatus: true,
+        locationType: true,
+        locationCity: true,
+        locationAddress: true,
+        locationVirtualLink: true,
+        isFree: true,
+        entryFeeAmount: true,
+        currency: true,
+        visibility: true,
+        eventType: true,
+        registrationCount: true,
+        maxUsers: true,
+        registrationDeadline: true,
+        isRegistrationPaused: true,
+        organizationName: true,
+        organizationLogoUrl: true,
+        contactName: true,
+        contactEmail: true,
+        contactPhone: true,
+        attendeeEligibility: true,
+        createdAt: true,
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+        festival: {
+          select: { id: true, name: true, slug: true },
+        },
+        attachments: {
+          select: {
+            id: true,
+            storageKey: true,
+            publicUrl: true,
+            fileName: true,
+            mimeType: true,
+            sizeBytes: true,
+          },
+        },
+        registrationForm: {
+          include: { fields: { orderBy: { order: 'asc' } } },
+        },
+        prizeBreakdown: {
+          select: { id: true, position: true, amount: true, description: true },
+          orderBy: { amount: 'desc' },
+        },
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    const isPubliclyVisible =
+      (event.status === 'PUBLISHED' || event.status === 'ONGOING') &&
+      event.approvalStatus === 'APPROVED';
+
+    if (!isPubliclyVisible) {
+      throw new NotFoundException('Event not found or not publicly visible');
+    }
+
+    return event;
   }
 
   /**
@@ -132,10 +349,13 @@ export class EventService {
         name: true,
         slug: true,
         status: true,
+        approvalStatus: true,
         startDate: true,
         endDate: true,
         registrationCount: true,
         maxUsers: true,
+        registrationDeadline: true,
+        isRegistrationPaused: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -153,10 +373,13 @@ export class EventService {
             name: true,
             slug: true,
             status: true,
+            approvalStatus: true,
             startDate: true,
             endDate: true,
             registrationCount: true,
             maxUsers: true,
+            registrationDeadline: true,
+            isRegistrationPaused: true,
           },
         },
       },
@@ -169,10 +392,13 @@ export class EventService {
       name: string;
       slug: string;
       status: string;
+      approvalStatus: string | null;
       startDate: Date;
       endDate: Date;
       registrationCount: number;
       maxUsers: number | null;
+      registrationDeadline: Date | null;
+      isRegistrationPaused: boolean;
       role: 'OWNER' | 'MANAGER';
     }> = ownedEvents.map((e) => ({ ...e, role: 'OWNER' as const }));
 
@@ -186,7 +412,88 @@ export class EventService {
   }
 
   /**
-   * Get a single event by ID.
+   * Get a single event by ID for dashboard (full data, permission required).
+   */
+  async getEventByIdForDashboard(id: string, requesterUserId: string) {
+    const event = await prisma.eventEntity.findUnique({
+      where: { id },
+      include: {
+        owner: {
+          select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+        },
+        festival: {
+          select: { id: true, name: true, slug: true },
+        },
+        participants: {
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+            },
+          },
+        },
+        attachments: true,
+        registrationForm: {
+          include: { fields: { orderBy: { order: 'asc' } } },
+        },
+        prizeBreakdown: {
+          orderBy: { amount: 'desc' },
+        },
+      },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    // Verify permission - owner, admin, or manager can view full data
+    const hasPermission = await this.hasEditPermission(event.ownerId, requesterUserId, id);
+    if (!hasPermission) {
+      throw new ForbiddenException('You do not have permission to view this event\'s full details.');
+    }
+
+    return event;
+  }
+
+  /**
+   * Get a single event by slug for dashboard (full data, permission required).
+   */
+  async getEventBySlugForDashboard(slug: string, requesterUserId: string) {
+    const event = await prisma.eventEntity.findUnique({
+      where: { slug },
+      include: {
+        owner: {
+          select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+        },
+        festival: {
+          select: { id: true, name: true, slug: true },
+        },
+        participants: {
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+            },
+          },
+        },
+        attachments: true,
+        registrationForm: {
+          include: { fields: { orderBy: { order: 'asc' } } },
+        },
+        prizeBreakdown: {
+          orderBy: { amount: 'desc' },
+        },
+      },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    // Verify permission - owner, admin, or manager can view full data
+    const hasPermission = await this.hasEditPermission(event.ownerId, requesterUserId, event.id);
+    if (!hasPermission) {
+      throw new ForbiddenException('You do not have permission to view this event\'s full details.');
+    }
+
+    return event;
+  }
+
+  /**
+   * Get a single event by ID (internal use - kept for backwards compatibility).
+   * @deprecated Use getEventByIdForDashboard for authenticated access or getPublicEventById for public access.
    */
   async getEventById(id: string) {
     const event = await prisma.eventEntity.findUnique({
@@ -219,7 +526,8 @@ export class EventService {
   }
 
   /**
-   * Get a single event by slug.
+   * Get a single event by slug (internal use - kept for backwards compatibility).
+   * @deprecated Use getEventBySlugForDashboard for authenticated access or getPublicEventBySlug for public access.
    */
   async getEventBySlug(slug: string) {
     const event = await prisma.eventEntity.findUnique({
@@ -487,7 +795,8 @@ export class EventService {
       throw new ConflictException('You have already joined this event.');
     }
 
-    // Fetch registration form if answers provided
+    // Always load registration form to enforce required field validation
+    // This prevents clients from bypassing required questions by sending empty answers
     let registrationFields: Array<{
       id: string;
       label: string;
@@ -496,42 +805,57 @@ export class EventService {
       options: string[];
     }> = [];
 
-    if (answers && answers.length > 0) {
-      const regForm = await prisma.eventRegistrationFormEntity.findUnique({
-        where: { eventId },
-        include: {
-          fields: {
-            select: {
-              id: true,
-              label: true,
-              type: true,
-              required: true,
-              options: true,
-            },
-            orderBy: { order: 'asc' },
+    const regForm = await prisma.eventRegistrationFormEntity.findUnique({
+      where: { eventId },
+      include: {
+        fields: {
+          select: {
+            id: true,
+            label: true,
+            type: true,
+            required: true,
+            options: true,
           },
+          orderBy: { order: 'asc' },
         },
-      });
+      },
+    });
 
-      if (regForm) {
-        registrationFields = regForm.fields;
+    if (regForm) {
+      registrationFields = regForm.fields;
+    }
+
+    // Validate required fields - even if client sends empty answers
+    const providedFieldIds = new Set((answers ?? []).map((a) => a.fieldId));
+    const providedAnswers = answers ?? [];
+
+    // Check for required fields
+    for (const field of registrationFields) {
+      if (field.required) {
+        if (!providedFieldIds.has(field.id)) {
+          throw new BadRequestException(`Field "${field.label}" is required.`);
+        }
+        // Also check that required field answer is not empty
+        const answer = providedAnswers.find((a) => a.fieldId === field.id);
+        if (answer) {
+          const value = answer.value;
+          const isEmpty =
+            value === '' ||
+            value === null ||
+            value === undefined ||
+            (Array.isArray(value) && value.length === 0);
+          if (isEmpty) {
+            throw new BadRequestException(`Field "${field.label}" is required and cannot be empty.`);
+          }
+        }
       }
     }
 
-    // Validate answers if form fields exist
-    if (registrationFields.length > 0 && answers) {
+    // Validate each provided answer
+    if (providedAnswers.length > 0) {
       const fieldMap = new Map(registrationFields.map((f) => [f.id, f]));
-      const providedFieldIds = new Set(answers.map((a) => a.fieldId));
 
-      // Check for required fields
-      for (const field of registrationFields) {
-        if (field.required && !providedFieldIds.has(field.id)) {
-          throw new BadRequestException(`Field "${field.label}" is required.`);
-        }
-      }
-
-      // Validate each answer
-      for (const answer of answers) {
+      for (const answer of providedAnswers) {
         const field = fieldMap.get(answer.fieldId);
         if (!field) {
           throw new BadRequestException(`Unknown field ID: ${answer.fieldId}`);
@@ -610,6 +934,7 @@ export class EventService {
       });
 
       // Create submission and answers if provided
+      let submissionId: string | undefined;
       if (answers && answers.length > 0 && registrationFields.length > 0) {
         const submission = await tx.eventRegistrationSubmissionEntity.create({
           data: {
@@ -618,6 +943,7 @@ export class EventService {
             participantId: participant.id,
           },
         });
+        submissionId = submission.id;
 
         // Create answers
         const answerData = answers.map((a) => ({
@@ -632,8 +958,102 @@ export class EventService {
         });
       }
 
+      // After successful registration, log to Google Sheets asynchronously
+      // Pass submissionId so it can read from DB-saved answers for consistency
+      this.logToGoogleSheets(eventId, userId, answers ?? [], submissionId).catch((err) => {
+        console.error('Failed to log to Google Sheets:', err);
+      });
+
       return { message: 'Successfully joined the event.' };
     });
+  }
+
+  /**
+   * Logs event registration to Google Sheets.
+   * Writes to 'Registrations' tab with auto-headers and one column per question.
+   */
+  private async logToGoogleSheets(
+    eventId: string,
+    userId: string,
+    answers: Array<{ fieldId: string; value: string | number | string[] }>,
+    submissionId?: string,
+  ) {
+    try {
+      // Fetch user, event, and registration form data
+      const user = await prisma.userEntity.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      const event = await prisma.eventEntity.findUnique({
+        where: { id: eventId },
+        select: { name: true },
+      });
+
+      if (!user || !event) return;
+
+      const regForm = await prisma.eventRegistrationFormEntity.findUnique({
+        where: { eventId },
+        include: {
+          fields: {
+            select: { id: true, label: true },
+            orderBy: { order: 'asc' },
+          },
+        },
+      });
+
+      // If submissionId provided, try to read from DB-saved answers for consistency
+      let answersToLog = answers;
+      if (submissionId) {
+        const dbAnswers = await prisma.eventRegistrationAnswerEntity.findMany({
+          where: { submissionId },
+          select: { fieldId: true, valueText: true, valueJson: true },
+        });
+        if (dbAnswers.length > 0) {
+          answersToLog = dbAnswers.map((a) => ({
+            fieldId: a.fieldId,
+            value: a.valueJson as string | number | string[],
+          }));
+        }
+      }
+
+      // Build fixed columns
+      const fixedColumns: Record<string, string | number | null> = {
+        'timestamp': new Date().toISOString(),
+        'eventId': eventId,
+        'eventName': event.name,
+        'userId': userId,
+        'fullName': `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+        'email': user.email,
+        'submissionId': submissionId ?? '',
+      };
+
+      // Build question columns with stable headers: "<label> (<fieldId>)"
+      const questionColumns: Record<string, string | number | null> = {};
+      const fieldInfoMap = new Map<string, string>();
+      if (regForm) {
+        for (const field of regForm.fields) {
+          fieldInfoMap.set(field.id, field.label);
+        }
+      }
+
+      for (const answer of answersToLog) {
+        const label = fieldInfoMap.get(answer.fieldId) || 'Unknown';
+        const headerKey = `${label} (${answer.fieldId})`;
+        const val = Array.isArray(answer.value)
+          ? answer.value.join(', ')
+          : String(answer.value ?? '');
+        questionColumns[headerKey] = val;
+      }
+
+      // Use the new appendRegistrationRow method
+      await this.googleSheetsService.appendRegistrationRow(
+        'Registrations',
+        fixedColumns,
+        questionColumns
+      );
+    } catch (error) {
+      console.error('Error in logToGoogleSheets:', error);
+    }
   }
 
   /**
@@ -705,6 +1125,136 @@ export class EventService {
   }
 
   /**
+   * List all registrations for an event by slug (owner/manager/admin only).
+   * Returns participant data enriched with onboarding profile information.
+   */
+  async listEventRegistrationsBySlug(slug: string, requesterUserId: string) {
+    // Find event by slug
+    const event = await prisma.eventEntity.findUnique({
+      where: { slug },
+      select: { id: true, ownerId: true },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    // Check permission (owner, admin, or manager)
+    const hasPermission = await this.hasEditPermission(
+      event.ownerId,
+      requesterUserId,
+      event.id,
+    );
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have permission to view registrations for this event.',
+      );
+    }
+
+    // Query all participants with onboarding data
+    const participants = await prisma.eventParticipantEntity.findMany({
+      where: { eventId: event.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+            onboardingProfile: {
+              include: {
+                college: {
+                  select: {
+                    id: true,
+                    name: true,
+                    city: true,
+                    state: true,
+                    country: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        submission: {
+          select: {
+            id: true,
+            submittedAt: true,
+          },
+        },
+      },
+      orderBy: { joinedAt: 'desc' },
+    });
+
+    // Map to dashboard-friendly format
+    return participants.map((p) => {
+      const user = p.user;
+      const profile = user.onboardingProfile;
+
+      // Derive university/institution
+      let university = '';
+      if (profile) {
+        if (profile.college) {
+          university = profile.college.name;
+        } else if (profile.schoolName) {
+          university = profile.schoolName;
+        } else if (profile.companyName) {
+          university = profile.companyName;
+        }
+      }
+
+      // Derive location
+      let location = '';
+      if (profile) {
+        const parts: string[] = [];
+        if (profile.locationCity) parts.push(profile.locationCity);
+        if (profile.locationState) parts.push(profile.locationState);
+        if (profile.locationCountry) parts.push(profile.locationCountry);
+        location = parts.join(', ');
+      }
+
+      // Derive course/category
+      let course = '';
+      if (profile) {
+        const category = profile.userCategory;
+        switch (category) {
+          case 'SCHOOL_STUDENT':
+            course = profile.schoolClass
+              ? `School - Class ${profile.schoolClass}`
+              : 'School Student';
+            break;
+          case 'COLLEGE_STUDENT':
+          case 'PROFESSIONAL_SCHOOL_STUDENT':
+            if (profile.collegeCurrentYear) {
+              course = `Year ${profile.collegeCurrentYear}`;
+            } else {
+              course = 'College Student';
+            }
+            break;
+          case 'WORKING_PROFESSIONAL':
+            course = profile.jobTitle || 'Working Professional';
+            break;
+          case 'FRESHER':
+            course = 'Fresher';
+            break;
+          default:
+            course = '';
+        }
+      }
+
+      return {
+        id: p.id,
+        name: [user.firstName, user.lastName].filter(Boolean).join(' ') || 'N/A',
+        email: user.email,
+        avatarUrl: user.imageUrl || null,
+        university,
+        location,
+        course,
+        status: p.submission ? 'Completed' : 'Incomplete',
+        registeredOn: p.joinedAt.toISOString(),
+      };
+    });
+  }
+
+  /**
    * Get all roles for an event (owner + managers + evaluators).
    */
   async getEventRoles(eventId: string) {
@@ -738,6 +1288,80 @@ export class EventService {
     });
 
     if (!event) throw new NotFoundException('Event not found');
+
+    const managers = event.userRoles
+      .filter((r) => r.role === 'MANAGER')
+      .map((r) => ({
+        id: r.user.id,
+        email: r.user.email,
+        firstName: r.user.firstName,
+        lastName: r.user.lastName,
+        imageUrl: r.user.imageUrl,
+        role: r.role as EventUserRoleValue,
+        assignedAt: r.createdAt.toISOString(),
+      }));
+
+    const evaluators = event.userRoles
+      .filter((r) => r.role === 'EVALUATOR')
+      .map((r) => ({
+        id: r.user.id,
+        email: r.user.email,
+        firstName: r.user.firstName,
+        lastName: r.user.lastName,
+        imageUrl: r.user.imageUrl,
+        role: r.role as EventUserRoleValue,
+        assignedAt: r.createdAt.toISOString(),
+      }));
+
+    return {
+      owner: event.owner,
+      managers,
+      evaluators,
+    };
+  }
+
+  /**
+   * Get all roles for an event with permission check (owner/manager/admin only).
+   * Protects manager/evaluator emails from public access.
+   */
+  async getEventRolesWithPermission(eventId: string, requesterUserId: string) {
+    const event = await prisma.eventEntity.findUnique({
+      where: { id: eventId },
+      select: {
+        id: true,
+        ownerId: true,
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+        userRoles: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!event) throw new NotFoundException('Event not found');
+
+    // Verify permission - only owner, admin, or manager can view roles
+    const hasPermission = await this.hasEditPermission(event.ownerId, requesterUserId, eventId);
+    if (!hasPermission) {
+      throw new ForbiddenException('You do not have permission to view roles for this event.');
+    }
 
     const managers = event.userRoles
       .filter((r) => r.role === 'MANAGER')

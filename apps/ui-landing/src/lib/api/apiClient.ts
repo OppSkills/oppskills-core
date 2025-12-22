@@ -1,4 +1,7 @@
-import axios, { type AxiosInstance } from "axios";
+import axios, {
+  type AxiosInstance,
+  type InternalAxiosRequestConfig,
+} from "axios";
 
 /**
  * Normalizes the UI's API base URL so we can reliably target specific resources.
@@ -31,6 +34,9 @@ export function getApiRootUrl(): string {
     "/hackathons",
     "/festivals",
     "/events",
+    "/user-accounts",
+    "/colleges",
+    "/media",
   ] as const;
   const matched = knownResourceSuffixes.find((suffix) =>
     trimmed.endsWith(suffix)
@@ -47,7 +53,27 @@ export function createApiClient(resourcePath: string): AxiosInstance {
   const root = getApiRootUrl();
   const path = normalizeResourcePath(resourcePath);
   const baseURL = `${root}${path}`;
-  return axios.create({ baseURL });
+  const client = axios.create({ baseURL });
+
+  /**
+   * IMPORTANT: Always treat request URLs as resource-relative.
+   *
+   * Why: many callsites use `API.get("/me")`, `API.get("/my")`, `API.put(\`/${id}\`)`, etc.
+   * In Node/server contexts, a leading `/` can be interpreted as "absolute from host root"
+   * which would drop the resource prefix from `baseURL` and hit `/me` instead of
+   * `/user-accounts/me`, causing a 404.
+   *
+   * This interceptor makes the behavior unambiguous by stripping leading slashes.
+   */
+  client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    const url = config.url;
+    if (typeof url === "string" && url.startsWith("/")) {
+      config.url = url.replace(/^\/+/, "");
+    }
+    return config;
+  });
+
+  return client;
 }
 
 /**

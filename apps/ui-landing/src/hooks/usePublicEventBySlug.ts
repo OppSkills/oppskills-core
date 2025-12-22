@@ -2,9 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { getPublicEventBySlug } from "@/lib/api/eventApi";
 
 /**
- * Detailed event data returned by the slug endpoint.
+ * Public event data returned by the public slug endpoint.
+ * NOTE: This is sanitized - no participants, no registrant emails, no role lists.
  */
-export interface EventDetail {
+export interface PublicEventDetail {
   id: string;
   slug: string;
   name: string;
@@ -13,6 +14,7 @@ export interface EventDetail {
   startDate: string;
   endDate: string;
   status: string;
+  approvalStatus: string | null;
   locationType: string | null;
   locationCity: string | null;
   locationAddress: string | null;
@@ -25,15 +27,19 @@ export interface EventDetail {
   registrationCount: number;
   maxUsers: number | null;
   registrationDeadline: string | null;
+  isRegistrationPaused: boolean;
   organizationName: string | null;
   organizationLogoUrl: string | null;
   contactName: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
   attendeeEligibility: string[];
+  /**
+   * Owner info - public endpoints only return first/last name and imageUrl.
+   * Email is NOT exposed for privacy.
+   */
   owner: {
     id: string;
-    email: string;
     firstName: string | null;
     lastName: string | null;
     imageUrl: string | null;
@@ -43,18 +49,9 @@ export interface EventDetail {
     name: string;
     slug: string;
   } | null;
-  participants: Array<{
-    id: string;
-    userId: string;
-    createdAt: string;
-    user: {
-      id: string;
-      email: string;
-      firstName: string | null;
-      lastName: string | null;
-      imageUrl: string | null;
-    };
-  }>;
+  /**
+   * NOTE: participants is NOT included in public responses to protect registrant PII.
+   */
   attachments: Array<{
     id: string;
     storageKey: string;
@@ -85,6 +82,12 @@ export interface EventDetail {
 }
 
 /**
+ * Backwards compatibility alias.
+ * @deprecated Use PublicEventDetail instead.
+ */
+export type EventDetail = PublicEventDetail;
+
+/**
  * Normalizes slug input.
  */
 function normalizeSlug(slug: string | null | undefined): string | null {
@@ -107,7 +110,7 @@ export function getPublicEventBySlugQueryKey(slug: string | null) {
 export function usePublicEventBySlug(slug: string | null | undefined) {
   const safeSlug = normalizeSlug(slug);
 
-  return useQuery<EventDetail>({
+  return useQuery<PublicEventDetail>({
     queryKey: getPublicEventBySlugQueryKey(safeSlug),
     enabled: safeSlug !== null,
     queryFn: async () => {
@@ -115,7 +118,7 @@ export function usePublicEventBySlug(slug: string | null | undefined) {
         throw new Error("Event slug is required.");
       }
       const data = await getPublicEventBySlug(safeSlug);
-      return data as EventDetail;
+      return data as PublicEventDetail;
     },
   });
 }

@@ -264,6 +264,65 @@ export default function OnboardingPage() {
   // LocalStorage key for persisting form data
   const STORAGE_KEY = "oppskills_onboarding_form";
   const hasLoadedFromStorage = useRef(false);
+  const previousUserCategory = useRef<UserCategoryValue | "">("");
+
+  // Clear irrelevant fields when userCategory changes to prevent stale data submission
+  useEffect(() => {
+    const currentCategory = form.state.values.userCategory;
+    
+    // Skip on initial load or if category hasn't actually changed
+    if (!hasLoadedFromStorage.current || previousUserCategory.current === currentCategory) {
+      previousUserCategory.current = currentCategory;
+      return;
+    }
+
+    // Clear fields based on the new category
+    switch (currentCategory) {
+      case UserCategoryValue.WORKING_PROFESSIONAL:
+        // Clear college and school fields - professionals only need company info
+        form.setFieldValue("collegeId", "");
+        form.setFieldValue("collegeName", "");
+        form.setFieldValue("collegeCurrentYear", "");
+        form.setFieldValue("collegePassoutYear", "");
+        form.setFieldValue("collegeSkipped", false);
+        form.setFieldValue("schoolName", "");
+        form.setFieldValue("schoolClass", "");
+        form.setFieldValue("schoolAddress", "");
+        break;
+
+      case UserCategoryValue.FRESHER:
+        // Clear school and company fields - freshers may optionally add college
+        form.setFieldValue("schoolName", "");
+        form.setFieldValue("schoolClass", "");
+        form.setFieldValue("schoolAddress", "");
+        form.setFieldValue("companyName", "");
+        form.setFieldValue("jobTitle", "");
+        break;
+
+      case UserCategoryValue.COLLEGE_STUDENT:
+      case UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT:
+        // Clear school and company fields - college students only need college info
+        form.setFieldValue("schoolName", "");
+        form.setFieldValue("schoolClass", "");
+        form.setFieldValue("schoolAddress", "");
+        form.setFieldValue("companyName", "");
+        form.setFieldValue("jobTitle", "");
+        break;
+
+      case UserCategoryValue.SCHOOL_STUDENT:
+        // Clear college and company fields - school students only need school info
+        form.setFieldValue("collegeId", "");
+        form.setFieldValue("collegeName", "");
+        form.setFieldValue("collegeCurrentYear", "");
+        form.setFieldValue("collegePassoutYear", "");
+        form.setFieldValue("collegeSkipped", false);
+        form.setFieldValue("companyName", "");
+        form.setFieldValue("jobTitle", "");
+        break;
+    }
+
+    previousUserCategory.current = currentCategory;
+  }, [form.state.values.userCategory, form]);
 
   // Load saved form data from localStorage on mount
   useEffect(() => {

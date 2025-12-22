@@ -154,10 +154,11 @@ export const UpcomingEvents = () => {
           {displayEvents.map((event) => {
             const startDate = new Date(event.startDate);
             const formattedDate = format(startDate, "dd MMM yyyy");
-            const formattedDeadLineDate = format(
-              new Date(event.registrationDeadline),
-              "dd MMM yyyy"
-            );
+            const formattedTime = format(startDate, "hh:mm a");
+            // Safely handle null registrationDeadline
+            const formattedDeadLineDate = event.registrationDeadline
+              ? format(new Date(event.registrationDeadline), "dd MMM yyyy")
+              : "N/A";
             const mode = formatMode(event.locationType);
             const entryFee = formatEntryFee(event);
             const isFree = event.isFree;
@@ -220,9 +221,7 @@ export const UpcomingEvents = () => {
                         <span className="text-xs text-neutral-500">
                           Attendees
                         </span>
-                        <span className="text-neutral-700">
-                          {event.registrationCount}
-                        </span>
+                        <span className="text-neutral-700">{event.registrationCount}</span>
                       </div>
                       <div className="flex flex-col gap-2 ">
                         <span className="text-xs text-neutral-500">

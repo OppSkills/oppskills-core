@@ -75,17 +75,10 @@ export function EventRegistrationCard({
             Registered
           </h3>
         </div>
-        <div className="p-6 space-y-6">
+        <div className="p-6">
           <p className="text-zinc-600 dark:text-zinc-400 text-[15px]">
             You have successfully registered for this event. We look forward to seeing you!
           </p>
-
-          <Button 
-            className="w-full h-[52px] rounded-full bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-[18px]"
-            onClick={() => window.location.href = "/dashboard"}
-          >
-            Go to Dashboard
-          </Button>
         </div>
       </div>
     );
