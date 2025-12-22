@@ -118,6 +118,24 @@ export class EventController {
     return this.eventService.getEventBySlug(validSlug);
   }
 
+  @Get('by-slug/:slug/registrations')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({ summary: 'Get event registrations by slug (owner/manager/admin only)' })
+  @ApiParam({ name: 'slug', description: 'Event slug' })
+  @ApiResponse({ status: 200, description: 'Event registrations list' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Owner/Manager/Admin only' })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async getEventRegistrationsBySlug(@Param('slug') slug: string, @Req() req: Request) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+
+    const validSlug = assertNonEmptyId(slug, 'slug');
+    return this.eventService.listEventRegistrationsBySlug(validSlug, userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get event by ID' })
   @ApiParam({ name: 'id', description: 'Event ID' })

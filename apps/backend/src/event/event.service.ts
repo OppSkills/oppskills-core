@@ -764,6 +764,136 @@ export class EventService {
   }
 
   /**
+   * List all registrations for an event by slug (owner/manager/admin only).
+   * Returns participant data enriched with onboarding profile information.
+   */
+  async listEventRegistrationsBySlug(slug: string, requesterUserId: string) {
+    // Find event by slug
+    const event = await prisma.eventEntity.findUnique({
+      where: { slug },
+      select: { id: true, ownerId: true },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    // Check permission (owner, admin, or manager)
+    const hasPermission = await this.hasEditPermission(
+      event.ownerId,
+      requesterUserId,
+      event.id,
+    );
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have permission to view registrations for this event.',
+      );
+    }
+
+    // Query all participants with onboarding data
+    const participants = await prisma.eventParticipantEntity.findMany({
+      where: { eventId: event.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+            onboardingProfile: {
+              include: {
+                college: {
+                  select: {
+                    id: true,
+                    name: true,
+                    city: true,
+                    state: true,
+                    country: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        submission: {
+          select: {
+            id: true,
+            submittedAt: true,
+          },
+        },
+      },
+      orderBy: { joinedAt: 'desc' },
+    });
+
+    // Map to dashboard-friendly format
+    return participants.map((p) => {
+      const user = p.user;
+      const profile = user.onboardingProfile;
+
+      // Derive university/institution
+      let university = '';
+      if (profile) {
+        if (profile.college) {
+          university = profile.college.name;
+        } else if (profile.schoolName) {
+          university = profile.schoolName;
+        } else if (profile.companyName) {
+          university = profile.companyName;
+        }
+      }
+
+      // Derive location
+      let location = '';
+      if (profile) {
+        const parts: string[] = [];
+        if (profile.locationCity) parts.push(profile.locationCity);
+        if (profile.locationState) parts.push(profile.locationState);
+        if (profile.locationCountry) parts.push(profile.locationCountry);
+        location = parts.join(', ');
+      }
+
+      // Derive course/category
+      let course = '';
+      if (profile) {
+        const category = profile.userCategory;
+        switch (category) {
+          case 'SCHOOL_STUDENT':
+            course = profile.schoolClass
+              ? `School - Class ${profile.schoolClass}`
+              : 'School Student';
+            break;
+          case 'COLLEGE_STUDENT':
+          case 'PROFESSIONAL_SCHOOL_STUDENT':
+            if (profile.collegeCurrentYear) {
+              course = `Year ${profile.collegeCurrentYear}`;
+            } else {
+              course = 'College Student';
+            }
+            break;
+          case 'WORKING_PROFESSIONAL':
+            course = profile.jobTitle || 'Working Professional';
+            break;
+          case 'FRESHER':
+            course = 'Fresher';
+            break;
+          default:
+            course = '';
+        }
+      }
+
+      return {
+        id: p.id,
+        name: [user.firstName, user.lastName].filter(Boolean).join(' ') || 'N/A',
+        email: user.email,
+        avatarUrl: user.imageUrl || null,
+        university,
+        location,
+        course,
+        status: p.submission ? 'Completed' : 'Incomplete',
+        registeredOn: p.joinedAt.toISOString(),
+      };
+    });
+  }
+
+  /**
    * Get all roles for an event (owner + managers + evaluators).
    */
   async getEventRoles(eventId: string) {

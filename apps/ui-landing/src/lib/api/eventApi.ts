@@ -370,3 +370,31 @@ export async function checkMyRegistration(
   });
   return res.data as MyRegistrationResponse;
 }
+
+/**
+ * Single registration record for event dashboard.
+ */
+export interface EventRegistration {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  university: string;
+  location: string;
+  course: string;
+  status: "Completed" | "Incomplete";
+  registeredOn: string;
+}
+
+/**
+ * Get all registrations for an event by slug (owner/manager/admin only).
+ */
+export async function getEventRegistrationsBySlug(
+  token: string,
+  slug: string
+): Promise<EventRegistration[]> {
+  const res = await API.get(`/by-slug/${slug}/registrations`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as EventRegistration[];
+}
