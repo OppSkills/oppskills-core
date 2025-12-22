@@ -162,6 +162,3 @@ todos:
 - [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/lib/api/eventApi.ts`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/lib/api/eventApi.ts)
 - [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/hooks/usePublicEventBySlug.ts`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/hooks/usePublicEventBySlug.ts)
 - [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/organize/event/page.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/organize/event/page.tsx)
-- [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/page.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/page.tsx)
-- [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx)
-- [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/_components/BasicDetails.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/_components/BasicDetails.tsx)

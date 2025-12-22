@@ -342,6 +342,8 @@ export class UserAccountsService {
     // 3. Category specific rules
     switch (data.userCategory) {
       case UserCategoryValue.SCHOOL_STUDENT:
+        // Required: schoolName, schoolClass
+        // Optional: schoolAddress
         if (!data.schoolName || data.schoolName.trim().length === 0) {
           throw new HttpException(
             'School name is required for school students',
@@ -354,16 +356,13 @@ export class UserAccountsService {
             HttpStatus.BAD_REQUEST,
           );
         }
-        if (!data.schoolAddress || data.schoolAddress.trim().length === 0) {
-          throw new HttpException(
-            'School address is required for school students',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
+        // schoolAddress is optional - no validation required
         break;
 
       case UserCategoryValue.COLLEGE_STUDENT:
       case UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT:
+        // Required: collegeId (unless collegeSkipped=true)
+        // Optional: collegeCurrentYear, collegePassoutYear
         if (
           !data.collegeSkipped &&
           (!data.collegeId || data.collegeId.trim().length === 0)
@@ -373,59 +372,17 @@ export class UserAccountsService {
             HttpStatus.BAD_REQUEST,
           );
         }
-        if (
-          !data.collegeCurrentYear ||
-          data.collegeCurrentYear.trim().length === 0
-        ) {
-          throw new HttpException(
-            'Current year of study is required',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
+        // collegeCurrentYear is optional - no validation required
         break;
 
       case UserCategoryValue.FRESHER:
-        // Freshers cannot skip college details
-        if (!data.collegeId || data.collegeId.trim().length === 0) {
-          throw new HttpException(
-            'College selection is required for freshers',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-        if (
-          !data.collegePassoutYear ||
-          typeof data.collegePassoutYear !== 'number' ||
-          data.collegePassoutYear < 1900 ||
-          data.collegePassoutYear > 2100
-        ) {
-          throw new HttpException(
-            'Valid college passout year is required for freshers',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
+        // Freshers: No college requirements
+        // College fields are optional - user can add them if they want
         break;
 
       case UserCategoryValue.WORKING_PROFESSIONAL:
-        // Professionals can skip college, but if not skipped, they need collegeId and passout year
-        if (!data.collegeSkipped) {
-          if (!data.collegeId || data.collegeId.trim().length === 0) {
-            throw new HttpException(
-              'College is required unless you choose to skip education details',
-              HttpStatus.BAD_REQUEST,
-            );
-          }
-          if (
-            !data.collegePassoutYear ||
-            typeof data.collegePassoutYear !== 'number' ||
-            data.collegePassoutYear < 1900 ||
-            data.collegePassoutYear > 2100
-          ) {
-            throw new HttpException(
-              'Valid college passout year is required if education is provided',
-              HttpStatus.BAD_REQUEST,
-            );
-          }
-        }
+        // Working professionals: No college requirements
+        // All education fields are optional
         break;
     }
   }
