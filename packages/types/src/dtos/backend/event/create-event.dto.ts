@@ -3,6 +3,7 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsDefined,
   IsEmail,
   IsIn,
   IsInt,
@@ -908,6 +909,7 @@ export class EventRegistrationAnswerDto {
     ],
     example: "john@example.com",
   })
+  @IsDefined()
   value: string | number | string[];
 }
 

@@ -205,6 +205,11 @@ export interface OnboardingProfileResponseDto {
   schoolClass?: string | null;
   schoolAddress?: string | null;
   collegeId?: string | null;
+  // College relation for prefilling registration forms
+  college?: {
+    id: string;
+    name: string;
+  } | null;
   collegeCurrentYear?: string | null;
   collegePassoutYear?: number | null;
   collegeSkipped: boolean;

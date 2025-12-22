@@ -138,6 +138,7 @@ export class UserAccountsService {
 
   /**
    * Get current user profile with onboarding status.
+   * Includes college details for prefilling registration forms.
    */
   async getMe(input: {
     userId: string | undefined;
@@ -151,7 +152,19 @@ export class UserAccountsService {
       throw new HttpException("Missing authenticated user id.", HttpStatus.UNAUTHORIZED);
     }
 
-    const include = { onboardingProfile: true } as const;
+    // Include college relation to get college name for prefilling
+    const include = {
+      onboardingProfile: {
+        include: {
+          college: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    } as const;
 
     // 1) Primary lookup: DB primary key should ideally be the Clerk user id.
     const byId = await prisma.userEntity.findUnique({

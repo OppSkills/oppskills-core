@@ -246,9 +246,8 @@ export default function EventDetailsPage() {
         email: meData.email ?? undefined,
         phone: user?.primaryPhoneNumber?.phoneNumber,
         gender: onboardingProfile?.gender,
-        // Note: collegeName is not directly available from onboarding profile (only collegeId)
-        // User will need to fill it in manually
-        collegeName: undefined,
+        // Use college.name from the relation (fetched by backend with college include)
+        collegeName: onboardingProfile?.college?.name ?? undefined,
         companyName: onboardingProfile?.companyName ?? undefined,
         schoolName: onboardingProfile?.schoolName ?? undefined,
       };
