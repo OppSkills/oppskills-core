@@ -27,7 +27,7 @@ export default function Login({
       await signIn.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/sso-callback",
-        redirectUrlComplete: "/dashboard",
+        redirectUrlComplete: "/",
       });
     } catch (err: unknown) {
       console.error("OAuth error", err);
@@ -55,7 +55,7 @@ export default function Login({
         await setActive({ session: result.createdSessionId });
         toast.success("Welcome back!");
         setIsOpenLogin(false);
-        router.push("/dashboard");
+        router.push("/");
       } else {
         console.log(result);
         toast.error("Something went wrong during sign in");

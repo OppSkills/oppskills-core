@@ -93,7 +93,7 @@ export class CollegesController {
       'Import multiple colleges at once. This endpoint is ONLY available in non-production environments.',
   })
   @ApiBody({
-    description: 'Array of college objects to import',
+    description: 'Array of college objects to import. Optional fields (state, city, address) will default to empty string if not provided.',
     schema: {
       type: 'object',
       properties: {
@@ -105,13 +105,13 @@ export class CollegesController {
               id: { type: 'string' },
               name: { type: 'string' },
               country: { type: 'string' },
-              state: { type: 'string' },
-              city: { type: 'string' },
-              address: { type: 'string' },
-              website: { type: 'string' },
-              logo: { type: 'string' },
+              state: { type: 'string', nullable: true },
+              city: { type: 'string', nullable: true },
+              address: { type: 'string', nullable: true },
+              website: { type: 'string', nullable: true },
+              logo: { type: 'string', nullable: true },
             },
-            required: ['id', 'name', 'country', 'state', 'city', 'address'],
+            required: ['id', 'name', 'country'],
           },
         },
       },

@@ -1,0 +1,852 @@
+[
+  {
+    "id": "iit-m-001",
+    "name": "Indian Institute of Technology Madras",
+    "country": "India",
+    "state": "Tamil Nadu",
+    "city": "Chennai",
+    "address": "IIT P.O., Chennai 600036",
+    "website": "www.iitm.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-d-002",
+    "name": "Indian Institute of Technology Delhi",
+    "country": "India",
+    "state": "Delhi",
+    "city": "New Delhi",
+    "address": "Hauz Khas, New Delhi 110016",
+    "website": "www.iitd.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-b-003",
+    "name": "Indian Institute of Technology Bombay",
+    "country": "India",
+    "state": "Maharashtra",
+    "city": "Mumbai",
+    "address": "Powai, Mumbai 400076",
+    "website": "www.iitb.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-k-004",
+    "name": "Indian Institute of Technology Kanpur",
+    "country": "India",
+    "state": "Uttar Pradesh",
+    "city": "Kanpur",
+    "address": "Kalyanpur, Kanpur 208016",
+    "website": "www.iitk.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-kgp-005",
+    "name": "Indian Institute of Technology Kharagpur",
+    "country": "India",
+    "state": "West Bengal",
+    "city": "Kharagpur",
+    "address": "Kharagpur 721302",
+    "website": "www.iitkgp.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-r-006",
+    "name": "Indian Institute of Technology Roorkee",
+    "country": "India",
+    "state": "Uttarakhand",
+    "city": "Roorkee",
+    "address": "Roorkee 247667",
+    "website": "www.iitr.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-g-007",
+    "name": "Indian Institute of Technology Guwahati",
+    "country": "India",
+    "state": "Assam",
+    "city": "Guwahati",
+    "address": "Surjyamukhi, Guwahati 781039",
+    "website": "www.iitg.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-h-008",
+    "name": "Indian Institute of Technology Hyderabad",
+    "country": "India",
+    "state": "Telangana",
+    "city": "Sangareddy",
+    "address": "Kandi, Sangareddy 502285",
+    "website": "www.iith.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-i-009",
+    "name": "Indian Institute of Technology Indore",
+    "country": "India",
+    "state": "Madhya Pradesh",
+    "city": "Indore",
+    "address": "Simrol, Indore 453552",
+    "website": "www.iiti.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-v-010",
+    "name": "Indian Institute of Technology (BHU) Varanasi",
+    "country": "India",
+    "state": "Uttar Pradesh",
+    "city": "Varanasi",
+    "address": "Varanasi 221005",
+    "website": "www.iitbhu.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-ism-011",
+    "name": "Indian Institute of Technology (ISM) Dhanbad",
+    "country": "India",
+    "state": "Jharkhand",
+    "city": "Dhanbad",
+    "address": "Dhanbad 826004",
+    "website": "www.iitism.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-gn-012",
+    "name": "Indian Institute of Technology Gandhinagar",
+    "country": "India",
+    "state": "Gujarat",
+    "city": "Gandhinagar",
+    "address": "Palaj, Gandhinagar 382355",
+    "website": "www.iitgn.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-rp-013",
+    "name": "Indian Institute of Technology Ropar",
+    "country": "India",
+    "state": "Punjab",
+    "city": "Rupnagar",
+    "address": "Rupnagar 140001",
+    "website": "www.iitrpr.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-jd-014",
+    "name": "Indian Institute of Technology Jodhpur",
+    "country": "India",
+    "state": "Rajasthan",
+    "city": "Jodhpur",
+    "address": "Karwar 342037",
+    "website": "www.iitj.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-p-015",
+    "name": "Indian Institute of Technology Patna",
+    "country": "India",
+    "state": "Bihar",
+    "city": "Patna",
+    "address": "Bihta, Patna 801103",
+    "website": "www.iitp.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-bbs-016",
+    "name": "Indian Institute of Technology Bhubaneswar",
+    "country": "India",
+    "state": "Odisha",
+    "city": "Bhubaneswar",
+    "address": "Argul 752050",
+    "website": "www.iitbbs.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-tp-017",
+    "name": "Indian Institute of Technology Tirupati",
+    "country": "India",
+    "state": "Andhra Pradesh",
+    "city": "Tirupati",
+    "address": "Yerpedu 517619",
+    "website": "www.iittp.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-mnd-018",
+    "name": "Indian Institute of Technology Mandi",
+    "country": "India",
+    "state": "Himachal Pradesh",
+    "city": "Mandi",
+    "address": "Kamand 175005",
+    "website": "www.iitmandi.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-pk-019",
+    "name": "Indian Institute of Technology Palakkad",
+    "country": "India",
+    "state": "Kerala",
+    "city": "Palakkad",
+    "address": "Palakkad 678623",
+    "website": "iitpkd.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-jm-020",
+    "name": "Indian Institute of Technology Jammu",
+    "country": "India",
+    "state": "Jammu and Kashmir",
+    "city": "Jammu",
+    "address": "Jagti 181221",
+    "website": "www.iitjammu.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-dh-021",
+    "name": "Indian Institute of Technology Dharwad",
+    "country": "India",
+    "state": "Karnataka",
+    "city": "Dharwad",
+    "address": "Walmi Campus, Belur 580011",
+    "website": "www.iitdh.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-bh-022",
+    "name": "Indian Institute of Technology Bhilai",
+    "country": "India",
+    "state": "Chhattisgarh",
+    "city": "Bhilai",
+    "address": "Sejbahar, Raipur 492015",
+    "website": "www.iitbhilai.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iit-goa-023",
+    "name": "Indian Institute of Technology Goa",
+    "country": "India",
+    "state": "Goa",
+    "city": "Ponda",
+    "address": "Farmagudi, Ponda 403401",
+    "website": "iitgoa.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-tr-001",
+    "name": "National Institute of Technology Tiruchirappalli",
+    "country": "India",
+    "state": "Tamil Nadu",
+    "city": "Tiruchirappalli",
+    "address": "Tanjore Main Road, NH 67",
+    "website": "www.nitt.edu",
+    "logo": null
+  },
+  {
+    "id": "nit-sk-002",
+    "name": "National Institute of Technology Karnataka, Surathkal",
+    "country": "India",
+    "state": "Karnataka",
+    "city": "Mangalore",
+    "address": "NH 66, Srinivasnagar, Surathkal",
+    "website": "www.nitk.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-rk-003",
+    "name": "National Institute of Technology Rourkela",
+    "country": "India",
+    "state": "Odisha",
+    "city": "Rourkela",
+    "address": "Sector 1, Rourkela 769008",
+    "website": "www.nitrkl.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-wr-004",
+    "name": "National Institute of Technology Warangal",
+    "country": "India",
+    "state": "Telangana",
+    "city": "Warangal",
+    "address": "Hanamkonda, Warangal 506004",
+    "website": "www.nitw.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-cl-005",
+    "name": "National Institute of Technology Calicut",
+    "country": "India",
+    "state": "Kerala",
+    "city": "Kozhikode",
+    "address": "NIT Campus P.O. 673601",
+    "website": "www.nitc.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-dg-006",
+    "name": "National Institute of Technology Durgapur",
+    "country": "India",
+    "state": "West Bengal",
+    "city": "Durgapur",
+    "address": "Mahatma Gandhi Avenue 713209",
+    "website": "www.nitdgp.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-ng-007",
+    "name": "Visvesvaraya National Institute of Technology Nagpur",
+    "country": "India",
+    "state": "Maharashtra",
+    "city": "Nagpur",
+    "address": "South Ambazari Road 440010",
+    "website": "www.vnit.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-kkr-008",
+    "name": "National Institute of Technology Kurukshetra",
+    "country": "India",
+    "state": "Haryana",
+    "city": "Kurukshetra",
+    "address": "Thanesar, Kurukshetra 136119",
+    "website": "www.nitkkr.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-jp-009",
+    "name": "Malaviya National Institute of Technology Jaipur",
+    "country": "India",
+    "state": "Rajasthan",
+    "city": "Jaipur",
+    "address": "Jawaharlal Nehru Marg 302017",
+    "website": "www.mnit.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-jl-010",
+    "name": "Dr. B. R. Ambedkar National Institute of Technology Jalandhar",
+    "country": "India",
+    "state": "Punjab",
+    "city": "Jalandhar",
+    "address": "G.T. Road, Amritsar Bypass",
+    "website": "www.nitj.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-bp-011",
+    "name": "Maulana Azad National Institute of Technology Bhopal",
+    "country": "India",
+    "state": "Madhya Pradesh",
+    "city": "Bhopal",
+    "address": "Link Road No. 3, 462003",
+    "website": "www.manit.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-al-012",
+    "name": "Motilal Nehru National Institute of Technology Allahabad",
+    "country": "India",
+    "state": "Uttar Pradesh",
+    "city": "Prayagraj",
+    "address": "Teliarganj, Prayagraj 211004",
+    "website": "www.mnnit.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-hp-013",
+    "name": "National Institute of Technology Hamirpur",
+    "country": "India",
+    "state": "Himachal Pradesh",
+    "city": "Hamirpur",
+    "address": "Hamirpur 177005",
+    "website": "www.nith.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-pt-014",
+    "name": "National Institute of Technology Patna",
+    "country": "India",
+    "state": "Bihar",
+    "city": "Patna",
+    "address": "Ashok Rajpath 800005",
+    "website": "www.nitp.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-rp-015",
+    "name": "National Institute of Technology Raipur",
+    "country": "India",
+    "state": "Chhattisgarh",
+    "city": "Raipur",
+    "address": "G.E. Road 492010",
+    "website": "www.nitrr.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-sr-016",
+    "name": "National Institute of Technology Srinagar",
+    "country": "India",
+    "state": "Jammu and Kashmir",
+    "city": "Srinagar",
+    "address": "Hazratbal, Srinagar 190006",
+    "website": "www.nitsri.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-js-017",
+    "name": "National Institute of Technology Jamshedpur",
+    "country": "India",
+    "state": "Jharkhand",
+    "city": "Jamshedpur",
+    "address": "Adityapur, Jamshedpur 831014",
+    "website": "www.nitjsr.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-ag-018",
+    "name": "National Institute of Technology Agartala",
+    "country": "India",
+    "state": "Tripura",
+    "city": "Agartala",
+    "address": "Jirania 799046",
+    "website": "www.nita.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-go-019",
+    "name": "National Institute of Technology Goa",
+    "country": "India",
+    "state": "Goa",
+    "city": "Cuncolim",
+    "address": "Farmagudi, Ponda 403401",
+    "website": "www.nitgoa.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-ap-020",
+    "name": "National Institute of Technology Arunachal Pradesh",
+    "country": "India",
+    "state": "Arunachal Pradesh",
+    "city": "Yupia",
+    "address": "Yupia 791112",
+    "website": "www.nitap.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-mg-021",
+    "name": "National Institute of Technology Meghalaya",
+    "country": "India",
+    "state": "Meghalaya",
+    "city": "Shillong",
+    "address": "Bijni Complex, Laitumkhrah",
+    "website": "www.nitm.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-mn-022",
+    "name": "National Institute of Technology Manipur",
+    "country": "India",
+    "state": "Manipur",
+    "city": "Imphal",
+    "address": "Langol, Imphal 795004",
+    "website": "www.nitmanipur.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-mz-023",
+    "name": "National Institute of Technology Mizoram",
+    "country": "India",
+    "state": "Mizoram",
+    "city": "Aizawl",
+    "address": "Chaltlang, Aizawl 796012",
+    "website": "www.nitmz.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-nl-024",
+    "name": "National Institute of Technology Nagaland",
+    "country": "India",
+    "state": "Nagaland",
+    "city": "Chümoukedima",
+    "address": "Chümoukedima 797103",
+    "website": "www.nitnagaland.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-pd-025",
+    "name": "National Institute of Technology Puducherry",
+    "country": "India",
+    "state": "Puducherry",
+    "city": "Karaikal",
+    "address": "Thiruvettakudy 609609",
+    "website": "www.nitpy.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-si-026",
+    "name": "National Institute of Technology Sikkim",
+    "country": "India",
+    "state": "Sikkim",
+    "city": "Ravangla",
+    "address": "Ravangla 737139",
+    "website": "www.nitsikkim.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-sl-027",
+    "name": "National Institute of Technology Silchar",
+    "country": "India",
+    "state": "Assam",
+    "city": "Silchar",
+    "address": "Silchar 788010",
+    "website": "www.nits.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-dl-028",
+    "name": "National Institute of Technology Delhi",
+    "country": "India",
+    "state": "Delhi",
+    "city": "New Delhi",
+    "address": "Narela 110040",
+    "website": "www.nitdelhi.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-uk-029",
+    "name": "National Institute of Technology Uttarakhand",
+    "country": "India",
+    "state": "Uttarakhand",
+    "city": "Srinagar",
+    "address": "Srinagar (Garhwal) 246174",
+    "website": "www.nituk.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-an-030",
+    "name": "National Institute of Technology Andhra Pradesh",
+    "country": "India",
+    "state": "Andhra Pradesh",
+    "city": "Tadepalligudem",
+    "address": "Tadepalligudem 534101",
+    "website": "www.nitandhra.ac.in",
+    "logo": null
+  },
+  {
+    "id": "nit-st-031",
+    "name": "Sardar Vallabhbhai National Institute of Technology Surat",
+    "country": "India",
+    "state": "Gujarat",
+    "city": "Surat",
+    "address": "Ichchhanath, Surat 395007",
+    "website": "www.svnit.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-al-001",
+    "name": "Indian Institute of Information Technology Allahabad",
+    "country": "India",
+    "state": "Uttar Pradesh",
+    "city": "Prayagraj",
+    "address": "Devghat, Jhalwa, Prayagraj",
+    "website": "www.iiita.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-gw-002",
+    "name": "Atal Bihari Vajpayee Indian Institute of Information Technology and Management Gwalior",
+    "country": "India",
+    "state": "Madhya Pradesh",
+    "city": "Gwalior",
+    "address": "Morena Link Road, Gwalior",
+    "website": "www.iiitm.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-jb-003",
+    "name": "Indian Institute of Information Technology, Design and Manufacturing Jabalpur",
+    "country": "India",
+    "state": "Madhya Pradesh",
+    "city": "Jabalpur",
+    "address": "Dumna Airport Road, Jabalpur",
+    "website": "www.iiitdmj.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-kn-004",
+    "name": "Indian Institute of Information Technology, Design and Manufacturing Kancheepuram",
+    "country": "India",
+    "state": "Tamil Nadu",
+    "city": "Chennai",
+    "address": "Melakottaiyur, Off Vandalur-Kelambakkam Road",
+    "website": "www.iiitdm.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-kt-005",
+    "name": "Indian Institute of Information Technology Kottayam",
+    "country": "India",
+    "state": "Kerala",
+    "city": "Kottayam",
+    "address": "Valavoor, Pala, Kottayam",
+    "website": "www.iiitkottayam.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-gu-006",
+    "name": "Indian Institute of Information Technology Guwahati",
+    "country": "India",
+    "state": "Assam",
+    "city": "Guwahati",
+    "address": "Bongora, Guwahati",
+    "website": "www.iiitg.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-sc-007",
+    "name": "Indian Institute of Information Technology Sri City",
+    "country": "India",
+    "state": "Andhra Pradesh",
+    "city": "Chittoor",
+    "address": "Sri City, Satyavedu Mandal",
+    "website": "www.iiits.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-vd-008",
+    "name": "Indian Institute of Information Technology Vadodara",
+    "country": "India",
+    "state": "Gujarat",
+    "city": "Gandhinagar",
+    "address": "Block No. 9, Government Engineering College",
+    "website": "www.iiitvadodara.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-ko-009",
+    "name": "Indian Institute of Information Technology Kota",
+    "country": "India",
+    "state": "Rajasthan",
+    "city": "Kota",
+    "address": "Ranpur, Kota",
+    "website": "iiitkota.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-sn-010",
+    "name": "Indian Institute of Information Technology Sonepat",
+    "country": "India",
+    "state": "Haryana",
+    "city": "Sonepat",
+    "address": "I-TEC, Technopark, Sonepat",
+    "website": "iiitsonepat.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-un-011",
+    "name": "Indian Institute of Information Technology Una",
+    "country": "India",
+    "state": "Himachal Pradesh",
+    "city": "Una",
+    "address": "Saloh, Una",
+    "website": "iiitu.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-lu-012",
+    "name": "Indian Institute of Information Technology Lucknow",
+    "country": "India",
+    "state": "Uttar Pradesh",
+    "city": "Lucknow",
+    "address": "Chak Ganjaria, Ahmamau",
+    "website": "iiitl.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-kl-013",
+    "name": "Indian Institute of Information Technology Kalyani",
+    "country": "India",
+    "state": "West Bengal",
+    "city": "Kalyani",
+    "address": "WEBEL IT Park, Kalyani",
+    "website": "iiitkalyani.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-dw-014",
+    "name": "Indian Institute of Information Technology Dharwad",
+    "country": "India",
+    "state": "Karnataka",
+    "city": "Dharwad",
+    "address": "Sattur, Itigatti Road",
+    "website": "www.iiitdwd.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-kr-015",
+    "name": "Indian Institute of Information Technology, Design and Manufacturing Kurnool",
+    "country": "India",
+    "state": "Andhra Pradesh",
+    "city": "Kurnool",
+    "address": "Jagannathagattu, Kurnool",
+    "website": "www.iiitk.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-mp-016",
+    "name": "Indian Institute of Information Technology Manipur",
+    "country": "India",
+    "state": "Manipur",
+    "city": "Imphal",
+    "address": "Mantripukhri, Imphal",
+    "website": "www.iiitmanipur.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-ng-017",
+    "name": "Indian Institute of Information Technology Nagpur",
+    "country": "India",
+    "state": "Maharashtra",
+    "city": "Nagpur",
+    "address": "Waranga, Wardha Road",
+    "website": "iiitn.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-pn-018",
+    "name": "Indian Institute of Information Technology Pune",
+    "country": "India",
+    "state": "Maharashtra",
+    "city": "Pune",
+    "address": "Ambegaon Budruk, Pune",
+    "website": "iiitp.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-bh-019",
+    "name": "Indian Institute of Information Technology Bhagalpur",
+    "country": "India",
+    "state": "Bihar",
+    "city": "Bhagalpur",
+    "address": "BCE Campus, Sabour",
+    "website": "iiitbh.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-bp-020",
+    "name": "Indian Institute of Information Technology Bhopal",
+    "country": "India",
+    "state": "Madhya Pradesh",
+    "city": "Bhopal",
+    "address": "MANIT Campus, Bhopal",
+    "website": "www.iiitbhopal.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-rc-021",
+    "name": "Indian Institute of Information Technology Raichur",
+    "country": "India",
+    "state": "Karnataka",
+    "city": "Raichur",
+    "address": "GEC Campus, Raichur",
+    "website": "iiitr.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-rn-022",
+    "name": "Indian Institute of Information Technology Ranchi",
+    "country": "India",
+    "state": "Jharkhand",
+    "city": "Ranchi",
+    "address": "Sirkha Toli, Namkum",
+    "website": "iiitranchi.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-ag-023",
+    "name": "Indian Institute of Information Technology Agartala",
+    "country": "India",
+    "state": "Tripura",
+    "city": "Agartala",
+    "address": "NIT Agartala Campus",
+    "website": "iiitagartala.ac.in",
+    "logo": null
+  },
+  {
+    "id": "iiit-su-024",
+    "name": "Indian Institute of Information Technology Surat",
+    "country": "India",
+    "state": "Gujarat",
+    "city": "Surat",
+    "address": "Kholvad, Surat",
+    "website": "www.iiitsurat.ac.in",
+    "logo": null
+  },
+  {
+    "id": "bca-ch-001",
+    "name": "Christ University",
+    "country": "India",
+    "state": "Karnataka",
+    "city": "Bengaluru",
+    "address": "Hosur Road, Bengaluru",
+    "website": "www.christuniversity.in",
+    "logo": null
+  },
+  {
+    "id": "bca-lo-002",
+    "name": "Loyola College",
+    "country": "India",
+    "state": "Tamil Nadu",
+    "city": "Chennai",
+    "address": "Sterling Road, Nungambakkam",
+    "website": "www.loyolacollege.edu",
+    "logo": null
+  },
+  {
+    "id": "bca-sy-003",
+    "name": "Symbiosis Institute of Computer Studies and Research",
+    "country": "India",
+    "state": "Maharashtra",
+    "city": "Pune",
+    "address": "Atur Centre, Model Colony",
+    "website": "www.sicsr.ac.in",
+    "logo": null
+  },
+  {
+    "id": "bca-st-004",
+    "name": "St. Stephen's College",
+    "country": "India",
+    "state": "Delhi",
+    "city": "New Delhi",
+    "address": "University Enclave, North Campus",
+    "website": "www.ststephens.edu",
+    "logo": null
+  },
+  {
+    "id": "bca-mi-005",
+    "name": "Miranda House",
+    "country": "India",
+    "state": "Delhi",
+    "city": "New Delhi",
+    "address": "GC Narang Road, University Enclave",
+    "website": "www.mirandahouse.ac.in",
+    "logo": null
+  },
+  {
+    "id": "bca-ha-006",
+    "name": "Hansraj College",
+    "country": "India",
+    "state": "Delhi",
+    "city": "New Delhi",
+    "address": "Mahatma Hans Raj Marg, Malka Ganj",
+    "website": "www.hansrajcollege.ac.in",
+    "logo": null
+  },
+  {
+    "id": "bca-mc-007",
+    "name": "Madras Christian College",
+    "country": "India",
+    "state": "Tamil Nadu",
+    "city": "Chennai",
+    "address": "Tambaram, Chennai",
+    "website": "www.mcc.edu.in",
+    "logo": null
+  }
+]

@@ -363,7 +363,8 @@ export class CollegesService {
 
   /**
    * Normalize and validate an incoming import item.
-   * Rejects rows missing required fields to prevent bad data (instead of silently storing empty strings).
+   * Provides default values for missing optional fields to allow import of incomplete data.
+   * Only rejects rows missing critical required fields (id, name, country).
    */
   private normalizeCollege(item: CollegeImportItemDto): Result<NormalizedCollegeImport> {
     const id = this.safeTrim(item.id);
@@ -373,12 +374,27 @@ export class CollegesService {
     const city = this.safeTrim(item.city);
     const address = this.safeTrim(item.address);
 
+    // Only check critical required fields
     if (id.length === 0) return { ok: false, error: "Invalid college: missing id" };
     if (name.length === 0) return { ok: false, error: `Invalid college ${id}: missing name` };
     if (country.length === 0) return { ok: false, error: `Invalid college ${id}: missing country` };
-    if (state.length === 0) return { ok: false, error: `Invalid college ${id}: missing state` };
-    if (city.length === 0) return { ok: false, error: `Invalid college ${id}: missing city` };
-    if (address.length === 0) return { ok: false, error: `Invalid college ${id}: missing address` };
+
+    // Provide defaults for optional fields that are required in database
+    // Use empty string for missing optional fields
+    const normalizedState = state.length > 0 ? state : "";
+    const normalizedCity = city.length > 0 ? city : "";
+    const normalizedAddress = address.length > 0 ? address : "";
+
+    // Log warning if any optional fields are missing (for monitoring purposes)
+    if (state.length === 0 || city.length === 0 || address.length === 0) {
+      this.logger.warn(
+        `College ${id} (${name}) imported with missing fields: ${[
+          state.length === 0 ? "state" : null,
+          city.length === 0 ? "city" : null,
+          address.length === 0 ? "address" : null,
+        ].filter(Boolean).join(", ")}`
+      );
+    }
 
     const websiteRaw = this.safeTrim(item.website);
     const logoRaw = this.safeTrim(item.logo);
@@ -389,9 +405,9 @@ export class CollegesService {
         id,
         name,
         country,
-        state,
-        city,
-        address,
+        state: normalizedState,
+        city: normalizedCity,
+        address: normalizedAddress,
         website: websiteRaw.length > 0 ? websiteRaw : null,
         logo: logoRaw.length > 0 ? logoRaw : null,
       },

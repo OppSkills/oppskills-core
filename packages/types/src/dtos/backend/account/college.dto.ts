@@ -18,16 +18,16 @@ export class CollegeImportItemDto {
   country: string;
 
   @IsString()
-  @IsNotEmpty()
-  state: string;
+  @IsOptional()
+  state?: string;
 
   @IsString()
-  @IsNotEmpty()
-  city: string;
+  @IsOptional()
+  city?: string;
 
   @IsString()
-  @IsNotEmpty()
-  address: string;
+  @IsOptional()
+  address?: string;
 
   @IsString()
   @IsOptional()
