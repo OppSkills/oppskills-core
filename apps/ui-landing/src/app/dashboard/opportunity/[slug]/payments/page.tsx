@@ -296,7 +296,7 @@ const CalculationCard = ({
         </span>
         {/* Check Icon */}
         {isSelected ? (
-          <CheckCircle className="w-6 h-6 text-primary fill-primary text-white" />
+          <CheckCircle className="w-6 h-6 fill-primary text-white" />
         ) : (
           <Circle className="w-6 h-6 text-primary/30" />
         )}

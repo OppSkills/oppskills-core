@@ -48,23 +48,13 @@ const Footer = () => {
         {/* Top Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-12">
           <div className="flex items-center gap-3">
-            {/* Logo */}
-            <div className="relative w-12 h-12">
-              <Image
-                src="/logof.png"
-                alt="OppSkills Logo"
-                fill
-                className="object-contain"
-              />
-            </div>
-            <div className="flex flex-col md:flex-row gap-0 md:gap-6 items-center">
-              <p className="text-xl md:text-2xl font-bold tracking-tight w-full md:w-auto">
-                OPP<span className="text-[#a855f7]">SKILLS</span>
-              </p>
-              <p className="text-lg md:text-xl font-bold">
-                The <span className="text-[#a855f7]">Student’s</span> platform
-              </p>
-            </div>
+            <Image
+              src="/logo.svg"
+              alt="OppSkills Logo"
+              width={200}
+              height={200}
+              className="object-contain"
+            />
           </div>
 
           <div className="flex items-center gap-2 text-lg md:text-xl font-medium">
