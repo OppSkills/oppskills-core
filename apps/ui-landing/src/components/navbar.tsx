@@ -7,6 +7,7 @@ import Link from "next/link";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import Auth from "./auth/Auth";
 import { useQueryState } from "nuqs";
+import Image from "next/image";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,12 +42,7 @@ const Navbar = () => {
           className="flex items-center gap-2"
           onClick={() => setIsOpen(false)}
         >
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <div className="w-3 h-3 rounded-full bg-background" />
-          </div>
-          <span className="text-xl font-bold">
-            OPP<span className="text-primary">SKILLS</span>
-          </span>
+          <Image src="/logo.svg" alt="Logo" width={140} height={30} />
         </Link>
 
         {/* --- DESKTOP NAVIGATION --- */}

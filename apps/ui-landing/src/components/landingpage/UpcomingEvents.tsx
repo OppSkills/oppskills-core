@@ -221,7 +221,9 @@ export const UpcomingEvents = () => {
                         <span className="text-xs text-neutral-500">
                           Attendees
                         </span>
-                        <span className="text-neutral-700">{event.registrationCount}</span>
+                        <span className="text-neutral-700">
+                          {event.registrationCount}
+                        </span>
                       </div>
                       <div className="flex flex-col gap-2 ">
                         <span className="text-xs text-neutral-500">
@@ -244,7 +246,7 @@ export const UpcomingEvents = () => {
             );
           })}
           {displayEvents.length == 1 && (
-            <div className="col-span-2 bg-[url('/competition_placeholder.png')] bg-cover bg-center bg-no-repeat"></div>
+            <div className="col-span-2 bg-[url('/event_placeholder.png')] bg-cover bg-center bg-no-repeat"></div>
           )}
         </div>
       </div>
