@@ -46,7 +46,7 @@ const Navbar = () => {
         </Link>
 
         {/* --- DESKTOP NAVIGATION --- */}
-        <div className="hidden md:flex items-center gap-8">
+        {/* <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
             <Link
               key={link.name}
@@ -56,7 +56,7 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
-        </div>
+        </div> */}
 
         {/* --- RIGHT SIDE ACTIONS --- */}
         <div className="flex items-center gap-3">
@@ -67,9 +67,9 @@ const Navbar = () => {
               <Link href="/organize">
                 <Button
                   variant="outline"
-                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                  className="border-primary rounded-full text-primary hover:bg-primary hover:text-primary-foreground"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4" />
                   Host
                 </Button>
               </Link>
