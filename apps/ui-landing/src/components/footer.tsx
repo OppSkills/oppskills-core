@@ -58,12 +58,12 @@ const Footer = () => {
           </div>
 
           <div className="flex items-center gap-2 text-lg md:text-xl font-medium">
-            <span>Create your events.</span>
             <Link
               href="/create-event"
-              className="text-[#d946ef] hover:underline"
+              className="text-primary-foreground hover:underline"
             >
-              Click here
+              <span>Create your events. </span>
+              <span className="text-primary-400">Click here</span>
             </Link>
           </div>
         </div>

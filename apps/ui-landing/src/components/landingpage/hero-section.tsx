@@ -103,11 +103,11 @@ export default function HeroSection() {
             className={`relative w-full h-[182px] rounded-[24px] overflow-hidden ${card.styles.bg} flex p-6 transition-transform hover:scale-105 shadow-sm group mx-auto max-w-md md:max-w-none`}
           >
             <div className="relative z-10 flex flex-col gap-2">
-              <h3
+              <p
                 className={`poppins font-semibold text-[24px] leading-[125%] text-neutral-900`}
               >
                 {card.title}
-              </h3>
+              </p>
               <ul
                 className={`inter font-normal text-[16px] leading-[150%] text-neutral-800 space-y-0.5`}
               >

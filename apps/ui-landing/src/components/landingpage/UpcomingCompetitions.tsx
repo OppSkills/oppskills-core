@@ -13,7 +13,7 @@ export default function UpcomingCompetitions() {
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
             Top Competitions
           </h2>
-          <p className="text-muted-foreground text-lg inter">
+          <p className="text-neutral-600 text-lg inter">
             Discover the most popular competitions students are joining right
             now.
           </p>
@@ -64,7 +64,7 @@ export default function UpcomingCompetitions() {
           <h3 className="text-2xl font-bold text-foreground poppins mb-2">
             Coming Soon
           </h3>
-          <p className="text-muted-foreground text-center max-w-md inter">
+          <p className="text-neutral-600 text-center max-w-md inter">
             We&apos;re preparing exciting hackathons and coding competitions for
             you. Stay tuned for amazing opportunities to showcase your skills!
           </p>

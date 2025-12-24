@@ -218,7 +218,7 @@ export const UpcomingEvents = () => {
 
                     <div className="flex justify-between items-center text-sm pb-3">
                       <div className="flex flex-col gap-2 ">
-                        <span className="text-xs text-neutral-500">
+                        <span className="text-xs text-neutral-600">
                           Attendees
                         </span>
                         <span className="text-neutral-700">
@@ -226,7 +226,7 @@ export const UpcomingEvents = () => {
                         </span>
                       </div>
                       <div className="flex flex-col gap-2 ">
-                        <span className="text-xs text-neutral-500">
+                        <span className="text-xs text-neutral-600">
                           Register By
                         </span>
                         <span className="text-neutral-700">
@@ -234,7 +234,7 @@ export const UpcomingEvents = () => {
                         </span>
                       </div>
                       <div className="flex flex-col gap-2  text-right">
-                        <span className="text-xs text-neutral-500">
+                        <span className="text-xs text-neutral-600">
                           Entry Fee
                         </span>
                         <span className="text-neutral-700">{entryFee}</span>
