@@ -118,7 +118,7 @@ export default function RoundsAndStages({
           )}
           <Button
             onClick={handleAddRound}
-            className="bg-primary text-white hover:bg-primary/90 font-semibold gap-2 rounded-full shadow-lg shadow-primary/20"
+            className="bg-primary-500 text-white hover:bg-primary/90 font-semibold gap-2 rounded-full shadow-lg shadow-primary/20"
           >
             <Plus className="w-4 h-4" />
             Add Round
@@ -150,7 +150,7 @@ export default function RoundsAndStages({
                   className={cn(
                     "w-12 h-12 rounded-lg flex items-center justify-center border font-bold text-lg transition-colors",
                     isEditing
-                      ? "bg-primary text-white border-primary"
+                      ? "bg-primary-500 text-white border-primary"
                       : "bg-secondary/50 text-secondary-foreground border-secondary"
                   )}
                 >
@@ -163,7 +163,7 @@ export default function RoundsAndStages({
                 className={cn(
                   "flex-1 border rounded-xl p-6 mb-6 shadow-sm transition-all relative overflow-hidden",
                   isEditing
-                    ? "bg-card ring-2 ring-primary border-transparent"
+                    ? "bg-card ring-2 ring-primary-500 border-transparent"
                     : "bg-card border-border/50 hover:shadow-md"
                 )}
               >
@@ -369,7 +369,7 @@ export default function RoundsAndStages({
                       <Button
                         variant="outline"
                         onClick={() => handleEditRound(round)}
-                        className="text-primary border-primary/20 hover:bg-primary/5 rounded-full h-9 text-xs gap-1.5 px-4"
+                        className="text-primary-500 border-primary/20 hover:bg-primary/5 rounded-full h-9 text-xs gap-1.5 px-4"
                       >
                         <FileEdit className="w-3.5 h-3.5" />
                         Edit Round

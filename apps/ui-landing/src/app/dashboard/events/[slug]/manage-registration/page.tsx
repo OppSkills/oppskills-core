@@ -11,7 +11,13 @@ import {
 } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, MoreVertical, SlidersHorizontal, Loader2 } from "lucide-react";
+import {
+  Search,
+  Filter,
+  MoreVertical,
+  SlidersHorizontal,
+  Loader2,
+} from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEventRegistrationsBySlug } from "@/hooks/useEventRegistrationsBySlug";
@@ -138,14 +144,18 @@ const UserDetailModal = ({
                   <div className="flex items-center gap-2.5 text-muted-foreground">
                     <CalendarDays className="w-4 h-4 translate-y-[1px]" />
                     <span className="text-sm font-medium">
-                      Registered on: {new Date(participant.registeredOn).toLocaleString('en-US', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                      })}
+                      Registered on:{" "}
+                      {new Date(participant.registeredOn).toLocaleString(
+                        "en-US",
+                        {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        }
+                      )}
                     </span>
                   </div>
                 )}
@@ -162,7 +172,11 @@ export default function ManageRegistrationPage() {
   const params = useParams();
   const slug = typeof params.slug === "string" ? params.slug : null;
 
-  const { data: registrations, isLoading, error } = useEventRegistrationsBySlug(slug);
+  const {
+    data: registrations,
+    isLoading,
+    error,
+  } = useEventRegistrationsBySlug(slug);
 
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
@@ -209,7 +223,7 @@ export default function ManageRegistrationPage() {
               checked={row.getIsSelected()}
               onCheckedChange={(value) => row.toggleSelected(!!value)}
               aria-label="Select row"
-              className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+              className="border-muted-foreground/30 data-[state=checked]:bg-primary-500 data-[state=checked]:text-primary-foreground"
             />
           </div>
         ),
@@ -235,7 +249,9 @@ export default function ManageRegistrationPage() {
           <div className="flex items-center gap-3">
             <Avatar className="w-10 h-10">
               <AvatarImage src={info.row.original.avatarUrl || undefined} />
-              <AvatarFallback>{String(info.getValue()).charAt(0)}</AvatarFallback>
+              <AvatarFallback>
+                {String(info.getValue()).charAt(0)}
+              </AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
               <span className="font-semibold text-foreground text-sm">
@@ -301,16 +317,20 @@ export default function ManageRegistrationPage() {
   if (error) {
     return (
       <div className="w-full bg-white min-h-screen p-8 flex flex-col items-center justify-center gap-4">
-        <h1 className="text-2xl font-bold text-foreground">Error Loading Registrations</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          Error Loading Registrations
+        </h1>
         <p className="text-muted-foreground">
-          {error instanceof Error ? error.message : "Failed to load registrations. Please try again."}
+          {error instanceof Error
+            ? error.message
+            : "Failed to load registrations. Please try again."}
         </p>
       </div>
     );
   }
 
-  const completedCount = data.filter(p => p.status === "Completed").length;
-  const incompleteCount = data.filter(p => p.status === "Incomplete").length;
+  const completedCount = data.filter((p) => p.status === "Completed").length;
+  const incompleteCount = data.filter((p) => p.status === "Incomplete").length;
 
   return (
     <div className="w-full bg-white min-h-screen p-8 flex flex-col items-center gap-8">
@@ -341,7 +361,9 @@ export default function ManageRegistrationPage() {
           ].map((tab) => (
             <button
               key={tab.value}
-              onClick={() => setActiveTab(tab.value as "All" | "Completed" | "Incomplete")}
+              onClick={() =>
+                setActiveTab(tab.value as "All" | "Completed" | "Incomplete")
+              }
               className={cn(
                 "px-4 py-2 rounded-full text-sm font-medium transition-colors",
                 activeTab === tab.value
@@ -387,7 +409,8 @@ export default function ManageRegistrationPage() {
             </div>
             <div>S. No.</div>
             <div className="flex items-center gap-2">
-              {data.length} Participated <SlidersHorizontal className="w-4 h-4" />
+              {data.length} Participated{" "}
+              <SlidersHorizontal className="w-4 h-4" />
             </div>
             <div className="flex items-center justify-end gap-2 text-right">
               <Filter className="w-4 h-4" /> Reg. Status{" "}

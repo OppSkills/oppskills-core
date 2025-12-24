@@ -476,8 +476,14 @@ export default function Page() {
           ? values.eventThumbnail.trim()
           : undefined,
         // Use combineDateAndTimeToIso to preserve time component
-        startDate: combineDateAndTimeToIso(values.eventDate, values.eventTimeFrom),
-        endDate: combineDateAndTimeToIso(values.eventDate, values.eventTimeFrom),
+        startDate: combineDateAndTimeToIso(
+          values.eventDate,
+          values.eventTimeFrom
+        ),
+        endDate: combineDateAndTimeToIso(
+          values.eventDate,
+          values.eventTimeFrom
+        ),
         location: toLocationDto(values.eventLocation) as
           | EventLocationDto
           | undefined,
@@ -667,7 +673,7 @@ export default function Page() {
                   className="p-2 cursor-pointer focus:bg-transparent"
                   onClick={() => setShowFestivalModal(true)}
                 >
-                  <div className="flex items-center gap-2 text-primary font-medium w-full">
+                  <div className="flex items-center gap-2 text-primary-500 font-medium w-full">
                     <span className="font-semibold text-base py-1">
                       Create New Festival
                     </span>

@@ -209,7 +209,7 @@ export default function PaymentFormModal({
             <div className="flex items-center justify-end px-5 py-4 bg-muted gap-2">
               <Button
                 onClick={handleSave}
-                className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-inter text-base font-medium leading-[150%] px-6 py-2.5 h-auto"
+                className="rounded-full bg-primary-500 hover:bg-primary/90 text-primary-foreground font-inter text-base font-medium leading-[150%] px-6 py-2.5 h-auto"
               >
                 Save Account Details
               </Button>
@@ -244,7 +244,7 @@ const CustomInput = ({
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="flex h-12 px-4 items-center self-stretch rounded-[24px] border border-border bg-background text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
+      className="flex h-12 px-4 items-center self-stretch rounded-[24px] border border-border bg-background text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-primary-500 focus-visible:ring-offset-0"
     />
   </div>
 );

@@ -217,7 +217,7 @@ export default function OpportunitySettingsPage({
   const handleDelete = () => {
     if (deleteConfirmation !== hackathon?.name) {
       toast.error(
-        "Please type the opportunity name correctly to confirm deletion",
+        "Please type the opportunity name correctly to confirm deletion"
       );
       return;
     }
@@ -571,28 +571,28 @@ export default function OpportunitySettingsPage({
           <CardContent className="flex flex-wrap gap-3">
             <Link
               href={`/dashboard/opportunity/${slug}/edit-opportunity`}
-              className="text-primary hover:underline text-sm"
+              className="text-primary-500 hover:underline text-sm"
             >
               Edit Opportunity Details
             </Link>
             <span className="text-muted-foreground">•</span>
             <Link
               href={`/dashboard/opportunity/${slug}/manage-roles`}
-              className="text-primary hover:underline text-sm"
+              className="text-primary-500 hover:underline text-sm"
             >
               Manage Team
             </Link>
             <span className="text-muted-foreground">•</span>
             <Link
               href={`/dashboard/opportunity/${slug}/manage-registration`}
-              className="text-primary hover:underline text-sm"
+              className="text-primary-500 hover:underline text-sm"
             >
               View Registrations
             </Link>
             <span className="text-muted-foreground">•</span>
             <Link
               href={`/opportunities/${slug}`}
-              className="text-primary hover:underline text-sm"
+              className="text-primary-500 hover:underline text-sm"
               target="_blank"
             >
               View Public Page

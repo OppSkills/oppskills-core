@@ -16,7 +16,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User } from "lucide-react";
 
-function getInitials(firstName: string | null, lastName: string | null, email: string): string {
+function getInitials(
+  firstName: string | null,
+  lastName: string | null,
+  email: string
+): string {
   if (firstName && lastName) {
     return `${firstName[0]}${lastName[0]}`.toUpperCase();
   }
@@ -29,7 +33,11 @@ function getInitials(firstName: string | null, lastName: string | null, email: s
   return email.slice(0, 2).toUpperCase();
 }
 
-function getDisplayName(firstName: string | null, lastName: string | null, email: string): string {
+function getDisplayName(
+  firstName: string | null,
+  lastName: string | null,
+  email: string
+): string {
   if (firstName && lastName) {
     return `${firstName} ${lastName}`;
   }
@@ -109,7 +117,7 @@ export function SiteHeader() {
                   <button className="flex items-center gap-3 cursor-pointer outline-none">
                     <Avatar className="h-10 w-10 border border-slate-200">
                       <AvatarImage src={userImageUrl ?? undefined} />
-                      <AvatarFallback className="bg-primary text-white">
+                      <AvatarFallback className="bg-primary-500 text-white">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
@@ -127,7 +135,7 @@ export function SiteHeader() {
                   <div className="flex items-center gap-2 p-2">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={userImageUrl ?? undefined} />
-                      <AvatarFallback className="bg-primary text-white text-xs">
+                      <AvatarFallback className="bg-primary-500 text-white text-xs">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
@@ -140,7 +148,10 @@ export function SiteHeader() {
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <a href="/dashboard/profile" className="flex items-center cursor-pointer">
+                    <a
+                      href="/dashboard/profile"
+                      className="flex items-center cursor-pointer"
+                    >
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </a>

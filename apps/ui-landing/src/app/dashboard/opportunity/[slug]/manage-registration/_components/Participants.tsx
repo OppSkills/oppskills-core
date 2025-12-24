@@ -127,7 +127,7 @@ export default function Participants({ data }: ParticipantsProps) {
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                   <span
-                    className="font-semibold hover:text-primary cursor-pointer"
+                    className="font-semibold hover:text-primary-500 cursor-pointer"
                     onClick={() => {
                       router.push(
                         `/dashboard/opportunity/${slug}/manage-registration/${row.original.id}`

@@ -162,7 +162,7 @@ export default function TeamManagementPage() {
           onClick={() => setActiveTab("members")}
           className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
             activeTab === "members"
-              ? "bg-secondary/50 border-primary/30 text-primary shadow-sm"
+              ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
               : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
           }`}
         >
@@ -177,7 +177,7 @@ export default function TeamManagementPage() {
             onClick={() => setActiveTab(round.id)}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
               activeTab === round.id
-                ? "bg-secondary/50 border-primary/30 text-primary shadow-sm"
+                ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
                 : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
             }`}
           >
@@ -210,7 +210,7 @@ export default function TeamManagementPage() {
                   <span className="text-sm text-muted-foreground">
                     {selectedRoundSubmission.submittedAt
                       ? new Date(
-                          selectedRoundSubmission.submittedAt,
+                          selectedRoundSubmission.submittedAt
                         ).toLocaleString()
                       : "—"}
                   </span>

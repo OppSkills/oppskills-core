@@ -41,7 +41,7 @@ export default function FestivalsTable({
   return (
     <div className="w-full bg-background rounded-xl border overflow-hidden">
       <Table>
-        <TableHeader className="bg-primary text-primary-foreground hover:bg-primary/95">
+        <TableHeader className="bg-primary-500 text-primary-foreground hover:bg-primary/95">
           <TableRow className="hover:bg-transparent border-none">
             <TableHead className="text-primary-foreground/90 font-medium w-[80px]">
               S. No.

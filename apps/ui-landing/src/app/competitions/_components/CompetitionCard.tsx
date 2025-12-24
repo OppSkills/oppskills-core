@@ -112,7 +112,7 @@ export function CompetitionCard({ competition }: CompetitionCardProps) {
               {competition._count?.participants || 0}
             </span>
             <span
-              className="flex items-center gap-1 text-primary font-medium"
+              className="flex items-center gap-1 text-primary-500 font-medium"
               title="Prize Pool"
             >
               <Trophy className="h-3.5 w-3.5" />

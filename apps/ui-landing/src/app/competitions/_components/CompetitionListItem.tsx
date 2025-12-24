@@ -54,7 +54,7 @@ export function CompetitionListItem({ competition }: CompetitionListItemProps) {
         </div>
 
         <div>
-          <h3 className="line-clamp-1 text-lg font-bold group-hover:text-primary transition-colors">
+          <h3 className="line-clamp-1 text-lg font-bold group-hover:text-primary-500 transition-colors">
             {competition.title}
           </h3>
           <p className="line-clamp-2 text-sm text-muted-foreground sm:line-clamp-1">
@@ -95,7 +95,7 @@ export function CompetitionListItem({ competition }: CompetitionListItemProps) {
 // Just a visual element to mimic a button
 function ButtonMock() {
   return (
-    <div className="h-8 w-8 rounded-full bg-background border flex items-center justify-center group-hover:bg-primary group-hover:border-primary transition-colors">
+    <div className="h-8 w-8 rounded-full bg-background border flex items-center justify-center group-hover:bg-primary-500 group-hover:border-primary-500 transition-colors">
       <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary-foreground" />
     </div>
   );

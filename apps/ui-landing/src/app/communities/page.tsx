@@ -96,7 +96,7 @@ export default function CommunitiesPage() {
         <div className="flex flex-col items-center text-center max-w-4xl mx-auto mb-16 space-y-6">
           <Badge
             variant="outline"
-            className="px-4 py-1.5 rounded-full border-primary/20 bg-primary/5 text-primary text-sm font-medium gap-2"
+            className="px-4 py-1.5 rounded-full border-primary/20 bg-primary/5 text-primary-500 text-sm font-medium gap-2"
           >
             <Sparkles className="w-3.5 h-3.5" />
             Discover Your Tribe
@@ -112,7 +112,7 @@ export default function CommunitiesPage() {
           </p>
 
           <div className="relative w-full max-w-lg mt-8 group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary-500 to-purple-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
             <div className="relative flex items-center bg-background rounded-lg border border-input shadow-sm">
               <Search className="absolute left-3 w-5 h-5 text-muted-foreground" />
               <Input
@@ -151,7 +151,7 @@ export default function CommunitiesPage() {
                         src={`https://api.dicebear.com/7.x/initials/svg?seed=${community.name}`}
                         className="object-cover"
                       />
-                      <AvatarFallback className="rounded-none bg-primary/10 text-primary font-bold text-xl">
+                      <AvatarFallback className="rounded-none bg-primary/10 text-primary-500 font-bold text-xl">
                         {community.name.substring(0, 2)}
                       </AvatarFallback>
                     </Avatar>
@@ -166,7 +166,7 @@ export default function CommunitiesPage() {
                 </div>
 
                 <div className="pt-2">
-                  <h3 className="text-xl font-bold font-poppins group-hover:text-primary transition-colors">
+                  <h3 className="text-xl font-bold font-poppins group-hover:text-primary-500 transition-colors">
                     {community.name}
                   </h3>
                 </div>
@@ -181,7 +181,7 @@ export default function CommunitiesPage() {
                     <Badge
                       key={tag}
                       variant="outline"
-                      className="text-xs font-medium bg-muted/30 border-muted-foreground/20 text-muted-foreground group-hover:border-primary/20 group-hover:text-primary group-hover:bg-primary/5 transition-colors"
+                      className="text-xs font-medium bg-muted/30 border-muted-foreground/20 text-muted-foreground group-hover:border-primary/20 group-hover:text-primary-500 group-hover:bg-primary/5 transition-colors"
                     >
                       #{tag}
                     </Badge>

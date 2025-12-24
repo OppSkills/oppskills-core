@@ -38,9 +38,9 @@ export default function ContactPage() {
 
       <div className="container px-4 md:px-6 py-12 md:py-24 mx-auto relative z-10">
         <div className="mb-16 text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary-500 text-sm font-medium mb-4">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-500 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
             </span>
             We're here to help
@@ -85,7 +85,7 @@ export default function ContactPage() {
                     <h3 className="font-semibold text-lg mb-1">Email Us</h3>
                     <a
                       href="mailto:oppskills15@gmail.com"
-                      className="text-muted-foreground hover:text-primary transition-colors block"
+                      className="text-muted-foreground hover:text-primary-500 transition-colors block"
                     >
                       oppskills15@gmail.com
                     </a>
@@ -107,7 +107,7 @@ export default function ContactPage() {
                       <div className="p-2 border rounded-lg">
                         <a
                           href="tel:+919690752035"
-                          className="text-lg font-medium hover:text-primary transition-colors"
+                          className="text-lg font-medium hover:text-primary-500 transition-colors"
                         >
                           +91 9690752035
                         </a>
@@ -115,7 +115,7 @@ export default function ContactPage() {
                       <div className="p-2 border rounded-lg">
                         <a
                           href="tel:+919935070033"
-                          className="text-lg font-medium hover:text-primary transition-colors"
+                          className="text-lg font-medium hover:text-primary-500 transition-colors"
                         >
                           +91 9935070033
                         </a>
@@ -126,7 +126,7 @@ export default function ContactPage() {
               </Card>
             </div>
 
-            <Card className="relative overflow-hidden border-none shadow-xl bg-gradient-to-br from-primary via-purple-600 to-blue-600 text-white mt-4">
+            <Card className="relative overflow-hidden border-none shadow-xl bg-gradient-to-br from-primary-500 via-purple-600 to-blue-600 text-white mt-4">
               <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl font-bold">
@@ -141,7 +141,7 @@ export default function ContactPage() {
               <CardContent>
                 <Button
                   variant="secondary"
-                  className="w-full bg-white text-primary hover:bg-white/90 shadow-md font-semibold gap-2 group"
+                  className="w-full bg-white text-primary-500 hover:bg-white/90 shadow-md font-semibold gap-2 group"
                 >
                   {/* Join Discord{" "}
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" /> */}
@@ -246,7 +246,7 @@ export default function ContactPage() {
                   <Button
                     type="submit"
                     size="lg"
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 h-12 text-base"
+                    className="w-full bg-primary-500 hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 h-12 text-base"
                   >
                     <Send className="mr-2 h-4 w-4" /> Send Message
                   </Button>

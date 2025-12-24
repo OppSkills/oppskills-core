@@ -150,7 +150,7 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleEditPrize(prize.id)}
-                    className="text-primary hover:text-primary hover:bg-primary/10 gap-1 h-8"
+                    className="text-primary-500 hover:text-primary-500 hover:bg-primary/10 gap-1 h-8"
                   >
                     <Edit2 className="w-3 h-3" />
                     <span className="text-xs">Edit</span>
@@ -159,7 +159,7 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeletePrize(prize.id)}
-                    className="text-primary hover:text-destructive-foreground hover:bg-destructive/10 gap-1 h-8"
+                    className="text-primary-500 hover:text-destructive-foreground hover:bg-destructive/10 gap-1 h-8"
                   >
                     <Trash2 className="w-3 h-3" />
                     <span className="text-xs">Delete</span>

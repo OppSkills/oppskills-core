@@ -105,7 +105,7 @@ export default function TicketsPage() {
             className={cn(
               "flex min-w-[100px] px-4 py-2 justify-center items-center gap-2.5 rounded-full flex-1 h-auto font-sans text-base font-normal leading-relaxed transition-all duration-200",
               isPaid
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                ? "bg-primary-500 text-primary-foreground hover:bg-primary/90"
                 : "bg-input border border-dashed border-primary/30 text-foreground hover:bg-input/80"
             )}
           >
@@ -118,7 +118,7 @@ export default function TicketsPage() {
             className={cn(
               "flex min-w-[100px] px-4 py-2 justify-center items-center gap-2.5 rounded-full flex-1 h-auto font-sans text-base font-normal leading-relaxed transition-all duration-200",
               !isPaid
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                ? "bg-primary-500 text-primary-foreground hover:bg-primary/90"
                 : "bg-input border border-dashed border-primary/30 text-foreground hover:bg-input/80"
             )}
           >
@@ -195,7 +195,7 @@ export default function TicketsPage() {
                     <div className="flex items-center gap-2.5">
                       <button className="flex px-4 py-2 justify-center items-center gap-3 rounded-[37px] hover:bg-primary/10 transition-colors group">
                         <Pencil className="w-[18px] h-[18px] text-primary" />
-                        <span className="font-sans text-primary text-xs font-medium leading-relaxed">
+                        <span className="font-sans text-primary-500 text-xs font-medium leading-relaxed">
                           Edit
                         </span>
                       </button>
@@ -206,7 +206,7 @@ export default function TicketsPage() {
                         }
                       >
                         <Trash2 className="w-[18px] h-[18px] text-primary" />
-                        <span className="font-sans text-primary text-xs font-medium leading-relaxed">
+                        <span className="font-sans text-primary-500 text-xs font-medium leading-relaxed">
                           Delete
                         </span>
                       </button>
@@ -224,7 +224,7 @@ export default function TicketsPage() {
                   </span>
                 </div>
                 <span
-                  className="font-sans text-primary text-base font-normal leading-relaxed underline decoration-solid cursor-pointer decoration-auto underline-offset-auto"
+                  className="font-sans text-primary-500 text-base font-normal leading-relaxed underline decoration-solid cursor-pointer decoration-auto underline-offset-auto"
                   onClick={() => setIsCreateTicketModalOpen(true)}
                 >
                   Click here to generate one
@@ -348,7 +348,7 @@ const CalculationCard = ({
       className={cn(
         "flex w-full max-w-[362px] p-5 flex-col items-start gap-3 rounded-2xl border bg-background cursor-pointer transition-all duration-200",
         isSelected
-          ? "border-primary shadow-[0_0_12px_0_rgba(149,0,213,0.3)]" // Active State
+          ? "border-primary-500 shadow-[0_0_12px_0_rgba(149,0,213,0.3)]" // Active State
           : "border-primary/20" // Inactive State (approx #EACCF7)
       )}
     >
@@ -359,7 +359,7 @@ const CalculationCard = ({
         </span>
         {/* Check Icon */}
         {isSelected ? (
-          <CheckCircle className="w-6 h-6 fill-primary text-white" />
+          <CheckCircle className="w-6 h-6 fill-primary-500 text-white" />
         ) : (
           <Circle className="w-6 h-6 text-primary/30" />
         )}
@@ -379,7 +379,7 @@ const CalculationCard = ({
           <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
             Registration Amount:
           </span>
-          <span className="font-sans text-primary text-base font-normal leading-relaxed">
+          <span className="font-sans text-primary-500 text-base font-normal leading-relaxed">
             {values.reg}
           </span>
         </div>
@@ -388,7 +388,7 @@ const CalculationCard = ({
           <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
             Service Charge:
           </span>
-          <span className="font-sans text-primary text-base font-normal leading-relaxed">
+          <span className="font-sans text-primary-500 text-base font-normal leading-relaxed">
             {values.service}
           </span>
         </div>
@@ -397,7 +397,7 @@ const CalculationCard = ({
           <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
             Tax:
           </span>
-          <span className="font-sans text-primary text-base font-normal leading-relaxed">
+          <span className="font-sans text-primary-500 text-base font-normal leading-relaxed">
             {values.tax}
           </span>
         </div>
@@ -406,7 +406,7 @@ const CalculationCard = ({
           <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
             User Pay:
           </span>
-          <span className="font-sans text-primary text-base font-normal leading-relaxed">
+          <span className="font-sans text-primary-500 text-base font-normal leading-relaxed">
             {values.userPay}
           </span>
         </div>
@@ -420,7 +420,7 @@ const CalculationCard = ({
         <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
           You get
         </span>
-        <span className="font-sans text-primary text-base font-normal leading-relaxed">
+        <span className="font-sans text-primary-500 text-base font-normal leading-relaxed">
           {values.youGet}
         </span>
       </div>

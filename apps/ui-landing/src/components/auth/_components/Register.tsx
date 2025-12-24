@@ -121,7 +121,9 @@ export default function Register({
           router.push("/");
         } else {
           console.log("Session ID is missing:", sessionId);
-          toast.error("Registration completed but session could not be created. Please sign in.");
+          toast.error(
+            "Registration completed but session could not be created. Please sign in."
+          );
           setIsOpenLogin(false);
         }
       } else {
@@ -168,7 +170,7 @@ export default function Register({
 
         {/* Animated Progress Bar */}
         <motion.div
-          className="absolute top-1/2 left-0 h-0.5 bg-primary -translate-y-1/2 -z-0"
+          className="absolute top-1/2 left-0 h-0.5 bg-primary-500 -translate-y-1/2 -z-0"
           initial={{ width: "0%" }}
           animate={{
             width: `${((step - 1) / 2) * 100}%`,
@@ -181,9 +183,9 @@ export default function Register({
             <button
               onClick={() => handleStepClick(i)}
               disabled={i > step}
-              className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full text-xs font-bold transition-colors border-none outline-none focus:ring-2 ring-offset-1 focus:ring-primary ${
+              className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full text-xs font-bold transition-colors border-none outline-none focus:ring-2 ring-offset-1 focus:ring-primary-500 ${
                 step >= i
-                  ? "bg-primary text-primary-foreground cursor-pointer"
+                  ? "bg-primary-500 text-primary-foreground cursor-pointer"
                   : "bg-muted text-muted-foreground cursor-not-allowed"
               }`}
             >
@@ -228,7 +230,7 @@ export default function Register({
             </p>
             <button
               onClick={() => setStep(1)}
-              className="text-xs text-primary hover:underline mt-1"
+              className="text-xs text-primary-500 hover:underline mt-1"
             >
               Change email
             </button>

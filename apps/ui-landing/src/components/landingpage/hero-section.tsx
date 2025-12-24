@@ -48,7 +48,7 @@ export default function HeroSection() {
         <div className="space-y-2">
           <h1 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
             Opportunities Made{" "}
-            <span className="text-primary kaushan-script font-normal">
+            <span className="text-primary-500 kaushan-script font-normal">
               Simple
             </span>
           </h1>
@@ -72,7 +72,7 @@ export default function HeroSection() {
       inline-flex items-center justify-center gap-3
       px-6 py-3
       rounded-[37px]
-      bg-primary text-primary-foreground hover:opacity-90
+      bg-primary-500 text-primary-foreground hover:opacity-90
       inter font-semibold text-[20px] leading-[150%]
       shadow-md transition-all hover:-translate-y-1 h-auto
     "
@@ -87,7 +87,7 @@ export default function HeroSection() {
       inline-flex items-center justify-center gap-3
       px-6 py-3
       rounded-[37px]
-      text-primary hover:bg-muted
+      text-primary-500 hover:bg-muted
       inter font-semibold text-[20px] leading-[150%]
       transition-all hover:-translate-y-1 h-auto
     "

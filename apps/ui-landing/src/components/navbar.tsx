@@ -51,7 +51,7 @@ const Navbar = () => {
             <Link
               key={link.name}
               href={link.href}
-              className="text-foreground hover:text-primary transition-colors text-sm font-medium"
+              className="text-foreground hover:text-primary-500 transition-colors text-sm font-medium"
             >
               {link.name}
             </Link>
@@ -67,7 +67,7 @@ const Navbar = () => {
               <Link href="/organize">
                 <Button
                   variant="outline"
-                  className="border-primary rounded-full text-primary hover:bg-primary hover:text-primary-foreground"
+                  className="border-primary-500 rounded-full text-primary-500 hover:bg-primary-500 hover:text-primary-foreground"
                 >
                   <Plus className="w-4 h-4" />
                   Host
@@ -85,7 +85,7 @@ const Navbar = () => {
                 onClick={() => {
                   setAuthMode("login");
                 }}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                className="bg-primary-500 text-primary-foreground hover:bg-primary/90"
               >
                 Sign In / Sign Up
               </Button>
@@ -112,7 +112,7 @@ const Navbar = () => {
               <Link
                 key={link.name}
                 href={link.href}
-                className="text-foreground hover:text-primary transition-colors text-lg font-medium px-2"
+                className="text-foreground hover:text-primary-500 transition-colors text-lg font-medium px-2"
                 onClick={() => setIsOpen(false)}
               >
                 {link.name}
@@ -125,7 +125,7 @@ const Navbar = () => {
                 <Link href="/organize" onClick={() => setIsOpen(false)}>
                   <Button
                     variant="outline"
-                    className="w-full border-primary text-primary"
+                    className="w-full border-primary-500 text-primary"
                   >
                     <Plus className="w-4 h-4 mr-2" /> Host
                   </Button>
@@ -144,7 +144,7 @@ const Navbar = () => {
                 <Link href="/organize" onClick={() => setIsOpen(false)}>
                   <Button
                     variant="outline"
-                    className="w-full border-primary text-primary"
+                    className="w-full border-primary-500 text-primary"
                   >
                     <Plus className="w-4 h-4 mr-2" /> Host
                   </Button>
@@ -154,7 +154,7 @@ const Navbar = () => {
                     setAuthMode("login");
                     setIsOpen(false);
                   }}
-                  className="w-full bg-primary text-foreground"
+                  className="w-full bg-primary-500 text-foreground"
                 >
                   Sign In / Sign Up
                 </Button>

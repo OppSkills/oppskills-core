@@ -76,7 +76,7 @@ const InputBlock = ({
       className
     )}
   >
-    <div className="flex items-center gap-3 text-muted-foreground group-hover:text-primary transition-colors">
+    <div className="flex items-center gap-3 text-muted-foreground group-hover:text-primary-500 transition-colors">
       {icon}
       <span className="font-medium text-lg text-foreground group-hover:text-primary">
         {label}

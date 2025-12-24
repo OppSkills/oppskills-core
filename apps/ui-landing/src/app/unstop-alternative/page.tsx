@@ -110,7 +110,7 @@ export default function UnstopAlternativePage() {
         <div className="flex gap-4 justify-center">
           <Link
             href="/organize"
-            className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-semibold hover:bg-primary/90 transition"
+            className="px-6 py-3 bg-primary-500 text-primary-foreground rounded-full font-semibold hover:bg-primary/90 transition"
           >
             Host an Event
           </Link>

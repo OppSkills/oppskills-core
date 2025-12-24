@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getHackathonBySlug } from "@/lib/api/hackathonApi";
-import { Loader2 } from "lucide-react";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -63,11 +63,11 @@ export default async function HackathonPage({ params }: Props) {
       "@type": "Place",
       name: "Online", // default for hackathon if no location logic
     },
-     image: hackathon.bannerUrl ? [hackathon.bannerUrl] : undefined,
-     organizer: {
+    image: hackathon.bannerUrl ? [hackathon.bannerUrl] : undefined,
+    organizer: {
       "@type": "Organization",
       name: "OppSkills",
-      url: "https://oppskills.com"
+      url: "https://oppskills.com",
     },
   };
 
@@ -76,23 +76,26 @@ export default async function HackathonPage({ params }: Props) {
       <JsonLd data={hackathonSchema} />
       <div className="container mx-auto px-4 py-12">
         {/* Basic SEO-friendly content structure */}
-      <h1 className="text-4xl font-bold mb-4">{hackathon.name}</h1>
-      <p className="text-xl text-muted-foreground mb-8">
-        {hackathon.startDate ? new Date(hackathon.startDate).toLocaleDateString() : 'Date TBA'}
-      </p>
+        <h1 className="text-4xl font-bold mb-4">{hackathon.name}</h1>
+        <p className="text-xl text-muted-foreground mb-8">
+          {hackathon.startDate
+            ? new Date(hackathon.startDate).toLocaleDateString()
+            : "Date TBA"}
+        </p>
 
-      <section className="prose dark:prose-invert max-w-none">
-        <div dangerouslySetInnerHTML={{ __html: hackathon.description || "" }} />
-      </section>
-      
-      <div className="mt-8">
-         {/* Call to action or Client Component button could go here */}
-         <button className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium">
+        <section className="prose dark:prose-invert max-w-none">
+          <div
+            dangerouslySetInnerHTML={{ __html: hackathon.description || "" }}
+          />
+        </section>
+
+        <div className="mt-8">
+          {/* Call to action or Client Component button could go here */}
+          <button className="px-6 py-2 bg-primary-500 text-primary-foreground rounded-lg font-medium">
             Register Now
-         </button>
+          </button>
+        </div>
       </div>
-    </div>
     </>
   );
 }
-```

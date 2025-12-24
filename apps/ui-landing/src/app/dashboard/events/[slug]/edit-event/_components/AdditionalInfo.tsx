@@ -367,7 +367,7 @@ export default function AdditionalInfo({
               className="flex items-center justify-between p-4 rounded-xl bg-secondary/20 border border-secondary/30"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary-500 font-bold text-lg">
                   {contact.name.substring(0, 2).toUpperCase()}
                 </div>
                 <div>
@@ -384,7 +384,7 @@ export default function AdditionalInfo({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleEditContact(contact)}
-                  className="text-primary hover:text-primary hover:bg-primary/10 gap-1 h-8"
+                  className="text-primary-500 hover:text-primary-500 hover:bg-primary/10 gap-1 h-8"
                 >
                   <Edit2 className="w-3 h-3" />
                   <span className="text-xs">Edit</span>
@@ -393,7 +393,7 @@ export default function AdditionalInfo({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDeleteContact(contact.id)}
-                  className="text-primary hover:text-destructive-foreground hover:bg-destructive/10 gap-1 h-8"
+                  className="text-primary-500 hover:text-destructive-foreground hover:bg-destructive/10 gap-1 h-8"
                 >
                   <Trash2 className="w-3 h-3" />
                   <span className="text-xs">Delete</span>
@@ -448,7 +448,7 @@ export default function AdditionalInfo({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDeleteAttachment(file.id)}
-                  className="text-primary hover:text-destructive-foreground hover:bg-destructive/10 gap-1 h-8"
+                  className="text-primary-500 hover:text-destructive-foreground hover:bg-destructive/10 gap-1 h-8"
                 >
                   <Trash2 className="w-3 h-3" />
                   <span className="text-xs">Delete</span>
@@ -597,8 +597,8 @@ export default function AdditionalInfo({
                 className={cn(
                   "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all",
                   isDragging
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary hover:bg-secondary/20",
+                    ? "border-primary-500 bg-primary/5"
+                    : "border-border hover:border-primary-500 hover:bg-secondary/20",
                   attachmentErrors.file && "border-destructive"
                 )}
               >

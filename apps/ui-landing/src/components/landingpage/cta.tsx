@@ -61,7 +61,7 @@ const CTA = () => {
     <section className="py-20 sm:py-24 lg:py-32 bg-gradient-to-b from-background via-primary/[0.02] to-secondary/5 relative overflow-hidden">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 opacity-[0.03]">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary rounded-full mix-blend-multiply filter blur-xl" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500 rounded-full mix-blend-multiply filter blur-xl" />
         <div className="absolute top-3/4 right-1/4 w-96 h-96 bg-secondary rounded-full mix-blend-multiply filter blur-xl" />
       </div>
 
@@ -83,7 +83,7 @@ const CTA = () => {
 
                   <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6 leading-tight">
                     Reach thousands of{" "}
-                    <span className="text-primary relative">
+                    <span className="text-primary-500 relative">
                       tech professionals
                     </span>
                   </h2>

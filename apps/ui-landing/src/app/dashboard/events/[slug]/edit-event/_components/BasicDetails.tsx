@@ -75,7 +75,7 @@ const InputBlock = ({
       className
     )}
   >
-    <div className="flex items-center gap-3 text-muted-foreground group-hover:text-primary transition-colors">
+    <div className="flex items-center gap-3 text-muted-foreground group-hover:text-primary-500 transition-colors">
       {icon}
       <span className="font-medium text-lg text-foreground group-hover:text-primary">
         {label}
@@ -469,12 +469,20 @@ export default function BasicDetails({
               }
             }}
             className={!isDraftEvent ? "opacity-50 cursor-not-allowed" : ""}
-            title={!isDraftEvent ? "Registration form can only be edited for DRAFT events" : undefined}
+            title={
+              !isDraftEvent
+                ? "Registration form can only be edited for DRAFT events"
+                : undefined
+            }
           >
             <InputBlock
               icon={<FileEdit className="w-6 h-6" />}
               label="Registration Form"
-              subLabel={isDraftEvent ? "Customize registration questions" : "Locked (event is not in DRAFT)"}
+              subLabel={
+                isDraftEvent
+                  ? "Customize registration questions"
+                  : "Locked (event is not in DRAFT)"
+              }
             />
           </div>
         </div>

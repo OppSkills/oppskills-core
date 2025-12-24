@@ -602,7 +602,7 @@ export default function Page() {
                   className="p-2 cursor-pointer focus:bg-transparent"
                   onClick={() => setShowFestivalModal(true)}
                 >
-                  <div className="flex items-center gap-2 text-primary font-medium w-full">
+                  <div className="flex items-center gap-2 text-primary-500 font-medium w-full">
                     <span className="font-semibold text-base py-1">
                       Create New Festival
                     </span>

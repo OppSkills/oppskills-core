@@ -26,7 +26,7 @@ export default function AboutPage() {
         </div>
 
         {/* Abstract Background Element */}
-        <div className="absolute -top-24 -z-10 h-full w-full opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary via-background to-background"></div>
+        <div className="absolute -top-24 -z-10 h-full w-full opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary-500 via-background to-background"></div>
       </section>
 
       {/* Mission Section */}

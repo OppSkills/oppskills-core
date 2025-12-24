@@ -132,7 +132,7 @@ export default function CreateTicketModal({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex w-[140px] px-4 py-2 justify-center items-center gap-3 rounded-[37px] border border-primary/20 bg-transparent outline-none hover:bg-muted/50">
-                  <span className="font-inter text-primary text-xs font-medium leading-[150%]">
+                  <span className="font-inter text-primary-500 text-xs font-medium leading-[150%]">
                     {feeType}
                   </span>
                   <ChevronDown className="w-4 h-4 text-primary" />
@@ -158,7 +158,7 @@ export default function CreateTicketModal({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex w-[140px] px-4 py-2 justify-center items-center gap-3 rounded-[37px] border border-primary/20 bg-transparent outline-none hover:bg-muted/50">
-                  <span className="font-inter text-primary text-xs font-medium leading-[150%] whitespace-nowrap">
+                  <span className="font-inter text-primary-500 text-xs font-medium leading-[150%] whitespace-nowrap">
                     {requirement}
                   </span>
                   <ChevronDown className="w-4 h-4 text-primary" />
@@ -181,7 +181,7 @@ export default function CreateTicketModal({
         {/* --- FOOTER --- */}
         <div className="flex px-5 py-4 justify-end items-center bg-muted">
           <Button
-            className="flex px-5 py-2.5 justify-center items-center gap-3 rounded-[37px] bg-primary hover:bg-primary/90 text-primary-foreground font-inter text-base font-medium leading-[150%]"
+            className="flex px-5 py-2.5 justify-center items-center gap-3 rounded-[37px] bg-primary-500 hover:bg-primary/90 text-primary-foreground font-inter text-base font-medium leading-[150%]"
             onClick={handleCreate}
           >
             Create ticket

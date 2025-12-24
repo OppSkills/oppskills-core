@@ -53,7 +53,7 @@ export default function Auth({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Hero Section - Hidden on Mobile */}
-        <div className="hidden md:block w-full md:w-[45%] h-full bg-linear-to-br from-primary to-primary/80 relative overflow-hidden">
+        <div className="hidden md:block w-full md:w-[45%] h-full bg-linear-to-br from-primary-500 to-primary/80 relative overflow-hidden">
           <Swiper
             loop={true}
             modules={[Autoplay]}

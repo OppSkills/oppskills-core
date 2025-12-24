@@ -260,7 +260,7 @@ export default function TalentPipelinePage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-[180px] rounded-xl p-0 text-primary overflow-hidden border-border shadow-lg"
+              className="w-[180px] rounded-xl p-0 text-primary-500 overflow-hidden border-border shadow-lg"
             >
               <DropdownMenuLabel className="p-3 text-sm font-medium hover:bg-muted/50 cursor-pointer text-center">
                 Last 7 Days

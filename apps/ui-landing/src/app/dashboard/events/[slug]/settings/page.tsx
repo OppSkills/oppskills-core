@@ -104,7 +104,9 @@ function getStatusBadge(status: string) {
       return <Badge className="bg-blue-500 hover:bg-blue-600">Published</Badge>;
     case "ONGOING":
       return (
-        <Badge className="bg-green-500 hover:bg-green-600">Live / Ongoing</Badge>
+        <Badge className="bg-green-500 hover:bg-green-600">
+          Live / Ongoing
+        </Badge>
       );
     case "COMPLETED":
       return (
@@ -285,7 +287,9 @@ export default function EventSettingsPage({
                 <p className="text-sm font-medium text-red-800">
                   Rejection Note:
                 </p>
-                <p className="text-sm text-red-700 mt-1">{event.approvalNote}</p>
+                <p className="text-sm text-red-700 mt-1">
+                  {event.approvalNote}
+                </p>
               </div>
             )}
 
@@ -302,8 +306,8 @@ export default function EventSettingsPage({
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                 <p className="text-sm text-yellow-800 flex items-center gap-2">
                   <Clock className="w-4 h-4" />
-                  Your event is pending admin approval. You will be notified once
-                  reviewed.
+                  Your event is pending admin approval. You will be notified
+                  once reviewed.
                 </p>
               </div>
             )}
@@ -435,7 +439,10 @@ export default function EventSettingsPage({
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" className="text-amber-600 border-amber-200 hover:bg-amber-50">
+                  <Button
+                    variant="outline"
+                    className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                  >
                     <Ban className="w-4 h-4 mr-2" />
                     Cancel Event
                   </Button>
@@ -444,8 +451,8 @@ export default function EventSettingsPage({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Cancel Event?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will mark the event as cancelled. Participants will be
-                      notified. This action cannot be undone.
+                      This will mark the event as cancelled. Participants will
+                      be notified. This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -524,8 +531,8 @@ export default function EventSettingsPage({
             </AlertDialog>
 
             <p className="text-xs text-muted-foreground">
-              This will permanently delete &quot;{event.name}&quot; and all associated
-              data.
+              This will permanently delete &quot;{event.name}&quot; and all
+              associated data.
             </p>
           </CardContent>
         </Card>
@@ -538,28 +545,28 @@ export default function EventSettingsPage({
           <CardContent className="flex flex-wrap gap-3">
             <Link
               href={`/dashboard/events/${slug}/edit-event`}
-              className="text-primary hover:underline text-sm"
+              className="text-primary-500 hover:underline text-sm"
             >
               Edit Event Details
             </Link>
             <span className="text-muted-foreground">•</span>
             <Link
               href={`/dashboard/events/${slug}/manage-roles`}
-              className="text-primary hover:underline text-sm"
+              className="text-primary-500 hover:underline text-sm"
             >
               Manage Team
             </Link>
             <span className="text-muted-foreground">•</span>
             <Link
               href={`/dashboard/events/${slug}/manage-registration`}
-              className="text-primary hover:underline text-sm"
+              className="text-primary-500 hover:underline text-sm"
             >
               View Registrations
             </Link>
             <span className="text-muted-foreground">•</span>
             <Link
               href={`/events/${slug}`}
-              className="text-primary hover:underline text-sm"
+              className="text-primary-500 hover:underline text-sm"
               target="_blank"
             >
               View Public Page

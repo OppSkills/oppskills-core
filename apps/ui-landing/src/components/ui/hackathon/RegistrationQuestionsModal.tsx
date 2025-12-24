@@ -313,7 +313,7 @@ export default function RegistrationQuestionsModal({
                             required: !question.required,
                           })
                         }
-                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        className="w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary"
                       />
                       <span className="hidden md:inline">Required</span>
                       <span className="md:hidden">Req</span>
@@ -408,7 +408,7 @@ export default function RegistrationQuestionsModal({
                     type="checkbox"
                     checked={newQuestionRequired}
                     onChange={() => setNewQuestionRequired((v) => !v)}
-                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    className="w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary"
                   />
                   Required
                 </label>
@@ -416,7 +416,7 @@ export default function RegistrationQuestionsModal({
                 <Button
                   onClick={handleAddQuestion}
                   size="icon"
-                  className="rounded-full h-8 w-8 bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
+                  className="rounded-full h-8 w-8 bg-primary-500 text-primary-foreground hover:bg-primary/90 shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                 </Button>
