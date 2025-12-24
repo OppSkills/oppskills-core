@@ -3,7 +3,7 @@ import {
   joinTeam,
   leaveTeam,
   getTeamsByHackathon,
-  // getTeamById
+  getTeamById,
 } from "@/lib/api/teamApi";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -36,15 +36,15 @@ export const useTeams = () => {
     });
 
   // ▌GET SINGLE TEAM
-  // const teamById = (teamId: string) =>
-  //   useQuery({
-  //     queryKey: ["team", teamId],
-  //     queryFn: async () => {
-  //       const token = await getToken();
-  //       return getTeamById(token!, teamId);
-  //     },
-  //     enabled: !!teamId,
-  //   });
+  const useTeamById = (teamId: string) =>
+    useQuery({
+      queryKey: ["team", teamId],
+      queryFn: async () => {
+        const token = requireToken(await getToken());
+        return getTeamById(token, teamId);
+      },
+      enabled: !!teamId,
+    });
 
   // ▌CREATE
   const create = useMutation({
@@ -79,5 +79,11 @@ export const useTeams = () => {
     },
   });
 
-  return { teamsByHackathon: useTeamsByHackathon, create, join, leave };
+  return {
+    teamsByHackathon: useTeamsByHackathon,
+    teamById: useTeamById,
+    create,
+    join,
+    leave,
+  };
 };

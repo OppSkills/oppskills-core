@@ -7,7 +7,7 @@ import { FestivalModule } from './festival/festival.module';
 import { HackathonModule } from './hackathon/hackathon.module';
 import { TeamModule } from './team/team.module';
 import { UserAccountsModule } from './user-accounts/user-accounts.module';
-import { MediaModule } from "./media/media.module";
+import { MediaModule } from './media/media.module';
 import { CollegesModule } from './colleges/colleges.module';
 import { EventModule } from './event/event.module';
 import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
@@ -32,4 +32,3 @@ import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
   providers: [AppService, ClerkAuthConfigService],
 })
 export class AppModule {}
-

@@ -54,6 +54,7 @@ export class TeamService {
         maxSize: dto.maxSize,
         hackathonId: dto.hackathonId,
         leaderId,
+        creatorId: leaderId, // The person who creates the team is the original creator
       },
       include: {
         leader: true,
@@ -155,5 +156,75 @@ export class TeamService {
     await prisma.teamMemberEntity.delete({ where: { id: member.id } });
 
     return { message: 'Left team successfully' };
+  }
+
+  /**
+   * Change the team leader.
+   * Only the original team creator can change the leader.
+   * New leader must be an existing team member.
+   */
+  async changeTeamLeader(
+    teamId: string,
+    newLeaderId: string,
+    currentUserId: string,
+  ) {
+    const team = await prisma.teamEntity.findUnique({
+      where: { id: teamId },
+      include: { members: true },
+    });
+
+    if (!team) throw new NotFoundException('Team not found');
+
+    // Only the original team creator can change the leader
+    if (team.creatorId !== currentUserId) {
+      throw new ForbiddenException(
+        'Only the team creator can change the leader',
+      );
+    }
+
+    // Can't set the current leader as new leader
+    if (newLeaderId === team.leaderId) {
+      throw new ForbiddenException('You are already the team leader');
+    }
+
+    // New leader must be an existing team member
+    const isMember = team.members.some((m) => m.userId === newLeaderId);
+    if (!isMember) {
+      throw new ForbiddenException(
+        'New leader must be an existing team member',
+      );
+    }
+
+    // Capture old leader before update
+    const oldLeaderId = team.leaderId;
+
+    // Update in a transaction:
+    // 1. Set new leader
+    // 2. Remove new leader from members (since leader is separate)
+    // 3. Add old leader to members
+    await prisma.$transaction(async (tx) => {
+      // Update leader
+      await tx.teamEntity.update({
+        where: { id: teamId },
+        data: { leaderId: newLeaderId },
+      });
+
+      // Remove new leader from members table
+      await tx.teamMemberEntity.deleteMany({
+        where: { teamId, userId: newLeaderId },
+      });
+
+      // Add old leader as a member (if not already a member)
+      const oldLeaderIsMember = team.members.some(
+        (m) => m.userId === oldLeaderId,
+      );
+      if (!oldLeaderIsMember) {
+        await tx.teamMemberEntity.create({
+          data: { teamId, userId: oldLeaderId },
+        });
+      }
+    });
+
+    return { message: 'Team leader changed successfully' };
   }
 }

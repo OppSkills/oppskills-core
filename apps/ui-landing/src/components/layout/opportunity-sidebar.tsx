@@ -8,6 +8,7 @@ import {
   IconCreditCard,
   IconUserCog,
   IconMail,
+  IconSettings,
 } from "@tabler/icons-react";
 
 import { MobileSidebarSwitcher } from "./mobile-sidebar-switcher";
@@ -59,6 +60,11 @@ const getOpportunityNavItems = (slug: string) => [
     title: "Send Notifications",
     url: `/dashboard/opportunity/${slug}/send-notifications`,
     icon: IconMail,
+  },
+  {
+    title: "Settings",
+    url: `/dashboard/opportunity/${slug}/settings`,
+    icon: IconSettings,
   },
 ];
 

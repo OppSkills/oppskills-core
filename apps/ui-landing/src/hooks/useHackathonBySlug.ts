@@ -41,4 +41,9 @@ export function useHackathonBySlug(slug: string | null | undefined) {
   });
 }
 
-
+/**
+ * Get the query key for a hackathon by slug (for cache invalidation).
+ */
+export function getHackathonBySlugQueryKey(slug: string) {
+  return ["hackathon-by-slug", slug];
+}

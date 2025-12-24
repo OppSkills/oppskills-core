@@ -7,6 +7,7 @@ import {
   Req,
   UseGuards,
   Delete,
+  Patch,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
@@ -30,26 +31,40 @@ export class TeamController {
   constructor(private readonly teamService: TeamService) {}
 
   @Post('create-team')
-  @ApiOperation({ summary: 'Create a new team', description: 'Create a new team for a hackathon. The authenticated user becomes the team leader.' })
+  @ApiOperation({
+    summary: 'Create a new team',
+    description:
+      'Create a new team for a hackathon. The authenticated user becomes the team leader.',
+  })
   @ApiBody({ type: CreateTeamDto })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'Team created successfully',
     schema: {
       type: 'object',
       properties: {
-        id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000' },
+        id: {
+          type: 'string',
+          format: 'uuid',
+          example: '550e8400-e29b-41d4-a716-446655440000',
+        },
         name: { type: 'string', example: 'Code Warriors' },
         hackathonId: { type: 'string', format: 'uuid' },
         leaderId: { type: 'string' },
         maxSize: { type: 'number', example: 4 },
         invitationCode: { type: 'string', example: 'ABC123' },
-        createdAt: { type: 'string', format: 'date-time' }
-      }
-    }
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid input or team limit reached' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input or team limit reached',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   async createTeam(@Body() dto: CreateTeamDto, @Req() req: Request) {
     const user = req['user'];
     if (!user) {
@@ -59,10 +74,19 @@ export class TeamController {
   }
 
   @Get('teams/:hackathonId')
-  @ApiOperation({ summary: 'Get teams by hackathon', description: 'Retrieve all teams for a specific hackathon' })
-  @ApiParam({ name: 'hackathonId', description: 'Hackathon ID', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiOperation({
+    summary: 'Get teams by hackathon',
+    description: 'Retrieve all teams for a specific hackathon',
+  })
+  @ApiParam({
+    name: 'hackathonId',
+    description: 'Hackathon ID',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
     description: 'List of teams retrieved successfully',
     schema: {
       type: 'array',
@@ -75,22 +99,34 @@ export class TeamController {
           maxSize: { type: 'number' },
           currentSize: { type: 'number' },
           invitationCode: { type: 'string' },
-          members: { type: 'array', items: { type: 'object' } }
-        }
-      }
-    }
+          members: { type: 'array', items: { type: 'object' } },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Hackathon not found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   async getTeamsByHackathon(@Param('hackathonId') hackathonId: string) {
     return this.teamService.getTeamsByHackathon(hackathonId);
   }
 
   @Get('team/:teamId')
-  @ApiOperation({ summary: 'Get team by ID', description: 'Retrieve detailed information about a specific team' })
-  @ApiParam({ name: 'teamId', description: 'Team ID', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiOperation({
+    summary: 'Get team by ID',
+    description: 'Retrieve detailed information about a specific team',
+  })
+  @ApiParam({
+    name: 'teamId',
+    description: 'Team ID',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+  })
+  @ApiResponse({
+    status: 200,
     description: 'Team details retrieved successfully',
     schema: {
       type: 'object',
@@ -101,45 +137,57 @@ export class TeamController {
         leaderId: { type: 'string' },
         maxSize: { type: 'number' },
         invitationCode: { type: 'string' },
-        members: { 
-          type: 'array', 
-          items: { 
+        members: {
+          type: 'array',
+          items: {
             type: 'object',
             properties: {
               id: { type: 'string' },
               userId: { type: 'string' },
               role: { type: 'string' },
-              joinedAt: { type: 'string', format: 'date-time' }
-            }
-          } 
-        }
-      }
-    }
+              joinedAt: { type: 'string', format: 'date-time' },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Team not found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   async getTeamById(@Param('teamId') teamId: string) {
     return this.teamService.getTeamById(teamId);
   }
 
   @Post('join-team')
-  @ApiOperation({ summary: 'Join a team', description: 'Join an existing team using team ID or invitation code' })
+  @ApiOperation({
+    summary: 'Join a team',
+    description: 'Join an existing team using team ID or invitation code',
+  })
   @ApiBody({ type: CreateTeamDto })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'Successfully joined team',
     schema: {
       type: 'object',
       properties: {
         message: { type: 'string', example: 'Successfully joined team' },
         teamId: { type: 'string', format: 'uuid' },
-        memberId: { type: 'string', format: 'uuid' }
-      }
-    }
+        memberId: { type: 'string', format: 'uuid' },
+      },
+    },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Team full or already a member' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Team full or already a member',
+  })
   @ApiResponse({ status: 404, description: 'Team not found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   async joinTeam(@Body() dto: CreateTeamDto, @Req() req: Request) {
     const user = req['user'];
     if (!user) {
@@ -149,26 +197,107 @@ export class TeamController {
   }
 
   @Delete('leave-team/:teamId')
-  @ApiOperation({ summary: 'Leave a team', description: 'Leave a team you are currently a member of' })
-  @ApiParam({ name: 'teamId', description: 'Team ID', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiOperation({
+    summary: 'Leave a team',
+    description: 'Leave a team you are currently a member of',
+  })
+  @ApiParam({
+    name: 'teamId',
+    description: 'Team ID',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+  })
+  @ApiResponse({
+    status: 200,
     description: 'Successfully left team',
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Successfully left team' }
-      }
-    }
+        message: { type: 'string', example: 'Successfully left team' },
+      },
+    },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Not a team member or team leader cannot leave' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Not a team member or team leader cannot leave',
+  })
   @ApiResponse({ status: 404, description: 'Team not found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
   async leaveTeam(@Param('teamId') teamId: string, @Req() req: Request) {
     const user = req['user'];
     if (!user) {
       throw new UnauthorizedException('User not found in request');
     }
     return this.teamService.leaveTeam(teamId, user.id);
+  }
+
+  @Patch('team/:teamId/leader')
+  @ApiOperation({
+    summary: 'Change team leader',
+    description:
+      'Change the team leader. Only the original team creator can perform this action. New leader must be an existing team member.',
+  })
+  @ApiParam({
+    name: 'teamId',
+    description: 'Team ID',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        newLeaderId: {
+          type: 'string',
+          description:
+            'User ID of the new leader (must be an existing team member)',
+          example: 'user_2abc123',
+        },
+      },
+      required: ['newLeaderId'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Team leader changed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Team leader changed successfully',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - New leader must be an existing team member',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - Only the original team creator can change the leader',
+  })
+  @ApiResponse({ status: 404, description: 'Team not found' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async changeTeamLeader(
+    @Param('teamId') teamId: string,
+    @Body() body: { newLeaderId: string },
+    @Req() req: Request,
+  ) {
+    const user = req['user'];
+    if (!user) {
+      throw new UnauthorizedException('User not found in request');
+    }
+    return this.teamService.changeTeamLeader(teamId, body.newLeaderId, user.id);
   }
 }

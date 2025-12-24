@@ -335,7 +335,7 @@ export class EventService {
 
   /**
    * List events for the dashboard for a given user.
-   * 
+   *
    * Visibility rules:
    * - Owner can see their events
    * - Managers can see events they manage
@@ -419,7 +419,13 @@ export class EventService {
       where: { id },
       include: {
         owner: {
-          select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
         },
         festival: {
           select: { id: true, name: true, slug: true },
@@ -427,7 +433,13 @@ export class EventService {
         participants: {
           include: {
             user: {
-              select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                imageUrl: true,
+              },
             },
           },
         },
@@ -443,9 +455,15 @@ export class EventService {
     if (!event) throw new NotFoundException('Event not found');
 
     // Verify permission - owner, admin, or manager can view full data
-    const hasPermission = await this.hasEditPermission(event.ownerId, requesterUserId, id);
+    const hasPermission = await this.hasEditPermission(
+      event.ownerId,
+      requesterUserId,
+      id,
+    );
     if (!hasPermission) {
-      throw new ForbiddenException('You do not have permission to view this event\'s full details.');
+      throw new ForbiddenException(
+        "You do not have permission to view this event's full details.",
+      );
     }
 
     return event;
@@ -459,7 +477,13 @@ export class EventService {
       where: { slug },
       include: {
         owner: {
-          select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
         },
         festival: {
           select: { id: true, name: true, slug: true },
@@ -467,7 +491,13 @@ export class EventService {
         participants: {
           include: {
             user: {
-              select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                imageUrl: true,
+              },
             },
           },
         },
@@ -483,9 +513,15 @@ export class EventService {
     if (!event) throw new NotFoundException('Event not found');
 
     // Verify permission - owner, admin, or manager can view full data
-    const hasPermission = await this.hasEditPermission(event.ownerId, requesterUserId, event.id);
+    const hasPermission = await this.hasEditPermission(
+      event.ownerId,
+      requesterUserId,
+      event.id,
+    );
     if (!hasPermission) {
-      throw new ForbiddenException('You do not have permission to view this event\'s full details.');
+      throw new ForbiddenException(
+        "You do not have permission to view this event's full details.",
+      );
     }
 
     return event;
@@ -500,7 +536,13 @@ export class EventService {
       where: { id },
       include: {
         owner: {
-          select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
         },
         festival: {
           select: { id: true, name: true, slug: true },
@@ -508,7 +550,13 @@ export class EventService {
         participants: {
           include: {
             user: {
-              select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                imageUrl: true,
+              },
             },
           },
         },
@@ -534,7 +582,13 @@ export class EventService {
       where: { slug },
       include: {
         owner: {
-          select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
         },
         festival: {
           select: { id: true, name: true, slug: true },
@@ -542,7 +596,13 @@ export class EventService {
         participants: {
           include: {
             user: {
-              select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                imageUrl: true,
+              },
             },
           },
         },
@@ -582,7 +642,11 @@ export class EventService {
     });
     if (!event) throw new NotFoundException('Event not found');
 
-    const hasPermission = await this.hasEditPermission(event.ownerId, userId, id);
+    const hasPermission = await this.hasEditPermission(
+      event.ownerId,
+      userId,
+      id,
+    );
     if (!hasPermission) {
       throw new ForbiddenException('You are not allowed to edit this event.');
     }
@@ -591,15 +655,19 @@ export class EventService {
     const isBasicInfoChange =
       (dto.name !== undefined && dto.name !== event.name) ||
       (dto.slug !== undefined && dto.slug !== event.slug) ||
-      (dto.description !== undefined && dto.description !== event.description) ||
-      (dto.bannerImageUrl !== undefined && dto.bannerImageUrl !== event.bannerImageUrl);
+      (dto.description !== undefined &&
+        dto.description !== event.description) ||
+      (dto.bannerImageUrl !== undefined &&
+        dto.bannerImageUrl !== event.bannerImageUrl);
 
     // For non-DRAFT events, only allow edits if they are basic info changes (which will reset approval)
     const isDraft = event.status === 'DRAFT';
     const isApproved = event.approvalStatus === 'APPROVED';
 
     if (!isDraft && !isBasicInfoChange) {
-      throw new ForbiddenException('Only DRAFT events can be fully edited. For published events, only basic info changes are allowed.');
+      throw new ForbiddenException(
+        'Only DRAFT events can be fully edited. For published events, only basic info changes are allowed.',
+      );
     }
 
     // Parse dates if provided
@@ -693,7 +761,9 @@ export class EventService {
     if (event.ownerId !== userId) {
       const isAdmin = await this.isAdminUser(userId);
       if (!isAdmin) {
-        throw new ForbiddenException('You are not allowed to delete this event.');
+        throw new ForbiddenException(
+          'You are not allowed to delete this event.',
+        );
       }
     }
 
@@ -716,9 +786,15 @@ export class EventService {
     if (!event) throw new NotFoundException('Event not found');
 
     // Permission: owner OR admin OR manager
-    const hasPermission = await this.hasEditPermission(event.ownerId, userId, id);
+    const hasPermission = await this.hasEditPermission(
+      event.ownerId,
+      userId,
+      id,
+    );
     if (!hasPermission) {
-      throw new ForbiddenException('You are not allowed to change this event status.');
+      throw new ForbiddenException(
+        'You are not allowed to change this event status.',
+      );
     }
 
     const currentStatus = event.status as LifecycleStatus;
@@ -744,7 +820,7 @@ export class EventService {
   async joinEvent(
     eventId: string,
     userId: string,
-    answers?: Array<{ fieldId: string; value: string | number | string[] }>
+    answers?: Array<{ fieldId: string; value: string | number | string[] }>,
   ) {
     const event = await prisma.eventEntity.findUnique({
       where: { id: eventId },
@@ -773,7 +849,9 @@ export class EventService {
 
     // Check if registrations are paused
     if (event.isRegistrationPaused) {
-      throw new BadRequestException('Event registrations are currently paused.');
+      throw new BadRequestException(
+        'Event registrations are currently paused.',
+      );
     }
 
     // Check deadline
@@ -797,14 +875,20 @@ export class EventService {
     }
 
     // Fetch user's onboarding profile to determine userCategory
-    const userOnboardingProfile = await prisma.userOnboardingProfileEntity.findUnique({
-      where: { userId },
-      select: { userCategory: true },
-    });
+    const userOnboardingProfile =
+      await prisma.userOnboardingProfileEntity.findUnique({
+        where: { userId },
+        select: { userCategory: true },
+      });
     const userCategory = userOnboardingProfile?.userCategory;
 
     // Default gender options matching Prisma Gender enum
-    const DEFAULT_GENDER_OPTIONS = ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'];
+    const DEFAULT_GENDER_OPTIONS = [
+      'MALE',
+      'FEMALE',
+      'OTHER',
+      'PREFER_NOT_TO_SAY',
+    ];
 
     // Define default fields that should be lazy-created
     // Order is negative so they sort before custom fields (which use 0+)
@@ -818,10 +902,38 @@ export class EventService {
     };
 
     const defaultFieldDefs: DefaultFieldDef[] = [
-      { frontendId: 'default-name', label: 'Name', type: 'TEXT', order: -50, required: true, options: [] },
-      { frontendId: 'default-email', label: 'Email', type: 'EMAIL', order: -40, required: true, options: [] },
-      { frontendId: 'default-phone', label: 'Phone No.', type: 'PHONE_NO', order: -30, required: true, options: [] },
-      { frontendId: 'default-gender', label: 'Gender', type: 'OPTIONS', order: -20, required: true, options: DEFAULT_GENDER_OPTIONS },
+      {
+        frontendId: 'default-name',
+        label: 'Name',
+        type: 'TEXT',
+        order: -50,
+        required: true,
+        options: [],
+      },
+      {
+        frontendId: 'default-email',
+        label: 'Email',
+        type: 'EMAIL',
+        order: -40,
+        required: true,
+        options: [],
+      },
+      {
+        frontendId: 'default-phone',
+        label: 'Phone No.',
+        type: 'PHONE_NO',
+        order: -30,
+        required: true,
+        options: [],
+      },
+      {
+        frontendId: 'default-gender',
+        label: 'Gender',
+        type: 'OPTIONS',
+        order: -20,
+        required: true,
+        options: DEFAULT_GENDER_OPTIONS,
+      },
     ];
 
     // Add conditional identity field based on userCategory
@@ -894,7 +1006,7 @@ export class EventService {
     // Lazy-create missing default fields
     // Build a map of existing fields by label for matching
     const existingFieldsByLabel = new Map(
-      regForm.fields.map((f) => [f.label.toLowerCase(), f])
+      regForm.fields.map((f) => [f.label.toLowerCase(), f]),
     );
 
     // Map frontend field IDs to real DB field IDs
@@ -985,7 +1097,9 @@ export class EventService {
             value === undefined ||
             (Array.isArray(value) && value.length === 0);
           if (isEmpty) {
-            throw new BadRequestException(`Field "${field.label}" is required and cannot be empty.`);
+            throw new BadRequestException(
+              `Field "${field.label}" is required and cannot be empty.`,
+            );
           }
         }
       }
@@ -1013,36 +1127,47 @@ export class EventService {
           case 'EMAIL':
           case 'PHONE_NO':
             if (typeof value !== 'string') {
-              throw new BadRequestException(`Field "${field.label}" must be a string.`);
+              throw new BadRequestException(
+                `Field "${field.label}" must be a string.`,
+              );
             }
             if (field.type === 'EMAIL' && value.length > 0) {
               const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
               if (!emailRegex.test(value)) {
-                throw new BadRequestException(`Field "${field.label}" must be a valid email.`);
+                throw new BadRequestException(
+                  `Field "${field.label}" must be a valid email.`,
+                );
               }
             }
             break;
           case 'NUMBER':
             if (typeof value !== 'number' && typeof value !== 'string') {
-              throw new BadRequestException(`Field "${field.label}" must be a number.`);
+              throw new BadRequestException(
+                `Field "${field.label}" must be a number.`,
+              );
             }
             break;
           case 'OPTIONS': {
             // Use field options, or default gender options for Gender field
             const effectiveOptions =
-              field.label.toLowerCase() === 'gender' && (!field.options || field.options.length === 0)
+              field.label.toLowerCase() === 'gender' &&
+              (!field.options || field.options.length === 0)
                 ? DEFAULT_GENDER_OPTIONS
                 : field.options;
 
             if (Array.isArray(value)) {
               for (const v of value) {
                 if (!effectiveOptions.includes(v)) {
-                  throw new BadRequestException(`Invalid option "${v}" for field "${field.label}".`);
+                  throw new BadRequestException(
+                    `Invalid option "${v}" for field "${field.label}".`,
+                  );
                 }
               }
             } else if (typeof value === 'string') {
               if (value.length > 0 && !effectiveOptions.includes(value)) {
-                throw new BadRequestException(`Invalid option "${value}" for field "${field.label}".`);
+                throw new BadRequestException(
+                  `Invalid option "${value}" for field "${field.label}".`,
+                );
               }
             }
             break;
@@ -1096,7 +1221,8 @@ export class EventService {
         const answerData = providedAnswers.map((a) => ({
           submissionId: submission.id,
           fieldId: a.fieldId,
-          valueText: typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
+          valueText:
+            typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
           valueJson: a.value,
         }));
 
@@ -1107,7 +1233,12 @@ export class EventService {
 
       // After successful registration, log to Google Sheets asynchronously
       // Pass submissionId so it can read from DB-saved answers for consistency
-      this.logToGoogleSheets(eventId, userId, providedAnswers, submissionId).catch((err) => {
+      this.logToGoogleSheets(
+        eventId,
+        userId,
+        providedAnswers,
+        submissionId,
+      ).catch((err) => {
         console.error('Failed to log to Google Sheets:', err);
       });
 
@@ -1165,13 +1296,13 @@ export class EventService {
 
       // Build fixed columns
       const fixedColumns: Record<string, string | number | null> = {
-        'timestamp': new Date().toISOString(),
-        'eventId': eventId,
-        'eventName': event.name,
-        'userId': userId,
-        'fullName': `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
-        'email': user.email,
-        'submissionId': submissionId ?? '',
+        timestamp: new Date().toISOString(),
+        eventId: eventId,
+        eventName: event.name,
+        userId: userId,
+        fullName: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+        email: user.email,
+        submissionId: submissionId ?? '',
       };
 
       // Build question columns with stable headers: "<label> (<fieldId>)"
@@ -1196,7 +1327,7 @@ export class EventService {
       await this.googleSheetsService.appendRegistrationRow(
         'Registrations',
         fixedColumns,
-        questionColumns
+        questionColumns,
       );
     } catch (error) {
       console.error('Error in logToGoogleSheets:', error);
@@ -1389,7 +1520,8 @@ export class EventService {
 
       return {
         id: p.id,
-        name: [user.firstName, user.lastName].filter(Boolean).join(' ') || 'N/A',
+        name:
+          [user.firstName, user.lastName].filter(Boolean).join(' ') || 'N/A',
         email: user.email,
         avatarUrl: user.imageUrl || null,
         university,
@@ -1505,9 +1637,15 @@ export class EventService {
     if (!event) throw new NotFoundException('Event not found');
 
     // Verify permission - only owner, admin, or manager can view roles
-    const hasPermission = await this.hasEditPermission(event.ownerId, requesterUserId, eventId);
+    const hasPermission = await this.hasEditPermission(
+      event.ownerId,
+      requesterUserId,
+      eventId,
+    );
     if (!hasPermission) {
-      throw new ForbiddenException('You do not have permission to view roles for this event.');
+      throw new ForbiddenException(
+        'You do not have permission to view roles for this event.',
+      );
     }
 
     const managers = event.userRoles
@@ -1560,16 +1698,25 @@ export class EventService {
     if (event.ownerId !== assignedByUserId) {
       const isAdmin = await this.isAdminUser(assignedByUserId);
       if (!isAdmin) {
-        throw new ForbiddenException('You are not allowed to add roles to this event.');
+        throw new ForbiddenException(
+          'You are not allowed to add roles to this event.',
+        );
       }
     }
 
     // Find user by email
     const user = await prisma.userEntity.findUnique({
       where: { email },
-      select: { id: true, email: true, firstName: true, lastName: true, imageUrl: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        imageUrl: true,
+      },
     });
-    if (!user) throw new NotFoundException(`User with email "${email}" not found.`);
+    if (!user)
+      throw new NotFoundException(`User with email "${email}" not found.`);
 
     // Cannot assign role to owner
     if (user.id === event.ownerId) {
@@ -1583,7 +1730,9 @@ export class EventService {
       },
     });
     if (existing) {
-      throw new ConflictException(`User already has the ${role} role for this event.`);
+      throw new ConflictException(
+        `User already has the ${role} role for this event.`,
+      );
     }
 
     await prisma.eventUserRoleEntity.create({
@@ -1627,7 +1776,9 @@ export class EventService {
     if (event.ownerId !== removedByUserId) {
       const isAdmin = await this.isAdminUser(removedByUserId);
       if (!isAdmin) {
-        throw new ForbiddenException('You are not allowed to remove roles from this event.');
+        throw new ForbiddenException(
+          'You are not allowed to remove roles from this event.',
+        );
       }
     }
 
@@ -1636,7 +1787,8 @@ export class EventService {
       where: { email },
       select: { id: true },
     });
-    if (!user) throw new NotFoundException(`User with email "${email}" not found.`);
+    if (!user)
+      throw new NotFoundException(`User with email "${email}" not found.`);
 
     // Find and delete the role
     const existing = await prisma.eventUserRoleEntity.findUnique({
@@ -1645,7 +1797,9 @@ export class EventService {
       },
     });
     if (!existing) {
-      throw new NotFoundException(`User does not have the ${role} role for this event.`);
+      throw new NotFoundException(
+        `User does not have the ${role} role for this event.`,
+      );
     }
 
     await prisma.eventUserRoleEntity.delete({
@@ -1666,7 +1820,18 @@ export class EventService {
    */
   async updateEventAdditionalInfo(
     id: string,
-    dto: { additionalInfo?: { contact?: { name?: string; email?: string; phone?: string }; attachments?: Array<{ storageKey: string; publicUrl?: string; fileName?: string; mimeType?: string; sizeBytes?: number }> } },
+    dto: {
+      additionalInfo?: {
+        contact?: { name?: string; email?: string; phone?: string };
+        attachments?: Array<{
+          storageKey: string;
+          publicUrl?: string;
+          fileName?: string;
+          mimeType?: string;
+          sizeBytes?: number;
+        }>;
+      };
+    },
     userId: string,
   ) {
     await this.assertEventEditableByUser(id, userId);
@@ -1718,7 +1883,19 @@ export class EventService {
    */
   async updateEventRegistrationForm(
     id: string,
-    dto: { registrationForm: { externalFormLink?: string; fields?: Array<{ label: string; type: string; required: boolean; order: number; options?: string[]; placeholder?: string }> } },
+    dto: {
+      registrationForm: {
+        externalFormLink?: string;
+        fields?: Array<{
+          label: string;
+          type: string;
+          required: boolean;
+          order: number;
+          options?: string[];
+          placeholder?: string;
+        }>;
+      };
+    },
     userId: string,
   ) {
     await this.assertEventEditableByUser(id, userId);
@@ -1759,7 +1936,13 @@ export class EventService {
             data: form.fields.map((f) => ({
               registrationFormId: regForm.id,
               label: f.label,
-              type: f.type as 'TEXT' | 'PHONE_NO' | 'EMAIL' | 'NUMBER' | 'ATTACHMENTS' | 'OPTIONS',
+              type: f.type as
+                | 'TEXT'
+                | 'PHONE_NO'
+                | 'EMAIL'
+                | 'NUMBER'
+                | 'ATTACHMENTS'
+                | 'OPTIONS',
               required: f.required,
               order: f.order,
               options: f.options ?? [],
@@ -1779,7 +1962,13 @@ export class EventService {
    */
   async updateEventPrizeBreakdown(
     id: string,
-    dto: { prizeBreakdown: Array<{ position: string; amount: string; description?: string }> },
+    dto: {
+      prizeBreakdown: Array<{
+        position: string;
+        amount: string;
+        description?: string;
+      }>;
+    },
     userId: string,
   ) {
     await this.assertEventEditableByUser(id, userId);
@@ -1842,9 +2031,15 @@ export class EventService {
     });
     if (!event) throw new NotFoundException('Event not found');
 
-    const hasPermission = await this.hasEditPermission(event.ownerId, userId, id);
+    const hasPermission = await this.hasEditPermission(
+      event.ownerId,
+      userId,
+      id,
+    );
     if (!hasPermission) {
-      throw new ForbiddenException('You are not allowed to submit this event for approval.');
+      throw new ForbiddenException(
+        'You are not allowed to submit this event for approval.',
+      );
     }
 
     // Update status to PUBLISHED and approvalStatus to PENDING
@@ -1924,7 +2119,11 @@ export class EventService {
     });
     if (!event) throw new NotFoundException('Event not found');
 
-    const hasPermission = await this.hasEditPermission(event.ownerId, userId, id);
+    const hasPermission = await this.hasEditPermission(
+      event.ownerId,
+      userId,
+      id,
+    );
     if (!hasPermission) {
       throw new ForbiddenException('You are not allowed to modify this event.');
     }
@@ -1965,7 +2164,11 @@ export class EventService {
       throw new ForbiddenException('Only DRAFT events can be edited.');
     }
 
-    const hasPermission = await this.hasEditPermission(event.ownerId, userId, id);
+    const hasPermission = await this.hasEditPermission(
+      event.ownerId,
+      userId,
+      id,
+    );
     if (!hasPermission) {
       throw new ForbiddenException('You are not allowed to edit this event.');
     }

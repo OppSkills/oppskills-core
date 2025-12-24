@@ -1,63 +1,132 @@
 "use client";
 
-import React, { useState } from "react";
-import { ChevronLeft, UserCircle2, CheckCircle2 } from "lucide-react"; // Using stock lucide icons
+import { useState, useMemo } from "react";
+import { ChevronLeft, UserCircle2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import TeamMembers, { TeamMember } from "./_components/TeamMembers";
-import SynopsisSubmission from "./_components/SynopsisSubmission";
-import PresentationSubmission from "./_components/PresentationSubmission";
-import OfflineRound from "./_components/OfflineRound";
-// Mock Data
-const MOCK_MEMBERS: TeamMember[] = [
-  {
-    id: "1",
-    name: "Student Name",
-    role: "Team Leader",
-    college: "College Name",
-    email: "pghasdfasdf@gmail.com",
-    location: "Lucknow, Uttar Pradesh, India",
-    education:
-      "College Student | Management | 2-Year MBA (Master of Business Administration) | Full Time | 2nd Year",
-    registeredOn: "20 Dec 2025, 02:02 PM",
-    avatarUrl: "https://github.com/shadcn.png", // Placeholder
-  },
-  {
-    id: "2",
-    name: "Student Name",
-    role: "Team Member",
-    college: "College Name",
-    email: "pghasdfasdf@gmail.com",
-    location: "Lucknow, Uttar Pradesh, India",
-    education:
-      "College Student | Management | 2-Year MBA (Master of Business Administration) | Full Time | 2nd Year",
-    registeredOn: "20 Dec 2025, 02:02 PM",
-    avatarUrl: "https://github.com/shadcn.png",
-  },
-  {
-    id: "3",
-    name: "Student Name",
-    role: "Team Member",
-    college: "College Name",
-    email: "pghasdfasdf@gmail.com",
-    location: "Lucknow, Uttar Pradesh, India",
-    education:
-      "College Student | Management | 2-Year MBA (Master of Business Administration) | Full Time | 2nd Year",
-    registeredOn: "20 Dec 2025, 02:02 PM",
-    avatarUrl: "https://github.com/shadcn.png",
-  },
-];
-
-type TabType = "members" | "synopsis" | "presentation" | "offline";
+import { useTeams } from "@/hooks/useTeams";
+import { useHackathonRegistrationsBySlug } from "@/hooks/useHackathonRegistrations";
+import type { TeamDetailResponse } from "@/lib/api/teamApi";
 
 export default function TeamManagementPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabType>("members");
+  const params = useParams();
+  const slug = params.slug as string;
+  const teamId = params.teamID as string;
+
+  const { teamById } = useTeams();
+  const {
+    data: teamData,
+    isLoading: teamLoading,
+    error: teamError,
+  } = teamById(teamId);
+  const { data: registrationsData } = useHackathonRegistrationsBySlug(slug);
+
+  const [activeTab, setActiveTab] = useState<string>("members");
+
+  // Build members list from team data
+  const members: TeamMember[] = useMemo(() => {
+    if (!teamData) return [];
+    const team = teamData as TeamDetailResponse;
+
+    const result: TeamMember[] = [];
+
+    // Add leader first
+    result.push({
+      id: team.leader.id,
+      name:
+        [team.leader.firstName, team.leader.lastName]
+          .filter(Boolean)
+          .join(" ") || team.leader.email,
+      role: "Team Leader",
+      college: "—",
+      email: team.leader.email,
+      location: "—",
+      education: "—",
+      registeredOn: new Date(team.createdAt).toLocaleDateString("en-US", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      avatarUrl: team.leader.imageUrl || undefined,
+    });
+
+    // Add members
+    for (const member of team.members) {
+      result.push({
+        id: member.user.id,
+        name:
+          [member.user.firstName, member.user.lastName]
+            .filter(Boolean)
+            .join(" ") || member.user.email,
+        role: "Team Member",
+        college: "—",
+        email: member.user.email,
+        location: "—",
+        education: "—",
+        registeredOn: new Date(member.joinedAt).toLocaleDateString("en-US", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        avatarUrl: member.user.imageUrl || undefined,
+      });
+    }
+
+    return result;
+  }, [teamData]);
+
+  // Build round tabs from registrations data
+  const roundTabs = useMemo(() => {
+    if (!registrationsData || registrationsData.rounds.length === 0) return [];
+    return registrationsData.rounds.map((round) => ({
+      id: round.id,
+      name: round.name,
+      order: round.order,
+    }));
+  }, [registrationsData]);
+
+  // Find submission for selected round
+  const selectedRoundSubmission = useMemo(() => {
+    if (!registrationsData || activeTab === "members") return null;
+    const team = registrationsData.teams.find((t) => t.teamId === teamId);
+    if (!team) return null;
+    return team.roundSubmissions[activeTab] || null;
+  }, [registrationsData, activeTab, teamId]);
 
   const handleBack = () => {
     router.back();
   };
+
+  if (teamLoading) {
+    return (
+      <div className="flex w-full justify-center items-center min-h-[400px] bg-surface">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (teamError || !teamData) {
+    return (
+      <div className="flex w-full justify-center items-center min-h-[400px] bg-surface">
+        <div className="text-center">
+          <p className="text-destructive font-medium">Failed to load team</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            {teamError instanceof Error ? teamError.message : "Team not found"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const team = teamData as TeamDetailResponse;
+  const teamInitials = team.name.slice(0, 2).toUpperCase();
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] p-2 sm:p-4 md:p-6 lg:p-10 space-y-6 font-inter">
@@ -73,16 +142,15 @@ export default function TeamManagementPage() {
         </Button>
         <div className="flex flex-col">
           <div className="flex items-center gap-3">
-            {/* Team Logo Placeholder - replacing with a colored circle if no image */}
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-              LN
+              {teamInitials}
             </div>
             <h1 className="text-xl font-bold text-gray-900 font-poppins">
-              Team Name
+              {team.name}
             </h1>
           </div>
           <Badge className="w-fit mt-1 bg-purple-100 text-purple-700 hover:bg-purple-100 border-none font-medium text-xs px-2 py-0.5 rounded-md">
-            Completed
+            {members.length} / {team.maxSize} Members
           </Badge>
         </div>
       </div>
@@ -102,64 +170,70 @@ export default function TeamManagementPage() {
           Team Members
         </button>
 
-        {/* Tab 2: Synopsis Submission */}
-        <button
-          onClick={() => setActiveTab("synopsis")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
-            activeTab === "synopsis"
-              ? "bg-secondary/50 border-primary/30 text-primary shadow-sm"
-              : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
-          }`}
-        >
-          <div
-            className={`flex items-center justify-center w-6 h-6 rounded-full text-xs border ${activeTab === "synopsis" ? "border-primary" : "border-muted-foreground"}`}
+        {/* Round Tabs - Dynamic from rounds data */}
+        {roundTabs.map((round) => (
+          <button
+            key={round.id}
+            onClick={() => setActiveTab(round.id)}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
+              activeTab === round.id
+                ? "bg-secondary/50 border-primary/30 text-primary shadow-sm"
+                : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
+            }`}
           >
-            1
-          </div>
-          Synopsis Submission
-        </button>
-
-        {/* Tab 3: Presentation Submission */}
-        <button
-          onClick={() => setActiveTab("presentation")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
-            activeTab === "presentation"
-              ? "bg-secondary/50 border-primary/30 text-primary shadow-sm"
-              : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
-          }`}
-        >
-          <div
-            className={`flex items-center justify-center w-6 h-6 rounded-full text-xs border ${activeTab === "presentation" ? "border-primary" : "border-muted-foreground"}`}
-          >
-            2
-          </div>
-          Presentation Submission
-        </button>
-
-        {/* Tab 4: Offline Round */}
-        <button
-          onClick={() => setActiveTab("offline")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
-            activeTab === "offline"
-              ? "bg-secondary/50 border-primary/30 text-primary shadow-sm"
-              : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
-          }`}
-        >
-          <div
-            className={`flex items-center justify-center w-6 h-6 rounded-full text-xs border ${activeTab === "offline" ? "border-primary" : "border-muted-foreground"}`}
-          >
-            3
-          </div>
-          Offline Round
-        </button>
+            <div
+              className={`flex items-center justify-center w-6 h-6 rounded-full text-xs border ${
+                activeTab === round.id
+                  ? "border-primary"
+                  : "border-muted-foreground"
+              }`}
+            >
+              {round.order}
+            </div>
+            {round.name}
+          </button>
+        ))}
       </div>
 
       {/* Content Area */}
       <div className="bg-primary-foreground rounded-[20px] p-2 sm:p-4 md:p-6 lg:p-10 shadow-sm border border-gray-100 min-h-[500px]">
-        {activeTab === "members" && <TeamMembers members={MOCK_MEMBERS} />}
-        {activeTab === "synopsis" && <SynopsisSubmission />}
-        {activeTab === "presentation" && <PresentationSubmission />}
-        {activeTab === "offline" && <OfflineRound />}
+        {activeTab === "members" && <TeamMembers members={members} />}
+
+        {activeTab !== "members" && (
+          <div className="space-y-4">
+            {selectedRoundSubmission ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-green-100 text-green-700">
+                    Submitted
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    {selectedRoundSubmission.submittedAt
+                      ? new Date(
+                          selectedRoundSubmission.submittedAt,
+                        ).toLocaleString()
+                      : "—"}
+                  </span>
+                </div>
+                <div className="bg-muted/30 rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">Submission Data</h3>
+                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {JSON.stringify(selectedRoundSubmission.payload, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16">
+                <p className="text-muted-foreground text-lg">
+                  No submission yet
+                </p>
+                <p className="text-muted-foreground text-sm mt-1">
+                  This team has not submitted for this round
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { Type } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsInt,
@@ -7,12 +7,12 @@ import {
   Min,
   ValidateIf,
   ValidateNested,
-} from "class-validator";
+} from 'class-validator';
 import {
   EventRegistrationFormDto,
   EventPrizeBreakdownDto,
   EventAdditionalInfoDto,
-} from "@oppskills/types";
+} from '@oppskills/types';
 
 /**
  * Payload to replace the entire registration form definition for an event.
@@ -41,7 +41,7 @@ export class UpdateEventPrizeBreakdownDto {
  */
 export class UpdateEventMaxUsersDto {
   @ApiPropertyOptional({
-    description: "Maximum number of users (null = unlimited)",
+    description: 'Maximum number of users (null = unlimited)',
     nullable: true,
     minimum: 1,
   })

@@ -129,7 +129,10 @@ export class ClerkAuthGuard implements CanActivate {
           // Log but don't fail - the user might still be able to complete their request
           this.logger.warn('[canActivate] Failed to upsert user:', {
             userId,
-            error: upsertError instanceof Error ? upsertError.message : `${upsertError}`,
+            error:
+              upsertError instanceof Error
+                ? upsertError.message
+                : `${upsertError}`,
           });
         }
       }

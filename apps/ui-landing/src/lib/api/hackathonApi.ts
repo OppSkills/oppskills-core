@@ -13,6 +13,79 @@ import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/hackathons");
 
+// =====================
+// Public Endpoints (no auth required)
+// =====================
+
+/**
+ * Type for public hackathon list items.
+ */
+export interface PublicHackathonListItem {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  bannerImageUrl: string | null;
+  startDate: string;
+  endDate: string;
+  status: string;
+  approvalStatus: string;
+  mode: string;
+  locationType: string | null;
+  locationCity: string | null;
+  locationAddress: string | null;
+  locationVirtualLink: string | null;
+  isFree: boolean;
+  entryFeeAmount: number | null;
+  currency: string;
+  prizeTotalWorthAmount: number | null;
+  hackathonType: string;
+  participantType: string;
+  registrationCount: number;
+  maxTeams: number | null;
+  registrationDeadline: string | null;
+  isRegistrationPaused: boolean;
+  organizationName: string | null;
+  organizationLogoUrl: string | null;
+  createdAt: string;
+  owner: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    imageUrl: string | null;
+  };
+  festival: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
+}
+
+/**
+ * Fetches public hackathons (PUBLISHED/ONGOING + APPROVED).
+ * No authentication required.
+ */
+export async function getPublicHackathons(
+  festivalId?: string,
+): Promise<PublicHackathonListItem[]> {
+  const params = festivalId ? { festival_id: festivalId } : {};
+  const res = await API.get("/public", { params });
+  return res.data as PublicHackathonListItem[];
+}
+
+/**
+ * Fetches a public hackathon by slug.
+ * No authentication required.
+ */
+export async function getPublicHackathonBySlug(slug: string): Promise<unknown> {
+  const res = await API.get(`/public/by-slug/${encodeURIComponent(slug)}`);
+  return res.data as unknown;
+}
+
+// =====================
+// Authenticated Endpoints
+// =====================
+
 /**
  * Fetches hackathons visible to the current user.
  */
@@ -38,7 +111,7 @@ export async function getMyHackathons(token: string): Promise<unknown> {
  */
 export async function getHackathonById(
   token: string,
-  id: string
+  id: string,
 ): Promise<unknown> {
   const res = await API.get(`/${id}`, { headers: buildAuthHeaders(token) });
   return res.data as unknown;
@@ -49,7 +122,7 @@ export async function getHackathonById(
  */
 export async function getHackathonBySlug(
   token: string,
-  slug: string
+  slug: string,
 ): Promise<unknown> {
   const safeSlug = slug.trim();
   if (safeSlug.length === 0) {
@@ -66,7 +139,7 @@ export async function getHackathonBySlug(
  */
 export async function createHackathon(
   token: string,
-  data: CreateHackathonDto
+  data: CreateHackathonDto,
 ): Promise<unknown> {
   const res = await API.post("", data, { headers: buildAuthHeaders(token) });
   return res.data as unknown;
@@ -80,7 +153,7 @@ export async function createHackathon(
 export async function updateHackathon(
   token: string,
   id: string,
-  data: UpdateHackathonDto
+  data: UpdateHackathonDto,
 ): Promise<unknown> {
   const res = await API.put(`/${id}`, data, {
     headers: buildAuthHeaders(token),
@@ -106,7 +179,7 @@ type UpdateHackathonMaxTeamsPayload = {
 export async function updateHackathonRounds(
   token: string,
   id: string,
-  data: UpdateHackathonRoundsDto
+  data: UpdateHackathonRoundsDto,
 ): Promise<unknown> {
   const res = await API.put(`/${id}/rounds`, data, {
     headers: buildAuthHeaders(token),
@@ -120,7 +193,7 @@ export async function updateHackathonRounds(
 export async function updateHackathonAdditionalInfo(
   token: string,
   id: string,
-  data: UpdateHackathonAdditionalInfoDto
+  data: UpdateHackathonAdditionalInfoDto,
 ): Promise<unknown> {
   const res = await API.put(`/${id}/additional-info`, data, {
     headers: buildAuthHeaders(token),
@@ -134,7 +207,7 @@ export async function updateHackathonAdditionalInfo(
 export async function updateHackathonRegistrationForm(
   token: string,
   id: string,
-  data: UpdateHackathonRegistrationFormPayload
+  data: UpdateHackathonRegistrationFormPayload,
 ): Promise<unknown> {
   const res = await API.put(`/${id}/registration-form`, data, {
     headers: buildAuthHeaders(token),
@@ -148,7 +221,7 @@ export async function updateHackathonRegistrationForm(
 export async function updateHackathonPrizeBreakdown(
   token: string,
   id: string,
-  data: UpdateHackathonPrizeBreakdownPayload
+  data: UpdateHackathonPrizeBreakdownPayload,
 ): Promise<unknown> {
   const res = await API.put(`/${id}/prize-breakdown`, data, {
     headers: buildAuthHeaders(token),
@@ -163,7 +236,7 @@ export async function updateHackathonPrizeBreakdown(
 export async function updateHackathonMaxTeams(
   token: string,
   id: string,
-  data: UpdateHackathonMaxTeamsPayload
+  data: UpdateHackathonMaxTeamsPayload,
 ): Promise<unknown> {
   const res = await API.put(`/${id}/max-teams`, data, {
     headers: buildAuthHeaders(token),
@@ -176,7 +249,7 @@ export async function updateHackathonMaxTeams(
  */
 export async function deleteHackathon(
   token: string,
-  id: string
+  id: string,
 ): Promise<unknown> {
   const res = await API.delete(`/${id}`, { headers: buildAuthHeaders(token) });
   return res.data as unknown;
@@ -187,12 +260,12 @@ export async function deleteHackathon(
  */
 export async function registerForHackathon(
   token: string,
-  id: string
+  id: string,
 ): Promise<unknown> {
   const res = await API.post(
     `/${id}/register`,
     {},
-    { headers: buildAuthHeaders(token) }
+    { headers: buildAuthHeaders(token) },
   );
   return res.data as unknown;
 }
@@ -206,7 +279,7 @@ export async function registerForHackathon(
  */
 export async function getHackathonRoles(
   token: string,
-  id: string
+  id: string,
 ): Promise<HackathonRolesResponse> {
   const res = await API.get(`/${id}/roles`, {
     headers: buildAuthHeaders(token),
@@ -220,7 +293,7 @@ export async function getHackathonRoles(
 export async function addHackathonRole(
   token: string,
   id: string,
-  data: AddHackathonRoleDto
+  data: AddHackathonRoleDto,
 ): Promise<{ message: string; alreadyExists: boolean }> {
   const res = await API.post(`/${id}/roles`, data, {
     headers: buildAuthHeaders(token),
@@ -234,11 +307,130 @@ export async function addHackathonRole(
 export async function removeHackathonRole(
   token: string,
   id: string,
-  data: RemoveHackathonRoleDto
+  data: RemoveHackathonRoleDto,
 ): Promise<{ message: string }> {
   const res = await API.delete(`/${id}/roles`, {
     headers: buildAuthHeaders(token),
     data, // axios supports body in DELETE via data property
   });
   return res.data as { message: string };
+}
+
+// =====================
+// Registrations (Teams) for Dashboard
+// =====================
+
+/**
+ * Response type for hackathon registrations (teams) by slug.
+ */
+export interface HackathonRoundInfo {
+  id: string;
+  name: string;
+  order: number;
+  roundType: string;
+  startsAt: string;
+  endsAt: string;
+  status: string;
+}
+
+export interface HackathonTeamLeader {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  imageUrl: string | null;
+  university: string;
+  location: string;
+}
+
+export interface HackathonTeamRoundSubmission {
+  submissionId: string;
+  submittedAt: string | null;
+  payload: unknown;
+}
+
+export interface HackathonTeamRegistration {
+  teamId: string;
+  teamName: string;
+  memberCount: number;
+  maxSize: number;
+  createdAt: string;
+  leader: HackathonTeamLeader;
+  roundSubmissions: Record<string, HackathonTeamRoundSubmission>;
+}
+
+export interface HackathonRegistrationsBySlugResponse {
+  hackathonId: string;
+  rounds: HackathonRoundInfo[];
+  teams: HackathonTeamRegistration[];
+}
+
+/**
+ * Get all team registrations for a hackathon by slug (owner/manager/admin only).
+ */
+export async function getHackathonRegistrationsBySlug(
+  token: string,
+  slug: string,
+): Promise<HackathonRegistrationsBySlugResponse> {
+  const safeSlug = slug.trim();
+  if (safeSlug.length === 0) {
+    throw new Error("Hackathon slug is required.");
+  }
+  const res = await API.get(
+    `/by-slug/${encodeURIComponent(safeSlug)}/registrations`,
+    {
+      headers: buildAuthHeaders(token),
+    },
+  );
+  return res.data as HackathonRegistrationsBySlugResponse;
+}
+
+// =====================
+// Settings & Approval
+// =====================
+
+/**
+ * Submit a hackathon for admin approval.
+ * Sets status to PUBLISHED and approvalStatus to PENDING.
+ */
+export async function submitHackathonForApproval(
+  token: string,
+  id: string,
+): Promise<unknown> {
+  const res = await API.post(
+    `/${id}/submit-for-approval`,
+    {},
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as unknown;
+}
+
+/**
+ * Update hackathon lifecycle status.
+ */
+export async function updateHackathonStatus(
+  token: string,
+  id: string,
+  data: {
+    status: "DRAFT" | "PUBLISHED" | "ONGOING" | "COMPLETED" | "CANCELLED";
+  },
+): Promise<unknown> {
+  const res = await API.patch(`/${id}/status`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
+}
+
+/**
+ * Update hackathon registration paused status.
+ */
+export async function updateHackathonRegistrationPaused(
+  token: string,
+  id: string,
+  data: { isRegistrationPaused: boolean },
+): Promise<unknown> {
+  const res = await API.patch(`/${id}/registration-paused`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as unknown;
 }

@@ -26,7 +26,10 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CollegesService } from './colleges.service';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
-import type { CollegeBulkImportDto, CollegeImportItemDto } from '@oppskills/types';
+import type {
+  CollegeBulkImportDto,
+  CollegeImportItemDto,
+} from '@oppskills/types';
 
 @ApiTags('Colleges')
 @Controller('colleges')
@@ -93,7 +96,8 @@ export class CollegesController {
       'Import multiple colleges at once. This endpoint is ONLY available in non-production environments.',
   })
   @ApiBody({
-    description: 'Array of college objects to import. Optional fields (state, city, address) will default to empty string if not provided.',
+    description:
+      'Array of college objects to import. Optional fields (state, city, address) will default to empty string if not provided.',
     schema: {
       type: 'object',
       properties: {
@@ -170,8 +174,13 @@ export class CollegesController {
       );
     }
 
-    this.logger.log(`Bulk importing ${body.colleges.length} colleges with batch size ${batchSize}`);
-    const result = await this.collegesService.bulkImportColleges(body.colleges, batchSize);
+    this.logger.log(
+      `Bulk importing ${body.colleges.length} colleges with batch size ${batchSize}`,
+    );
+    const result = await this.collegesService.bulkImportColleges(
+      body.colleges,
+      batchSize,
+    );
     return result;
   }
 
@@ -266,7 +275,7 @@ export class CollegesController {
     try {
       const content = file.buffer.toString('utf-8');
       const parsed = JSON.parse(content);
-      
+
       // Handle both array and { colleges: [...] } format
       if (Array.isArray(parsed)) {
         colleges = parsed;
@@ -282,8 +291,13 @@ export class CollegesController {
       );
     }
 
-    this.logger.log(`Parsed ${colleges.length} colleges from file, starting import with batch size ${batchSize}`);
-    const result = await this.collegesService.bulkImportColleges(colleges, batchSize);
+    this.logger.log(
+      `Parsed ${colleges.length} colleges from file, starting import with batch size ${batchSize}`,
+    );
+    const result = await this.collegesService.bulkImportColleges(
+      colleges,
+      batchSize,
+    );
     return result;
   }
 }

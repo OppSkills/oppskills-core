@@ -13,7 +13,6 @@ import type {
   UpdateHackathonRoundsDto,
   UpdateHackathonAdditionalInfoDto,
   HackathonAttendeeEligibilityValue,
-  HackathonRoundTypeValue,
   PrizeBreakdownDto,
   RegistrationFormDto,
 } from '@oppskills/types';
@@ -28,9 +27,6 @@ type LifecycleStatus =
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 
-/** Default round type for auto-generated rounds. */
-const DEFAULT_ROUND_TYPE: HackathonRoundTypeValue = 'ONLINE';
-
 /** Default attendee eligibility when not provided. */
 const DEFAULT_ATTENDEE_ELIGIBILITY: HackathonAttendeeEligibilityValue[] = [
   'EVERYONE_CAN_APPLY',
@@ -41,7 +37,7 @@ export class HackathonService {
   /**
    * Create a hackathon as a user.
    * - If `festivalId` is null/undefined => standalone hackathon.
-   * - If `rounds` is not provided, creates 3 default rounds with evenly split timelines.
+   * - If `rounds` is not provided, no default rounds are created (organizers add them later).
    */
   async createHackathon(dto: CreateHackathonDto, userId: string) {
     if (dto.festivalId) {
@@ -67,7 +63,7 @@ export class HackathonService {
 
     const slug = await this.buildHackathonSlug(dto.slug, dto.name);
 
-    // Build rounds data - either from DTO or generate default 3 rounds
+    // Build rounds data - either from DTO or empty (no default rounds)
     const roundsData = dto.rounds
       ? dto.rounds.map((round) => ({
           name: round.name,
@@ -80,7 +76,7 @@ export class HackathonService {
             ? (round.submissionConfig as Prisma.InputJsonValue)
             : Prisma.JsonNull,
         }))
-      : this.generateDefaultRounds(startDate, endDate);
+      : []; // Don't create default rounds - organizers can add them later
 
     // Determine attendee eligibility
     const attendeeEligibility =
@@ -220,6 +216,311 @@ export class HackathonService {
       include: this.getHackathonIncludeClause(),
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Public Endpoints (no auth) - sanitized data only
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * List public hackathons (PUBLISHED/ONGOING + APPROVED only).
+   * Returns sanitized data without teams or participant PII.
+   */
+  async listPublicHackathons(input: { festivalId?: string } = {}) {
+    const baseWhere: Record<string, unknown> = {
+      status: { in: ['PUBLISHED', 'ONGOING'] },
+      approvalStatus: 'APPROVED',
+    };
+    if (input.festivalId) {
+      baseWhere.festivalId = input.festivalId;
+    }
+
+    const hackathons = await prisma.hackathonEntity.findMany({
+      where: baseWhere,
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        bannerImageUrl: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        approvalStatus: true,
+        mode: true,
+        locationType: true,
+        locationCity: true,
+        locationAddress: true,
+        locationVirtualLink: true,
+        isFree: true,
+        entryFeeAmount: true,
+        currency: true,
+        prizeTotalWorthAmount: true,
+        prizeDescription: true,
+        prizeCertificate: true,
+        visibility: true,
+        hackathonType: true,
+        participantType: true,
+        registrationCount: true,
+        maxTeams: true,
+        registrationDeadline: true,
+        isRegistrationPaused: true,
+        organizationName: true,
+        organizationLogoUrl: true,
+        attendeeEligibility: true,
+        createdAt: true,
+        // Owner info (public: name only)
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+        festival: {
+          select: { id: true, name: true, slug: true },
+        },
+        // Rounds are public
+        rounds: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            startsAt: true,
+            endsAt: true,
+            order: true,
+            roundType: true,
+            status: true,
+          },
+          orderBy: { order: 'asc' },
+        },
+        // Prize breakdown is public
+        prizeBreakdown: {
+          select: { id: true, position: true, amount: true, description: true },
+          orderBy: { amount: 'desc' },
+        },
+      },
+      orderBy: { startDate: 'asc' },
+    });
+
+    return hackathons;
+  }
+
+  /**
+   * Get a public hackathon by slug (PUBLISHED/ONGOING + APPROVED only).
+   * Returns sanitized data without teams, participants, or PII.
+   */
+  async getPublicHackathonBySlug(slug: string) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        bannerImageUrl: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        approvalStatus: true,
+        mode: true,
+        locationType: true,
+        locationCity: true,
+        locationAddress: true,
+        locationVirtualLink: true,
+        isFree: true,
+        entryFeeAmount: true,
+        currency: true,
+        prizeTotalWorthAmount: true,
+        prizeDescription: true,
+        prizeCertificate: true,
+        visibility: true,
+        hackathonType: true,
+        participantType: true,
+        registrationCount: true,
+        maxTeams: true,
+        registrationDeadline: true,
+        isRegistrationPaused: true,
+        organizationName: true,
+        organizationLogoUrl: true,
+        attendeeEligibility: true,
+        contactName: true,
+        contactEmail: true,
+        contactPhone: true,
+        createdAt: true,
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+        festival: {
+          select: { id: true, name: true, slug: true },
+        },
+        rounds: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            startsAt: true,
+            endsAt: true,
+            order: true,
+            roundType: true,
+            status: true,
+          },
+          orderBy: { order: 'asc' },
+        },
+        prizeBreakdown: {
+          select: { id: true, position: true, amount: true, description: true },
+          orderBy: { amount: 'desc' },
+        },
+        registrationForm: {
+          select: {
+            id: true,
+            externalFormLink: true,
+            fields: {
+              select: {
+                id: true,
+                label: true,
+                type: true,
+                required: true,
+                order: true,
+                options: true,
+              },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!hackathon) {
+      throw new NotFoundException('Hackathon not found');
+    }
+
+    // Only return if publicly visible
+    const isPubliclyVisible =
+      (hackathon.status === 'PUBLISHED' || hackathon.status === 'ONGOING') &&
+      hackathon.approvalStatus === 'APPROVED';
+
+    if (!isPubliclyVisible) {
+      throw new NotFoundException(
+        'Hackathon not found or not publicly visible',
+      );
+    }
+
+    return hackathon;
+  }
+
+  /**
+   * Get a public hackathon by ID (PUBLISHED/ONGOING + APPROVED only).
+   * Returns sanitized data without teams, participants, or PII.
+   */
+  async getPublicHackathonById(id: string) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        bannerImageUrl: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        approvalStatus: true,
+        mode: true,
+        locationType: true,
+        locationCity: true,
+        locationAddress: true,
+        locationVirtualLink: true,
+        isFree: true,
+        entryFeeAmount: true,
+        currency: true,
+        prizeTotalWorthAmount: true,
+        prizeDescription: true,
+        prizeCertificate: true,
+        visibility: true,
+        hackathonType: true,
+        participantType: true,
+        registrationCount: true,
+        maxTeams: true,
+        registrationDeadline: true,
+        isRegistrationPaused: true,
+        organizationName: true,
+        organizationLogoUrl: true,
+        attendeeEligibility: true,
+        contactName: true,
+        contactEmail: true,
+        contactPhone: true,
+        createdAt: true,
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+        festival: {
+          select: { id: true, name: true, slug: true },
+        },
+        rounds: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            startsAt: true,
+            endsAt: true,
+            order: true,
+            roundType: true,
+            status: true,
+          },
+          orderBy: { order: 'asc' },
+        },
+        prizeBreakdown: {
+          select: { id: true, position: true, amount: true, description: true },
+          orderBy: { amount: 'desc' },
+        },
+        registrationForm: {
+          select: {
+            id: true,
+            externalFormLink: true,
+            fields: {
+              select: {
+                id: true,
+                label: true,
+                type: true,
+                required: true,
+                order: true,
+                options: true,
+              },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!hackathon) {
+      throw new NotFoundException('Hackathon not found');
+    }
+
+    // Only return if publicly visible
+    const isPubliclyVisible =
+      (hackathon.status === 'PUBLISHED' || hackathon.status === 'ONGOING') &&
+      hackathon.approvalStatus === 'APPROVED';
+
+    if (!isPubliclyVisible) {
+      throw new NotFoundException(
+        'Hackathon not found or not publicly visible',
+      );
+    }
+
+    return hackathon;
   }
 
   /**
@@ -621,7 +922,8 @@ export class HackathonService {
     await this.assertHackathonEditableByUser(id, userId);
 
     const externalFormLink =
-      typeof dto.externalFormLink === 'string' && dto.externalFormLink.trim().length > 0
+      typeof dto.externalFormLink === 'string' &&
+      dto.externalFormLink.trim().length > 0
         ? dto.externalFormLink.trim()
         : undefined;
 
@@ -780,33 +1082,6 @@ export class HackathonService {
     }
 
     return hackathon;
-  }
-
-  /**
-   * Generate 3 default rounds by evenly splitting the hackathon duration.
-   */
-  private generateDefaultRounds(startDate: Date, endDate: Date) {
-    const totalDuration = endDate.getTime() - startDate.getTime();
-    const roundDuration = totalDuration / 3;
-
-    const roundNames = ['Round 1', 'Round 2', 'Round 3'];
-
-    return roundNames.map((name, index) => {
-      const roundStart = new Date(startDate.getTime() + index * roundDuration);
-      const roundEnd = new Date(
-        startDate.getTime() + (index + 1) * roundDuration,
-      );
-
-      return {
-        name,
-        description: null,
-        startsAt: roundStart,
-        endsAt: roundEnd,
-        order: index,
-        roundType: DEFAULT_ROUND_TYPE,
-        submissionConfig: Prisma.JsonNull,
-      };
-    });
   }
 
   /**
@@ -994,7 +1269,10 @@ export class HackathonService {
   /**
    * Check if a user is a manager for a given hackathon.
    */
-  async isHackathonManager(hackathonId: string, userId: string): Promise<boolean> {
+  async isHackathonManager(
+    hackathonId: string,
+    userId: string,
+  ): Promise<boolean> {
     const role = await prisma.hackathonUserRoleEntity.findFirst({
       where: {
         hackathonId,
@@ -1251,5 +1529,308 @@ export class HackathonService {
     return {
       message: `Successfully removed ${targetUser.firstName || targetUser.email} as ${role.toLowerCase()}.`,
     };
+  }
+
+  // =====================
+  // Registrations (Teams) for Dashboard
+  // =====================
+
+  /**
+   * Check if a user has permission to view hackathon registrations (owner/admin/manager).
+   */
+  private async hasViewRegistrationsPermission(
+    ownerId: string,
+    userId: string,
+    hackathonId: string,
+  ): Promise<boolean> {
+    if (ownerId === userId) return true;
+    const isAdmin = await this.isAdminUser(userId);
+    if (isAdmin) return true;
+    const isManager = await this.isHackathonManager(hackathonId, userId);
+    return isManager;
+  }
+
+  /**
+   * List all team registrations for a hackathon by slug (owner/manager/admin only).
+   * Returns team data enriched with leader profile information and round submission statuses.
+   */
+  async listHackathonRegistrationsBySlug(
+    slug: string,
+    requesterUserId: string,
+  ) {
+    // Find hackathon by slug
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug },
+      select: { id: true, ownerId: true },
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    // Check permission
+    const hasPermission = await this.hasViewRegistrationsPermission(
+      hackathon.ownerId,
+      requesterUserId,
+      hackathon.id,
+    );
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have permission to view registrations for this hackathon.',
+      );
+    }
+
+    // Get all rounds for this hackathon
+    const rounds = await prisma.roundEntity.findMany({
+      where: { hackathonId: hackathon.id },
+      orderBy: { order: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        order: true,
+        roundType: true,
+        startsAt: true,
+        endsAt: true,
+        status: true,
+      },
+    });
+
+    // Query all teams with leader onboarding data and round submissions
+    const teams = await prisma.teamEntity.findMany({
+      where: { hackathonId: hackathon.id },
+      include: {
+        leader: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+            onboardingProfile: {
+              include: {
+                college: {
+                  select: {
+                    id: true,
+                    name: true,
+                    city: true,
+                    state: true,
+                    country: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        members: {
+          select: { id: true },
+        },
+        roundSubmissions: {
+          select: {
+            id: true,
+            roundId: true,
+            submittedAt: true,
+            payload: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Map to dashboard-friendly format
+    return {
+      hackathonId: hackathon.id,
+      rounds: rounds.map((r) => ({
+        id: r.id,
+        name: r.name,
+        order: r.order,
+        roundType: r.roundType,
+        startsAt: r.startsAt,
+        endsAt: r.endsAt,
+        status: r.status,
+      })),
+      teams: teams.map((team) => {
+        const leader = team.leader;
+        const profile = leader.onboardingProfile;
+
+        // Derive university/institution from leader
+        let university = '';
+        if (profile) {
+          if (profile.college) {
+            university = profile.college.name;
+          } else if (profile.schoolName) {
+            university = profile.schoolName;
+          } else if (profile.companyName) {
+            university = profile.companyName;
+          }
+        }
+
+        // Derive location from leader
+        let location = '';
+        if (profile) {
+          const parts: string[] = [];
+          if (profile.locationCity) parts.push(profile.locationCity);
+          if (profile.locationState) parts.push(profile.locationState);
+          if (profile.locationCountry) parts.push(profile.locationCountry);
+          location = parts.join(', ');
+        }
+
+        // Build round submission status map
+        const roundSubmissions = team.roundSubmissions.reduce(
+          (acc, sub) => {
+            acc[sub.roundId] = {
+              submissionId: sub.id,
+              submittedAt: sub.submittedAt,
+              payload: sub.payload,
+            };
+            return acc;
+          },
+          {} as Record<
+            string,
+            { submissionId: string; submittedAt: Date | null; payload: unknown }
+          >,
+        );
+
+        return {
+          teamId: team.id,
+          teamName: team.name,
+          memberCount: team.members.length + 1, // +1 for leader
+          maxSize: team.maxSize,
+          createdAt: team.createdAt,
+          leader: {
+            id: leader.id,
+            email: leader.email,
+            firstName: leader.firstName,
+            lastName: leader.lastName,
+            imageUrl: leader.imageUrl,
+            university,
+            location,
+          },
+          roundSubmissions,
+        };
+      }),
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Approval & Registration Control
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Submit hackathon for approval.
+   * - Sets status to PUBLISHED and approvalStatus to PENDING.
+   * - Requires owner/admin/manager permission.
+   */
+  async submitForApproval(id: string, userId: string, note?: string) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id },
+      select: { id: true, ownerId: true, status: true, approvalStatus: true },
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    const hasPermission = await this.hasViewRegistrationsPermission(
+      hackathon.ownerId,
+      userId,
+      id,
+    );
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You are not allowed to submit this hackathon for approval.',
+      );
+    }
+
+    // Update status to PUBLISHED and approvalStatus to PENDING
+    return prisma.hackathonEntity.update({
+      where: { id },
+      data: {
+        status: 'PUBLISHED',
+        approvalStatus: 'PENDING',
+        approvalSubmittedAt: new Date(),
+        approvalApprovedAt: null,
+        approvalRejectedAt: null,
+        approvalNote: note,
+      },
+      select: {
+        id: true,
+        status: true,
+        approvalStatus: true,
+        approvalSubmittedAt: true,
+      },
+    });
+  }
+
+  /**
+   * Update approval status (admin only).
+   * - Approves or rejects a hackathon.
+   */
+  async updateApprovalStatus(
+    id: string,
+    approvalStatus: 'APPROVED' | 'REJECTED',
+    userId: string,
+    note?: string,
+  ) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id },
+      select: { id: true, approvalStatus: true },
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    // Admin-only check
+    const isAdmin = await this.isAdminUser(userId);
+    if (!isAdmin) {
+      throw new ForbiddenException(
+        'Only admins can approve or reject hackathons.',
+      );
+    }
+
+    const now = new Date();
+    return prisma.hackathonEntity.update({
+      where: { id },
+      data: {
+        approvalStatus,
+        approvalApprovedAt: approvalStatus === 'APPROVED' ? now : null,
+        approvalRejectedAt: approvalStatus === 'REJECTED' ? now : null,
+        approvalNote: note,
+      },
+      select: {
+        id: true,
+        approvalStatus: true,
+        approvalApprovedAt: true,
+        approvalRejectedAt: true,
+        approvalNote: true,
+      },
+    });
+  }
+
+  /**
+   * Update registration paused status.
+   * - Requires owner/admin/manager permission.
+   */
+  async updateRegistrationPaused(
+    id: string,
+    isRegistrationPaused: boolean,
+    userId: string,
+  ) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id },
+      select: { id: true, ownerId: true },
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    const hasPermission = await this.hasViewRegistrationsPermission(
+      hackathon.ownerId,
+      userId,
+      id,
+    );
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You are not allowed to modify this hackathon.',
+      );
+    }
+
+    return prisma.hackathonEntity.update({
+      where: { id },
+      data: { isRegistrationPaused },
+      select: {
+        id: true,
+        isRegistrationPaused: true,
+      },
+    });
   }
 }
