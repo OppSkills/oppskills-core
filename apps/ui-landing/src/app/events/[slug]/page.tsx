@@ -48,6 +48,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       images: event.bannerImageUrl ? [event.bannerImageUrl] : undefined,
     },
+    alternates: {
+      canonical: `https://oppskills.com/events/${event.slug}`,
+    },
   };
 }
 

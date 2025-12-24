@@ -1,15 +1,77 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Better Alternative to Unstop for Hackathons & College Events",
+  title:
+    "Better Alternative to Unstop for Hackathons & College Events | OppSkills",
   description:
     "Looking for an Unstop alternative? OppSkills offers a better platform for hosting and participating in college hackathons, events, and competitions with lower fees and better support.",
+  keywords: [
+    "Unstop alternative",
+    "Unstop competitor",
+    "hackathon platform",
+    "college event platform",
+    "student opportunities",
+    "better than unstop",
+    "OppSkills vs Unstop",
+  ],
+  alternates: {
+    canonical: "https://oppskills.com/unstop-alternative",
+  },
+  openGraph: {
+    title: "Better Alternative to Unstop | OppSkills",
+    description:
+      "Compare OppSkills vs Unstop. Why OppSkills is the best platform for students and organizers for hackathons and events.",
+    url: "https://oppskills.com/unstop-alternative",
+    type: "article",
+    images: [
+      {
+        url: "/og_poster.png",
+        width: 1200,
+        height: 630,
+        alt: "OppSkills vs Unstop",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Better Alternative to Unstop | OppSkills",
+    description:
+      "Compare OppSkills vs Unstop. The best platform for college hackathons and events.",
+    images: ["/og_poster.png"],
+  },
 };
 
 export default function UnstopAlternativePage() {
   return (
     <div className="container mx-auto px-4 py-16 max-w-4xl">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Article",
+          headline: "Why OppSkills is the Best Unstop Alternative",
+          description:
+            "Compare OppSkills vs Unstop. Why OppSkills is the best platform for students and organizers for hackathons and events.",
+          author: {
+            "@type": "Organization",
+            name: "OppSkills",
+          },
+          publisher: {
+            "@type": "Organization",
+            name: "OppSkills",
+            logo: {
+              "@type": "ImageObject",
+              url: "https://oppskills.com/logo.svg",
+            },
+          },
+          mainEntityOfPage: {
+            "@type": "WebPage",
+            "@id": "https://oppskills.com/unstop-alternative",
+          },
+        }}
+      />
+
       <h1 className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight">
         Why OppSkills is the Best{" "}
         <span className="text-primary">Unstop Alternative</span>

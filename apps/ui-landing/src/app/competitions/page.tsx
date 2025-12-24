@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { JsonLd } from "@/components/seo/JsonLd";
 import {
   CopyIcon,
   Grid,
@@ -172,6 +173,17 @@ export default function CompetitionsPage() {
 
   return (
     <div className="container mx-auto min-h-screen px-4 py-8 md:px-6">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "College Hackathons & Competitions",
+          description:
+            "Explore active hackathons, design challenges, and coding contests.",
+          url: "https://oppskills.com/competitions",
+        }}
+      />
+
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
