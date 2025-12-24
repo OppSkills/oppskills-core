@@ -115,7 +115,9 @@ export class GoogleSheetsController {
 
     if (diagnostics.issues.length === 0 && !diagnostics.isReady) {
       diagnostics.issues.push('Service initialized but not ready');
-      diagnostics.suggestions.push('Check backend logs for initialization errors');
+      diagnostics.suggestions.push(
+        'Check backend logs for initialization errors',
+      );
     }
 
     if (diagnostics.issues.length === 0 && diagnostics.isReady) {

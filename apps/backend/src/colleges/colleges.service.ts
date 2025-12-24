@@ -1,7 +1,7 @@
-import { Injectable } from "@nestjs/common";
-import { prisma } from "@oppskills/db";
-import { Logger } from "src/_utils/logger";
-import type { CollegeImportItemDto } from "@oppskills/types";
+import { Injectable } from '@nestjs/common';
+import { prisma } from '@oppskills/db';
+import { Logger } from 'src/_utils/logger';
+import type { CollegeImportItemDto } from '@oppskills/types';
 
 /**
  * Result shape for bulk imports.
@@ -135,7 +135,7 @@ export class CollegesService {
         );
       } catch (error) {
         results.failed += batch.length;
-        const errorMsg = `Batch ${batchNumber} failed: ${error instanceof Error ? error.message : "Unknown error"}`;
+        const errorMsg = `Batch ${batchNumber} failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
         results.errors.push(errorMsg);
         this.logger.error(errorMsg, error);
       }
@@ -237,7 +237,7 @@ export class CollegesService {
       );
     } catch (error) {
       results.failed += batch.length;
-      const errorMsg = `Batch ${results.batchesProcessed} failed: ${error instanceof Error ? error.message : "Unknown error"}`;
+      const errorMsg = `Batch ${results.batchesProcessed} failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
       results.errors.push(errorMsg);
       this.logger.error(errorMsg, error);
     }
@@ -328,7 +328,9 @@ export class CollegesService {
     const toUpdate = normalized.filter((c) => existingIdSet.has(c.id));
     let updated = 0;
 
-    const updateConcurrency = this.coerceConcurrencyLimit(opts.updateConcurrency);
+    const updateConcurrency = this.coerceConcurrencyLimit(
+      opts.updateConcurrency,
+    );
     const updateResults = await this.runWithConcurrencyLimit(
       toUpdate,
       updateConcurrency,
@@ -366,7 +368,9 @@ export class CollegesService {
    * Provides default values for missing optional fields to allow import of incomplete data.
    * Only rejects rows missing critical required fields (id, name, country).
    */
-  private normalizeCollege(item: CollegeImportItemDto): Result<NormalizedCollegeImport> {
+  private normalizeCollege(
+    item: CollegeImportItemDto,
+  ): Result<NormalizedCollegeImport> {
     const id = this.safeTrim(item.id);
     const name = this.safeTrim(item.name);
     const country = this.safeTrim(item.country);
@@ -375,24 +379,29 @@ export class CollegesService {
     const address = this.safeTrim(item.address);
 
     // Only check critical required fields
-    if (id.length === 0) return { ok: false, error: "Invalid college: missing id" };
-    if (name.length === 0) return { ok: false, error: `Invalid college ${id}: missing name` };
-    if (country.length === 0) return { ok: false, error: `Invalid college ${id}: missing country` };
+    if (id.length === 0)
+      return { ok: false, error: 'Invalid college: missing id' };
+    if (name.length === 0)
+      return { ok: false, error: `Invalid college ${id}: missing name` };
+    if (country.length === 0)
+      return { ok: false, error: `Invalid college ${id}: missing country` };
 
     // Provide defaults for optional fields that are required in database
     // Use empty string for missing optional fields
-    const normalizedState = state.length > 0 ? state : "";
-    const normalizedCity = city.length > 0 ? city : "";
-    const normalizedAddress = address.length > 0 ? address : "";
+    const normalizedState = state.length > 0 ? state : '';
+    const normalizedCity = city.length > 0 ? city : '';
+    const normalizedAddress = address.length > 0 ? address : '';
 
     // Log warning if any optional fields are missing (for monitoring purposes)
     if (state.length === 0 || city.length === 0 || address.length === 0) {
       this.logger.warn(
         `College ${id} (${name}) imported with missing fields: ${[
-          state.length === 0 ? "state" : null,
-          city.length === 0 ? "city" : null,
-          address.length === 0 ? "address" : null,
-        ].filter(Boolean).join(", ")}`
+          state.length === 0 ? 'state' : null,
+          city.length === 0 ? 'city' : null,
+          address.length === 0 ? 'address' : null,
+        ]
+          .filter(Boolean)
+          .join(', ')}`,
       );
     }
 
@@ -415,7 +424,7 @@ export class CollegesService {
   }
 
   private safeTrim(value: unknown): string {
-    if (typeof value !== "string") return "";
+    if (typeof value !== 'string') return '';
     return value.trim();
   }
 
@@ -458,7 +467,7 @@ export class CollegesService {
           await worker(item);
           results[currentIndex] = { ok: true, value: true };
         } catch (e) {
-          const msg = e instanceof Error ? e.message : "Unknown error";
+          const msg = e instanceof Error ? e.message : 'Unknown error';
           results[currentIndex] = { ok: false, error: msg };
         }
       }

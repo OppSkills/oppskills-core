@@ -258,7 +258,8 @@ model UserEntity {
   // Relations
   hackathons   HackathonEntity[]   @relation("UserHackathons")  // created hackathons
   festivals    FestivalEntity[]    @relation("UserFestivals")   // created festivals
-  teams        TeamEntity[]        @relation("UserTeams")       // teams this user has created
+  teamsCreated TeamEntity[]        @relation("TeamCreator")     // teams this user has created
+  teamsLed     TeamEntity[]        @relation("UserTeams")       // teams this user is leading
   teamMembers  TeamMemberEntity[]                             // teams they are part of
 
   // Per-hackathon roles (Manager/Evaluator)
@@ -346,6 +347,9 @@ model HackathonEntity {
   approvalApprovedAt       DateTime?        @map("approval_approved_at")
   approvalRejectedAt       DateTime?        @map("approval_rejected_at")
   approvalNote             String?          @map("approval_note") @db.Text
+
+  // Registration controls
+  isRegistrationPaused     Boolean          @default(false) @map("is_registration_paused")
 
   // Relation: only the creator (organizer) can edit/delete
   ownerId     String
@@ -566,6 +570,8 @@ model RoundEntity {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
+  teamSubmissions HackathonTeamRoundSubmissionEntity[]
+
   @@map("round")
   @@schema("oppskills")
   @@index([hackathonId])
@@ -638,10 +644,16 @@ model TeamEntity {
   hackathonId   String
   hackathon     HackathonEntity  @relation(fields: [hackathonId], references: [id])
 
+  // The original creator of the team (can change leader)
+  creatorId     String    @map("creator_id")
+  creator       UserEntity       @relation("TeamCreator", fields: [creatorId], references: [id])
+
+  // Current team leader
   leaderId      String
   leader        UserEntity       @relation("UserTeams", fields: [leaderId], references: [id])
 
   members       TeamMemberEntity[]
+  roundSubmissions HackathonTeamRoundSubmissionEntity[]
 
   @@map("team")
   @@schema("oppskills")
@@ -662,6 +674,31 @@ model TeamMemberEntity {
   @@unique([userId, teamId])  // one user can't join the same team twice
   @@map("team_member")
   @@schema("oppskills")
+}
+
+/// Submission for a team in a hackathon round.
+/// Stores the full submission payload (synopsis, presentation links, etc.).
+model HackathonTeamRoundSubmissionEntity {
+  id          String   @id @default(cuid())
+  teamId      String   @map("team_id")
+  team        TeamEntity @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  roundId     String   @map("round_id")
+  round       RoundEntity @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  /// Full submission payload (flexible JSON for synopsis text, links, file URLs, etc.)
+  payload     Json     @default("{}")
+
+  /// When the submission was made (null = not yet submitted)
+  submittedAt DateTime? @map("submitted_at")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([teamId, roundId])  // one submission per team per round
+  @@map("hackathon_team_round_submission")
+  @@schema("oppskills")
+  @@index([teamId])
+  @@index([roundId])
 }
 
 /// Attachments for hackathon (S3-ready: stores storageKey + optional publicUrl).

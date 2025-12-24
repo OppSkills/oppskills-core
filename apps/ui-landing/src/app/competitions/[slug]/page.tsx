@@ -5,234 +5,266 @@ import { RoundsTimeline } from "./_components/RoundsTimeline";
 import { AboutSection } from "./_components/AboutSection";
 import { Organizers } from "./_components/Organizers";
 import { Prizes } from "./_components/Prizes";
-import { CompetitionDetails } from "./_components/types";
+import type {
+  CompetitionDetails,
+  Round,
+  RoundStatus,
+  Organizer,
+  Prize,
+} from "./_components/types";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getPublicHackathonBySlug } from "@/lib/api/hackathonApi";
+import { format, formatDistanceToNow } from "date-fns";
+import { Loader2 } from "lucide-react";
 
-interface PageProps {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+/**
+ * Map API round status to UI status.
+ */
+function mapRoundStatus(
+  startsAt: string,
+  endsAt: string,
+  status?: string,
+): RoundStatus {
+  const now = new Date();
+  const start = new Date(startsAt);
+  const end = new Date(endsAt);
+
+  if (status === "COMPLETED" || now > end) return "completed";
+  if (status === "ONGOING" || (now >= start && now <= end)) return "live";
+  return "upcoming";
+}
+
+/**
+ * Map participant type to team size display.
+ */
+function mapTeamSize(participantType: string): string {
+  switch (participantType) {
+    case "INDIVIDUAL":
+      return "1 Member";
+    case "TEAM_OF_2":
+      return "2 Members";
+    case "TEAM_OF_3":
+      return "3 Members";
+    case "TEAM_OF_4":
+      return "4 Members";
+    case "TEAM_OF_5":
+      return "5 Members";
+    case "TEAM_OF_6":
+      return "6 Members";
+    case "MORE_THAN_6":
+      return "6+ Members";
+    default:
+      return "1+ Members";
+  }
+}
+
+/**
+ * Map prize icon based on position.
+ */
+function mapPrizeIcon(position: number): "trophy" | "medal" | "star" {
+  if (position === 1) return "trophy";
+  if (position === 2) return "medal";
+  return "star";
 }
 
 export default function CompetitionDetailsPage() {
   const { slug } = useParams();
-  const [competition, setCompetition] = useState<CompetitionDetails>({
-    id: "1",
-    slug: "silicon-valley-funding-summit-2026",
-    title:
-      "Silicon Valley Funding Summit At CES 2026 - VIP Access For Investors",
-    thumbnail:
-      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2670&auto=format&fit=crop",
-    location: "Las Vegas, NV",
-    dateRange: "January 7-10, 2026",
-    tags: ["Funding", "Tech", "Innovation"],
-
-    featuredIn: "FestName",
-    specificDate: "Monday, 5 January 2026",
-    specificTime: "8:00 - 20:00 GMT-8",
-    venueName: "College/University Name",
-    venueAddress: "City, State",
-    teamSize: "1-2 Members",
-    impressions: 206,
-    registrationDeadline: "8 Days",
-
-    about: `
-            <p><b>Theme:</b> Data Visualization Challenge – <i>“Turning Raw Data Into Real Insights”</i></p>
-
-            <p><b>Event Rounds:</b></p>
-
-            <p><b>Round 1: Dashboard Thinking & Video Response Assessment</b></p>
-            <p>
-            Participants will receive the actual dataset (inspired by Rail India, data.gov.in, etc.) that will be used throughout the competition.
-            </p>
-            <p>
-            The task is to demonstrate structural thinking by answering 6 specific analytical questions regarding trends, visualization choices, and storytelling flow.
-            </p>
-            <ul>
-            <li>Identify top trends in the dataset</li>
-            <li>Select appropriate visualization types for specific columns</li>
-            <li>Prioritize insights valuable for leadership</li>
-            </ul>
-            <p>
-            The objective is to ensure candidates possess the necessary analytical thinking before moving to the design phase.
-            </p>
-
-            <p><b>Round 2: Dashboard Design & Insight Extraction</b></p>
-            <p>
-            Shortlisted teams will build a single-page dashboard using the full dataset provided in Round 1.
-            </p>
-            <ul>
-            <li>KPI section with high-level metrics</li>
-            <li>4–6 core visualizations reflecting time-based or categorical changes</li>
-            <li>Interactive elements (if supported by the tool)</li>
-            </ul>
-            <p>
-            Teams must also submit a short PPT summarizing 3–5 key insights derived from their dashboard.
-            </p>
-            <p>
-            The focus is on translating raw data into a clean, well-structured layout that highlights meaningful patterns.
-            </p>
-
-            <p><b>Round 3: Presentation and Operational Recommendations (Finale)</b></p>
-            <p>
-            Finalist teams will present their dashboard and insights via a live video conference (Zoom).
-            </p>
-            <ul>
-            <li>Explain the story behind the dashboard</li>
-            <li>Justify design choices and identified trends</li>
-            <li>Propose 2–5 practical operational strategies to improve efficiency or service quality</li>
-            </ul>
-            <p>
-            This round tests the ability to go beyond creation and demonstrate strategic thinking.
-            </p>
-
-            <p><b>Rules and Guidelines:</b></p>
-            <ul>
-            <li><b>Dataset Adherence:</b> Teams must strictly use the dataset provided.</li>
-            <li><b>Originality:</b> All work must be original. Plagiarism will lead to immediate disqualification.</li>
-            <li><b>AI Usage:</b> AI for content generation is prohibited. Coding assistance tools may be used if disclosed.</li>
-            <li><b>Tools:</b> Power BI, Tableau, Excel, Python (Plotly/Matplotlib), Google Looker Studio.</li>
-            <li><b>Presentation Time:</b> 10–15 minutes + Q&A.</li>
-            <li><b>Meeting Etiquette:</b> Ensure clear audio and video quality.</li>
-            <li><b>Final Decision:</b> The organizing committee’s decision will be final.</li>
-            </ul>
-
-            <p><b>Eligibility & Logistics:</b></p>
-            <ul>
-            <li><b>Eligibility:</b> Engineering, BBA, BCA, MCA, BSc, BE, B.Com, MBA, M.Tech students</li>
-            <li><b>Team Size:</b> 1–3 members per team</li>
-            <li><b>Event Format:</b> Rounds 1 & 2 (Online), Round 3 (Live via Zoom)</li>
-            </ul>
-
-            <p><b>Judging Criteria:</b></p>
-            <ul>
-            <li><b>Insight Depth (40%):</b> Meaningful, non-obvious insights grounded in data</li>
-            <li><b>Visualization Quality (30%):</b> Correct chart selection and clean layout</li>
-            <li><b>Storytelling & Flow (20%):</b> Logical narrative and explanation of impact</li>
-            <li><b>Actionability (10%):</b> Practical and relevant recommendations</li>
-            </ul>
-
-            <p><b>Round-Specific Submission Details:</b></p>
-
-            <p><b>Round 1:</b></p>
-            <ul>
-            <li><b>Format:</b> Video responses + supporting document (if applicable)</li>
-            <li><b>Task:</b> Answer 6 analytical questions in a recorded video</li>
-            <li><b>Evaluation:</b> Dataset understanding (25%), visualization justification (20%), clarity (15%)</li>
-            </ul>
-
-            <p><b>Round 2:</b></p>
-            <ul>
-            <li><b>Format:</b> Dashboard file or public link + short summary PPT</li>
-            <li><b>Task:</b> Single-page dashboard with KPIs and 4–6 charts</li>
-            <li><b>Evaluation:</b> Structure (25%), visualization (25%), insights (30%)</li>
-            </ul>
-
-            <p><b>Round 3:</b></p>
-            <ul>
-            <li><b>Format:</b> Live presentation with dashboard and PPT</li>
-            <li><b>Task:</b> Explain trends, story, and operational recommendations</li>
-            <li><b>Evaluation:</b> Strategic thinking, presentation quality, actionability</li>
-            </ul>
-
-            <p><b>Important Dates:</b></p>
-            <ul>
-            <li><b>Registration Deadline:</b> 18th Dec, 11:59 PM</li>
-            <li><b>Round 1 Submission:</b> 21st Dec, 11:59 PM</li>
-            <li><b>Round 2 Submission:</b> To be announced</li>
-            <li><b>Round 3 Finale:</b> To be announced</li>
-            </ul>
-
-            <p><b>Additional Information:</b></p>
-            <ul>
-            <li>Participation is free</li>
-            <li>Ensure adherence to deadlines</li>
-            <li>If using Python/R, include preprocessing code files</li>
-            </ul>
-
-    `,
-    rounds: [
-      {
-        id: "r1",
-        name: "Round Name",
-        description: "Round Description in 2 lines...",
-        startDate: "Jan 10, 2026 12:00 PM IST",
-        endDate: "Jan 20, 2026 11:59 PM IST",
-        status: "upcoming",
-      },
-      {
-        id: "r2",
-        name: "Round Name",
-        description: "Round Description in 2 lines...",
-        startDate: "Feb 1, 2026 12:00 PM IST",
-        endDate: "Feb 15, 2026 11:59 PM IST",
-        status: "upcoming",
-      },
-      {
-        id: "r3",
-        name: "Round Name",
-        description: "Round Description in 2 lines...",
-        startDate: "Feb 20, 2026 12:00 PM IST",
-        endDate: "Feb 25, 2026 11:59 PM IST",
-        status: "upcoming",
-      },
-      {
-        id: "r4",
-        name: "Round Name",
-        description: "Round Description in 2 lines...",
-        startDate: "Mar 1, 2026 12:00 PM IST",
-        endDate: "Mar 5, 2026 11:59 PM IST",
-        status: "upcoming",
-      },
-    ],
-    organizers: [
-      {
-        id: "o1",
-        name: "Owner Name",
-        role: "Organizer",
-        avatar: "",
-        company: "",
-      },
-      {
-        id: "o2",
-        name: "Owner Name",
-        role: "Organizer",
-        avatar: "",
-        company: "",
-      },
-    ],
-    prizes: [
-      {
-        id: "p1",
-        title: "Winner",
-        amount: "₹ 5,000",
-        description: "",
-        icon: "trophy",
-      },
-      {
-        id: "p2",
-        title: "1st Runner Up",
-        amount: "₹ 5,000",
-        description: "",
-        icon: "medal",
-      },
-      {
-        id: "p3",
-        title: "2nd Runner Up",
-        amount: "Neckband + Swags",
-        description: "",
-        icon: "star",
-      },
-      {
-        id: "p4",
-        title: "Participation",
-        amount: "Certificate",
-        description: "",
-        icon: "star",
-      },
-    ],
-  });
-  console.log(slug);
+  const [competition, setCompetition] = useState<CompetitionDetails | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [curTab, setCurTab] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchCompetition() {
+      if (!slug || typeof slug !== "string") return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const data = (await getPublicHackathonBySlug(slug)) as {
+          id: string;
+          slug: string;
+          name: string;
+          description: string | null;
+          bannerImageUrl: string | null;
+          startDate: string;
+          endDate: string;
+          mode: string;
+          locationType: string | null;
+          locationCity: string | null;
+          locationAddress: string | null;
+          locationVirtualLink: string | null;
+          hackathonType: string;
+          participantType: string;
+          impressions: number;
+          registrationDeadline: string | null;
+          prizeTotalWorthAmount: number | null;
+          currency: string;
+          organizationName: string | null;
+          owner: {
+            id: string;
+            firstName: string | null;
+            lastName: string | null;
+            imageUrl: string | null;
+          };
+          festival: {
+            id: string;
+            name: string;
+            slug: string;
+          } | null;
+          rounds: Array<{
+            id: string;
+            name: string;
+            description: string | null;
+            startsAt: string;
+            endsAt: string;
+            order: number;
+            roundType: string;
+            status: string;
+          }>;
+          prizeBreakdown: Array<{
+            id: string;
+            position: number;
+            amount: number;
+            description: string | null;
+          }>;
+        };
+
+        // Map API data to CompetitionDetails
+        const startDate = new Date(data.startDate);
+        const endDate = new Date(data.endDate);
+
+        // Build location string
+        let location = "Online";
+        if (
+          data.locationType === "PHYSICAL" ||
+          data.locationType === "OFFLINE"
+        ) {
+          location = data.locationCity || data.locationAddress || "In-Person";
+        } else if (data.locationType === "HYBRID") {
+          location = data.locationCity
+            ? `${data.locationCity} + Online`
+            : "Hybrid";
+        }
+
+        // Build date range string
+        const dateRange =
+          startDate.toDateString() === endDate.toDateString()
+            ? format(startDate, "MMMM d, yyyy")
+            : `${format(startDate, "MMMM d")} - ${format(endDate, "d, yyyy")}`;
+
+        // Map rounds
+        const rounds: Round[] = data.rounds.map((r) => ({
+          id: r.id,
+          name: r.name,
+          description: r.description || "",
+          startDate: format(new Date(r.startsAt), "MMM d, yyyy h:mm a"),
+          endDate: format(new Date(r.endsAt), "MMM d, yyyy h:mm a"),
+          status: mapRoundStatus(r.startsAt, r.endsAt, r.status),
+        }));
+
+        // Map organizers (owner + organization)
+        const organizers: Organizer[] = [];
+        if (data.owner) {
+          const ownerName = [data.owner.firstName, data.owner.lastName]
+            .filter(Boolean)
+            .join(" ");
+          organizers.push({
+            id: data.owner.id,
+            name: ownerName || "Organizer",
+            role: "Organizer",
+            avatar: data.owner.imageUrl || "",
+            company: data.organizationName || undefined,
+          });
+        }
+
+        // Map prizes
+        const prizes: Prize[] = data.prizeBreakdown.map((p) => {
+          const amountValue = p.amount ?? 0;
+          return {
+            id: p.id,
+            title:
+              p.position === 1
+                ? "Winner"
+                : p.position === 2
+                  ? "1st Runner Up"
+                  : p.position === 3
+                    ? "2nd Runner Up"
+                    : `Position ${p.position}`,
+            amount: `${data.currency} ${amountValue.toLocaleString()}`,
+            description: p.description || "",
+            icon: mapPrizeIcon(p.position),
+          };
+        });
+
+        // Calculate registration deadline display
+        let registrationDeadline = "Open";
+        if (data.registrationDeadline) {
+          const deadline = new Date(data.registrationDeadline);
+          if (deadline > new Date()) {
+            registrationDeadline = formatDistanceToNow(deadline, {
+              addSuffix: false,
+            });
+          } else {
+            registrationDeadline = "Closed";
+          }
+        }
+
+        // Build tags from hackathon type
+        const tags: string[] = [];
+        if (data.hackathonType) {
+          tags.push(
+            data.hackathonType
+              .replace(/_/g, " ")
+              .toLowerCase()
+              .replace(/\b\w/g, (c) => c.toUpperCase()),
+          );
+        }
+        if (data.mode) {
+          tags.push(data.mode);
+        }
+
+        const competitionDetails: CompetitionDetails = {
+          id: data.id,
+          slug: data.slug,
+          title: data.name,
+          thumbnail: data.bannerImageUrl || "",
+          location,
+          dateRange,
+          tags,
+          about: data.description || "",
+          rounds,
+          organizers,
+          prizes,
+          featuredIn: data.festival?.name,
+          specificDate: format(startDate, "EEEE, d MMMM yyyy"),
+          specificTime: `${format(startDate, "HH:mm")} - ${format(endDate, "HH:mm")}`,
+          venueName:
+            data.locationType === "VIRTUAL"
+              ? "Online Event"
+              : data.organizationName || undefined,
+          venueAddress: data.locationAddress || data.locationCity || undefined,
+          teamSize: mapTeamSize(data.participantType),
+          impressions: data.impressions,
+          registrationDeadline,
+        };
+
+        setCompetition(competitionDetails);
+      } catch (err) {
+        console.error("Failed to fetch competition:", err);
+        setError("Competition not found or not available.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchCompetition();
+  }, [slug]);
+
   useEffect(() => {
     if (curTab) {
       const element = document.getElementById(curTab);
@@ -244,6 +276,39 @@ export default function CompetitionDetailsPage() {
       }
     }
   }, [curTab]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-transparent py-8">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="flex items-center justify-center py-32">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !competition) {
+    return (
+      <div className="min-h-screen bg-transparent py-8">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <h2 className="text-2xl font-bold text-foreground">
+              Competition Not Found
+            </h2>
+            <p className="text-muted-foreground">
+              {error ||
+                "This competition may not exist or is not publicly available."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-transparent py-8">
       <div className="container mx-auto px-4 max-w-7xl">
@@ -259,12 +324,17 @@ export default function CompetitionDetailsPage() {
               {competition.title}
             </h1>
 
-            <CompetitionTabs setCurTab={setCurTab} />
+            <CompetitionTabs
+              setCurTab={setCurTab}
+              hasRounds={competition.rounds.length > 0}
+            />
 
             <div className="space-y-12">
-              <section id="rounds" className="scroll-mt-24">
-                <RoundsTimeline rounds={competition.rounds} />
-              </section>
+              {competition.rounds.length > 0 && (
+                <section id="rounds" className="scroll-mt-24">
+                  <RoundsTimeline rounds={competition.rounds} />
+                </section>
+              )}
 
               <section id="details" className="scroll-mt-24">
                 <AboutSection content={competition.about} />

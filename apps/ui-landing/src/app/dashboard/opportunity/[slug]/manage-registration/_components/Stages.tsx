@@ -1,32 +1,31 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
-export default function Stages({
-  selectedStage,
-  onSelectStage,
-}: {
+export interface StageData {
+  name: string;
+  description: string;
+}
+
+interface StagesProps {
+  stages?: StageData[];
   selectedStage: string;
   onSelectStage: (stage: string) => void;
-}) {
-  const stagesData = [
-    {
-      name: "All registrations",
-      description: "Submission through Oppskills",
-    },
-    {
-      name: "R1 - Synopsis Submissions",
-      description: "Submission through Oppskills",
-    },
-    {
-      name: "R2 - Online Presentation",
-      description: "Submission through Oppskills",
-    },
-    {
-      name: "R3 - Finale Offline",
-      description: "Submission through Oppskills",
-    },
-  ];
+}
+
+const defaultStages: StageData[] = [
+  {
+    name: "All registrations",
+    description: "All registered teams",
+  },
+];
+
+export default function Stages({
+  stages = defaultStages,
+  selectedStage,
+  onSelectStage,
+}: StagesProps) {
+  // Use provided stages or default
+  const stagesData = stages.length > 0 ? stages : defaultStages;
 
   const Card = ({
     title,
@@ -44,7 +43,7 @@ export default function Stages({
         onClick={onClick}
         className={cn(
           "h-62px flex border-foreground/50 border rounded-[12px] p-[8px] gap-2 cursor-pointer transition-colors",
-          isActive ? "bg-primary/10 border-primary" : "hover:bg-muted/50"
+          isActive ? "bg-primary/10 border-primary" : "hover:bg-muted/50",
         )}
       >
         <div className="flex w-6 h-6 justify-center items-center">
@@ -59,7 +58,7 @@ export default function Stages({
           <h2
             className={cn(
               "text-[16px] text-foreground/80",
-              isActive && "text-primary"
+              isActive && "text-primary",
             )}
           >
             {title}
@@ -92,9 +91,6 @@ export default function Stages({
           />
         </div>
       ))}
-      <div className="flex items-center justify-center ml-4 cursor-pointer hover:scale-110 transition-all shrink-0">
-        <Image alt="add-steps" src="/icons/plus.svg" height={32} width={32} />
-      </div>
     </div>
   );
 }

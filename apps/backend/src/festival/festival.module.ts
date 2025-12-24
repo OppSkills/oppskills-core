@@ -8,4 +8,3 @@ import { FestivalService } from './festival.service';
   exports: [FestivalService],
 })
 export class FestivalModule {}
-

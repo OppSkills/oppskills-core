@@ -2,9 +2,10 @@
 import { Module } from '@nestjs/common';
 import { HackathonService } from './hackathon.service';
 import { HackathonController } from './hackathon.controller';
+import { HackathonPublicController } from './hackathon-public.controller';
 
 @Module({
-  controllers: [HackathonController],
+  controllers: [HackathonPublicController, HackathonController],
   providers: [HackathonService],
   exports: [HackathonService],
 })
