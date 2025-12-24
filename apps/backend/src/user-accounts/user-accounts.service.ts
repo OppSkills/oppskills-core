@@ -144,12 +144,14 @@ export class UserAccountsService {
     userId: string | undefined;
     email: string | undefined;
   }) {
-    const userId =
-      typeof input.userId === "string" ? input.userId.trim() : "";
-    const email = typeof input.email === "string" ? input.email.trim() : "";
+    const userId = typeof input.userId === 'string' ? input.userId.trim() : '';
+    const email = typeof input.email === 'string' ? input.email.trim() : '';
 
     if (userId.length === 0) {
-      throw new HttpException("Missing authenticated user id.", HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Missing authenticated user id.',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     // Include college relation to get college name for prefilling
@@ -198,7 +200,7 @@ export class UserAccountsService {
         });
         return created;
       } catch (error) {
-        this.logger.warn("[getMe] Failed to create user; retrying by email.", {
+        this.logger.warn('[getMe] Failed to create user; retrying by email.', {
           userId,
           email,
           error: error instanceof Error ? error.message : `${error}`,
@@ -213,7 +215,7 @@ export class UserAccountsService {
     }
 
     throw new HttpException(
-      `User not found for id "${userId}"${email.length > 0 ? ` or email "${email}"` : ""}`,
+      `User not found for id "${userId}"${email.length > 0 ? ` or email "${email}"` : ''}`,
       HttpStatus.NOT_FOUND,
     );
   }
@@ -331,7 +333,7 @@ export class UserAccountsService {
       // Sanitize: filter out empty strings and non-string values
       const sanitizedInterests = data.interests
         .filter((i) => typeof i === 'string' && i.trim().length > 0)
-        .map((i) => (i as string).trim());
+        .map((i) => i.trim());
       // Replace with sanitized array (can be empty)
       data.interests = sanitizedInterests;
     }
@@ -347,7 +349,7 @@ export class UserAccountsService {
       // Sanitize: filter out empty strings and non-string values
       const sanitizedSkills = data.skills
         .filter((s) => typeof s === 'string' && s.trim().length > 0)
-        .map((s) => (s as string).trim());
+        .map((s) => s.trim());
       // Replace with sanitized array (can be empty)
       data.skills = sanitizedSkills;
     }

@@ -26,7 +26,9 @@ if (!clientEmail) {
   console.log('   ✅ Valid service account email:', clientEmail);
 } else if (clientEmail.includes('.apps.googleusercontent.com')) {
   console.log('   ❌ This is an OAuth client ID, not a service account email');
-  console.log('   💡 You need a service account email ending with .iam.gserviceaccount.com');
+  console.log(
+    '   💡 You need a service account email ending with .iam.gserviceaccount.com',
+  );
   hasErrors = true;
 } else {
   console.log('   ⚠️  Unexpected format:', clientEmail);
@@ -42,7 +44,9 @@ if (!privateKey) {
   const keyLength = privateKey.replace(/\\n/g, '').replace(/\s/g, '').length;
   console.log('   ✅ Valid private key format (length:', keyLength, 'chars)');
 } else if (privateKey.startsWith('GOCSPX-')) {
-  console.log('   ❌ This is an OAuth client secret, not a service account private key');
+  console.log(
+    '   ❌ This is an OAuth client secret, not a service account private key',
+  );
   console.log(
     '   💡 You need a private key that starts with -----BEGIN PRIVATE KEY-----',
   );
@@ -73,7 +77,9 @@ if (!spreadsheetId) {
 console.log('\n' + '='.repeat(60));
 if (hasErrors) {
   console.log('❌ Configuration has errors. Please fix them and try again.');
-  console.log('\n📖 See GOOGLE_SHEETS_SETUP.md for detailed setup instructions.');
+  console.log(
+    '\n📖 See GOOGLE_SHEETS_SETUP.md for detailed setup instructions.',
+  );
   process.exit(1);
 } else {
   console.log('✅ Configuration looks good!');

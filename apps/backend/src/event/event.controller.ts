@@ -67,13 +67,18 @@ export class EventController {
    * Returns sanitized data without participants or roles.
    */
   @Get('public')
-  @ApiOperation({ summary: 'List public events (PUBLISHED/ONGOING + APPROVED only)' })
+  @ApiOperation({
+    summary: 'List public events (PUBLISHED/ONGOING + APPROVED only)',
+  })
   @ApiQuery({
     name: 'festival_id',
     required: false,
     description: 'Filter events by festival ID',
   })
-  @ApiResponse({ status: 200, description: 'List of public events (sanitized)' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of public events (sanitized)',
+  })
   async listPublicEvents(@Query('festival_id') festivalId?: string) {
     return this.eventService.listPublicEvents({ festivalId });
   }
@@ -86,7 +91,10 @@ export class EventController {
   @ApiOperation({ summary: 'Get public event by slug (sanitized, no PII)' })
   @ApiParam({ name: 'slug', description: 'Event slug' })
   @ApiResponse({ status: 200, description: 'Public event details (sanitized)' })
-  @ApiResponse({ status: 404, description: 'Event not found or not publicly visible' })
+  @ApiResponse({
+    status: 404,
+    description: 'Event not found or not publicly visible',
+  })
   async getPublicEventBySlug(@Param('slug') slug: string) {
     const validSlug = assertNonEmptyId(slug, 'slug');
     return this.eventService.getPublicEventBySlug(validSlug);
@@ -100,7 +108,10 @@ export class EventController {
   @ApiOperation({ summary: 'Get public event by ID (sanitized, no PII)' })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({ status: 200, description: 'Public event details (sanitized)' })
-  @ApiResponse({ status: 404, description: 'Event not found or not publicly visible' })
+  @ApiResponse({
+    status: 404,
+    description: 'Event not found or not publicly visible',
+  })
   async getPublicEvent(@Param('id') id: string) {
     const validId = assertNonEmptyId(id, 'id');
     return this.eventService.getPublicEventById(validId);
@@ -179,13 +190,21 @@ export class EventController {
 
   @Get('by-slug/:slug/registrations')
   @UseGuards(ClerkAuthGuard)
-  @ApiOperation({ summary: 'Get event registrations by slug (owner/manager/admin only)' })
+  @ApiOperation({
+    summary: 'Get event registrations by slug (owner/manager/admin only)',
+  })
   @ApiParam({ name: 'slug', description: 'Event slug' })
   @ApiResponse({ status: 200, description: 'Event registrations list' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Owner/Manager/Admin only' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Owner/Manager/Admin only',
+  })
   @ApiResponse({ status: 404, description: 'Event not found' })
-  async getEventRegistrationsBySlug(@Param('slug') slug: string, @Req() req: Request) {
+  async getEventRegistrationsBySlug(
+    @Param('slug') slug: string,
+    @Req() req: Request,
+  ) {
     const userId = req.user?.id;
     if (!userId) {
       throw new BadRequestException('User ID is required.');
@@ -289,10 +308,15 @@ export class EventController {
 
   @Put(':id/additional-info')
   @UseGuards(ClerkAuthGuard)
-  @ApiOperation({ summary: 'Update event additional info (contact + attachments)' })
+  @ApiOperation({
+    summary: 'Update event additional info (contact + attachments)',
+  })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({ status: 200, description: 'Additional info updated' })
-  @ApiResponse({ status: 400, description: 'Invalid input or event not in DRAFT' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input or event not in DRAFT',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Event not found' })
@@ -315,7 +339,10 @@ export class EventController {
   @ApiOperation({ summary: 'Update event registration form' })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({ status: 200, description: 'Registration form updated' })
-  @ApiResponse({ status: 400, description: 'Invalid input or event not in DRAFT' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input or event not in DRAFT',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Event not found' })
@@ -338,7 +365,10 @@ export class EventController {
   @ApiOperation({ summary: 'Update event prize breakdown' })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({ status: 200, description: 'Prize breakdown updated' })
-  @ApiResponse({ status: 400, description: 'Invalid input or event not in DRAFT' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input or event not in DRAFT',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Event not found' })
@@ -361,7 +391,10 @@ export class EventController {
   @ApiOperation({ summary: 'Update event max users limit' })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({ status: 200, description: 'Max users limit updated' })
-  @ApiResponse({ status: 400, description: 'Invalid input or event not in DRAFT' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input or event not in DRAFT',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Event not found' })
@@ -388,14 +421,17 @@ export class EventController {
   @ApiOperation({ summary: 'Join an event with optional registration answers' })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({ status: 201, description: 'Successfully joined event' })
-  @ApiResponse({ status: 400, description: 'Cannot join event or invalid answers' })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot join event or invalid answers',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Event not found' })
   @ApiResponse({ status: 409, description: 'Already joined' })
   async joinEvent(
     @Param('id') id: string,
     @Body() dto: JoinEventDto,
-    @Req() req: Request
+    @Req() req: Request,
   ) {
     const userId = req.user?.id;
     if (!userId) {
@@ -458,7 +494,10 @@ export class EventController {
     description: 'Event roles (owner, managers, evaluators)',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Owner/Manager/Admin only' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Owner/Manager/Admin only',
+  })
   @ApiResponse({ status: 404, description: 'Event not found' })
   async getEventRoles(@Param('id') id: string, @Req() req: Request) {
     const userId = req.user?.id;
@@ -529,7 +568,8 @@ export class EventController {
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Submit event for approval',
-    description: 'Sets status to PUBLISHED and approvalStatus to PENDING. Requires owner/admin/manager.',
+    description:
+      'Sets status to PUBLISHED and approvalStatus to PENDING. Requires owner/admin/manager.',
   })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({ status: 200, description: 'Event submitted for approval' })
@@ -586,7 +626,8 @@ export class EventController {
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Pause/unpause event registrations',
-    description: 'Toggle registration pause status. Event remains publicly visible.',
+    description:
+      'Toggle registration pause status. Event remains publicly visible.',
   })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({ status: 200, description: 'Registration status updated' })

@@ -1,20 +1,41 @@
-'use client';
+"use client";
 
-import React, { useEffect } from 'react';
-import { useQueryState } from 'nuqs';
-import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import React, { useEffect, useMemo } from "react";
+import { useQueryState } from "nuqs";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
-const TABS = [
-  { id: 'rounds', label: 'Rounds & Status' },
-  { id: 'details', label: 'Details' },
-  { id: 'prizes', label: 'Prizes' },
-  { id: 'reviews', label: 'Reviews' },
+const ALL_TABS = [
+  { id: "rounds", label: "Rounds & Status" },
+  { id: "details", label: "Details" },
+  { id: "prizes", label: "Prizes" },
+  { id: "reviews", label: "Reviews" },
 ];
 
-export function CompetitionTabs({ setCurTab }: { setCurTab: (tab: string) => void }) {
-  const [activeTab, setActiveTab] = useQueryState('activeTab', {
-    defaultValue: 'rounds',
+interface CompetitionTabsProps {
+  setCurTab: (tab: string) => void;
+  hasRounds?: boolean;
+  hasPrizes?: boolean;
+}
+
+export function CompetitionTabs({
+  setCurTab,
+  hasRounds = true,
+  hasPrizes = true,
+}: CompetitionTabsProps) {
+  // Filter out tabs based on available content
+  const tabs = useMemo(() => {
+    return ALL_TABS.filter((tab) => {
+      if (tab.id === "rounds" && !hasRounds) return false;
+      if (tab.id === "prizes" && !hasPrizes) return false;
+      return true;
+    });
+  }, [hasRounds, hasPrizes]);
+
+  const defaultTab = hasRounds ? "rounds" : "details";
+
+  const [activeTab, setActiveTab] = useQueryState("activeTab", {
+    defaultValue: defaultTab,
   });
 
   useEffect(() => {
@@ -24,17 +45,17 @@ export function CompetitionTabs({ setCurTab }: { setCurTab: (tab: string) => voi
   return (
     <div className="w-full border-b border-zinc-200 dark:border-zinc-800 mb-8 overflow-x-auto">
       <div className="flex items-center gap-8 min-w-max">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'relative py-4 text-sm font-medium transition-colors hover:text-purple-600',
+                "relative py-4 text-sm font-medium transition-colors hover:text-purple-600",
                 isActive
-                  ? 'text-purple-600'
-                  : 'text-zinc-600 dark:text-zinc-400'
+                  ? "text-purple-600"
+                  : "text-zinc-600 dark:text-zinc-400",
               )}
             >
               {tab.label}
@@ -42,7 +63,7 @@ export function CompetitionTabs({ setCurTab }: { setCurTab: (tab: string) => voi
                 <motion.div
                   layoutId="activeTabIndicator"
                   className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 />
               )}
             </button>

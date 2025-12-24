@@ -1,6 +1,6 @@
-import * as winston from "winston";
-import { Logger as WinstonLogger } from "winston";
-import { AsyncLocalStorage } from "async_hooks";
+import * as winston from 'winston';
+import { Logger as WinstonLogger } from 'winston';
+import { AsyncLocalStorage } from 'async_hooks';
 
 /**
  * Minimal subset of the New Relic agent API that we use in this project.
@@ -12,14 +12,13 @@ interface NewRelicLike {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return typeof value === 'object' && value !== null;
 }
 
 function isNewRelicLike(value: unknown): value is NewRelicLike {
   if (!isRecord(value)) return false;
   return (
-    "recordLogEvent" in value &&
-    typeof value["recordLogEvent"] === "function"
+    'recordLogEvent' in value && typeof value['recordLogEvent'] === 'function'
   );
 }
 
@@ -29,18 +28,18 @@ function isNewRelicLike(value: unknown): value is NewRelicLike {
  * - Keeps New Relic optional in local/dev environments.
  */
 function loadNewRelic(): NewRelicLike | null {
-  if (process.env.NODE_ENV !== "production") return null;
+  if (process.env.NODE_ENV !== 'production') return null;
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod: unknown = require("newrelic");
+    const mod: unknown = require('newrelic');
 
     // CommonJS default export shape
     if (isNewRelicLike(mod)) return mod;
 
     // ESM interop shape (rare but safe)
-    if (isRecord(mod) && isNewRelicLike(mod["default"])) {
-      return mod["default"];
+    if (isRecord(mod) && isNewRelicLike(mod['default'])) {
+      return mod['default'];
     }
   } catch {
     // New Relic is optional; ignore load failures.
@@ -59,8 +58,8 @@ interface LogContext {
 }
 
 const logLevelMap: { [key: string]: string } = {
-  WorkerService: "error",
-  CacheService: "error",
+  WorkerService: 'error',
+  CacheService: 'error',
 };
 
 export class Logger {
@@ -93,7 +92,7 @@ export class Logger {
 
     const consoleTransport = new winston.transports.Console({
       format: winston.format.combine(
-        winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss.SSS" }),
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
         winston.format.errors({ stack: true }),
         customFormat,
       ),
@@ -102,28 +101,28 @@ export class Logger {
     });
 
     this.logger = winston.createLogger({
-      level: process.env.NODE_ENV === "production" ? "info" : "debug",
+      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
       format: winston.format.combine(
-        winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss.SSS" }),
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
         winston.format.errors({ stack: true }),
         winston.format.splat(),
         customFormat,
       ),
       defaultMeta: {
         svc: this.prefix,
-        env: process.env.NODE_ENV || "development",
+        env: process.env.NODE_ENV || 'development',
       },
       transports: [consoleTransport],
       exitOnError: false, // Don't exit on handled exceptions
     });
 
     // Add production-specific transports
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === 'production') {
       // Add error file transport for production
       this.logger.add(
         new winston.transports.File({
-          filename: "logs/error.log",
-          level: "error",
+          filename: 'logs/error.log',
+          level: 'error',
           format: winston.format.combine(
             winston.format.timestamp(),
             winston.format.json(),
@@ -151,16 +150,16 @@ export class Logger {
   private formatMessage(args: ReadonlyArray<unknown>): string {
     let message = args
       .map((arg) => {
-        if (typeof arg === "string") {
+        if (typeof arg === 'string') {
           return arg;
         }
         try {
           return JSON.stringify(arg);
         } catch {
-          return "[Object]";
+          return '[Object]';
         }
       })
-      .join(" ");
+      .join(' ');
 
     if (message.length > Logger.MAX_MESSAGE_LENGTH) {
       message = `${message.substring(0, Logger.MAX_MESSAGE_LENGTH)}... [truncated]`;
@@ -175,7 +174,7 @@ export class Logger {
 
     // Skip logging based on logLevelMap in development
     if (
-      process.env.NODE_ENV === "development" &&
+      process.env.NODE_ENV === 'development' &&
       logLevelMap[this.prefix] &&
       logLevelMap[this.prefix] !== level
     ) {
@@ -192,7 +191,7 @@ export class Logger {
     this.logger.log(level, message, metadata);
 
     // Log to New Relic in production
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === 'production') {
       try {
         const nr = loadNewRelic();
         if (nr) {
@@ -205,31 +204,31 @@ export class Logger {
         }
       } catch (error) {
         // Don't let NewRelic errors crash the application
-        // eslint-disable-next-line no-console
-        console.error("Error sending to NewRelic:", error);
+
+        console.error('Error sending to NewRelic:', error);
       }
     }
   }
 
   debug(...args: unknown[]) {
-    this.logToWinstonAndNewRelic("debug", args);
+    this.logToWinstonAndNewRelic('debug', args);
   }
 
   info(...args: unknown[]) {
-    this.logToWinstonAndNewRelic("info", args);
+    this.logToWinstonAndNewRelic('info', args);
   }
 
   warn(...args: unknown[]) {
-    this.logToWinstonAndNewRelic("warn", args);
+    this.logToWinstonAndNewRelic('warn', args);
   }
 
   error(...args: unknown[]) {
     const formattedArgs: unknown[] = args.map((arg) => {
       if (!(arg instanceof Error)) return arg;
 
-      const maybeCode = isRecord(arg) ? arg["code"] : undefined;
+      const maybeCode = isRecord(arg) ? arg['code'] : undefined;
       const code =
-        typeof maybeCode === "string" || typeof maybeCode === "number"
+        typeof maybeCode === 'string' || typeof maybeCode === 'number'
           ? maybeCode
           : undefined;
 
@@ -240,14 +239,14 @@ export class Logger {
         code,
       };
     });
-    this.logToWinstonAndNewRelic("error", formattedArgs);
+    this.logToWinstonAndNewRelic('error', formattedArgs);
   }
 
   log(...args: unknown[]) {
-    this.logToWinstonAndNewRelic("info", args);
+    this.logToWinstonAndNewRelic('info', args);
   }
 
   verbose(...args: unknown[]) {
-    this.logToWinstonAndNewRelic("verbose", args);
+    this.logToWinstonAndNewRelic('verbose', args);
   }
 }
