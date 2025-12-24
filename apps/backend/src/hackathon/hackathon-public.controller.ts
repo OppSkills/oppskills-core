@@ -1,4 +1,10 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Param,
+  Query,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -11,7 +17,7 @@ import { HackathonService } from './hackathon.service';
 function assertNonEmptyId(id: string, fieldName: string): string {
   const trimmed = id.trim();
   if (trimmed.length === 0) {
-    throw new Error(`${fieldName} is required.`);
+    throw new BadRequestException(`${fieldName} is required.`);
   }
   return trimmed;
 }

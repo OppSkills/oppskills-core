@@ -239,7 +239,7 @@ export class TeamController {
   @ApiOperation({
     summary: 'Change team leader',
     description:
-      'Change the team leader. Only the current leader can perform this action. New leader must be an existing team member.',
+      'Change the team leader. Only the original team creator can perform this action. New leader must be an existing team member.',
   })
   @ApiParam({
     name: 'teamId',
@@ -281,7 +281,8 @@ export class TeamController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Only the current leader can change the leader',
+    description:
+      'Forbidden - Only the original team creator can change the leader',
   })
   @ApiResponse({ status: 404, description: 'Team not found' })
   @ApiResponse({

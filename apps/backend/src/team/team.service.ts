@@ -182,9 +182,9 @@ export class TeamService {
       );
     }
 
-    // Can't set yourself as leader (you already are)
-    if (newLeaderId === currentUserId) {
-      throw new ForbiddenException('You are already the team leader');
+    // Can't set the current leader as new leader
+    if (newLeaderId === team.leaderId) {
+      throw new ForbiddenException('This user is already the team leader');
     }
 
     // New leader must be an existing team member
