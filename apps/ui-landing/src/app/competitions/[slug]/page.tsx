@@ -183,20 +183,23 @@ export default function CompetitionDetailsPage() {
         }
 
         // Map prizes
-        const prizes: Prize[] = data.prizeBreakdown.map((p) => ({
-          id: p.id,
-          title:
-            p.position === 1
-              ? "Winner"
-              : p.position === 2
-                ? "1st Runner Up"
-                : p.position === 3
-                  ? "2nd Runner Up"
-                  : `Position ${p.position}`,
-          amount: `${data.currency} ${p.amount.toLocaleString()}`,
-          description: p.description || "",
-          icon: mapPrizeIcon(p.position),
-        }));
+        const prizes: Prize[] = data.prizeBreakdown.map((p) => {
+          const amountValue = p.amount ?? 0;
+          return {
+            id: p.id,
+            title:
+              p.position === 1
+                ? "Winner"
+                : p.position === 2
+                  ? "1st Runner Up"
+                  : p.position === 3
+                    ? "2nd Runner Up"
+                    : `Position ${p.position}`,
+            amount: `${data.currency} ${amountValue.toLocaleString()}`,
+            description: p.description || "",
+            icon: mapPrizeIcon(p.position),
+          };
+        });
 
         // Calculate registration deadline display
         let registrationDeadline = "Open";

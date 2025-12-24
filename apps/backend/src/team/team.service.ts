@@ -160,7 +160,7 @@ export class TeamService {
 
   /**
    * Change the team leader.
-   * Only the original team creator (current leader) can change the leader.
+   * Only the original team creator can change the leader.
    * New leader must be an existing team member.
    */
   async changeTeamLeader(
@@ -184,7 +184,7 @@ export class TeamService {
 
     // Can't set the current leader as new leader
     if (newLeaderId === team.leaderId) {
-      throw new ForbiddenException('This user is already the team leader');
+      throw new ForbiddenException('You are already the team leader');
     }
 
     // New leader must be an existing team member
@@ -194,6 +194,9 @@ export class TeamService {
         'New leader must be an existing team member',
       );
     }
+
+    // Capture old leader before update
+    const oldLeaderId = team.leaderId;
 
     // Update in a transaction:
     // 1. Set new leader
@@ -211,13 +214,13 @@ export class TeamService {
         where: { teamId, userId: newLeaderId },
       });
 
-      // Add old leader as a member (if not already a member somehow)
+      // Add old leader as a member (if not already a member)
       const oldLeaderIsMember = team.members.some(
-        (m) => m.userId === currentUserId,
+        (m) => m.userId === oldLeaderId,
       );
       if (!oldLeaderIsMember) {
         await tx.teamMemberEntity.create({
-          data: { teamId, userId: currentUserId },
+          data: { teamId, userId: oldLeaderId },
         });
       }
     });

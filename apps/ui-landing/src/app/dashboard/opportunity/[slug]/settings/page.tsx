@@ -210,6 +210,7 @@ export default function OpportunitySettingsPage({
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to delete opportunity");
+      setIsDeleting(false);
     },
   });
 
@@ -221,7 +222,14 @@ export default function OpportunitySettingsPage({
       return;
     }
     setIsDeleting(true);
-    deleteHackathonMutation.mutate();
+    deleteHackathonMutation.mutate(undefined, {
+      onSettled: () => {
+        // Reset isDeleting if not navigating away (i.e., on error)
+        if (!deleteHackathonMutation.isSuccess) {
+          setIsDeleting(false);
+        }
+      },
+    });
   };
 
   if (isLoading) {
