@@ -47,7 +47,7 @@ const RichTextEditor = dynamic(
     loading: () => (
       <div className="h-[200px] bg-muted animate-pulse rounded-lg" />
     ),
-  }
+  },
 );
 
 import { format } from "date-fns";
@@ -145,6 +145,7 @@ export default function Page() {
 
   // Date picker open states
   const [eventDateOpen, setEventDateOpen] = useState(false);
+  const [eventEndDateOpen, setEventEndDateOpen] = useState(false);
   const [registerByOpen, setRegisterByOpen] = useState(false);
 
   const form = useForm({
@@ -196,7 +197,7 @@ export default function Page() {
 
   type FestivalListItem = { id: string; name: string };
   const [festivals, setFestivals] = useState<ReadonlyArray<FestivalListItem>>(
-    []
+    [],
   );
   const [isLoadingFestivals, setIsLoadingFestivals] = useState(false);
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
@@ -205,7 +206,7 @@ export default function Page() {
 
   const bannerInputId = useMemo(
     () => `organizer-banner-upload-${crypto.randomUUID()}`,
-    []
+    [],
   );
 
   // LocalStorage persistence
@@ -236,7 +237,7 @@ export default function Page() {
   }
 
   function extractFestivalList(
-    input: unknown
+    input: unknown,
   ): ReadonlyArray<FestivalListItem> {
     const listRaw = Array.isArray(input)
       ? input
@@ -288,7 +289,7 @@ export default function Page() {
   }
 
   function toLocationDto(
-    input: string
+    input: string,
   ): EventLocationDto | FestivalLocationDto | undefined {
     const trimmed = input.trim();
     if (trimmed.length === 0) return undefined;
@@ -341,7 +342,7 @@ export default function Page() {
         setIsUploadingBanner(false);
       }
     },
-    [getToken, isUploadingBanner, form]
+    [getToken, isUploadingBanner, form],
   );
 
   // ============================================================================
@@ -365,10 +366,12 @@ export default function Page() {
           form.setFieldValue("eventTimeFrom", parsed.eventTimeFrom);
         if (parsed.eventDate)
           form.setFieldValue("eventDate", new Date(parsed.eventDate));
+        if (parsed.eventEndDate)
+          form.setFieldValue("eventEndDate", new Date(parsed.eventEndDate));
         if (parsed.eventRegisterBy)
           form.setFieldValue(
             "eventRegisterBy",
-            new Date(parsed.eventRegisterBy)
+            new Date(parsed.eventRegisterBy),
           );
         if (parsed.organizationName)
           form.setFieldValue("organizationName", parsed.organizationName);
@@ -388,8 +391,9 @@ export default function Page() {
         JSON.stringify({
           ...values,
           eventDate: values.eventDate?.toISOString(),
+          eventEndDate: values.eventEndDate?.toISOString(),
           eventRegisterBy: values.eventRegisterBy?.toISOString(),
-        })
+        }),
       );
     } catch (err) {
       console.error("Error saving form:", err);
@@ -441,7 +445,11 @@ export default function Page() {
       return;
     }
     if (!values.eventDate) {
-      toast.error("Event Date is required");
+      toast.error("Start Date is required");
+      return;
+    }
+    if (values.eventEndDate && values.eventEndDate < values.eventDate) {
+      toast.error("End Date must be on or after the Start Date");
       return;
     }
     if (!values.eventLocation) {
@@ -453,7 +461,7 @@ export default function Page() {
       values.eventDate &&
       values.eventRegisterBy > values.eventDate
     ) {
-      toast.error("Registration deadline must be before the Event Date");
+      toast.error("Registration deadline must be before the Start Date");
       return;
     }
 
@@ -476,8 +484,14 @@ export default function Page() {
           ? values.eventThumbnail.trim()
           : undefined,
         // Use combineDateAndTimeToIso to preserve time component
-        startDate: combineDateAndTimeToIso(values.eventDate, values.eventTimeFrom),
-        endDate: combineDateAndTimeToIso(values.eventDate, values.eventTimeFrom),
+        startDate: combineDateAndTimeToIso(
+          values.eventDate,
+          values.eventTimeFrom,
+        ),
+        endDate: combineDateAndTimeToIso(
+          values.eventEndDate || values.eventDate,
+          values.eventTimeFrom,
+        ),
         location: toLocationDto(values.eventLocation) as
           | EventLocationDto
           | undefined,
@@ -500,7 +514,7 @@ export default function Page() {
       const eventId = extractEventId(created);
       if (!eventId) {
         toast.error(
-          "Event was created but we couldn't read its id from the server response."
+          "Event was created but we couldn't read its id from the server response.",
         );
         return;
       }
@@ -547,7 +561,7 @@ export default function Page() {
                     htmlFor={bannerInputId}
                     className={cn(
                       "absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-white/20 hover:bg-background/40 transition-colors cursor-pointer",
-                      isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
+                      isUploadingBanner ? "opacity-60 cursor-not-allowed" : "",
                     )}
                     aria-disabled={isUploadingBanner}
                   >
@@ -696,10 +710,10 @@ export default function Page() {
 
             {/* Date and Time Row */}
             <div className="flex flex-wrap gap-4">
-              {/* Event Date */}
+              {/* Start Date */}
               <div className="flex flex-col gap-2">
                 <Label className="px-1 text-sm font-medium text-muted-foreground">
-                  Event Date
+                  Start Date
                 </Label>
                 <Popover open={eventDateOpen} onOpenChange={setEventDateOpen}>
                   <PopoverTrigger asChild>
@@ -730,6 +744,53 @@ export default function Page() {
                           onSelect={(date) => {
                             form.setFieldValue("eventDate", date);
                             setEventDateOpen(false);
+                          }}
+                        />
+                      )}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* End Date */}
+              <div className="flex flex-col gap-2">
+                <Label className="px-1 text-sm font-medium text-muted-foreground">
+                  End Date
+                </Label>
+                <Popover
+                  open={eventEndDateOpen}
+                  onOpenChange={setEventEndDateOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-40 justify-between font-normal"
+                    >
+                      <form.Subscribe
+                        selector={(state) => state.values.eventEndDate}
+                        children={(eventEndDate) =>
+                          eventEndDate
+                            ? format(eventEndDate, "PP")
+                            : "Same as start"
+                        }
+                      />
+                      <ChevronDown className="w-4 h-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-auto overflow-hidden p-0"
+                    align="start"
+                  >
+                    <form.Subscribe
+                      selector={(state) => state.values.eventEndDate}
+                      children={(eventEndDate) => (
+                        <Calendar
+                          mode="single"
+                          selected={eventEndDate}
+                          captionLayout="dropdown"
+                          onSelect={(date) => {
+                            form.setFieldValue("eventEndDate", date);
+                            setEventEndDateOpen(false);
                           }}
                         />
                       )}
@@ -850,7 +911,7 @@ export default function Page() {
                       value={field.state.value ?? ""}
                       onChange={(e) =>
                         field.handleChange(
-                          e.target.value ? Number(e.target.value) : undefined
+                          e.target.value ? Number(e.target.value) : undefined,
                         )
                       }
                       placeholder="Unlimited"

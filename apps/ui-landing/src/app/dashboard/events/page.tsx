@@ -3,7 +3,6 @@
 import { Search, Plus } from "lucide-react";
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -47,7 +46,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function getString(
   obj: Record<string, unknown>,
-  key: string
+  key: string,
 ): string | undefined {
   const value = obj[key];
   return typeof value === "string" && value.trim().length > 0
@@ -57,7 +56,7 @@ function getString(
 
 function getNumber(
   obj: Record<string, unknown>,
-  key: string
+  key: string,
 ): number | undefined {
   const value = obj[key];
   return typeof value === "number" ? value : undefined;
@@ -93,18 +92,18 @@ function isRegistrationOpen(input: {
   isRegistrationPaused?: boolean;
 }): boolean {
   const status = (input.status ?? "").toUpperCase();
-  
+
   // Only PUBLISHED or ONGOING events accept registrations
   // DRAFT, CANCELLED, COMPLETED events never accept registrations
   if (status !== "PUBLISHED" && status !== "ONGOING") return false;
-  
+
   // Must be APPROVED
   const approval = (input.approvalStatus ?? "").toUpperCase();
   if (approval !== "APPROVED") return false;
-  
+
   // If registration is paused, it's closed
   if (input.isRegistrationPaused === true) return false;
-  
+
   // Check deadline (if set)
   const deadlineStr = input.registrationDeadline;
   if (deadlineStr) {
@@ -113,7 +112,7 @@ function isRegistrationOpen(input: {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -151,7 +150,8 @@ function extractEventRows(input: unknown): EventRow[] {
       const slug = getString(row, "slug");
       const status = getString(row, "status") ?? "DRAFT";
       const approvalStatus = getString(row, "approvalStatus") ?? null;
-      const registrationDeadline = getString(row, "registrationDeadline") ?? null;
+      const registrationDeadline =
+        getString(row, "registrationDeadline") ?? null;
       const isRegistrationPaused = row["isRegistrationPaused"] === true;
       const open = isRegistrationOpen({
         status,
@@ -268,14 +268,13 @@ const columns = [
   columnHelper.accessor("isOpen", {
     header: () => <div className="text-center">Registration</div>,
     cell: (info) => (
-      <div className="flex items-center justify-center gap-3">
-        <Switch checked={info.getValue()} />
+      <div className="flex items-center justify-center">
         <span
           className={cn(
             "px-3 py-1 rounded text-xs font-medium w-16 text-center shadow-sm",
             info.getValue()
               ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
+              : "bg-red-100 text-red-700",
           )}
         >
           {info.row.original.registrationLabel}
@@ -409,7 +408,7 @@ export default function EventsPage() {
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </div>
                   ))}
@@ -440,12 +439,12 @@ export default function EventsPage() {
                           key={cell.id}
                           className={cn(
                             "whitespace-nowrap overflow-hidden text-ellipsis",
-                            isSno && "text-center"
+                            isSno && "text-center",
                           )}
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
-                            cell.getContext()
+                            cell.getContext(),
                           )}
                         </div>
                       );
