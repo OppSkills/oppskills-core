@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Inter, Poppins, Kaushan_Script } from "next/font/google";
 import "./globals.css";
+import {
+  JsonLd,
+  organizationSchema,
+  websiteSchema,
+} from "@/components/seo/JsonLd";
 import { ThemeProvider } from "@/components/theme-provider";
 import ClientProviders from "../../src/client-providers";
 
@@ -20,7 +25,14 @@ const poppins = Poppins({
   weight: ["400", "500", "600", "700"],
 });
 
+const kaushan = Kaushan_Script({
+  variable: "--font-kaushan",
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://oppskills.com"),
   title: {
     default:
       "OppSkills | College Events, Hackathons, Competitions & Student Opportunities",
@@ -48,15 +60,12 @@ export const metadata: Metadata = {
     "hackathon platform",
     "promote event",
   ],
-
   authors: [
     {
       name: "Vijay Singh",
     },
   ],
-
   publisher: "OppSkills",
-
   robots: {
     index: true,
     follow: true,
@@ -68,13 +77,17 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-
   openGraph: {
-    title: "OppSkills | College Events, Hackathons & Student Opportunities",
+    title: {
+      default: "OppSkills | College Events, Hackathons & Student Opportunities",
+      template: "%s | OppSkills",
+    },
     description:
       "Discover and host college events, hackathons, competitions, and student opportunities on OppSkills.",
     url: "https://oppskills.com",
     siteName: "OppSkills",
+    locale: "en_US",
+    type: "website",
     images: [
       {
         url: "/og_poster.png",
@@ -83,23 +96,21 @@ export const metadata: Metadata = {
         alt: "OppSkills – College Events, Hackathons & Opportunities",
       },
     ],
-    type: "website",
   },
-
   twitter: {
     card: "summary_large_image",
-    title: "OppSkills | College Events, Hackathons & Student Opportunities",
+    title: {
+      default: "OppSkills | College Events, Hackathons & Student Opportunities",
+      template: "%s | OppSkills",
+    },
     description:
       "Discover and host hackathons, college events, and student opportunities.",
     images: ["/og_poster.png"],
+    creator: "@oppskills",
   },
-
   alternates: {
-    canonical: "https://oppskills.com",
+    canonical: "./",
   },
-
-  metadataBase: new URL("https://oppskills.com"),
-
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -114,7 +125,6 @@ export const metadata: Metadata = {
       },
     ],
   },
-
   other: {
     "instagram:site": "https://www.instagram.com/oppskills.global/",
     "linkedin:site": "https://linkedin.com/company/oppskills",
@@ -129,25 +139,11 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
-        <head>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "Organization",
-                name: "OppSkills",
-                url: "https://oppskills.com",
-                logo: "https://oppskills.com/og_poster.png",
-                sameAs: [
-                  "https://www.instagram.com/oppskills.global/",
-                  "https://linkedin.com/company/oppskills",
-                ],
-              }),
-            }}
-          />
-        </head>
-        <body className={`${inter.variable} ${poppins.variable} antialiased`}>
+        <head></head>
+        <body
+          className={`${inter.variable} ${poppins.variable} ${kaushan.variable} font-sans antialiased`}
+        >
+          <JsonLd data={[organizationSchema, websiteSchema]} />
           <Suspense>
             <ThemeProvider
               attribute="class"
