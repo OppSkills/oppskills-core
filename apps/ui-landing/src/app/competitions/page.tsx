@@ -174,9 +174,12 @@ export default function CompetitionsPage() {
     <div className="container mx-auto min-h-screen px-4 py-8 md:px-6">
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Competitions</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            College Hackathons & Competitions
+          </h1>
           <p className="text-muted-foreground">
             Explore active hackathons, design challenges, and coding contests.
+            The best Unstop hackathon alternative.
           </p>
         </div>
 

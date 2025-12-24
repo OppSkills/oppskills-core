@@ -53,9 +53,10 @@ export default function HeroSection() {
             </span>
           </h1>
 
-          <h1 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
-            Discover Your Next Event
-          </h1>
+          <h2 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
+            Discover Your Next
+            <br className="hidden md:block" /> College Hackathon
+          </h2>
         </div>
 
         <p className="w-full max-w-[993px] mx-auto text-center text-muted-foreground text-[18px] md:text-[28px] font-normal leading-normal px-2 inter">

@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     template: "%s | OppSkills",
   },
   description:
-    "OppSkills is a college-first platform to discover and host hackathons, college events, competitions, internships, and student opportunities. Built for students, clubs, and colleges.",
+    "OppSkills is the best event organiser platform for students. Discover and host hackathons, college events, competitions, internships, and student opportunities. A better alternative to Unstop for college hackathons.",
   keywords: [
     "OppSkills",
     "college events",
@@ -42,6 +42,11 @@ export const metadata: Metadata = {
     "club events",
     "Unstop alternative",
     "Unstop competitor",
+    "unstop hackathon",
+    "college hackathon",
+    "event organiser",
+    "hackathon platform",
+    "promote event",
   ],
 
   authors: [

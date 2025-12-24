@@ -11,7 +11,7 @@ export default function UpcomingCompetitions() {
       <div className="container px-4 md:px-6 mx-auto">
         <div className="mb-8 space-y-2">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
-            Top Competitions
+            Top Hackathons & Competitions
           </h2>
           <p className="text-neutral-600 text-lg inter">
             Discover the most popular competitions students are joining right
