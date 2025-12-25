@@ -9,6 +9,7 @@ import {
   Delete,
   Patch,
   UnauthorizedException,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,10 +18,11 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { TeamService } from './team.service';
-import { CreateTeamDto } from '@oppskills/types';
+import { CreateTeamDto, JoinTeamDto } from '@oppskills/types';
 import type { Request } from 'express';
 
 @ApiTags('Teams')
@@ -34,7 +36,7 @@ export class TeamController {
   @ApiOperation({
     summary: 'Create a new team',
     description:
-      'Create a new team for a hackathon. The authenticated user becomes the team leader.',
+      'Create a new team for a hackathon. The authenticated user becomes the team leader. Optionally include registration form answers.',
   })
   @ApiBody({ type: CreateTeamDto })
   @ApiResponse({
@@ -52,7 +54,7 @@ export class TeamController {
         hackathonId: { type: 'string', format: 'uuid' },
         leaderId: { type: 'string' },
         maxSize: { type: 'number', example: 4 },
-        invitationCode: { type: 'string', example: 'ABC123' },
+        invitationCode: { type: 'string', example: 'ABC123XY' },
         createdAt: { type: 'string', format: 'date-time' },
       },
     },
@@ -76,7 +78,8 @@ export class TeamController {
   @Get('teams/:hackathonId')
   @ApiOperation({
     summary: 'Get teams by hackathon',
-    description: 'Retrieve all teams for a specific hackathon',
+    description:
+      'Retrieve all open teams for a specific hackathon that users can browse and join',
   })
   @ApiParam({
     name: 'hackathonId',
@@ -161,12 +164,54 @@ export class TeamController {
     return this.teamService.getTeamById(teamId);
   }
 
+  @Get('my-team')
+  @ApiOperation({
+    summary: 'Check if user is in a team for a hackathon',
+    description:
+      'Returns the team if the user is already registered in a team for the specified hackathon, null otherwise.',
+  })
+  @ApiQuery({
+    name: 'hackathonId',
+    description: 'Hackathon ID',
+    type: 'string',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Team check result',
+    schema: {
+      type: 'object',
+      nullable: true,
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        name: { type: 'string' },
+        leaderId: { type: 'string' },
+        maxSize: { type: 'number' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async checkMyTeam(
+    @Query('hackathonId') hackathonId: string,
+    @Req() req: Request,
+  ) {
+    const user = req['user'];
+    if (!user) {
+      throw new UnauthorizedException('User not found in request');
+    }
+    return this.teamService.checkUserTeamInHackathon(hackathonId, user.id);
+  }
+
   @Post('join-team')
   @ApiOperation({
     summary: 'Join a team',
-    description: 'Join an existing team using team ID or invitation code',
+    description:
+      'Join an existing team using team ID or invitation code. Optionally include registration form answers.',
   })
-  @ApiBody({ type: CreateTeamDto })
+  @ApiBody({ type: JoinTeamDto })
   @ApiResponse({
     status: 201,
     description: 'Successfully joined team',
@@ -188,7 +233,7 @@ export class TeamController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  async joinTeam(@Body() dto: CreateTeamDto, @Req() req: Request) {
+  async joinTeam(@Body() dto: JoinTeamDto, @Req() req: Request) {
     const user = req['user'];
     if (!user) {
       throw new UnauthorizedException('User not found in request');

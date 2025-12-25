@@ -1,5 +1,4 @@
-
-export type RoundStatus = 'completed' | 'live' | 'upcoming';
+export type RoundStatus = "completed" | "live" | "upcoming";
 
 export interface Round {
   id: string;
@@ -24,7 +23,23 @@ export interface Prize {
   title: string;
   amount: string;
   description: string;
-  icon?: 'trophy' | 'medal' | 'star';
+  icon?: "trophy" | "medal" | "star";
+}
+
+export interface RegistrationField {
+  id: string;
+  label: string;
+  type: string;
+  required: boolean;
+  order: number;
+  options: string[];
+  placeholder: string | null;
+}
+
+export interface RegistrationForm {
+  id: string;
+  externalFormLink: string | null;
+  fields: RegistrationField[];
 }
 
 export interface CompetitionDetails {
@@ -39,7 +54,7 @@ export interface CompetitionDetails {
   rounds: Round[];
   organizers: Organizer[];
   prizes: Prize[];
-  
+
   // New fields for sidebar
   featuredIn?: string;
   specificDate?: string;
@@ -49,4 +64,10 @@ export interface CompetitionDetails {
   teamSize?: string;
   impressions?: number;
   registrationDeadline?: string;
+
+  // Fields for registration
+  participantType?: string;
+  registrationForm?: RegistrationForm | null;
+  isRegistrationPaused?: boolean;
+  registrationDeadlineDate?: Date | null;
 }
