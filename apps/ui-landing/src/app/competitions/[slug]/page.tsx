@@ -355,7 +355,7 @@ export default function CompetitionDetailsPage() {
                 <h2 className="text-2xl font-bold text-foreground mb-6">
                   Reviews
                 </h2>
-                <div className="p-12 text-center text-muted-foreground bg-zinc-50 dark:bg-zinc-900 border border-dashed rounded-xl">
+                <div className="p-12 text-center text-muted-foreground bg-neutral-50  border border-dashed rounded-xl">
                   Reviews coming soon...
                 </div>
               </section>

@@ -83,7 +83,7 @@ export default async function HackathonPage({ params }: Props) {
             : "Date TBA"}
         </p>
 
-        <section className="prose dark:prose-invert max-w-none">
+        <section className="prose  max-w-none">
           <div
             dangerouslySetInnerHTML={{ __html: hackathon.description || "" }}
           />

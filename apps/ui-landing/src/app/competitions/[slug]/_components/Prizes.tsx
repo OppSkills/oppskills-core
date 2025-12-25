@@ -14,7 +14,7 @@ export function Prizes({ prizes }: PrizesProps) {
       case "trophy":
         return <Trophy className="w-8 h-8 text-yellow-500" />;
       case "medal":
-        return <Medal className="w-8 h-8 text-zinc-400" />;
+        return <Medal className="w-8 h-8 text-neutral-400" />;
       case "star":
         return <Star className="w-8 h-8 text-orange-500" />;
       default:
@@ -24,20 +24,18 @@ export function Prizes({ prizes }: PrizesProps) {
 
   const getGradient = (index: number) => {
     const gradients = [
-      "bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 border-yellow-200 dark:border-yellow-900/30",
-      "bg-gradient-to-br from-zinc-50 to-slate-50 dark:from-zinc-900/10 dark:to-slate-900/10 border-zinc-200 dark:border-zinc-800",
-      "bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/10 dark:to-red-900/10 border-orange-200 dark:border-orange-900/30",
+      "bg-gradient-to-br from-yellow-50 to-orange-50   border-yellow-200 ",
+      "bg-gradient-to-br from-neutral-50 to-slate-50   border-neutral-200 ",
+      "bg-gradient-to-br from-orange-50 to-red-50   border-orange-200 ",
     ];
     return gradients[index % gradients.length];
   };
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">
-        Prizes
-      </h2>
+      <h2 className="text-2xl font-bold text-neutral-900  mb-6">Prizes</h2>
       {prizes.length === 0 ? (
-        <div className="p-12 text-center text-muted-foreground bg-zinc-50 dark:bg-zinc-900 border border-dashed rounded-xl">
+        <div className="p-12 text-center text-muted-foreground bg-neutral-50  border border-dashed rounded-xl">
           No prizes announced yet.
         </div>
       ) : (
@@ -51,20 +49,20 @@ export function Prizes({ prizes }: PrizesProps) {
                 hover:shadow-lg transition-all duration-300 hover:-translate-y-1
               `}
             >
-              <div className="p-4 bg-white dark:bg-zinc-900 rounded-full shadow-sm mb-2">
+              <div className="p-4 bg-white  rounded-full shadow-sm mb-2">
                 {getIcon(prize.icon)}
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                <h3 className="text-lg font-bold text-neutral-900 ">
                   {prize.title}
                 </h3>
-                <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-400 mt-1">
+                <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-neutral-900 to-neutral-600   mt-1">
                   {prize.amount}
                 </div>
               </div>
 
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+              <p className="text-sm text-neutral-600  leading-relaxed">
                 {prize.description}
               </p>
             </div>

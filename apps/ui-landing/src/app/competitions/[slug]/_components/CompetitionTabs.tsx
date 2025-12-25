@@ -43,7 +43,7 @@ export function CompetitionTabs({
   }, [activeTab]);
 
   return (
-    <div className="w-full border-b border-zinc-200 dark:border-zinc-800 mb-8 overflow-x-auto">
+    <div className="w-full border-b border-neutral-200  mb-8 overflow-x-auto">
       <div className="flex items-center gap-8 min-w-max">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -53,9 +53,7 @@ export function CompetitionTabs({
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "relative py-4 text-sm font-medium transition-colors hover:text-purple-600",
-                isActive
-                  ? "text-purple-600"
-                  : "text-zinc-600 dark:text-zinc-400",
+                isActive ? "text-purple-600" : "text-neutral-600 "
               )}
             >
               {tab.label}
