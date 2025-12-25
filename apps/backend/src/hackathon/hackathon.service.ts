@@ -583,27 +583,96 @@ export class HackathonService {
   /**
    * Get a single hackathon by ID.
    * Includes all relations: owner, festival, rounds, questions, attachments, etc.
+   *
+   * Authorization:
+   * - Public hackathons (PUBLISHED/ONGOING + APPROVED) are readable by any authenticated user.
+   * - Non-public hackathons require owner, manager, or admin access.
    */
-  async getHackathonById(id: string) {
+  async getHackathonById(id: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { id },
       include: this.getHackathonIncludeClause(),
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    await this.assertCanReadHackathon(hackathon, userId);
+
     return hackathon;
   }
 
   /**
    * Get a single hackathon by slug.
    * Includes all relations: owner, festival, rounds, questions, attachments, etc.
+   *
+   * Authorization:
+   * - Public hackathons (PUBLISHED/ONGOING + APPROVED) are readable by any authenticated user.
+   * - Non-public hackathons require owner, manager, or admin access.
    */
-  async getHackathonBySlug(slug: string) {
+  async getHackathonBySlug(slug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { slug },
       include: this.getHackathonIncludeClause(),
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    await this.assertCanReadHackathon(hackathon, userId);
+
     return hackathon;
+  }
+
+  /**
+   * Check if a hackathon is publicly visible.
+   */
+  private isHackathonPubliclyVisible(hackathon: {
+    status: string;
+    approvalStatus: string;
+  }): boolean {
+    const publicStatuses = ['PUBLISHED', 'ONGOING'];
+    return (
+      publicStatuses.includes(hackathon.status) &&
+      hackathon.approvalStatus === 'APPROVED'
+    );
+  }
+
+  /**
+   * Assert that a user can read a hackathon.
+   * - Public hackathons are readable by any authenticated user.
+   * - Non-public hackathons require owner, manager, or admin access.
+   * Throws NotFoundException (404) to avoid leaking existence of private hackathons.
+   */
+  private async assertCanReadHackathon(
+    hackathon: {
+      id: string;
+      ownerId: string;
+      status: string;
+      approvalStatus: string;
+    },
+    userId: string,
+  ): Promise<void> {
+    // Public hackathons are readable by anyone
+    if (this.isHackathonPubliclyVisible(hackathon)) {
+      return;
+    }
+
+    // Check if user is owner
+    if (hackathon.ownerId === userId) {
+      return;
+    }
+
+    // Check if user is admin
+    const isAdmin = await this.isAdminUser(userId);
+    if (isAdmin) {
+      return;
+    }
+
+    // Check if user is manager
+    const isManager = await this.isHackathonManager(hackathon.id, userId);
+    if (isManager) {
+      return;
+    }
+
+    // User is not authorized - throw 404 to avoid leaking existence
+    throw new NotFoundException('Hackathon not found');
   }
 
   /**

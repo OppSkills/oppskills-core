@@ -20,16 +20,17 @@ export interface Competition {
   shortDescription?: string;
   startDate?: string;
   endDate?: string;
-  mode?: string; // ONLINE, OFFLINE, HYBRID
+  mode?: string;
   location?: string;
   bannerUrl?: string;
-  status?: string; // DRAFT, PUBLISHED, etc. - or derived status
+  status?: string;
   prizes?: { totalPrizePool?: string; currency?: string }[];
   maxTeams?: number;
   _count?: {
     participants?: number;
   };
   tags?: string[];
+  isDraft?: boolean;
 }
 
 interface CompetitionCardProps {
@@ -55,7 +56,15 @@ export function CompetitionCard({ competition }: CompetitionCardProps) {
           alt={competition.title}
           className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
         />
-        <div className="absolute right-2 top-2">
+        <div className="absolute right-2 top-2 flex gap-1">
+          {competition.isDraft && (
+            <Badge
+              variant="secondary"
+              className="bg-yellow-500/90 text-white backdrop-blur-sm"
+            >
+              Draft
+            </Badge>
+          )}
           <Badge
             variant="secondary"
             className="bg-background/80 backdrop-blur-sm"
