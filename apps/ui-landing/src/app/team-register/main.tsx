@@ -136,7 +136,8 @@ export default function RegistrationPage() {
   // Check if user is already in a team
   useEffect(() => {
     async function checkTeam() {
-      if (!isSignedIn || !hackathonId) {
+      const idToCheck = hackathon?.id || hackathonId;
+      if (!isSignedIn || !idToCheck) {
         setIsCheckingTeam(false);
         return;
       }
@@ -148,7 +149,7 @@ export default function RegistrationPage() {
           return;
         }
 
-        const team = await checkMyHackathonTeam(token, hackathonId);
+        const team = await checkMyHackathonTeam(token, idToCheck);
         setMyTeam(team);
       } catch (err) {
         console.error("Failed to check team:", err);
@@ -158,7 +159,7 @@ export default function RegistrationPage() {
     }
 
     checkTeam();
-  }, [isSignedIn, hackathonId, getToken]);
+  }, [isSignedIn, hackathonId, hackathon?.id, getToken]);
 
   // Loading state
   if (
@@ -370,7 +371,7 @@ export default function RegistrationPage() {
 
       {mode === "CREATE" || isIndividual ? (
         <CreateTeamForm
-          hackathonId={hackathonId}
+          hackathonId={hackathon.id}
           hackathonSlug={slug}
           hackathonName={hackathon.name}
           maxSize={maxSize}
@@ -379,7 +380,7 @@ export default function RegistrationPage() {
         />
       ) : (
         <JoinTeamList
-          hackathonId={hackathonId}
+          hackathonId={hackathon.id}
           hackathonSlug={slug}
           hackathonName={hackathon.name}
           registrationForm={hackathon.registrationForm}
