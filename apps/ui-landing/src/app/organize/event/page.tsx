@@ -47,7 +47,7 @@ const RichTextEditor = dynamic(
     loading: () => (
       <div className="h-[200px] bg-muted animate-pulse rounded-lg" />
     ),
-  }
+  },
 );
 
 import { format } from "date-fns";
@@ -125,8 +125,8 @@ export default function Page() {
       .string()
       .min(3, "Event name must be at least 3 characters")
       .max(160, "Event name must be less than 160 characters"),
-    eventDate: z.date({ message: "Start date is required" }),
-    eventEndDate: z.date().optional(),
+    eventStartDate: z.date({ message: "Start date is required" }),
+    eventEndDate: z.date({ message: "End date is required" }),
     eventLocation: z.string().min(1, "Location is required"),
     eventTimeFrom: z.string(),
     eventDescription: z.string().optional(),
@@ -144,7 +144,8 @@ export default function Page() {
   // ============================================================================
 
   // Date picker open states
-  const [eventDateOpen, setEventDateOpen] = useState(false);
+  const [eventStartDateOpen, setEventStartDateOpen] = useState(false);
+  const [eventEndDateOpen, setEventEndDateOpen] = useState(false);
   const [registerByOpen, setRegisterByOpen] = useState(false);
 
   const form = useForm({
@@ -152,7 +153,7 @@ export default function Page() {
       eventFestName: "",
       festivalId: undefined as string | undefined,
       eventName: "",
-      eventDate: undefined as Date | undefined,
+      eventStartDate: undefined as Date | undefined,
       eventEndDate: undefined as Date | undefined,
       eventLocation: "",
       eventTimeFrom: "10:00",
@@ -196,7 +197,7 @@ export default function Page() {
 
   type FestivalListItem = { id: string; name: string };
   const [festivals, setFestivals] = useState<ReadonlyArray<FestivalListItem>>(
-    []
+    [],
   );
   const [isLoadingFestivals, setIsLoadingFestivals] = useState(false);
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
@@ -205,7 +206,7 @@ export default function Page() {
 
   const bannerInputId = useMemo(
     () => `organizer-banner-upload-${crypto.randomUUID()}`,
-    []
+    [],
   );
 
   // LocalStorage persistence
@@ -236,7 +237,7 @@ export default function Page() {
   }
 
   function extractFestivalList(
-    input: unknown
+    input: unknown,
   ): ReadonlyArray<FestivalListItem> {
     const listRaw = Array.isArray(input)
       ? input
@@ -288,7 +289,7 @@ export default function Page() {
   }
 
   function toLocationDto(
-    input: string
+    input: string,
   ): EventLocationDto | FestivalLocationDto | undefined {
     const trimmed = input.trim();
     if (trimmed.length === 0) return undefined;
@@ -341,7 +342,7 @@ export default function Page() {
         setIsUploadingBanner(false);
       }
     },
-    [getToken, isUploadingBanner, form]
+    [getToken, isUploadingBanner, form],
   );
 
   // ============================================================================
@@ -363,12 +364,14 @@ export default function Page() {
           form.setFieldValue("eventLocation", parsed.eventLocation);
         if (parsed.eventTimeFrom)
           form.setFieldValue("eventTimeFrom", parsed.eventTimeFrom);
-        if (parsed.eventDate)
-          form.setFieldValue("eventDate", new Date(parsed.eventDate));
+        if (parsed.eventStartDate)
+          form.setFieldValue("eventStartDate", new Date(parsed.eventStartDate));
+        if (parsed.eventEndDate)
+          form.setFieldValue("eventEndDate", new Date(parsed.eventEndDate));
         if (parsed.eventRegisterBy)
           form.setFieldValue(
             "eventRegisterBy",
-            new Date(parsed.eventRegisterBy)
+            new Date(parsed.eventRegisterBy),
           );
         if (parsed.organizationName)
           form.setFieldValue("organizationName", parsed.organizationName);
@@ -387,9 +390,10 @@ export default function Page() {
         STORAGE_KEY,
         JSON.stringify({
           ...values,
-          eventDate: values.eventDate?.toISOString(),
+          eventStartDate: values.eventStartDate?.toISOString(),
+          eventEndDate: values.eventEndDate?.toISOString(),
           eventRegisterBy: values.eventRegisterBy?.toISOString(),
-        })
+        }),
       );
     } catch (err) {
       console.error("Error saving form:", err);
@@ -440,8 +444,16 @@ export default function Page() {
       toast.error("Event Name is required");
       return;
     }
-    if (!values.eventDate) {
-      toast.error("Event Date is required");
+    if (!values.eventStartDate) {
+      toast.error("Start Date is required");
+      return;
+    }
+    if (!values.eventEndDate) {
+      toast.error("End Date is required");
+      return;
+    }
+    if (values.eventEndDate < values.eventStartDate) {
+      toast.error("End Date must be after Start Date");
       return;
     }
     if (!values.eventLocation) {
@@ -450,10 +462,10 @@ export default function Page() {
     }
     if (
       values.eventRegisterBy &&
-      values.eventDate &&
-      values.eventRegisterBy > values.eventDate
+      values.eventStartDate &&
+      values.eventRegisterBy > values.eventStartDate
     ) {
-      toast.error("Registration deadline must be before the Event Date");
+      toast.error("Registration deadline must be before the Start Date");
       return;
     }
 
@@ -477,12 +489,12 @@ export default function Page() {
           : undefined,
         // Use combineDateAndTimeToIso to preserve time component
         startDate: combineDateAndTimeToIso(
-          values.eventDate,
-          values.eventTimeFrom
+          values.eventStartDate,
+          values.eventTimeFrom,
         ),
         endDate: combineDateAndTimeToIso(
-          values.eventDate,
-          values.eventTimeFrom
+          values.eventEndDate,
+          values.eventTimeFrom,
         ),
         location: toLocationDto(values.eventLocation) as
           | EventLocationDto
@@ -506,7 +518,7 @@ export default function Page() {
       const eventId = extractEventId(created);
       if (!eventId) {
         toast.error(
-          "Event was created but we couldn't read its id from the server response."
+          "Event was created but we couldn't read its id from the server response.",
         );
         return;
       }
@@ -553,7 +565,7 @@ export default function Page() {
                     htmlFor={bannerInputId}
                     className={cn(
                       "absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-background/20 hover:bg-background/40 transition-colors cursor-pointer",
-                      isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
+                      isUploadingBanner ? "opacity-60 cursor-not-allowed" : "",
                     )}
                     aria-disabled={isUploadingBanner}
                   >
@@ -702,21 +714,26 @@ export default function Page() {
 
             {/* Date and Time Row */}
             <div className="flex flex-wrap gap-4">
-              {/* Event Date */}
+              {/* Start Date */}
               <div className="flex flex-col gap-2">
                 <Label className="px-1 text-sm font-medium text-muted-foreground">
-                  Event Date
+                  Start Date
                 </Label>
-                <Popover open={eventDateOpen} onOpenChange={setEventDateOpen}>
+                <Popover
+                  open={eventStartDateOpen}
+                  onOpenChange={setEventStartDateOpen}
+                >
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className="w-40 justify-between font-normal"
                     >
                       <form.Subscribe
-                        selector={(state) => state.values.eventDate}
-                        children={(eventDate) =>
-                          eventDate ? format(eventDate, "PP") : "Select date"
+                        selector={(state) => state.values.eventStartDate}
+                        children={(eventStartDate) =>
+                          eventStartDate
+                            ? format(eventStartDate, "PP")
+                            : "Select date"
                         }
                       />
                       <ChevronDown className="w-4 h-4 opacity-50" />
@@ -727,15 +744,62 @@ export default function Page() {
                     align="start"
                   >
                     <form.Subscribe
-                      selector={(state) => state.values.eventDate}
-                      children={(eventDate) => (
+                      selector={(state) => state.values.eventStartDate}
+                      children={(eventStartDate) => (
                         <Calendar
                           mode="single"
-                          selected={eventDate}
+                          selected={eventStartDate}
                           captionLayout="dropdown"
                           onSelect={(date) => {
-                            form.setFieldValue("eventDate", date);
-                            setEventDateOpen(false);
+                            form.setFieldValue("eventStartDate", date);
+                            setEventStartDateOpen(false);
+                          }}
+                        />
+                      )}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* End Date */}
+              <div className="flex flex-col gap-2">
+                <Label className="px-1 text-sm font-medium text-muted-foreground">
+                  End Date
+                </Label>
+                <Popover
+                  open={eventEndDateOpen}
+                  onOpenChange={setEventEndDateOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-40 justify-between font-normal"
+                    >
+                      <form.Subscribe
+                        selector={(state) => state.values.eventEndDate}
+                        children={(eventEndDate) =>
+                          eventEndDate
+                            ? format(eventEndDate, "PP")
+                            : "Select date"
+                        }
+                      />
+                      <ChevronDown className="w-4 h-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-auto overflow-hidden p-0"
+                    align="start"
+                  >
+                    <form.Subscribe
+                      selector={(state) => state.values.eventEndDate}
+                      children={(eventEndDate) => (
+                        <Calendar
+                          mode="single"
+                          selected={eventEndDate}
+                          captionLayout="dropdown"
+                          onSelect={(date) => {
+                            form.setFieldValue("eventEndDate", date);
+                            setEventEndDateOpen(false);
                           }}
                         />
                       )}
@@ -856,7 +920,7 @@ export default function Page() {
                       value={field.state.value ?? ""}
                       onChange={(e) =>
                         field.handleChange(
-                          e.target.value ? Number(e.target.value) : undefined
+                          e.target.value ? Number(e.target.value) : undefined,
                         )
                       }
                       placeholder="Unlimited"

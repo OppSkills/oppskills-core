@@ -51,7 +51,7 @@ import DescriptionEditorModal from "@/components/ui/derived/DescriptionEditorMod
 import dynamic from "next/dynamic";
 const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
-  { ssr: false }
+  { ssr: false },
 );
 import { format } from "date-fns";
 import Image from "next/image";
@@ -118,7 +118,8 @@ export default function Page() {
     festivalId?: string;
     eventFestVisibility: string;
     eventName: string;
-    eventDate: Date | undefined;
+    eventStartDate: Date | undefined;
+    eventEndDate: Date | undefined;
     eventLocation: string;
     eventTimeFrom: string;
     eventDescription: string;
@@ -134,7 +135,8 @@ export default function Page() {
     festivalId: undefined,
     eventFestVisibility: "",
     eventName: "",
-    eventDate: undefined,
+    eventStartDate: undefined,
+    eventEndDate: undefined,
     eventLocation: "",
     eventTimeFrom: "",
     eventDescription: "",
@@ -179,7 +181,7 @@ export default function Page() {
   type FestivalListItem = { id: string; name: string };
 
   const [festivals, setFestivals] = useState<ReadonlyArray<FestivalListItem>>(
-    []
+    [],
   );
   const [isLoadingFestivals, setIsLoadingFestivals] = useState<boolean>(false);
   const [isSubmittingHackathon, setIsSubmittingHackathon] =
@@ -191,7 +193,7 @@ export default function Page() {
   const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
   const bannerInputId = useMemo(
     () => `organizer-banner-upload-${crypto.randomUUID()}`,
-    []
+    [],
   );
 
   /**
@@ -226,7 +228,7 @@ export default function Page() {
    * - an object with a `data` array.
    */
   function extractFestivalList(
-    input: unknown
+    input: unknown,
   ): ReadonlyArray<FestivalListItem> {
     const listRaw = Array.isArray(input)
       ? input
@@ -325,7 +327,7 @@ export default function Page() {
    * Maps modal question types to backend registration field types.
    */
   function toRegistrationFieldTypeValue(
-    type: RegistrationQuestion["type"]
+    type: RegistrationQuestion["type"],
   ): RegistrationFieldTypeValue {
     if (type === "Text") return "TEXT";
     if (type === "Phone No.") return "PHONE_NO";
@@ -340,7 +342,7 @@ export default function Page() {
    * Validates labels and OPTIONS values.
    */
   function mapRegistrationQuestionsToRegistrationFields(
-    questions: ReadonlyArray<RegistrationQuestion>
+    questions: ReadonlyArray<RegistrationQuestion>,
   ): ReadonlyArray<RegistrationFieldDto> {
     const fields: RegistrationFieldDto[] = [];
 
@@ -377,7 +379,7 @@ export default function Page() {
    * If the input is a URL, we treat it as VIRTUAL; otherwise PHYSICAL.
    */
   function toLocationDto(
-    input: string
+    input: string,
   ): HackathonLocationDto | FestivalLocationDto | undefined {
     const trimmed = input.trim();
     if (trimmed.length === 0) return undefined;
@@ -414,7 +416,7 @@ export default function Page() {
    * Maps UI participant type labels to backend enum values.
    */
   function toParticipantTypeValue(
-    label: string
+    label: string,
   ): ParticipantTypeValue | undefined {
     if (label === "Individual Participants") return "INDIVIDUAL";
     if (label === "Team of 2") return "TEAM_OF_2";
@@ -484,7 +486,7 @@ export default function Page() {
               htmlFor={bannerInputId}
               className={cn(
                 "absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-background/20 hover:bg-background/40 transition-colors cursor-pointer",
-                isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
+                isUploadingBanner ? "opacity-60 cursor-not-allowed" : "",
               )}
               aria-disabled={isUploadingBanner}
             >
@@ -686,37 +688,70 @@ export default function Page() {
                   placeholder="Hackathon Name"
                 />
               </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <div className="h-full">
-                    <InputBlock
-                      icon={<CalendarIcon className="w-6 h-6" />}
-                      label={
-                        formData.eventDate
-                          ? format(formData.eventDate, "PPP")
-                          : "Select Date"
-                      }
-                      subLabel="Hackathon Date"
-                      className="bg-muted h-full"
-                    />
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Event Date</label>
-
-                    <div className="not-prose border rounded-md p-2">
-                      <Calendar
-                        mode="single"
-                        selected={formData.eventDate}
-                        onSelect={(date) =>
-                          setFormData({ ...formData, eventDate: date })
+              <div className="grid grid-cols-2 gap-4">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="h-full">
+                      <InputBlock
+                        icon={<CalendarIcon className="w-6 h-6" />}
+                        label={
+                          formData.eventStartDate
+                            ? format(formData.eventStartDate, "PPP")
+                            : "Select Date"
                         }
+                        subLabel="Start Date"
+                        className="bg-muted h-full"
                       />
                     </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Start Date</label>
+
+                      <div className="not-prose border rounded-md p-2">
+                        <Calendar
+                          mode="single"
+                          selected={formData.eventStartDate}
+                          onSelect={(date) =>
+                            setFormData({ ...formData, eventStartDate: date })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="h-full">
+                      <InputBlock
+                        icon={<CalendarIcon className="w-6 h-6" />}
+                        label={
+                          formData.eventEndDate
+                            ? format(formData.eventEndDate, "PPP")
+                            : "Select Date"
+                        }
+                        subLabel="End Date"
+                        className="bg-muted h-full"
+                      />
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">End Date</label>
+
+                      <div className="not-prose border rounded-md p-2">
+                        <Calendar
+                          mode="single"
+                          selected={formData.eventEndDate}
+                          onSelect={(date) =>
+                            setFormData({ ...formData, eventEndDate: date })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
 
             {/* Location and Time */}
@@ -930,8 +965,16 @@ export default function Page() {
                   toast.error("Event Name is required");
                   return;
                 }
-                if (!formData.eventDate) {
-                  toast.error("Event Date is required");
+                if (!formData.eventStartDate) {
+                  toast.error("Start Date is required");
+                  return;
+                }
+                if (!formData.eventEndDate) {
+                  toast.error("End Date is required");
+                  return;
+                }
+                if (formData.eventEndDate < formData.eventStartDate) {
+                  toast.error("End Date must be after Start Date");
                   return;
                 }
                 if (!formData.eventLocation) {
@@ -944,9 +987,9 @@ export default function Page() {
                 }
 
                 // Validate dates
-                if (formData.eventRegisterBy > formData.eventDate) {
+                if (formData.eventRegisterBy > formData.eventStartDate) {
                   toast.error(
-                    "Registration Last Date must be before the Event Date"
+                    "Registration Last Date must be before the Start Date",
                   );
                   return;
                 }
@@ -969,26 +1012,26 @@ export default function Page() {
                     bannerImageUrl: isValidUrl(formData.eventThumbnail)
                       ? formData.eventThumbnail.trim()
                       : undefined,
-                    startDate: toIsoDateOnly(formData.eventDate),
-                    endDate: toIsoDateOnly(formData.eventDate),
+                    startDate: toIsoDateOnly(formData.eventStartDate),
+                    endDate: toIsoDateOnly(formData.eventEndDate),
                     mode: inferredMode,
                     visibility: toVisibilityValue(formData.eventFestVisibility),
                     hackathonType: toHackathonTypeValue(formData.hackathonType),
                     participantType: toParticipantTypeValue(
-                      formData.participantType
+                      formData.participantType,
                     ),
                     location: toLocationDto(formData.eventLocation) as
                       | HackathonLocationDto
                       | undefined,
                     registrationDeadline: toIsoDateOnly(
-                      formData.eventRegisterBy
+                      formData.eventRegisterBy,
                     ),
                   };
 
                   // Pre-validate registration questions (so we don't create a hackathon and then fail saving fields).
                   const registrationFields =
                     mapRegistrationQuestionsToRegistrationFields(
-                      formData.registrationQuestions
+                      formData.registrationQuestions,
                     );
                   const invalidOptions = registrationFields.some((f) => {
                     if (f.type !== "OPTIONS") return false;
@@ -996,7 +1039,7 @@ export default function Page() {
                   });
                   if (invalidOptions) {
                     toast.error(
-                      "Please add at least one option for every Options question."
+                      "Please add at least one option for every Options question.",
                     );
                     return;
                   }
@@ -1005,7 +1048,7 @@ export default function Page() {
                   const hackathonId = extractHackathonId(created);
                   if (!hackathonId) {
                     toast.error(
-                      "Event was created but we couldn't read its id from the server response."
+                      "Event was created but we couldn't read its id from the server response.",
                     );
                     return;
                   }
@@ -1291,7 +1334,7 @@ export default function Page() {
                     setFestivals(
                       extractFestivalList(res).length > 0
                         ? extractFestivalList(res)
-                        : festivals
+                        : festivals,
                     );
                     await loadFestivals();
                   } catch (err: unknown) {
