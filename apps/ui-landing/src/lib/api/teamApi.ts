@@ -1,3 +1,5 @@
+import axios from "axios";
+
 import type { CreateTeamDto } from "@oppskills/types/frontend";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
@@ -152,9 +154,16 @@ export async function checkMyHackathonTeam(
   token: string,
   hackathonId: string,
 ): Promise<TeamDetailResponse | null> {
-  const res = await API.get(`/my-team`, {
-    params: { hackathonId },
-    headers: buildAuthHeaders(token),
-  });
-  return res.data as TeamDetailResponse | null;
+  try {
+    const res = await API.get(`/my-team`, {
+      params: { hackathonId },
+      headers: buildAuthHeaders(token),
+    });
+    return res.data as TeamDetailResponse;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }

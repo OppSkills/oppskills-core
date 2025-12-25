@@ -940,7 +940,7 @@ export class TeamService {
             );
           }
           break;
-        case 'EMAIL':
+        case 'EMAIL': {
           if (typeof value !== 'string') {
             throw new BadRequestException(
               `Field "${field.label}" must be a string.`,
@@ -953,6 +953,7 @@ export class TeamService {
             );
           }
           break;
+        }
         case 'NUMBER':
           if (typeof value !== 'number' && typeof value !== 'string') {
             throw new BadRequestException(

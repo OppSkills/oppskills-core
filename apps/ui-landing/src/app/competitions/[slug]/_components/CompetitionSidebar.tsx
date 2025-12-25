@@ -43,13 +43,12 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         if (!token) return;
 
         const team = await checkMyHackathonTeam(token, competition.id);
-        if (team) {
-          setIsAlreadyRegistered(true);
-          setMyTeam({ id: team.id, name: team.name });
-        }
+        setIsAlreadyRegistered(!!team);
+        setMyTeam(team ? { id: team.id, name: team.name } : null);
       } catch (error) {
-        // Silently ignore - user is not registered
         console.error("Error checking registration:", error);
+        setIsAlreadyRegistered(false);
+        setMyTeam(null);
       } finally {
         setIsCheckingRegistration(false);
       }

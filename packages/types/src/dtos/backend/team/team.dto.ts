@@ -7,9 +7,39 @@ import {
   IsArray,
   ValidateNested,
   IsBoolean,
+  registerDecorator,
+  type ValidationArguments,
+  type ValidationOptions,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
+
+export function IsAnswerValue(validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: "isAnswerValue",
+      target: object.constructor,
+      propertyName,
+      options: validationOptions,
+      validator: {
+        validate(value: unknown) {
+          if (typeof value === "string") return true;
+          if (typeof value === "number" && Number.isFinite(value)) return true;
+          if (
+            Array.isArray(value) &&
+            value.every((item) => typeof item === "string")
+          ) {
+            return true;
+          }
+          return false;
+        },
+        defaultMessage(args: ValidationArguments) {
+          return `${args.property} must be a string, a finite number, or an array of strings`;
+        },
+      },
+    });
+  };
+}
 
 /**
  * A single registration answer for hackathon team registration.
@@ -27,6 +57,7 @@ export class RegistrationAnswerDto {
       "Answer value (string, number, or array of strings for multi-select)",
     example: "John Doe",
   })
+  @IsAnswerValue()
   value: string | number | string[];
 }
 
@@ -57,15 +88,6 @@ export class CreateTeamDto {
   @IsInt()
   @Min(1)
   maxSize?: number;
-
-  @ApiPropertyOptional({
-    description: "Team ID (used when joining an existing team)",
-    format: "uuid",
-    example: "550e8400-e29b-41d4-a716-446655440001",
-  })
-  @IsOptional()
-  @IsUUID()
-  teamId?: string;
 
   @ApiPropertyOptional({
     description: "Whether the team is open for others to browse and join",
