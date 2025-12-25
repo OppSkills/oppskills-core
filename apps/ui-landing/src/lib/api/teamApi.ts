@@ -36,6 +36,8 @@ export interface TeamDetailResponse {
   hackathonId: string;
   leaderId: string;
   maxSize: number;
+  invitationCode: string | null;
+  isOpen: boolean;
   createdAt: string;
   updatedAt: string;
   leader: TeamLeader;
@@ -47,6 +49,12 @@ export interface TeamDetailResponse {
   };
 }
 
+export interface JoinTeamDto {
+  teamId?: string;
+  invitationCode?: string;
+  answers?: Array<{ fieldId: string; value: string | number | string[] }>;
+}
+
 // =====================
 // API Functions
 // =====================
@@ -56,24 +64,44 @@ export interface TeamDetailResponse {
  */
 export async function createTeam(
   token: string,
-  data: CreateTeamDto,
-): Promise<unknown> {
+  data: CreateTeamDto & {
+    answers?: Array<{ fieldId: string; value: string | number | string[] }>;
+  },
+): Promise<TeamDetailResponse> {
   const res = await API.post("/create-team", data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as TeamDetailResponse;
+}
+
+/**
+ * Joins a team by ID or invitation code.
+ */
+export async function joinTeam(
+  token: string,
+  data: JoinTeamDto,
+): Promise<unknown> {
+  const res = await API.post("/join-team", data, {
     headers: buildAuthHeaders(token),
   });
   return res.data as unknown;
 }
 
 /**
- * Joins a team (payload depends on backend DTO).
+ * Joins a team by invitation code.
  */
-export async function joinTeam(
+export async function joinTeamByCode(
   token: string,
-  data: CreateTeamDto,
+  invitationCode: string,
+  answers?: Array<{ fieldId: string; value: string | number | string[] }>,
 ): Promise<unknown> {
-  const res = await API.post("/join-team", data, {
-    headers: buildAuthHeaders(token),
-  });
+  const res = await API.post(
+    "/join-team",
+    { invitationCode, answers },
+    {
+      headers: buildAuthHeaders(token),
+    },
+  );
   return res.data as unknown;
 }
 
@@ -91,16 +119,16 @@ export async function leaveTeam(
 }
 
 /**
- * Lists teams for a given hackathon.
+ * Lists open teams for a given hackathon.
  */
 export async function getTeamsByHackathon(
   token: string,
   hackathonId: string,
-): Promise<unknown> {
+): Promise<TeamDetailResponse[]> {
   const res = await API.get(`/teams/${hackathonId}`, {
     headers: buildAuthHeaders(token),
   });
-  return res.data as unknown;
+  return res.data as TeamDetailResponse[];
 }
 
 /**
@@ -114,4 +142,19 @@ export async function getTeamById(
     headers: buildAuthHeaders(token),
   });
   return res.data as TeamDetailResponse;
+}
+
+/**
+ * Check if the current user is already in a team for a hackathon.
+ * Returns the team if found, null otherwise.
+ */
+export async function checkMyHackathonTeam(
+  token: string,
+  hackathonId: string,
+): Promise<TeamDetailResponse | null> {
+  const res = await API.get(`/my-team`, {
+    params: { hackathonId },
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as TeamDetailResponse | null;
 }

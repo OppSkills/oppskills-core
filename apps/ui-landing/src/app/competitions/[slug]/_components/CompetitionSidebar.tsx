@@ -1,16 +1,167 @@
 "use client";
 
-import React from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { ChevronRight, MapPin, Users, Sparkles, Clock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  ChevronRight,
+  MapPin,
+  Users,
+  Sparkles,
+  Clock,
+  Loader2,
+  CheckCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CompetitionDetails } from "./types";
+import { useAuth, useUser, SignInButton } from "@clerk/nextjs";
+import { toast } from "sonner";
+import { checkMyHackathonTeam } from "@/lib/api/teamApi";
+import type { CompetitionDetails } from "./types";
 
 interface CompetitionSidebarProps {
   competition: CompetitionDetails;
 }
 
 export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
+  const router = useRouter();
+  const { isSignedIn, getToken } = useAuth();
+  const { user } = useUser();
+  const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
+  const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
+  const [myTeam, setMyTeam] = useState<{ id: string; name: string } | null>(
+    null,
+  );
+
+  // Check if user is already registered when signed in
+  useEffect(() => {
+    async function checkRegistration() {
+      if (!isSignedIn || !competition.id) return;
+
+      setIsCheckingRegistration(true);
+      try {
+        const token = await getToken();
+        if (!token) return;
+
+        const team = await checkMyHackathonTeam(token, competition.id);
+        if (team) {
+          setIsAlreadyRegistered(true);
+          setMyTeam({ id: team.id, name: team.name });
+        }
+      } catch (error) {
+        // Silently ignore - user is not registered
+        console.error("Error checking registration:", error);
+      } finally {
+        setIsCheckingRegistration(false);
+      }
+    }
+
+    checkRegistration();
+  }, [isSignedIn, competition.id, getToken]);
+
+  // Check if registration is closed
+  const isRegistrationClosed =
+    competition.isRegistrationPaused ||
+    (competition.registrationDeadlineDate &&
+      new Date() > competition.registrationDeadlineDate);
+
+  const handleRegisterClick = async () => {
+    // If not signed in, the SignInButton will handle it
+    if (!isSignedIn) {
+      return;
+    }
+
+    // Check if user is onboarded
+    const isOnboarded = user?.publicMetadata?.onboarded === true;
+    if (!isOnboarded) {
+      // Redirect to onboarding with return URL
+      const returnUrl = `/competitions/${competition.slug}`;
+      router.push(`/onboarding?returnUrl=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
+
+    // Check if registration is closed
+    if (isRegistrationClosed) {
+      toast.error("Registration is currently closed for this competition.");
+      return;
+    }
+
+    // Check if already registered
+    if (isAlreadyRegistered) {
+      toast.info("You are already registered for this competition!");
+      return;
+    }
+
+    // Redirect to team registration page
+    router.push(
+      `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`,
+    );
+  };
+
+  const renderRegisterButton = () => {
+    // If checking registration status
+    if (isCheckingRegistration) {
+      return (
+        <Button
+          className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm"
+          disabled
+        >
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Checking...
+        </Button>
+      );
+    }
+
+    // If already registered
+    if (isAlreadyRegistered && myTeam) {
+      return (
+        <Button
+          className="w-full bg-green-600 hover:bg-green-700 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm"
+          onClick={() =>
+            router.push(
+              `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`,
+            )
+          }
+        >
+          <CheckCircle className="w-4 h-4 mr-2" />
+          Registered: {myTeam.name}
+        </Button>
+      );
+    }
+
+    // If registration is closed
+    if (isRegistrationClosed) {
+      return (
+        <Button
+          className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm cursor-not-allowed"
+          disabled
+        >
+          Registration Closed
+        </Button>
+      );
+    }
+
+    // If not signed in, show sign-in button
+    if (!isSignedIn) {
+      return (
+        <SignInButton mode="modal">
+          <Button className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm">
+            Register for free
+          </Button>
+        </SignInButton>
+      );
+    }
+
+    // Default: show register button
+    return (
+      <Button
+        className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm"
+        onClick={handleRegisterClick}
+      >
+        Register for free
+      </Button>
+    );
+  };
+
   return (
     <div className="space-y-5 font-sans">
       {/* Featured In Pill */}
@@ -78,9 +229,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           </div>
 
           {/* Register Button */}
-          <Button className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm">
-            Register for free
-          </Button>
+          {renderRegisterButton()}
 
           {/* Divider */}
           <div className="h-px bg-zinc-100 dark:bg-zinc-800 w-full my-2" />

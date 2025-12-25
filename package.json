@@ -12,6 +12,7 @@
     "build:ui-landing": "turbo run build --filter=ui-landing",
     "db:dev": "turbo run dev --filter=@oppskills/db",
     "db:migrate": "cd packages/database && pnpm exec prisma migrate dev",
+    "db:reset": "cd packages/database && pnpm exec prisma migrate reset --force",
     "db:migrate:deploy": "cd packages/database && pnpm exec prisma migrate deploy",
     "db:push": "cd packages/database && pnpm exec prisma db push",
     "db:studio": "cd packages/database && pnpm exec prisma studio",

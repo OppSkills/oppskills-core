@@ -24,7 +24,7 @@ import { Loader2 } from "lucide-react";
 function mapRoundStatus(
   startsAt: string,
   endsAt: string,
-  status?: string
+  status?: string,
 ): RoundStatus {
   const now = new Date();
   const start = new Date(startsAt);
@@ -71,7 +71,7 @@ function mapPrizeIcon(position: number): "trophy" | "medal" | "star" {
 export default function CompetitionDetailsPage() {
   const { slug } = useParams();
   const [competition, setCompetition] = useState<CompetitionDetails | null>(
-    null
+    null,
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,6 +102,7 @@ export default function CompetitionDetailsPage() {
           participantType: string;
           impressions: number;
           registrationDeadline: string | null;
+          isRegistrationPaused: boolean;
           prizeTotalWorthAmount: number | null;
           currency: string;
           organizationName: string | null;
@@ -132,6 +133,19 @@ export default function CompetitionDetailsPage() {
             amount: number;
             description: string | null;
           }>;
+          registrationForm: {
+            id: string;
+            externalFormLink: string | null;
+            fields: Array<{
+              id: string;
+              label: string;
+              type: string;
+              required: boolean;
+              order: number;
+              options: string[];
+              placeholder: string | null;
+            }>;
+          } | null;
         };
 
         // Map API data to CompetitionDetails
@@ -221,7 +235,7 @@ export default function CompetitionDetailsPage() {
             data.hackathonType
               .replace(/_/g, " ")
               .toLowerCase()
-              .replace(/\b\w/g, (c) => c.toUpperCase())
+              .replace(/\b\w/g, (c) => c.toUpperCase()),
           );
         }
         if (data.mode) {
@@ -251,6 +265,13 @@ export default function CompetitionDetailsPage() {
           teamSize: mapTeamSize(data.participantType),
           impressions: data.impressions,
           registrationDeadline,
+          // New fields for registration
+          participantType: data.participantType,
+          registrationForm: data.registrationForm,
+          isRegistrationPaused: data.isRegistrationPaused,
+          registrationDeadlineDate: data.registrationDeadline
+            ? new Date(data.registrationDeadline)
+            : null,
         };
 
         setCompetition(competitionDetails);
