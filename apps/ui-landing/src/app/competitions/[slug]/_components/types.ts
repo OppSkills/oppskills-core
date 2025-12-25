@@ -55,7 +55,6 @@ export interface CompetitionDetails {
   organizers: Organizer[];
   prizes: Prize[];
 
-  // New fields for sidebar
   featuredIn?: string;
   specificDate?: string;
   specificTime?: string;
@@ -65,9 +64,10 @@ export interface CompetitionDetails {
   impressions?: number;
   registrationDeadline?: string;
 
-  // Fields for registration
   participantType?: string;
   registrationForm?: RegistrationForm | null;
   isRegistrationPaused?: boolean;
   registrationDeadlineDate?: Date | null;
+  maxTeams?: number | null;
+  registrationCount?: number;
 }

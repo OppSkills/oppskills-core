@@ -13,9 +13,10 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth, useUser, SignInButton } from "@clerk/nextjs";
+import { useAuth, SignInButton } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { checkMyHackathonTeam } from "@/lib/api/teamApi";
+import { getMe } from "@/lib/api/usersApi";
 import type { CompetitionDetails } from "./types";
 
 interface CompetitionSidebarProps {
@@ -25,8 +26,8 @@ interface CompetitionSidebarProps {
 export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   const router = useRouter();
   const { isSignedIn, getToken } = useAuth();
-  const { user } = useUser();
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
   const [myTeam, setMyTeam] = useState<{ id: string; name: string } | null>(
     null,
@@ -63,37 +64,51 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     (competition.registrationDeadlineDate &&
       new Date() > competition.registrationDeadlineDate);
 
+  const isMaxTeamsReached =
+    competition.maxTeams !== null &&
+    competition.maxTeams !== undefined &&
+    competition.registrationCount !== undefined &&
+    competition.registrationCount >= competition.maxTeams;
+
   const handleRegisterClick = async () => {
-    // If not signed in, the SignInButton will handle it
     if (!isSignedIn) {
       return;
     }
 
-    // Check if user is onboarded
-    const isOnboarded = user?.publicMetadata?.onboarded === true;
-    if (!isOnboarded) {
-      // Redirect to onboarding with return URL
-      const returnUrl = `/competitions/${competition.slug}`;
-      router.push(`/onboarding?returnUrl=${encodeURIComponent(returnUrl)}`);
-      return;
-    }
+    setIsCheckingOnboarding(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Please sign in to register.");
+        return;
+      }
 
-    // Check if registration is closed
-    if (isRegistrationClosed) {
-      toast.error("Registration is currently closed for this competition.");
-      return;
-    }
+      const meData = await getMe(token);
+      if (!meData.onboarded) {
+        const returnUrl = `/competitions/${competition.slug}`;
+        router.push(`/onboarding?returnUrl=${encodeURIComponent(returnUrl)}`);
+        return;
+      }
 
-    // Check if already registered
-    if (isAlreadyRegistered) {
-      toast.info("You are already registered for this competition!");
-      return;
-    }
+      if (isRegistrationClosed) {
+        toast.error("Registration is currently closed for this competition.");
+        return;
+      }
 
-    // Redirect to team registration page
-    router.push(
-      `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`,
-    );
+      if (isAlreadyRegistered) {
+        toast.info("You are already registered for this competition!");
+        return;
+      }
+
+      router.push(
+        `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`,
+      );
+    } catch (error) {
+      console.error("Error checking onboarding status:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsCheckingOnboarding(false);
+    }
   };
 
   const renderRegisterButton = () => {
@@ -139,6 +154,18 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       );
     }
 
+    // If max teams reached
+    if (isMaxTeamsReached) {
+      return (
+        <Button
+          className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm cursor-not-allowed"
+          disabled
+        >
+          Teams Full
+        </Button>
+      );
+    }
+
     // If not signed in, show sign-in button
     if (!isSignedIn) {
       return (
@@ -155,8 +182,16 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       <Button
         className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm"
         onClick={handleRegisterClick}
+        disabled={isCheckingOnboarding}
       >
-        Register for free
+        {isCheckingOnboarding ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Loading...
+          </>
+        ) : (
+          "Register for free"
+        )}
       </Button>
     );
   };
