@@ -18,7 +18,7 @@ export function Organizers({ organizers }: OrganizersProps) {
         {organizers.map((organizer) => (
           <div
             key={organizer.id}
-            className="flex items-center gap-4 p-4 rounded-xl border border-neutral-200  bg-white  hover:border-purple-200  transition-colors"
+            className="flex items-center gap-4 p-4 rounded-xl border border-neutral-200  bg-background  hover:border-purple-200  transition-colors"
           >
             <Avatar className="h-12 w-12 border border-neutral-100">
               <AvatarImage src={organizer.avatar} alt={organizer.name} />

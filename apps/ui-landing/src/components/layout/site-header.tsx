@@ -87,7 +87,7 @@ export function SiteHeader() {
   const initials = getInitials(userFirstName, userLastName, userEmail);
 
   return (
-    <header className="flex bg-white shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear rounded-xl px-4 lg:px-6">
+    <header className="flex bg-background shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear rounded-xl px-4 lg:px-6">
       <div className="flex w-full items-center justify-between p-5">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-1" />
@@ -117,7 +117,7 @@ export function SiteHeader() {
                   <button className="flex items-center gap-3 cursor-pointer outline-none">
                     <Avatar className="h-10 w-10 border border-slate-200">
                       <AvatarImage src={userImageUrl ?? undefined} />
-                      <AvatarFallback className="bg-primary-500 text-white">
+                      <AvatarFallback className="bg-primary-500 text-background">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
@@ -135,7 +135,7 @@ export function SiteHeader() {
                   <div className="flex items-center gap-2 p-2">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={userImageUrl ?? undefined} />
-                      <AvatarFallback className="bg-primary-500 text-white text-xs">
+                      <AvatarFallback className="bg-primary-500 text-background text-xs">
                         {initials}
                       </AvatarFallback>
                     </Avatar>

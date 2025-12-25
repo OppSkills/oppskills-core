@@ -269,9 +269,12 @@ export default function OnboardingPage() {
   // Clear irrelevant fields when userCategory changes to prevent stale data submission
   useEffect(() => {
     const currentCategory = form.state.values.userCategory;
-    
+
     // Skip on initial load or if category hasn't actually changed
-    if (!hasLoadedFromStorage.current || previousUserCategory.current === currentCategory) {
+    if (
+      !hasLoadedFromStorage.current ||
+      previousUserCategory.current === currentCategory
+    ) {
       previousUserCategory.current = currentCategory;
       return;
     }
@@ -458,9 +461,10 @@ export default function OnboardingPage() {
       await submitOnboarding(token, onboardingData);
       clearSavedFormData(); // Clear localStorage on successful submission
       toast.success("Onboarding completed! Welcome to OppSkills!");
-      
+
       // Redirect to returnUrl if provided, otherwise go to dashboard
-      const redirectTo = returnUrl && returnUrl.length > 0 ? returnUrl : "/dashboard";
+      const redirectTo =
+        returnUrl && returnUrl.length > 0 ? returnUrl : "/dashboard";
       router.push(redirectTo);
     } catch (error) {
       console.error("Error submitting onboarding:", error);
@@ -523,13 +527,13 @@ export default function OnboardingPage() {
   const progress = (currentStep / 6) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-background to-purple-50 flex flex-col">
       {/* Header */}
       <header className="py-6 px-8 border-b border-violet-100">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+              <Sparkles className="w-5 h-5 text-background" />
             </div>
             <span className="font-bold text-xl bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
               OppSkills

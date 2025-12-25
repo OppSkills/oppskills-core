@@ -93,18 +93,18 @@ function isRegistrationOpen(input: {
   isRegistrationPaused?: boolean;
 }): boolean {
   const status = (input.status ?? "").toUpperCase();
-  
+
   // Only PUBLISHED or ONGOING events accept registrations
   // DRAFT, CANCELLED, COMPLETED events never accept registrations
   if (status !== "PUBLISHED" && status !== "ONGOING") return false;
-  
+
   // Must be APPROVED
   const approval = (input.approvalStatus ?? "").toUpperCase();
   if (approval !== "APPROVED") return false;
-  
+
   // If registration is paused, it's closed
   if (input.isRegistrationPaused === true) return false;
-  
+
   // Check deadline (if set)
   const deadlineStr = input.registrationDeadline;
   if (deadlineStr) {
@@ -113,7 +113,7 @@ function isRegistrationOpen(input: {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -151,7 +151,8 @@ function extractEventRows(input: unknown): EventRow[] {
       const slug = getString(row, "slug");
       const status = getString(row, "status") ?? "DRAFT";
       const approvalStatus = getString(row, "approvalStatus") ?? null;
-      const registrationDeadline = getString(row, "registrationDeadline") ?? null;
+      const registrationDeadline =
+        getString(row, "registrationDeadline") ?? null;
       const isRegistrationPaused = row["isRegistrationPaused"] === true;
       const open = isRegistrationOpen({
         status,
@@ -384,7 +385,7 @@ export default function EventsPage() {
               placeholder="Search events"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-4 pr-12 rounded-full border border-border bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-sm"
+              className="w-full h-12 pl-4 pr-12 rounded-full border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-sm"
             />
             <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
           </div>
@@ -418,7 +419,7 @@ export default function EventsPage() {
             </div>
 
             {/* Data Rows */}
-            <div className="flex flex-col bg-white rounded-b-xl">
+            <div className="flex flex-col bg-background rounded-b-xl">
               {isLoading ? (
                 <div className="h-24 flex items-center justify-center text-muted-foreground">
                   Loading events...

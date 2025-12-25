@@ -58,7 +58,7 @@ export default function RichTextEditor({
 
   return (
     <div
-      className={`border rounded-lg bg-white overflow-hidden flex flex-col w-full max-h-[600px] ${className || ""}`}
+      className={`border rounded-lg bg-background overflow-hidden flex flex-col w-full max-h-[600px] ${className || ""}`}
     >
       <Toolbar editor={editor} />
       <div

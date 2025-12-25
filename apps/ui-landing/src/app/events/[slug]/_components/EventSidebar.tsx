@@ -28,7 +28,7 @@ export function EventSidebar({ event }: EventSidebarProps) {
       <EventRegistrationCard tickets={event.tickets} />
 
       {/* Quick Info Card */}
-      <div className="bg-white  rounded-2xl border border-neutral-200  p-6 shadow-sm space-y-5">
+      <div className="bg-background  rounded-2xl border border-neutral-200  p-6 shadow-sm space-y-5">
         {/* Date Row */}
         <div className="flex gap-4 items-center">
           <div className="flex-shrink-0 w-12 h-12 bg-neutral-50  rounded-xl border border-neutral-100  flex items-center justify-center">

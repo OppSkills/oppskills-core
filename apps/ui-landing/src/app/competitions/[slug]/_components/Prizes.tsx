@@ -49,7 +49,7 @@ export function Prizes({ prizes }: PrizesProps) {
                 hover:shadow-lg transition-all duration-300 hover:-translate-y-1
               `}
             >
-              <div className="p-4 bg-white  rounded-full shadow-sm mb-2">
+              <div className="p-4 bg-background  rounded-full shadow-sm mb-2">
                 {getIcon(prize.icon)}
               </div>
 

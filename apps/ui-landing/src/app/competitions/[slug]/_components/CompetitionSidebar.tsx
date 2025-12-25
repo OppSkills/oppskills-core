@@ -36,7 +36,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       </div>
 
       {/* Info Card */}
-      <div className="bg-white  rounded-2xl border border-neutral-200  p-6 shadow-sm">
+      <div className="bg-background  rounded-2xl border border-neutral-200  p-6 shadow-sm">
         <p className="text-neutral-600  text-[15px] mb-6">
           Welcome! to join event please register below.
         </p>
@@ -78,7 +78,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           </div>
 
           {/* Register Button */}
-          <Button className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm">
+          <Button className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-background rounded-full h-[52px] font-semibold text-[16px] shadow-sm">
             Register for free
           </Button>
 

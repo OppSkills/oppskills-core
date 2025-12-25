@@ -43,8 +43,8 @@ export default function HeroSection() {
   ];
 
   return (
-    <section className="relative min-h-[90vh] flex flex-col items-center justify-between pt-16 md:pt-30 bg-background overflow-hidden">
-      <div className="relative z-40 max-w-[1159px] px-4 text-center space-y-6">
+    <section className="relative min-h-[90vh] flex flex-col items-center justify-between bg-background overflow-hidden">
+      <div className="relative z-40 max-w-[1159px] px-4 text-center space-y-6 py-16">
         <div className="space-y-2">
           <h1 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
             Opportunities Made{" "}

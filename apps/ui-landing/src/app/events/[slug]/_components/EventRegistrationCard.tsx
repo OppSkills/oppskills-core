@@ -69,7 +69,7 @@ export function EventRegistrationCard({
 
   if (isRegistered) {
     return (
-      <div className="w-full bg-white  rounded-[20px] border border-neutral-200  overflow-hidden shadow-sm font-sans">
+      <div className="w-full bg-background  rounded-[20px] border border-neutral-200  overflow-hidden shadow-sm font-sans">
         <div className="bg-[#F0FDF4]  px-6 py-4 border-b border-neutral-100 ">
           <h3 className="text-[#166534]  font-semibold text-lg flex items-center gap-2">
             <CheckCircle className="w-5 h-5" />
@@ -88,7 +88,7 @@ export function EventRegistrationCard({
 
   if (isSimpleRSVP) {
     return (
-      <div className="w-full bg-white  rounded-[20px] border border-neutral-200  overflow-hidden shadow-sm font-sans">
+      <div className="w-full bg-background  rounded-[20px] border border-neutral-200  overflow-hidden shadow-sm font-sans">
         <div className="bg-[#FDF2FF]  px-6 py-4">
           <h3 className="text-[#5B2E63]  font-semibold text-lg">
             Registration
@@ -123,7 +123,7 @@ export function EventRegistrationCard({
           )}
 
           <Button
-            className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-white font-semibold text-[18px]"
+            className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-background font-semibold text-[18px]"
             onClick={onRegister}
             disabled={isRegistering}
           >
@@ -140,7 +140,7 @@ export function EventRegistrationCard({
 
   // Ticket Selection View
   return (
-    <div className="w-full bg-white  rounded-[20px] border border-neutral-200  overflow-hidden shadow-sm font-sans">
+    <div className="w-full bg-background  rounded-[20px] border border-neutral-200  overflow-hidden shadow-sm font-sans">
       <div className="bg-[#FDF2FF]  px-6 py-4">
         <h3 className="text-[#5B2E63]  font-semibold text-lg">Registration</h3>
       </div>
@@ -175,7 +175,7 @@ export function EventRegistrationCard({
                   <div className="mt-1">
                     {isSelected ? (
                       <div className="w-6 h-6 rounded-full bg-[#9C00E5] flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white" />
+                        <Check className="w-4 h-4 text-background" />
                       </div>
                     ) : (
                       <div className="w-6 h-6 rounded-full border-2 border-neutral-300 " />
@@ -212,7 +212,7 @@ export function EventRegistrationCard({
         )}
 
         <Button
-          className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-white font-semibold text-[18px]"
+          className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-background font-semibold text-[18px]"
           onClick={onRegister}
           disabled={isRegistering || !selectedTicketId}
         >

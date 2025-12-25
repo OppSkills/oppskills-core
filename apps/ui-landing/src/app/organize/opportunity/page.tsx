@@ -483,12 +483,12 @@ export default function Page() {
             <label
               htmlFor={bannerInputId}
               className={cn(
-                "absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-white/20 hover:bg-background/40 transition-colors cursor-pointer",
+                "absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-background/20 hover:bg-background/40 transition-colors cursor-pointer",
                 isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
               )}
               aria-disabled={isUploadingBanner}
             >
-              <p className="text-white px-4 py-2 flex items-center gap-2 text-xs font-medium">
+              <p className="text-background px-4 py-2 flex items-center gap-2 text-xs font-medium">
                 <Upload className="w-4 h-4" />
                 {isUploadingBanner ? "Uploading…" : "Upload"}
               </p>
@@ -1071,8 +1071,8 @@ export default function Page() {
                         fill
                         className="object-cover opacity-50"
                       />
-                      <div className="absolute inset-0 bg-black/40" />
-                      <div className="z-10 bg-black/40 backdrop-blur-md text-white px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium border border-white/20">
+                      <div className="absolute inset-0 bg-foreground/40" />
+                      <div className="z-10 bg-foreground/40 backdrop-blur-md text-background px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium border border-background/20">
                         <Upload className="w-4 h-4" /> Upload
                       </div>
                     </div>

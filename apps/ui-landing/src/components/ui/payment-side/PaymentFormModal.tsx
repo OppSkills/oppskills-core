@@ -74,7 +74,7 @@ export default function PaymentFormModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-foreground/80 backdrop-blur-sm">
           {/* MODAL CONTAINER */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -90,7 +90,7 @@ export default function PaymentFormModal({
               </h5>
               <div
                 onClick={onClose}
-                className="flex items-center justify-center w-8 h-8 cursor-pointer rounded-full hover:bg-black/5 transition-colors"
+                className="flex items-center justify-center w-8 h-8 cursor-pointer rounded-full hover:bg-foreground/5 transition-colors"
               >
                 <X className="w-6 h-6 text-muted-foreground" strokeWidth={2} />
               </div>

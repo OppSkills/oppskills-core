@@ -40,7 +40,7 @@ export function RoundsTimeline({ rounds }: RoundsTimelineProps) {
               </div>
 
               {/* Card */}
-              <div className="flex-1 bg-white  rounded-2xl border border-neutral-200  p-6">
+              <div className="flex-1 bg-background  rounded-2xl border border-neutral-200  p-6">
                 <h3 className="text-xl font-bold text-neutral-900  mb-1">
                   {round.name}
                 </h3>

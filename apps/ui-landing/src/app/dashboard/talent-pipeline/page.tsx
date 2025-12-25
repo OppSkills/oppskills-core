@@ -248,7 +248,7 @@ export default function TalentPipelinePage() {
               placeholder="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-4 pr-12 rounded-full border border-border bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-sm"
+              className="w-full h-12 pl-4 pr-12 rounded-full border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-sm"
             />
             <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
           </div>
@@ -282,7 +282,7 @@ export default function TalentPipelinePage() {
         </div>
 
         {/* Table Container */}
-        <div className="rounded-[24px] border border-border overflow-hidden shadow-sm overflow-x-auto bg-white">
+        <div className="rounded-[24px] border border-border overflow-hidden shadow-sm overflow-x-auto bg-background">
           {/* Header Row */}
           <div className="grid grid-cols-[60px_1.8fr_1.2fr_1.2fr_1.8fr_1.8fr] gap-4 items-center bg-primary/10 p-4 border-b-2 border-primary/30">
             {table.getHeaderGroups().map((headerGroup) => (

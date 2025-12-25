@@ -439,7 +439,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                         className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
                         {getInitials(
                           event.owner.firstName,
                           event.owner.lastName
@@ -466,7 +466,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
                   {event.contactName && (
                     <div className="p-4 bg-[#FDF2FF]  rounded-xl border border-purple-100  flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
                         {event.contactName.charAt(0).toUpperCase()}
                       </div>
                       <div>

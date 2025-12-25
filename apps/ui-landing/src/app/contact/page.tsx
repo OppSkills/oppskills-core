@@ -126,14 +126,14 @@ export default function ContactPage() {
               </Card>
             </div>
 
-            <Card className="relative overflow-hidden border-none shadow-xl bg-gradient-to-br from-primary-500 via-purple-600 to-blue-600 text-white mt-4">
+            <Card className="relative overflow-hidden border-none shadow-xl bg-gradient-to-br from-primary-500 via-purple-600 to-blue-600 text-background mt-4">
               <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl font-bold">
                   <MessageSquare className="h-6 w-6" />
                   Community
                 </CardTitle>
-                <CardDescription className="text-white/80 text-base">
+                <CardDescription className="text-background/80 text-base">
                   Join our Discord server to connect with 10,000+ developers and
                   organizers.
                 </CardDescription>
@@ -141,7 +141,7 @@ export default function ContactPage() {
               <CardContent>
                 <Button
                   variant="secondary"
-                  className="w-full bg-white text-primary-500 hover:bg-white/90 shadow-md font-semibold gap-2 group"
+                  className="w-full bg-background text-primary-500 hover:bg-background/90 shadow-md font-semibold gap-2 group"
                 >
                   {/* Join Discord{" "}
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" /> */}

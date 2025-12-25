@@ -131,7 +131,7 @@ export default function TeamManagementPage() {
   return (
     <div className="min-h-screen bg-[#F8F9FA] p-2 sm:p-4 md:p-6 lg:p-10 space-y-6 font-inter">
       {/* Header Section */}
-      <div className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+      <div className="flex items-center gap-4 bg-background p-4 rounded-xl shadow-sm border border-gray-100">
         <Button
           variant="ghost"
           size="icon"
@@ -142,7 +142,7 @@ export default function TeamManagementPage() {
         </Button>
         <div className="flex flex-col">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-background font-bold text-lg">
               {teamInitials}
             </div>
             <h1 className="text-xl font-bold text-gray-900 font-poppins">

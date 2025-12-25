@@ -58,16 +58,16 @@ export default function ManageRolesPage() {
   const params = useParams();
   const slug = typeof params.slug === "string" ? params.slug : null;
 
-  const [activeTab, setActiveTab] = useState<"Manager" | "Evaluator">("Manager");
+  const [activeTab, setActiveTab] = useState<"Manager" | "Evaluator">(
+    "Manager"
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Query for event data
   const eventQuery = useEventBySlug(slug);
 
   // Derive eventId safely using type guard
-  const eventId = isEventWithId(eventQuery.data)
-    ? eventQuery.data.id
-    : null;
+  const eventId = isEventWithId(eventQuery.data) ? eventQuery.data.id : null;
 
   // Query for roles
   const rolesQuery = useEventRoles(eventId);
@@ -137,7 +137,9 @@ export default function ManageRolesPage() {
   const roles = rolesQuery.data;
 
   const currentList =
-    activeTab === "Manager" ? (roles?.managers ?? []) : (roles?.evaluators ?? []);
+    activeTab === "Manager"
+      ? (roles?.managers ?? [])
+      : (roles?.evaluators ?? []);
 
   // Loading state
   const isLoading = eventQuery.isLoading || rolesQuery.isLoading;
@@ -203,13 +205,17 @@ export default function ManageRolesPage() {
               className={cn(
                 "px-6 py-2 rounded-full text-sm font-medium transition-all",
                 activeTab === tab
-                  ? "bg-[#A020F0] text-white shadow-md shadow-purple-900/20"
+                  ? "bg-[#A020F0] text-background shadow-md shadow-purple-900/20"
                   : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
               )}
             >
               {tab}
               <span className="ml-2 text-xs opacity-70">
-                ({tab === "Manager" ? roles?.managers.length : roles?.evaluators.length})
+                (
+                {tab === "Manager"
+                  ? roles?.managers.length
+                  : roles?.evaluators.length}
+                )
               </span>
             </button>
           ))}
