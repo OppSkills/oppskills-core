@@ -44,7 +44,7 @@ const Footer = () => {
 
   return (
     <footer className="w-full px-4 sm:px-6 lg:px-8 pb-8 pt-12">
-      <div className="max-w-340 mx-auto bg-[#030005] text-white rounded-[2.5rem] p-8 md:p-12 lg:p-16 overflow-hidden relative">
+      <div className="max-w-340 mx-auto bg-[#030005] text-background rounded-[2.5rem] p-8 md:p-12 lg:p-16 overflow-hidden relative">
         {/* Top Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-12">
           <div className="flex items-center gap-3">
@@ -69,7 +69,7 @@ const Footer = () => {
         </div>
 
         {/* Divider */}
-        <div className="h-px bg-white/10 w-full mb-12" />
+        <div className="h-px bg-background/10 w-full mb-12" />
 
         {/* Bottom Section */}
         <div className="flex flex-col lg:flex-row justify-between gap-12 lg:gap-8">
@@ -86,7 +86,7 @@ const Footer = () => {
                     <Link
                       href="?auth=signup"
                       scroll={false}
-                      className="text-gray-400 hover:text-white transition-colors text-base"
+                      className="text-gray-400 hover:text-background transition-colors text-base"
                     >
                       Sign up
                     </Link>
@@ -95,7 +95,7 @@ const Footer = () => {
                     <Link
                       href="?auth=login"
                       scroll={false}
-                      className="text-gray-400 hover:text-white transition-colors text-base"
+                      className="text-gray-400 hover:text-background transition-colors text-base"
                     >
                       Sign in
                     </Link>
@@ -105,7 +105,7 @@ const Footer = () => {
                   <li>
                     <Link
                       href="/dashboard"
-                      className="text-gray-400 hover:text-white transition-colors text-base"
+                      className="text-gray-400 hover:text-background transition-colors text-base"
                     >
                       Profile
                     </Link>
@@ -125,7 +125,7 @@ const Footer = () => {
                       <Link
                         href={link.href}
                         scroll={link.scroll}
-                        className="text-gray-400 hover:text-white transition-colors text-base"
+                        className="text-gray-400 hover:text-background transition-colors text-base"
                       >
                         {link.name}
                       </Link>
@@ -138,7 +138,7 @@ const Footer = () => {
 
           {/* Social Links Box */}
           <div className="lg:w-auto self-start">
-            <div className="border border-white/10 rounded-2xl p-6 bg-white/5 backdrop-blur-sm pr-12 min-w-[280px]">
+            <div className="border border-background/10 rounded-2xl p-6 bg-background/5 backdrop-blur-sm pr-12 min-w-[280px]">
               <h4 className="text-lg font-semibold mb-6">Follow Us On</h4>
               <div className="flex items-center gap-4">
                 {socialLinks.map((social, index) => {
@@ -149,7 +149,7 @@ const Footer = () => {
                       href={social.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+                      className="w-10 h-10 flex items-center justify-center rounded-full bg-background/10 hover:bg-background/20 transition-colors text-background"
                       aria-label={social.label}
                     >
                       <Icon className="w-5 h-5" />

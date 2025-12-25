@@ -230,7 +230,7 @@ export default function RegistrationQuestionsModal({
           {fixedQuestions.map((question) => (
             <div
               key={question.id}
-              className="bg-white rounded-lg p-3 flex flex-col md:flex-row md:items-center gap-2 shadow-sm border border-transparent"
+              className="bg-background rounded-lg p-3 flex flex-col md:flex-row md:items-center gap-2 shadow-sm border border-transparent"
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <GripVertical className="text-gray-300 w-5 h-5 cursor-not-allowed opacity-50 shrink-0" />
@@ -246,7 +246,7 @@ export default function RegistrationQuestionsModal({
                   Required
                 </Badge>
                 <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                  <Check className="w-5 h-5 text-white" />
+                  <Check className="w-5 h-5 text-background" />
                 </div>
               </div>
             </div>
@@ -263,7 +263,7 @@ export default function RegistrationQuestionsModal({
               <Reorder.Item
                 key={question.id}
                 value={question}
-                className="bg-white rounded-lg p-3 flex flex-col gap-3 shadow-sm border border-transparent hover:border-gray-200 transition-colors relative"
+                className="bg-background rounded-lg p-3 flex flex-col gap-3 shadow-sm border border-transparent hover:border-gray-200 transition-colors relative"
               >
                 <div className="flex flex-col md:flex-row md:items-start gap-3">
                   {/* Drag Handle & Label Input */}
@@ -371,7 +371,7 @@ export default function RegistrationQuestionsModal({
           </Reorder.Group>
 
           {/* Add New Question Row */}
-          <div className="bg-white rounded-lg p-3 flex flex-col md:flex-row items-stretch md:items-center gap-3 shadow-sm border border-transparent mt-4">
+          <div className="bg-background rounded-lg p-3 flex flex-col md:flex-row items-stretch md:items-center gap-3 shadow-sm border border-transparent mt-4">
             <Input
               value={newQuestionLabel}
               onChange={(e) => setNewQuestionLabel(e.target.value)}
@@ -429,7 +429,7 @@ export default function RegistrationQuestionsModal({
           <div className="flex justify-end">
             <Button
               onClick={handleSave}
-              className="bg-[#A020F0] hover:bg-[#8e1cd6] text-white rounded-full px-8 py-2 h-10 font-medium shadow-lg shadow-purple-900/10 w-full md:w-auto"
+              className="bg-[#A020F0] hover:bg-[#8e1cd6] text-background rounded-full px-8 py-2 h-10 font-medium shadow-lg shadow-purple-900/10 w-full md:w-auto"
             >
               Done
             </Button>

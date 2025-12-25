@@ -97,7 +97,7 @@ export default function UpcomingCompetitions() {
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-purple-600 dark:text-purple-400"
+                  className="text-purple-600 "
                 >
                   <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
                   <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
@@ -160,12 +160,12 @@ export default function UpcomingCompetitions() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-700">
-                        <span className="text-white text-5xl font-bold">
+                        <span className="text-background text-5xl font-bold">
                           {hackathon.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
                       {[hackathon.hackathonType, hackathon.mode].map(
                         (item, index) => (

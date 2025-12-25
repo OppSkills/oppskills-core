@@ -72,7 +72,7 @@ export default function Login({
     <div className="flex flex-col gap-4">
       <Button
         onClick={handleGoogleLogin}
-        className="w-full rounded-full text-foreground py-6 border-zinc-200/20"
+        className="w-full rounded-full text-foreground py-6 border-neutral-200/20"
         variant="outline"
         type="button"
         aria-label="Sign in with Google account"
@@ -83,7 +83,7 @@ export default function Login({
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+          <span className="w-full border-t border-neutral-200 " />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">

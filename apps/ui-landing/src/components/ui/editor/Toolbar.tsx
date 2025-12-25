@@ -52,7 +52,7 @@ export default function Toolbar({ editor }: { editor: Editor }) {
 
   const btnClass = (active: boolean) =>
     `p-2 rounded hover:bg-gray-100 transition-colors ${
-      active ? "bg-gray-200 text-black" : "text-gray-600"
+      active ? "bg-gray-200 text-foreground" : "text-gray-600"
     }`;
 
   return (

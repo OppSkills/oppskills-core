@@ -87,11 +87,11 @@ const UserDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[700px] p-0 overflow-hidden rounded-[20px] border-none bg-white">
+      <DialogContent className="max-w-[700px] p-0 overflow-hidden rounded-[20px] border-none bg-background">
         <div className="flex flex-col p-6 sm:p-8 gap-6">
           <div className="flex flex-col sm:flex-row gap-6 items-start">
             {/* Avatar */}
-            <Avatar className="w-24 h-24 sm:w-28 sm:h-28 border-4 border-white shadow-lg">
+            <Avatar className="w-24 h-24 sm:w-28 sm:h-28 border-4 border-background shadow-lg">
               <AvatarImage
                 src={participant.avatarUrl || undefined}
                 className="object-cover"
@@ -212,7 +212,7 @@ export default function ManageRegistrationPage() {
               table.toggleAllPageRowsSelected(!!value)
             }
             aria-label="Select all"
-            className="border-white data-[state=checked]:bg-white data-[state=checked]:text-primary"
+            className="border-background data-[state=checked]:bg-background data-[state=checked]:text-primary"
           />
         ),
         cell: ({ row }) => (
@@ -307,7 +307,7 @@ export default function ManageRegistrationPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="w-full bg-white min-h-screen p-8 flex items-center justify-center">
+      <div className="w-full bg-background min-h-screen p-8 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -316,7 +316,7 @@ export default function ManageRegistrationPage() {
   // Error state
   if (error) {
     return (
-      <div className="w-full bg-white min-h-screen p-8 flex flex-col items-center justify-center gap-4">
+      <div className="w-full bg-background min-h-screen p-8 flex flex-col items-center justify-center gap-4">
         <h1 className="text-2xl font-bold text-foreground">
           Error Loading Registrations
         </h1>
@@ -333,7 +333,7 @@ export default function ManageRegistrationPage() {
   const incompleteCount = data.filter((p) => p.status === "Incomplete").length;
 
   return (
-    <div className="w-full bg-white min-h-screen p-8 flex flex-col items-center gap-8">
+    <div className="w-full bg-background min-h-screen p-8 flex flex-col items-center gap-8">
       {/* Modal */}
       <UserDetailModal
         isOpen={!!selectedParticipant}
@@ -397,10 +397,10 @@ export default function ManageRegistrationPage() {
       <div className="w-full max-w-5xl rounded-xl overflow-x-auto border border-border/50 shadow-sm">
         <div className="min-w-[800px]">
           {/* Custom Header with Purple Background */}
-          <div className="bg-primary-600 text-white px-4 py-3 grid grid-cols-[50px_80px_1fr_200px] items-center text-sm font-medium">
+          <div className="bg-primary-600 text-background px-4 py-3 grid grid-cols-[50px_80px_1fr_200px] items-center text-sm font-medium">
             <div className="flex justify-center">
               <Checkbox
-                className="border-white data-[state=checked]:bg-white data-[state=checked]:text-primary-600"
+                className="border-background data-[state=checked]:bg-background data-[state=checked]:text-primary-600"
                 checked={table.getIsAllPageRowsSelected()}
                 onCheckedChange={(value) =>
                   table.toggleAllPageRowsSelected(!!value)
@@ -419,7 +419,7 @@ export default function ManageRegistrationPage() {
           </div>
 
           {/* Table Body */}
-          <div className="bg-white">
+          <div className="bg-background">
             {table.getRowModel().rows.length === 0 ? (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 No registrations found
@@ -438,7 +438,7 @@ export default function ManageRegistrationPage() {
                     <Checkbox
                       checked={row.getIsSelected()}
                       onCheckedChange={(value) => row.toggleSelected(!!value)}
-                      className="border-muted-foreground/30 data-[state=checked]:bg-primary-600 data-[state=checked]:text-white"
+                      className="border-muted-foreground/30 data-[state=checked]:bg-primary-600 data-[state=checked]:text-background"
                     />
                   </div>
                   <div className="text-muted-foreground text-sm font-medium pl-2">

@@ -34,7 +34,7 @@ export default function Alerts() {
         {alertsData.map((alert, index) => (
           <div
             key={index}
-            className="flex justify-between items-center p-4 rounded-[12px] border border-border/60 bg-white hover:border-primary/30 transition-colors gap-2"
+            className="flex justify-between items-center p-4 rounded-[12px] border border-border/60 bg-background hover:border-primary/30 transition-colors gap-2"
           >
             <div className="flex flex-col gap-1 max-w-[70%]">
               <p className="font-semibold text-foreground text-md">

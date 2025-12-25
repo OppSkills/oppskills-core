@@ -42,7 +42,7 @@ export default async function CollegePage({ params }: Props) {
       <h1 className="text-4xl font-bold mb-4">{college.name}</h1>
       <p className="text-xl text-muted-foreground mb-8">{college.location}</p>
 
-      <section className="prose dark:prose-invert max-w-none">
+      <section className="prose max-w-none">
         <p>{college.description}</p>
       </section>
 

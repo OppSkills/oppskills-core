@@ -40,15 +40,15 @@ export default function RecentListing() {
         {listings.map((item, index) => (
           <div
             key={index}
-            className="flex flex-col sm:flex-row gap-4 p-3 rounded-[12px] border border-border/60 bg-white hover:border-primary/30 transition-colors"
+            className="flex flex-col sm:flex-row gap-4 p-3 rounded-[12px] border border-border/60 bg-background hover:border-primary/30 transition-colors"
           >
             {/* Image Placeholder - using a gradient div if image missing, or fallback */}
             <div className="w-full sm:w-[120px] h-[120px] sm:h-[70px] relative rounded-md overflow-hidden bg-slate-900 shrink-0">
               {/* Pseudo-image since we might not have the asset */}
-              <div className="absolute inset-0 flex items-center justify-center text-white/50 text-[10px] font-bold tracking-widest">
+              <div className="absolute inset-0 flex items-center justify-center text-background/50 text-[10px] font-bold tracking-widest">
                 HACKATHON
               </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent"></div>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 md:gap-6">
               <div className="flex-1 flex flex-col justify-center">

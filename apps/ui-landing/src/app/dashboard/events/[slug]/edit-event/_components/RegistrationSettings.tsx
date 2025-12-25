@@ -109,7 +109,7 @@ export default function RegistrationSettings({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full bg-white border-none shadow-sm text-foreground justify-start px-3"
+                    className="w-full bg-background border-none shadow-sm text-foreground justify-start px-3"
                   >
                     <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
                     {formData.registrationSettings.startDate
@@ -128,7 +128,7 @@ export default function RegistrationSettings({
                   />
                 </PopoverContent>
               </Popover>
-              <div className="bg-white rounded-md flex items-center p-3 shadow-sm w-[130px]">
+              <div className="bg-background rounded-md flex items-center p-3 shadow-sm w-[130px]">
                 <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
                 <input
                   type="time"
@@ -152,7 +152,7 @@ export default function RegistrationSettings({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full bg-white border-none shadow-sm text-foreground justify-start px-3"
+                    className="w-full bg-background border-none shadow-sm text-foreground justify-start px-3"
                   >
                     <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
                     {formData.registrationSettings.endDate
@@ -171,7 +171,7 @@ export default function RegistrationSettings({
                   />
                 </PopoverContent>
               </Popover>
-              <div className="bg-white rounded-md flex items-center p-3 shadow-sm w-[130px]">
+              <div className="bg-background rounded-md flex items-center p-3 shadow-sm w-[130px]">
                 <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
                 <input
                   type="time"
@@ -193,7 +193,7 @@ export default function RegistrationSettings({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full bg-white border-none shadow-sm text-foreground justify-start px-3"
+                    className="w-full bg-background border-none shadow-sm text-foreground justify-start px-3"
                   >
                     <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
                     {formData.registrationSettings.eventDate
@@ -212,7 +212,7 @@ export default function RegistrationSettings({
                   />
                 </PopoverContent>
               </Popover>
-              <div className="bg-white rounded-md flex items-center p-3 shadow-sm w-[130px]">
+              <div className="bg-background rounded-md flex items-center p-3 shadow-sm w-[130px]">
                 <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
                 <input
                   type="time"
@@ -246,8 +246,8 @@ export default function RegistrationSettings({
             className={cn(
               "flex items-center gap-2 px-6 py-2.5 rounded-full border transition-all",
               formData.registrationSettings.maxTeamsNoLimit
-                ? "border-[#F3E8FF] bg-white shadow-sm"
-                : "border-border bg-white text-muted-foreground"
+                ? "border-[#F3E8FF] bg-background shadow-sm"
+                : "border-border bg-background text-muted-foreground"
             )}
           >
             <InfinityIcon

@@ -118,7 +118,7 @@ export default function RoundsAndStages({
           )}
           <Button
             onClick={handleAddRound}
-            className="bg-primary-500 text-white hover:bg-primary/90 font-semibold gap-2 rounded-full shadow-lg shadow-primary/20"
+            className="bg-primary-500 text-background hover:bg-primary/90 font-semibold gap-2 rounded-full shadow-lg shadow-primary/20"
           >
             <Plus className="w-4 h-4" />
             Add Round
@@ -150,7 +150,7 @@ export default function RoundsAndStages({
                   className={cn(
                     "w-12 h-12 rounded-lg flex items-center justify-center border font-bold text-lg transition-colors",
                     isEditing
-                      ? "bg-primary-500 text-white border-primary"
+                      ? "bg-primary-500 text-background border-primary"
                       : "bg-secondary/50 text-secondary-foreground border-secondary"
                   )}
                 >

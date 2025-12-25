@@ -364,7 +364,7 @@ export default function OpportunityPage() {
               placeholder="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-4 pr-12 rounded-full border border-border bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-sm"
+              className="w-full h-12 pl-4 pr-12 rounded-full border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-sm"
             />
             <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
           </div>
@@ -398,7 +398,7 @@ export default function OpportunityPage() {
             </div>
 
             {/* Data Rows */}
-            <div className="flex flex-col bg-white rounded-b-xl">
+            <div className="flex flex-col bg-background rounded-b-xl">
               {isLoading ? (
                 <div className="h-24 flex items-center justify-center text-muted-foreground">
                   Loading hackathons...

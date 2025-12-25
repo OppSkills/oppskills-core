@@ -39,7 +39,7 @@ export default function Auth({ onClose }: { onClose: () => void }) {
     },
   ];
   return (
-    <div className="fixed top-0 w-full bg-black/80 left-0 h-screen flex justify-center items-center z-50 px-4">
+    <div className="fixed top-0 w-full bg-foreground/80 left-0 h-screen flex justify-center items-center z-50 px-4">
       <div
         className="relative w-full max-w-[850px] min-h-[500px] max-h-[90vh] md:h-[580px] bg-background rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-200"
         role="dialog"

@@ -28,30 +28,30 @@ export function EventSidebar({ event }: EventSidebarProps) {
       <EventRegistrationCard tickets={event.tickets} />
 
       {/* Quick Info Card */}
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm space-y-5">
+      <div className="bg-background  rounded-2xl border border-neutral-200  p-6 shadow-sm space-y-5">
         {/* Date Row */}
         <div className="flex gap-4 items-center">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-50 dark:bg-zinc-800 rounded-xl border border-zinc-100 dark:border-zinc-700 flex items-center justify-center">
-            <Calendar className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+          <div className="flex-shrink-0 w-12 h-12 bg-neutral-50  rounded-xl border border-neutral-100  flex items-center justify-center">
+            <Calendar className="w-5 h-5 text-neutral-700 " />
           </div>
           <div>
-            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 text-[15px]">
+            <h4 className="font-semibold text-neutral-900  text-[15px]">
               {event.date}
             </h4>
-            <p className="text-sm text-zinc-500">{event.time}</p>
+            <p className="text-sm text-neutral-500">{event.time}</p>
           </div>
         </div>
 
         {/* Location Row */}
         <div className="flex gap-4 items-center">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-50 dark:bg-zinc-800 rounded-xl border border-zinc-100 dark:border-zinc-700 flex items-center justify-center">
-            <MapPin className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+          <div className="flex-shrink-0 w-12 h-12 bg-neutral-50  rounded-xl border border-neutral-100  flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-neutral-700 " />
           </div>
           <div>
-            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 text-[15px]">
+            <h4 className="font-semibold text-neutral-900  text-[15px]">
               {event.venueName}
             </h4>
-            <p className="text-sm text-zinc-500">{event.venueAddress}</p>
+            <p className="text-sm text-neutral-500">{event.venueAddress}</p>
           </div>
         </div>
       </div>

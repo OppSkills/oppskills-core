@@ -39,7 +39,7 @@ export default function EmptyState({ roleName, onAdd }: EmptyStateProps) {
 
       <Button
         onClick={onAdd}
-        className="bg-[#A020F0] hover:bg-[#8e1cd6] text-white rounded-full px-8 py-6 text-base font-semibold shadow-lg shadow-purple-900/20 transition-all hover:scale-105"
+        className="bg-[#A020F0] hover:bg-[#8e1cd6] text-background rounded-full px-8 py-6 text-base font-semibold shadow-lg shadow-purple-900/20 transition-all hover:scale-105"
       >
         <PlusCircle className="w-5 h-5 mr-2" />
         Add {roleName}

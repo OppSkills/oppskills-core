@@ -113,7 +113,7 @@ function getStatusBadge(status: string) {
       );
     case "COMPLETED":
       return (
-        <Badge variant="secondary" className="bg-gray-500 text-white">
+        <Badge variant="secondary" className="bg-gray-500 text-background">
           Completed
         </Badge>
       );

@@ -69,7 +69,7 @@ export default function DescriptionEditorModal({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-hidden relative bg-gray-50/50 p-4">
-          <div className="h-full bg-white rounded-lg shadow-sm border flex flex-col overflow-hidden">
+          <div className="h-full bg-background rounded-lg shadow-sm border flex flex-col overflow-hidden">
             <RichTextEditor
               value={value}
               onChange={setValue}
@@ -77,7 +77,7 @@ export default function DescriptionEditorModal({
             />
           </div>
         </div>
-        <DialogFooter className="p-4 border-t bg-white">
+        <DialogFooter className="p-4 border-t bg-background">
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>

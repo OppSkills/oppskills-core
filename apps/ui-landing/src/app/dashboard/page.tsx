@@ -66,7 +66,7 @@ export default async function page() {
           </div>
           <div className="right self-end md:self-auto w-full sm:w-auto">
             <Link href="/dashboard/host">
-              <Button className="w-full rounded-full px-6 h-12 bg-primary-500 hover:bg-primary/90 text-white font-semibold shadow-lg shadow-purple-200">
+              <Button className="w-full rounded-full px-6 h-12 bg-primary-500 hover:bg-primary/90 text-background font-semibold shadow-lg shadow-purple-200">
                 <Plus className="mr-2 h-5 w-5" />
                 Host
               </Button>

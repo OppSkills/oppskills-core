@@ -179,12 +179,12 @@ export default function BasicDetails({
           <label
             htmlFor={fileInputId}
             className={cn(
-              "absolute bottom-3 right-3 rounded-full bg-black/30 backdrop-blur-md border border-white/20 hover:bg-black/50 transition-colors cursor-pointer",
+              "absolute bottom-3 right-3 rounded-full bg-foreground/30 backdrop-blur-md border border-background/20 hover:bg-foreground/50 transition-colors cursor-pointer",
               isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
             )}
             aria-disabled={isUploadingBanner}
           >
-            <p className="text-white px-4 py-1.5 flex items-center gap-2 text-xs font-medium">
+            <p className="text-background px-4 py-1.5 flex items-center gap-2 text-xs font-medium">
               <Upload className="w-3 h-3" />
               {isUploadingBanner ? "Uploading…" : "Upload"}
             </p>

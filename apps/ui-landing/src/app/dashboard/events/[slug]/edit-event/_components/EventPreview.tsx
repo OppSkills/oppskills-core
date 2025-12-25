@@ -166,14 +166,14 @@ export function EventPreview({ slug }: EventPreviewProps) {
           {/* Festival badge if applicable */}
           {event.festival && (
             <div className="flex flex-wrap gap-2 mb-4">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-full text-xs text-zinc-600 dark:text-zinc-400">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-100  rounded-full text-xs text-neutral-600 ">
                 <span className="font-normal text-muted-foreground">
                   Featured in
                 </span>
-                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                <span className="font-semibold text-neutral-900 ">
                   {event.festival.name}
                 </span>
-                <span className="text-zinc-400">&gt;</span>
+                <span className="text-neutral-400">&gt;</span>
               </div>
             </div>
           )}
@@ -185,32 +185,32 @@ export function EventPreview({ slug }: EventPreviewProps) {
           <div className="flex flex-wrap gap-6 md:gap-12">
             {/* Date Row */}
             <div className="flex gap-4 items-center">
-              <div className="flex-shrink-0 w-12 h-12 bg-zinc-50 dark:bg-zinc-800 rounded-xl border border-zinc-100 dark:border-zinc-700 flex flex-col items-center justify-center">
-                <span className="text-[10px] uppercase text-zinc-500 font-medium leading-none mb-0.5">
+              <div className="flex-shrink-0 w-12 h-12 bg-neutral-50  rounded-xl border border-neutral-100  flex flex-col items-center justify-center">
+                <span className="text-[10px] uppercase text-neutral-500 font-medium leading-none mb-0.5">
                   {monthShort}
                 </span>
-                <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100 leading-none">
+                <span className="text-lg font-bold text-neutral-900  leading-none">
                   {dayNum}
                 </span>
               </div>
               <div>
-                <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 text-[15px]">
+                <h4 className="font-semibold text-neutral-900  text-[15px]">
                   {formattedDate}
                 </h4>
-                <p className="text-sm text-zinc-500">{formattedTime}</p>
+                <p className="text-sm text-neutral-500">{formattedTime}</p>
               </div>
             </div>
 
             {/* Location Row */}
             <div className="flex gap-4 items-center">
-              <div className="flex-shrink-0 w-12 h-12 bg-zinc-50 dark:bg-zinc-800 rounded-xl border border-zinc-100 dark:border-zinc-700 flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+              <div className="flex-shrink-0 w-12 h-12 bg-neutral-50  rounded-xl border border-neutral-100  flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-neutral-700 " />
               </div>
               <div>
-                <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 text-[15px]">
+                <h4 className="font-semibold text-neutral-900  text-[15px]">
                   {venueName}
                 </h4>
-                <p className="text-sm text-zinc-500">{venueAddress}</p>
+                <p className="text-sm text-neutral-500">{venueAddress}</p>
               </div>
             </div>
           </div>
@@ -246,7 +246,7 @@ export function EventPreview({ slug }: EventPreviewProps) {
                 <h2 className="text-2xl font-bold mb-4 text-foreground poppins">
                   About Event
                 </h2>
-                <div className="prose dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-300 inter whitespace-pre-line">
+                <div className="prose  max-w-none text-neutral-600  inter whitespace-pre-line">
                   {event.description ? (
                     <div
                       dangerouslySetInnerHTML={{ __html: event.description }}
@@ -264,7 +264,7 @@ export function EventPreview({ slug }: EventPreviewProps) {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Owner Card */}
-                  <div className="p-4 bg-[#FDF2FF] dark:bg-[#3E1A45]/30 rounded-xl border border-purple-100 dark:border-purple-900/50 flex items-center gap-4">
+                  <div className="p-4 bg-[#FDF2FF]  rounded-xl border border-purple-100  flex items-center gap-4">
                     {event.owner.imageUrl ? (
                       <Image
                         src={event.owner.imageUrl}
@@ -274,7 +274,7 @@ export function EventPreview({ slug }: EventPreviewProps) {
                         className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
                         {getInitials(
                           event.owner.firstName,
                           event.owner.lastName
@@ -287,11 +287,11 @@ export function EventPreview({ slug }: EventPreviewProps) {
                         {event.owner.lastName || "Organizer"}
                       </h4>
                       {event.contactPhone && (
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-neutral-500">
                           {event.contactPhone}
                         </p>
                       )}
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-neutral-500">
                         {event.contactEmail || event.owner.email}
                       </p>
                     </div>
@@ -299,8 +299,8 @@ export function EventPreview({ slug }: EventPreviewProps) {
 
                   {/* Contact person card (if different from owner) */}
                   {event.contactName && (
-                    <div className="p-4 bg-[#FDF2FF] dark:bg-[#3E1A45]/30 rounded-xl border border-purple-100 dark:border-purple-900/50 flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
+                    <div className="p-4 bg-[#FDF2FF]  rounded-xl border border-purple-100  flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
                         {event.contactName.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -308,12 +308,12 @@ export function EventPreview({ slug }: EventPreviewProps) {
                           {event.contactName}
                         </h4>
                         {event.contactPhone && (
-                          <p className="text-xs text-zinc-500">
+                          <p className="text-xs text-neutral-500">
                             {event.contactPhone}
                           </p>
                         )}
                         {event.contactEmail && (
-                          <p className="text-xs text-zinc-500">
+                          <p className="text-xs text-neutral-500">
                             {event.contactEmail}
                           </p>
                         )}
@@ -333,7 +333,7 @@ export function EventPreview({ slug }: EventPreviewProps) {
                     {event.prizeBreakdown.map((prize) => (
                       <div
                         key={prize.id}
-                        className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl"
+                        className="p-4 border border-neutral-200  rounded-xl"
                       >
                         <h4 className="font-bold text-foreground">
                           {prize.position}
@@ -342,7 +342,7 @@ export function EventPreview({ slug }: EventPreviewProps) {
                           {event.currency} {prize.amount.toLocaleString()}
                         </p>
                         {prize.description && (
-                          <p className="text-sm text-zinc-500 mt-2">
+                          <p className="text-sm text-neutral-500 mt-2">
                             {prize.description}
                           </p>
                         )}

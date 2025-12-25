@@ -87,9 +87,9 @@ export default function CommunitiesPage() {
     <div className="min-h-screen bg-background relative selection:bg-primary/20 pb-20 flex flex-col items-center justify-center">
       {/* Dynamic Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-lighten animate-blob" />
-        <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-lighten animate-blob animation-delay-2000" />
-        <div className="absolute bottom-[-10%] left-[20%] w-[700px] h-[700px] bg-blue-500/10 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-lighten animate-blob animation-delay-4000" />
+        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] mix-blend-multiply  animate-blob" />
+        <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] mix-blend-multiply  animate-blob animation-delay-2000" />
+        <div className="absolute bottom-[-10%] left-[20%] w-[700px] h-[700px] bg-blue-500/10 rounded-full blur-[120px] mix-blend-multiply  animate-blob animation-delay-4000" />
       </div>
 
       <div className="container px-4 md:px-6 py-12 md:py-24 mx-auto relative z-10">
@@ -130,7 +130,7 @@ export default function CommunitiesPage() {
           {COMMUNITIES.map((community) => (
             <Card
               key={community.id}
-              className="group overflow-hidden border-border/50 bg-background/50 backdrop-blur-sm hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:hover:shadow-primary/10"
+              className="group overflow-hidden border-border/50 bg-background/50 backdrop-blur-sm hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 "
             >
               <div className="relative h-40 w-full overflow-hidden">
                 <div

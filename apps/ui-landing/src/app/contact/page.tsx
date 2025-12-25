@@ -31,9 +31,9 @@ export default function ContactPage() {
     <div className="min-h-screen bg-background relative selection:bg-primary/20 flex flex-col items-center justify-center">
       {/* Abstract Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-lighten animate-blob" />
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-lighten animate-blob animation-delay-2000" />
-        <div className="absolute -bottom-32 left-1/2 w-[500px] h-[500px] bg-pink-500/20 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-lighten animate-blob animation-delay-4000" />
+        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-[120px] mix-blend-multiply  animate-blob" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-[120px] mix-blend-multiply  animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-32 left-1/2 w-[500px] h-[500px] bg-pink-500/20 rounded-full blur-[120px] mix-blend-multiply  animate-blob animation-delay-4000" />
       </div>
 
       <div className="container px-4 md:px-6 py-12 md:py-24 mx-auto relative z-10">
@@ -45,7 +45,7 @@ export default function ContactPage() {
             </span>
             We're here to help
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-purple-800 to-gray-900 dark:from-white dark:via-purple-200 dark:to-white pb-2 font-poppins">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-purple-800 to-gray-900    pb-2 font-poppins">
             Get in Touch
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl leading-relaxed">
@@ -60,7 +60,7 @@ export default function ContactPage() {
             <div className="grid gap-4">
               <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-background/50 overflow-hidden group hover:border-primary/50 transition-colors">
                 <CardContent className="p-6 flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-300">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100  text-purple-600  group-hover:scale-110 transition-transform duration-300">
                     <MapPin className="h-6 w-6" />
                   </div>
                   <div>
@@ -78,7 +78,7 @@ export default function ContactPage() {
 
               <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-background/50 overflow-hidden group hover:border-primary/50 transition-colors">
                 <CardContent className="p-6 flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100  text-blue-600  group-hover:scale-110 transition-transform duration-300">
                     <Mail className="h-6 w-6" />
                   </div>
                   <div>
@@ -95,7 +95,7 @@ export default function ContactPage() {
 
               <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-background/50 overflow-hidden group hover:border-primary/50 transition-colors">
                 <CardContent className="p-6 flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 group-hover:scale-110 transition-transform duration-300">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-pink-100  text-pink-600  group-hover:scale-110 transition-transform duration-300">
                     <Phone className="h-6 w-6" />
                   </div>
                   <div>
@@ -126,14 +126,14 @@ export default function ContactPage() {
               </Card>
             </div>
 
-            <Card className="relative overflow-hidden border-none shadow-xl bg-gradient-to-br from-primary-500 via-purple-600 to-blue-600 text-white mt-4">
+            <Card className="relative overflow-hidden border-none shadow-xl bg-gradient-to-br from-primary-500 via-purple-600 to-blue-600 text-background mt-4">
               <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl font-bold">
                   <MessageSquare className="h-6 w-6" />
                   Community
                 </CardTitle>
-                <CardDescription className="text-white/80 text-base">
+                <CardDescription className="text-background/80 text-base">
                   Join our Discord server to connect with 10,000+ developers and
                   organizers.
                 </CardDescription>
@@ -141,7 +141,7 @@ export default function ContactPage() {
               <CardContent>
                 <Button
                   variant="secondary"
-                  className="w-full bg-white text-primary-500 hover:bg-white/90 shadow-md font-semibold gap-2 group"
+                  className="w-full bg-background text-primary-500 hover:bg-background/90 shadow-md font-semibold gap-2 group"
                 >
                   {/* Join Discord{" "}
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" /> */}
