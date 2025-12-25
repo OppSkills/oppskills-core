@@ -55,7 +55,7 @@ import {
   type CreateOnboardingDto,
 } from "@oppskills/types/frontend";
 
-import { submitOnboarding } from "@/lib/api/usersApi";
+import { submitOnboarding, getMe } from "@/lib/api/usersApi";
 import { searchColleges } from "@/lib/api/collegesApi";
 import {
   Loader2,
@@ -215,7 +215,7 @@ const SKILL_SUGGESTIONS = [
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [step, setStep] = useQueryState("step", {
     defaultValue: "1",
     parse: (value) => value || "1",
@@ -226,6 +226,7 @@ export default function OnboardingPage() {
   });
   const currentStep = parseInt(step || "1", 10);
 
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [collegeSearchQuery, setCollegeSearchQuery] = useState("");
   const [collegeSearchResults, setCollegeSearchResults] = useState<
@@ -233,6 +234,39 @@ export default function OnboardingPage() {
   >([]);
   const [isSearchingColleges, setIsSearchingColleges] = useState(false);
   const [collegeComboboxOpen, setCollegeComboboxOpen] = useState(false);
+
+  useEffect(() => {
+    async function checkAlreadyOnboarded() {
+      if (!isLoaded) return;
+
+      if (!isSignedIn) {
+        router.push("/");
+        return;
+      }
+
+      try {
+        const token = await getToken();
+        if (!token) {
+          router.push("/");
+          return;
+        }
+
+        const meData = await getMe(token);
+        if (meData.onboarded) {
+          const redirectTo =
+            returnUrl && returnUrl.length > 0 ? returnUrl : "/";
+          router.push(redirectTo);
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to check onboarding status:", err);
+      } finally {
+        setIsCheckingOnboarding(false);
+      }
+    }
+
+    checkAlreadyOnboarded();
+  }, [isLoaded, isSignedIn, getToken, returnUrl, router]);
 
   const form = useForm({
     defaultValues: {
@@ -419,7 +453,7 @@ export default function OnboardingPage() {
         setIsSearchingColleges(false);
       }
     },
-    [getToken]
+    [getToken],
   );
 
   const handleFinalSubmit = async (data: OnboardingFormData) => {
@@ -525,6 +559,14 @@ export default function OnboardingPage() {
   };
 
   const progress = (currentStep / 6) * 100;
+
+  if (isCheckingOnboarding) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-background to-purple-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-background to-purple-50 flex flex-col">
@@ -783,11 +825,11 @@ export default function OnboardingPage() {
                                     onSelect={() => {
                                       form.setFieldValue(
                                         "collegeId",
-                                        college.id
+                                        college.id,
                                       );
                                       form.setFieldValue(
                                         "collegeName",
-                                        college.name
+                                        college.name,
                                       );
                                       setCollegeSearchQuery("");
                                       setCollegeSearchResults([]);
@@ -1005,8 +1047,8 @@ export default function OnboardingPage() {
                                 if (isSelected) {
                                   field.handleChange(
                                     field.state.value.filter(
-                                      (i) => i !== interest
-                                    )
+                                      (i) => i !== interest,
+                                    ),
                                   );
                                 } else {
                                   field.handleChange([
@@ -1047,7 +1089,9 @@ export default function OnboardingPage() {
                               onClick={() => {
                                 if (isSelected) {
                                   field.handleChange(
-                                    field.state.value.filter((s) => s !== skill)
+                                    field.state.value.filter(
+                                      (s) => s !== skill,
+                                    ),
                                   );
                                 } else {
                                   field.handleChange([

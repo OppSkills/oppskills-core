@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useAuth, useUser, SignInButton } from "@clerk/nextjs";
+import { useAuth, SignInButton } from "@clerk/nextjs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { CreateTeamForm } from "@/components/CreateTeamForm";
@@ -13,6 +13,7 @@ import {
   checkMyHackathonTeam,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
+import { getMe } from "@/lib/api/usersApi";
 import Link from "next/link";
 
 type RegistrationMode = "CREATE" | "JOIN";
@@ -67,7 +68,6 @@ export default function RegistrationPage() {
   const params = useSearchParams();
   const router = useRouter();
   const { isSignedIn, isLoaded, getToken } = useAuth();
-  const { user } = useUser();
 
   const hackathonId = params.get("hackathonId");
   const slug = params.get("slug");
@@ -77,27 +77,41 @@ export default function RegistrationPage() {
   const [isLoadingHackathon, setIsLoadingHackathon] = useState(true);
   const [myTeam, setMyTeam] = useState<TeamDetailResponse | null>(null);
   const [isCheckingTeam, setIsCheckingTeam] = useState(true);
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check auth and onboarding
   useEffect(() => {
-    if (!isLoaded) return;
+    async function checkOnboarding() {
+      if (!isLoaded) return;
 
-    if (!isSignedIn) {
-      // Will show sign-in prompt
-      setIsLoadingHackathon(false);
-      setIsCheckingTeam(false);
-      return;
+      if (!isSignedIn) {
+        setIsLoadingHackathon(false);
+        setIsCheckingTeam(false);
+        return;
+      }
+
+      if (!slug) return;
+
+      setIsCheckingOnboarding(true);
+      try {
+        const token = await getToken();
+        if (!token) return;
+
+        const meData = await getMe(token);
+        if (!meData.onboarded) {
+          const returnUrl = `/team-register?hackathonId=${hackathonId}&slug=${slug}`;
+          router.push(`/onboarding?returnUrl=${encodeURIComponent(returnUrl)}`);
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to check onboarding:", err);
+      } finally {
+        setIsCheckingOnboarding(false);
+      }
     }
 
-    // Check if onboarded
-    const isOnboarded = user?.publicMetadata?.onboarded === true;
-    if (!isOnboarded && slug) {
-      const returnUrl = `/team-register?hackathonId=${hackathonId}&slug=${slug}`;
-      router.push(`/onboarding?returnUrl=${encodeURIComponent(returnUrl)}`);
-      return;
-    }
-  }, [isLoaded, isSignedIn, user, hackathonId, slug, router]);
+    checkOnboarding();
+  }, [isLoaded, isSignedIn, getToken, hackathonId, slug, router]);
 
   // Fetch hackathon data
   useEffect(() => {
@@ -147,7 +161,12 @@ export default function RegistrationPage() {
   }, [isSignedIn, hackathonId, getToken]);
 
   // Loading state
-  if (!isLoaded || isLoadingHackathon || isCheckingTeam) {
+  if (
+    !isLoaded ||
+    isLoadingHackathon ||
+    isCheckingTeam ||
+    isCheckingOnboarding
+  ) {
     return (
       <div className="max-w-3xl mx-auto mt-8 p-6">
         <div className="flex items-center justify-center py-16">

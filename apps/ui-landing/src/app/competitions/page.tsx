@@ -1,96 +1,85 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { JsonLd } from "@/components/seo/JsonLd";
-import {
-  CopyIcon,
-  Grid,
-  LayoutList,
-  SlidersHorizontal,
-  Loader2,
-} from "lucide-react";
+import { Grid, LayoutList, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
 import { CompetitionsFilterSidebar } from "./_components/CompetitionsFilterSidebar";
-import { CompetitionCard, Competition } from "./_components/CompetitionCard";
+import {
+  CompetitionCard,
+  type Competition,
+} from "./_components/CompetitionCard";
 import { CompetitionListItem } from "./_components/CompetitionListItem";
-// import { getHackathons } from "@/lib/api/hackathonApi";
+import { usePublicHackathons } from "@/hooks/usePublicHackathons";
+import { useAuth } from "@clerk/nextjs";
+import { useQuery } from "@tanstack/react-query";
+import { getMyHackathons } from "@/lib/api/hackathonApi";
+import type { PublicHackathonListItem } from "@/lib/api/hackathonApi";
 
-// Mock Data for development/fallback
-const MOCK_COMPETITIONS: Competition[] = [
-  {
-    id: "1",
-    title: "Global AI Hackathon 2024",
-    slug: "global-ai-hackathon-2024",
-    shortDescription:
-      "Build the future of AI in this 48-hour global event. Prizes worth $50k!",
-    startDate: "2024-05-15",
-    endDate: "2024-05-17",
-    mode: "Online",
-    location: "Global",
-    bannerUrl:
-      "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=600&auto=format&fit=crop",
-    status: "Upcoming",
-    maxTeams: 100,
-    tags: ["AI", "Machine Learning", "Python"],
-    _count: { participants: 450 },
-  },
-  {
-    id: "2",
-    title: "Sustainability Design Challenge",
-    slug: "sustainability-design-challenge",
-    shortDescription:
-      "Design solutions for a sustainable future. Open to all designers and engineers.",
-    startDate: "2024-06-01",
-    endDate: "2024-06-10",
-    mode: "Hybrid",
-    location: "New York, NY",
-    bannerUrl:
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?q=80&w=600&auto=format&fit=crop",
-    status: "Open",
-    maxTeams: 50,
-    tags: ["Design", "Sustainability", "Green Tech"],
-    _count: { participants: 120 },
-  },
-  {
-    id: "3",
-    title: "FinTech Innovation Summit",
-    slug: "fintech-innovation-summit",
-    shortDescription:
-      "Revolutionize the financial industry with blockchain and web3 technologies.",
-    startDate: "2024-07-20",
-    endDate: "2024-07-22",
-    mode: "Offline",
-    location: "London, UK",
-    bannerUrl:
-      "https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?q=80&w=600&auto=format&fit=crop",
-    status: "Upcoming",
-    maxTeams: 200,
-    tags: ["FinTech", "Blockchain", "Web3"],
-    _count: { participants: 300 },
-  },
-  {
-    id: "4",
-    title: "HealthTech Codefest",
-    slug: "healthtech-codefest",
-    shortDescription:
-      "Coding for better health outcomes. Join us to solve critical healthcare challenges.",
-    startDate: "2024-04-10",
-    endDate: "2024-04-12",
-    mode: "Online",
-    location: "Global",
-    bannerUrl:
-      "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=600&auto=format&fit=crop",
-    status: "Ended",
-    maxTeams: 80,
-    tags: ["HealthTech", "Coding", "Java"],
-    _count: { participants: 150 },
-  },
-];
+interface MyHackathonItem {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  status: string;
+  mode: string;
+  startDate: string;
+  endDate: string;
+  registrationDeadline: string | null;
+  bannerImageUrl: string | null;
+  ownerId: string;
+}
+
+function isPubliclyVisible(hackathon: {
+  status: string;
+  approvalStatus?: string;
+}): boolean {
+  const publicStatuses = ["PUBLISHED", "ONGOING"];
+  return (
+    publicStatuses.includes(hackathon.status) &&
+    hackathon.approvalStatus === "APPROVED"
+  );
+}
+
+function transformPublicHackathon(
+  h: PublicHackathonListItem,
+): Competition & { isDraft: boolean } {
+  return {
+    id: h.id,
+    title: h.name,
+    slug: h.slug,
+    shortDescription: h.description ?? undefined,
+    startDate: h.startDate,
+    endDate: h.endDate,
+    mode: h.mode,
+    location: h.locationCity ?? h.locationAddress ?? undefined,
+    bannerUrl: h.bannerImageUrl ?? undefined,
+    status: h.status,
+    maxTeams: h.maxTeams ?? undefined,
+    _count: { participants: h.registrationCount ?? 0 },
+    isDraft: false,
+  };
+}
+
+function transformMyHackathon(
+  h: MyHackathonItem,
+): Competition & { isDraft: boolean } {
+  return {
+    id: h.id,
+    title: h.name,
+    slug: h.slug,
+    shortDescription: h.description ?? undefined,
+    startDate: h.startDate,
+    endDate: h.endDate,
+    mode: h.mode,
+    bannerUrl: h.bannerImageUrl ?? undefined,
+    status: h.status,
+    isDraft: true,
+  };
+}
 
 export default function CompetitionsPage() {
-  // State
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [filters, setFilters] = useState<{
     search: string;
@@ -104,72 +93,63 @@ export default function CompetitionsPage() {
     types: [],
   });
 
-  const [competitions, setCompetitions] = useState<Competition[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { getToken, isSignedIn } = useAuth();
 
-  // Fetch Data (using mock for now as we don't have guaranteed auth token)
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // In real impl: const data = await getHackathons(token);
-        // For demo/dev: simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        setCompetitions(MOCK_COMPETITIONS);
-      } catch (error) {
-        console.error("Failed to fetch competitions", error);
-        // Fallback or empty state
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  const {
+    data: publicHackathons,
+    isLoading: publicLoading,
+    error: publicError,
+  } = usePublicHackathons();
 
-  // Filter Logic
-  const filteredCompetitions = competitions.filter((comp) => {
-    // Search
-    if (
-      filters.search &&
-      !comp.title.toLowerCase().includes(filters.search.toLowerCase())
-    ) {
-      return false;
-    }
-    // Mode
-    if (
-      filters.modes.length > 0 &&
-      comp.mode &&
-      !filters.modes.includes(comp.mode)
-    ) {
-      return false;
-    }
-    // Status (This relies on status string matching exactly, in real app might need mapping)
-    if (
-      filters.status.length > 0 &&
-      comp.status &&
-      !filters.status.includes(comp.status)
-    ) {
-      return false;
-    }
-    // Tags/Types (using tags as proxy for types/categories)
-    // In real app, check specific type field
-    if (filters.types.length > 0) {
-      // Simple check: if selected type matches any tag or title keywords
-      // This is a loose match for the demo
-      const typeMatch = filters.types.some(
-        (type) =>
-          comp.tags?.some((tag) => tag.includes(type)) ||
-          comp.title.includes(type)
-      );
-      // Logic: If filter is active, must match at least one
-      // Actually 'types' in sidebar are "Hackathon", "Design Challenge" etc.
-      // We don't have a 'type' field in mock, let's skip strict enforcement or map it.
-      // For now, let's ignore strictly to avoid empty results on mock data
-      // or implement a basic check if data allows.
-    }
-
-    return true;
+  const { data: myHackathonsRaw, isLoading: myLoading } = useQuery({
+    queryKey: ["my-hackathons-for-competitions"],
+    enabled: isSignedIn === true,
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) return [];
+      return getMyHackathons(token) as Promise<MyHackathonItem[]>;
+    },
   });
+
+  const competitions = useMemo(() => {
+    const publicList = (publicHackathons ?? []).map(transformPublicHackathon);
+    const publicIds = new Set(publicList.map((c) => c.id));
+
+    const myDrafts = (myHackathonsRaw ?? [])
+      .filter((h) => !isPubliclyVisible(h))
+      .filter((h) => !publicIds.has(h.id))
+      .map(transformMyHackathon);
+
+    return [...myDrafts, ...publicList];
+  }, [publicHackathons, myHackathonsRaw]);
+
+  const loading = publicLoading || (isSignedIn && myLoading);
+
+  const filteredCompetitions = useMemo(() => {
+    return competitions.filter((comp) => {
+      if (
+        filters.search &&
+        !comp.title.toLowerCase().includes(filters.search.toLowerCase())
+      ) {
+        return false;
+      }
+      if (
+        filters.modes.length > 0 &&
+        comp.mode &&
+        !filters.modes.includes(comp.mode)
+      ) {
+        return false;
+      }
+      if (
+        filters.status.length > 0 &&
+        comp.status &&
+        !filters.status.includes(comp.status)
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [competitions, filters]);
 
   return (
     <div className="container mx-auto min-h-screen px-4 py-8 md:px-6">
@@ -195,7 +175,6 @@ export default function CompetitionsPage() {
           </p>
         </div>
 
-        {/* Mobile Filter Toggle & View Switcher */}
         <div className="flex items-center gap-2">
           <Sheet>
             <SheetTrigger asChild>
@@ -238,7 +217,6 @@ export default function CompetitionsPage() {
       </div>
 
       <div className="flex flex-col gap-8 lg:flex-row">
-        {/* Sidebar - Desktop */}
         <aside className="hidden w-64 shrink-0 lg:block">
           <div className="sticky top-20">
             <CompetitionsFilterSidebar
@@ -248,11 +226,19 @@ export default function CompetitionsPage() {
           </div>
         </aside>
 
-        {/* Main Content */}
         <div className="flex-1">
           {loading ? (
             <div className="flex h-64 items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : publicError ? (
+            <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed text-center">
+              <h3 className="text-lg font-semibold">
+                Failed to load competitions
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Please try again later.
+              </p>
             </div>
           ) : filteredCompetitions.length === 0 ? (
             <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed text-center">
@@ -283,7 +269,7 @@ export default function CompetitionsPage() {
                   <CompetitionCard key={comp.id} competition={comp} />
                 ) : (
                   <CompetitionListItem key={comp.id} competition={comp} />
-                )
+                ),
               )}
             </div>
           )}
