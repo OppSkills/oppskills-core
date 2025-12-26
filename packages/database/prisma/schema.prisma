@@ -273,6 +273,9 @@ model UserEntity {
   eventParticipations  EventParticipantEntity[]                                  // events user is participating in
   eventRegistrationSubmissions EventRegistrationSubmissionEntity[] @relation("UserEventSubmissions")
 
+  // Hackathon registration submissions
+  hackathonRegistrationSubmissions HackathonRegistrationSubmissionEntity[] @relation("UserHackathonSubmissions")
+
   // Onboarding profile (1:1 relation)
   onboardingProfile UserOnboardingProfileEntity?
 
@@ -364,6 +367,9 @@ model HackathonEntity {
 
   // Per-hackathon user roles (Manager/Evaluator)
   userRoles   HackathonUserRoleEntity[]
+
+  // Registration submissions (for tracking participant answers)
+  registrationSubmissions HackathonRegistrationSubmissionEntity[]
 
   @@map("hackathon")
   @@schema("oppskills")
@@ -610,6 +616,9 @@ model RegistrationFieldEntity {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Relation to hackathon registration answers
+  hackathonAnswers HackathonRegistrationAnswerEntity[]
+
   @@map("registration_field")
   @@schema("oppskills")
   @@index([registrationFormId])
@@ -640,6 +649,12 @@ model TeamEntity {
   updatedAt     DateTime  @updatedAt
   maxSize       Int       // decided by organizer when hackathon is created
 
+  /// Unique invitation code for joining this team (generated on create)
+  invitationCode String?  @unique @map("invitation_code")
+
+  /// Whether the team is open for new members to browse and join
+  isOpen        Boolean   @default(true) @map("is_open")
+
   // Relations
   hackathonId   String
   hackathon     HackathonEntity  @relation(fields: [hackathonId], references: [id])
@@ -654,6 +669,7 @@ model TeamEntity {
 
   members       TeamMemberEntity[]
   roundSubmissions HackathonTeamRoundSubmissionEntity[]
+  registrationSubmissions HackathonRegistrationSubmissionEntity[]
 
   @@map("team")
   @@schema("oppskills")
@@ -671,9 +687,66 @@ model TeamMemberEntity {
   teamId    String
   team      TeamEntity  @relation(fields: [teamId], references: [id])
 
+  // Relation to registration submission
+  registrationSubmission HackathonRegistrationSubmissionEntity?
+
   @@unique([userId, teamId])  // one user can't join the same team twice
   @@map("team_member")
   @@schema("oppskills")
+}
+
+/// Registration submission for a hackathon (links user + team + hackathon).
+/// Created when user creates or joins a team and fills registration form.
+model HackathonRegistrationSubmissionEntity {
+  id            String   @id @default(cuid())
+  hackathonId   String   @map("hackathon_id")
+  hackathon     HackathonEntity @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  userId        String   @map("user_id")
+  user          UserEntity  @relation("UserHackathonSubmissions", fields: [userId], references: [id], onDelete: Cascade)
+  teamId        String   @map("team_id")
+  team          TeamEntity @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  /// Optional link to team member (null for team leader who is not in members table)
+  teamMemberId  String?  @unique @map("team_member_id")
+  teamMember    TeamMemberEntity? @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+
+  /// Whether this user is the team leader
+  isLeader      Boolean  @default(false) @map("is_leader")
+
+  submittedAt   DateTime @default(now()) @map("submitted_at")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  answers       HackathonRegistrationAnswerEntity[]
+
+  @@unique([hackathonId, userId])
+  @@map("hackathon_registration_submission")
+  @@schema("oppskills")
+  @@index([hackathonId])
+  @@index([userId])
+  @@index([teamId])
+}
+
+/// Individual answer to a hackathon registration field.
+model HackathonRegistrationAnswerEntity {
+  id           String   @id @default(cuid())
+  submissionId String   @map("submission_id")
+  submission   HackathonRegistrationSubmissionEntity @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  fieldId      String   @map("field_id")
+  field        RegistrationFieldEntity @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  // Store answer value - valueText for easy querying, valueJson for complex values
+  valueText    String?  @map("value_text") @db.Text
+  valueJson    Json?    @map("value_json")
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([submissionId, fieldId])
+  @@map("hackathon_registration_answer")
+  @@schema("oppskills")
+  @@index([submissionId])
+  @@index([fieldId])
 }
 
 /// Submission for a team in a hackathon round.

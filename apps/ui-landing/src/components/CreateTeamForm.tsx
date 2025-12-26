@@ -1,83 +1,378 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import RichTextEditor from "@/components/ui/editor/RichtextEditor";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle } from "lucide-react";
+import { createTeam } from "@/lib/api/teamApi";
+import { getMe } from "@/lib/api/usersApi";
+import {
+  HackathonRegistrationModal,
+  type RegistrationField,
+  type UserDataForPrefill,
+} from "@/components/HackathonRegistrationModal";
 
-interface CreateTeamFormProps {
-  hackathonId: string;
+interface RegistrationForm {
+  id: string;
+  externalFormLink: string | null;
+  fields: RegistrationField[];
 }
 
-export function CreateTeamForm({ hackathonId }: CreateTeamFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [teamData, setTeamData] = useState({
-    name: "",
-    description: "",
-    maxMembers: "4",
-  });
+export interface CreateTeamFormProps {
+  hackathonId: string;
+  hackathonSlug: string;
+  hackathonName: string;
+  maxSize: number;
+  isIndividual: boolean;
+  registrationForm: RegistrationForm | null;
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
+export function CreateTeamForm({
+  hackathonId,
+  hackathonSlug,
+  hackathonName,
+  maxSize,
+  isIndividual,
+  registrationForm,
+}: CreateTeamFormProps) {
+  const router = useRouter();
+  const { getToken } = useAuth();
+  const { user } = useUser();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [teamName, setTeamName] = useState("");
+  const [isOpen, setIsOpen] = useState(true);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [isSubmittingRegistration, setIsSubmittingRegistration] =
+    useState(false);
+
+  const [registrationFields, setRegistrationFields] = useState<
+    RegistrationField[]
+  >([]);
+  const [userDataForPrefill, setUserDataForPrefill] = useState<
+    UserDataForPrefill | undefined
+  >(undefined);
+
+  // Build user data for baseline prefill (no onboarding fetch)
+  const baselineUserData = {
+    name: user
+      ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
+      : undefined,
+    email: user?.primaryEmailAddress?.emailAddress,
+    phone: user?.primaryPhoneNumber?.phoneNumber,
+  };
+
+  const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!teamData.name || !teamData.description) {
-      toast.error("Please fill in all fields");
+
+    if (!isIndividual && !teamName.trim()) {
+      toast.error("Please enter a team name");
       return;
     }
 
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
+    const token = await getToken();
+    if (!token) {
+      toast.error("Authentication required");
+      return;
+    }
 
-    console.log("Creating team for hackathon:", hackathonId, teamData);
-    toast.success("Team created successfully! (Mock)");
+    const meData = await getMe(token);
+    if (!meData.onboarded) {
+      const returnUrl = encodeURIComponent(window.location.href);
+      router.push(`/onboarding?returnUrl=${returnUrl}`);
+      return;
+    }
+
+    if (registrationForm?.externalFormLink) {
+      window.open(
+        registrationForm.externalFormLink,
+        "_blank",
+        "noopener,noreferrer",
+      );
+      toast.info(
+        "Complete the external registration form to finish registration.",
+      );
+
+      await submitTeamCreation([]);
+      return;
+    }
+
+    const onboardingProfile = meData.onboardingProfile;
+    const fullName =
+      [meData.firstName, meData.lastName].filter(Boolean).join(" ") ||
+      undefined;
+
+    const prefillData: UserDataForPrefill = {
+      name: fullName,
+      email: meData.email ?? undefined,
+      phone: user?.primaryPhoneNumber?.phoneNumber,
+      gender: onboardingProfile?.gender,
+      collegeName: onboardingProfile?.college?.name ?? undefined,
+      companyName: onboardingProfile?.companyName ?? undefined,
+      schoolName: onboardingProfile?.schoolName ?? undefined,
+    };
+
+    setUserDataForPrefill(prefillData);
+
+    const userCategory = onboardingProfile?.userCategory;
+
+    const defaultFields: RegistrationField[] = [
+      {
+        id: "default-name",
+        label: "Name",
+        type: "TEXT",
+        required: true,
+        order: -50,
+        options: [],
+        placeholder: "Your full name",
+      },
+      {
+        id: "default-email",
+        label: "Email",
+        type: "EMAIL",
+        required: true,
+        order: -40,
+        options: [],
+        placeholder: "email@example.com",
+      },
+      {
+        id: "default-phone",
+        label: "Phone No.",
+        type: "PHONE_NO",
+        required: true,
+        order: -30,
+        options: [],
+        placeholder: "+91 XXXXX XXXXX",
+      },
+      {
+        id: "default-gender",
+        label: "Gender",
+        type: "OPTIONS",
+        required: true,
+        order: -20,
+        options: [],
+        placeholder: "Select gender",
+      },
+    ];
+
+    if (userCategory === "SCHOOL_STUDENT") {
+      defaultFields.push({
+        id: "default-school-name",
+        label: "School Name",
+        type: "TEXT",
+        required: true,
+        order: -10,
+        options: [],
+        placeholder: "Your school name",
+      });
+    } else if (
+      userCategory === "COLLEGE_STUDENT" ||
+      userCategory === "PROFESSIONAL_SCHOOL_STUDENT" ||
+      userCategory === "FRESHER"
+    ) {
+      defaultFields.push({
+        id: "default-college-name",
+        label: "College Name",
+        type: "TEXT",
+        required: true,
+        order: -10,
+        options: [],
+        placeholder: "Your college name",
+      });
+    } else if (userCategory === "WORKING_PROFESSIONAL") {
+      defaultFields.push({
+        id: "default-company-name",
+        label: "Company Name",
+        type: "TEXT",
+        required: true,
+        order: -10,
+        options: [],
+        placeholder: "Your company name",
+      });
+    } else {
+      defaultFields.push({
+        id: "default-college-name",
+        label: "College Name",
+        type: "TEXT",
+        required: true,
+        order: -10,
+        options: [],
+        placeholder: "Your college/institution name",
+      });
+    }
+
+    const customFields = registrationForm?.fields ?? [];
+    const defaultLabels = new Set(
+      defaultFields.map((f) => f.label.toLowerCase()),
+    );
+    const filteredCustomFields = customFields.filter(
+      (f) => !defaultLabels.has(f.label.toLowerCase()),
+    );
+
+    const mergedFields = [...defaultFields, ...filteredCustomFields].sort(
+      (a, b) => a.order - b.order,
+    );
+
+    setRegistrationFields(mergedFields);
+    setShowRegistrationModal(true);
+    return;
   };
 
+  const submitTeamCreation = async (
+    answers: Array<{ fieldId: string; value: string | number | string[] }>,
+  ) => {
+    setIsLoading(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Authentication required");
+        return;
+      }
+
+      const finalTeamName = isIndividual
+        ? `${user?.firstName || "Participant"}'s Registration`
+        : teamName.trim();
+
+      await createTeam(token, {
+        name: finalTeamName,
+        hackathonId,
+        maxSize,
+        isOpen,
+        answers,
+      });
+
+      setIsSuccess(true);
+      toast.success(
+        isIndividual
+          ? "Registration successful!"
+          : "Team created successfully!",
+      );
+
+      // Redirect after a short delay
+      setTimeout(() => {
+        router.push(`/competitions/${hackathonSlug}`);
+      }, 2000);
+    } catch (error: unknown) {
+      console.error("Failed to create team:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to create team";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+      setShowRegistrationModal(false);
+    }
+  };
+
+  const handleRegistrationSubmit = async (
+    answers: Array<{ fieldId: string; value: string | number | string[] }>,
+  ) => {
+    setIsSubmittingRegistration(true);
+    try {
+      await submitTeamCreation(answers);
+    } finally {
+      setIsSubmittingRegistration(false);
+    }
+  };
+
+  // Success state
+  if (isSuccess) {
+    return (
+      <div className="text-center space-y-4 py-8">
+        <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
+        <h2 className="text-2xl font-bold text-green-700">
+          {isIndividual ? "Registration Successful!" : "Team Created!"}
+        </h2>
+        <p className="text-gray-600">Redirecting to competition page...</p>
+        <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-md">
-      <h2 className="text-xl font-semibold">Create a New Team</h2>
-      <div className="space-y-2">
-        <Label htmlFor="teamName">Team Name</Label>
-        <Input
-          id="teamName"
-          placeholder="e.g. The Innovators"
-          value={teamData.name}
-          onChange={(e) => setTeamData({ ...teamData, name: e.target.value })}
-        />
-      </div>
+    <>
+      <form
+        onSubmit={handleCreateTeam}
+        className="space-y-6 p-4 border rounded-md"
+      >
+        <h2 className="text-xl font-semibold">
+          {isIndividual ? "Register for Competition" : "Create a New Team"}
+        </h2>
 
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <RichTextEditor
-          placeholder="What is your team building?"
-          value={teamData.description}
-          onChange={(content) =>
-            setTeamData({ ...teamData, description: content })
-          }
-        />
-      </div>
+        {!isIndividual && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="teamName">Team Name</Label>
+              <Input
+                id="teamName"
+                placeholder="e.g. The Innovators"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="maxMembers">Max Size</Label>
-        <Input
-          id="maxMembers"
-          type="number"
-          min="2"
-          max="6"
-          value={teamData.maxMembers}
-          onChange={(e) =>
-            setTeamData({ ...teamData, maxMembers: e.target.value })
-          }
-        />
-      </div>
+            <div className="space-y-2">
+              <Label>Team Size</Label>
+              <p className="text-sm text-muted-foreground">
+                Maximum {maxSize} member{maxSize > 1 ? "s" : ""} (set by
+                organizer)
+              </p>
+            </div>
 
-      <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-        Create Team
-      </Button>
-    </form>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="isOpen">Open for others to join</Label>
+                <p className="text-sm text-muted-foreground">
+                  Allow others to browse and request to join your team
+                </p>
+              </div>
+              <Switch
+                id="isOpen"
+                checked={isOpen}
+                onCheckedChange={setIsOpen}
+                disabled={isLoading}
+              />
+            </div>
+          </>
+        )}
+
+        {isIndividual && (
+          <p className="text-sm text-muted-foreground">
+            This is an individual competition. Click below to complete your
+            registration.
+          </p>
+        )}
+
+        <Button type="submit" disabled={isLoading} className="w-full">
+          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {isIndividual ? "Register" : "Create Team"}
+        </Button>
+      </form>
+
+      {/* Registration Modal */}
+      <HackathonRegistrationModal
+        isOpen={showRegistrationModal}
+        onClose={() => setShowRegistrationModal(false)}
+        onSubmit={handleRegistrationSubmit}
+        fields={registrationFields}
+        hackathonName={hackathonName}
+        isSubmitting={isSubmittingRegistration}
+        userData={userDataForPrefill ?? baselineUserData}
+        title={
+          isIndividual ? "Complete Registration" : "Complete Team Registration"
+        }
+        description={
+          isIndividual
+            ? `Fill in the required information to register for ${hackathonName}`
+            : `Fill in the required information to create your team for ${hackathonName}`
+        }
+      />
+    </>
   );
 }

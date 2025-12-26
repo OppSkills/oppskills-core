@@ -36,6 +36,11 @@ export function CompetitionListItem({ competition }: CompetitionListItemProps) {
       {/* Main Info */}
       <div className="flex flex-1 flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
+          {competition.isDraft && (
+            <Badge variant="secondary" className="bg-yellow-500/90 text-white">
+              Draft
+            </Badge>
+          )}
           <Badge
             variant="outline"
             className="border-primary/20 bg-primary/5 text-primary"

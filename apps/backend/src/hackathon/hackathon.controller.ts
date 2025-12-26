@@ -34,6 +34,7 @@ import {
   RemoveHackathonRoleDto,
 } from '@oppskills/types';
 import { Logger } from '../_utils/logger';
+import { AdminGuard } from '../common/admin.guard';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { HackathonService } from './hackathon.service';
 import {
@@ -121,10 +122,10 @@ export class HackathonController {
   }
 
   @Get()
+  @UseGuards(AdminGuard)
   @ApiOperation({
-    summary: 'List all hackathons',
-    description:
-      'Retrieve a list of hackathons, optionally filtered by festival ID',
+    summary: 'List all hackathons (Admin only)',
+    description: 'Retrieve a list of all hackathons. Requires admin access.',
   })
   @ApiQuery({
     name: 'festival_id',
@@ -230,9 +231,11 @@ export class HackathonController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  async getHackathonBySlug(@Param('slug') slug: string) {
+  async getHackathonBySlug(@Param('slug') slug: string, @Req() req: Request) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
     const safeSlug = assertNonEmptyId(slug, 'slug');
-    return this.hackathonService.getHackathonBySlug(safeSlug);
+    return this.hackathonService.getHackathonBySlug(safeSlug, userId);
   }
 
   @Get('by-slug/:slug/registrations')
@@ -361,9 +364,11 @@ export class HackathonController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  async getHackathon(@Param('id') id: string) {
+  async getHackathon(@Param('id') id: string, @Req() req: Request) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
     const safeId = assertNonEmptyId(id, 'id');
-    return this.hackathonService.getHackathonById(safeId);
+    return this.hackathonService.getHackathonById(safeId, userId);
   }
 
   /** Update a hackathon (owner-only). */

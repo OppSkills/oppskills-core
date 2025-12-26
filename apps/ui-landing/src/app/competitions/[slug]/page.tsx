@@ -14,17 +14,18 @@ import type {
 } from "./_components/types";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getPublicHackathonBySlug } from "@/lib/api/hackathonApi";
+import {
+  getPublicHackathonBySlug,
+  getHackathonBySlug,
+} from "@/lib/api/hackathonApi";
 import { format, formatDistanceToNow } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 
-/**
- * Map API round status to UI status.
- */
 function mapRoundStatus(
   startsAt: string,
   endsAt: string,
-  status?: string
+  status?: string,
 ): RoundStatus {
   const now = new Date();
   const start = new Date(startsAt);
@@ -35,9 +36,6 @@ function mapRoundStatus(
   return "upcoming";
 }
 
-/**
- * Map participant type to team size display.
- */
 function mapTeamSize(participantType: string): string {
   switch (participantType) {
     case "INDIVIDUAL":
@@ -59,23 +57,205 @@ function mapTeamSize(participantType: string): string {
   }
 }
 
-/**
- * Map prize icon based on position.
- */
 function mapPrizeIcon(position: number): "trophy" | "medal" | "star" {
   if (position === 1) return "trophy";
   if (position === 2) return "medal";
   return "star";
 }
 
+interface HackathonApiData {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  bannerImageUrl: string | null;
+  startDate: string;
+  endDate: string;
+  status?: string;
+  approvalStatus?: string;
+  mode: string;
+  locationType: string | null;
+  locationCity: string | null;
+  locationAddress: string | null;
+  locationVirtualLink: string | null;
+  hackathonType: string;
+  participantType: string;
+  impressions?: number;
+  registrationDeadline: string | null;
+  isRegistrationPaused: boolean;
+  prizeTotalWorthAmount: number | null;
+  currency: string;
+  organizationName: string | null;
+  maxTeams?: number | null;
+  registrationCount?: number;
+  owner: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    imageUrl: string | null;
+  };
+  festival: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
+  rounds: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    startsAt: string;
+    endsAt: string;
+    order: number;
+    roundType: string;
+    status: string;
+  }>;
+  prizeBreakdown: Array<{
+    id: string;
+    position: number;
+    amount: number;
+    description: string | null;
+  }>;
+  registrationForm: {
+    id: string;
+    externalFormLink: string | null;
+    fields: Array<{
+      id: string;
+      label: string;
+      type: string;
+      required: boolean;
+      order: number;
+      options: string[];
+      placeholder: string | null;
+    }>;
+  } | null;
+}
+
+function transformApiData(data: HackathonApiData): CompetitionDetails {
+  const startDate = new Date(data.startDate);
+  const endDate = new Date(data.endDate);
+
+  let location = "Online";
+  if (data.locationType === "PHYSICAL" || data.locationType === "OFFLINE") {
+    location = data.locationCity || data.locationAddress || "In-Person";
+  } else if (data.locationType === "HYBRID") {
+    location = data.locationCity ? `${data.locationCity} + Online` : "Hybrid";
+  }
+
+  const dateRange =
+    startDate.toDateString() === endDate.toDateString()
+      ? format(startDate, "MMMM d, yyyy")
+      : `${format(startDate, "MMMM d")} - ${format(endDate, "d, yyyy")}`;
+
+  const rounds: Round[] = data.rounds.map((r) => ({
+    id: r.id,
+    name: r.name,
+    description: r.description || "",
+    startDate: format(new Date(r.startsAt), "MMM d, yyyy h:mm a"),
+    endDate: format(new Date(r.endsAt), "MMM d, yyyy h:mm a"),
+    status: mapRoundStatus(r.startsAt, r.endsAt, r.status),
+  }));
+
+  const organizers: Organizer[] = [];
+  if (data.owner) {
+    const ownerName = [data.owner.firstName, data.owner.lastName]
+      .filter(Boolean)
+      .join(" ");
+    organizers.push({
+      id: data.owner.id,
+      name: ownerName || "Organizer",
+      role: "Organizer",
+      avatar: data.owner.imageUrl || "",
+      company: data.organizationName || undefined,
+    });
+  }
+
+  const prizes: Prize[] = data.prizeBreakdown.map((p) => {
+    const amountValue = p.amount ?? 0;
+    return {
+      id: p.id,
+      title:
+        p.position === 1
+          ? "Winner"
+          : p.position === 2
+            ? "1st Runner Up"
+            : p.position === 3
+              ? "2nd Runner Up"
+              : `Position ${p.position}`,
+      amount: `${data.currency} ${amountValue.toLocaleString()}`,
+      description: p.description || "",
+      icon: mapPrizeIcon(p.position),
+    };
+  });
+
+  let registrationDeadline = "Open";
+  if (data.registrationDeadline) {
+    const deadline = new Date(data.registrationDeadline);
+    if (deadline > new Date()) {
+      registrationDeadline = formatDistanceToNow(deadline, {
+        addSuffix: false,
+      });
+    } else {
+      registrationDeadline = "Closed";
+    }
+  }
+
+  const tags: string[] = [];
+  if (data.hackathonType) {
+    tags.push(
+      data.hackathonType
+        .replace(/_/g, " ")
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
+    );
+  }
+  if (data.mode) {
+    tags.push(data.mode);
+  }
+
+  return {
+    id: data.id,
+    slug: data.slug,
+    title: data.name,
+    thumbnail: data.bannerImageUrl || "",
+    location,
+    dateRange,
+    tags,
+    about: data.description || "",
+    rounds,
+    organizers,
+    prizes,
+    featuredIn: data.festival?.name,
+    specificDate: format(startDate, "EEEE, d MMMM yyyy"),
+    specificTime: `${format(startDate, "HH:mm")} - ${format(endDate, "HH:mm")}`,
+    venueName:
+      data.locationType === "VIRTUAL"
+        ? "Online Event"
+        : data.organizationName || undefined,
+    venueAddress: data.locationAddress || data.locationCity || undefined,
+    teamSize: mapTeamSize(data.participantType),
+    impressions: data.impressions ?? 0,
+    registrationDeadline,
+    participantType: data.participantType,
+    registrationForm: data.registrationForm,
+    isRegistrationPaused: data.isRegistrationPaused,
+    registrationDeadlineDate: data.registrationDeadline
+      ? new Date(data.registrationDeadline)
+      : null,
+    maxTeams: data.maxTeams,
+    registrationCount: data.registrationCount ?? 0,
+  };
+}
+
 export default function CompetitionDetailsPage() {
   const { slug } = useParams();
+  const { getToken, isSignedIn } = useAuth();
   const [competition, setCompetition] = useState<CompetitionDetails | null>(
-    null
+    null,
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [curTab, setCurTab] = useState<string | null>(null);
+  const [isDraft, setIsDraft] = useState(false);
 
   useEffect(() => {
     async function fetchCompetition() {
@@ -83,179 +263,27 @@ export default function CompetitionDetailsPage() {
 
       setIsLoading(true);
       setError(null);
+      setIsDraft(false);
 
       try {
-        const data = (await getPublicHackathonBySlug(slug)) as {
-          id: string;
-          slug: string;
-          name: string;
-          description: string | null;
-          bannerImageUrl: string | null;
-          startDate: string;
-          endDate: string;
-          mode: string;
-          locationType: string | null;
-          locationCity: string | null;
-          locationAddress: string | null;
-          locationVirtualLink: string | null;
-          hackathonType: string;
-          participantType: string;
-          impressions: number;
-          registrationDeadline: string | null;
-          prizeTotalWorthAmount: number | null;
-          currency: string;
-          organizationName: string | null;
-          owner: {
-            id: string;
-            firstName: string | null;
-            lastName: string | null;
-            imageUrl: string | null;
-          };
-          festival: {
-            id: string;
-            name: string;
-            slug: string;
-          } | null;
-          rounds: Array<{
-            id: string;
-            name: string;
-            description: string | null;
-            startsAt: string;
-            endsAt: string;
-            order: number;
-            roundType: string;
-            status: string;
-          }>;
-          prizeBreakdown: Array<{
-            id: string;
-            position: number;
-            amount: number;
-            description: string | null;
-          }>;
-        };
-
-        // Map API data to CompetitionDetails
-        const startDate = new Date(data.startDate);
-        const endDate = new Date(data.endDate);
-
-        // Build location string
-        let location = "Online";
-        if (
-          data.locationType === "PHYSICAL" ||
-          data.locationType === "OFFLINE"
-        ) {
-          location = data.locationCity || data.locationAddress || "In-Person";
-        } else if (data.locationType === "HYBRID") {
-          location = data.locationCity
-            ? `${data.locationCity} + Online`
-            : "Hybrid";
+        const data = (await getPublicHackathonBySlug(slug)) as HackathonApiData;
+        setCompetition(transformApiData(data));
+      } catch (publicErr) {
+        if (isSignedIn) {
+          try {
+            const token = await getToken();
+            if (token) {
+              const data = (await getHackathonBySlug(
+                token,
+                slug,
+              )) as HackathonApiData;
+              setCompetition(transformApiData(data));
+              setIsDraft(true);
+              return;
+            }
+          } catch {}
         }
-
-        // Build date range string
-        const dateRange =
-          startDate.toDateString() === endDate.toDateString()
-            ? format(startDate, "MMMM d, yyyy")
-            : `${format(startDate, "MMMM d")} - ${format(endDate, "d, yyyy")}`;
-
-        // Map rounds
-        const rounds: Round[] = data.rounds.map((r) => ({
-          id: r.id,
-          name: r.name,
-          description: r.description || "",
-          startDate: format(new Date(r.startsAt), "MMM d, yyyy h:mm a"),
-          endDate: format(new Date(r.endsAt), "MMM d, yyyy h:mm a"),
-          status: mapRoundStatus(r.startsAt, r.endsAt, r.status),
-        }));
-
-        // Map organizers (owner + organization)
-        const organizers: Organizer[] = [];
-        if (data.owner) {
-          const ownerName = [data.owner.firstName, data.owner.lastName]
-            .filter(Boolean)
-            .join(" ");
-          organizers.push({
-            id: data.owner.id,
-            name: ownerName || "Organizer",
-            role: "Organizer",
-            avatar: data.owner.imageUrl || "",
-            company: data.organizationName || undefined,
-          });
-        }
-
-        // Map prizes
-        const prizes: Prize[] = data.prizeBreakdown.map((p) => {
-          const amountValue = p.amount ?? 0;
-          return {
-            id: p.id,
-            title:
-              p.position === 1
-                ? "Winner"
-                : p.position === 2
-                  ? "1st Runner Up"
-                  : p.position === 3
-                    ? "2nd Runner Up"
-                    : `Position ${p.position}`,
-            amount: `${data.currency} ${amountValue.toLocaleString()}`,
-            description: p.description || "",
-            icon: mapPrizeIcon(p.position),
-          };
-        });
-
-        // Calculate registration deadline display
-        let registrationDeadline = "Open";
-        if (data.registrationDeadline) {
-          const deadline = new Date(data.registrationDeadline);
-          if (deadline > new Date()) {
-            registrationDeadline = formatDistanceToNow(deadline, {
-              addSuffix: false,
-            });
-          } else {
-            registrationDeadline = "Closed";
-          }
-        }
-
-        // Build tags from hackathon type
-        const tags: string[] = [];
-        if (data.hackathonType) {
-          tags.push(
-            data.hackathonType
-              .replace(/_/g, " ")
-              .toLowerCase()
-              .replace(/\b\w/g, (c) => c.toUpperCase())
-          );
-        }
-        if (data.mode) {
-          tags.push(data.mode);
-        }
-
-        const competitionDetails: CompetitionDetails = {
-          id: data.id,
-          slug: data.slug,
-          title: data.name,
-          thumbnail: data.bannerImageUrl || "",
-          location,
-          dateRange,
-          tags,
-          about: data.description || "",
-          rounds,
-          organizers,
-          prizes,
-          featuredIn: data.festival?.name,
-          specificDate: format(startDate, "EEEE, d MMMM yyyy"),
-          specificTime: `${format(startDate, "HH:mm")} - ${format(endDate, "HH:mm")}`,
-          venueName:
-            data.locationType === "VIRTUAL"
-              ? "Online Event"
-              : data.organizationName || undefined,
-          venueAddress: data.locationAddress || data.locationCity || undefined,
-          teamSize: mapTeamSize(data.participantType),
-          impressions: data.impressions,
-          registrationDeadline,
-        };
-
-        setCompetition(competitionDetails);
-      } catch (err) {
-        console.error("Failed to fetch competition:", err);
+        console.error("Failed to fetch competition:", publicErr);
         setError("Competition not found or not available.");
       } finally {
         setIsLoading(false);
@@ -263,7 +291,7 @@ export default function CompetitionDetailsPage() {
     }
 
     fetchCompetition();
-  }, [slug]);
+  }, [slug, isSignedIn, getToken]);
 
   useEffect(() => {
     if (curTab) {
@@ -277,7 +305,6 @@ export default function CompetitionDetailsPage() {
     }
   }, [curTab]);
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-transparent py-8">
@@ -290,7 +317,6 @@ export default function CompetitionDetailsPage() {
     );
   }
 
-  // Error state
   if (error || !competition) {
     return (
       <div className="min-h-screen bg-transparent py-8">
@@ -312,13 +338,24 @@ export default function CompetitionDetailsPage() {
   return (
     <div className="min-h-screen bg-transparent py-8">
       <div className="container mx-auto px-4 max-w-7xl">
+        {isDraft && (
+          <div className="mb-6 flex items-center gap-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
+            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            <div>
+              <p className="font-semibold text-yellow-700">Draft Preview</p>
+              <p className="text-sm text-yellow-600">
+                This competition is not published yet. Only you and your team
+                can see this page.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative items-start">
-          {/* Sidebar */}
           <div className="lg:col-span-1 lg:sticky lg:top-20">
             <CompetitionSidebar competition={competition} />
           </div>
 
-          {/* Main Content */}
           <div className="lg:col-span-2">
             <h1 className="text-3xl font-extrabold text-foreground leading-tight mb-6">
               {competition.title}
@@ -341,9 +378,6 @@ export default function CompetitionDetailsPage() {
               </section>
 
               <section className="scroll-mt-24">
-                {/* Note: In image, this is 'Organizers' visualized after about, 
-                      though image labels it 'Rounds Timeline' again erroneously. 
-                      I am placing it here to match flow. */}
                 <Organizers organizers={competition.organizers} />
               </section>
 

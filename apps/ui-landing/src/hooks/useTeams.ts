@@ -10,6 +10,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import type { CreateTeamDto } from "@oppskills/types/frontend";
 
+import type { JoinTeamDto } from "@/lib/api/teamApi";
+
 /**
  * Ensures we have a token for authenticated API calls.
  */
@@ -57,7 +59,7 @@ export const useTeams = () => {
 
   // ▌JOIN
   const join = useMutation({
-    mutationFn: async (payload: CreateTeamDto) => {
+    mutationFn: async (payload: JoinTeamDto) => {
       const token = requireToken(await getToken());
       return joinTeam(token, payload);
     },
