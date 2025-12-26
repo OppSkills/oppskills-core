@@ -330,10 +330,15 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
     if (isSameMonth) {
       // e.g., "10-12 March 2026"
-      formattedDate = `${format(startDate, "d")}-${format(endDate, "d")} ${format(endDate, "MMMM yyyy")}`;
+      const startDay = format(startDate, "d");
+      const endDay = format(endDate, "d");
+      const monthYear = format(endDate, "MMMM yyyy");
+      formattedDate = `${startDay}-${endDay} ${monthYear}`;
     } else {
       // Different months, e.g., "30 Jan - 2 Feb 2026"
-      formattedDate = `${format(startDate, "d MMM")} - ${format(endDate, "d MMM yyyy")}`;
+      const startFormatted = format(startDate, "d MMM");
+      const endFormatted = format(endDate, "d MMM yyyy");
+      formattedDate = `${startFormatted} - ${endFormatted}`;
     }
   }
 
