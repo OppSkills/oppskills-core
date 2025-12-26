@@ -137,13 +137,14 @@ export class EventService {
         contactPhone: true,
         attendeeEligibility: true,
         createdAt: true,
-        // Owner info (public: name only, no email exposed in list)
+        // Owner info (public: name and email for contact purposes)
         owner: {
           select: {
             id: true,
             firstName: true,
             lastName: true,
             imageUrl: true,
+            email: true,
           },
         },
         festival: {
@@ -198,13 +199,14 @@ export class EventService {
         contactPhone: true,
         attendeeEligibility: true,
         createdAt: true,
-        // Owner info (public: first/last name, imageUrl; NOT email)
+        // Owner info (public: first/last name, imageUrl, and email for contact purposes)
         owner: {
           select: {
             id: true,
             firstName: true,
             lastName: true,
             imageUrl: true,
+            email: true,
           },
         },
         festival: {

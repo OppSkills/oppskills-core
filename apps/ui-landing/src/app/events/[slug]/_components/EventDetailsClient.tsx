@@ -313,7 +313,14 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
   // Format dates
   const startDate = new Date(event.startDate);
-  const formattedDate = format(startDate, "EEEE, d MMM yyyy");
+  const endDate = new Date(event.endDate);
+  
+  // Format date range (e.g., "10-12 March 2026" or "Friday, 9 Jan 2026" if same day)
+  const isSameDay = format(startDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd");
+  const formattedDate = isSameDay
+    ? format(startDate, "EEEE, d MMM yyyy")
+    : `${format(startDate, "d")}-${format(endDate, "d MMM yyyy")}`;
+  
   const formattedTime = format(startDate, "h:mm a") + " Onwards";
   const monthShort = format(startDate, "MMM");
   const dayNum = format(startDate, "dd");
@@ -451,12 +458,17 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                         {event.owner.firstName || ""}{" "}
                         {event.owner.lastName || "Organizer"}
                       </h4>
+                      {event.owner.email && (
+                        <p className="text-xs text-neutral-500">
+                          {event.owner.email}
+                        </p>
+                      )}
                       {event.contactPhone && (
                         <p className="text-xs text-neutral-500">
                           {event.contactPhone}
                         </p>
                       )}
-                      {event.contactEmail && (
+                      {event.contactEmail && event.contactEmail !== event.owner.email && (
                         <p className="text-xs text-neutral-500">
                           {event.contactEmail}
                         </p>
