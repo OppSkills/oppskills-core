@@ -31,7 +31,7 @@ interface EventDetailsClientProps {
  */
 function getInitials(
   firstName: string | null,
-  lastName: string | null
+  lastName: string | null,
 ): string {
   const first = (firstName ?? "").trim().charAt(0).toUpperCase();
   const last = (lastName ?? "").trim().charAt(0).toUpperCase();
@@ -163,14 +163,14 @@ function buildDefaultFields(userCategory?: string): RegistrationField[] {
 
 function mergeDefaultAndCustomFields(
   customFields: RegistrationField[] | undefined,
-  userCategory?: string
+  userCategory?: string,
 ): RegistrationField[] {
   const defaults = buildDefaultFields(userCategory);
   const customs = customFields ?? [];
 
   const defaultLabels = new Set(defaults.map((f) => f.label.toLowerCase()));
   const filteredCustoms = customs.filter(
-    (f) => !defaultLabels.has(f.label.toLowerCase())
+    (f) => !defaultLabels.has(f.label.toLowerCase()),
   );
 
   return [...defaults, ...filteredCustoms].sort((a, b) => a.order - b.order);
@@ -261,7 +261,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         []) as RegistrationField[];
       const mergedFields = mergeDefaultAndCustomFields(
         customFields,
-        onboardingProfile?.userCategory
+        onboardingProfile?.userCategory,
       );
 
       setRegistrationFields(mergedFields);
@@ -275,7 +275,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   };
 
   const handleJoinEvent = async (
-    answers: Array<{ fieldId: string; value: string | number | string[] }>
+    answers: Array<{ fieldId: string; value: string | number | string[] }>,
   ) => {
     if (!event) return;
 
@@ -313,7 +313,35 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
   // Format dates
   const startDate = new Date(event.startDate);
-  const formattedDate = format(startDate, "EEEE, d MMM yyyy");
+  const endDate = new Date(event.endDate);
+
+  // Use date-fns functions for reliable date comparison
+  const isSameDay =
+    format(startDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd");
+
+  // Format date display
+  let formattedDate: string;
+  if (isSameDay) {
+    formattedDate = format(startDate, "EEEE, d MMM yyyy");
+  } else {
+    // Check if same month and year
+    const isSameMonth =
+      format(startDate, "yyyy-MM") === format(endDate, "yyyy-MM");
+
+    if (isSameMonth) {
+      // e.g., "10-12 March 2026"
+      const startDay = format(startDate, "d");
+      const endDay = format(endDate, "d");
+      const monthYear = format(endDate, "MMMM yyyy");
+      formattedDate = `${startDay}-${endDay} ${monthYear}`;
+    } else {
+      // Different months, e.g., "30 Jan - 2 Feb 2026"
+      const startFormatted = format(startDate, "d MMM");
+      const endFormatted = format(endDate, "d MMM yyyy");
+      formattedDate = `${startFormatted} - ${endFormatted}`;
+    }
+  }
+
   const formattedTime = format(startDate, "h:mm a") + " Onwards";
   const monthShort = format(startDate, "MMM");
   const dayNum = format(startDate, "dd");
@@ -442,7 +470,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                       <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
                         {getInitials(
                           event.owner.firstName,
-                          event.owner.lastName
+                          event.owner.lastName,
                         )}
                       </div>
                     )}
@@ -451,6 +479,11 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                         {event.owner.firstName || ""}{" "}
                         {event.owner.lastName || "Organizer"}
                       </h4>
+                      {event.owner.email && (
+                        <p className="text-xs text-neutral-500">
+                          {event.owner.email}
+                        </p>
+                      )}
                       {event.contactPhone && (
                         <p className="text-xs text-neutral-500">
                           {event.contactPhone}
