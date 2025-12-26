@@ -198,13 +198,14 @@ export class EventService {
         contactPhone: true,
         attendeeEligibility: true,
         createdAt: true,
-        // Owner info (public: first/last name, imageUrl; NOT email)
+        // Owner info (public: first/last name, imageUrl, email)
         owner: {
           select: {
             id: true,
             firstName: true,
             lastName: true,
             imageUrl: true,
+            email: true,
           },
         },
         festival: {
