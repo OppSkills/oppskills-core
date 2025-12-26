@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: event.bannerImageUrl
         ? [
             {
-              url: `https://oppskills.com/image/serve?url=${event.bannerImageUrl}`,
+              url: `https://api.oppskills.com/image/serve?url=${event.bannerImageUrl}`,
               width: 1200,
               height: 630,
               alt: event.name,
@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       images: event.bannerImageUrl
-        ? [`https://oppskills.com/image/serve?url=${event.bannerImageUrl}`]
+        ? [`https://api.oppskills.com/image/serve?url=${event.bannerImageUrl}`]
         : undefined,
     },
     alternates: {
@@ -113,7 +113,7 @@ export default async function EventPage({ params }: Props) {
             },
           },
     image: event.bannerImageUrl
-      ? [`https://oppskills.com/image/serve?url=${event.bannerImageUrl}`]
+      ? [`https://api.oppskills.com/image/serve?url=${event.bannerImageUrl}`]
       : undefined,
     organizer: {
       "@type": "Person",
