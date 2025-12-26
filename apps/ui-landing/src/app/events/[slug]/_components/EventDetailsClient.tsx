@@ -315,11 +315,9 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   const startDate = new Date(event.startDate);
   const endDate = new Date(event.endDate);
 
-  // Check if event spans multiple days
+  // Use date-fns functions for reliable date comparison
   const isSameDay =
-    startDate.getDate() === endDate.getDate() &&
-    startDate.getMonth() === endDate.getMonth() &&
-    startDate.getFullYear() === endDate.getFullYear();
+    format(startDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd");
 
   // Format date display
   let formattedDate: string;
@@ -328,8 +326,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   } else {
     // Check if same month and year
     const isSameMonth =
-      startDate.getMonth() === endDate.getMonth() &&
-      startDate.getFullYear() === endDate.getFullYear();
+      format(startDate, "yyyy-MM") === format(endDate, "yyyy-MM");
 
     if (isSameMonth) {
       // e.g., "10-12 March 2026"

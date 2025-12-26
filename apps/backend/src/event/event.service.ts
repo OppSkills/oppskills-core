@@ -199,6 +199,8 @@ export class EventService {
         attendeeEligibility: true,
         createdAt: true,
         // Owner info (public: first/last name, imageUrl, email)
+        // Note: Owner email is intentionally included for contact purposes
+        // as requested in the event detail page requirements
         owner: {
           select: {
             id: true,
