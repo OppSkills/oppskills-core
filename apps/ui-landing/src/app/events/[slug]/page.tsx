@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const title = `${event.name} | College Event`;
+  const title = `${event.name}`;
   // Strip HTML from description for meta description
   const description = event.description
     ? event.description.replace(/<[^>]*>/g, "").slice(0, 160)
