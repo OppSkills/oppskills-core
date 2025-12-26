@@ -40,7 +40,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      images: event.bannerImageUrl ? [event.bannerImageUrl] : undefined,
+      url: `https://oppskills.com/events/${event.slug}`,
+      siteName: "OppSkills",
+      images: event.bannerImageUrl
+        ? [
+            {
+              url: event.bannerImageUrl,
+              width: 1200,
+              height: 630,
+              alt: event.name,
+            },
+          ]
+        : undefined,
+      type: "website",
     },
     twitter: {
       card: "summary_large_image",
