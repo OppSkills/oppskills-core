@@ -17,8 +17,23 @@ export class ImageController {
     }
 
     try {
+      const parsedUrl = new URL(url);
+      if (
+        parsedUrl.hostname !== 'assets.oppskills.com' ||
+        parsedUrl.protocol !== 'https:'
+      ) {
+        console.warn(`[ImageServe] Blocked invalid URL: ${url}`);
+        return res.redirect(fallbackUrl);
+      }
+    } catch (e) {
+      console.warn(`[ImageServe] Invalid URL format: ${url}`);
+      return res.redirect(fallbackUrl);
+    }
+
+    try {
       console.log(`[ImageServe] Fetching URL: ${url}`);
       const response = await fetch(url, {
+        redirect: 'error',
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
