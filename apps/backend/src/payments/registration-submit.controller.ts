@@ -1,10 +1,7 @@
 import { Controller, Post, Param, Body, UseGuards, Req } from '@nestjs/common';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { RegistrationSubmitService } from './registration-submit.service';
-
-interface SubmitRegistrationDto {
-  answers: Array<{ fieldId: string; value: string }>;
-}
+import { SubmitRegistrationDto } from './dto';
 
 @Controller('hackathons')
 @UseGuards(ClerkAuthGuard)

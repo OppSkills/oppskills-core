@@ -9,12 +9,7 @@ import {
 } from '@nestjs/common';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { RefundService } from './refund.service';
-
-interface CreateRefundDto {
-  paymentId: string;
-  amount?: number;
-  reason?: string;
-}
+import { CreateRefundDto } from './dto';
 
 @Controller('hackathons')
 @UseGuards(ClerkAuthGuard)
