@@ -48,7 +48,16 @@ import { useState } from "react";
 
 export default function EarningsPage() {
   const params = useParams();
-  const slug = params?.slug as string;
+  const slugParam = params?.slug;
+  const slug = Array.isArray(slugParam) ? slugParam[0] : slugParam;
+
+  if (!slug) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <p className="text-muted-foreground">Invalid hackathon</p>
+      </div>
+    );
+  }
 
   const {
     data: earnings,

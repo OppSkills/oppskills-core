@@ -384,6 +384,7 @@ export function CreateTeamForm({
     try {
       await submitTeamCreation(answers);
     } catch (err) {
+      console.error("Registration submission failed:", err);
       setIsSubmittingRegistration(false);
     }
   };
@@ -457,11 +458,6 @@ export function CreateTeamForm({
           </p>
         )}
 
-        <Button type="submit" disabled={isLoading} className="w-full">
-          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          {isIndividual ? "Register" : "Create Team"}
-        </Button>
-
         {!isFree && (
           <div className="space-y-2">
             <Label htmlFor="discountCode">Discount Code (Optional)</Label>
@@ -474,6 +470,11 @@ export function CreateTeamForm({
             />
           </div>
         )}
+
+        <Button type="submit" disabled={isLoading} className="w-full">
+          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {isIndividual ? "Register" : "Create Team"}
+        </Button>
       </form>
 
       <HackathonRegistrationModal

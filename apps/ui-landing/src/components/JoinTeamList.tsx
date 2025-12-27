@@ -504,6 +504,7 @@ export function JoinTeamList({
         await submitJoinByCode(pendingInviteCode, answers);
       }
     } catch (err) {
+      console.error("Registration submission failed:", err);
       setIsSubmittingRegistration(false);
     }
   };
