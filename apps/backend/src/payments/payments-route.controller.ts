@@ -9,65 +9,7 @@ import {
 } from '@nestjs/common';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { PaymentsRouteService } from './payments-route.service';
-
-interface OnboardRouteDto {
-  email: string;
-  phone: string;
-  legalBusinessName: string;
-  businessType:
-    | 'individual'
-    | 'partnership'
-    | 'private_limited'
-    | 'public_limited'
-    | 'llp'
-    | 'ngo'
-    | 'trust'
-    | 'society'
-    | 'not_yet_registered';
-  contactName: string;
-  profile: {
-    category: string;
-    subcategory: string;
-    address: {
-      street1: string;
-      street2?: string;
-      city: string;
-      state: string;
-      postalCode: string;
-      country: string;
-    };
-  };
-  legalInfo?: {
-    pan?: string;
-    gst?: string;
-  };
-  stakeholder: {
-    name: string;
-    email: string;
-    phone?: string;
-    address?: {
-      street: string;
-      city: string;
-      state: string;
-      postalCode: string;
-      country: string;
-    };
-    kyc?: {
-      pan: string;
-    };
-  };
-  settlements: {
-    accountNumber: string;
-    ifscCode: string;
-    beneficiaryName: string;
-  };
-}
-
-interface UpdateSettlementsDto {
-  accountNumber: string;
-  ifscCode: string;
-  beneficiaryName: string;
-}
+import { OnboardRouteDto, UpdateSettlementsDto } from './dto';
 
 @Controller('payments/route')
 @UseGuards(ClerkAuthGuard)

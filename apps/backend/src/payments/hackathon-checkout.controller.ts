@@ -9,18 +9,8 @@ import {
 } from '@nestjs/common';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { HackathonCheckoutService } from './hackathon-checkout.service';
+import { CreateOrderDto, VerifyPaymentDto } from './dto';
 import type { Request } from 'express';
-
-interface CreateOrderDto {
-  teamId?: string;
-  discountCode?: string;
-}
-
-interface VerifyPaymentDto {
-  razorpayOrderId: string;
-  razorpayPaymentId: string;
-  razorpaySignature: string;
-}
 
 @Controller('hackathons')
 @UseGuards(ClerkAuthGuard)

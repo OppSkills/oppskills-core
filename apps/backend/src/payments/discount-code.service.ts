@@ -42,6 +42,13 @@ export class DiscountCodeService {
       );
     }
 
+    if (params.value <= 0) {
+      throw new BadRequestException('Discount value must be positive');
+    }
+    if (params.type === 'PERCENT' && params.value > 100) {
+      throw new BadRequestException('Percentage discount cannot exceed 100%');
+    }
+
     return prisma.hackathonDiscountCodeEntity.create({
       data: {
         hackathonId: hackathon.id,

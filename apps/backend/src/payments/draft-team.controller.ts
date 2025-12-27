@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { ClerkAuthGuard } from 'src/common/clerk-auth.guard';
 import { DraftTeamService } from './draft-team.service';
+import { CreateDraftTeamDto, JoinDraftTeamDto, LeaveDraftTeamDto } from './dto';
 
 @Controller('hackathons')
 @UseGuards(ClerkAuthGuard)
@@ -18,7 +19,7 @@ export class DraftTeamController {
   @Post(':slug/teams/draft')
   async createDraftTeam(
     @Param('slug') slug: string,
-    @Body() body: { name: string; maxSize?: number },
+    @Body() body: CreateDraftTeamDto,
     @Req() req: { user: { id: string } },
   ) {
     return this.draftTeamService.createDraftTeam({
@@ -31,7 +32,7 @@ export class DraftTeamController {
 
   @Post(':slug/teams/draft/join')
   async joinDraftTeam(
-    @Body() body: { teamId?: string; invitationCode?: string },
+    @Body() body: JoinDraftTeamDto,
     @Req() req: { user: { id: string } },
   ) {
     return this.draftTeamService.joinDraftTeam({
@@ -43,7 +44,7 @@ export class DraftTeamController {
 
   @Delete(':slug/teams/draft/leave')
   async leaveDraftTeam(
-    @Body() body: { teamId: string },
+    @Body() body: LeaveDraftTeamDto,
     @Req() req: { user: { id: string } },
   ) {
     return this.draftTeamService.leaveDraftTeam({

@@ -190,6 +190,39 @@ export class HackathonCheckoutService {
       hackathon.registrationDeadline.getTime() / 1000,
     );
 
+    if (grossAmountPaise === 0) {
+      const payment = await prisma.hackathonPaymentEntity.create({
+        data: {
+          scope,
+          hackathonId: hackathon.id,
+          organizerId: hackathon.ownerId,
+          payerUserId: params.userId,
+          teamId,
+          currency: hackathon.currency || 'INR',
+          grossAmount: new Decimal(0),
+          platformFeeAmount: new Decimal(0),
+          organizerShareAmount: new Decimal(0),
+          razorpayOrderId: `free_${hackathon.id}_${Date.now()}`,
+          transferOnHold: false,
+          transferOnHoldUntil: null,
+          orderStatus: HackathonPaymentOrderStatus.PAID,
+          paymentStatus: HackathonPaymentStatus.CAPTURED,
+          discountCodeId,
+          discountAmount: discountAmount.greaterThan(0) ? discountAmount : null,
+        },
+      });
+
+      return {
+        paymentId: payment.id,
+        razorpayKeyId: null,
+        razorpayOrderId: null,
+        amount: 0,
+        currency: hackathon.currency || 'INR',
+        hackathonName: hackathon.name,
+        zeroAmountPayment: true,
+      };
+    }
+
     const razorpayOrder = await this.razorpayService.createOrder({
       amountPaise: grossAmountPaise,
       currency: hackathon.currency || 'INR',

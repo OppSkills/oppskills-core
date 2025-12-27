@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { prisma, RazorpayRouteStatus } from '@oppskills/db';
 import { RazorpayService } from './razorpay.service';
 
@@ -269,7 +269,7 @@ export class PaymentsRouteService {
     });
 
     if (!account) {
-      throw new Error('Route account not found');
+      throw new NotFoundException('Route account not found');
     }
 
     try {

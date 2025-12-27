@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { DiscountCodeService } from './discount-code.service';
+import { CreateDiscountCodeDto, UpdateDiscountCodeDto } from './dto';
 
 @Controller('hackathons/:slug/discount-codes')
 @UseGuards(ClerkAuthGuard)
@@ -21,14 +22,7 @@ export class DiscountCodeController {
   async createDiscountCode(
     @Param('slug') slug: string,
     @Req() req: { user: { id: string } },
-    @Body()
-    body: {
-      code: string;
-      type: 'PERCENT' | 'FIXED';
-      value: number;
-      maxRedemptions?: number;
-      maxPerUser?: number;
-    },
+    @Body() body: CreateDiscountCodeDto,
   ) {
     return this.discountCodeService.createDiscountCode({
       hackathonSlug: slug,
@@ -49,8 +43,7 @@ export class DiscountCodeController {
   async updateDiscountCode(
     @Param('codeId') codeId: string,
     @Req() req: { user: { id: string } },
-    @Body()
-    body: { active?: boolean; maxRedemptions?: number; maxPerUser?: number },
+    @Body() body: UpdateDiscountCodeDto,
   ) {
     return this.discountCodeService.updateDiscountCode({
       codeId,

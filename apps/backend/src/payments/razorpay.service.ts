@@ -77,10 +77,14 @@ export class RazorpayService {
       .update(payload)
       .digest('hex');
 
-    return crypto.timingSafeEqual(
-      Buffer.from(params.signature, 'hex'),
-      Buffer.from(expectedSignature, 'hex'),
-    );
+    try {
+      return crypto.timingSafeEqual(
+        Buffer.from(params.signature, 'hex'),
+        Buffer.from(expectedSignature, 'hex'),
+      );
+    } catch {
+      return false;
+    }
   }
 
   verifyWebhookSignature(rawBody: string | Buffer, signature: string): boolean {
