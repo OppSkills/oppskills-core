@@ -56,6 +56,7 @@ export class TeamService {
       select: {
         id: true,
         ownerId: true,
+        isFree: true,
         maxTeams: true,
         participantType: true,
         status: true,
@@ -98,6 +99,12 @@ export class TeamService {
       new Date() > hackathon.registrationDeadline
     ) {
       throw new BadRequestException('Registration deadline has passed.');
+    }
+
+    if (!hackathon.isFree) {
+      throw new BadRequestException(
+        'Paid hackathons use the payment flow. Create/join a draft team and complete payment before submitting registration.',
+      );
     }
 
     // Hackathon owner cannot create a team in their own hackathon
@@ -281,6 +288,7 @@ export class TeamService {
             select: {
               id: true,
               ownerId: true,
+              isFree: true,
               status: true,
               approvalStatus: true,
               isRegistrationPaused: true,
@@ -303,6 +311,7 @@ export class TeamService {
             select: {
               id: true,
               ownerId: true,
+              isFree: true,
               status: true,
               approvalStatus: true,
               isRegistrationPaused: true,
@@ -346,6 +355,12 @@ export class TeamService {
       new Date() > hackathon.registrationDeadline
     ) {
       throw new BadRequestException('Registration deadline has passed.');
+    }
+
+    if (!hackathon.isFree) {
+      throw new BadRequestException(
+        'Paid hackathons use the payment flow. Create/join a draft team and complete payment before submitting registration.',
+      );
     }
 
     // Check if team is full
