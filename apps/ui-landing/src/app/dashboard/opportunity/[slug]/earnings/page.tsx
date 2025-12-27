@@ -51,6 +51,22 @@ export default function EarningsPage() {
   const slugParam = params?.slug;
   const slug = Array.isArray(slugParam) ? slugParam[0] : slugParam;
 
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const {
+    data: earnings,
+    isLoading: isLoadingEarnings,
+    refetch: refetchEarnings,
+  } = useHackathonEarnings(slug ?? "");
+
+  const {
+    data: payments,
+    isLoading: isLoadingPayments,
+    refetch: refetchPayments,
+  } = useHackathonPayments(slug ?? "");
+
+  const requestRefundMutation = useRequestRefund(slug ?? "");
+
   if (!slug) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -58,22 +74,6 @@ export default function EarningsPage() {
       </div>
     );
   }
-
-  const {
-    data: earnings,
-    isLoading: isLoadingEarnings,
-    refetch: refetchEarnings,
-  } = useHackathonEarnings(slug);
-
-  const {
-    data: payments,
-    isLoading: isLoadingPayments,
-    refetch: refetchPayments,
-  } = useHackathonPayments(slug);
-
-  const requestRefundMutation = useRequestRefund(slug);
-
-  const [searchTerm, setSearchTerm] = useState("");
 
   const handleRefund = async (paymentId: string) => {
     if (

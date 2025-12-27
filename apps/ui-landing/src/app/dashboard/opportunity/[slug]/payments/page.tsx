@@ -48,22 +48,13 @@ export default function Page() {
   const slugParam = params?.slug;
   const slug = Array.isArray(slugParam) ? slugParam[0] : slugParam;
 
-  if (!slug) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <p className="text-muted-foreground">Invalid hackathon</p>
-      </div>
-    );
-  }
-
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isPaid, setIsPaid] = useState<boolean>(false);
   const [chargeMode, setChargeMode] = useState<ChargeMode>("PER_TEAM");
   const [entryFeeAmount, setEntryFeeAmount] = useState<string>("");
 
   const { data: routeStatus, isLoading: routeLoading } = useRouteStatus();
-  // Cast the unknown response to our local interface
-  const { data: hackathonData } = useHackathonBySlug(slug);
+  const { data: hackathonData } = useHackathonBySlug(slug ?? "");
   const hackathon = hackathonData as HackathonData | undefined;
 
   const routeOnboarding = useRouteOnboarding();
@@ -76,6 +67,14 @@ export default function Page() {
       setEntryFeeAmount(hackathon.entryFeeAmount?.toString() || "");
     }
   }, [hackathon]);
+
+  if (!slug) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <p className="text-muted-foreground">Invalid hackathon</p>
+      </div>
+    );
+  }
 
   const handlePaymentFormSave = async (data: {
     accountHolderName: string;
