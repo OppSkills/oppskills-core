@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +21,14 @@ import {
   getTeamsByHackathon,
   joinTeam,
   joinTeamByCode,
+  joinDraftTeam,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
+import {
+  createPaymentOrder,
+  verifyPayment,
+  submitRegistration,
+} from "@/lib/api/paymentsApi";
 import { getMe } from "@/lib/api/usersApi";
 import {
   HackathonRegistrationModal,
@@ -40,6 +47,16 @@ export interface JoinTeamListProps {
   hackathonSlug: string;
   hackathonName: string;
   registrationForm: RegistrationForm | null;
+  isFree?: boolean;
+  entryFeeAmount?: number | null;
+  currency?: string;
+  chargeMode?: "PER_TEAM" | "PER_USER";
+}
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
 }
 
 export function JoinTeamList({
@@ -47,6 +64,10 @@ export function JoinTeamList({
   hackathonSlug,
   hackathonName,
   registrationForm,
+  isFree = true,
+  entryFeeAmount,
+  currency = "INR",
+  chargeMode = "PER_TEAM",
 }: JoinTeamListProps) {
   const router = useRouter();
   const { getToken } = useAuth();
@@ -80,7 +101,6 @@ export function JoinTeamList({
     UserDataForPrefill | undefined
   >(undefined);
 
-  // Baseline user data for prefill (no onboarding fetch)
   const baselineUserData = {
     name: user
       ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
@@ -89,7 +109,6 @@ export function JoinTeamList({
     phone: user?.primaryPhoneNumber?.phoneNumber,
   };
 
-  // Fetch teams on mount
   useEffect(() => {
     async function fetchTeams() {
       setIsLoadingTeams(true);
@@ -285,6 +304,76 @@ export function JoinTeamList({
     await openRegistrationModal({ inviteCode: inviteCode.trim() });
   };
 
+  const processPaymentAndRegistration = async (
+    token: string,
+    answers: Array<{ fieldId: string; value: string | number | string[] }>,
+  ) => {
+    try {
+      const order = await createPaymentOrder(token, hackathonSlug, {});
+
+      const options = {
+        key: order.keyId,
+        amount: order.amountPaise,
+        currency: order.currency,
+        name: hackathonName,
+        description: "Registration Fee",
+        order_id: order.orderId,
+        handler: async (response: any) => {
+          try {
+            setIsSubmittingRegistration(true);
+
+            await verifyPayment(token, hackathonSlug, {
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+
+            const formattedAnswers = answers.map((a) => ({
+              fieldId: a.fieldId,
+              value: String(a.value),
+            }));
+
+            await submitRegistration(token, hackathonSlug, formattedAnswers);
+
+            setIsSuccess(true);
+            toast.success("Successfully joined and registered!");
+
+            setTimeout(() => {
+              router.push(`/competitions/${hackathonSlug}`);
+            }, 2000);
+          } catch (err: unknown) {
+            console.error("Post-payment error:", err);
+            const msg =
+              err instanceof Error
+                ? err.message
+                : "Registration failed after payment";
+            toast.error(msg);
+          } finally {
+            setIsSubmittingRegistration(false);
+            setShowRegistrationModal(false);
+            setJoiningTeamId(null);
+            setIsJoiningByCode(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsSubmittingRegistration(false);
+            toast.info("Payment cancelled");
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error: unknown) {
+      console.error("Payment init error:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to initiate payment";
+      toast.error(message);
+      setIsSubmittingRegistration(false);
+    }
+  };
+
   const submitJoinTeam = async (
     teamId: string,
     answers: Array<{ fieldId: string; value: string | number | string[] }>,
@@ -297,23 +386,50 @@ export function JoinTeamList({
         return;
       }
 
-      await joinTeam(token, { teamId, answers });
+      if (isFree) {
+        await joinTeam(token, { teamId, answers });
+        const team = teams.find((t) => t.id === teamId);
+        setJoinedTeamName(team?.name || "the team");
+        setIsSuccess(true);
+        toast.success("Successfully joined the team!");
 
-      const team = teams.find((t) => t.id === teamId);
-      setJoinedTeamName(team?.name || "the team");
-      setIsSuccess(true);
-      toast.success("Successfully joined the team!");
+        setTimeout(() => {
+          router.push(`/competitions/${hackathonSlug}`);
+        }, 2000);
 
-      // Redirect after a short delay
-      setTimeout(() => {
-        router.push(`/competitions/${hackathonSlug}`);
-      }, 2000);
+        setJoiningTeamId(null);
+        setShowRegistrationModal(false);
+      } else {
+        await joinDraftTeam(token, hackathonSlug, { teamId });
+
+        const team = teams.find((t) => t.id === teamId);
+        setJoinedTeamName(team?.name || "the team");
+
+        if (chargeMode === "PER_USER") {
+          await processPaymentAndRegistration(token, answers);
+        } else {
+          const formattedAnswers = answers.map((a) => ({
+            fieldId: a.fieldId,
+            value: String(a.value),
+          }));
+          await submitRegistration(token, hackathonSlug, formattedAnswers);
+
+          setIsSuccess(true);
+          toast.success("Successfully joined!");
+
+          setTimeout(() => {
+            router.push(`/competitions/${hackathonSlug}`);
+          }, 2000);
+
+          setJoiningTeamId(null);
+          setShowRegistrationModal(false);
+        }
+      }
     } catch (error: unknown) {
       console.error("Failed to join team:", error);
       const message =
         error instanceof Error ? error.message : "Failed to join team";
       toast.error(message);
-    } finally {
       setJoiningTeamId(null);
       setShowRegistrationModal(false);
     }
@@ -331,22 +447,47 @@ export function JoinTeamList({
         return;
       }
 
-      await joinTeamByCode(token, code, answers);
+      if (isFree) {
+        await joinTeamByCode(token, code, answers);
+        setJoinedTeamName("the team");
+        setIsSuccess(true);
+        toast.success("Successfully joined the team!");
 
-      setJoinedTeamName("the team");
-      setIsSuccess(true);
-      toast.success("Successfully joined the team!");
+        setTimeout(() => {
+          router.push(`/competitions/${hackathonSlug}`);
+        }, 2000);
 
-      // Redirect after a short delay
-      setTimeout(() => {
-        router.push(`/competitions/${hackathonSlug}`);
-      }, 2000);
+        setIsJoiningByCode(false);
+        setShowRegistrationModal(false);
+      } else {
+        await joinDraftTeam(token, hackathonSlug, { invitationCode: code });
+        setJoinedTeamName("the team");
+
+        if (chargeMode === "PER_USER") {
+          await processPaymentAndRegistration(token, answers);
+        } else {
+          const formattedAnswers = answers.map((a) => ({
+            fieldId: a.fieldId,
+            value: String(a.value),
+          }));
+          await submitRegistration(token, hackathonSlug, formattedAnswers);
+
+          setIsSuccess(true);
+          toast.success("Successfully joined!");
+
+          setTimeout(() => {
+            router.push(`/competitions/${hackathonSlug}`);
+          }, 2000);
+
+          setIsJoiningByCode(false);
+          setShowRegistrationModal(false);
+        }
+      }
     } catch (error: unknown) {
       console.error("Failed to join team:", error);
       const message =
         error instanceof Error ? error.message : "Invalid invitation code";
       toast.error(message);
-    } finally {
       setIsJoiningByCode(false);
       setShowRegistrationModal(false);
     }
@@ -362,10 +503,9 @@ export function JoinTeamList({
       } else if (pendingInviteCode) {
         await submitJoinByCode(pendingInviteCode, answers);
       }
-    } finally {
+    } catch (err) {
+      console.error("Registration submission failed:", err);
       setIsSubmittingRegistration(false);
-      setPendingJoinTeamId(null);
-      setPendingInviteCode(null);
     }
   };
 
@@ -385,8 +525,8 @@ export function JoinTeamList({
 
   return (
     <>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <div className="space-y-6">
-        {/* Join by Invite Code */}
         <div className="p-4 border rounded-lg bg-zinc-50 dark:bg-zinc-900 space-y-4">
           <div className="flex items-center gap-2">
             <KeyRound className="w-5 h-5 text-primary" />
@@ -418,7 +558,6 @@ export function JoinTeamList({
 
         <Separator />
 
-        {/* Browse Open Teams */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Users className="w-5 h-5" />
@@ -440,7 +579,7 @@ export function JoinTeamList({
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {teams.map((team) => {
-                const memberCount = (team.members?.length || 0) + 1; // +1 for leader
+                const memberCount = (team.members?.length || 0) + 1;
                 const isFull = memberCount >= team.maxSize;
                 const isJoining = joiningTeamId === team.id;
 
@@ -484,7 +623,6 @@ export function JoinTeamList({
         </div>
       </div>
 
-      {/* Registration Modal */}
       <HackathonRegistrationModal
         isOpen={showRegistrationModal}
         onClose={() => {

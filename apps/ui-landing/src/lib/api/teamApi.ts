@@ -167,3 +167,37 @@ export async function checkMyHackathonTeam(
     throw error;
   }
 }
+
+/**
+ * Creates a draft team (for paid hackathons).
+ */
+export async function createDraftTeam(
+  token: string,
+  hackathonSlug: string,
+  data: {
+    name: string;
+    maxSize?: number;
+  },
+): Promise<TeamDetailResponse & { invitationCode: string }> {
+  const res = await API.post(`/${hackathonSlug}/teams/draft`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data;
+}
+
+/**
+ * Joins a draft team (for paid hackathons).
+ */
+export async function joinDraftTeam(
+  token: string,
+  hackathonSlug: string,
+  data: {
+    teamId?: string;
+    invitationCode?: string;
+  },
+): Promise<unknown> {
+  const res = await API.post(`/${hackathonSlug}/teams/draft/join`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data;
+}
