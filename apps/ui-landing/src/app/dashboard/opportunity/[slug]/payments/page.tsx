@@ -90,6 +90,9 @@ export default function Page() {
     city: string;
     address1: string;
     address2?: string;
+    businessType: string;
+    businessCategory: string;
+    businessSubcategory: string;
   }) => {
     try {
       if (!routeStatus?.razorpayAccountId) {
@@ -97,11 +100,11 @@ export default function Page() {
           email: data.email,
           phone: data.phone,
           legalBusinessName: data.accountHolderName,
-          businessType: "individual",
+          businessType: data.businessType,
           contactName: data.accountHolderName,
           profile: {
-            category: "education",
-            subcategory: "coaching",
+            category: data.businessCategory,
+            subcategory: data.businessSubcategory,
             address: {
               street1: data.address1,
               street2: data.address2,

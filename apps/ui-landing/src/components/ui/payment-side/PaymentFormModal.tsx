@@ -5,6 +5,13 @@ import { X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 
 export interface PayoutDetails {
@@ -22,7 +29,103 @@ export interface PayoutDetails {
   city: string;
   address1: string;
   address2: string;
+  businessType: string;
+  businessCategory: string;
+  businessSubcategory: string;
 }
+
+const INDIAN_STATES = [
+  "Andaman and Nicobar Islands",
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chandigarh",
+  "Chhattisgarh",
+  "Dadra and Nagar Haveli",
+  "Daman and Diu",
+  "Delhi",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jammu and Kashmir",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Ladakh",
+  "Lakshadweep",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Puducherry",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+];
+
+const BUSINESS_TYPES = [
+  { label: "Individual", value: "individual" },
+  { label: "Proprietorship", value: "proprietorship" },
+  { label: "Partnership", value: "partnership" },
+  { label: "Private Limited", value: "private_limited" },
+  { label: "Public Limited", value: "public_limited" },
+  { label: "LLP", value: "llp" },
+  { label: "NGO", value: "ngo" },
+  { label: "Trust", value: "trust" },
+  { label: "Society", value: "society" },
+  { label: "Not Yet Registered", value: "not_yet_registered" },
+];
+
+const BUSINESS_CATEGORIES = [
+  {
+    label: "Education",
+    value: "education",
+    subcategories: [
+      { label: "Coaching", value: "coaching" },
+      { label: "College", value: "college" },
+      { label: "Schools", value: "schools" },
+      { label: "Other", value: "other" },
+    ],
+  },
+  {
+    label: "Financial Services",
+    value: "financial_services",
+    subcategories: [
+      { label: "Advisor", value: "financial_advisor" },
+      { label: "Accounting", value: "accounting" },
+      { label: "Other", value: "other" },
+    ],
+  },
+  {
+    label: "Services",
+    value: "services",
+    subcategories: [
+      { label: "Software", value: "software" },
+      { label: "Consulting", value: "consulting" },
+      { label: "Other", value: "other" },
+    ],
+  },
+  {
+    label: "Technology",
+    value: "technology",
+    subcategories: [
+      { label: "SaaS", value: "saas" },
+      { label: "E-commerce", value: "ecommerce" },
+      { label: "Other", value: "other" },
+    ],
+  },
+];
 
 interface PaymentFormModalProps {
   isOpen: boolean;
@@ -59,6 +162,9 @@ export default function PaymentFormModal({
     city: "",
     address1: "",
     address2: "",
+    businessType: "individual",
+    businessCategory: "education",
+    businessSubcategory: "coaching",
   });
 
   const [touched, setTouched] = useState<
@@ -118,6 +224,12 @@ export default function PaymentFormModal({
         return !value.trim() ? "City is required" : "";
       case "address1":
         return !value.trim() ? "Address is required" : "";
+      case "businessType":
+        return !value.trim() ? "Business type is required" : "";
+      case "businessCategory":
+        return !value.trim() ? "Category is required" : "";
+      case "businessSubcategory":
+        return !value.trim() ? "Subcategory is required" : "";
       case "gstTin":
       case "address2":
         return "";
@@ -210,6 +322,14 @@ export default function PaymentFormModal({
             <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 bg-background">
               {/* Row 1 */}
               <div className="flex flex-col md:flex-row gap-4 w-full">
+                <CustomSelect
+                  label="Business Type *"
+                  value={formData.businessType}
+                  onChange={(v) => handleChange("businessType", v)}
+                  error={errors.businessType}
+                  options={BUSINESS_TYPES}
+                  placeholder="Select Type"
+                />
                 <CustomInput
                   label="Account Holder Name *"
                   placeholder="Enter Name"
@@ -218,6 +338,44 @@ export default function PaymentFormModal({
                   onBlur={() => handleBlur("accountHolderName")}
                   error={errors.accountHolderName}
                 />
+              </div>
+
+              {/* Row 2 - Business Category */}
+              <div className="flex flex-col md:flex-row gap-4 w-full">
+                <CustomSelect
+                  label="Business Category *"
+                  value={formData.businessCategory}
+                  onChange={(v) => {
+                    handleChange("businessCategory", v);
+                    // Reset subcategory when category changes
+                    const cat = BUSINESS_CATEGORIES.find((c) => c.value === v);
+                    if (cat && cat.subcategories.length > 0) {
+                      handleChange(
+                        "businessSubcategory",
+                        cat.subcategories[0].value,
+                      );
+                    }
+                  }}
+                  error={errors.businessCategory}
+                  options={BUSINESS_CATEGORIES}
+                  placeholder="Select Category"
+                />
+                <CustomSelect
+                  label="Business Subcategory *"
+                  value={formData.businessSubcategory}
+                  onChange={(v) => handleChange("businessSubcategory", v)}
+                  error={errors.businessSubcategory}
+                  options={
+                    BUSINESS_CATEGORIES.find(
+                      (c) => c.value === formData.businessCategory,
+                    )?.subcategories || []
+                  }
+                  placeholder="Select Subcategory"
+                />
+              </div>
+
+              {/* Row 3 - Contact Info */}
+              <div className="flex flex-col md:flex-row gap-4 w-full">
                 <CustomInput
                   label="Email *"
                   placeholder="Enter Email"
@@ -238,7 +396,7 @@ export default function PaymentFormModal({
                 />
               </div>
 
-              {/* Row 2 */}
+              {/* Row 4 - Bank Details */}
               <div className="flex flex-col md:flex-row gap-4 w-full">
                 <CustomInput
                   label="Bank Name *"
@@ -266,7 +424,7 @@ export default function PaymentFormModal({
                 />
               </div>
 
-              {/* Row 3 */}
+              {/* Row 5 - Tax Info */}
               <div className="flex flex-col md:flex-row gap-4 w-full">
                 <CustomInput
                   label="Pan Number *"
@@ -294,7 +452,7 @@ export default function PaymentFormModal({
                 />
               </div>
 
-              {/* Row 4 */}
+              {/* Row 6 - Address Location */}
               <div className="flex flex-col md:flex-row gap-4 w-full">
                 <CustomInput
                   label="Pincode *"
@@ -304,13 +462,16 @@ export default function PaymentFormModal({
                   onBlur={() => handleBlur("pincode")}
                   error={errors.pincode}
                 />
-                <CustomInput
+                <CustomSelect
                   label="State *"
-                  placeholder="Enter State"
                   value={formData.state}
                   onChange={(v) => handleChange("state", v)}
-                  onBlur={() => handleBlur("state")}
                   error={errors.state}
+                  options={INDIAN_STATES.map((state) => ({
+                    label: state,
+                    value: state,
+                  }))}
+                  placeholder="Select State"
                 />
                 <CustomInput
                   label="City *"
@@ -322,7 +483,7 @@ export default function PaymentFormModal({
                 />
               </div>
 
-              {/* Row 5 */}
+              {/* Row 7 - Address Lines */}
               <div className="flex flex-col md:flex-row gap-4 w-full">
                 <CustomInput
                   label="Address 1 *"
@@ -366,6 +527,52 @@ export default function PaymentFormModal({
     </AnimatePresence>
   );
 }
+
+// --- HELPER COMPONENT FOR SELECT ---
+const CustomSelect = ({
+  label,
+  value,
+  onChange,
+  error,
+  options,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  error?: string;
+  options: { label: string; value: string }[];
+  placeholder: string;
+}) => (
+  <div className="flex flex-col items-start gap-1 flex-1 w-full">
+    <Label className="font-inter text-muted-foreground text-xs font-normal leading-[150%]">
+      {label}
+    </Label>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger
+        className={`flex h-12 px-4 items-center self-stretch rounded-[24px] border ${
+          error
+            ? "border-red-500 focus:ring-red-500"
+            : "border-border bg-background text-foreground placeholder:text-muted-foreground/60 focus:ring-1 focus:ring-primary-500"
+        } focus:ring-offset-0`}
+      >
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((opt) => (
+          <SelectItem key={opt.value} value={opt.value}>
+            {opt.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    {error && (
+      <span className="text-red-500 text-xs px-1 animate-in fade-in slide-in-from-top-1">
+        {error}
+      </span>
+    )}
+  </div>
+);
 
 // --- HELPER COMPONENT FOR INPUTS ---
 const CustomInput = ({
