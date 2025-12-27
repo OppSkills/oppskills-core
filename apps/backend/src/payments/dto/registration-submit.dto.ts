@@ -1,8 +1,9 @@
-import { IsArray, ValidateNested, IsString } from 'class-validator';
+import { IsArray, IsString, IsNotEmpty, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class RegistrationAnswerDto {
+class AnswerDto {
   @IsString()
+  @IsNotEmpty()
   fieldId: string;
 
   @IsString()
@@ -12,6 +13,6 @@ class RegistrationAnswerDto {
 export class SubmitRegistrationDto {
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => RegistrationAnswerDto)
-  answers: RegistrationAnswerDto[];
+  @Type(() => AnswerDto)
+  answers: AnswerDto[];
 }

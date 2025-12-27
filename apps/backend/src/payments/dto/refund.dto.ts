@@ -1,7 +1,14 @@
-import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  Min,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class CreateRefundDto {
   @IsString()
+  @IsNotEmpty()
   paymentId: string;
 
   @IsOptional()
