@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://oppskills.com
+
+# Sitemaps
+Sitemap: https://oppskills.com/sitemap.xml

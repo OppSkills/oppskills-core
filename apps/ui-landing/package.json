@@ -7,6 +7,7 @@
     "prebuild": "pnpm --filter @oppskills/types build",
     "build": "next build",
     "start": "next start",
+    "postbuild": "next-sitemap",
     "lint": "eslint"
   },
   "dependencies": {

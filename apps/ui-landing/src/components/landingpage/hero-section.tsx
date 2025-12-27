@@ -1,10 +1,8 @@
 "use client";
 
-import React from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 export default function HeroSection() {
   const router = useRouter();
@@ -54,8 +52,7 @@ export default function HeroSection() {
           </h1>
 
           <h2 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
-            Discover Your Next
-            <br className="hidden md:block" /> College Hackathon
+            Discover Your Next Event
           </h2>
         </div>
 

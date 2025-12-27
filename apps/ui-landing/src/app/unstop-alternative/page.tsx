@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     "Unstop competitor",
     "hackathon platform",
     "college event platform",
-    "student opportunities",
+    "Opportunities for students",
     "better than unstop",
     "OppSkills vs Unstop",
   ],

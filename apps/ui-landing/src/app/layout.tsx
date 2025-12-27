@@ -35,16 +35,16 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://oppskills.com"),
   title: {
     default:
-      "OppSkills | College Events, Hackathons, Competitions & Student Opportunities",
+      "OppSkills | College Events, Hackathons, Competitions & Opportunities for students",
     template: "%s | OppSkills",
   },
   description:
-    "OppSkills is the best event organiser platform for students. Discover and host hackathons, college events, competitions, internships, and student opportunities. A better alternative to Unstop for college hackathons.",
+    "OppSkills is the best event organiser platform for students. Discover and host hackathons, college events, competitions, internships, and Opportunities for students. A better alternative to Unstop for college hackathons.",
   keywords: [
     "OppSkills",
     "college events",
     "hackathons",
-    "student opportunities",
+    "Opportunities for students",
     "college competitions",
     "college hackathons India",
     "student event platform",
@@ -79,11 +79,12 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: {
-      default: "OppSkills | College Events, Hackathons & Student Opportunities",
+      default:
+        "OppSkills | College Events, Hackathons & Opportunities for students",
       template: "%s | OppSkills",
     },
     description:
-      "Discover and host college events, hackathons, competitions, and student opportunities on OppSkills.",
+      "Discover and host college events, hackathons, competitions, and Opportunities for students on OppSkills.",
     url: "https://oppskills.com",
     siteName: "OppSkills",
     locale: "en_US",
@@ -100,11 +101,12 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: {
-      default: "OppSkills | College Events, Hackathons & Student Opportunities",
+      default:
+        "OppSkills | College Events, Hackathons & Opportunities for students",
       template: "%s | OppSkills",
     },
     description:
-      "Discover and host hackathons, college events, and student opportunities.",
+      "Discover and host hackathons, college events, and Opportunities for students.",
     images: ["/og_poster.png"],
     creator: "@oppskills",
   },
