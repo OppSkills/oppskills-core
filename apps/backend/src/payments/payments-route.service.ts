@@ -15,7 +15,8 @@ export interface OnboardRouteInput {
     | 'trust'
     | 'society'
     | 'ngo'
-    | 'llp';
+    | 'llp'
+    | 'not_yet_registered';
   contactName: string;
   profile: {
     category: string;
@@ -248,15 +249,16 @@ export class PaymentsRouteService {
     stakeholder: {
       name: string;
       email: string;
-      phone?: string;
+      phone?: { primary: string; secondary?: string };
       address?: {
-        street: string;
-        city: string;
-        state: string;
-        postalCode: string;
-        country: string;
+        street?: string;
+        city?: string;
+        state?: string;
+        postalCode?: string;
+        country?: string;
       };
-      kyc?: { pan: string };
+      kyc: { pan: string };
+      notes?: Record<string, string>;
     },
     settlements: {
       accountNumber: string;
@@ -276,7 +278,7 @@ export class PaymentsRouteService {
       await this.razorpay.createStakeholder(razorpayAccountId, {
         name: stakeholder.name,
         email: stakeholder.email,
-        phone: stakeholder.phone ? { primary: stakeholder.phone } : undefined,
+        phone: stakeholder.phone,
         address: stakeholder.address,
         kyc: stakeholder.kyc,
       });
@@ -366,15 +368,16 @@ export class PaymentsRouteService {
     stakeholder: {
       name: string;
       email: string;
-      phone?: string;
+      phone?: { primary: string; secondary?: string };
       address?: {
-        street: string;
-        city: string;
-        state: string;
-        postalCode: string;
-        country: string;
+        street?: string;
+        city?: string;
+        state?: string;
+        postalCode?: string;
+        country?: string;
       };
-      kyc?: { pan: string };
+      kyc: { pan: string };
+      notes?: Record<string, string>;
     },
     settlements: {
       accountNumber: string;

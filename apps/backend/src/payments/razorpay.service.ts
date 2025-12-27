@@ -518,11 +518,11 @@ export interface CreateStakeholderParams {
     secondary?: string;
   };
   address?: {
-    street: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
   };
   kyc?: {
     pan: string;

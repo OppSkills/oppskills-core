@@ -7,6 +7,7 @@ class AnswerDto {
   fieldId: string;
 
   @IsString()
+  @IsNotEmpty()
   value: string;
 }
 

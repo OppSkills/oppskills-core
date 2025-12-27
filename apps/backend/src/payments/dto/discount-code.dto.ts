@@ -7,6 +7,7 @@ import {
   Min,
   Max,
   ValidateIf,
+  IsNotEmpty,
 } from 'class-validator';
 
 export enum DiscountType {
@@ -16,6 +17,7 @@ export enum DiscountType {
 
 export class CreateDiscountCodeDto {
   @IsString()
+  @IsNotEmpty()
   code: string;
 
   @IsEnum(DiscountType)

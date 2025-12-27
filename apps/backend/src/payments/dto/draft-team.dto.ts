@@ -1,7 +1,15 @@
-import { IsString, IsOptional, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  Min,
+  Max,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class CreateDraftTeamDto {
   @IsString()
+  @IsNotEmpty()
   name: string;
 
   @IsOptional()
@@ -23,5 +31,6 @@ export class JoinDraftTeamDto {
 
 export class LeaveDraftTeamDto {
   @IsString()
+  @IsNotEmpty()
   teamId: string;
 }

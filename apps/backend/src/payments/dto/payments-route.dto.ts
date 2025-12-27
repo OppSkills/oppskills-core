@@ -4,6 +4,8 @@ import {
   IsEnum,
   IsOptional,
   ValidateNested,
+  IsNotEmpty,
+  IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -17,10 +19,12 @@ export enum BusinessType {
   TRUST = 'trust',
   SOCIETY = 'society',
   NOT_YET_REGISTERED = 'not_yet_registered',
+  PROPRIETORSHIP = 'proprietorship',
 }
 
 class AddressDto {
   @IsString()
+  @IsNotEmpty()
   street1: string;
 
   @IsOptional()
@@ -28,23 +32,29 @@ class AddressDto {
   street2?: string;
 
   @IsString()
+  @IsNotEmpty()
   city: string;
 
   @IsString()
+  @IsNotEmpty()
   state: string;
 
   @IsString()
+  @IsNotEmpty()
   postalCode: string;
 
   @IsString()
+  @IsNotEmpty()
   country: string;
 }
 
 class ProfileDto {
   @IsString()
+  @IsNotEmpty()
   category: string;
 
   @IsString()
+  @IsNotEmpty()
   subcategory: string;
 
   @ValidateNested()
@@ -63,57 +73,85 @@ class LegalInfoDto {
 }
 
 class StakeholderAddressDto {
+  @IsOptional()
   @IsString()
-  street: string;
+  street?: string;
 
+  @IsOptional()
   @IsString()
-  city: string;
+  city?: string;
 
+  @IsOptional()
   @IsString()
-  state: string;
+  state?: string;
 
+  @IsOptional()
   @IsString()
-  postalCode: string;
+  postalCode?: string;
 
+  @IsOptional()
   @IsString()
-  country: string;
+  country?: string;
 }
 
 class StakeholderKycDto {
   @IsString()
+  @IsNotEmpty()
   pan: string;
+}
+
+class StakeholderPhoneDto {
+  @IsString()
+  @IsNotEmpty()
+  primary: string;
+
+  @IsOptional()
+  @IsString()
+  secondary?: string;
+}
+
+class NotesDto {
+  [key: string]: string;
 }
 
 class StakeholderDto {
   @IsString()
+  @IsNotEmpty()
   name: string;
 
   @IsEmail()
   email: string;
 
   @IsOptional()
-  @IsString()
-  phone?: string;
+  @ValidateNested()
+  @Type(() => StakeholderPhoneDto)
+  phone?: StakeholderPhoneDto;
 
   @IsOptional()
   @ValidateNested()
   @Type(() => StakeholderAddressDto)
   address?: StakeholderAddressDto;
 
-  @IsOptional()
   @ValidateNested()
   @Type(() => StakeholderKycDto)
-  kyc?: StakeholderKycDto;
+  kyc: StakeholderKycDto;
+
+  @IsOptional()
+  @IsObject()
+  notes?: Record<string, string>;
 }
 
 class SettlementsDto {
   @IsString()
+  @IsNotEmpty()
   accountNumber: string;
 
   @IsString()
+  @IsNotEmpty()
   ifscCode: string;
 
   @IsString()
+  @IsNotEmpty()
   beneficiaryName: string;
 }
 
@@ -122,15 +160,18 @@ export class OnboardRouteDto {
   email: string;
 
   @IsString()
+  @IsNotEmpty()
   phone: string;
 
   @IsString()
+  @IsNotEmpty()
   legalBusinessName: string;
 
   @IsEnum(BusinessType)
   businessType: BusinessType;
 
   @IsString()
+  @IsNotEmpty()
   contactName: string;
 
   @ValidateNested()
@@ -153,11 +194,14 @@ export class OnboardRouteDto {
 
 export class UpdateSettlementsDto {
   @IsString()
+  @IsNotEmpty()
   accountNumber: string;
 
   @IsString()
+  @IsNotEmpty()
   ifscCode: string;
 
   @IsString()
+  @IsNotEmpty()
   beneficiaryName: string;
 }
