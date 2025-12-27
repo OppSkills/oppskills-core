@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Loader2, CheckCircle } from "lucide-react";
-import { createTeam } from "@/lib/api/teamApi";
+import { createTeam, createDraftTeam } from "@/lib/api/teamApi";
+import {
+  createPaymentOrder,
+  verifyPayment,
+  submitRegistration,
+} from "@/lib/api/paymentsApi";
 import { getMe } from "@/lib/api/usersApi";
 import {
   HackathonRegistrationModal,
@@ -30,6 +36,16 @@ export interface CreateTeamFormProps {
   maxSize: number;
   isIndividual: boolean;
   registrationForm: RegistrationForm | null;
+  isFree?: boolean;
+  entryFeeAmount?: number | null;
+  currency?: string;
+  chargeMode?: "PER_TEAM" | "PER_USER";
+}
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
 }
 
 export function CreateTeamForm({
@@ -39,6 +55,10 @@ export function CreateTeamForm({
   maxSize,
   isIndividual,
   registrationForm,
+  isFree = true,
+  entryFeeAmount,
+  currency = "INR",
+  chargeMode = "PER_TEAM",
 }: CreateTeamFormProps) {
   const router = useRouter();
   const { getToken } = useAuth();
@@ -58,8 +78,8 @@ export function CreateTeamForm({
   const [userDataForPrefill, setUserDataForPrefill] = useState<
     UserDataForPrefill | undefined
   >(undefined);
+  const [discountCode, setDiscountCode] = useState("");
 
-  // Build user data for baseline prefill (no onboarding fetch)
   const baselineUserData = {
     name: user
       ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
@@ -224,6 +244,85 @@ export function CreateTeamForm({
     return;
   };
 
+  const processPaymentAndRegistration = async (
+    token: string,
+    teamId: string,
+    answers: Array<{ fieldId: string; value: string | number | string[] }>,
+  ) => {
+    try {
+      const orderParams = {
+        ...(chargeMode === "PER_TEAM" ? { teamId } : {}),
+        discountCode: discountCode.trim() || undefined,
+      };
+
+      const order = await createPaymentOrder(token, hackathonSlug, orderParams);
+
+      const options = {
+        key: order.keyId,
+        amount: order.amountPaise,
+        currency: order.currency,
+        name: hackathonName,
+        description: isIndividual
+          ? "Individual Registration"
+          : "Team Registration",
+        order_id: order.orderId,
+        handler: async (response: any) => {
+          try {
+            setIsSubmittingRegistration(true);
+
+            await verifyPayment(token, hackathonSlug, {
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+
+            const formattedAnswers = answers.map((a) => ({
+              fieldId: a.fieldId,
+              value: String(a.value),
+            }));
+
+            await submitRegistration(token, hackathonSlug, formattedAnswers);
+
+            setIsSuccess(true);
+            toast.success("Payment and registration successful!");
+
+            setTimeout(() => {
+              router.push(`/competitions/${hackathonSlug}`);
+            }, 2000);
+          } catch (err: unknown) {
+            console.error("Post-payment error:", err);
+            const msg =
+              err instanceof Error
+                ? err.message
+                : "Registration failed after payment";
+            toast.error(msg);
+          } finally {
+            setIsLoading(false);
+            setIsSubmittingRegistration(false);
+            setShowRegistrationModal(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsLoading(false);
+            setIsSubmittingRegistration(false);
+            toast.info("Payment cancelled");
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error: unknown) {
+      console.error("Payment init error:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to initiate payment";
+      toast.error(message);
+      setIsLoading(false);
+      setIsSubmittingRegistration(false);
+    }
+  };
+
   const submitTeamCreation = async (
     answers: Array<{ fieldId: string; value: string | number | string[] }>,
   ) => {
@@ -239,31 +338,40 @@ export function CreateTeamForm({
         ? `${user?.firstName || "Participant"}'s Registration`
         : teamName.trim();
 
-      await createTeam(token, {
-        name: finalTeamName,
-        hackathonId,
-        maxSize,
-        isOpen,
-        answers,
-      });
+      if (isFree) {
+        await createTeam(token, {
+          name: finalTeamName,
+          hackathonId,
+          maxSize,
+          isOpen,
+          answers,
+        });
 
-      setIsSuccess(true);
-      toast.success(
-        isIndividual
-          ? "Registration successful!"
-          : "Team created successfully!",
-      );
+        setIsSuccess(true);
+        toast.success(
+          isIndividual
+            ? "Registration successful!"
+            : "Team created successfully!",
+        );
 
-      // Redirect after a short delay
-      setTimeout(() => {
-        router.push(`/competitions/${hackathonSlug}`);
-      }, 2000);
+        setTimeout(() => {
+          router.push(`/competitions/${hackathonSlug}`);
+        }, 2000);
+        setIsLoading(false);
+        setShowRegistrationModal(false);
+      } else {
+        const draft = await createDraftTeam(token, hackathonSlug, {
+          name: finalTeamName,
+          maxSize,
+        });
+
+        await processPaymentAndRegistration(token, draft.id, answers);
+      }
     } catch (error: unknown) {
       console.error("Failed to create team:", error);
       const message =
         error instanceof Error ? error.message : "Failed to create team";
       toast.error(message);
-    } finally {
       setIsLoading(false);
       setShowRegistrationModal(false);
     }
@@ -275,12 +383,11 @@ export function CreateTeamForm({
     setIsSubmittingRegistration(true);
     try {
       await submitTeamCreation(answers);
-    } finally {
+    } catch (err) {
       setIsSubmittingRegistration(false);
     }
   };
 
-  // Success state
   if (isSuccess) {
     return (
       <div className="text-center space-y-4 py-8">
@@ -296,6 +403,7 @@ export function CreateTeamForm({
 
   return (
     <>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <form
         onSubmit={handleCreateTeam}
         className="space-y-6 p-4 border rounded-md"
@@ -353,9 +461,21 @@ export function CreateTeamForm({
           {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {isIndividual ? "Register" : "Create Team"}
         </Button>
+
+        {!isFree && (
+          <div className="space-y-2">
+            <Label htmlFor="discountCode">Discount Code (Optional)</Label>
+            <Input
+              id="discountCode"
+              placeholder="Enter discount code"
+              value={discountCode}
+              onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+              disabled={isLoading}
+            />
+          </div>
+        )}
       </form>
 
-      {/* Registration Modal */}
       <HackathonRegistrationModal
         isOpen={showRegistrationModal}
         onClose={() => setShowRegistrationModal(false)}

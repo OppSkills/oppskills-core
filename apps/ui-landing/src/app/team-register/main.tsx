@@ -25,6 +25,10 @@ interface HackathonData {
   participantType: string;
   isRegistrationPaused: boolean;
   registrationDeadline: string | null;
+  isFree: boolean;
+  entryFeeAmount: number | null;
+  currency: string;
+  chargeMode: "PER_TEAM" | "PER_USER";
   registrationForm: {
     id: string;
     externalFormLink: string | null;
@@ -377,6 +381,10 @@ export default function RegistrationPage() {
           maxSize={maxSize}
           isIndividual={isIndividual}
           registrationForm={hackathon.registrationForm}
+          isFree={hackathon.isFree}
+          entryFeeAmount={hackathon.entryFeeAmount}
+          currency={hackathon.currency}
+          chargeMode={hackathon.chargeMode}
         />
       ) : (
         <JoinTeamList
@@ -384,6 +392,10 @@ export default function RegistrationPage() {
           hackathonSlug={slug}
           hackathonName={hackathon.name}
           registrationForm={hackathon.registrationForm}
+          isFree={hackathon.isFree}
+          entryFeeAmount={hackathon.entryFeeAmount}
+          currency={hackathon.currency}
+          chargeMode={hackathon.chargeMode}
         />
       )}
     </div>
