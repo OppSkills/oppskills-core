@@ -132,6 +132,7 @@ describe('TeamService', () => {
       prismaMock.hackathonEntity.findUnique.mockResolvedValueOnce({
         id: 'hack-1',
         ownerId: 'owner-1',
+        isFree: true,
         maxTeams: null,
         participantType: 'TEAM_OF_2',
         status: 'PUBLISHED',

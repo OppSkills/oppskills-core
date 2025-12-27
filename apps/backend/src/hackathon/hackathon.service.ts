@@ -731,7 +731,9 @@ export class HackathonService {
     // Validate cross-field constraints
     this.assertLocationValid(dto);
     this.assertUniversityRestrictionValid(dto);
-    this.assertPricingValid(dto);
+    this.assertPricingValid(dto, hackathon);
+
+    await this.assertPricingNotLockedByRegistration(id, hackathon, dto);
 
     const startDate = dto.startDate
       ? this.parseDate(dto.startDate, 'startDate')
@@ -882,7 +884,7 @@ export class HackathonService {
     dto: UpdateHackathonRoundsDto,
     userId: string,
   ) {
-    const hackathon = await this.assertHackathonEditableByUser(id, userId);
+    await this.assertHackathonEditableByUser(id, userId);
 
     // Validate round timeline constraints
     for (const round of dto.rounds) {
@@ -1276,12 +1278,78 @@ export class HackathonService {
 
   private assertPricingValid(
     dto: CreateHackathonDto | UpdateHackathonDto,
+    currentHackathon?: {
+      isFree: boolean;
+      entryFeeAmount: unknown;
+      registrationDeadline: Date | null;
+    },
   ): void {
-    const isFree = dto.isFree ?? true;
-    if (isFree) return;
-    if (!dto.entryFeeAmount || dto.entryFeeAmount.trim().length === 0) {
+    const targetIsFree = dto.isFree ?? currentHackathon?.isFree ?? true;
+    if (targetIsFree) return;
+
+    const entryFeeAmount =
+      dto.entryFeeAmount ?? currentHackathon?.entryFeeAmount;
+    const hasEntryFeeAmount =
+      typeof entryFeeAmount === 'string'
+        ? entryFeeAmount.trim().length > 0
+        : entryFeeAmount !== null && entryFeeAmount !== undefined;
+
+    if (!hasEntryFeeAmount) {
       throw new BadRequestException(
         'entryFeeAmount is required when isFree is false.',
+      );
+    }
+
+    const registrationDeadline =
+      dto.registrationDeadline ?? currentHackathon?.registrationDeadline;
+    const hasRegistrationDeadline =
+      typeof registrationDeadline === 'string'
+        ? registrationDeadline.trim().length > 0
+        : registrationDeadline !== null && registrationDeadline !== undefined;
+
+    if (!hasRegistrationDeadline) {
+      throw new BadRequestException(
+        'registrationDeadline is required when isFree is false.',
+      );
+    }
+  }
+
+  private async assertPricingNotLockedByRegistration(
+    hackathonId: string,
+    currentHackathon: {
+      isFree: boolean;
+      entryFeeAmount: unknown;
+      chargeMode: unknown;
+    },
+    dto: UpdateHackathonDto & { chargeMode?: string },
+  ): Promise<void> {
+    const isPricingFieldChanging =
+      (dto.isFree !== undefined && dto.isFree !== currentHackathon.isFree) ||
+      (dto.entryFeeAmount !== undefined &&
+        String(dto.entryFeeAmount) !==
+          String(currentHackathon.entryFeeAmount)) ||
+      ('chargeMode' in dto && dto.chargeMode !== currentHackathon.chargeMode);
+
+    if (!isPricingFieldChanging) return;
+
+    const [team, payment, submission] = await Promise.all([
+      prisma.teamEntity.findFirst({
+        where: { hackathonId },
+        select: { id: true },
+      }),
+      prisma.hackathonPaymentEntity.findFirst({
+        where: { hackathonId },
+        select: { id: true },
+      }),
+      prisma.hackathonRegistrationSubmissionEntity.findFirst({
+        where: { hackathonId },
+        select: { id: true },
+      }),
+    ]);
+
+    if (team || payment || submission) {
+      throw new BadRequestException(
+        'Cannot change pricing fields (isFree, entryFeeAmount, chargeMode) after registration has started.',
       );
     }
   }

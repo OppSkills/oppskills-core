@@ -11,6 +11,7 @@ import { MediaModule } from './media/media.module';
 import { CollegesModule } from './colleges/colleges.module';
 import { EventModule } from './event/event.module';
 import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
     CollegesModule,
     EventModule,
     GoogleSheetsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],
