@@ -13,15 +13,37 @@ export class RazorpayService {
   private readonly keySecret: string;
   private readonly webhookSecret: string;
   private readonly baseUrl = 'https://api.razorpay.com';
+  private readonly isConfigured: boolean;
 
   constructor(private readonly configService: ConfigService) {
-    this.keyId = this.configService.getOrThrow<string>('RAZORPAY_KEY_ID');
-    this.keySecret = this.configService.getOrThrow<string>(
-      'RAZORPAY_KEY_SECRET',
-    );
-    this.webhookSecret = this.configService.getOrThrow<string>(
+    const keyId = this.configService.get<string>('RAZORPAY_KEY_ID');
+    const keySecret = this.configService.get<string>('RAZORPAY_KEY_SECRET');
+    const webhookSecret = this.configService.get<string>(
       'RAZORPAY_WEBHOOK_SECRET',
     );
+
+    if (!keyId || !keySecret || !webhookSecret) {
+      this.logger.warn(
+        'Razorpay configuration is missing (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, or RAZORPAY_WEBHOOK_SECRET). Payment features will be disabled.',
+      );
+      this.keyId = '';
+      this.keySecret = '';
+      this.webhookSecret = '';
+      this.isConfigured = false;
+    } else {
+      this.keyId = keyId;
+      this.keySecret = keySecret;
+      this.webhookSecret = webhookSecret;
+      this.isConfigured = true;
+    }
+  }
+
+  private assertConfigured(): void {
+    if (!this.isConfigured) {
+      throw new InternalServerErrorException(
+        'Razorpay is not configured. Please set RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, and RAZORPAY_WEBHOOK_SECRET.',
+      );
+    }
   }
 
   async createOrder(params: {
@@ -38,6 +60,7 @@ export class RazorpayService {
       on_hold_until?: number;
     }>;
   }): Promise<RazorpayOrderResponse> {
+    this.assertConfigured();
     const body: Record<string, unknown> = {
       amount: params.amountPaise,
       currency: params.currency,
@@ -63,6 +86,7 @@ export class RazorpayService {
   }
 
   async fetchOrder(orderId: string): Promise<RazorpayOrderResponse> {
+    this.assertConfigured();
     return this.request<RazorpayOrderResponse>('GET', `/v1/orders/${orderId}`);
   }
 
@@ -71,6 +95,7 @@ export class RazorpayService {
     paymentId: string;
     signature: string;
   }): boolean {
+    this.assertConfigured();
     const payload = `${params.orderId}|${params.paymentId}`;
     const expectedSignature = crypto
       .createHmac('sha256', this.keySecret)
@@ -88,6 +113,7 @@ export class RazorpayService {
   }
 
   verifyWebhookSignature(rawBody: string | Buffer, signature: string): boolean {
+    this.assertConfigured();
     const bodyString =
       typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8');
     const expectedSignature = crypto
@@ -111,6 +137,7 @@ export class RazorpayService {
     notes?: Record<string, string>;
     speed?: 'normal' | 'optimum';
   }): Promise<RazorpayRefundResponse> {
+    this.assertConfigured();
     const body: Record<string, unknown> = {};
 
     if (params.amount !== undefined) {
@@ -131,6 +158,7 @@ export class RazorpayService {
   }
 
   async fetchRefund(refundId: string): Promise<RazorpayRefundResponse> {
+    this.assertConfigured();
     return this.request<RazorpayRefundResponse>(
       'GET',
       `/v1/refunds/${refundId}`,
@@ -140,6 +168,7 @@ export class RazorpayService {
   async createLinkedAccount(
     params: CreateLinkedAccountParams,
   ): Promise<RazorpayLinkedAccountResponse> {
+    this.assertConfigured();
     const body = {
       email: params.email,
       phone: params.phone,
@@ -180,6 +209,7 @@ export class RazorpayService {
   async fetchLinkedAccount(
     accountId: string,
   ): Promise<RazorpayLinkedAccountResponse> {
+    this.assertConfigured();
     return this.request<RazorpayLinkedAccountResponse>(
       'GET',
       `/v2/accounts/${accountId}`,
@@ -190,6 +220,7 @@ export class RazorpayService {
     accountId: string,
     params: CreateStakeholderParams,
   ): Promise<RazorpayStakeholderResponse> {
+    this.assertConfigured();
     const body = {
       name: params.name,
       email: params.email,
@@ -229,6 +260,7 @@ export class RazorpayService {
     accountId: string,
     tncAccepted: boolean,
   ): Promise<RazorpayProductConfigResponse> {
+    this.assertConfigured();
     return this.request<RazorpayProductConfigResponse>(
       'POST',
       `/v2/accounts/${accountId}/products`,
