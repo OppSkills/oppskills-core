@@ -185,7 +185,7 @@ export class RazorpayService {
             street2: params.profile.address.street2 || '',
             city: params.profile.address.city,
             state: params.profile.address.state,
-            postal_code: params.profile.address.postalCode,
+            postal_code: parseInt(params.profile.address.postalCode, 10),
             country: params.profile.address.country,
           },
         },
@@ -193,7 +193,7 @@ export class RazorpayService {
       legal_info: params.legalInfo
         ? {
             pan: params.legalInfo.pan,
-            gst: params.legalInfo.gst,
+            ...(params.legalInfo.gst ? { gst: params.legalInfo.gst } : {}),
           }
         : undefined,
       reference_id: params.referenceId,
@@ -236,7 +236,9 @@ export class RazorpayService {
               street: params.address.street,
               city: params.address.city,
               state: params.address.state,
-              postal_code: params.address.postalCode,
+              postal_code: params.address.postalCode
+                ? parseInt(params.address.postalCode, 10)
+                : undefined,
               country: params.address.country,
             },
           }
