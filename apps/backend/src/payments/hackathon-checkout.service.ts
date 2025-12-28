@@ -209,7 +209,7 @@ export class HackathonCheckoutService {
     const razorpayOrder = await this.razorpayService.createOrder({
       amountPaise: grossAmountPaise,
       currency: hackathon.currency || 'INR',
-      receipt: `hck_${hackathon.id}_${Date.now()}`,
+      receipt: `hck_${hackathon.id.slice(-8)}_${Date.now()}`,
       notes: {
         hackathonId: hackathon.id,
         hackathonSlug: hackathon.slug,
