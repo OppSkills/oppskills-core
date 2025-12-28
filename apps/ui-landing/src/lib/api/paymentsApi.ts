@@ -101,8 +101,30 @@ export interface EarningsData {
   totalGross: number;
   totalPlatformFee: number;
   totalOrganizerShare: number;
+  totalRefunded: number;
+  netEarnings: number;
+  paidOut: number;
+  pendingPayout: number;
+  eligibleAt: string | null;
+  isEligibleNow: boolean;
   capturedPaymentsCount: number;
   currency: string;
+}
+
+export interface PayoutDetails {
+  userId: string;
+  accountHolderName: string;
+  accountNumberLast4: string;
+  ifsc: string;
+  upiId: string | null;
+  updatedAt: string;
+}
+
+export interface PayoutDetailsInput {
+  accountHolderName: string;
+  accountNumber: string;
+  ifsc: string;
+  upiId?: string;
 }
 
 export interface PaymentRecord {
@@ -273,5 +295,24 @@ export async function submitRegistration(
       headers: buildAuthHeaders(token),
     },
   );
+  return res.data;
+}
+
+export async function getPayoutDetails(
+  token: string,
+): Promise<PayoutDetails | null> {
+  const res = await PaymentsAPI.get("/payout-details", {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data;
+}
+
+export async function upsertPayoutDetails(
+  token: string,
+  params: PayoutDetailsInput,
+): Promise<PayoutDetails> {
+  const res = await PaymentsAPI.put("/payout-details", params, {
+    headers: buildAuthHeaders(token),
+  });
   return res.data;
 }

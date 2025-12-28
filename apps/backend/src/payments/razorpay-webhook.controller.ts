@@ -212,12 +212,30 @@ export class RazorpayWebhookController {
     const paymentId = refund.payment_id;
     if (!paymentId) return;
 
-    await prisma.hackathonPaymentEntity.updateMany({
+    const refundAmountInRupees = new Prisma.Decimal(refund.amount).div(100);
+
+    const payment = await prisma.hackathonPaymentEntity.findFirst({
       where: { razorpayPaymentId: paymentId },
+      select: { id: true, grossAmount: true, refundedAmount: true },
+    });
+
+    if (!payment) {
+      this.logger.warn(`Payment not found for refund: ${paymentId}`);
+      return;
+    }
+
+    const newRefundedAmount = new Prisma.Decimal(payment.refundedAmount).add(
+      refundAmountInRupees,
+    );
+    const isFullyRefunded = newRefundedAmount.gte(payment.grossAmount);
+
+    await prisma.hackathonPaymentEntity.update({
+      where: { id: payment.id },
       data: {
         razorpayRefundId: refund.id,
         refundStatus: 'PROCESSED',
-        paymentStatus: 'REFUNDED',
+        refundedAmount: newRefundedAmount,
+        paymentStatus: isFullyRefunded ? 'REFUNDED' : 'CAPTURED',
         refundedAt: new Date(),
       },
     });
@@ -337,6 +355,7 @@ interface RazorpayWebhookPayload {
       entity: {
         id: string;
         payment_id: string;
+        amount: number;
         status: string;
       };
     };

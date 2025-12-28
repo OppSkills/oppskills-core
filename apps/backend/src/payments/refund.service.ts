@@ -63,6 +63,20 @@ export class RefundService {
       throw new BadRequestException('Payment has already been refunded');
     }
 
+    const existingPayout = await prisma.hackathonPayoutEntity.findFirst({
+      where: {
+        hackathonId: hackathon.id,
+        organizerId: hackathon.ownerId,
+        status: 'PAID',
+      },
+    });
+
+    if (existingPayout) {
+      throw new BadRequestException(
+        'Refunds are blocked after payout has been processed',
+      );
+    }
+
     const refundAmountPaise = params.amount
       ? Math.round(params.amount * 100)
       : undefined;
