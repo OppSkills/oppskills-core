@@ -221,9 +221,18 @@ export const UpcomingEvents = () => {
                         <span className="text-xs text-neutral-600">
                           Attendees
                         </span>
-                        <span className="text-neutral-700">
-                          {event.registrationCount}
-                        </span>
+                        <div className="flex gap-1">
+                          <div className="flex">
+                            <div className="w-4 h-4 rounded-full bg-primary-500"></div>
+                            <div className="w-4 h-4 rounded-full bg-primary-400 -ml-2"></div>
+                            <div className="w-4 h-4 rounded-full bg-primary-300 -ml-2"></div>
+                          </div>
+                          <span className="text-neutral-700">
+                            {event.registrationCount > 10
+                              ? `${event.registrationCount - 1}+`
+                              : event.registrationCount}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex flex-col gap-2 ">
                         <span className="text-xs text-neutral-600">
