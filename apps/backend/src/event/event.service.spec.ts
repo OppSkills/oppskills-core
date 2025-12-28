@@ -72,11 +72,7 @@ describe('EventService - Google Sheets logging', () => {
 
       prismaMock.eventRegistrationAnswerEntity.findMany.mockResolvedValue([]);
 
-      // Call the private method via a public method (joinEvent)
-      // Since logToGoogleSheets is private, we'll test it indirectly
-      // by mocking the entire joinEvent flow
-
-      // Instead, let's access the method using bracket notation
+      // Access the private method using bracket notation to test directly
       await (service as any).logToGoogleSheets(
         targetEventId,
         userId,

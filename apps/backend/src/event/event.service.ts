@@ -26,6 +26,7 @@ type LifecycleStatus =
 @Injectable()
 export class EventService {
   private readonly logger = new Logger(EventService.name);
+  private readonly GOOGLE_SHEETS_ENABLED_EVENT_ID = 'cmjn3pgst0001oz01flu5hcgw';
 
   constructor(private readonly googleSheetsService: GoogleSheetsService) {}
   /**
@@ -1262,9 +1263,7 @@ export class EventService {
     answers: Array<{ fieldId: string; value: string | number | string[] }>,
     submissionId?: string,
   ) {
-    const GOOGLE_SHEETS_ENABLED_EVENT_ID = 'cmjn3pgst0001oz01flu5hcgw';
-
-    if (eventId !== GOOGLE_SHEETS_ENABLED_EVENT_ID) {
+    if (eventId !== this.GOOGLE_SHEETS_ENABLED_EVENT_ID) {
       this.logger.debug(`Skipping Google Sheets logging for event ${eventId}`);
       return;
     }
