@@ -311,22 +311,65 @@ export function JoinTeamList({
     try {
       const order = await createPaymentOrder(token, hackathonSlug, {});
 
+      // If discount makes this a zero-amount payment, backend already marks it as CAPTURED.
+      // Skip Razorpay checkout and proceed to registration submission (PER_USER flow).
+      if (order.zeroAmountPayment || order.amountPaise === 0) {
+        if (chargeMode === "PER_USER") {
+          const formattedAnswers = answers.map((a) => ({
+            fieldId: a.fieldId,
+            value: String(a.value),
+          }));
+
+          await submitRegistration(token, hackathonSlug, formattedAnswers);
+        }
+
+        setIsSuccess(true);
+        toast.success("Registration successful!");
+
+        setTimeout(() => {
+          router.push(`/competitions/${hackathonSlug}`);
+        }, 2000);
+
+        return;
+      }
+
+      const razorpayKey = order.razorpayKeyId || order.keyId;
+      const razorpayOrderId = order.razorpayOrderId || order.orderId;
+
+      if (!razorpayKey) {
+        throw new Error("Payment configuration missing (Razorpay key)");
+      }
+
+      if (!razorpayOrderId) {
+        throw new Error("Payment initialization failed (missing Razorpay order id)");
+      }
+
       const options = {
-        key: order.razorpayKeyId || order.keyId,
+        key: razorpayKey,
         amount: order.amountPaise,
         currency: order.currency,
         name: hackathonName,
         description: "Registration Fee",
-        order_id: order.orderId,
+        order_id: razorpayOrderId,
         handler: async (response: any) => {
           try {
             const verifyToken = await getToken();
             if (!verifyToken) throw new Error("Authentication required");
 
+            const responseOrderId = response?.razorpay_order_id;
+            const responsePaymentId = response?.razorpay_payment_id;
+            const responseSignature = response?.razorpay_signature;
+
+            if (!responseOrderId || !responsePaymentId || !responseSignature) {
+              throw new Error(
+                "Payment verification failed (missing Razorpay fields). Please try again.",
+              );
+            }
+
             await verifyPayment(verifyToken, hackathonSlug, {
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
+              razorpayOrderId: responseOrderId,
+              razorpayPaymentId: responsePaymentId,
+              razorpaySignature: responseSignature,
             });
 
             if (chargeMode === "PER_USER") {

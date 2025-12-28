@@ -88,12 +88,21 @@ export interface CreateDiscountCodeParams {
 }
 
 export interface PaymentOrder {
-  keyId?: string; // Legacy support if needed
-  razorpayKeyId?: string; // New field from backend
-  orderId: string;
+  // Backend primary fields
+  paymentId: string;
+  razorpayKeyId: string | null;
+  razorpayOrderId: string | null;
+
   amountPaise: number;
   currency: string;
   hackathonName: string;
+
+  // When discount makes total 0, backend returns a zero-amount payment
+  zeroAmountPayment?: boolean;
+
+  // Backward compatibility (older frontend used these)
+  keyId?: string;
+  orderId?: string;
 }
 
 export interface EarningsData {
