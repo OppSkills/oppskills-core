@@ -12,13 +12,14 @@ import {
   Circle,
   AlertTriangle,
 } from "lucide-react";
-import PaymentFormModal from "@/components/ui/payment-side/PaymentFormModal";
+import PayoutDetailsForm from "@/components/ui/payment-side/PayoutDetailsForm";
 import CreateTicketModal, {
   TicketData,
 } from "@/components/ui/payment-side/create-ticket-modal";
+import { PayoutDetailsInput } from "@/lib/api/paymentsApi";
 
 export default function TicketsPage() {
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isPayoutFormOpen, setIsPayoutFormOpen] = useState(false);
   const [isCreateTicketModalOpen, setIsCreateTicketModalOpen] = useState(false);
   const [isPaid, setIsPaid] = useState<boolean>(true); // Defaulting to true based on typical event needs, or false to match mockup
   const [tickets, setTickets] = useState<TicketData[]>([]);
@@ -26,46 +27,27 @@ export default function TicketsPage() {
     "player" | "organizer"
   >("player");
 
-  const [payoutDetails, setPayoutDetails] = useState({
+  const [payoutDetails, setPayoutDetails] = useState<PayoutDetailsInput>({
     accountHolderName: "",
-    email: "",
-    phone: "",
-    bankName: "",
     accountNumber: "",
-    confirmAccountNumber: "",
-    panNumber: "",
-    ifscCode: "",
-    gstTin: "",
-    pincode: "",
-    state: "",
-    city: "",
-    address1: "",
-    address2: "",
+    ifsc: "",
+    upiId: "",
   });
 
   const handleCreateTicket = (newTicket: TicketData) => {
     setTickets([...tickets, newTicket]);
   };
 
-  const handleSavePaymentDetails = (data: typeof payoutDetails) => {
+  const handleSavePaymentDetails = (data: PayoutDetailsInput) => {
     setPayoutDetails(data);
-    setIsPaymentModalOpen(false);
+    setIsPayoutFormOpen(false);
   };
 
   const payoutFields = [
     { label: "Account Holder Name", value: payoutDetails.accountHolderName },
-    { label: "Phone Number", value: payoutDetails.phone },
-    { label: "Email", value: payoutDetails.email },
-    { label: "Bank Name", value: payoutDetails.bankName },
-    { label: "Bank Account Number", value: payoutDetails.accountNumber },
-    { label: "IFSC Code", value: payoutDetails.ifscCode },
-    { label: "Pan Number", value: payoutDetails.panNumber },
-    { label: "GST Tin Number", value: payoutDetails.gstTin },
-    { label: "Address 1", value: payoutDetails.address1 },
-    { label: "Address 2", value: payoutDetails.address2 },
-    { label: "State", value: payoutDetails.state },
-    { label: "City", value: payoutDetails.city },
-    { label: "Pin Code", value: payoutDetails.pincode },
+    { label: "Account Number", value: payoutDetails.accountNumber },
+    { label: "IFSC Code", value: payoutDetails.ifsc },
+    { label: "UPI ID", value: payoutDetails.upiId },
   ];
 
   return (
@@ -136,9 +118,9 @@ export default function TicketsPage() {
             onClose={() => setIsCreateTicketModalOpen(false)}
             onCreate={handleCreateTicket}
           />
-          <PaymentFormModal
-            isOpen={isPaymentModalOpen}
-            onClose={() => setIsPaymentModalOpen(false)}
+          <PayoutDetailsForm
+            isOpen={isPayoutFormOpen}
+            onClose={() => setIsPayoutFormOpen(false)}
             onSave={handleSavePaymentDetails}
             initialData={payoutDetails}
           />
@@ -293,7 +275,7 @@ export default function TicketsPage() {
 
               <button
                 className="flex w-9 h-9 justify-center items-center rounded-full hover:bg-muted transition-colors"
-                onClick={() => setIsPaymentModalOpen(true)}
+                onClick={() => setIsPayoutFormOpen(true)}
               >
                 <Pencil
                   className="w-5 h-5 text-muted-foreground"

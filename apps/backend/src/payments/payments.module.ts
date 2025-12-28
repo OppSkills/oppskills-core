@@ -13,6 +13,10 @@ import { RefundService } from './refund.service';
 import { RefundController } from './refund.controller';
 import { DiscountCodeService } from './discount-code.service';
 import { DiscountCodeController } from './discount-code.controller';
+import { PayoutDetailsService } from './payout-details.service';
+import { PayoutDetailsController } from './payout-details.controller';
+import { AdminPayoutsService } from './admin-payouts.service';
+import { AdminPayoutsController } from './admin-payouts.controller';
 
 @Module({
   controllers: [
@@ -23,6 +27,8 @@ import { DiscountCodeController } from './discount-code.controller';
     RegistrationSubmitController,
     RefundController,
     DiscountCodeController,
+    PayoutDetailsController,
+    AdminPayoutsController,
   ],
   providers: [
     RazorpayService,
@@ -32,6 +38,8 @@ import { DiscountCodeController } from './discount-code.controller';
     RegistrationSubmitService,
     RefundService,
     DiscountCodeService,
+    PayoutDetailsService,
+    AdminPayoutsService,
   ],
   exports: [
     RazorpayService,
@@ -41,6 +49,8 @@ import { DiscountCodeController } from './discount-code.controller';
     RegistrationSubmitService,
     RefundService,
     DiscountCodeService,
+    PayoutDetailsService,
+    AdminPayoutsService,
   ],
 })
 export class PaymentsModule {}

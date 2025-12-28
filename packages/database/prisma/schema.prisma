@@ -365,6 +365,12 @@ model UserEntity {
   // Discount code redemptions
   discountRedemptions HackathonDiscountRedemptionEntity[] @relation("UserDiscountRedemptions")
 
+  // Manual payout details (organizer bank account)
+  payoutDetails OrganizerPayoutDetailsEntity? @relation("UserPayoutDetails")
+
+  // Payouts received as organizer
+  payoutsReceived HackathonPayoutEntity[] @relation("UserPayoutsReceived")
+
   @@map("user")
   @@schema("oppskills")
 }
@@ -462,6 +468,9 @@ model HackathonEntity {
 
   // Discount codes for this hackathon
   discountCodes HackathonDiscountCodeEntity[]
+
+  // Manual payouts for this hackathon
+  payouts HackathonPayoutEntity[]
 
   @@index([festivalId])
   @@map("hackathon")
@@ -1167,6 +1176,7 @@ model HackathonPaymentEntity {
   // Refund
   razorpayRefundId String?       @unique @map("razorpay_refund_id")
   refundStatus     RefundStatus? @map("refund_status")
+  refundedAmount   Decimal       @default(0) @map("refunded_amount") @db.Decimal(12, 2)
   refundedAt       DateTime?     @map("refunded_at")
 
   // Timestamps
@@ -1177,6 +1187,9 @@ model HackathonPaymentEntity {
 
   // Discount redemption link
   discountRedemption HackathonDiscountRedemptionEntity?
+
+  // Payout items (which payouts include this payment)
+  payoutItems HackathonPayoutItemEntity[]
 
   @@unique([scope, hackathonId, teamId], name: "unique_team_payment")
   @@unique([scope, hackathonId, payerUserId], name: "unique_user_payment")
@@ -1240,5 +1253,76 @@ model RazorpayWebhookEventEntity {
   processedAt DateTime? @map("processed_at")
 
   @@map("razorpay_webhook_event")
+  @@schema("oppskills")
+}
+
+// =============================================================================
+// MANUAL PAYOUT SYSTEM (No Razorpay Route)
+// =============================================================================
+
+/// Status of a manual payout to organizer.
+enum PayoutStatus {
+  PAID
+
+  @@map("PayoutStatus")
+  @@schema("oppskills")
+}
+
+/// Organizer's bank account details for manual payouts.
+model OrganizerPayoutDetailsEntity {
+  id                String     @id @default(cuid())
+  userId            String     @unique @map("user_id")
+  user              UserEntity @relation("UserPayoutDetails", fields: [userId], references: [id], onDelete: Cascade)
+  accountHolderName String     @map("account_holder_name")
+  accountNumber     String     @map("account_number")
+  ifsc              String
+  upiId             String?    @map("upi_id")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  @@map("organizer_payout_details")
+  @@schema("oppskills")
+}
+
+/// Record of a manual payout to an organizer for a hackathon.
+model HackathonPayoutEntity {
+  id          String          @id @default(cuid())
+  hackathonId String          @map("hackathon_id")
+  hackathon   HackathonEntity @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  organizerId String          @map("organizer_id")
+  organizer   UserEntity      @relation("UserPayoutsReceived", fields: [organizerId], references: [id])
+  amount      Decimal         @db.Decimal(12, 2)
+  currency    String          @default("INR")
+  status      PayoutStatus    @default(PAID)
+  eligibleAt  DateTime        @map("eligible_at")
+  paidAt      DateTime        @map("paid_at")
+  reference   String // UTR / bank transfer reference
+  notes       String?         @db.Text
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  // Line items (which payments were covered)
+  items HackathonPayoutItemEntity[]
+
+  @@index([hackathonId])
+  @@index([organizerId])
+  @@map("hackathon_payout")
+  @@schema("oppskills")
+}
+
+/// Links a payout to the individual payments it covers.
+model HackathonPayoutItemEntity {
+  id              String                 @id @default(cuid())
+  payoutId        String                 @map("payout_id")
+  payout          HackathonPayoutEntity  @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+  paymentId       String                 @map("payment_id")
+  payment         HackathonPaymentEntity @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amountAllocated Decimal                @map("amount_allocated") @db.Decimal(12, 2)
+  createdAt       DateTime               @default(now()) @map("created_at")
+
+  @@unique([payoutId, paymentId])
+  @@index([payoutId])
+  @@index([paymentId])
+  @@map("hackathon_payout_item")
   @@schema("oppskills")
 }

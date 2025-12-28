@@ -11,8 +11,11 @@ import {
   getHackathonEarnings,
   getHackathonPayments,
   requestRefund,
+  getPayoutDetails,
+  upsertPayoutDetails,
   type RouteOnboardingParams,
   type CreateDiscountCodeParams,
+  type PayoutDetailsInput,
 } from "@/lib/api/paymentsApi";
 
 export function useRouteStatus() {
@@ -186,6 +189,35 @@ export function useRequestRefund(hackathonSlug: string) {
       queryClient.invalidateQueries({
         queryKey: ["hackathon-earnings", hackathonSlug],
       });
+    },
+  });
+}
+
+export function usePayoutDetails() {
+  const { getToken } = useAuth();
+
+  return useQuery({
+    queryKey: ["payout-details"],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return getPayoutDetails(token);
+    },
+  });
+}
+
+export function useUpsertPayoutDetails() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: PayoutDetailsInput) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return upsertPayoutDetails(token, params);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payout-details"] });
     },
   });
 }

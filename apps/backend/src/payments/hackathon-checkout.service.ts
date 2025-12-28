@@ -84,19 +84,6 @@ export class HackathonCheckoutService {
       throw new BadRequestException('Registration deadline has passed');
     }
 
-    const organizerRouteAccount =
-      await this.paymentsRouteService.getRouteAccountByUserId(
-        hackathon.ownerId,
-      );
-    if (
-      !organizerRouteAccount ||
-      organizerRouteAccount.status !== 'ACTIVATED'
-    ) {
-      throw new BadRequestException(
-        'Organizer payment account is not activated',
-      );
-    }
-
     const chargeMode = hackathon.chargeMode || HackathonChargeMode.PER_TEAM;
     const scope =
       chargeMode === HackathonChargeMode.PER_TEAM
@@ -185,10 +172,6 @@ export class HackathonCheckoutService {
     const organizerShareAmount = grossAmount.minus(platformFeeAmount);
 
     const grossAmountPaise = grossAmount.times(100).toNumber();
-    const organizerSharePaise = organizerShareAmount.times(100).toNumber();
-    const registrationDeadlineUnix = Math.floor(
-      hackathon.registrationDeadline.getTime() / 1000,
-    );
 
     if (grossAmountPaise === 0) {
       const payment = await prisma.hackathonPaymentEntity.create({
@@ -234,18 +217,6 @@ export class HackathonCheckoutService {
         teamId: teamId || '',
         scope,
       },
-      transfers:
-        grossAmountPaise > 0
-          ? [
-              {
-                account: organizerRouteAccount.razorpayAccountId,
-                amount: organizerSharePaise,
-                currency: hackathon.currency || 'INR',
-                on_hold: true,
-                on_hold_until: registrationDeadlineUnix,
-              },
-            ]
-          : undefined,
     });
 
     const payment = await prisma.hackathonPaymentEntity.create({
@@ -260,8 +231,8 @@ export class HackathonCheckoutService {
         platformFeeAmount,
         organizerShareAmount,
         razorpayOrderId: razorpayOrder.id,
-        transferOnHold: true,
-        transferOnHoldUntil: registrationDeadlineUnix,
+        transferOnHold: false,
+        transferOnHoldUntil: null,
         orderStatus: HackathonPaymentOrderStatus.CREATED,
         paymentStatus: HackathonPaymentStatus.CREATED,
         discountCodeId,
@@ -416,7 +387,12 @@ export class HackathonCheckoutService {
   async getOrganizerEarnings(slug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { slug },
-      select: { id: true, ownerId: true, name: true },
+      select: {
+        id: true,
+        ownerId: true,
+        name: true,
+        registrationDeadline: true,
+      },
     });
 
     if (!hackathon) {
@@ -446,9 +422,33 @@ export class HackathonCheckoutService {
       (sum, p) => sum.plus(p.organizerShareAmount),
       new Decimal(0),
     );
-    const totalRefunded = payments
-      .filter((p) => p.refundStatus === 'PROCESSED')
-      .reduce((sum, p) => sum.plus(p.grossAmount), new Decimal(0));
+    const totalRefunded = payments.reduce(
+      (sum, p) => sum.plus(p.refundedAmount),
+      new Decimal(0),
+    );
+
+    const netEarnings = totalOrganizerShare.minus(totalRefunded);
+
+    const payouts = await prisma.hackathonPayoutEntity.findMany({
+      where: {
+        hackathonId: hackathon.id,
+        organizerId: userId,
+        status: 'PAID',
+      },
+    });
+
+    const paidOut = payouts.reduce(
+      (sum, p) => sum.plus(p.amount),
+      new Decimal(0),
+    );
+
+    const pendingPayout = Decimal.max(
+      netEarnings.minus(paidOut),
+      new Decimal(0),
+    );
+
+    const eligibleAt = hackathon.registrationDeadline;
+    const isEligibleNow = eligibleAt ? new Date() >= eligibleAt : false;
 
     return {
       hackathonId: hackathon.id,
@@ -458,7 +458,11 @@ export class HackathonCheckoutService {
       totalPlatformFee: totalPlatformFee.toString(),
       totalOrganizerShare: totalOrganizerShare.toString(),
       totalRefunded: totalRefunded.toString(),
-      netOrganizerShare: totalOrganizerShare.minus(totalRefunded).toString(),
+      netEarnings: netEarnings.toString(),
+      paidOut: paidOut.toString(),
+      pendingPayout: pendingPayout.toString(),
+      eligibleAt,
+      isEligibleNow,
     };
   }
 

@@ -11,24 +11,21 @@ import {
   Circle,
   AlertCircle,
   Clock,
-  ExternalLink,
   Loader2,
+  Banknote,
+  IndianRupee,
 } from "lucide-react";
-import PaymentFormModal from "@/components/ui/payment-side/PaymentFormModal";
+import PayoutDetailsForm from "@/components/ui/payment-side/PayoutDetailsForm";
 import {
-  useRouteStatus,
-  useRouteOnboarding,
-  useUpdateRouteSettlements,
+  usePayoutDetails,
+  useUpsertPayoutDetails,
+  useHackathonEarnings,
 } from "@/hooks/usePayments";
 import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
 import { toast } from "sonner";
+import { PayoutDetailsInput } from "@/lib/api/paymentsApi";
+import { format } from "date-fns";
 
-type RouteStatus =
-  | "CREATED"
-  | "UNDER_REVIEW"
-  | "NEEDS_CLARIFICATION"
-  | "ACTIVATED"
-  | "SUSPENDED";
 type ChargeMode = "PER_TEAM" | "PER_USER";
 
 // Define a local interface for the hackathon data we expect
@@ -48,17 +45,19 @@ export default function Page() {
   const slugParam = params?.slug;
   const slug = Array.isArray(slugParam) ? slugParam[0] : slugParam;
 
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isPayoutFormOpen, setIsPayoutFormOpen] = useState(false);
   const [isPaid, setIsPaid] = useState<boolean>(false);
   const [chargeMode, setChargeMode] = useState<ChargeMode>("PER_TEAM");
   const [entryFeeAmount, setEntryFeeAmount] = useState<string>("");
 
-  const { data: routeStatus, isLoading: routeLoading } = useRouteStatus();
   const { data: hackathonData } = useHackathonBySlug(slug ?? "");
   const hackathon = hackathonData as HackathonData | undefined;
 
-  const routeOnboarding = useRouteOnboarding();
-  const updateSettlements = useUpdateRouteSettlements();
+  const { data: payoutDetails, isLoading: payoutLoading } = usePayoutDetails();
+  const upsertPayoutDetails = useUpsertPayoutDetails();
+  const { data: earnings, isLoading: earningsLoading } = useHackathonEarnings(
+    slug ?? "",
+  );
 
   useEffect(() => {
     if (hackathon) {
@@ -76,126 +75,15 @@ export default function Page() {
     );
   }
 
-  const handlePaymentFormSave = async (data: {
-    accountHolderName: string;
-    email: string;
-    phone: string;
-    bankName: string;
-    accountNumber: string;
-    panNumber: string;
-    ifscCode: string;
-    gstTin?: string;
-    pincode: string;
-    state: string;
-    city: string;
-    address1: string;
-    address2?: string;
-    businessType: string;
-    businessCategory: string;
-    businessSubcategory: string;
-  }) => {
+  const handlePayoutDetailsSave = async (data: PayoutDetailsInput) => {
     try {
-      if (!routeStatus?.razorpayAccountId) {
-        await routeOnboarding.mutateAsync({
-          email: data.email,
-          phone: data.phone,
-          legalBusinessName: data.accountHolderName,
-          businessType: data.businessType,
-          contactName: data.accountHolderName,
-          profile: {
-            category: data.businessCategory,
-            subcategory: data.businessSubcategory,
-            address: {
-              street1: data.address1,
-              street2: data.address2,
-              city: data.city,
-              state: data.state,
-              postalCode: data.pincode,
-              country: "IN",
-            },
-          },
-          legalInfo: {
-            pan: data.panNumber,
-            gst: data.gstTin,
-          },
-          stakeholder: {
-            name: data.accountHolderName,
-            email: data.email,
-            phone: {
-              primary: data.phone,
-            },
-            kyc: {
-              pan: data.panNumber,
-            },
-          },
-          settlements: {
-            accountNumber: data.accountNumber,
-            ifscCode: data.ifscCode,
-            beneficiaryName: data.accountHolderName,
-          },
-        });
-        toast.success("Payout account created successfully");
-      } else {
-        await updateSettlements.mutateAsync({
-          accountNumber: data.accountNumber,
-          ifscCode: data.ifscCode,
-          beneficiaryName: data.accountHolderName,
-        });
-        toast.success("Settlement details updated");
-      }
-      setIsPaymentModalOpen(false);
+      await upsertPayoutDetails.mutateAsync(data);
+      toast.success("Payout details saved successfully");
+      setIsPayoutFormOpen(false);
     } catch (error) {
       console.error(error);
       toast.error("Failed to save payout details");
     }
-  };
-
-  const getStatusBadge = (status?: RouteStatus) => {
-    if (!status) return null;
-
-    const statusConfig: Record<
-      RouteStatus,
-      { color: string; icon: React.ReactNode; label: string }
-    > = {
-      CREATED: {
-        color: "bg-blue-100 text-blue-700",
-        icon: <Clock className="w-4 h-4" />,
-        label: "Created",
-      },
-      UNDER_REVIEW: {
-        color: "bg-yellow-100 text-yellow-700",
-        icon: <Clock className="w-4 h-4" />,
-        label: "Under Review",
-      },
-      NEEDS_CLARIFICATION: {
-        color: "bg-orange-100 text-orange-700",
-        icon: <AlertCircle className="w-4 h-4" />,
-        label: "Needs Clarification",
-      },
-      ACTIVATED: {
-        color: "bg-green-100 text-green-700",
-        icon: <CheckCircle className="w-4 h-4" />,
-        label: "Activated",
-      },
-      SUSPENDED: {
-        color: "bg-red-100 text-red-700",
-        icon: <AlertCircle className="w-4 h-4" />,
-        label: "Suspended",
-      },
-    };
-
-    const config = statusConfig[status];
-    return (
-      <div
-        className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
-          config.color,
-        )}
-      >
-        {config.icon}
-        {config.label}
-      </div>
-    );
   };
 
   const registrationStarted =
@@ -258,11 +146,50 @@ export default function Page() {
       {/* PAID CONFIGURATION */}
       {isPaid && (
         <div className="flex flex-col gap-6 w-full animate-in fade-in slide-in-from-top-2 duration-300">
-          <PaymentFormModal
-            onSave={handlePaymentFormSave}
-            isOpen={isPaymentModalOpen}
-            onClose={() => setIsPaymentModalOpen(false)}
+          <PayoutDetailsForm
+            onSave={handlePayoutDetailsSave}
+            isOpen={isPayoutFormOpen}
+            onClose={() => setIsPayoutFormOpen(false)}
+            initialData={
+              payoutDetails
+                ? {
+                    accountHolderName: payoutDetails.accountHolderName,
+                    accountNumber: "", // Don't prefill full account number for security
+                    ifsc: payoutDetails.ifsc,
+                    upiId: payoutDetails.upiId || "",
+                  }
+                : undefined
+            }
+            isLoading={upsertPayoutDetails.isPending}
           />
+
+          {/* EARNINGS OVERVIEW */}
+          {earnings && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+              <div className="flex flex-col p-5 gap-2 rounded-2xl border border-border bg-card">
+                <span className="text-sm text-muted-foreground flex items-center gap-2">
+                  <IndianRupee className="w-4 h-4" /> Pending Payout
+                </span>
+                <span className="text-2xl font-semibold">
+                  ₹{earnings.pendingPayout}
+                </span>
+                {!earnings.isEligibleNow && earnings.eligibleAt && (
+                  <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full w-fit">
+                    Available {format(new Date(earnings.eligibleAt), "MMM d")}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col p-5 gap-2 rounded-2xl border border-border bg-card">
+                <span className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Banknote className="w-4 h-4" /> Paid Out
+                </span>
+                <span className="text-2xl font-semibold text-green-600">
+                  ₹{earnings.paidOut}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* CHARGE MODE */}
           <div className="flex flex-col items-start gap-4 p-6 self-stretch rounded-2xl border border-border bg-transparent">
@@ -371,20 +298,26 @@ export default function Page() {
                   <h6 className="font-poppins text-foreground text-xl font-semibold leading-tight capitalize">
                     Payout Account Details
                   </h6>
-                  {routeLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                  {payoutDetails ? (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-700">
+                      <CheckCircle className="w-4 h-4" />
+                      Active
+                    </div>
                   ) : (
-                    getStatusBadge(routeStatus?.status as RouteStatus)
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-700">
+                      <AlertCircle className="w-4 h-4" />
+                      Not Set
+                    </div>
                   )}
                 </div>
                 <p className="font-sans text-muted-foreground text-base font-normal leading-normal">
-                  Your Razorpay Route linked account for receiving payouts
+                  Bank details for receiving payouts from paid registrations
                 </p>
               </div>
 
               <button
                 className="flex w-9 h-9 justify-center items-center rounded-full hover:bg-muted transition-colors"
-                onClick={() => setIsPaymentModalOpen(true)}
+                onClick={() => setIsPayoutFormOpen(true)}
               >
                 <Pencil
                   className="w-5 h-5 text-muted-foreground"
@@ -393,66 +326,51 @@ export default function Page() {
               </button>
             </div>
 
-            {routeStatus?.status === "NEEDS_CLARIFICATION" &&
-              routeStatus.resolutionUrl && (
-                <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg w-full">
-                  <AlertCircle className="w-5 h-5 text-orange-600" />
-                  <span className="text-sm text-orange-800">
-                    Your account needs clarification.{" "}
-                    <a
-                      href={routeStatus.resolutionUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline font-medium inline-flex items-center gap-1"
-                    >
-                      Resolve now <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </span>
-                </div>
-              )}
-
-            {!routeStatus?.razorpayAccountId ? (
+            {payoutLoading ? (
+              <div className="flex items-center justify-center p-8 w-full">
+                <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
+              </div>
+            ) : !payoutDetails ? (
               <div className="flex flex-col items-center justify-center p-8 bg-muted/30 rounded-xl w-full">
                 <p className="text-muted-foreground mb-4">
                   Set up your payout account to receive payments
                 </p>
-                <Button onClick={() => setIsPaymentModalOpen(true)}>
+                <Button onClick={() => setIsPayoutFormOpen(true)}>
                   Set Up Payout Account
                 </Button>
               </div>
             ) : (
               <div className="grid grid-cols-[1fr_2fr] gap-2.5 p-2.5 self-stretch">
                 <div className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-                  Account ID
+                  Account Holder
                 </div>
                 <div className="font-sans text-foreground text-base font-normal leading-relaxed">
-                  {routeStatus.razorpayAccountId}
+                  {payoutDetails.accountHolderName}
                 </div>
                 <div className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-                  Product ID
+                  Account Number
                 </div>
                 <div className="font-sans text-foreground text-base font-normal leading-relaxed">
-                  {routeStatus.routeProductId || "--"}
+                  xxxx-xxxx-{payoutDetails.accountNumberLast4}
                 </div>
                 <div className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-                  Status
+                  IFSC Code
                 </div>
                 <div className="font-sans text-foreground text-base font-normal leading-relaxed">
-                  {routeStatus.status}
+                  {payoutDetails.ifsc}
                 </div>
+                {payoutDetails.upiId && (
+                  <>
+                    <div className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
+                      UPI ID
+                    </div>
+                    <div className="font-sans text-foreground text-base font-normal leading-relaxed">
+                      {payoutDetails.upiId}
+                    </div>
+                  </>
+                )}
               </div>
             )}
-
-            {routeStatus?.status !== "ACTIVATED" &&
-              routeStatus?.razorpayAccountId && (
-                <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg w-full">
-                  <Clock className="w-5 h-5 text-yellow-600" />
-                  <span className="text-sm text-yellow-800">
-                    Your account is pending activation. You cannot collect paid
-                    registrations until activated.
-                  </span>
-                </div>
-              )}
           </div>
         </div>
       )}
