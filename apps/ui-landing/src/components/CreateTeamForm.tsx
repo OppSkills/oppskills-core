@@ -258,7 +258,7 @@ export function CreateTeamForm({
       const order = await createPaymentOrder(token, hackathonSlug, orderParams);
 
       const options = {
-        key: order.razorpayKeyId,
+        key: order.razorpayKeyId || order.keyId,
         amount: order.amountPaise,
         currency: order.currency,
         name: hackathonName,
