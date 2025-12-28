@@ -52,7 +52,9 @@ export default function HeroSection() {
           </h1>
 
           <h2 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
-            Discover Your Next Event
+            Discover Your Next
+            <br />
+            College Event
           </h2>
         </div>
 
