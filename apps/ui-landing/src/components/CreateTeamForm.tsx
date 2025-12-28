@@ -269,8 +269,10 @@ export function CreateTeamForm({
         handler: async (response: any) => {
           try {
             setIsSubmittingRegistration(true);
+            const verifyToken = await getToken();
+            if (!verifyToken) throw new Error("Authentication required");
 
-            await verifyPayment(token, hackathonSlug, {
+            await verifyPayment(verifyToken, hackathonSlug, {
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
@@ -281,7 +283,11 @@ export function CreateTeamForm({
               value: String(a.value),
             }));
 
-            await submitRegistration(token, hackathonSlug, formattedAnswers);
+            await submitRegistration(
+              verifyToken,
+              hackathonSlug,
+              formattedAnswers,
+            );
 
             setIsSuccess(true);
             toast.success("Payment and registration successful!");

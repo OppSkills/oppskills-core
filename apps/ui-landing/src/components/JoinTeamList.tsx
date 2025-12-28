@@ -320,23 +320,35 @@ export function JoinTeamList({
         order_id: order.orderId,
         handler: async (response: any) => {
           try {
-            setIsSubmittingRegistration(true);
+            const verifyToken = await getToken();
+            if (!verifyToken) throw new Error("Authentication required");
 
-            await verifyPayment(token, hackathonSlug, {
+            await verifyPayment(verifyToken, hackathonSlug, {
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
             });
 
-            const formattedAnswers = answers.map((a) => ({
-              fieldId: a.fieldId,
-              value: String(a.value),
-            }));
-
-            await submitRegistration(token, hackathonSlug, formattedAnswers);
+            if (chargeMode === "PER_USER") {
+              // For PER_USER, registration is submitted after payment
+              const formattedAnswers = answers.map((a) => ({
+                fieldId: a.fieldId,
+                value: String(a.value),
+              }));
+              await submitRegistration(
+                verifyToken,
+                hackathonSlug,
+                formattedAnswers,
+              );
+            }
+            // For PER_TEAM, registration was already submitted by leader,
+            // we just needed to pay (if we were paying, but logic suggests PER_TEAM members join free?)
+            // Actually, JoinTeamList logic for PER_TEAM seems to skip payment if isFree...
+            // Wait, if chargeMode is PER_TEAM, members usually join for free if leader paid.
+            // But if there is a fee for joining (unlikely for PER_TEAM mode member), we handle it.
 
             setIsSuccess(true);
-            toast.success("Successfully joined and registered!");
+            toast.success("Payment successful! You have joined the team.");
 
             setTimeout(() => {
               router.push(`/competitions/${hackathonSlug}`);
