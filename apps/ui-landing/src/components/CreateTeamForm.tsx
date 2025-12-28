@@ -365,7 +365,7 @@ export function CreateTeamForm({
           maxSize,
         });
 
-        await processPaymentAndRegistration(token, draft.id, answers);
+        await processPaymentAndRegistration(token, draft.team.id, answers);
       }
     } catch (error: unknown) {
       console.error("Failed to create team:", error);

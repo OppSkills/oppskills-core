@@ -168,6 +168,28 @@ export async function checkMyHackathonTeam(
   }
 }
 
+export interface DraftTeamResponse {
+  team: {
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+    maxSize: number;
+    invitationCode: string;
+    isOpen: boolean;
+    hackathonId: string;
+    creatorId: string;
+    leaderId: string;
+    leader: TeamLeader;
+  };
+  hackathon: {
+    id: string;
+    slug: string;
+    name: string;
+  };
+  invitationCode: string;
+}
+
 /**
  * Creates a draft team (for paid hackathons).
  */
@@ -178,7 +200,7 @@ export async function createDraftTeam(
     name: string;
     maxSize?: number;
   },
-): Promise<TeamDetailResponse & { invitationCode: string }> {
+): Promise<DraftTeamResponse> {
   const res = await API.post(`/${hackathonSlug}/teams/draft`, data, {
     headers: buildAuthHeaders(token),
   });
