@@ -312,7 +312,7 @@ export function JoinTeamList({
       const order = await createPaymentOrder(token, hackathonSlug, {});
 
       const options = {
-        key: order.keyId,
+        key: order.razorpayKeyId,
         amount: order.amountPaise,
         currency: order.currency,
         name: hackathonName,

@@ -88,7 +88,7 @@ export interface CreateDiscountCodeParams {
 }
 
 export interface PaymentOrder {
-  keyId: string;
+  razorpayKeyId: string;
   orderId: string;
   amountPaise: number;
   currency: string;
