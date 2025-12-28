@@ -41,11 +41,12 @@ export default function PayoutDetailsForm({
 
   useEffect(() => {
     if (isOpen && initialData) {
-      setFormData((prev) => ({
-        ...prev,
-        ...initialData,
+      setFormData({
+        accountHolderName: initialData.accountHolderName || "",
+        accountNumber: initialData.accountNumber || "",
+        ifsc: initialData.ifsc || "",
         upiId: initialData.upiId || "",
-      }));
+      });
       setErrors({});
       setTouched({});
     } else if (isOpen) {

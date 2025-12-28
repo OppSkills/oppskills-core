@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,11 +22,15 @@ import {
   useHackathonEarnings,
 } from "@/hooks/usePayments";
 import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
+import { useAuth } from "@clerk/nextjs";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PayoutDetailsInput } from "@/lib/api/paymentsApi";
+import { updateHackathon } from "@/lib/api/hackathonApi";
 import { format } from "date-fns";
 
 type ChargeMode = "PER_TEAM" | "PER_USER";
+type AutoSaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
 // Define a local interface for the hackathon data we expect
 interface HackathonData {
@@ -40,32 +44,160 @@ interface HackathonData {
   ownerId: string;
 }
 
+interface PricingState {
+  isFree: boolean;
+  chargeMode: ChargeMode;
+  entryFeeAmount: string;
+}
+
+function serializePricing(state: PricingState): string {
+  return JSON.stringify(state);
+}
+
 export default function Page() {
   const params = useParams();
   const slugParam = params?.slug;
   const slug = Array.isArray(slugParam) ? slugParam[0] : slugParam;
 
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
   const [isPayoutFormOpen, setIsPayoutFormOpen] = useState(false);
   const [isPaid, setIsPaid] = useState<boolean>(false);
   const [chargeMode, setChargeMode] = useState<ChargeMode>("PER_TEAM");
   const [entryFeeAmount, setEntryFeeAmount] = useState<string>("");
+  const [hackathonId, setHackathonId] = useState<string | null>(null);
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
+  const lastSavedSnapshotRef = useRef<string | null>(null);
+  const savingSnapshotRef = useRef<string | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveQueuedRef = useRef<boolean>(false);
+  const lastSavedAtRef = useRef<number | null>(null);
 
   const { data: hackathonData } = useHackathonBySlug(slug ?? "");
   const hackathon = hackathonData as HackathonData | undefined;
 
   const { data: payoutDetails, isLoading: payoutLoading } = usePayoutDetails();
   const upsertPayoutDetails = useUpsertPayoutDetails();
-  const { data: earnings, isLoading: earningsLoading } = useHackathonEarnings(
-    slug ?? "",
-  );
+  const { data: earnings } = useHackathonEarnings(slug ?? "");
+
+  const currentPricing = useMemo((): PricingState => ({
+    isFree: !isPaid,
+    chargeMode,
+    entryFeeAmount,
+  }), [isPaid, chargeMode, entryFeeAmount]);
+
+  const latestPricingRef = useRef<PricingState>(currentPricing);
+  useEffect(() => {
+    latestPricingRef.current = currentPricing;
+  }, [currentPricing]);
 
   useEffect(() => {
-    if (hackathon) {
+    if (hackathon && !hasHydrated) {
+      setHackathonId(hackathon.id);
       setIsPaid(!hackathon.isFree);
       setChargeMode((hackathon.chargeMode as ChargeMode) || "PER_TEAM");
       setEntryFeeAmount(hackathon.entryFeeAmount?.toString() || "");
+      const initialState: PricingState = {
+        isFree: hackathon.isFree,
+        chargeMode: (hackathon.chargeMode as ChargeMode) || "PER_TEAM",
+        entryFeeAmount: hackathon.entryFeeAmount?.toString() || "",
+      };
+      lastSavedSnapshotRef.current = serializePricing(initialState);
+      lastSavedAtRef.current = Date.now();
+      setAutoSaveStatus("saved");
+      setHasHydrated(true);
     }
-  }, [hackathon]);
+  }, [hackathon, hasHydrated]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!hackathonId) throw new Error("Hackathon ID not loaded");
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const pricing = latestPricingRef.current;
+      const feeAmount = pricing.entryFeeAmount.trim();
+      const parsedFee = feeAmount ? parseFloat(feeAmount) : null;
+
+      await updateHackathon(token, hackathonId, {
+        isFree: pricing.isFree,
+        chargeMode: pricing.isFree ? undefined : pricing.chargeMode,
+        entryFeeAmount: pricing.isFree ? undefined : (parsedFee !== null && !isNaN(parsedFee) ? parsedFee.toFixed(2) : undefined),
+      });
+    },
+    onError: (err) => {
+      console.error(err);
+    },
+  });
+
+  const runSaveMutation = useCallback((): void => {
+    if (saveMutation.isPending) {
+      saveQueuedRef.current = true;
+      return;
+    }
+
+    setAutoSaveStatus("saving");
+    savingSnapshotRef.current = serializePricing(latestPricingRef.current);
+
+    saveMutation.mutate(undefined, {
+      onSuccess: () => {
+        if (typeof savingSnapshotRef.current === "string") {
+          lastSavedSnapshotRef.current = savingSnapshotRef.current;
+        }
+        savingSnapshotRef.current = null;
+
+        const nowSnapshot = serializePricing(latestPricingRef.current);
+        if (nowSnapshot === lastSavedSnapshotRef.current) {
+          lastSavedAtRef.current = Date.now();
+          setAutoSaveStatus("saved");
+        } else {
+          setAutoSaveStatus("dirty");
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["hackathon", slug] });
+
+        if (saveQueuedRef.current) {
+          saveQueuedRef.current = false;
+          setTimeout(() => runSaveMutation(), 0);
+        }
+      },
+      onError: () => {
+        setAutoSaveStatus("error");
+        savingSnapshotRef.current = null;
+        toast.error("Failed to save pricing settings");
+      },
+    });
+  }, [saveMutation, queryClient, slug]);
+
+  useEffect(() => {
+    if (!hasHydrated || !hackathonId) return;
+
+    const snapshot = serializePricing(currentPricing);
+    if (snapshot === lastSavedSnapshotRef.current) {
+      if (autoSaveStatus !== "saving") setAutoSaveStatus("saved");
+      return;
+    }
+
+    setAutoSaveStatus("dirty");
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      runSaveMutation();
+    }, 900);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+    };
+  }, [currentPricing, hasHydrated, hackathonId, autoSaveStatus, runSaveMutation]);
 
   if (!slug) {
     return (
@@ -94,6 +226,28 @@ export default function Page() {
 
   return (
     <div className="flex flex-col items-start gap-5 p-10 w-full flex-1 self-stretch min-h-[600px] rounded-[20px] bg-background border border-transparent shadow-sm">
+      {/* Auto-save status indicator */}
+      <div className="w-full flex items-center justify-between px-2 py-2 bg-muted/30 rounded-lg">
+        <div className="text-xs font-medium">
+          {autoSaveStatus === "saving" ? (
+            <span className="text-primary flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" /> Saving…
+            </span>
+          ) : autoSaveStatus === "dirty" ? (
+            <span className="text-amber-600">Unsaved changes</span>
+          ) : autoSaveStatus === "error" ? (
+            <span className="text-destructive">Save failed</span>
+          ) : (
+            <span className="text-emerald-600">Saved</span>
+          )}
+        </div>
+        <div className="text-[11px] text-muted-foreground">
+          {typeof lastSavedAtRef.current === "number"
+            ? `Last saved: ${new Date(lastSavedAtRef.current).toLocaleTimeString()}`
+            : ""}
+        </div>
+      </div>
+
       <p className="font-sans text-muted-foreground text-sm font-normal">
         Set up opportunity fees for participants (if applicable). Configure
         payment settings and payout account details.

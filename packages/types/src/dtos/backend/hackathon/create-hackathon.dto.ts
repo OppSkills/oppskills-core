@@ -85,28 +85,31 @@ const HACKATHON_ATTENDEE_ELIGIBILITY_VALUES = [
 export type HackathonAttendeeEligibilityValue =
   (typeof HACKATHON_ATTENDEE_ELIGIBILITY_VALUES)[number];
 
-
 /** Type of hackathon round (determines submission requirements). */
-const HACKATHON_ROUND_TYPE_VALUES = ["ONLINE", "OFFLINE", "PRESENTATION"] as const;
+const HACKATHON_ROUND_TYPE_VALUES = [
+  "ONLINE",
+  "OFFLINE",
+  "PRESENTATION",
+] as const;
 export type HackathonRoundTypeValue =
   (typeof HACKATHON_ROUND_TYPE_VALUES)[number];
 
 export class HackathonLocationDto {
   /** Location type for the hackathon. */
-  @ApiProperty({ 
-    description: 'Location type (PHYSICAL or VIRTUAL)', 
+  @ApiProperty({
+    description: "Location type (PHYSICAL or VIRTUAL)",
     enum: LOCATION_TYPE_VALUES,
-    example: 'PHYSICAL'
+    example: "PHYSICAL",
   })
   @IsString()
   @IsIn(LOCATION_TYPE_VALUES)
   type: LocationTypeValue;
 
   /** Physical address (required when type=PHYSICAL). */
-  @ApiPropertyOptional({ 
-    description: 'Physical address (required when type=PHYSICAL)', 
+  @ApiPropertyOptional({
+    description: "Physical address (required when type=PHYSICAL)",
     maxLength: 500,
-    example: '456 Tech Park Ave, Building 3, Austin, TX 78701'
+    example: "456 Tech Park Ave, Building 3, Austin, TX 78701",
   })
   @IsOptional()
   @IsString()
@@ -114,10 +117,10 @@ export class HackathonLocationDto {
   address?: string;
 
   /** City (optional, used for search/filter). */
-  @ApiPropertyOptional({ 
-    description: 'City name for filtering', 
+  @ApiPropertyOptional({
+    description: "City name for filtering",
     maxLength: 120,
-    example: 'Austin'
+    example: "Austin",
   })
   @IsOptional()
   @IsString()
@@ -125,10 +128,10 @@ export class HackathonLocationDto {
   city?: string;
 
   /** Virtual meeting link (required when type=VIRTUAL). */
-  @ApiPropertyOptional({ 
-    description: 'Virtual meeting link (required when type=VIRTUAL)', 
-    format: 'uri',
-    example: 'https://meet.google.com/abc-defg-hij'
+  @ApiPropertyOptional({
+    description: "Virtual meeting link (required when type=VIRTUAL)",
+    format: "uri",
+    example: "https://meet.google.com/abc-defg-hij",
   })
   @IsOptional()
   @IsUrl()
@@ -136,7 +139,11 @@ export class HackathonLocationDto {
 }
 
 export class PrizeBreakdownDto {
-  @ApiProperty({ description: 'Prize position (e.g., "1st Place", "Runner-up")', maxLength: 60, example: '1st Place' })
+  @ApiProperty({
+    description: 'Prize position (e.g., "1st Place", "Runner-up")',
+    maxLength: 60,
+    example: "1st Place",
+  })
   @IsString()
   @MaxLength(60)
   position: string;
@@ -145,12 +152,16 @@ export class PrizeBreakdownDto {
    * Decimal string e.g. "1000.00"
    * Stored as Decimal(12,2) in DB.
    */
-  @ApiProperty({ description: 'Prize amount as decimal string', maxLength: 40, example: '1000.00' })
+  @ApiProperty({
+    description: "Prize amount as decimal string",
+    maxLength: 40,
+    example: "1000.00",
+  })
   @IsString()
   @MaxLength(40)
   amount: string;
 
-  @ApiPropertyOptional({ description: 'Prize description', maxLength: 2000 })
+  @ApiPropertyOptional({ description: "Prize description", maxLength: 2000 })
   @IsOptional()
   @IsString()
   @MaxLength(2000)
@@ -166,10 +177,10 @@ export class PrizeBreakdownDto {
  */
 export class HackathonContactDto {
   /** Contact person name */
-  @ApiPropertyOptional({ 
-    description: 'Contact person name', 
+  @ApiPropertyOptional({
+    description: "Contact person name",
     maxLength: 120,
-    example: 'Jane Smith'
+    example: "Jane Smith",
   })
   @IsOptional()
   @IsString()
@@ -177,20 +188,20 @@ export class HackathonContactDto {
   name?: string;
 
   /** Contact email address */
-  @ApiPropertyOptional({ 
-    description: 'Contact email address', 
-    format: 'email',
-    example: 'jane.smith@techcorp.com'
+  @ApiPropertyOptional({
+    description: "Contact email address",
+    format: "email",
+    example: "jane.smith@techcorp.com",
   })
   @IsOptional()
   @IsEmail()
   email?: string;
 
   /** Contact phone number */
-  @ApiPropertyOptional({ 
-    description: 'Contact phone number', 
+  @ApiPropertyOptional({
+    description: "Contact phone number",
     maxLength: 20,
-    example: '+1-555-123-4567'
+    example: "+1-555-123-4567",
   })
   @IsOptional()
   @IsString()
@@ -204,30 +215,31 @@ export class HackathonContactDto {
  */
 export class HackathonAttachmentDto {
   /** Storage key for S3 or other storage provider */
-  @ApiProperty({ 
-    description: 'Storage key for S3 or other storage provider', 
+  @ApiProperty({
+    description: "Storage key for S3 or other storage provider",
     maxLength: 500,
-    example: 'hackathons/2025/tech-innovation/rules.pdf'
+    example: "hackathons/2025/tech-innovation/rules.pdf",
   })
   @IsString()
   @MaxLength(500)
   storageKey: string;
 
   /** Optional public URL (for direct access or CDN) */
-  @ApiPropertyOptional({ 
-    description: 'Optional public URL (for direct access or CDN)', 
-    format: 'uri',
-    example: 'https://cdn.oppskills.com/hackathons/2025/tech-innovation/rules.pdf'
+  @ApiPropertyOptional({
+    description: "Optional public URL (for direct access or CDN)",
+    format: "uri",
+    example:
+      "https://cdn.oppskills.com/hackathons/2025/tech-innovation/rules.pdf",
   })
   @IsOptional()
   @IsUrl()
   publicUrl?: string;
 
   /** Original file name */
-  @ApiPropertyOptional({ 
-    description: 'Original file name', 
+  @ApiPropertyOptional({
+    description: "Original file name",
     maxLength: 255,
-    example: 'hackathon-rules-2025.pdf'
+    example: "hackathon-rules-2025.pdf",
   })
   @IsOptional()
   @IsString()
@@ -235,10 +247,10 @@ export class HackathonAttachmentDto {
   fileName?: string;
 
   /** MIME type of the file */
-  @ApiPropertyOptional({ 
-    description: 'MIME type of the file', 
+  @ApiPropertyOptional({
+    description: "MIME type of the file",
     maxLength: 100,
-    example: 'application/pdf'
+    example: "application/pdf",
   })
   @IsOptional()
   @IsString()
@@ -246,10 +258,10 @@ export class HackathonAttachmentDto {
   mimeType?: string;
 
   /** File size in bytes */
-  @ApiPropertyOptional({ 
-    description: 'File size in bytes', 
+  @ApiPropertyOptional({
+    description: "File size in bytes",
     minimum: 0,
-    example: 524288
+    example: 524288,
   })
   @IsOptional()
   @IsInt()
@@ -262,9 +274,9 @@ export class HackathonAttachmentDto {
  */
 export class HackathonAdditionalInfoDto {
   /** Contact person information */
-  @ApiPropertyOptional({ 
-    description: 'Contact person information', 
-    type: () => HackathonContactDto
+  @ApiPropertyOptional({
+    description: "Contact person information",
+    type: () => HackathonContactDto,
   })
   @IsOptional()
   @ValidateNested()
@@ -272,9 +284,9 @@ export class HackathonAdditionalInfoDto {
   contact?: HackathonContactDto;
 
   /** Attachments (S3-ready) */
-  @ApiPropertyOptional({ 
-    description: 'Attachments (S3-ready)', 
-    type: [HackathonAttachmentDto]
+  @ApiPropertyOptional({
+    description: "Attachments (S3-ready)",
+    type: [HackathonAttachmentDto],
   })
   @IsOptional()
   @IsArray()
@@ -284,55 +296,55 @@ export class HackathonAdditionalInfoDto {
 }
 
 export class RegistrationFieldDto {
-  @ApiProperty({ 
-    description: 'Field label', 
+  @ApiProperty({
+    description: "Field label",
     maxLength: 120,
-    example: 'University Name'
+    example: "University Name",
   })
   @IsString()
   @MaxLength(120)
   label: string;
 
-  @ApiProperty({ 
-    description: 'Field type', 
+  @ApiProperty({
+    description: "Field type",
     enum: REGISTRATION_FIELD_TYPE_VALUES,
-    example: 'TEXT'
+    example: "TEXT",
   })
   @IsString()
   @IsIn(REGISTRATION_FIELD_TYPE_VALUES)
   type: RegistrationFieldTypeValue;
 
-  @ApiProperty({ 
-    description: 'Whether this field is required', 
-    example: true
+  @ApiProperty({
+    description: "Whether this field is required",
+    example: true,
   })
   @IsBoolean()
   required: boolean;
 
-  @ApiProperty({ 
-    description: 'Display order of the field (0-indexed)', 
+  @ApiProperty({
+    description: "Display order of the field (0-indexed)",
     minimum: 0,
-    example: 0
+    example: 0,
   })
   @IsInt()
   @Min(0)
   order: number;
 
   /** Only relevant when type=OPTIONS */
-  @ApiPropertyOptional({ 
-    description: 'Available options (only relevant when type=OPTIONS)', 
+  @ApiPropertyOptional({
+    description: "Available options (only relevant when type=OPTIONS)",
     type: [String],
-    example: ['Option A', 'Option B', 'Option C']
+    example: ["Option A", "Option B", "Option C"],
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   options?: string[];
 
-  @ApiPropertyOptional({ 
-    description: 'Placeholder text for the field', 
+  @ApiPropertyOptional({
+    description: "Placeholder text for the field",
     maxLength: 160,
-    example: 'Enter your university name'
+    example: "Enter your university name",
   })
   @IsOptional()
   @IsString()
@@ -341,10 +353,10 @@ export class RegistrationFieldDto {
 }
 
 export class RegistrationFormDto {
-  @ApiPropertyOptional({ 
-    description: 'External form link (e.g., Google Forms, Typeform)', 
-    format: 'uri',
-    example: 'https://forms.google.com/hackathon-registration'
+  @ApiPropertyOptional({
+    description: "External form link (e.g., Google Forms, Typeform)",
+    format: "uri",
+    example: "https://forms.google.com/hackathon-registration",
   })
   @IsOptional()
   @IsUrl()
@@ -354,9 +366,10 @@ export class RegistrationFormDto {
    * If you provide `externalFormLink`, `fields` becomes optional.
    * Otherwise, `fields` is required and validated.
    */
-  @ApiPropertyOptional({ 
-    description: 'Custom registration fields (optional if externalFormLink is provided)', 
-    type: [RegistrationFieldDto]
+  @ApiPropertyOptional({
+    description:
+      "Custom registration fields (optional if externalFormLink is provided)",
+    type: [RegistrationFieldDto],
   })
   @IsOptional()
   @ValidateIf((value: RegistrationFormDto) => !value.externalFormLink)
@@ -372,19 +385,19 @@ export class RegistrationFormDto {
  */
 export class RoundSubmissionConfigDto {
   /** Whether a file upload is required */
-  @ApiPropertyOptional({ 
-    description: 'Whether a file upload is required', 
-    example: true
+  @ApiPropertyOptional({
+    description: "Whether a file upload is required",
+    example: true,
   })
   @IsOptional()
   @IsBoolean()
   requiresFileUpload?: boolean;
 
   /** Allowed file types (e.g., ["pdf", "pptx", "zip"]) */
-  @ApiPropertyOptional({ 
-    description: 'Allowed file types', 
+  @ApiPropertyOptional({
+    description: "Allowed file types",
     type: [String],
-    example: ['pdf', 'pptx', 'zip']
+    example: ["pdf", "pptx", "zip"],
   })
   @IsOptional()
   @IsArray()
@@ -392,10 +405,10 @@ export class RoundSubmissionConfigDto {
   allowedFileTypes?: string[];
 
   /** Maximum file size in bytes */
-  @ApiPropertyOptional({ 
-    description: 'Maximum file size in bytes', 
+  @ApiPropertyOptional({
+    description: "Maximum file size in bytes",
     minimum: 1,
-    example: 10485760
+    example: 10485760,
   })
   @IsOptional()
   @IsInt()
@@ -403,28 +416,29 @@ export class RoundSubmissionConfigDto {
   maxFileSizeBytes?: number;
 
   /** Whether a link submission is required */
-  @ApiPropertyOptional({ 
-    description: 'Whether a link submission is required', 
-    example: true
+  @ApiPropertyOptional({
+    description: "Whether a link submission is required",
+    example: true,
   })
   @IsOptional()
   @IsBoolean()
   requiresLinkSubmission?: boolean;
 
   /** Whether a text description is required */
-  @ApiPropertyOptional({ 
-    description: 'Whether a text description is required', 
-    example: true
+  @ApiPropertyOptional({
+    description: "Whether a text description is required",
+    example: true,
   })
   @IsOptional()
   @IsBoolean()
   requiresDescription?: boolean;
 
   /** Custom instructions for the submission */
-  @ApiPropertyOptional({ 
-    description: 'Custom instructions for the submission', 
+  @ApiPropertyOptional({
+    description: "Custom instructions for the submission",
     maxLength: 2000,
-    example: 'Please submit your project presentation and a demo video link. Ensure all files are properly labeled.'
+    example:
+      "Please submit your project presentation and a demo video link. Ensure all files are properly labeled.",
   })
   @IsOptional()
   @IsString()
@@ -437,20 +451,21 @@ export class RoundSubmissionConfigDto {
  */
 export class RoundDto {
   /** Round name (e.g., "Ideation Round", "Final Presentation") */
-  @ApiProperty({ 
-    description: 'Round name', 
+  @ApiProperty({
+    description: "Round name",
     maxLength: 120,
-    example: 'Final Presentation'
+    example: "Final Presentation",
   })
   @IsString()
   @MaxLength(120)
   name: string;
 
   /** Optional description of the round */
-  @ApiPropertyOptional({ 
-    description: 'Optional description of the round', 
+  @ApiPropertyOptional({
+    description: "Optional description of the round",
     maxLength: 5000,
-    example: 'Present your final project to the judges. Each team gets 10 minutes for presentation and 5 minutes for Q&A.'
+    example:
+      "Present your final project to the judges. Each team gets 10 minutes for presentation and 5 minutes for Q&A.",
   })
   @IsOptional()
   @IsString()
@@ -458,47 +473,47 @@ export class RoundDto {
   description?: string;
 
   /** ISO datetime string for round start */
-  @ApiProperty({ 
-    description: 'ISO datetime string for round start', 
-    format: 'date-time',
-    example: '2025-03-17T09:00:00Z'
+  @ApiProperty({
+    description: "ISO datetime string for round start",
+    format: "date-time",
+    example: "2025-03-17T09:00:00Z",
   })
   @IsDateString()
   startsAt: string;
 
   /** ISO datetime string for round end */
-  @ApiProperty({ 
-    description: 'ISO datetime string for round end', 
-    format: 'date-time',
-    example: '2025-03-17T17:00:00Z'
+  @ApiProperty({
+    description: "ISO datetime string for round end",
+    format: "date-time",
+    example: "2025-03-17T17:00:00Z",
   })
   @IsDateString()
   endsAt: string;
 
   /** Order of the round (0-indexed) */
-  @ApiProperty({ 
-    description: 'Order of the round (0-indexed)', 
+  @ApiProperty({
+    description: "Order of the round (0-indexed)",
     minimum: 0,
-    example: 2
+    example: 2,
   })
   @IsInt()
   @Min(0)
   order: number;
 
   /** Type of round (ONLINE, OFFLINE, PRESENTATION) */
-  @ApiProperty({ 
-    description: 'Type of round', 
+  @ApiProperty({
+    description: "Type of round",
     enum: HACKATHON_ROUND_TYPE_VALUES,
-    example: 'PRESENTATION'
+    example: "PRESENTATION",
   })
   @IsString()
   @IsIn(HACKATHON_ROUND_TYPE_VALUES)
   roundType: HackathonRoundTypeValue;
 
   /** Optional submission configuration for this round */
-  @ApiPropertyOptional({ 
-    description: 'Optional submission configuration for this round', 
-    type: () => RoundSubmissionConfigDto
+  @ApiPropertyOptional({
+    description: "Optional submission configuration for this round",
+    type: () => RoundSubmissionConfigDto,
   })
   @IsOptional()
   @ValidateNested()
@@ -513,18 +528,29 @@ export class RoundDto {
  */
 export class CreateHackathonDto {
   // Basic Details
-  @ApiProperty({ description: 'Hackathon name', maxLength: 160, example: 'Tech Innovation Hackathon 2025' })
+  @ApiProperty({
+    description: "Hackathon name",
+    maxLength: 160,
+    example: "Tech Innovation Hackathon 2025",
+  })
   @IsString()
   @MaxLength(160)
   name: string;
 
-  @ApiPropertyOptional({ description: 'Detailed hackathon description', maxLength: 20000 })
+  @ApiPropertyOptional({
+    description: "Detailed hackathon description",
+    maxLength: 20000,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(20000)
   description?: string;
 
-  @ApiPropertyOptional({ description: 'URL-friendly slug', maxLength: 180, example: 'tech-innovation-2025' })
+  @ApiPropertyOptional({
+    description: "URL-friendly slug",
+    maxLength: 180,
+    example: "tech-innovation-2025",
+  })
   @IsOptional()
   @IsString()
   @MaxLength(180)
@@ -534,86 +560,112 @@ export class CreateHackathonDto {
    * Optional parent festival. If not provided, hackathon is standalone.
    * (NULL in DB means "Individual Hackathon")
    */
-  @ApiPropertyOptional({ 
-    description: 'Parent festival ID (null for standalone hackathon)', 
-    format: 'uuid',
-    example: '550e8400-e29b-41d4-a716-446655440002'
+  @ApiPropertyOptional({
+    description: "Parent festival ID (null for standalone hackathon)",
+    format: "uuid",
+    example: "550e8400-e29b-41d4-a716-446655440002",
   })
   @IsOptional()
   @IsString()
   festivalId?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Banner image URL', 
-    format: 'uri',
-    example: 'https://cdn.oppskills.com/hackathons/tech-innovation-2025-banner.jpg'
+  @ApiPropertyOptional({
+    description: "Banner image URL",
+    format: "uri",
+    example:
+      "https://cdn.oppskills.com/hackathons/tech-innovation-2025-banner.jpg",
   })
   @IsOptional()
   @IsUrl()
   bannerImageUrl?: string;
 
   // Core dates & mode (existing fields)
-  @ApiProperty({ description: 'Hackathon start date (ISO 8601)', format: 'date-time', example: '2025-03-15T10:00:00Z' })
+  @ApiProperty({
+    description: "Hackathon start date (ISO 8601)",
+    format: "date-time",
+    example: "2025-03-15T10:00:00Z",
+  })
   @IsDateString()
   startDate: string;
 
-  @ApiProperty({ description: 'Hackathon end date (ISO 8601)', format: 'date-time', example: '2025-03-17T18:00:00Z' })
+  @ApiProperty({
+    description: "Hackathon end date (ISO 8601)",
+    format: "date-time",
+    example: "2025-03-17T18:00:00Z",
+  })
   @IsDateString()
   endDate: string;
 
-  @ApiProperty({ description: 'Hackathon mode', enum: HACKATHON_MODE_VALUES, example: 'HYBRID' })
+  @ApiProperty({
+    description: "Hackathon mode",
+    enum: HACKATHON_MODE_VALUES,
+    example: "HYBRID",
+  })
   @IsString()
   @IsIn(HACKATHON_MODE_VALUES)
   mode: HackathonModeValue;
 
   // Configuration
-  @ApiPropertyOptional({ description: 'Hackathon visibility', enum: VISIBILITY_VALUES, default: 'PUBLIC' })
+  @ApiPropertyOptional({
+    description: "Hackathon visibility",
+    enum: VISIBILITY_VALUES,
+    default: "PUBLIC",
+  })
   @IsOptional()
   @IsString()
   @IsIn(VISIBILITY_VALUES)
   visibility?: VisibilityValue;
 
-  @ApiPropertyOptional({ description: 'Type of hackathon', enum: HACKATHON_TYPE_VALUES })
+  @ApiPropertyOptional({
+    description: "Type of hackathon",
+    enum: HACKATHON_TYPE_VALUES,
+  })
   @IsOptional()
   @IsString()
   @IsIn(HACKATHON_TYPE_VALUES)
   hackathonType?: HackathonTypeValue;
 
-  @ApiPropertyOptional({ description: 'Participant type/team size', enum: PARTICIPANT_TYPE_VALUES })
+  @ApiPropertyOptional({
+    description: "Participant type/team size",
+    enum: PARTICIPANT_TYPE_VALUES,
+  })
   @IsOptional()
   @IsString()
   @IsIn(PARTICIPANT_TYPE_VALUES)
   participantType?: ParticipantTypeValue;
 
   // Location
-  @ApiPropertyOptional({ description: 'Location details', type: () => HackathonLocationDto })
+  @ApiPropertyOptional({
+    description: "Location details",
+    type: () => HackathonLocationDto,
+  })
   @IsOptional()
   @ValidateNested()
   @Type(() => HackathonLocationDto)
   location?: HackathonLocationDto;
 
   // Registration
-  @ApiPropertyOptional({ 
-    description: 'Registration deadline (ISO 8601)', 
-    format: 'date-time',
-    example: '2025-03-10T23:59:59Z'
+  @ApiPropertyOptional({
+    description: "Registration deadline (ISO 8601)",
+    format: "date-time",
+    example: "2025-03-10T23:59:59Z",
   })
   @IsOptional()
   @IsDateString()
   registrationDeadline?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'External registration form link', 
-    format: 'uri',
-    example: 'https://forms.google.com/tech-hackathon-2025'
+  @ApiPropertyOptional({
+    description: "External registration form link",
+    format: "uri",
+    example: "https://forms.google.com/tech-hackathon-2025",
   })
   @IsOptional()
   @IsUrl()
   externalRegistrationLink?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Custom registration form configuration', 
-    type: () => RegistrationFormDto
+  @ApiPropertyOptional({
+    description: "Custom registration form configuration",
+    type: () => RegistrationFormDto,
   })
   @IsOptional()
   @ValidateNested()
@@ -621,32 +673,48 @@ export class CreateHackathonDto {
   registrationForm?: RegistrationFormDto;
 
   // Pricing & Prizes
-  @ApiPropertyOptional({ description: 'Whether the hackathon is free to enter', default: true })
+  @ApiPropertyOptional({
+    description: "Whether the hackathon is free to enter",
+    default: true,
+  })
   @IsOptional()
   @IsBoolean()
   isFree?: boolean;
 
   /** Decimal string e.g. "199.00" */
-  @ApiPropertyOptional({ description: 'Entry fee amount (decimal string)', example: '199.00' })
+  @ApiPropertyOptional({
+    description: "Entry fee amount (decimal string)",
+    example: "199.00",
+  })
   @IsOptional()
   @IsString()
   @MaxLength(40)
   entryFeeAmount?: string;
 
-  @ApiPropertyOptional({ description: 'Currency code', maxLength: 8, example: 'USD' })
+  @ApiPropertyOptional({
+    description: "Currency code",
+    maxLength: 8,
+    example: "USD",
+  })
   @IsOptional()
   @IsString()
   @MaxLength(8)
   currency?: string;
 
   /** Decimal string e.g. "10000.00" */
-  @ApiPropertyOptional({ description: 'Total prize pool worth (decimal string)', example: '10000.00' })
+  @ApiPropertyOptional({
+    description: "Total prize pool worth (decimal string)",
+    example: "10000.00",
+  })
   @IsOptional()
   @IsString()
   @MaxLength(40)
   prizeTotalWorthAmount?: string;
 
-  @ApiPropertyOptional({ description: 'Prize breakdown by position', type: [PrizeBreakdownDto] })
+  @ApiPropertyOptional({
+    description: "Prize breakdown by position",
+    type: [PrizeBreakdownDto],
+  })
   @IsOptional()
   @ValidateNested({ each: true })
   @IsArray()
@@ -657,48 +725,58 @@ export class CreateHackathonDto {
    * Rich text description for prizes (JSON format from editor like TipTap/Slate).
    * Stored as JSON in database.
    */
-  @ApiPropertyOptional({ 
-    description: 'Rich text description for prizes (JSON format from editor like TipTap/Slate)',
-    example: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Exciting prizes await!' }] }] }
+  @ApiPropertyOptional({
+    description:
+      "Rich text description for prizes (JSON format from editor like TipTap/Slate)",
+    example: {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "Exciting prizes await!" }],
+        },
+      ],
+    },
   })
   @IsOptional()
   @IsObject()
   prizeDescription?: Record<string, string | number | boolean | null | object>;
 
   /** Whether prize certificates will be provided */
-  @ApiPropertyOptional({ 
-    description: 'Whether prize certificates will be provided', 
-    example: true
+  @ApiPropertyOptional({
+    description: "Whether prize certificates will be provided",
+    example: true,
   })
   @IsOptional()
   @IsBoolean()
   prizeCertificate?: boolean;
 
   // Organizer
-  @ApiPropertyOptional({ 
-    description: 'Organization name', 
+  @ApiPropertyOptional({
+    description: "Organization name",
     maxLength: 180,
-    example: 'Tech Innovation Labs'
+    example: "Tech Innovation Labs",
   })
   @IsOptional()
   @IsString()
   @MaxLength(180)
   organizationName?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Organization logo URL', 
-    format: 'uri',
-    example: 'https://cdn.oppskills.com/orgs/tech-innovation-labs-logo.png'
+  @ApiPropertyOptional({
+    description: "Organization logo URL",
+    format: "uri",
+    example: "https://cdn.oppskills.com/orgs/tech-innovation-labs-logo.png",
   })
   @IsOptional()
   @IsUrl()
   organizationLogoUrl?: string;
 
   // University restriction
-  @ApiPropertyOptional({ 
-    description: 'List of allowed universities (for UNIVERSITY_ONLY visibility)', 
+  @ApiPropertyOptional({
+    description:
+      "List of allowed universities (for UNIVERSITY_ONLY visibility)",
     type: [String],
-    example: ['MIT', 'Stanford University', 'UC Berkeley']
+    example: ["MIT", "Stanford University", "UC Berkeley"],
   })
   @IsOptional()
   @IsArray()
@@ -711,10 +789,10 @@ export class CreateHackathonDto {
    * Defaults to ["EVERYONE_CAN_APPLY"] if not provided.
    */
   @ApiPropertyOptional({
-    description: 'Who can attend this hackathon',
+    description: "Who can attend this hackathon",
     enum: HACKATHON_ATTENDEE_ELIGIBILITY_VALUES,
     isArray: true,
-    default: ['EVERYONE_CAN_APPLY']
+    default: ["EVERYONE_CAN_APPLY"],
   })
   @IsOptional()
   @IsArray()
@@ -722,7 +800,10 @@ export class CreateHackathonDto {
   attendeeEligibility?: HackathonAttendeeEligibilityValue[];
 
   /** Maximum number of teams allowed (null = unlimited) */
-  @ApiPropertyOptional({ description: 'Maximum number of teams allowed (null = unlimited)', minimum: 1 })
+  @ApiPropertyOptional({
+    description: "Maximum number of teams allowed (null = unlimited)",
+    minimum: 1,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -731,19 +812,19 @@ export class CreateHackathonDto {
   /**
    * DTO for replacing all rounds of a hackathon.
    */
-  @ApiPropertyOptional({ 
-    description: 'Hackathon rounds (defaults to 3 rounds if not provided)', 
+  @ApiPropertyOptional({
+    description: "Hackathon rounds (defaults to 3 rounds if not provided)",
     type: [RoundDto],
     example: [
       {
-        name: 'Round 1: Ideation',
-        description: 'Submit your initial idea and project plan',
-        startsAt: '2025-03-15T10:00:00Z',
-        endsAt: '2025-03-15T18:00:00Z',
+        name: "Round 1: Ideation",
+        description: "Submit your initial idea and project plan",
+        startsAt: "2025-03-15T10:00:00Z",
+        endsAt: "2025-03-15T18:00:00Z",
         order: 0,
-        roundType: 'ONLINE'
-      }
-    ]
+        roundType: "ONLINE",
+      },
+    ],
   })
   @IsOptional()
   @IsArray()
@@ -755,9 +836,9 @@ export class CreateHackathonDto {
   /**
    * Additional info including contact person and attachments.
    */
-  @ApiPropertyOptional({ 
-    description: 'Additional info including contact person and attachments', 
-    type: () => HackathonAdditionalInfoDto
+  @ApiPropertyOptional({
+    description: "Additional info including contact person and attachments",
+    type: () => HackathonAdditionalInfoDto,
   })
   @IsOptional()
   @ValidateNested()
@@ -845,6 +926,11 @@ export class UpdateHackathonDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(["PER_TEAM", "PER_USER"] as const)
+  chargeMode?: "PER_TEAM" | "PER_USER";
+
+  @IsOptional()
+  @IsString()
   @MaxLength(40)
   entryFeeAmount?: string;
 
@@ -922,19 +1008,19 @@ export class UpdateHackathonDto {
  * DTO for replacing all rounds of a hackathon.
  */
 export class UpdateHackathonRoundsDto {
-  @ApiProperty({ 
-    description: 'Complete list of rounds to replace existing rounds', 
+  @ApiProperty({
+    description: "Complete list of rounds to replace existing rounds",
     type: [RoundDto],
     example: [
       {
-        name: 'Round 1: Ideation',
-        description: 'Submit your initial idea',
-        startsAt: '2025-03-15T10:00:00Z',
-        endsAt: '2025-03-15T18:00:00Z',
+        name: "Round 1: Ideation",
+        description: "Submit your initial idea",
+        startsAt: "2025-03-15T10:00:00Z",
+        endsAt: "2025-03-15T18:00:00Z",
         order: 0,
-        roundType: 'ONLINE'
-      }
-    ]
+        roundType: "ONLINE",
+      },
+    ],
   })
   @IsArray()
   @ValidateNested({ each: true })
@@ -946,18 +1032,18 @@ export class UpdateHackathonRoundsDto {
  * DTO for updating additional info (contact + attachments) of a hackathon.
  */
 export class UpdateHackathonAdditionalInfoDto {
-  @ApiPropertyOptional({ 
-    description: 'Contact person information', 
-    type: () => HackathonContactDto
+  @ApiPropertyOptional({
+    description: "Contact person information",
+    type: () => HackathonContactDto,
   })
   @IsOptional()
   @ValidateNested()
   @Type(() => HackathonContactDto)
   contact?: HackathonContactDto;
 
-  @ApiPropertyOptional({ 
-    description: 'List of attachments', 
-    type: [HackathonAttachmentDto]
+  @ApiPropertyOptional({
+    description: "List of attachments",
+    type: [HackathonAttachmentDto],
   })
   @IsOptional()
   @IsArray()
@@ -972,9 +1058,9 @@ export class UpdateHackathonAdditionalInfoDto {
  */
 export class UpdateHackathonStatusDto {
   @ApiProperty({
-    description: 'New lifecycle status',
+    description: "New lifecycle status",
     enum: LIFECYCLE_STATUS_VALUES,
-    example: 'PUBLISHED'
+    example: "PUBLISHED",
   })
   @IsString()
   @IsIn(LIFECYCLE_STATUS_VALUES)
