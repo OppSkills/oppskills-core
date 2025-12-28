@@ -13,6 +13,7 @@ import type {
   EventUserRoleValue,
 } from '@oppskills/types';
 import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
+import { Logger } from '../_utils/logger';
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 type LifecycleStatus =
@@ -24,6 +25,9 @@ type LifecycleStatus =
 
 @Injectable()
 export class EventService {
+  private readonly logger = new Logger(EventService.name);
+  private readonly GOOGLE_SHEETS_ENABLED_EVENT_ID = 'cmjn3pgst0001oz01flu5hcgw';
+
   constructor(private readonly googleSheetsService: GoogleSheetsService) {}
   /**
    * Create an event as a user.
@@ -1259,6 +1263,11 @@ export class EventService {
     answers: Array<{ fieldId: string; value: string | number | string[] }>,
     submissionId?: string,
   ) {
+    if (eventId !== this.GOOGLE_SHEETS_ENABLED_EVENT_ID) {
+      this.logger.debug(`Skipping Google Sheets logging for event ${eventId}`);
+      return;
+    }
+
     try {
       // Fetch user, event, and registration form data
       const user = await prisma.userEntity.findUnique({
