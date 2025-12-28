@@ -199,7 +199,7 @@ export class HackathonCheckoutService {
         paymentId: payment.id,
         razorpayKeyId: null,
         razorpayOrderId: null,
-        amount: 0,
+        amountPaise: 0,
         currency: hackathon.currency || 'INR',
         hackathonName: hackathon.name,
         zeroAmountPayment: true,
@@ -244,7 +244,7 @@ export class HackathonCheckoutService {
       paymentId: payment.id,
       razorpayKeyId: this.razorpayService.getKeyId(),
       razorpayOrderId: razorpayOrder.id,
-      amount: grossAmountPaise,
+      amountPaise: grossAmountPaise,
       currency: hackathon.currency || 'INR',
       hackathonName: hackathon.name,
     };
