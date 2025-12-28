@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +42,7 @@ type AutoSaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 interface HackathonData {
   id: string;
   slug: string;
+  status: string;
   isFree: boolean;
   entryFeeAmount: number | null;
   chargeMode: ChargeMode;
@@ -83,11 +90,14 @@ export default function Page() {
   const upsertPayoutDetails = useUpsertPayoutDetails();
   const { data: earnings } = useHackathonEarnings(slug ?? "");
 
-  const currentPricing = useMemo((): PricingState => ({
-    isFree: !isPaid,
-    chargeMode,
-    entryFeeAmount,
-  }), [isPaid, chargeMode, entryFeeAmount]);
+  const currentPricing = useMemo(
+    (): PricingState => ({
+      isFree: !isPaid,
+      chargeMode,
+      entryFeeAmount,
+    }),
+    [isPaid, chargeMode, entryFeeAmount],
+  );
 
   const latestPricingRef = useRef<PricingState>(currentPricing);
   useEffect(() => {
@@ -125,7 +135,11 @@ export default function Page() {
       await updateHackathon(token, hackathonId, {
         isFree: pricing.isFree,
         chargeMode: pricing.isFree ? undefined : pricing.chargeMode,
-        entryFeeAmount: pricing.isFree ? undefined : (parsedFee !== null && !isNaN(parsedFee) ? parsedFee.toFixed(2) : undefined),
+        entryFeeAmount: pricing.isFree
+          ? undefined
+          : parsedFee !== null && !isNaN(parsedFee)
+            ? parsedFee.toFixed(2)
+            : undefined,
       });
     },
     onError: (err) => {
@@ -175,6 +189,13 @@ export default function Page() {
   useEffect(() => {
     if (!hasHydrated || !hackathonId) return;
 
+    // Don't auto-save if hackathon is not in DRAFT status
+    const isDraftStatus = hackathon?.status === "DRAFT";
+    if (!isDraftStatus) {
+      if (autoSaveStatus !== "saved") setAutoSaveStatus("saved");
+      return;
+    }
+
     const snapshot = serializePricing(currentPricing);
     if (snapshot === lastSavedSnapshotRef.current) {
       if (autoSaveStatus !== "saving") setAutoSaveStatus("saved");
@@ -197,7 +218,14 @@ export default function Page() {
         debounceTimerRef.current = null;
       }
     };
-  }, [currentPricing, hasHydrated, hackathonId, autoSaveStatus, runSaveMutation]);
+  }, [
+    currentPricing,
+    hasHydrated,
+    hackathonId,
+    hackathon?.status,
+    autoSaveStatus,
+    runSaveMutation,
+  ]);
 
   if (!slug) {
     return (
@@ -222,7 +250,8 @@ export default function Page() {
     hackathon &&
     (hackathon.registrationCount > 0 ||
       (hackathon.teams && hackathon.teams.length > 0));
-  const canEditPricing = !registrationStarted;
+  const isDraft = hackathon?.status === "DRAFT";
+  const canEditPricing = isDraft;
 
   return (
     <div className="flex flex-col items-start gap-5 p-10 w-full flex-1 self-stretch min-h-[600px] rounded-[20px] bg-background border border-transparent shadow-sm">
@@ -261,7 +290,7 @@ export default function Page() {
           </h6>
           {!canEditPricing && (
             <p className="text-sm text-muted-foreground">
-              Pricing cannot be changed after registrations have started.
+              Pricing can only be edited while the opportunity is in draft.
             </p>
           )}
         </div>

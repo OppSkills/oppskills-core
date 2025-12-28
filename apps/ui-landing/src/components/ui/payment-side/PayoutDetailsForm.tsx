@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,25 +39,31 @@ export default function PayoutDetailsForm({
     Partial<Record<keyof PayoutDetailsInput, string>>
   >({});
 
+  // Track if we've initialized for this "open" session
+  const hasInitializedRef = useRef(false);
+  const wasOpenRef = useRef(false);
+
   useEffect(() => {
-    if (isOpen && initialData) {
+    // Detect transition from closed -> open
+    const justOpened = isOpen && !wasOpenRef.current;
+    wasOpenRef.current = isOpen;
+
+    // Only initialize when modal just opened, not on every render
+    if (justOpened) {
+      hasInitializedRef.current = true;
       setFormData({
-        accountHolderName: initialData.accountHolderName || "",
-        accountNumber: initialData.accountNumber || "",
-        ifsc: initialData.ifsc || "",
-        upiId: initialData.upiId || "",
+        accountHolderName: initialData?.accountHolderName || "",
+        accountNumber: initialData?.accountNumber || "",
+        ifsc: initialData?.ifsc || "",
+        upiId: initialData?.upiId || "",
       });
       setErrors({});
       setTouched({});
-    } else if (isOpen) {
-      setFormData({
-        accountHolderName: "",
-        accountNumber: "",
-        ifsc: "",
-        upiId: "",
-      });
-      setErrors({});
-      setTouched({});
+    }
+
+    // Reset the flag when modal closes
+    if (!isOpen) {
+      hasInitializedRef.current = false;
     }
   }, [isOpen, initialData]);
 
