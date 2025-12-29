@@ -271,7 +271,7 @@ export function CreateTeamForm({
         toast.success("Registration successful!");
 
         setTimeout(() => {
-          router.push(`/competitions/${hackathonSlug}`);
+          router.push(`/competitions/${hackathonSlug}?registered=true`);
         }, 2000);
 
         return;
@@ -285,7 +285,9 @@ export function CreateTeamForm({
       }
 
       if (!razorpayOrderId) {
-        throw new Error("Payment initialization failed (missing Razorpay order id)");
+        throw new Error(
+          "Payment initialization failed (missing Razorpay order id)",
+        );
       }
 
       const options = {
@@ -334,7 +336,7 @@ export function CreateTeamForm({
             toast.success("Payment and registration successful!");
 
             setTimeout(() => {
-              router.push(`/competitions/${hackathonSlug}`);
+              router.push(`/competitions/${hackathonSlug}?registered=true`);
             }, 2000);
           } catch (err: unknown) {
             console.error("Post-payment error:", err);
@@ -402,7 +404,7 @@ export function CreateTeamForm({
         );
 
         setTimeout(() => {
-          router.push(`/competitions/${hackathonSlug}`);
+          router.push(`/competitions/${hackathonSlug}?registered=true`);
         }, 2000);
         setIsLoading(false);
         setShowRegistrationModal(false);

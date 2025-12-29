@@ -20,6 +20,9 @@ import {
   Loader2,
   Banknote,
   IndianRupee,
+  X,
+  Search,
+  GraduationCap,
 } from "lucide-react";
 import PayoutDetailsForm from "@/components/ui/payment-side/PayoutDetailsForm";
 import {
@@ -33,10 +36,16 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PayoutDetailsInput } from "@/lib/api/paymentsApi";
 import { updateHackathon } from "@/lib/api/hackathonApi";
+import { searchColleges } from "@/lib/api/collegesApi";
 import { format } from "date-fns";
 
 type ChargeMode = "PER_TEAM" | "PER_USER";
 type AutoSaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
+
+interface SelectedCollege {
+  id: string;
+  name: string;
+}
 
 // Define a local interface for the hackathon data we expect
 interface HackathonData {
@@ -46,6 +55,7 @@ interface HackathonData {
   isFree: boolean;
   entryFeeAmount: number | null;
   chargeMode: ChargeMode;
+  freeCollegeIds?: string[];
   registrationCount: number;
   teams: unknown[];
   ownerId: string;
@@ -55,6 +65,7 @@ interface PricingState {
   isFree: boolean;
   chargeMode: ChargeMode;
   entryFeeAmount: string;
+  freeCollegeIds: string[];
 }
 
 function serializePricing(state: PricingState): string {
@@ -76,6 +87,20 @@ export default function Page() {
   const [hackathonId, setHackathonId] = useState<string | null>(null);
   const [hasHydrated, setHasHydrated] = useState(false);
 
+  const [selectedColleges, setSelectedColleges] = useState<SelectedCollege[]>(
+    [],
+  );
+  const [collegeSearchQuery, setCollegeSearchQuery] = useState("");
+  const [collegeSearchResults, setCollegeSearchResults] = useState<
+    SelectedCollege[]
+  >([]);
+  const [isSearchingColleges, setIsSearchingColleges] = useState(false);
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+  const collegeSearchRef = useRef<HTMLDivElement>(null);
+  const collegeSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
   const lastSavedSnapshotRef = useRef<string | null>(null);
   const savingSnapshotRef = useRef<string | null>(null);
@@ -95,8 +120,9 @@ export default function Page() {
       isFree: !isPaid,
       chargeMode,
       entryFeeAmount,
+      freeCollegeIds: selectedColleges.map((c) => c.id),
     }),
-    [isPaid, chargeMode, entryFeeAmount],
+    [isPaid, chargeMode, entryFeeAmount, selectedColleges],
   );
 
   const latestPricingRef = useRef<PricingState>(currentPricing);
@@ -110,10 +136,23 @@ export default function Page() {
       setIsPaid(!hackathon.isFree);
       setChargeMode((hackathon.chargeMode as ChargeMode) || "PER_TEAM");
       setEntryFeeAmount(hackathon.entryFeeAmount?.toString() || "");
+
+      // Hydrate freeCollegeIds - we only have IDs, not names, so store with placeholder names
+      // The names will be fetched/displayed properly when user interacts
+      if (hackathon.freeCollegeIds && hackathon.freeCollegeIds.length > 0) {
+        setSelectedColleges(
+          hackathon.freeCollegeIds.map((id) => ({
+            id,
+            name: `College ${id.slice(-6)}`,
+          })),
+        );
+      }
+
       const initialState: PricingState = {
         isFree: hackathon.isFree,
         chargeMode: (hackathon.chargeMode as ChargeMode) || "PER_TEAM",
         entryFeeAmount: hackathon.entryFeeAmount?.toString() || "",
+        freeCollegeIds: hackathon.freeCollegeIds || [],
       };
       lastSavedSnapshotRef.current = serializePricing(initialState);
       lastSavedAtRef.current = Date.now();
@@ -121,6 +160,73 @@ export default function Page() {
       setHasHydrated(true);
     }
   }, [hackathon, hasHydrated]);
+
+  // College search effect
+  useEffect(() => {
+    if (collegeSearchDebounceRef.current) {
+      clearTimeout(collegeSearchDebounceRef.current);
+    }
+
+    if (collegeSearchQuery.trim().length < 2) {
+      setCollegeSearchResults([]);
+      setIsSearchingColleges(false);
+      return;
+    }
+
+    setIsSearchingColleges(true);
+    collegeSearchDebounceRef.current = setTimeout(async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const results = await searchColleges(token, collegeSearchQuery);
+        setCollegeSearchResults(
+          results
+            .filter((r) => !selectedColleges.some((sc) => sc.id === r.id))
+            .map((r) => ({ id: r.id, name: r.name })),
+        );
+      } catch {
+        setCollegeSearchResults([]);
+      } finally {
+        setIsSearchingColleges(false);
+      }
+    }, 300);
+
+    return () => {
+      if (collegeSearchDebounceRef.current) {
+        clearTimeout(collegeSearchDebounceRef.current);
+      }
+    };
+  }, [collegeSearchQuery, getToken, selectedColleges]);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        collegeSearchRef.current &&
+        !collegeSearchRef.current.contains(event.target as Node)
+      ) {
+        setShowCollegeDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleAddCollege = (college: SelectedCollege) => {
+    if (selectedColleges.length >= 5) {
+      toast.error("Maximum 5 colleges allowed");
+      return;
+    }
+    if (selectedColleges.some((c) => c.id === college.id)) return;
+    setSelectedColleges((prev) => [...prev, college]);
+    setCollegeSearchQuery("");
+    setCollegeSearchResults([]);
+    setShowCollegeDropdown(false);
+  };
+
+  const handleRemoveCollege = (collegeId: string) => {
+    setSelectedColleges((prev) => prev.filter((c) => c.id !== collegeId));
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -140,6 +246,7 @@ export default function Page() {
           : parsedFee !== null && !isNaN(parsedFee)
             ? parsedFee.toFixed(2)
             : undefined,
+        freeCollegeIds: pricing.isFree ? undefined : pricing.freeCollegeIds,
       });
     },
     onError: (err) => {
@@ -441,6 +548,104 @@ export default function Page() {
                 className="max-w-[200px]"
               />
             </div>
+          </div>
+
+          {/* FREE FOR COLLEGES */}
+          <div className="flex flex-col items-start gap-4 p-6 self-stretch rounded-2xl border border-border bg-transparent">
+            <div className="flex flex-col items-start gap-3">
+              <h6 className="font-poppins text-foreground text-xl font-semibold leading-tight capitalize">
+                Free for Select Colleges
+              </h6>
+              <p className="font-sans text-muted-foreground text-base font-normal leading-normal">
+                Students from these colleges will get free entry (max 5).{" "}
+                {chargeMode === "PER_TEAM"
+                  ? "If the team leader is from an eligible college, the entire team gets free entry."
+                  : "Each participant from an eligible college gets free entry."}
+              </p>
+            </div>
+
+            {/* Selected colleges */}
+            {selectedColleges.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedColleges.map((college) => (
+                  <div
+                    key={college.id}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm"
+                  >
+                    <GraduationCap className="w-4 h-4" />
+                    <span className="max-w-[200px] truncate">
+                      {college.name}
+                    </span>
+                    {canEditPricing && (
+                      <button
+                        onClick={() => handleRemoveCollege(college.id)}
+                        className="hover:bg-primary/20 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* College search */}
+            {canEditPricing && selectedColleges.length < 5 && (
+              <div
+                ref={collegeSearchRef}
+                className="relative w-full max-w-[400px]"
+              >
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    value={collegeSearchQuery}
+                    onChange={(e) => {
+                      setCollegeSearchQuery(e.target.value);
+                      setShowCollegeDropdown(true);
+                    }}
+                    onFocus={() => setShowCollegeDropdown(true)}
+                    placeholder="Search colleges..."
+                    className="pl-9"
+                  />
+                  {isSearchingColleges && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+
+                {showCollegeDropdown &&
+                  collegeSearchQuery.trim().length >= 2 && (
+                    <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-[200px] overflow-y-auto">
+                      {isSearchingColleges ? (
+                        <div className="p-3 text-center text-muted-foreground text-sm">
+                          Searching...
+                        </div>
+                      ) : collegeSearchResults.length === 0 ? (
+                        <div className="p-3 text-center text-muted-foreground text-sm">
+                          No colleges found
+                        </div>
+                      ) : (
+                        collegeSearchResults.map((college) => (
+                          <button
+                            key={college.id}
+                            onClick={() => handleAddCollege(college)}
+                            className="w-full px-3 py-2 text-left hover:bg-muted text-sm flex items-center gap-2"
+                          >
+                            <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" />
+                            <span className="truncate">{college.name}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+              </div>
+            )}
+
+            {selectedColleges.length >= 5 && (
+              <p className="text-sm text-muted-foreground">
+                Maximum 5 colleges allowed
+              </p>
+            )}
           </div>
 
           {/* FEE BREAKDOWN */}

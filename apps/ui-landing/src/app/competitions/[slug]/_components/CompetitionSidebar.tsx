@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronRight,
   MapPin,
@@ -25,6 +25,7 @@ interface CompetitionSidebarProps {
 
 export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isSignedIn, getToken } = useAuth();
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
@@ -32,6 +33,9 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   const [myTeam, setMyTeam] = useState<{ id: string; name: string } | null>(
     null,
   );
+
+  // Force re-check when redirected back from registration with ?registered=true
+  const justRegistered = searchParams.get("registered") === "true";
 
   // Check if user is already registered when signed in
   useEffect(() => {
@@ -46,6 +50,13 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         const team = await checkMyHackathonTeam(token, competition.id);
         setIsAlreadyRegistered(!!team);
         setMyTeam(team ? { id: team.id, name: team.name } : null);
+
+        // Clear the query param after successful check to avoid re-triggering
+        if (justRegistered && team) {
+          router.replace(`/competitions/${competition.slug}`, {
+            scroll: false,
+          });
+        }
       } catch (error) {
         console.error("Error checking registration:", error);
         setIsAlreadyRegistered(false);
@@ -56,7 +67,14 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     }
 
     checkRegistration();
-  }, [isSignedIn, competition.id, getToken]);
+  }, [
+    isSignedIn,
+    competition.id,
+    competition.slug,
+    getToken,
+    justRegistered,
+    router,
+  ]);
 
   // Check if registration is closed
   const isRegistrationClosed =

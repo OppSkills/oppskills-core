@@ -791,6 +791,7 @@ export class HackathonService {
         organizationName: dto.organizationName,
         organizationLogoUrl: dto.organizationLogoUrl,
         allowedUniversities: dto.allowedUniversities ?? undefined,
+        freeCollegeIds: dto.freeCollegeIds ?? undefined,
 
         // New eligibility & team settings
         attendeeEligibility: dto.attendeeEligibility,

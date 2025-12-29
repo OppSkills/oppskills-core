@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsBoolean,
@@ -975,6 +976,16 @@ export class UpdateHackathonDto {
   @IsArray()
   @IsString({ each: true })
   allowedUniversities?: string[];
+
+  /**
+   * College IDs whose students get free entry (max 5).
+   * Only applies when isFree = false (paid hackathon).
+   */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMaxSize(5)
+  freeCollegeIds?: string[];
 
   // Eligibility & Team Settings
   /**

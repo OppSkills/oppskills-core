@@ -421,6 +421,7 @@ model HackathonEntity {
   organizationName    String?  @map("organization_name")
   organizationLogoUrl String?  @map("organization_logo_url")
   allowedUniversities String[] @default([]) @map("allowed_universities")
+  freeCollegeIds      String[] @default([]) @map("free_college_ids")
 
   // Eligibility & Team Settings
   attendeeEligibility HackathonAttendeeEligibility[] @default([]) @map("attendee_eligibility")

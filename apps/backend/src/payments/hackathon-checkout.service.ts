@@ -37,6 +37,7 @@ export class HackathonCheckoutService {
         slug: true,
         name: true,
         isFree: true,
+        freeCollegeIds: true,
         entryFeeAmount: true,
         currency: true,
         chargeMode: true,
@@ -91,6 +92,7 @@ export class HackathonCheckoutService {
         : HackathonPaymentScope.USER;
 
     let teamId: string | null = null;
+    let leaderUserId: string = params.userId;
 
     if (scope === HackathonPaymentScope.TEAM) {
       if (!params.teamId) {
@@ -113,6 +115,8 @@ export class HackathonCheckoutService {
       if (team.leaderId !== params.userId) {
         throw new ForbiddenException('Only team leader can initiate payment');
       }
+
+      leaderUserId = team.leaderId;
 
       const existingPayment = await prisma.hackathonPaymentEntity.findFirst({
         where: {
@@ -143,6 +147,44 @@ export class HackathonCheckoutService {
       if (existingPayment) {
         throw new BadRequestException('Payment already completed');
       }
+    }
+
+    const isEligibleForFreeEntry = await this.checkFreeCollegeEligibility(
+      hackathon.freeCollegeIds,
+      leaderUserId,
+    );
+
+    if (isEligibleForFreeEntry) {
+      const payment = await prisma.hackathonPaymentEntity.create({
+        data: {
+          scope,
+          hackathonId: hackathon.id,
+          organizerId: hackathon.ownerId,
+          payerUserId: params.userId,
+          teamId,
+          currency: hackathon.currency || 'INR',
+          grossAmount: new Decimal(0),
+          platformFeeAmount: new Decimal(0),
+          organizerShareAmount: new Decimal(0),
+          razorpayOrderId: `free_college_${hackathon.id}_${Date.now()}`,
+          transferOnHold: false,
+          transferOnHoldUntil: null,
+          orderStatus: HackathonPaymentOrderStatus.PAID,
+          paymentStatus: HackathonPaymentStatus.CAPTURED,
+          discountCodeId: null,
+          discountAmount: null,
+        },
+      });
+
+      return {
+        paymentId: payment.id,
+        razorpayKeyId: null,
+        razorpayOrderId: null,
+        amount: 0,
+        currency: hackathon.currency || 'INR',
+        zeroAmountPayment: true,
+        freeCollegeEligible: true,
+      };
     }
 
     let grossAmount = new Decimal(hackathon.entryFeeAmount);
@@ -464,6 +506,26 @@ export class HackathonCheckoutService {
       eligibleAt,
       isEligibleNow,
     };
+  }
+
+  private async checkFreeCollegeEligibility(
+    freeCollegeIds: string[],
+    userId: string,
+  ): Promise<boolean> {
+    if (!freeCollegeIds || freeCollegeIds.length === 0) {
+      return false;
+    }
+
+    const profile = await prisma.userOnboardingProfileEntity.findUnique({
+      where: { userId },
+      select: { collegeId: true },
+    });
+
+    if (!profile?.collegeId) {
+      return false;
+    }
+
+    return freeCollegeIds.includes(profile.collegeId);
   }
 
   async getHackathonPayments(slug: string, userId: string) {
