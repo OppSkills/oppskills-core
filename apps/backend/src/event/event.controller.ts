@@ -214,6 +214,40 @@ export class EventController {
     return this.eventService.listEventRegistrationsBySlug(validSlug, userId);
   }
 
+  @Get('by-slug/:slug/registrations/:participantId')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary:
+      'Get registration answers for a participant (owner/manager/admin only)',
+  })
+  @ApiParam({ name: 'slug', description: 'Event slug' })
+  @ApiParam({ name: 'participantId', description: 'Participant ID' })
+  @ApiResponse({ status: 200, description: 'Participant registration answers' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Owner/Manager/Admin only',
+  })
+  @ApiResponse({ status: 404, description: 'Event or participant not found' })
+  async getParticipantRegistrationAnswers(
+    @Param('slug') slug: string,
+    @Param('participantId') participantId: string,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+
+    const validSlug = assertNonEmptyId(slug, 'slug');
+    const validParticipantId = assertNonEmptyId(participantId, 'participantId');
+    return this.eventService.getParticipantRegistrationAnswers(
+      validSlug,
+      validParticipantId,
+      userId,
+    );
+  }
+
   /**
    * GET /events/:id - Dashboard endpoint (auth required).
    * Returns full event data for owner/manager/admin.

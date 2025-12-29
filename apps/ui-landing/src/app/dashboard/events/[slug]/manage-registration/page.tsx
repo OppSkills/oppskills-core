@@ -22,6 +22,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEventRegistrationsBySlug } from "@/hooks/useEventRegistrationsBySlug";
 import type { EventRegistration } from "@/lib/api/eventApi";
+import { getParticipantRegistrationAnswers } from "@/lib/api/eventApi";
+import { useAuth } from "@clerk/nextjs";
+import { useQuery } from "@tanstack/react-query";
 
 // --- Types ---
 type RegistrationStatus = "Completed" | "Incomplete";
@@ -78,11 +81,32 @@ const UserDetailModal = ({
   participant,
   isOpen,
   onClose,
+  slug,
 }: {
   participant: Participant | null;
   isOpen: boolean;
   onClose: () => void;
+  slug: string | null;
 }) => {
+  const { getToken } = useAuth();
+
+  const { data: answersData, isLoading: isLoadingAnswers } = useQuery({
+    queryKey: ["participant-registration-answers", slug, participant?.id],
+    queryFn: async () => {
+      if (!slug || !participant?.id) return null;
+      const token = await getToken();
+      if (!token) return null;
+      return getParticipantRegistrationAnswers(token, slug, participant.id);
+    },
+    enabled: isOpen && !!slug && !!participant?.id,
+  });
+
+  const formatAnswerValue = (value: string | string[] | number | null | undefined): string => {
+    if (value === null || value === undefined) return "—";
+    if (Array.isArray(value)) return value.join(", ");
+    return String(value);
+  };
+
   if (!participant) return null;
 
   return (
@@ -162,6 +186,38 @@ const UserDetailModal = ({
               </div>
             </div>
           </div>
+
+          {/* Registration Answers Section */}
+          {answersData && answersData.fields.length > 0 && (
+            <div className="border-t border-border pt-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">
+                Registration Form Answers
+              </h3>
+              <div className="flex flex-col gap-4">
+                {answersData.fields.map((field) => {
+                  const answer = answersData.answers.find(
+                    (a) => a.fieldId === field.id
+                  );
+                  return (
+                    <div key={field.id} className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {field.label}
+                      </span>
+                      <span className="text-sm text-foreground">
+                        {formatAnswerValue(answer?.value)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {isLoadingAnswers && (
+            <div className="border-t border-border pt-6 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -339,6 +395,7 @@ export default function ManageRegistrationPage() {
         isOpen={!!selectedParticipant}
         onClose={() => setSelectedParticipant(null)}
         participant={selectedParticipant}
+        slug={slug}
       />
 
       {/* Header Controls */}

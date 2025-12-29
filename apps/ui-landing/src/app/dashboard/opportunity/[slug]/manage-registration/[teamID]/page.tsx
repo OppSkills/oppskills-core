@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronLeft, UserCircle2, Loader2 } from "lucide-react";
+import { ChevronLeft, UserCircle2, Loader2, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useRouter, useParams } from "next/navigation";
@@ -9,6 +9,10 @@ import TeamMembers, { TeamMember } from "./_components/TeamMembers";
 import { useTeams } from "@/hooks/useTeams";
 import { useHackathonRegistrationsBySlug } from "@/hooks/useHackathonRegistrations";
 import type { TeamDetailResponse } from "@/lib/api/teamApi";
+import { getTeamRegistrationAnswers } from "@/lib/api/hackathonApi";
+import { useAuth } from "@clerk/nextjs";
+import { useQuery } from "@tanstack/react-query";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function TeamManagementPage() {
   const router = useRouter();
@@ -25,6 +29,27 @@ export default function TeamManagementPage() {
   const { data: registrationsData } = useHackathonRegistrationsBySlug(slug);
 
   const [activeTab, setActiveTab] = useState<string>("members");
+
+  const { getToken } = useAuth();
+
+  const { data: registrationAnswersData, isLoading: isLoadingAnswers } =
+    useQuery({
+      queryKey: ["team-registration-answers", slug, teamId],
+      queryFn: async () => {
+        const token = await getToken();
+        if (!token) return null;
+        return getTeamRegistrationAnswers(token, slug, teamId);
+      },
+      enabled: activeTab === "registration-answers",
+    });
+
+  const formatAnswerValue = (
+    value: string | string[] | number | null | undefined,
+  ): string => {
+    if (value === null || value === undefined) return "—";
+    if (Array.isArray(value)) return value.join(", ");
+    return String(value);
+  };
 
   // Build members list from team data
   const members: TeamMember[] = useMemo(() => {
@@ -170,6 +195,19 @@ export default function TeamManagementPage() {
           Team Members
         </button>
 
+        {/* Tab 2: Registration Answers */}
+        <button
+          onClick={() => setActiveTab("registration-answers")}
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
+            activeTab === "registration-answers"
+              ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
+              : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
+          }`}
+        >
+          <ClipboardList className="h-5 w-5" />
+          Registration Answers
+        </button>
+
         {/* Round Tabs - Dynamic from rounds data */}
         {roundTabs.map((round) => (
           <button
@@ -199,7 +237,86 @@ export default function TeamManagementPage() {
       <div className="bg-primary-foreground rounded-[20px] p-2 sm:p-4 md:p-6 lg:p-10 shadow-sm border border-gray-100 min-h-[500px]">
         {activeTab === "members" && <TeamMembers members={members} />}
 
-        {activeTab !== "members" && (
+        {activeTab === "registration-answers" && (
+          <div className="space-y-6">
+            {isLoadingAnswers && (
+              <div className="flex justify-center items-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
+
+            {!isLoadingAnswers &&
+              registrationAnswersData &&
+              registrationAnswersData.fields.length > 0 && (
+                <div className="space-y-8">
+                  {registrationAnswersData.fields.map((field) => (
+                    <div key={field.id} className="space-y-4">
+                      <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">
+                        {field.label}
+                      </h3>
+                      <div className="grid gap-3">
+                        {registrationAnswersData.respondents.map(
+                          (respondent) => {
+                            const answer = respondent.answers.find(
+                              (a) => a.fieldId === field.id,
+                            );
+                            return (
+                              <div
+                                key={respondent.odooId}
+                                className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg"
+                              >
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage
+                                    src={respondent.avatarUrl || undefined}
+                                  />
+                                  <AvatarFallback className="text-xs">
+                                    {respondent.odooName.charAt(0)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-foreground">
+                                      {respondent.odooName}
+                                    </span>
+                                    {respondent.isLeader && (
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs"
+                                      >
+                                        Leader
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {formatAnswerValue(answer?.value)}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          },
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            {!isLoadingAnswers &&
+              (!registrationAnswersData ||
+                registrationAnswersData.fields.length === 0) && (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <p className="text-muted-foreground text-lg">
+                    No registration form
+                  </p>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    This hackathon does not have a registration form configured
+                  </p>
+                </div>
+              )}
+          </div>
+        )}
+
+        {activeTab !== "members" && activeTab !== "registration-answers" && (
           <div className="space-y-4">
             {selectedRoundSubmission ? (
               <div className="space-y-4">
@@ -210,7 +327,7 @@ export default function TeamManagementPage() {
                   <span className="text-sm text-muted-foreground">
                     {selectedRoundSubmission.submittedAt
                       ? new Date(
-                          selectedRoundSubmission.submittedAt
+                          selectedRoundSubmission.submittedAt,
                         ).toLocaleString()
                       : "—"}
                   </span>

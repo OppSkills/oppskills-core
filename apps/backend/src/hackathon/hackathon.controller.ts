@@ -320,6 +320,92 @@ export class HackathonController {
     );
   }
 
+  @Get('by-slug/:slug/teams/:teamId/registration-answers')
+  @ApiOperation({
+    summary: 'Get team registration answers',
+    description:
+      'Retrieve registration form answers for all team members. Owner/Manager/Admin only.',
+  })
+  @ApiParam({
+    name: 'slug',
+    description: 'Hackathon slug',
+    type: 'string',
+    example: 'tech-innovation-2025',
+  })
+  @ApiParam({
+    name: 'teamId',
+    description: 'Team ID',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Team registration answers retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        fields: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              label: { type: 'string' },
+              type: { type: 'string' },
+              order: { type: 'number' },
+              options: { type: 'array', items: { type: 'string' } },
+            },
+          },
+        },
+        respondents: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              userId: { type: 'string' },
+              firstName: { type: 'string' },
+              lastName: { type: 'string' },
+              email: { type: 'string' },
+              imageUrl: { type: 'string' },
+              isLeader: { type: 'boolean' },
+              answers: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    fieldId: { type: 'string' },
+                    value: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Owner/Manager/Admin only',
+  })
+  @ApiResponse({ status: 404, description: 'Hackathon or team not found' })
+  async getTeamRegistrationAnswers(
+    @Param('slug') slug: string,
+    @Param('teamId') teamId: string,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+    const safeSlug = assertNonEmptyId(slug, 'slug');
+    const safeTeamId = assertNonEmptyId(teamId, 'teamId');
+    return this.hackathonService.getTeamRegistrationAnswers(
+      safeSlug,
+      safeTeamId,
+      userId,
+    );
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Get hackathon by ID',

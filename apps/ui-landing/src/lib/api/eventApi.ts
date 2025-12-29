@@ -82,7 +82,7 @@ export async function getMyEvents(token: string): Promise<unknown> {
  */
 export async function getEventById(
   token: string,
-  id: string
+  id: string,
 ): Promise<unknown> {
   const res = await API.get(`/${id}`, { headers: buildAuthHeaders(token) });
   return res.data as unknown;
@@ -93,7 +93,7 @@ export async function getEventById(
  */
 export async function getEventBySlug(
   token: string,
-  slug: string
+  slug: string,
 ): Promise<unknown> {
   const safeSlug = slug.trim();
   if (safeSlug.length === 0) {
@@ -110,7 +110,7 @@ export async function getEventBySlug(
  */
 export async function createEvent(
   token: string,
-  data: CreateEventDto
+  data: CreateEventDto,
 ): Promise<unknown> {
   const res = await API.post("", data, { headers: buildAuthHeaders(token) });
   return res.data as unknown;
@@ -124,7 +124,7 @@ export async function createEvent(
 export async function updateEvent(
   token: string,
   id: string,
-  data: UpdateEventDto
+  data: UpdateEventDto,
 ): Promise<unknown> {
   const res = await API.put(`/${id}`, data, {
     headers: buildAuthHeaders(token),
@@ -158,7 +158,7 @@ type UpdateEventMaxUsersPayload = {
 export async function updateEventAdditionalInfo(
   token: string,
   id: string,
-  data: UpdateEventAdditionalInfoPayload
+  data: UpdateEventAdditionalInfoPayload,
 ): Promise<unknown> {
   const res = await API.put(`/${id}/additional-info`, data, {
     headers: buildAuthHeaders(token),
@@ -172,7 +172,7 @@ export async function updateEventAdditionalInfo(
 export async function updateEventRegistrationForm(
   token: string,
   id: string,
-  data: UpdateEventRegistrationFormPayload
+  data: UpdateEventRegistrationFormPayload,
 ): Promise<unknown> {
   const res = await API.put(`/${id}/registration-form`, data, {
     headers: buildAuthHeaders(token),
@@ -186,7 +186,7 @@ export async function updateEventRegistrationForm(
 export async function updateEventPrizeBreakdown(
   token: string,
   id: string,
-  data: UpdateEventPrizeBreakdownPayload
+  data: UpdateEventPrizeBreakdownPayload,
 ): Promise<unknown> {
   const res = await API.put(`/${id}/prize-breakdown`, data, {
     headers: buildAuthHeaders(token),
@@ -201,7 +201,7 @@ export async function updateEventPrizeBreakdown(
 export async function updateEventMaxUsers(
   token: string,
   id: string,
-  data: UpdateEventMaxUsersPayload
+  data: UpdateEventMaxUsersPayload,
 ): Promise<unknown> {
   const res = await API.put(`/${id}/max-users`, data, {
     headers: buildAuthHeaders(token),
@@ -226,7 +226,7 @@ export async function deleteEvent(token: string, id: string): Promise<unknown> {
  */
 export async function getEventRoles(
   token: string,
-  id: string
+  id: string,
 ): Promise<EventRolesResponse> {
   const res = await API.get(`/${id}/roles`, {
     headers: buildAuthHeaders(token),
@@ -240,7 +240,7 @@ export async function getEventRoles(
 export async function addEventRole(
   token: string,
   id: string,
-  data: AddEventRoleDto
+  data: AddEventRoleDto,
 ): Promise<{ message: string; alreadyExists: boolean }> {
   const res = await API.post(`/${id}/roles`, data, {
     headers: buildAuthHeaders(token),
@@ -254,7 +254,7 @@ export async function addEventRole(
 export async function removeEventRole(
   token: string,
   id: string,
-  data: RemoveEventRoleDto
+  data: RemoveEventRoleDto,
 ): Promise<{ message: string }> {
   const res = await API.delete(`/${id}/roles`, {
     headers: buildAuthHeaders(token),
@@ -290,7 +290,7 @@ type UpdateRegistrationPausedPayload = {
 export async function submitEventForApproval(
   token: string,
   id: string,
-  data?: SubmitForApprovalPayload
+  data?: SubmitForApprovalPayload,
 ): Promise<unknown> {
   const res = await API.post(`/${id}/submit-approval`, data ?? {}, {
     headers: buildAuthHeaders(token),
@@ -304,7 +304,7 @@ export async function submitEventForApproval(
 export async function updateEventApprovalStatus(
   token: string,
   id: string,
-  data: UpdateApprovalStatusPayload
+  data: UpdateApprovalStatusPayload,
 ): Promise<unknown> {
   const res = await API.patch(`/${id}/approval`, data, {
     headers: buildAuthHeaders(token),
@@ -318,7 +318,7 @@ export async function updateEventApprovalStatus(
 export async function updateEventStatus(
   token: string,
   id: string,
-  data: UpdateEventStatusPayload
+  data: UpdateEventStatusPayload,
 ): Promise<unknown> {
   const res = await API.patch(`/${id}/status`, data, {
     headers: buildAuthHeaders(token),
@@ -332,7 +332,7 @@ export async function updateEventStatus(
 export async function updateEventRegistrationPaused(
   token: string,
   id: string,
-  data: UpdateRegistrationPausedPayload
+  data: UpdateRegistrationPausedPayload,
 ): Promise<unknown> {
   const res = await API.patch(`/${id}/registration`, data, {
     headers: buildAuthHeaders(token),
@@ -357,7 +357,7 @@ export interface JoinEventPayload {
 export async function joinEvent(
   token: string,
   id: string,
-  data?: JoinEventPayload
+  data?: JoinEventPayload,
 ): Promise<unknown> {
   const res = await API.post(`/${id}/join`, data ?? {}, {
     headers: buildAuthHeaders(token),
@@ -378,7 +378,7 @@ export interface MyRegistrationResponse {
  */
 export async function checkMyRegistration(
   token: string,
-  id: string
+  id: string,
 ): Promise<MyRegistrationResponse> {
   const res = await API.get(`/${id}/my-registration`, {
     headers: buildAuthHeaders(token),
@@ -406,10 +406,47 @@ export interface EventRegistration {
  */
 export async function getEventRegistrationsBySlug(
   token: string,
-  slug: string
+  slug: string,
 ): Promise<EventRegistration[]> {
   const res = await API.get(`/by-slug/${slug}/registrations`, {
     headers: buildAuthHeaders(token),
   });
   return res.data as EventRegistration[];
+}
+
+export interface RegistrationField {
+  id: string;
+  label: string;
+  type: string;
+  order: number;
+  options: string[] | null;
+  required: boolean;
+}
+
+export interface RegistrationAnswer {
+  fieldId: string;
+  value: string | number | string[] | null;
+}
+
+export interface ParticipantRegistrationAnswersResponse {
+  participant: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+  };
+  fields: RegistrationField[];
+  answers: RegistrationAnswer[];
+}
+
+export async function getParticipantRegistrationAnswers(
+  token: string,
+  slug: string,
+  participantId: string,
+): Promise<ParticipantRegistrationAnswersResponse> {
+  const res = await API.get(
+    `/by-slug/${encodeURIComponent(slug)}/registrations/${encodeURIComponent(participantId)}`,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as ParticipantRegistrationAnswersResponse;
 }

@@ -1970,4 +1970,168 @@ export class HackathonService {
       },
     });
   }
+
+  /**
+   * Get registration answers for a team (owner/manager/admin only).
+   * Returns form fields and all team members' answers grouped for display.
+   */
+  async getTeamRegistrationAnswers(
+    slug: string,
+    teamId: string,
+    requesterUserId: string,
+  ) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug },
+      select: { id: true, ownerId: true },
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    const hasPermission = await this.hasViewRegistrationsPermission(
+      hackathon.ownerId,
+      requesterUserId,
+      hackathon.id,
+    );
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have permission to view registration answers.',
+      );
+    }
+
+    const team = await prisma.teamEntity.findUnique({
+      where: { id: teamId },
+      include: {
+        leader: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!team) throw new NotFoundException('Team not found');
+    if (team.hackathonId !== hackathon.id) {
+      throw new NotFoundException('Team not found in this hackathon');
+    }
+
+    const registrationForm = await prisma.registrationFormEntity.findUnique({
+      where: { hackathonId: hackathon.id },
+      include: {
+        fields: {
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    const fields = registrationForm?.fields ?? [];
+
+    const allUserIds = [team.leaderId, ...team.members.map((m) => m.userId)];
+
+    const submissions =
+      await prisma.hackathonRegistrationSubmissionEntity.findMany({
+        where: {
+          hackathonId: hackathon.id,
+          userId: { in: allUserIds },
+        },
+        include: {
+          answers: {
+            include: {
+              field: true,
+            },
+          },
+        },
+      });
+
+    const submissionByUserId = new Map(submissions.map((s) => [s.userId, s]));
+
+    const respondents = [
+      {
+        userId: team.leader.id,
+        email: team.leader.email,
+        firstName: team.leader.firstName,
+        lastName: team.leader.lastName,
+        imageUrl: team.leader.imageUrl,
+        isLeader: true,
+        answers: this.formatAnswersForUser(
+          submissionByUserId.get(team.leaderId),
+          fields,
+        ),
+      },
+      ...team.members.map((member) => ({
+        userId: member.user.id,
+        email: member.user.email,
+        firstName: member.user.firstName,
+        lastName: member.user.lastName,
+        imageUrl: member.user.imageUrl,
+        isLeader: false,
+        answers: this.formatAnswersForUser(
+          submissionByUserId.get(member.userId),
+          fields,
+        ),
+      })),
+    ];
+
+    return {
+      fields: fields.map((f) => ({
+        id: f.id,
+        label: f.label,
+        type: f.type,
+        order: f.order,
+        options: f.options,
+        required: f.required,
+      })),
+      respondents,
+    };
+  }
+
+  private formatAnswersForUser(
+    submission:
+      | {
+          answers: Array<{
+            fieldId: string;
+            valueText: string | null;
+            valueJson: unknown;
+          }>;
+        }
+      | undefined,
+    fields: Array<{ id: string }>,
+  ): Array<{ fieldId: string; value: string | null }> {
+    if (!submission) {
+      return fields.map((f) => ({ fieldId: f.id, value: null }));
+    }
+
+    const answerMap = new Map(submission.answers.map((a) => [a.fieldId, a]));
+
+    return fields.map((f) => {
+      const answer = answerMap.get(f.id);
+      if (!answer) return { fieldId: f.id, value: null };
+
+      if (answer.valueText !== null) {
+        return { fieldId: f.id, value: answer.valueText };
+      }
+      if (answer.valueJson !== null) {
+        if (Array.isArray(answer.valueJson)) {
+          return { fieldId: f.id, value: answer.valueJson.join(', ') };
+        }
+        return { fieldId: f.id, value: String(answer.valueJson) };
+      }
+      return { fieldId: f.id, value: null };
+    });
+  }
 }

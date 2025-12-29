@@ -434,3 +434,51 @@ export async function updateHackathonRegistrationPaused(
   });
   return res.data as unknown;
 }
+
+// =====================
+// Team Registration Answers
+// =====================
+
+export interface TeamRegistrationField {
+  id: string;
+  label: string;
+  type: string;
+  order: number;
+  options: string[] | null;
+  required: boolean;
+}
+
+export interface TeamRegistrationAnswer {
+  fieldId: string;
+  value: string | number | string[] | null;
+}
+
+export interface TeamRespondent {
+  odooId: string;
+  odooName: string;
+  email: string;
+  avatarUrl: string | null;
+  isLeader: boolean;
+  answers: TeamRegistrationAnswer[];
+}
+
+export interface TeamRegistrationAnswersResponse {
+  fields: TeamRegistrationField[];
+  respondents: TeamRespondent[];
+}
+
+export async function getTeamRegistrationAnswers(
+  token: string,
+  slug: string,
+  teamId: string,
+): Promise<TeamRegistrationAnswersResponse> {
+  const safeSlug = slug.trim();
+  if (safeSlug.length === 0) {
+    throw new Error("Hackathon slug is required.");
+  }
+  const res = await API.get(
+    `/by-slug/${encodeURIComponent(safeSlug)}/teams/${encodeURIComponent(teamId)}/registration-answers`,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as TeamRegistrationAnswersResponse;
+}
