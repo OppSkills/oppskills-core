@@ -189,7 +189,9 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       return (
         <SignInButton mode="modal">
           <Button className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm">
-            Register for free
+            {competition.isFree === false && competition.entryFeeAmount
+              ? `Register for ${competition.currency || "INR"} ${competition.entryFeeAmount}`
+              : "Register for free"}
           </Button>
         </SignInButton>
       );
@@ -207,6 +209,8 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             Loading...
           </>
+        ) : competition.isFree === false && competition.entryFeeAmount ? (
+          `Register for ${competition.currency || "INR"} ${competition.entryFeeAmount}`
         ) : (
           "Register for free"
         )}

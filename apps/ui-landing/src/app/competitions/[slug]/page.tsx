@@ -85,6 +85,8 @@ interface HackathonApiData {
   isRegistrationPaused: boolean;
   prizeTotalWorthAmount: number | null;
   currency: string;
+  isFree: boolean;
+  entryFeeAmount: number | null;
   organizationName: string | null;
   maxTeams?: number | null;
   registrationCount?: number;
@@ -243,6 +245,9 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
       : null,
     maxTeams: data.maxTeams,
     registrationCount: data.registrationCount ?? 0,
+    isFree: data.isFree,
+    entryFeeAmount: data.entryFeeAmount,
+    currency: data.currency,
   };
 }
 

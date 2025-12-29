@@ -70,4 +70,7 @@ export interface CompetitionDetails {
   registrationDeadlineDate?: Date | null;
   maxTeams?: number | null;
   registrationCount?: number;
+  isFree?: boolean;
+  entryFeeAmount?: number | null;
+  currency?: string;
 }
