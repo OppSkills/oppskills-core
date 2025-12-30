@@ -74,5 +74,5 @@ export interface CompetitionDetails {
   entryFeeAmount?: number | null;
   currency?: string;
 
-  createdAt?: Date;
+  createdAt: Date;
 }

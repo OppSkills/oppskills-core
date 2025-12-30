@@ -25,7 +25,7 @@ import { useAuth } from "@clerk/nextjs";
 function mapRoundStatus(
   startsAt: string,
   endsAt: string,
-  status?: string,
+  status?: string
 ): RoundStatus {
   const now = new Date();
   const start = new Date(startsAt);
@@ -67,6 +67,7 @@ interface HackathonApiData {
   id: string;
   slug: string;
   name: string;
+  createdAt: Date;
   description: string | null;
   bannerImageUrl: string | null;
   startDate: string;
@@ -207,7 +208,7 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
       data.hackathonType
         .replace(/_/g, " ")
         .toLowerCase()
-        .replace(/\b\w/g, (c) => c.toUpperCase()),
+        .replace(/\b\w/g, (c) => c.toUpperCase())
     );
   }
   if (data.mode) {
@@ -248,6 +249,7 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     isFree: data.isFree,
     entryFeeAmount: data.entryFeeAmount,
     currency: data.currency,
+    createdAt: data.createdAt,
   };
 }
 
@@ -255,7 +257,7 @@ export default function CompetitionDetailsPage() {
   const { slug } = useParams();
   const { getToken, isSignedIn } = useAuth();
   const [competition, setCompetition] = useState<CompetitionDetails | null>(
-    null,
+    null
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -280,7 +282,7 @@ export default function CompetitionDetailsPage() {
             if (token) {
               const data = (await getHackathonBySlug(
                 token,
-                slug,
+                slug
               )) as HackathonApiData;
               setCompetition(transformApiData(data));
               setIsDraft(true);

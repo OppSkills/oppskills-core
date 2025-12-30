@@ -220,9 +220,11 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
   const getDeterministicPseudoImpressions = (
     registrationCount: number | null | undefined,
-    createdAt: Date | undefined
+    createdAt: Date
   ): number => {
-    if (!registrationCount || registrationCount <= 0 || !createdAt) return 0;
+    if (!registrationCount || registrationCount <= 0) return 0;
+
+    console.log(registrationCount, createdAt);
 
     const now = Date.now();
     const createdTime = new Date(createdAt).getTime();
@@ -247,8 +249,8 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     const softCap = registrationCount * 120;
 
     const impressions = registrationBase + timeExposure;
-
-    return Math.min(Math.floor(impressions), softCap);
+    const finalCount = Math.min(Math.floor(impressions), softCap);
+    return finalCount;
   };
 
   return (
@@ -349,8 +351,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
                     getDeterministicPseudoImpressions(
                       competition.registrationCount,
                       competition.createdAt
-                    ) ||
-                    "746"}
+                    )}
                 </div>
                 <div className="text-xs text-neutral-500">Impressions</div>
               </div>
