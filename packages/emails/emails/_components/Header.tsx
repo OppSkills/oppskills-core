@@ -8,7 +8,9 @@ import {
 import * as React from 'react';
 
 const baseUrl = 'https://www.oppskills.com';
-const iconColor = '7C737E'; // Hex without # for icons8 URL
+const iconColor = '7C737E'; 
+
+const logoUrl = `${baseUrl}/logo.png`;
 
 export function Header() {
   return (
@@ -16,10 +18,11 @@ export function Header() {
       <Row>
         <Column align="left">
           <Img
-            src={`${baseUrl}/logo.svg`}
+            src={logoUrl}
             width="140"
-            height="auto"
+            height="37"
             alt="OppSkills"
+            style={logoStyle}
           />
         </Column>
         <Column align="right">
@@ -62,5 +65,11 @@ const socialRow: React.CSSProperties = {
 
 const socialColumn: React.CSSProperties = {
   paddingLeft: '12px',
+};
+
+const logoStyle: React.CSSProperties = {
+  display: 'block',
+  maxWidth: '140px',
+  height: 'auto',
 };
 
