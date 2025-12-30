@@ -169,8 +169,18 @@ function mergeDefaultAndCustomFields(
   const customs = customFields ?? [];
 
   const defaultLabels = new Set(defaults.map((f) => f.label.toLowerCase()));
+  
+  // Also filter out all identity fields (school/college/company) from custom fields
+  // since we add the appropriate one based on userCategory
+  const identityFieldLabels = new Set([
+    "school name",
+    "college name", 
+    "company name",
+  ]);
+
   const filteredCustoms = customs.filter(
-    (f) => !defaultLabels.has(f.label.toLowerCase()),
+    (f) => !defaultLabels.has(f.label.toLowerCase()) && 
+           !identityFieldLabels.has(f.label.toLowerCase()),
   );
 
   return [...defaults, ...filteredCustoms].sort((a, b) => a.order - b.order);

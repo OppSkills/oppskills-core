@@ -231,8 +231,18 @@ export function CreateTeamForm({
     const defaultLabels = new Set(
       defaultFields.map((f) => f.label.toLowerCase()),
     );
+    
+    // Also filter out all identity fields (school/college/company) from custom fields
+    // since we add the appropriate one based on userCategory
+    const identityFieldLabels = new Set([
+      "school name",
+      "college name",
+      "company name",
+    ]);
+    
     const filteredCustomFields = customFields.filter(
-      (f) => !defaultLabels.has(f.label.toLowerCase()),
+      (f) => !defaultLabels.has(f.label.toLowerCase()) &&
+             !identityFieldLabels.has(f.label.toLowerCase()),
     );
 
     const mergedFields = [...defaultFields, ...filteredCustomFields].sort(

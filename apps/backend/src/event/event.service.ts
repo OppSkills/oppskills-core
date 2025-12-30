@@ -1088,9 +1088,31 @@ export class EventService {
 
     const providedFieldIds = new Set(providedAnswers.map((a) => a.fieldId));
 
+    // Identity field labels - only the one matching user's category should be required
+    const identityFieldLabels = new Set([
+      'school name',
+      'college name',
+      'company name',
+    ]);
+
+    // Determine which identity field label is required for this user
+    const requiredIdentityLabel =
+      userCategory === 'SCHOOL_STUDENT'
+        ? 'school name'
+        : userCategory === 'WORKING_PROFESSIONAL'
+          ? 'company name'
+          : 'college name'; // Default for COLLEGE_STUDENT, FRESHER, PROFESSIONAL_SCHOOL_STUDENT, or null
+
     // Check for required fields
     for (const field of registrationFields) {
       if (field.required) {
+        const fieldLabelLower = field.label.toLowerCase();
+        
+        // Skip identity fields that don't match the user's category
+        if (identityFieldLabels.has(fieldLabelLower) && fieldLabelLower !== requiredIdentityLabel) {
+          continue;
+        }
+        
         if (!providedFieldIds.has(field.id)) {
           throw new BadRequestException(`Field "${field.label}" is required.`);
         }

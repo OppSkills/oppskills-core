@@ -868,7 +868,7 @@ export class TeamService {
       value: a.value,
     }));
 
-    this.validateRegistrationAnswers(providedAnswers, registrationFields);
+    this.validateRegistrationAnswers(providedAnswers, registrationFields, userCategory);
 
     const requiredIdentityField = registrationFields.find(
       (f) => f.label.toLowerCase() === requiredIdentityLabel.toLowerCase(),
@@ -912,13 +912,36 @@ export class TeamService {
       required: boolean;
       options: string[];
     }>,
+    userCategory?: string | null,
   ) {
     const fieldMap = new Map(fields.map((f) => [f.id, f]));
     const providedFieldIds = new Set(answers.map((a) => a.fieldId));
 
+    // Identity field labels - only the one matching user's category should be required
+    const identityFieldLabels = new Set([
+      'school name',
+      'college name',
+      'company name',
+    ]);
+
+    // Determine which identity field label is required for this user
+    const requiredIdentityLabel =
+      userCategory === 'SCHOOL_STUDENT'
+        ? 'school name'
+        : userCategory === 'WORKING_PROFESSIONAL'
+          ? 'company name'
+          : 'college name'; // Default for COLLEGE_STUDENT, FRESHER, PROFESSIONAL_SCHOOL_STUDENT, or null
+
     // Check for required fields
     for (const field of fields) {
       if (field.required && !providedFieldIds.has(field.id)) {
+        const fieldLabelLower = field.label.toLowerCase();
+        
+        // Skip identity fields that don't match the user's category
+        if (identityFieldLabels.has(fieldLabelLower) && fieldLabelLower !== requiredIdentityLabel) {
+          continue;
+        }
+        
         throw new BadRequestException(`Field "${field.label}" is required.`);
       }
     }
