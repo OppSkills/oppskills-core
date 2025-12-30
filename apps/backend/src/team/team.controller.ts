@@ -51,7 +51,7 @@ export class TeamController {
           example: '550e8400-e29b-41d4-a716-446655440000',
         },
         name: { type: 'string', example: 'Code Warriors' },
-        hackathonId: { type: 'string', format: 'uuid' },
+        hackathonId: { type: 'string' },
         leaderId: { type: 'string' },
         maxSize: { type: 'number', example: 4 },
         invitationCode: { type: 'string', example: 'ABC123XY' },
@@ -85,8 +85,7 @@ export class TeamController {
     name: 'hackathonId',
     description: 'Hackathon ID',
     type: 'string',
-    format: 'uuid',
-    example: '550e8400-e29b-41d4-a716-446655440000',
+    example: 'cmjs132o7001yq901uh8byh06',
   })
   @ApiResponse({
     status: 200,

@@ -72,10 +72,9 @@ export class CreateTeamDto {
 
   @ApiProperty({
     description: "ID of the hackathon this team is participating in",
-    format: "uuid",
-    example: "550e8400-e29b-41d4-a716-446655440000",
+    example: "cmjs132o7001yq901uh8byh06",
   })
-  @IsUUID()
+  @IsString()
   hackathonId: string;
 
   @ApiPropertyOptional({
@@ -114,11 +113,10 @@ export class CreateTeamDto {
 export class JoinTeamDto {
   @ApiPropertyOptional({
     description: "Team ID to join",
-    format: "uuid",
-    example: "550e8400-e29b-41d4-a716-446655440001",
+    example: "cmjs132o7001yq901uh8byh07",
   })
   @IsOptional()
-  @IsUUID()
+  @IsString()
   teamId?: string;
 
   @ApiPropertyOptional({
