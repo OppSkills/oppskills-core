@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { prisma } from '@oppskills/db';
 import type {
   CreateEventDto,
@@ -14,6 +15,8 @@ import type {
 } from '@oppskills/types';
 import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
 import { Logger } from '../_utils/logger';
+import { EMAIL_EVENTS } from '../email/email.events';
+import type { EventJoinedEventPayload } from '../email/email.events';
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 type LifecycleStatus =
@@ -28,7 +31,10 @@ export class EventService {
   private readonly logger = new Logger(EventService.name);
   private readonly GOOGLE_SHEETS_ENABLED_EVENT_ID = 'cmjn3pgst0001oz01flu5hcgw';
 
-  constructor(private readonly googleSheetsService: GoogleSheetsService) {}
+  constructor(
+    private readonly googleSheetsService: GoogleSheetsService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
   /**
    * Create an event as a user.
    * - If `festivalId` is null/undefined => standalone event.
@@ -833,6 +839,14 @@ export class EventService {
       where: { id: eventId },
       select: {
         id: true,
+        name: true,
+        slug: true,
+        startDate: true,
+        eventType: true,
+        locationType: true,
+        locationAddress: true,
+        locationCity: true,
+        locationVirtualLink: true,
         ownerId: true,
         status: true,
         approvalStatus: true,
@@ -1205,8 +1219,15 @@ export class EventService {
       }
     }
 
+    // Fetch user data for email
+    const user = await prisma.userEntity.findUnique({
+      where: { id: userId },
+      select: { email: true, firstName: true },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
     // Check capacity (use transaction for atomic update)
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // Re-fetch within transaction to ensure consistency
       const currentEvent = await tx.eventEntity.findUnique({
         where: { id: eventId },
@@ -1271,8 +1292,48 @@ export class EventService {
         console.error('Failed to log to Google Sheets:', err);
       });
 
-      return { message: 'Successfully joined the event.' };
+      return { participantId: participant.id };
     });
+
+    // Format event date and time for email
+    const eventDate = event.startDate.toLocaleDateString('en-IN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const eventTime = event.startDate.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    // Build location string
+    let eventLocation: string | undefined;
+    if (event.locationType === 'PHYSICAL') {
+      eventLocation = [event.locationAddress, event.locationCity]
+        .filter(Boolean)
+        .join(', ');
+    } else if (event.locationType === 'VIRTUAL' && event.locationVirtualLink) {
+      eventLocation = 'Online Event';
+    }
+
+    // Emit event.joined event for event pass email
+    const emailPayload: EventJoinedEventPayload = {
+      userId,
+      email: user.email,
+      firstName: user.firstName || undefined,
+      eventId: event.id,
+      eventName: event.name,
+      eventSlug: event.slug,
+      eventDate,
+      eventTime,
+      eventLocation,
+      eventType: event.eventType || undefined,
+      registrationId: result.participantId,
+    };
+    this.eventEmitter.emit(EMAIL_EVENTS.EVENT_JOINED, emailPayload);
+
+    return { message: 'Successfully joined the event.' };
   }
 
   /**

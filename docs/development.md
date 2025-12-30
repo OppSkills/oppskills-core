@@ -79,6 +79,8 @@ MEDIA_MAX_UPLOAD_BYTES="10485760"
 MEDIA_MAX_DOCUMENT_UPLOAD_BYTES="104857600"
 MEDIA_ALLOWED_IMAGE_MIME_TYPES="image/jpeg,image/png,image/webp"
 MEDIA_ALLOWED_DOCUMENT_MIME_TYPES="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,image/jpeg,image/png,image/webp"
+RESEND_API_KEY="re_..."
+RESEND_FROM_EMAIL="OppSkills <noreply@oppskills.com>"
 ```
 
 #### Database (`packages/database/.env`)

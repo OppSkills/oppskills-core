@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Logger } from 'src/_utils/logger';
 import { ClerkAuthConfigService } from 'src/common/config.service';
 import { prisma } from '@oppskills/db';
@@ -9,6 +10,11 @@ import {
   CreateOnboardingDto,
   UserCategoryValue,
 } from '@oppskills/types';
+import {
+  EMAIL_EVENTS,
+  UserCreatedEventPayload,
+  UserOnboardedEventPayload,
+} from 'src/email/email.events';
 
 @Injectable()
 export class UserAccountsService {
@@ -16,6 +22,7 @@ export class UserAccountsService {
 
   constructor(
     private readonly clerkAuthConfigService: ClerkAuthConfigService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create({
@@ -277,19 +284,33 @@ export class UserAccountsService {
           },
         });
 
-        // Set user as onboarded
-        await tx.userEntity.update({
+        // Set user as onboarded and get user data for email
+        const user = await tx.userEntity.update({
           where: { id: userId },
           data: { onboarded: true },
+          select: {
+            email: true,
+            firstName: true,
+          },
         });
 
-        return onboardingProfile;
+        return { onboardingProfile, user };
       });
+
+      // Emit user.onboarded event for onboarding complete email
+      const eventPayload: UserOnboardedEventPayload = {
+        userId,
+        email: result.user.email,
+        firstName: result.user.firstName || undefined,
+        userCategory: data.userCategory,
+        locationCity: data.locationCity,
+      };
+      this.eventEmitter.emit(EMAIL_EVENTS.USER_ONBOARDED, eventPayload);
 
       return {
         success: true,
         message: 'Onboarding completed successfully',
-        onboardingProfile: result,
+        onboardingProfile: result.onboardingProfile,
       };
     } catch (error) {
       this.logger.error(
@@ -495,6 +516,15 @@ export class UserAccountsService {
                   lastName: payload.data.last_name,
                   imageUrl: payload.data.image_url,
                 });
+
+                // Emit user.created event for welcome email
+                const eventPayload: UserCreatedEventPayload = {
+                  userId,
+                  email: primaryEmail,
+                  firstName: payload.data.first_name || undefined,
+                  lastName: payload.data.last_name || undefined,
+                };
+                this.eventEmitter.emit(EMAIL_EVENTS.USER_CREATED, eventPayload);
 
                 return { success: true, data: userAccountAccess };
               } catch (error) {
