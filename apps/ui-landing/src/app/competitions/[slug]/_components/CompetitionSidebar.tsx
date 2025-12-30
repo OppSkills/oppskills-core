@@ -31,7 +31,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
   const [myTeam, setMyTeam] = useState<{ id: string; name: string } | null>(
-    null,
+    null
   );
 
   // Force re-check when redirected back from registration with ?registered=true
@@ -119,7 +119,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       }
 
       router.push(
-        `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`,
+        `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`
       );
     } catch (error) {
       console.error("Error checking onboarding status:", error);
@@ -150,7 +150,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           className="w-full bg-green-600 hover:bg-green-700 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm"
           onClick={() =>
             router.push(
-              `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`,
+              `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`
             )
           }
         >
@@ -216,6 +216,39 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         )}
       </Button>
     );
+  };
+
+  const getDeterministicPseudoImpressions = (
+    registrationCount: number | null | undefined,
+    createdAt: Date | undefined
+  ): number => {
+    if (!registrationCount || registrationCount <= 0 || !createdAt) return 0;
+
+    const now = Date.now();
+    const createdTime = new Date(createdAt).getTime();
+
+    const hoursOld = Math.max(
+      1,
+      Math.floor((now - createdTime) / (1000 * 60 * 60))
+    );
+
+    const registrationBase = registrationCount * 6;
+
+    let timeExposure = 0;
+
+    if (hoursOld <= 24) {
+      timeExposure = hoursOld * 35;
+    } else if (hoursOld <= 72) {
+      timeExposure = 24 * 35 + (hoursOld - 24) * 12;
+    } else {
+      timeExposure = 24 * 35 + 48 * 12 + Math.log2(hoursOld - 72 + 1) * 25;
+    }
+
+    const softCap = registrationCount * 120;
+
+    const impressions = registrationBase + timeExposure;
+
+    return Math.min(Math.floor(impressions), softCap);
   };
 
   return (
@@ -312,7 +345,12 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
               </div>
               <div>
                 <div className="font-semibold text-neutral-900  text-sm">
-                  {competition.impressions || "206"}
+                  {competition.impressions ||
+                    getDeterministicPseudoImpressions(
+                      competition.registrationCount,
+                      competition.createdAt
+                    ) ||
+                    "746"}
                 </div>
                 <div className="text-xs text-neutral-500">Impressions</div>
               </div>

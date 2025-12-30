@@ -73,4 +73,6 @@ export interface CompetitionDetails {
   isFree?: boolean;
   entryFeeAmount?: number | null;
   currency?: string;
+
+  createdAt?: Date;
 }
