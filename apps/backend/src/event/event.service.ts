@@ -962,7 +962,7 @@ export class EventService {
         frontendId: 'default-college-name',
         label: 'College Name',
         type: 'TEXT',
-        order: -10,
+        order: -9,
         required: true,
         options: [],
       });
@@ -971,7 +971,7 @@ export class EventService {
         frontendId: 'default-company-name',
         label: 'Company Name',
         type: 'TEXT',
-        order: -10,
+        order: -8,
         required: true,
         options: [],
       });
@@ -981,7 +981,7 @@ export class EventService {
         frontendId: 'default-college-name',
         label: 'College Name',
         type: 'TEXT',
-        order: -10,
+        order: -9,
         required: true,
         options: [],
       });
