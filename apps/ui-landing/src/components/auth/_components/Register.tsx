@@ -118,7 +118,7 @@ export default function Register({
           await setActive({ session: sessionId });
           toast.success("Registration Successful!");
           setIsOpenLogin(false);
-          router.push("/");
+          router.refresh();
         } else {
           console.log("Session ID is missing:", sessionId);
           toast.error(

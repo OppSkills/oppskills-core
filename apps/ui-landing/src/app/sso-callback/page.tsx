@@ -1,6 +1,30 @@
 "use client";
 
 import { AuthenticateWithRedirectCallback } from "@clerk/nextjs";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+
+/**
+ * Inner component that handles the SSO callback with search params
+ */
+function SSOCallbackContent() {
+  const searchParams = useSearchParams();
+  
+  // Get the redirect URL from search params, or fallback to "/"
+  const redirectUrl = searchParams.get("redirect_url") || "/";
+  
+  return (
+    <AuthenticateWithRedirectCallback
+      afterSignInUrl={redirectUrl}
+      afterSignUpUrl={redirectUrl}
+      /**
+       * When Clerk sign-up requires additional info (e.g. username is required),
+       * route the user back into our app instead of Clerk-hosted completion UI.
+       */
+      continueSignUpUrl="/complete-profile"
+    />
+  );
+}
 
 /**
  * SSO Callback page for handling OAuth redirects from Clerk
@@ -13,15 +37,9 @@ export default function SSOCallbackPage() {
     <div className="flex flex-col items-center justify-center min-h-screen">
       {/* Clerk CAPTCHA widget container for bot protection during OAuth flow */}
       <div id="clerk-captcha"></div>
-      <AuthenticateWithRedirectCallback
-        afterSignInUrl="/"
-        afterSignUpUrl="/"
-        /**
-         * When Clerk sign-up requires additional info (e.g. username is required),
-         * route the user back into our app instead of Clerk-hosted completion UI.
-         */
-        continueSignUpUrl="/complete-profile"
-      />
+      <Suspense fallback={<div>Loading...</div>}>
+        <SSOCallbackContent />
+      </Suspense>
     </div>
   );
 }
