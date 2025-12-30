@@ -84,10 +84,10 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold text-lg mb-1">Email Us</h3>
                     <a
-                      href="mailto:oppskills15@gmail.com"
+                      href="mailto:info@oppskills.com"
                       className="text-muted-foreground hover:text-primary-500 transition-colors block"
                     >
-                      oppskills15@gmail.com
+                      info@oppskills.com
                     </a>
                   </div>
                 </CardContent>

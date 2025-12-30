@@ -12,7 +12,7 @@ import {
 import Image from "next/image";
 import { MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { joinEvent, checkMyRegistration } from "@/lib/api/eventApi";
 import { getMe } from "@/lib/api/usersApi";
@@ -31,7 +31,7 @@ interface EventDetailsClientProps {
  */
 function getInitials(
   firstName: string | null,
-  lastName: string | null,
+  lastName: string | null
 ): string {
   const first = (firstName ?? "").trim().charAt(0).toUpperCase();
   const last = (lastName ?? "").trim().charAt(0).toUpperCase();
@@ -163,24 +163,25 @@ function buildDefaultFields(userCategory?: string): RegistrationField[] {
 
 function mergeDefaultAndCustomFields(
   customFields: RegistrationField[] | undefined,
-  userCategory?: string,
+  userCategory?: string
 ): RegistrationField[] {
   const defaults = buildDefaultFields(userCategory);
   const customs = customFields ?? [];
 
   const defaultLabels = new Set(defaults.map((f) => f.label.toLowerCase()));
-  
+
   // Also filter out all identity fields (school/college/company) from custom fields
   // since we add the appropriate one based on userCategory
   const identityFieldLabels = new Set([
     "school name",
-    "college name", 
+    "college name",
     "company name",
   ]);
 
   const filteredCustoms = customs.filter(
-    (f) => !defaultLabels.has(f.label.toLowerCase()) && 
-           !identityFieldLabels.has(f.label.toLowerCase()),
+    (f) =>
+      !defaultLabels.has(f.label.toLowerCase()) &&
+      !identityFieldLabels.has(f.label.toLowerCase())
   );
 
   return [...defaults, ...filteredCustoms].sort((a, b) => a.order - b.order);
@@ -271,7 +272,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         []) as RegistrationField[];
       const mergedFields = mergeDefaultAndCustomFields(
         customFields,
-        onboardingProfile?.userCategory,
+        onboardingProfile?.userCategory
       );
 
       setRegistrationFields(mergedFields);
@@ -285,7 +286,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   };
 
   const handleJoinEvent = async (
-    answers: Array<{ fieldId: string; value: string | number | string[] }>,
+    answers: Array<{ fieldId: string; value: string | number | string[] }>
   ) => {
     if (!event) return;
 
@@ -327,34 +328,37 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
   // Use date-fns functions for reliable date comparison
   const isSameDay =
-    format(startDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd");
+    formatInTimeZone(startDate, "UTC", "yyyy-MM-dd") ===
+    formatInTimeZone(endDate, "UTC", "yyyy-MM-dd");
 
   // Format date display
   let formattedDate: string;
   if (isSameDay) {
-    formattedDate = format(startDate, "EEEE, d MMM yyyy");
+    formattedDate = formatInTimeZone(startDate, "UTC", "EEEE, d MMM yyyy");
   } else {
     // Check if same month and year
     const isSameMonth =
-      format(startDate, "yyyy-MM") === format(endDate, "yyyy-MM");
+      formatInTimeZone(startDate, "UTC", "yyyy-MM") ===
+      formatInTimeZone(endDate, "UTC", "yyyy-MM");
 
     if (isSameMonth) {
       // e.g., "10-12 March 2026"
-      const startDay = format(startDate, "d");
-      const endDay = format(endDate, "d");
-      const monthYear = format(endDate, "MMMM yyyy");
+      const startDay = formatInTimeZone(startDate, "UTC", "d");
+      const endDay = formatInTimeZone(endDate, "UTC", "d");
+      const monthYear = formatInTimeZone(endDate, "UTC", "MMMM yyyy");
       formattedDate = `${startDay}-${endDay} ${monthYear}`;
     } else {
       // Different months, e.g., "30 Jan - 2 Feb 2026"
-      const startFormatted = format(startDate, "d MMM");
-      const endFormatted = format(endDate, "d MMM yyyy");
+      const startFormatted = formatInTimeZone(startDate, "UTC", "d MMM");
+      const endFormatted = formatInTimeZone(endDate, "UTC", "d MMM yyyy");
       formattedDate = `${startFormatted} - ${endFormatted}`;
     }
   }
 
-  const formattedTime = format(startDate, "h:mm a") + " Onwards";
-  const monthShort = format(startDate, "MMM");
-  const dayNum = format(startDate, "dd");
+  const formattedTime =
+    formatInTimeZone(startDate, "UTC", "h:mm a") + " Onwards";
+  const monthShort = formatInTimeZone(startDate, "UTC", "MMM");
+  const dayNum = formatInTimeZone(startDate, "UTC", "dd");
 
   const { venueName, venueAddress } = formatLocation(event);
 
@@ -480,7 +484,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                       <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
                         {getInitials(
                           event.owner.firstName,
-                          event.owner.lastName,
+                          event.owner.lastName
                         )}
                       </div>
                     )}

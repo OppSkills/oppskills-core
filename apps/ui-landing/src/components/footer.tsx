@@ -26,7 +26,11 @@ const Footer = () => {
       { name: "Competitions", href: "#competitions" },
       { name: "Events", href: "#events" },
     ],
-    OppSkills: [{ name: "Market Mafiaa", href: "https://marketmafiaa.com" }],
+    OppSkills: [
+      { name: "Market Mafiaa", href: "https://marketmafiaa.com" },
+      { name: "About Us", href: "/about" },
+      { name: "Contact", href: "/contact" },
+    ],
   };
 
   const socialLinks: SocialLink[] = [

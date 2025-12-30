@@ -8,9 +8,9 @@ import { ArrowRight, CheckCircle, Users, Globe, Zap } from "lucide-react";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col justify-center items-center space-y-16 py-12 md:py-24">
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-16 md:pt-24 lg:pt-32">
+      <section className="relative overflow-hidden pt-16 flex items-center">
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center text-center">
             <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">

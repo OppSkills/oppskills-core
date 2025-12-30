@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "dev": "tsc -w",
+    "dev": "concurrently \"tsc -w\" \"email dev --port 3005\"",
     "email:dev": "email dev --port 3005"
   },
   "dependencies": {
