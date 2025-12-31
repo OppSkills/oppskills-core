@@ -48,6 +48,15 @@ import CompetitionDetailsPage from "@/app/competitions/[slug]/page";
 /**
  * Shared Types
  */
+export interface RoundSubmissionConfig {
+  enabled: boolean;
+  allowedFileTypes: ("pdf" | "ppt" | "image")[];
+  maxFiles: number;
+  maxFileSizeBytes: number;
+  allowResubmission: boolean;
+  instructions?: string;
+}
+
 export interface Round {
   id: string;
   name: string;
@@ -56,6 +65,7 @@ export interface Round {
   endDate: Date;
   startTime: string;
   endTime: string;
+  submissionConfig?: RoundSubmissionConfig;
 }
 
 export interface RegistrationSettingsData {
@@ -144,7 +154,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function getString(
   obj: Record<string, unknown>,
-  key: string
+  key: string,
 ): string | undefined {
   const value = obj[key];
   return typeof value === "string" && value.trim().length > 0
@@ -186,7 +196,7 @@ function isValidUrl(value: string): boolean {
 }
 
 function toVisibilityValue(
-  label: string
+  label: string,
 ): "PUBLIC" | "PRIVATE" | "UNIVERSITY_ONLY" | undefined {
   if (label === "Public") return "PUBLIC";
   if (label === "Private") return "PRIVATE";
@@ -195,7 +205,7 @@ function toVisibilityValue(
 }
 
 function toHackathonTypeValue(
-  label: string
+  label: string,
 ):
   | "CODING_HACKATHON"
   | "IDEA_HACKATHON"
@@ -212,7 +222,7 @@ function toHackathonTypeValue(
 }
 
 function toParticipantTypeValue(
-  label: string
+  label: string,
 ):
   | "INDIVIDUAL"
   | "TEAM_OF_2"
@@ -257,7 +267,7 @@ function combineDateAndTimeToIso(date: Date, timeHHmm: string): string {
 }
 
 function mapCandidateTypesToEligibility(
-  input: ReadonlyArray<string>
+  input: ReadonlyArray<string>,
 ): HackathonAttendeeEligibilityValue[] {
   const out: HackathonAttendeeEligibilityValue[] = [];
   const add = (v: HackathonAttendeeEligibilityValue) => {
@@ -274,7 +284,7 @@ function mapCandidateTypesToEligibility(
 }
 
 function mapRegistrationQuestionsToRegistrationForm(
-  questions: ReadonlyArray<RegistrationQuestion>
+  questions: ReadonlyArray<RegistrationQuestion>,
 ): RegistrationFormDto {
   const typeMap: Record<
     RegistrationQuestion["type"],
@@ -326,7 +336,7 @@ function serializeRounds(value: ReadonlyArray<Round>): string {
 }
 
 function serializePrizeBreakdown(
-  value: ReadonlyArray<PrizeBreakdownDto>
+  value: ReadonlyArray<PrizeBreakdownDto>,
 ): string {
   return JSON.stringify(value);
 }
@@ -392,7 +402,7 @@ function formatPrizeAmount(amount: unknown): string {
 }
 
 function fromRegistrationFieldType(
-  value: string | undefined
+  value: string | undefined,
 ): RegistrationQuestion["type"] {
   const v = (value ?? "").toUpperCase();
   if (v === "PHONE_NO") return "Phone No.";
@@ -408,6 +418,54 @@ function extractHackathon(input: unknown): Record<string, unknown> | null {
   const maybeData = input["data"];
   if (isRecord(maybeData)) return maybeData;
   return input;
+}
+
+function getAutosaveErrorMessage(error: unknown): string {
+  if (!isRecord(error)) {
+    return "Autosave failed. Please check your connection.";
+  }
+
+  const response = error["response"];
+  if (!isRecord(response)) {
+    return "Autosave failed. Please check your connection.";
+  }
+
+  const status = response["status"];
+  const data = response["data"];
+
+  if (status === 403) {
+    if (isRecord(data) && typeof data["message"] === "string") {
+      const msg = data["message"];
+      if (msg.includes("DRAFT") || msg.includes("status")) {
+        return "Rounds can only be edited while the opportunity is in Draft status.";
+      }
+      if (msg.includes("permission") || msg.includes("access")) {
+        return "You don't have permission to edit this opportunity. Contact the owner to get manager access.";
+      }
+      return msg;
+    }
+    return "You don't have permission to edit this opportunity.";
+  }
+
+  if (status === 400) {
+    if (isRecord(data) && typeof data["message"] === "string") {
+      const msg = data["message"];
+      if (msg.includes("started") || msg.includes("cannot be edited")) {
+        return msg;
+      }
+      if (
+        msg.includes("endsAt") ||
+        msg.includes("startsAt") ||
+        (msg.includes("end") && msg.includes("start"))
+      ) {
+        return "Round end time must be after start time.";
+      }
+      return msg;
+    }
+    return "Invalid data. Please check your inputs.";
+  }
+
+  return "Autosave failed. Please check your connection.";
 }
 
 function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
@@ -508,7 +566,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
         fixed: false,
         options: Array.isArray(f["options"])
           ? (f["options"] as ReadonlyArray<unknown>).filter(
-              (o): o is string => typeof o === "string"
+              (o): o is string => typeof o === "string",
             )
           : undefined,
       };
@@ -562,7 +620,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
     eventRegisterBy: registrationDeadline,
     hackathonType: fromHackathonType(getString(hackathon, "hackathonType")),
     participantType: fromParticipantType(
-      getString(hackathon, "participantType")
+      getString(hackathon, "participantType"),
     ),
     registrationQuestions,
     rounds,
@@ -618,7 +676,7 @@ export default function EditOpportunityPage() {
     useState<boolean>(false);
   const [hackathonId, setHackathonId] = useState<string | null>(null);
   const lastSavedMaxTeamsRef = React.useRef<number | null | undefined>(
-    undefined
+    undefined,
   );
   const lastSavedRoundsSnapshotRef = React.useRef<string | null>(null);
   const savingRoundsSnapshotRef = React.useRef<string | null>(null);
@@ -711,7 +769,7 @@ export default function EditOpportunityPage() {
       // Snapshots used to decide whether to call dedicated nested endpoints.
       const roundsSnapshot = serializeRounds(formData.rounds);
       const additionalInfoSnapshot = serializeAdditionalInfo(
-        formData.additionalInfo
+        formData.additionalInfo,
       );
 
       const base: UpdateHackathonDto = {
@@ -733,12 +791,12 @@ export default function EditOpportunityPage() {
         participantType: toParticipantTypeValue(formData.participantType),
         location: toLocationDto(formData.eventLocation),
         attendeeEligibility: mapCandidateTypesToEligibility(
-          formData.registrationSettings.candidateTypes
+          formData.registrationSettings.candidateTypes,
         ),
         registrationDeadline: formData.eventRegisterBy
           ? combineDateAndTimeToIso(
               formData.eventRegisterBy,
-              formData.registrationSettings.endTime
+              formData.registrationSettings.endTime,
             )
           : undefined,
         startDate: formData.eventDate
@@ -747,7 +805,7 @@ export default function EditOpportunityPage() {
         endDate: formData.eventDate
           ? combineDateAndTimeToIso(
               formData.eventEndDate ?? formData.eventDate,
-              formData.eventTimeTo ?? formData.eventTimeFrom
+              formData.eventTimeTo ?? formData.eventTimeFrom,
             )
           : undefined,
         prizeCertificate:
@@ -785,6 +843,7 @@ export default function EditOpportunityPage() {
       if (roundsSnapshot !== lastSavedRoundsSnapshotRef.current) {
         const roundsDto: UpdateHackathonRoundsDto = {
           rounds: formData.rounds.map((r, idx) => ({
+            id: r.id.startsWith("new-") ? undefined : r.id,
             name: r.name,
             description:
               r.description.trim().length > 0 ? r.description : undefined,
@@ -792,7 +851,14 @@ export default function EditOpportunityPage() {
             endsAt: combineDateAndTimeToIso(r.endDate, r.endTime),
             order: idx,
             roundType: "ONLINE",
-            submissionConfig: undefined,
+            submissionConfig: r.submissionConfig?.enabled
+              ? {
+                  requiresFileUpload: true,
+                  allowedFileTypes: r.submissionConfig.allowedFileTypes,
+                  maxFileSizeBytes: r.submissionConfig.maxFileSizeBytes,
+                  instructions: r.submissionConfig.instructions,
+                }
+              : undefined,
           })),
         };
         await updateHackathonRounds(token, hackathonId, roundsDto);
@@ -800,10 +866,10 @@ export default function EditOpportunityPage() {
       }
 
       const customRegistrationQuestions = formData.registrationQuestions.filter(
-        (q) => q.fixed !== true && q.label.trim().length > 0
+        (q) => q.fixed !== true && q.label.trim().length > 0,
       );
       const registrationForm = mapRegistrationQuestionsToRegistrationForm(
-        customRegistrationQuestions
+        customRegistrationQuestions,
       );
       await updateHackathonRegistrationForm(token, hackathonId, {
         registrationForm,
@@ -816,7 +882,7 @@ export default function EditOpportunityPage() {
       } = formData.prizes.list.reduce(
         (
           acc: { prizeItems: PrizeBreakdownDto[]; hasInvalidAmount: boolean },
-          p
+          p,
         ) => {
           const amount = parseCurrencyToDecimalString(p.amount);
           if (amount === null) {
@@ -835,11 +901,11 @@ export default function EditOpportunityPage() {
             ],
           };
         },
-        { prizeItems: [], hasInvalidAmount: false }
+        { prizeItems: [], hasInvalidAmount: false },
       );
 
       const prizeBreakdownSnapshot = serializePrizeBreakdown(
-        prizeItemsResult.prizeItems
+        prizeItemsResult.prizeItems,
       );
       if (
         prizeItemsResult.hasInvalidAmount === false &&
@@ -892,7 +958,7 @@ export default function EditOpportunityPage() {
   const savingSnapshotRef = React.useRef<string | null>(null);
   const lastSavedAtRef = React.useRef<number | null>(null);
   const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
-    null
+    null,
   );
   const saveQueuedRef = React.useRef<boolean>(false);
   const lastErrorToastAtRef = React.useRef<number>(0);
@@ -956,13 +1022,14 @@ export default function EditOpportunityPage() {
           }, 0);
         }
       },
-      onError: () => {
+      onError: (error: unknown) => {
         setAutoSaveStatus("error");
         savingSnapshotRef.current = null;
         const now = Date.now();
         if (now - lastErrorToastAtRef.current > 10_000) {
           lastErrorToastAtRef.current = now;
-          toast.error("Autosave failed. Please check your connection.");
+          const errorMessage = getAutosaveErrorMessage(error);
+          toast.error(errorMessage);
         }
       },
     });
@@ -992,7 +1059,7 @@ export default function EditOpportunityPage() {
     lastSavedPrizeBreakdownSnapshotRef.current =
       serializePrizeBreakdown(initialPrizeItems);
     lastSavedAdditionalInfoSnapshotRef.current = serializeAdditionalInfo(
-      formData.additionalInfo
+      formData.additionalInfo,
     );
     lastSavedAtRef.current = Date.now();
     setAutoSaveStatus("saved");
@@ -1068,7 +1135,7 @@ export default function EditOpportunityPage() {
                 "flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all whitespace-nowrap",
                 activeTab === tab.id
                   ? "bg-secondary text-secondary-foreground border-primary"
-                  : "bg-background border-border text-muted-foreground hover:bg-muted"
+                  : "bg-background border-border text-muted-foreground hover:bg-muted",
               )}
             >
               {tab.icon}

@@ -386,6 +386,40 @@ export async function getHackathonRegistrationsBySlug(
 }
 
 // =====================
+// Team Round Qualification (Organizer)
+// =====================
+
+export async function setTeamRoundQualification(
+  token: string,
+  slug: string,
+  roundId: string,
+  teamId: string,
+  qualified: boolean,
+): Promise<unknown> {
+  const res = await API.put(
+    `/by-slug/${encodeURIComponent(slug)}/rounds/${roundId}/teams/${teamId}/qualification`,
+    { qualified },
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data;
+}
+
+export async function bulkSetTeamRoundQualification(
+  token: string,
+  slug: string,
+  roundId: string,
+  teamIds: string[],
+  qualified: boolean,
+): Promise<unknown> {
+  const res = await API.put(
+    `/by-slug/${encodeURIComponent(slug)}/rounds/${roundId}/bulk-qualification`,
+    { teamIds, qualified },
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data;
+}
+
+// =====================
 // Settings & Approval
 // =====================
 
@@ -481,4 +515,101 @@ export async function getTeamRegistrationAnswers(
     { headers: buildAuthHeaders(token) },
   );
   return res.data as TeamRegistrationAnswersResponse;
+}
+
+// =====================
+// Team Round Submissions (User-facing)
+// =====================
+
+export interface SubmissionFile {
+  url: string;
+  name: string;
+  mimeType: string;
+  size: number;
+}
+
+export interface RoundSubmissionInfo {
+  roundId: string;
+  submittedAt: string | null;
+  files: SubmissionFile[];
+  note: string | null;
+  qualified?: boolean;
+  qualifiedAt?: string | null;
+}
+
+export interface RoundQualificationInfo {
+  roundId: string;
+  qualified: boolean;
+  qualifiedAt: string | null;
+}
+
+export interface MyTeamSubmissionsResponse {
+  team: {
+    id: string;
+    name: string;
+    leaderId: string;
+  };
+  submissions: RoundSubmissionInfo[];
+  qualifications: RoundQualificationInfo[];
+}
+
+export async function getMyTeamSubmissions(
+  token: string,
+  slug: string,
+): Promise<MyTeamSubmissionsResponse | null> {
+  const safeSlug = slug.trim();
+  if (safeSlug.length === 0) {
+    throw new Error("Hackathon slug is required.");
+  }
+  try {
+    const res = await API.get(
+      `/by-slug/${encodeURIComponent(safeSlug)}/my-team/submissions`,
+      { headers: buildAuthHeaders(token) },
+    );
+    return res.data as MyTeamSubmissionsResponse;
+  } catch (err: unknown) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "response" in err &&
+      (err as { response?: { status?: number } }).response?.status === 404
+    ) {
+      return null;
+    }
+    throw err;
+  }
+}
+
+export interface UpsertSubmissionPayload {
+  files: SubmissionFile[];
+  note?: string | null;
+}
+
+export interface SubmissionResponse {
+  id: string;
+  teamId: string;
+  roundId: string;
+  submittedAt: string;
+  payload: {
+    files: SubmissionFile[];
+    note: string | null;
+  };
+}
+
+export async function upsertRoundSubmission(
+  token: string,
+  slug: string,
+  roundId: string,
+  data: UpsertSubmissionPayload,
+): Promise<SubmissionResponse> {
+  const safeSlug = slug.trim();
+  if (safeSlug.length === 0) {
+    throw new Error("Hackathon slug is required.");
+  }
+  const res = await API.put(
+    `/by-slug/${encodeURIComponent(safeSlug)}/rounds/${encodeURIComponent(roundId)}/submission`,
+    data,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as SubmissionResponse;
 }

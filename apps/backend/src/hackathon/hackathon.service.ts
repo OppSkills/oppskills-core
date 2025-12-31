@@ -876,48 +876,141 @@ export class HackathonService {
   }
 
   /**
-   * Replace all rounds of a hackathon.
-   * - Allowed only when status is DRAFT.
-   * - Owner-only (or admin).
+   * Update rounds of a hackathon using diff/upsert approach.
+   * - Owner/admin/manager can edit.
+   * - In DRAFT: full edit allowed.
+   * - After publish: only future rounds can be edited/deleted/created.
+   *   Rounds that have already started cannot be modified.
    */
   async updateHackathonRounds(
     id: string,
     dto: UpdateHackathonRoundsDto,
     userId: string,
   ) {
-    await this.assertHackathonEditableByUser(id, userId);
+    const hackathon = await this.assertHackathonRoundsEditableByUser(
+      id,
+      userId,
+    );
+    const now = new Date();
+    const isDraft = hackathon.status === 'DRAFT';
 
-    // Validate round timeline constraints
+    // Load existing rounds with submission counts
+    const existingRounds = await prisma.roundEntity.findMany({
+      where: { hackathonId: id },
+      include: {
+        _count: { select: { teamSubmissions: true } },
+      },
+    });
+    const existingById = new Map(existingRounds.map((r) => [r.id, r]));
+
+    // Validate all incoming rounds
     for (const round of dto.rounds) {
       const startsAt = this.parseDate(round.startsAt, 'rounds.startsAt');
       const endsAt = this.parseDate(round.endsAt, 'rounds.endsAt');
       if (endsAt.getTime() < startsAt.getTime()) {
         throw new BadRequestException(
-          `Round "${round.name}": endsAt must be >= startsAt.`,
+          `Round "${round.name}": end time must be after start time.`,
         );
       }
     }
 
-    // Delete existing rounds and create new ones in a transaction
-    await prisma.$transaction(async (tx) => {
-      await tx.roundEntity.deleteMany({
-        where: { hackathonId: id },
-      });
+    // Split incoming rounds into updates vs creates
+    const incomingWithId = dto.rounds.filter((r) => r.id);
+    const incomingNew = dto.rounds.filter((r) => !r.id);
+    const incomingIds = new Set(incomingWithId.map((r) => r.id));
 
-      await tx.roundEntity.createMany({
-        data: dto.rounds.map((round) => ({
-          hackathonId: id,
-          name: round.name,
-          description: round.description,
-          startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
-          endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
-          order: round.order,
-          roundType: round.roundType,
-          submissionConfig: round.submissionConfig
-            ? (round.submissionConfig as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-        })),
-      });
+    // Rounds to delete: existing but not in incoming
+    const toDeleteIds = existingRounds
+      .filter((r) => !incomingIds.has(r.id))
+      .map((r) => r.id);
+
+    // Non-DRAFT constraints
+    if (!isDraft) {
+      // Check updates: cannot edit rounds that have started
+      for (const round of incomingWithId) {
+        const existing = existingById.get(round.id!);
+        if (!existing) {
+          throw new BadRequestException(
+            `Round with id "${round.id}" not found.`,
+          );
+        }
+        if (existing.startsAt.getTime() <= now.getTime()) {
+          throw new BadRequestException(
+            `Round "${existing.name}" has already started and cannot be edited.`,
+          );
+        }
+      }
+
+      // Check creates: new rounds must start in the future
+      for (const round of incomingNew) {
+        const startsAt = this.parseDate(round.startsAt, 'rounds.startsAt');
+        if (startsAt.getTime() <= now.getTime()) {
+          throw new BadRequestException(
+            `New round "${round.name}" must start in the future.`,
+          );
+        }
+      }
+
+      // Check deletes: cannot delete started rounds or rounds with submissions
+      for (const roundId of toDeleteIds) {
+        const existing = existingById.get(roundId)!;
+        if (existing.startsAt.getTime() <= now.getTime()) {
+          throw new BadRequestException(
+            `Round "${existing.name}" has already started and cannot be deleted.`,
+          );
+        }
+        if (existing._count.teamSubmissions > 0) {
+          throw new BadRequestException(
+            `Round "${existing.name}" has submissions and cannot be deleted.`,
+          );
+        }
+      }
+    }
+
+    // Apply changes in transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete removed rounds
+      if (toDeleteIds.length > 0) {
+        await tx.roundEntity.deleteMany({
+          where: { id: { in: toDeleteIds } },
+        });
+      }
+
+      // Update existing rounds
+      for (const round of incomingWithId) {
+        await tx.roundEntity.update({
+          where: { id: round.id },
+          data: {
+            name: round.name,
+            description: round.description,
+            startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
+            endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
+            order: round.order,
+            roundType: round.roundType,
+            submissionConfig: round.submissionConfig
+              ? (round.submissionConfig as Prisma.InputJsonValue)
+              : Prisma.JsonNull,
+          },
+        });
+      }
+
+      // Create new rounds
+      if (incomingNew.length > 0) {
+        await tx.roundEntity.createMany({
+          data: incomingNew.map((round) => ({
+            hackathonId: id,
+            name: round.name,
+            description: round.description,
+            startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
+            endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
+            order: round.order,
+            roundType: round.roundType,
+            submissionConfig: round.submissionConfig
+              ? (round.submissionConfig as Prisma.InputJsonValue)
+              : Prisma.JsonNull,
+          })),
+        });
+      }
     });
 
     return prisma.hackathonEntity.findUnique({
@@ -1156,10 +1249,37 @@ export class HackathonService {
     return hackathon;
   }
 
-  /**
-   * Get the standard include clause for hackathon queries.
-   * Includes all relations: owner, festival, rounds, questions, attachments, etc.
-   */
+  private async assertHackathonRoundsEditableByUser(
+    id: string,
+    userId: string,
+  ) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id },
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    if (hackathon.ownerId !== userId) {
+      const isAdmin = await this.isAdminUser(userId);
+      if (!isAdmin) {
+        const isManager = await this.isHackathonManager(id, userId);
+        if (!isManager) {
+          throw new ForbiddenException(
+            'You are not allowed to edit this hackathon.',
+          );
+        }
+      }
+    }
+
+    const status = hackathon.status as LifecycleStatus;
+    if (status === 'CANCELLED' || status === 'COMPLETED') {
+      throw new ForbiddenException(
+        'Cannot edit rounds for a cancelled or completed hackathon.',
+      );
+    }
+
+    return hackathon;
+  }
+
   private getHackathonIncludeClause() {
     return {
       owner: {
@@ -1184,6 +1304,229 @@ export class HackathonService {
         },
       },
       attachments: true,
+    };
+  }
+
+  async getMyTeamSubmissions(slug: string, userId: string) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug },
+      include: {
+        rounds: { orderBy: { order: 'asc' } },
+      },
+    });
+
+    if (!hackathon) {
+      throw new NotFoundException(`Hackathon with slug "${slug}" not found.`);
+    }
+
+    const team = await prisma.teamEntity.findFirst({
+      where: {
+        hackathonId: hackathon.id,
+        OR: [{ leaderId: userId }, { members: { some: { userId } } }],
+      },
+      include: {
+        leader: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+        roundSubmissions: true,
+        roundQualifications: true,
+      },
+    });
+
+    if (!team) {
+      return {
+        team: null,
+        rounds: hackathon.rounds,
+        submissions: {},
+        qualifications: {},
+      };
+    }
+
+    const submissionsByRoundId: Record<
+      string,
+      (typeof team.roundSubmissions)[0]
+    > = {};
+    for (const sub of team.roundSubmissions) {
+      submissionsByRoundId[sub.roundId] = sub;
+    }
+
+    const qualificationsByRoundId: Record<
+      string,
+      { qualified: boolean; qualifiedAt: Date | null }
+    > = {};
+    for (const qual of team.roundQualifications) {
+      qualificationsByRoundId[qual.roundId] = {
+        qualified: qual.qualified,
+        qualifiedAt: qual.qualifiedAt,
+      };
+    }
+
+    return {
+      team: {
+        id: team.id,
+        name: team.name,
+        leader: team.leader,
+        members: team.members.map((m) => m.user),
+        isLeader: team.leaderId === userId,
+      },
+      rounds: hackathon.rounds,
+      submissions: submissionsByRoundId,
+    };
+  }
+
+  async upsertRoundSubmission(
+    slug: string,
+    roundId: string,
+    userId: string,
+    dto: import('@oppskills/types').UpsertRoundSubmissionDto,
+  ) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug },
+      include: {
+        rounds: { where: { id: roundId } },
+      },
+    });
+
+    if (!hackathon) {
+      throw new NotFoundException(`Hackathon with slug "${slug}" not found.`);
+    }
+
+    const round = hackathon.rounds[0];
+    if (!round) {
+      throw new NotFoundException(
+        `Round "${roundId}" not found in this hackathon.`,
+      );
+    }
+
+    const team = await prisma.teamEntity.findFirst({
+      where: {
+        hackathonId: hackathon.id,
+        leaderId: userId,
+      },
+    });
+
+    if (!team) {
+      throw new ForbiddenException(
+        'Only the team leader can submit. You are not leading a team in this hackathon.',
+      );
+    }
+
+    const now = new Date();
+    if (now < round.startsAt) {
+      throw new BadRequestException(
+        `Round "${round.name}" has not started yet. Submissions open on ${round.startsAt.toISOString()}.`,
+      );
+    }
+    if (now > round.endsAt) {
+      throw new BadRequestException(
+        `Round "${round.name}" has ended. Submissions closed on ${round.endsAt.toISOString()}.`,
+      );
+    }
+
+    const submissionConfig = round.submissionConfig as Record<
+      string,
+      unknown
+    > | null;
+    if (submissionConfig && submissionConfig.enabled === false) {
+      throw new BadRequestException(
+        'Submissions are not enabled for this round.',
+      );
+    }
+
+    // For rounds after the first, check if team was qualified from previous round
+    if (round.order > 1) {
+      const previousRounds = await prisma.roundEntity.findMany({
+        where: {
+          hackathonId: hackathon.id,
+          order: { lt: round.order },
+        },
+        orderBy: { order: 'desc' },
+        take: 1,
+      });
+
+      if (previousRounds.length > 0) {
+        const previousRound = previousRounds[0];
+        const qualification =
+          await prisma.teamRoundQualificationEntity.findUnique({
+            where: {
+              teamId_roundId: {
+                teamId: team.id,
+                roundId: previousRound.id,
+              },
+            },
+          });
+
+        if (!qualification || !qualification.qualified) {
+          throw new ForbiddenException(
+            `Your team must be qualified from "${previousRound.name}" to submit for "${round.name}".`,
+          );
+        }
+      }
+    }
+
+    const maxFiles = 3;
+    const maxFileSizeBytes = 50 * 1024 * 1024;
+
+    if (dto.files && dto.files.length > maxFiles) {
+      throw new BadRequestException(`Maximum ${maxFiles} files allowed.`);
+    }
+
+    if (dto.files) {
+      for (const file of dto.files) {
+        if (file.size > maxFileSizeBytes) {
+          throw new BadRequestException(
+            `File "${file.name}" exceeds maximum size of 50MB.`,
+          );
+        }
+      }
+    }
+
+    const payload = {
+      files: dto.files || [],
+      note: dto.note || null,
+    } as unknown as Prisma.InputJsonValue;
+
+    const submission = await prisma.hackathonTeamRoundSubmissionEntity.upsert({
+      where: {
+        teamId_roundId: {
+          teamId: team.id,
+          roundId: round.id,
+        },
+      },
+      create: {
+        teamId: team.id,
+        roundId: round.id,
+        payload,
+        submittedAt: now,
+      },
+      update: {
+        payload,
+        submittedAt: now,
+      },
+    });
+
+    return {
+      message: 'Submission saved successfully.',
+      submission,
     };
   }
 
@@ -1757,7 +2100,34 @@ export class HackathonService {
           },
         },
         members: {
-          select: { id: true },
+          select: {
+            id: true,
+            joinedAt: true,
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                imageUrl: true,
+                onboardingProfile: {
+                  select: {
+                    collegeCurrentYear: true,
+                    skills: true,
+                    college: {
+                      select: {
+                        id: true,
+                        name: true,
+                        city: true,
+                        state: true,
+                        country: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
         roundSubmissions: {
           select: {
@@ -1891,6 +2261,106 @@ export class HackathonService {
         approvalSubmittedAt: true,
       },
     });
+  }
+
+  /**
+   * Set qualification status for a team in a specific round.
+   * Only owner/admin/manager can qualify/disqualify teams.
+   */
+  async setTeamRoundQualification(
+    slug: string,
+    roundId: string,
+    teamId: string,
+    qualified: boolean,
+    userId: string,
+  ) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug },
+      select: { id: true, ownerId: true },
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    await this.assertHackathonRoundsEditableByUser(hackathon.id, userId);
+
+    const round = await prisma.roundEntity.findFirst({
+      where: { id: roundId, hackathonId: hackathon.id },
+    });
+    if (!round) throw new NotFoundException('Round not found');
+
+    const team = await prisma.teamEntity.findFirst({
+      where: { id: teamId, hackathonId: hackathon.id },
+    });
+    if (!team) throw new NotFoundException('Team not found');
+
+    const result = await prisma.teamRoundQualificationEntity.upsert({
+      where: { teamId_roundId: { teamId, roundId } },
+      create: {
+        teamId,
+        roundId,
+        qualified,
+        qualifiedAt: new Date(),
+        qualifiedBy: userId,
+      },
+      update: {
+        qualified,
+        qualifiedAt: new Date(),
+        qualifiedBy: userId,
+      },
+    });
+
+    return result;
+  }
+
+  /**
+   * Bulk set qualification status for multiple teams in a round.
+   */
+  async bulkSetTeamRoundQualification(
+    slug: string,
+    roundId: string,
+    teamIds: string[],
+    qualified: boolean,
+    userId: string,
+  ) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug },
+      select: { id: true, ownerId: true },
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    await this.assertHackathonRoundsEditableByUser(hackathon.id, userId);
+
+    const round = await prisma.roundEntity.findFirst({
+      where: { id: roundId, hackathonId: hackathon.id },
+    });
+    if (!round) throw new NotFoundException('Round not found');
+
+    const teams = await prisma.teamEntity.findMany({
+      where: { id: { in: teamIds }, hackathonId: hackathon.id },
+      select: { id: true },
+    });
+    const validTeamIds = teams.map((t) => t.id);
+
+    const results = await prisma.$transaction(
+      validTeamIds.map((teamId) =>
+        prisma.teamRoundQualificationEntity.upsert({
+          where: { teamId_roundId: { teamId, roundId } },
+          create: {
+            teamId,
+            roundId,
+            qualified,
+            qualifiedAt: new Date(),
+            qualifiedBy: userId,
+          },
+          update: {
+            qualified,
+            qualifiedAt: new Date(),
+            qualifiedBy: userId,
+          },
+        }),
+      ),
+    );
+
+    return { updated: results.length, teamIds: validTeamIds };
   }
 
   /**

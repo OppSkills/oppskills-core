@@ -7,6 +7,7 @@ import {
   Plus,
   Save,
   X,
+  Upload,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -16,6 +17,9 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import RichTextEditor from "@/components/ui/editor/RichtextEditor";
 import { format } from "date-fns";
 import React, { useState } from "react";
@@ -37,13 +41,21 @@ export default function RoundsAndStages({
 
   const handleAddRound = () => {
     const newRound: Round = {
-      id: crypto.randomUUID(),
+      id: `new-${crypto.randomUUID()}`,
       name: `Round ${formData.rounds.length + 1}`,
       description: "Enter round details here...",
       startDate: new Date(),
       endDate: new Date(),
       startTime: "09:00",
       endTime: "18:00",
+      submissionConfig: {
+        enabled: false,
+        allowedFileTypes: [],
+        maxFiles: 3,
+        maxFileSizeBytes: 52428800,
+        allowResubmission: true,
+        instructions: "",
+      },
     };
     setFormData((prev) => ({
       ...prev,
@@ -69,7 +81,7 @@ export default function RoundsAndStages({
     setFormData((prev) => ({
       ...prev,
       rounds: prev.rounds.map((r) =>
-        r.id === tempRoundData.id ? tempRoundData : r
+        r.id === tempRoundData.id ? tempRoundData : r,
       ),
     }));
     setEditingRoundId(null);
@@ -151,7 +163,7 @@ export default function RoundsAndStages({
                     "w-12 h-12 rounded-lg flex items-center justify-center border font-bold text-lg transition-colors",
                     isEditing
                       ? "bg-primary-500 text-background border-primary"
-                      : "bg-secondary/50 text-secondary-foreground border-secondary"
+                      : "bg-secondary/50 text-secondary-foreground border-secondary",
                   )}
                 >
                   R{index + 1}
@@ -164,7 +176,7 @@ export default function RoundsAndStages({
                   "flex-1 border rounded-xl p-6 mb-6 shadow-sm transition-all relative overflow-hidden",
                   isEditing
                     ? "bg-card ring-2 ring-primary-500 border-transparent"
-                    : "bg-card border-border/50 hover:shadow-md"
+                    : "bg-card border-border/50 hover:shadow-md",
                 )}
               >
                 {isEditing && tempRoundData ? (
@@ -211,7 +223,7 @@ export default function RoundsAndStages({
                                 className={cn(
                                   "w-full justify-start text-left font-normal",
                                   !tempRoundData.startDate &&
-                                    "text-muted-foreground"
+                                    "text-muted-foreground",
                                 )}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -262,7 +274,7 @@ export default function RoundsAndStages({
                                 className={cn(
                                   "w-full justify-start text-left font-normal",
                                   !tempRoundData.endDate &&
-                                    "text-muted-foreground"
+                                    "text-muted-foreground",
                                 )}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -316,6 +328,192 @@ export default function RoundsAndStages({
                           }
                         />
                       </div>
+                    </div>
+
+                    <div className="flex flex-col gap-4 mt-4 p-4 border rounded-lg bg-muted/30">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-base font-semibold">
+                            Enable Submissions
+                          </Label>
+                          <p className="text-sm text-muted-foreground">
+                            Allow participants to submit files for this round
+                          </p>
+                        </div>
+                        <Switch
+                          checked={
+                            tempRoundData.submissionConfig?.enabled ?? false
+                          }
+                          onCheckedChange={(checked) =>
+                            setTempRoundData({
+                              ...tempRoundData,
+                              submissionConfig: {
+                                ...tempRoundData.submissionConfig,
+                                enabled: checked,
+                                allowedFileTypes:
+                                  tempRoundData.submissionConfig
+                                    ?.allowedFileTypes ?? [],
+                                maxFiles:
+                                  tempRoundData.submissionConfig?.maxFiles ?? 3,
+                                maxFileSizeBytes:
+                                  tempRoundData.submissionConfig
+                                    ?.maxFileSizeBytes ?? 52428800,
+                                allowResubmission:
+                                  tempRoundData.submissionConfig
+                                    ?.allowResubmission ?? true,
+                                instructions:
+                                  tempRoundData.submissionConfig
+                                    ?.instructions ?? "",
+                              },
+                            })
+                          }
+                        />
+                      </div>
+
+                      {tempRoundData.submissionConfig?.enabled && (
+                        <div className="flex flex-col gap-4 pt-2 border-t">
+                          <div className="flex flex-col gap-2">
+                            <Label>Allowed File Types</Label>
+                            <div className="flex flex-wrap gap-4">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <Checkbox
+                                  checked={
+                                    tempRoundData.submissionConfig.allowedFileTypes?.includes(
+                                      "pdf",
+                                    ) ?? false
+                                  }
+                                  onCheckedChange={(checked) => {
+                                    const current =
+                                      tempRoundData.submissionConfig
+                                        ?.allowedFileTypes ?? [];
+                                    const updated = checked
+                                      ? [...current, "pdf" as const]
+                                      : current.filter((t) => t !== "pdf");
+                                    setTempRoundData({
+                                      ...tempRoundData,
+                                      submissionConfig: {
+                                        ...tempRoundData.submissionConfig!,
+                                        allowedFileTypes: updated,
+                                      },
+                                    });
+                                  }}
+                                />
+                                <span className="text-sm">PDF</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <Checkbox
+                                  checked={
+                                    tempRoundData.submissionConfig.allowedFileTypes?.includes(
+                                      "ppt",
+                                    ) ?? false
+                                  }
+                                  onCheckedChange={(checked) => {
+                                    const current =
+                                      tempRoundData.submissionConfig
+                                        ?.allowedFileTypes ?? [];
+                                    const updated = checked
+                                      ? [...current, "ppt" as const]
+                                      : current.filter((t) => t !== "ppt");
+                                    setTempRoundData({
+                                      ...tempRoundData,
+                                      submissionConfig: {
+                                        ...tempRoundData.submissionConfig!,
+                                        allowedFileTypes: updated,
+                                      },
+                                    });
+                                  }}
+                                />
+                                <span className="text-sm">PPT/PPTX</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <Checkbox
+                                  checked={
+                                    tempRoundData.submissionConfig.allowedFileTypes?.includes(
+                                      "image",
+                                    ) ?? false
+                                  }
+                                  onCheckedChange={(checked) => {
+                                    const current =
+                                      tempRoundData.submissionConfig
+                                        ?.allowedFileTypes ?? [];
+                                    const updated = checked
+                                      ? [...current, "image" as const]
+                                      : current.filter((t) => t !== "image");
+                                    setTempRoundData({
+                                      ...tempRoundData,
+                                      submissionConfig: {
+                                        ...tempRoundData.submissionConfig!,
+                                        allowedFileTypes: updated,
+                                      },
+                                    });
+                                  }}
+                                />
+                                <span className="text-sm">Images</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col gap-1">
+                              <Label className="text-sm text-muted-foreground">
+                                Max Files
+                              </Label>
+                              <div className="text-sm font-medium">3 files</div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <Label className="text-sm text-muted-foreground">
+                                Max Size per File
+                              </Label>
+                              <div className="text-sm font-medium">50 MB</div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label>Allow Resubmission</Label>
+                              <p className="text-xs text-muted-foreground">
+                                Let participants update their submission before
+                                deadline
+                              </p>
+                            </div>
+                            <Switch
+                              checked={
+                                tempRoundData.submissionConfig
+                                  .allowResubmission ?? true
+                              }
+                              onCheckedChange={(checked) =>
+                                setTempRoundData({
+                                  ...tempRoundData,
+                                  submissionConfig: {
+                                    ...tempRoundData.submissionConfig!,
+                                    allowResubmission: checked,
+                                  },
+                                })
+                              }
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <Label>Submission Instructions (Optional)</Label>
+                            <Input
+                              value={
+                                tempRoundData.submissionConfig.instructions ??
+                                ""
+                              }
+                              onChange={(e) =>
+                                setTempRoundData({
+                                  ...tempRoundData,
+                                  submissionConfig: {
+                                    ...tempRoundData.submissionConfig!,
+                                    instructions: e.target.value,
+                                  },
+                                })
+                              }
+                              placeholder="e.g., Submit your pitch deck in PDF format"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex justify-end gap-2 mt-2 pt-4 border-t">

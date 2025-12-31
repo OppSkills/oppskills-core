@@ -13,11 +13,14 @@ import type {
   Prize,
 } from "./_components/types";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   getPublicHackathonBySlug,
   getHackathonBySlug,
+  getMyTeamSubmissions,
+  type MyTeamSubmissionsResponse,
 } from "@/lib/api/hackathonApi";
+import { checkMyHackathonTeam } from "@/lib/api/teamApi";
 import { format, formatDistanceToNow } from "date-fns";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
@@ -261,6 +264,38 @@ export default function CompetitionDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [curTab, setCurTab] = useState<string | null>(null);
   const [isDraft, setIsDraft] = useState(false);
+  const [myTeam, setMyTeam] = useState<{
+    id: string;
+    name: string;
+    leaderId: string;
+  } | null>(null);
+  const [mySubmissions, setMySubmissions] = useState<
+    MyTeamSubmissionsResponse["submissions"]
+  >([]);
+  const [myQualifications, setMyQualifications] = useState<
+    MyTeamSubmissionsResponse["qualifications"]
+  >([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  const submissionsByRoundId = useMemo(() => {
+    const map: Record<string, (typeof mySubmissions)[0]> = {};
+    for (const sub of mySubmissions) {
+      map[sub.roundId] = sub;
+    }
+    return map;
+  }, [mySubmissions]);
+
+  const qualificationsByRoundId = useMemo(() => {
+    const map: Record<string, { qualified: boolean; qualifiedAt?: string }> =
+      {};
+    for (const qual of myQualifications) {
+      map[qual.roundId] = {
+        qualified: qual.qualified,
+        qualifiedAt: qual.qualifiedAt ?? undefined,
+      };
+    }
+    return map;
+  }, [myQualifications]);
 
   useEffect(() => {
     async function fetchCompetition() {
@@ -297,6 +332,40 @@ export default function CompetitionDetailsPage() {
 
     fetchCompetition();
   }, [slug, isSignedIn, getToken]);
+
+  useEffect(() => {
+    async function fetchTeamAndSubmissions() {
+      if (!isSignedIn || !competition?.id || typeof slug !== "string") return;
+
+      try {
+        const token = await getToken();
+        if (!token) return;
+
+        const teamResult = await checkMyHackathonTeam(token, competition.id);
+        if (teamResult) {
+          setMyTeam({
+            id: teamResult.id,
+            name: teamResult.name,
+            leaderId: teamResult.leader.id,
+          });
+          setCurrentUserId(teamResult.leader.id);
+
+          const submissionsResult = await getMyTeamSubmissions(token, slug);
+          if (submissionsResult) {
+            setMySubmissions(submissionsResult.submissions);
+            setMyQualifications(submissionsResult.qualifications || []);
+            if (submissionsResult.team?.leaderId) {
+              setCurrentUserId(submissionsResult.team.leaderId);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch team/submissions:", err);
+      }
+    }
+
+    fetchTeamAndSubmissions();
+  }, [isSignedIn, competition?.id, slug, getToken]);
 
   useEffect(() => {
     if (curTab) {
@@ -374,7 +443,15 @@ export default function CompetitionDetailsPage() {
             <div className="space-y-12">
               {competition.rounds.length > 0 && (
                 <section id="rounds" className="scroll-mt-24">
-                  <RoundsTimeline rounds={competition.rounds} />
+                  <RoundsTimeline
+                    rounds={competition.rounds}
+                    myTeam={myTeam}
+                    submissionsByRoundId={submissionsByRoundId}
+                    qualificationsByRoundId={qualificationsByRoundId}
+                    competitionSlug={
+                      typeof slug === "string" ? slug : undefined
+                    }
+                  />
                 </section>
               )}
 
