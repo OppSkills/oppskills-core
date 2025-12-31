@@ -27,6 +27,8 @@ export default function Register({
   // Form States
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const [errors, setErrors] = useState({ phone: "" });
+
   const [userDetails, setUserDetails] = useState({
     firstName: "",
     lastName: "",
@@ -158,6 +160,38 @@ export default function Register({
       name: "Details",
       icon: <User />,
     },
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+
+    // Remove non-digits
+    value = value.replace(/\D/g, "");
+
+    // Prevent leading zero
+    if (value.startsWith("0")) {
+      value = value.slice(1);
+    }
+
+    // Limit to 10 digits
+    if (value.length > 10) {
+      value = value.slice(0, 10);
+    }
+
+    setUserDetails((prev) => ({ ...prev, phone: value }));
+
+    // Live validation
+    setErrors((prev) => ({
+      ...prev,
+      phone: validatePhone(value),
+    }));
+  };
+
+  const validatePhone = (value: string) => {
+    if (!value) return "Phone number is required";
+    if (!/^[1-9][0-9]{9}$/.test(value))
+      return "Enter a valid 10-digit mobile number";
+    return "";
   };
 
   return (
@@ -292,12 +326,17 @@ export default function Register({
           <div className="space-y-2">
             <FloatingLabelInput
               id="phone"
+              type="tel"
+              inputMode="numeric"
+              pattern="[1-9][0-9]{9}"
               label="Phone Number"
               value={userDetails.phone}
-              onChange={(e) =>
-                setUserDetails({ ...userDetails, phone: e.target.value })
-              }
+              onChange={handlePhoneChange}
             />
+
+            {errors.phone && (
+              <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+            )}
           </div>
           <div className="space-y-2">
             <FloatingLabelInput
