@@ -357,6 +357,10 @@ export interface HackathonTeamRegistration {
   createdAt: string;
   leader: HackathonTeamLeader;
   roundSubmissions: Record<string, HackathonTeamRoundSubmission>;
+  roundQualifications: Record<
+    string,
+    { qualified: boolean; qualifiedAt: string | null }
+  >;
 }
 
 export interface HackathonRegistrationsBySlugResponse {

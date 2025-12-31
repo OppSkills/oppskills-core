@@ -2137,6 +2137,13 @@ export class HackathonService {
             payload: true,
           },
         },
+        roundQualifications: {
+          select: {
+            roundId: true,
+            qualified: true,
+            qualifiedAt: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -2195,6 +2202,21 @@ export class HackathonService {
           >,
         );
 
+        // Build round qualification status map
+        const roundQualifications = team.roundQualifications.reduce(
+          (acc, qual) => {
+            acc[qual.roundId] = {
+              qualified: qual.qualified,
+              qualifiedAt: qual.qualifiedAt,
+            };
+            return acc;
+          },
+          {} as Record<
+            string,
+            { qualified: boolean; qualifiedAt: Date | null }
+          >,
+        );
+
         return {
           teamId: team.id,
           teamName: team.name,
@@ -2211,6 +2233,7 @@ export class HackathonService {
             location,
           },
           roundSubmissions,
+          roundQualifications,
         };
       }),
     };

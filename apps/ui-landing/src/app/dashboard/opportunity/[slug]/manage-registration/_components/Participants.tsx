@@ -14,6 +14,8 @@ import {
   ArrowRight,
   Search,
   EllipsisVertical,
+  Check,
+  X,
 } from "lucide-react";
 
 import {
@@ -30,6 +32,10 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { FloatingInput } from "@/components/ui/derived/FloatingInput";
 import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { bulkSetTeamRoundQualification } from "@/lib/api/hackathonApi";
 
 export type Participant = {
   id: string;
@@ -41,18 +47,62 @@ export type Participant = {
   avatarUrl: string;
   status: "Completed" | "Incomplete";
   currentRound: string;
+  qualificationStatus?: "Qualified" | "Not Qualified" | "Awaiting" | null;
 };
 
 /* -------------------------- COLUMNS --------------------------- */
 
 interface ParticipantsProps {
   data: Participant[];
+  selectedRoundId?: string | null;
 }
 
-export default function Participants({ data }: ParticipantsProps) {
+export default function Participants({
+  data,
+  selectedRoundId,
+}: ParticipantsProps) {
   const params = useParams();
   const slug = params.slug as string;
   const router = useRouter();
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  const [filteredData, setFilteredData] = React.useState(data);
+  const [filterValue, setFilteredValue] = React.useState("all");
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
+
+  const { mutate: bulkQualify, isPending } = useMutation({
+    mutationFn: async ({
+      teamIds,
+      qualified,
+    }: {
+      teamIds: string[];
+      qualified: boolean;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      if (!selectedRoundId) throw new Error("No round selected");
+      return bulkSetTeamRoundQualification(
+        token,
+        slug,
+        selectedRoundId,
+        teamIds,
+        qualified,
+      );
+    },
+    onSuccess: () => {
+      toast.success("Teams updated successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["hackathon-registrations-by-slug", slug],
+      });
+      setRowSelection({});
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error ? error.message : "Failed to update teams";
+      toast.error(message);
+    },
+  });
 
   const columns: ColumnDef<Participant>[] = React.useMemo(
     () => [
@@ -130,7 +180,7 @@ export default function Participants({ data }: ParticipantsProps) {
                     className="font-semibold hover:text-primary-500 cursor-pointer"
                     onClick={() => {
                       router.push(
-                        `/dashboard/opportunity/${slug}/manage-registration/${row.original.id}`
+                        `/dashboard/opportunity/${slug}/manage-registration/${row.original.id}`,
                       );
                     }}
                   >
@@ -188,27 +238,47 @@ export default function Participants({ data }: ParticipantsProps) {
             Action / Status
           </div>
         ),
-        cell: ({ getValue }) => (
-          <div className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
-            <span>REG</span>
-            <ArrowRight className="h-4 w-4" />
-            <span>{getValue<string>()}</span>
-          </div>
-        ),
+        cell: ({ getValue, row }) => {
+          const qualStatus = row.original.qualificationStatus;
+          const currentRoundVal = getValue<string>();
+
+          return (
+            <div className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
+              {qualStatus ? (
+                <span
+                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border ${
+                    qualStatus === "Qualified"
+                      ? "border-green-200 bg-green-50 text-green-700"
+                      : qualStatus === "Not Qualified"
+                        ? "border-red-200 bg-red-50 text-red-700"
+                        : "border-yellow-200 bg-yellow-50 text-yellow-700"
+                  }`}
+                >
+                  {qualStatus === "Qualified" && <Check className="w-3 h-3" />}
+                  {qualStatus === "Not Qualified" && <X className="w-3 h-3" />}
+                  {qualStatus}
+                </span>
+              ) : (
+                <>
+                  <span>REG</span>
+                  <ArrowRight className="h-4 w-4" />
+                  <span>{currentRoundVal}</span>
+                </>
+              )}
+            </div>
+          );
+        },
       },
     ],
-    [slug, router]
+    [data.length, slug, router],
   );
-
-  const [filteredData, setFilteredData] = React.useState(data);
-  const [filterValue, setFilteredValue] = React.useState("all");
-  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
 
   const table = useReactTable({
     data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     onRowSelectionChange: setRowSelection,
+    getRowId: (row) => row.id, // Use ID for selection
     state: { rowSelection },
   });
 
@@ -224,7 +294,7 @@ export default function Participants({ data }: ParticipantsProps) {
     <div className="w-full space-y-4">
       {/* HEADER */}
       <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           <Button
             size="sm"
             className="border-2"
@@ -249,6 +319,36 @@ export default function Participants({ data }: ParticipantsProps) {
           >
             Incomplete
           </Button>
+
+          {selectedRoundId && (
+            <>
+              <div className="h-6 w-px bg-border mx-2" />
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-green-200 hover:bg-green-50 text-green-700 hover:text-green-800"
+                disabled={Object.keys(rowSelection).length === 0 || isPending}
+                onClick={() => {
+                  const selectedIds = Object.keys(rowSelection);
+                  bulkQualify({ teamIds: selectedIds, qualified: true });
+                }}
+              >
+                Qualify Selected
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-red-200 hover:bg-red-50 text-red-700 hover:text-red-800"
+                disabled={Object.keys(rowSelection).length === 0 || isPending}
+                onClick={() => {
+                  const selectedIds = Object.keys(rowSelection);
+                  bulkQualify({ teamIds: selectedIds, qualified: false });
+                }}
+              >
+                Disqualify
+              </Button>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <div className="relative w-full md:w-auto">
@@ -280,7 +380,7 @@ export default function Participants({ data }: ParticipantsProps) {
                   >
                     {flexRender(
                       header.column.columnDef.header,
-                      header.getContext()
+                      header.getContext(),
                     )}
                   </TableHead>
                 ))}
@@ -300,7 +400,7 @@ export default function Participants({ data }: ParticipantsProps) {
                     <TableCell key={cell.id} className="py-4">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   ))}
