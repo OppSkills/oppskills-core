@@ -45,6 +45,23 @@ function calculateTotalPrize(event: EventListItem): string {
   // Return a placeholder or calculate if available
   return "Prizes";
 }
+function formatCount(num: number): string {
+  if (num < 10) {
+    return `${num}`;
+  }
+
+  if (num < 1000) {
+    return `${Math.floor(num / 10) * 10}+`;
+  }
+
+  if (num < 1_000_000) {
+    const value = Math.floor(num / 100) / 10; // 1 decimal
+    return `${value % 1 === 0 ? value.toFixed(0) : value}k`;
+  }
+
+  const value = Math.floor(num / 10_000) / 100; // 2 decimals
+  return `${value % 1 === 0 ? value.toFixed(0) : value}M+`;
+}
 
 export const UpcomingEvents = () => {
   const { data: events, isLoading, error } = useEvents();
@@ -233,9 +250,7 @@ export const UpcomingEvents = () => {
                             <div className="w-4 h-4 rounded-full bg-primary-300 -ml-2"></div>
                           </div>
                           <span className="text-neutral-700">
-                            {event.registrationCount > 10
-                              ? `${event.registrationCount - 1}+`
-                              : event.registrationCount}
+                            {formatCount(event.registrationCount)}
                           </span>
                         </div>
                       </div>
