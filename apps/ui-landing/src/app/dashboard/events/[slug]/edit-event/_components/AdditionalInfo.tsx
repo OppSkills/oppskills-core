@@ -187,7 +187,7 @@ export default function AdditionalInfo({
       // Update existing contact
       updateInfo({
         contacts: contacts.map((c) =>
-          c.id === editingContact.id ? contactForm : c
+          c.id === editingContact.id ? contactForm : c,
         ),
       });
     } else {
@@ -310,8 +310,9 @@ export default function AdditionalInfo({
         title: attachmentForm.fileName,
         type: getFileType(
           attachmentForm.file?.name || "",
-          attachmentForm.file?.type
+          attachmentForm.file?.type,
         ),
+        mimeType: attachmentForm.file?.type || "application/octet-stream",
         url: presign.publicUrl,
         size: attachmentForm.file?.size,
       };
@@ -324,7 +325,7 @@ export default function AdditionalInfo({
     } catch (error) {
       console.error("Upload error:", error);
       alert(
-        `Upload Failed: ${error instanceof Error ? error.message : "Failed to upload attachment"}`
+        `Upload Failed: ${error instanceof Error ? error.message : "Failed to upload attachment"}`,
       );
     } finally {
       setIsUploading(false);
@@ -599,7 +600,7 @@ export default function AdditionalInfo({
                   isDragging
                     ? "border-primary-500 bg-primary/5"
                     : "border-border hover:border-primary-500 hover:bg-secondary/20",
-                  attachmentErrors.file && "border-destructive"
+                  attachmentErrors.file && "border-destructive",
                 )}
               >
                 <input

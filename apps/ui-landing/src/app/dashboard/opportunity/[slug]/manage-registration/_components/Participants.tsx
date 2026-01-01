@@ -240,30 +240,56 @@ export default function Participants({
         ),
         cell: ({ getValue, row }) => {
           const qualStatus = row.original.qualificationStatus;
-          const currentRoundVal = getValue<string>();
+          const teamId = row.original.id;
 
           return (
-            <div className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
-              {qualStatus ? (
-                <span
-                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border ${
-                    qualStatus === "Qualified"
-                      ? "border-green-200 bg-green-50 text-green-700"
-                      : qualStatus === "Not Qualified"
-                        ? "border-red-200 bg-red-50 text-red-700"
-                        : "border-yellow-200 bg-yellow-50 text-yellow-700"
-                  }`}
-                >
-                  {qualStatus === "Qualified" && <Check className="w-3 h-3" />}
-                  {qualStatus === "Not Qualified" && <X className="w-3 h-3" />}
-                  {qualStatus}
-                </span>
+            <div className="flex items-center justify-center gap-2">
+              {selectedRoundId ? (
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                    disabled={isPending || qualStatus === "Qualified"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      bulkQualify({ teamIds: [teamId], qualified: true });
+                    }}
+                    title="Qualify to next round"
+                  >
+                    <Check className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    disabled={isPending || qualStatus === "Not Qualified"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      bulkQualify({ teamIds: [teamId], qualified: false });
+                    }}
+                    title="Disqualify"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                  {qualStatus && (
+                    <span
+                      className={`ml-1 px-2 py-0.5 rounded-full text-xs border ${
+                        qualStatus === "Qualified"
+                          ? "border-green-200 bg-green-50 text-green-700"
+                          : qualStatus === "Not Qualified"
+                            ? "border-red-200 bg-red-50 text-red-700"
+                            : "border-yellow-200 bg-yellow-50 text-yellow-700"
+                      }`}
+                    >
+                      {qualStatus}
+                    </span>
+                  )}
+                </div>
               ) : (
-                <>
-                  <span>REG</span>
-                  <ArrowRight className="h-4 w-4" />
-                  <span>{currentRoundVal}</span>
-                </>
+                <span className="text-sm text-muted-foreground">
+                  {getValue<string>()}
+                </span>
               )}
             </div>
           );

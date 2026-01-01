@@ -9,7 +9,6 @@ const ALL_TABS = [
   { id: "rounds", label: "Rounds & Status" },
   { id: "details", label: "Details" },
   { id: "prizes", label: "Prizes" },
-  { id: "reviews", label: "Reviews" },
 ];
 
 interface CompetitionTabsProps {
@@ -53,7 +52,7 @@ export function CompetitionTabs({
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "relative py-4 text-sm font-medium transition-colors hover:text-purple-600",
-                isActive ? "text-purple-600" : "text-neutral-600 "
+                isActive ? "text-purple-600" : "text-neutral-600 ",
               )}
             >
               {tab.label}

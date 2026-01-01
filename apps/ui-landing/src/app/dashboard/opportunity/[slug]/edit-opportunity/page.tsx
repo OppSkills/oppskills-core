@@ -106,6 +106,7 @@ export interface Attachment {
   id: string;
   title: string;
   type: string;
+  mimeType?: string;
   url?: string;
   size?: number;
 }
@@ -500,6 +501,37 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
       const endsAt = getDate(r["endsAt"]);
       if (!startsAt || !endsAt) return null;
       const id = getString(r, "id") ?? crypto.randomUUID();
+
+      let submissionConfig: RoundSubmissionConfig | undefined;
+      const submissionConfigRaw = r["submissionConfig"];
+      if (isRecord(submissionConfigRaw)) {
+        const requiresFileUpload = submissionConfigRaw["requiresFileUpload"];
+        const allowedFileTypesRaw = submissionConfigRaw["allowedFileTypes"];
+        const allowedFileTypes = Array.isArray(allowedFileTypesRaw)
+          ? (allowedFileTypesRaw.filter(
+              (t): t is "pdf" | "ppt" | "image" =>
+                t === "pdf" || t === "ppt" || t === "image",
+            ) as ("pdf" | "ppt" | "image")[])
+          : [];
+        const maxFileSizeBytes =
+          typeof submissionConfigRaw["maxFileSizeBytes"] === "number"
+            ? submissionConfigRaw["maxFileSizeBytes"]
+            : 10 * 1024 * 1024;
+        const instructions = getString(
+          submissionConfigRaw as Record<string, unknown>,
+          "instructions",
+        );
+        submissionConfig = {
+          enabled: requiresFileUpload === true,
+          allowedFileTypes:
+            allowedFileTypes.length > 0 ? allowedFileTypes : ["pdf"],
+          maxFiles: 1,
+          maxFileSizeBytes,
+          allowResubmission: false,
+          instructions,
+        };
+      }
+
       return {
         id,
         name: getString(r, "name") ?? "Round",
@@ -508,6 +540,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
         endDate: endsAt,
         startTime: toTimeHHmm(startsAt),
         endTime: toTimeHHmm(endsAt),
+        submissionConfig,
       };
     })
     .filter((v): v is Round => v !== null);
@@ -938,9 +971,13 @@ export default function EditOpportunityPage() {
                 email: undefined,
                 phone: "",
               },
-          // NOTE: Attachments uploads/edits are not fully supported in this UI yet.
-          // We intentionally omit `attachments` so the backend preserves existing ones.
-          // TODO: When attachment management/upload is implemented, send attachments intentionally.
+          attachments: formData.additionalInfo.attachments.map((a) => ({
+            storageKey: a.url ?? a.id,
+            publicUrl: a.url,
+            fileName: a.title,
+            mimeType: a.mimeType || a.type,
+            sizeBytes: a.size,
+          })),
         };
         await updateHackathonAdditionalInfo(token, hackathonId, payload);
         savingAdditionalInfoSnapshotRef.current = additionalInfoSnapshot;

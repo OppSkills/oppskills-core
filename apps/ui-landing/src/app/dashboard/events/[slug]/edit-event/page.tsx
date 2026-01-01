@@ -21,7 +21,10 @@ import { useEventBySlug } from "@/hooks/useEventBySlug";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { UpdateEventDto, EventLocationDto } from "@oppskills/types/frontend";
+import type {
+  UpdateEventDto,
+  EventLocationDto,
+} from "@oppskills/types/frontend";
 import {
   updateEvent,
   updateEventAdditionalInfo,
@@ -68,6 +71,7 @@ export interface Attachment {
   id: string;
   title: string;
   type: string;
+  mimeType?: string;
   url?: string;
   size?: number;
 }
@@ -106,9 +110,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function getString(obj: Record<string, unknown>, key: string): string | undefined {
+function getString(
+  obj: Record<string, unknown>,
+  key: string,
+): string | undefined {
   const value = obj[key];
-  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+  return typeof value === "string" && value.trim().length > 0
+    ? value
+    : undefined;
 }
 
 function getDate(value: unknown): Date | undefined {
@@ -189,7 +198,8 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
   const startDate = getDate(event["startDate"]);
   const registrationDeadline = getDate(event["registrationDeadline"]);
   const maxUsersRaw = event["maxUsers"];
-  const maxUsersValue = typeof maxUsersRaw === "number" ? maxUsersRaw : undefined;
+  const maxUsersValue =
+    typeof maxUsersRaw === "number" ? maxUsersRaw : undefined;
 
   const locationVirtualLink = getString(event, "locationVirtualLink");
   const locationAddress = getString(event, "locationAddress");
@@ -216,7 +226,9 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
     WEBINAR: "Webinar",
     OTHER: "Other",
   };
-  const eventType = eventTypeRaw ? (eventTypeMap[eventTypeRaw] ?? "Conference") : "Conference";
+  const eventType = eventTypeRaw
+    ? (eventTypeMap[eventTypeRaw] ?? "Conference")
+    : "Conference";
 
   // Map attendee eligibility from backend
   const attendeeEligibilityRaw = event["attendeeEligibility"];
@@ -230,22 +242,26 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
     FRESHERS: "Freshers",
     PROFESSIONALS: "Professionals",
   };
-  const candidateTypes = attendeeEligibility.length > 0
-    ? attendeeEligibility.map((v) => candidateTypeMap[v] ?? v)
-    : ["Everyone can apply"];
+  const candidateTypes =
+    attendeeEligibility.length > 0
+      ? attendeeEligibility.map((v) => candidateTypeMap[v] ?? v)
+      : ["Everyone can apply"];
 
   // Map contact from backend
   const contactName = getString(event, "contactName");
   const contactEmail = getString(event, "contactEmail");
   const contactPhone = getString(event, "contactPhone");
-  const contacts: Contact[] = contactName || contactEmail || contactPhone
-    ? [{
-        id: "primary",
-        name: contactName ?? "",
-        email: contactEmail ?? "",
-        phone: contactPhone ?? "",
-      }]
-    : [];
+  const contacts: Contact[] =
+    contactName || contactEmail || contactPhone
+      ? [
+          {
+            id: "primary",
+            name: contactName ?? "",
+            email: contactEmail ?? "",
+            phone: contactPhone ?? "",
+          },
+        ]
+      : [];
 
   // Map attachments from backend
   const attachmentsRaw = event["attachments"];
@@ -273,15 +289,22 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
           description: getString(p, "description") ?? "",
         }))
     : [];
-  
+
   const prizeDescriptionRaw = event["prizeDescription"];
-  const prizeDescription = (isRecord(prizeDescriptionRaw) && typeof prizeDescriptionRaw["summary"] === "string")
-    ? prizeDescriptionRaw["summary"]
-    : (typeof prizeDescriptionRaw === "string" ? prizeDescriptionRaw : "");
+  const prizeDescription =
+    isRecord(prizeDescriptionRaw) &&
+    typeof prizeDescriptionRaw["summary"] === "string"
+      ? prizeDescriptionRaw["summary"]
+      : typeof prizeDescriptionRaw === "string"
+        ? prizeDescriptionRaw
+        : "";
 
   const prizes: PrizesData = {
     description: prizeDescription,
-    certificateProvided: typeof event["prizeCertificate"] === "boolean" ? event["prizeCertificate"] : null,
+    certificateProvided:
+      typeof event["prizeCertificate"] === "boolean"
+        ? event["prizeCertificate"]
+        : null,
     list: prizeList,
   };
 
@@ -306,18 +329,24 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
           const label = getString(f, "label") ?? "";
           const isFixed = fixedLabels.includes(label);
           return {
-            id: getString(f, "id") ?? (isFixed ? `fixed-${idx}` : `custom-${idx}-${Date.now()}`),
+            id:
+              getString(f, "id") ??
+              (isFixed ? `fixed-${idx}` : `custom-${idx}-${Date.now()}`),
             label,
             type: backToUiTypeMap[getString(f, "type") ?? "TEXT"] ?? "Text",
             required: typeof f["required"] === "boolean" ? f["required"] : true,
             fixed: isFixed,
-            options: Array.isArray(f["options"]) ? f["options"].filter((o): o is string => typeof o === "string") : undefined,
+            options: Array.isArray(f["options"])
+              ? f["options"].filter((o): o is string => typeof o === "string")
+              : undefined,
           };
         })
     : [];
 
   return {
-    eventFestName: festival ? (getString(festival, "name") ?? "Standalone Event") : "Standalone Event",
+    eventFestName: festival
+      ? (getString(festival, "name") ?? "Standalone Event")
+      : "Standalone Event",
     festivalId: festival ? getString(festival, "id") : undefined,
     eventFestVisibility,
     eventName: getString(event, "name") ?? "",
@@ -335,7 +364,9 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
       startDate: undefined,
       startTime: "09:00",
       endDate: registrationDeadline,
-      endTime: registrationDeadline ? toTimeHHmm(registrationDeadline) : "23:59",
+      endTime: registrationDeadline
+        ? toTimeHHmm(registrationDeadline)
+        : "23:59",
       eventDate: startDate,
       eventTime: startDate ? toTimeHHmm(startDate) : "09:00",
       maxTeamsNoLimit: maxUsersValue === undefined,
@@ -458,8 +489,12 @@ export default function EditEventPage() {
   const lastSavedPrizesSnapshotRef = React.useRef<string | null>(null);
   const savingPrizesSnapshotRef = React.useRef<string | null>(null);
 
-  const lastSavedRegistrationQuestionsSnapshotRef = React.useRef<string | null>(null);
-  const savingRegistrationQuestionsSnapshotRef = React.useRef<string | null>(null);
+  const lastSavedRegistrationQuestionsSnapshotRef = React.useRef<string | null>(
+    null,
+  );
+  const savingRegistrationQuestionsSnapshotRef = React.useRef<string | null>(
+    null,
+  );
 
   // Hydrate form from backend
   useEffect(() => {
@@ -488,14 +523,17 @@ export default function EditEventPage() {
       }
       const token = requireToken(await getToken());
 
-      const additionalInfoSnapshot = serializeAdditionalInfo(formData.additionalInfo);
+      const additionalInfoSnapshot = serializeAdditionalInfo(
+        formData.additionalInfo,
+      );
 
       // Map visibility back to backend enum
       const visibilityMap: Record<string, string> = {
         Public: "PUBLIC",
         Private: "PRIVATE",
       };
-      const visibility = visibilityMap[formData.eventFestVisibility] ?? "PUBLIC";
+      const visibility =
+        visibilityMap[formData.eventFestVisibility] ?? "PUBLIC";
 
       // Map event type back to backend enum
       const eventTypeMap: Record<string, string> = {
@@ -522,12 +560,23 @@ export default function EditEventPage() {
         .filter((v): v is string => typeof v === "string");
 
       const payload: UpdateEventDto = {
-        name: formData.eventName.trim().length > 0 ? formData.eventName.trim() : undefined,
-        description: formData.eventDescription.trim().length > 0 ? formData.eventDescription : undefined,
-        bannerImageUrl: isValidUrl(formData.eventThumbnail) ? formData.eventThumbnail.trim() : undefined,
+        name:
+          formData.eventName.trim().length > 0
+            ? formData.eventName.trim()
+            : undefined,
+        description:
+          formData.eventDescription.trim().length > 0
+            ? formData.eventDescription
+            : undefined,
+        bannerImageUrl: isValidUrl(formData.eventThumbnail)
+          ? formData.eventThumbnail.trim()
+          : undefined,
         location: toLocationDto(formData.eventLocation),
         registrationDeadline: formData.eventRegisterBy
-          ? combineDateAndTimeToIso(formData.eventRegisterBy, formData.registrationSettings.endTime)
+          ? combineDateAndTimeToIso(
+              formData.eventRegisterBy,
+              formData.registrationSettings.endTime,
+            )
           : undefined,
         startDate: formData.eventDate
           ? combineDateAndTimeToIso(formData.eventDate, formData.eventTimeFrom)
@@ -535,11 +584,29 @@ export default function EditEventPage() {
         endDate: formData.eventDate
           ? combineDateAndTimeToIso(formData.eventDate, formData.eventTimeFrom)
           : undefined,
-        maxUsers: formData.registrationSettings.maxTeamsNoLimit ? undefined : formData.registrationSettings.maxUsers,
-        organizationName: formData.organizationName.trim().length > 0 ? formData.organizationName.trim() : undefined,
+        maxUsers: formData.registrationSettings.maxTeamsNoLimit
+          ? undefined
+          : formData.registrationSettings.maxUsers,
+        organizationName:
+          formData.organizationName.trim().length > 0
+            ? formData.organizationName.trim()
+            : undefined,
         visibility: visibility as "PUBLIC" | "PRIVATE" | "UNIVERSITY_ONLY",
-        eventType: eventType as "WORKSHOP" | "CONFERENCE" | "MEETUP" | "NETWORKING" | "SEMINAR" | "WEBINAR" | "OTHER",
-        attendeeEligibility: attendeeEligibility as Array<"EVERYONE_CAN_APPLY" | "SCHOOL_STUDENTS" | "COLLEGE_STUDENTS" | "FRESHERS" | "PROFESSIONALS">,
+        eventType: eventType as
+          | "WORKSHOP"
+          | "CONFERENCE"
+          | "MEETUP"
+          | "NETWORKING"
+          | "SEMINAR"
+          | "WEBINAR"
+          | "OTHER",
+        attendeeEligibility: attendeeEligibility as Array<
+          | "EVERYONE_CAN_APPLY"
+          | "SCHOOL_STUDENTS"
+          | "COLLEGE_STUDENTS"
+          | "FRESHERS"
+          | "PROFESSIONALS"
+        >,
         prizeDescription: { summary: formData.prizes.description },
         prizeCertificate: formData.prizes.certificateProvided ?? false,
       };
@@ -552,8 +619,13 @@ export default function EditEventPage() {
 
       // Save additional info (contact + attachments) if changed - DRAFT only
       if (isDraft) {
-        const currentAdditionalInfoSnapshot = serializeAdditionalInfo(formData.additionalInfo);
-        if (currentAdditionalInfoSnapshot !== lastSavedAdditionalInfoSnapshotRef.current) {
+        const currentAdditionalInfoSnapshot = serializeAdditionalInfo(
+          formData.additionalInfo,
+        );
+        if (
+          currentAdditionalInfoSnapshot !==
+          lastSavedAdditionalInfoSnapshotRef.current
+        ) {
           const primaryContact = formData.additionalInfo.contacts[0];
           const contact = primaryContact
             ? {
@@ -564,10 +636,10 @@ export default function EditEventPage() {
             : undefined;
 
           const attachments = formData.additionalInfo.attachments.map((a) => ({
-            storageKey: a.url ?? a.id, // Use URL as storage key or ID as fallback
+            storageKey: a.url ?? a.id,
             publicUrl: a.url,
             fileName: a.title,
-            mimeType: a.type,
+            mimeType: a.mimeType || a.type,
             sizeBytes: a.size,
           }));
 
@@ -577,7 +649,8 @@ export default function EditEventPage() {
               attachments,
             },
           });
-          savingAdditionalInfoSnapshotRef.current = currentAdditionalInfoSnapshot;
+          savingAdditionalInfoSnapshotRef.current =
+            currentAdditionalInfoSnapshot;
         }
 
         // Save prizes if changed - DRAFT only
@@ -594,9 +667,17 @@ export default function EditEventPage() {
         }
 
         // Save registration questions if changed - DRAFT only
-        const currentRegQuestionsSnapshot = serializeRegistrationQuestions(formData.registrationQuestions);
-        if (currentRegQuestionsSnapshot !== lastSavedRegistrationQuestionsSnapshotRef.current) {
-          const typeMap: Record<RegistrationQuestion["type"], "TEXT" | "PHONE_NO" | "EMAIL" | "NUMBER" | "ATTACHMENTS" | "OPTIONS"> = {
+        const currentRegQuestionsSnapshot = serializeRegistrationQuestions(
+          formData.registrationQuestions,
+        );
+        if (
+          currentRegQuestionsSnapshot !==
+          lastSavedRegistrationQuestionsSnapshotRef.current
+        ) {
+          const typeMap: Record<
+            RegistrationQuestion["type"],
+            "TEXT" | "PHONE_NO" | "EMAIL" | "NUMBER" | "ATTACHMENTS" | "OPTIONS"
+          > = {
             Text: "TEXT",
             "Phone No.": "PHONE_NO",
             Email: "EMAIL",
@@ -616,7 +697,8 @@ export default function EditEventPage() {
               })),
             },
           });
-          savingRegistrationQuestionsSnapshotRef.current = currentRegQuestionsSnapshot;
+          savingRegistrationQuestionsSnapshotRef.current =
+            currentRegQuestionsSnapshot;
         }
       }
     },
@@ -625,11 +707,14 @@ export default function EditEventPage() {
     },
   });
 
-  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveUiStatus>("idle");
+  const [autoSaveStatus, setAutoSaveStatus] =
+    useState<AutoSaveUiStatus>("idle");
   const lastSavedSnapshotRef = React.useRef<string | null>(null);
   const savingSnapshotRef = React.useRef<string | null>(null);
   const lastSavedAtRef = React.useRef<number | null>(null);
-  const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const saveQueuedRef = React.useRef<boolean>(false);
   const lastErrorToastAtRef = React.useRef<number>(0);
   const latestFormDataRef = React.useRef<FormData>(formData);
@@ -658,7 +743,8 @@ export default function EditEventPage() {
         savingSnapshotRef.current = null;
 
         if (typeof savingAdditionalInfoSnapshotRef.current === "string") {
-          lastSavedAdditionalInfoSnapshotRef.current = savingAdditionalInfoSnapshotRef.current;
+          lastSavedAdditionalInfoSnapshotRef.current =
+            savingAdditionalInfoSnapshotRef.current;
         }
         savingAdditionalInfoSnapshotRef.current = null;
 
@@ -667,8 +753,11 @@ export default function EditEventPage() {
         }
         savingPrizesSnapshotRef.current = null;
 
-        if (typeof savingRegistrationQuestionsSnapshotRef.current === "string") {
-          lastSavedRegistrationQuestionsSnapshotRef.current = savingRegistrationQuestionsSnapshotRef.current;
+        if (
+          typeof savingRegistrationQuestionsSnapshotRef.current === "string"
+        ) {
+          lastSavedRegistrationQuestionsSnapshotRef.current =
+            savingRegistrationQuestionsSnapshotRef.current;
         }
         savingRegistrationQuestionsSnapshotRef.current = null;
 
@@ -705,9 +794,12 @@ export default function EditEventPage() {
     if (eventId === null) return;
     if (lastSavedSnapshotRef.current !== null) return;
     lastSavedSnapshotRef.current = serializeFormData(formData);
-    lastSavedAdditionalInfoSnapshotRef.current = serializeAdditionalInfo(formData.additionalInfo);
+    lastSavedAdditionalInfoSnapshotRef.current = serializeAdditionalInfo(
+      formData.additionalInfo,
+    );
     lastSavedPrizesSnapshotRef.current = serializePrizes(formData.prizes);
-    lastSavedRegistrationQuestionsSnapshotRef.current = serializeRegistrationQuestions(formData.registrationQuestions);
+    lastSavedRegistrationQuestionsSnapshotRef.current =
+      serializeRegistrationQuestions(formData.registrationQuestions);
     lastSavedAtRef.current = Date.now();
     setAutoSaveStatus("saved");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -740,7 +832,13 @@ export default function EditEventPage() {
         debounceTimerRef.current = null;
       }
     };
-  }, [formData, hasHydratedFromBackend, eventId, autoSaveStatus, runSaveMutation]);
+  }, [
+    formData,
+    hasHydratedFromBackend,
+    eventId,
+    autoSaveStatus,
+    runSaveMutation,
+  ]);
 
   if (isLoadingEvent) {
     return (
@@ -764,7 +862,8 @@ export default function EditEventPage() {
 
   // Determine if event is non-DRAFT (limited editing)
   const isNonDraft = eventStatus !== "DRAFT";
-  const isPublishedOrOngoing = eventStatus === "PUBLISHED" || eventStatus === "ONGOING";
+  const isPublishedOrOngoing =
+    eventStatus === "PUBLISHED" || eventStatus === "ONGOING";
 
   return (
     <div className="w-full flex flex-col items-center p-2 sm:p-4 md:p-6 lg:p-10 gap-6 bg-background">
@@ -796,7 +895,7 @@ export default function EditEventPage() {
                 "flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all whitespace-nowrap",
                 activeTab === tab.id
                   ? "bg-secondary text-secondary-foreground border-primary"
-                  : "bg-background border-border text-muted-foreground hover:bg-muted"
+                  : "bg-background border-border text-muted-foreground hover:bg-muted",
               )}
             >
               {tab.icon}
@@ -833,7 +932,11 @@ export default function EditEventPage() {
       {/* Content */}
       <div className="w-full max-w-6xl flex flex-col gap-6">
         {activeTab === "basic-details" && (
-          <BasicDetails formData={formData} setFormData={setFormData} isDraftEvent={isDraftEvent} />
+          <BasicDetails
+            formData={formData}
+            setFormData={setFormData}
+            isDraftEvent={isDraftEvent}
+          />
         )}
 
         {activeTab === "registration-settings" && (
