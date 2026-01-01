@@ -7,7 +7,6 @@ import {
   Loader2,
   ClipboardList,
   FileText,
-  Download,
   ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -424,7 +423,7 @@ export default function TeamManagementPage() {
                                     {fileName || "Submission File"}
                                   </p>
                                 </div>
-                                <Download className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
                               </a>
                             </div>
                           )}
