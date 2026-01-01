@@ -678,7 +678,8 @@ model RoundEntity {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  teamSubmissions HackathonTeamRoundSubmissionEntity[]
+  teamSubmissions   HackathonTeamRoundSubmissionEntity[]
+  qualifications    TeamRoundQualificationEntity[]
 
   @@unique([hackathonId, order])
   @@index([hackathonId])
@@ -771,6 +772,7 @@ model TeamEntity {
 
   members                 TeamMemberEntity[]
   roundSubmissions        HackathonTeamRoundSubmissionEntity[]
+  roundQualifications     TeamRoundQualificationEntity[]
   registrationSubmissions HackathonRegistrationSubmissionEntity[]
 
   // Payments for this team (for PER_TEAM charge mode)
@@ -875,6 +877,34 @@ model HackathonTeamRoundSubmissionEntity {
   @@index([teamId])
   @@index([roundId])
   @@map("hackathon_team_round_submission")
+  @@schema("oppskills")
+}
+
+/// Tracks team qualification/advancement status per round.
+/// Organizers mark teams as qualified to advance to the next round.
+model TeamRoundQualificationEntity {
+  id      String      @id @default(cuid())
+  teamId  String      @map("team_id")
+  team    TeamEntity  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  roundId String      @map("round_id")
+  round   RoundEntity @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  /// Whether the team is qualified/advanced for this round
+  qualified Boolean @default(false)
+
+  /// When the qualification status was set
+  qualifiedAt DateTime? @map("qualified_at")
+
+  /// User ID of the organizer who set the status
+  qualifiedBy String? @map("qualified_by")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([teamId, roundId])
+  @@index([teamId])
+  @@index([roundId])
+  @@map("team_round_qualification")
   @@schema("oppskills")
 }
 

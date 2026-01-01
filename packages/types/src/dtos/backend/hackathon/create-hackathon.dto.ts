@@ -7,6 +7,7 @@ import {
   IsEmail,
   IsIn,
   IsInt,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
@@ -451,6 +452,16 @@ export class RoundSubmissionConfigDto {
  * Round definition for a hackathon.
  */
 export class RoundDto {
+  /** Optional round ID for updates (omit for new rounds) */
+  @ApiPropertyOptional({
+    description:
+      "Round ID for updates. Omit when creating new rounds. Required when updating existing rounds.",
+    example: "clx1234567890",
+  })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   /** Round name (e.g., "Ideation Round", "Final Presentation") */
   @ApiProperty({
     description: "Round name",
@@ -1037,6 +1048,46 @@ export class UpdateHackathonRoundsDto {
   @ValidateNested({ each: true })
   @Type(() => RoundDto)
   rounds: RoundDto[];
+}
+
+export class SubmissionFileDto {
+  @ApiPropertyOptional({ description: "Media ID if using media service" })
+  @IsOptional()
+  @IsString()
+  mediaId?: string;
+
+  @ApiProperty({ description: "Public URL of the uploaded file" })
+  @IsString()
+  url: string;
+
+  @ApiProperty({ description: "Original file name" })
+  @IsString()
+  name: string;
+
+  @ApiProperty({ description: "MIME type of the file" })
+  @IsString()
+  mimeType: string;
+
+  @ApiProperty({ description: "File size in bytes" })
+  @IsNumber()
+  size: number;
+}
+
+export class UpsertRoundSubmissionDto {
+  @ApiProperty({
+    description: "Files uploaded for this submission (max 3, 50MB each)",
+    type: [SubmissionFileDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SubmissionFileDto)
+  @ArrayMaxSize(3)
+  files: SubmissionFileDto[];
+
+  @ApiPropertyOptional({ description: "Optional note or description" })
+  @IsOptional()
+  @IsString()
+  note?: string;
 }
 
 /**

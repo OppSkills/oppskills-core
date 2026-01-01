@@ -8,6 +8,7 @@ import {
   Get,
   Query,
   UnauthorizedException,
+  ForbiddenException,
   Patch,
   Put,
   Param,
@@ -32,6 +33,7 @@ import {
   RegistrationFormDto,
   AddHackathonRoleDto,
   RemoveHackathonRoleDto,
+  UpsertRoundSubmissionDto,
 } from '@oppskills/types';
 import { Logger } from '../_utils/logger';
 import { AdminGuard } from '../common/admin.guard';
@@ -316,6 +318,133 @@ export class HackathonController {
     const safeSlug = assertNonEmptyId(slug, 'slug');
     return this.hackathonService.listHackathonRegistrationsBySlug(
       safeSlug,
+      userId,
+    );
+  }
+
+  @Get('by-slug/:slug/my-team/submissions')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Get my team submissions for a hackathon',
+    description:
+      'Retrieve submission status for all rounds. Returns team info and per-round submission data.',
+  })
+  @ApiParam({
+    name: 'slug',
+    description: 'Hackathon slug',
+    type: 'string',
+    example: 'tech-innovation-2025',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Team submissions retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not registered for this hackathon',
+  })
+  async getMyTeamSubmissions(@Param('slug') slug: string, @Req() req: Request) {
+    const userId = req.user?.id;
+    if (!userId) throw new ForbiddenException('Authentication required');
+    const safeSlug = assertNonEmptyId(slug, 'slug');
+    return this.hackathonService.getMyTeamSubmissions(safeSlug, userId);
+  }
+
+  @Put('by-slug/:slug/rounds/:roundId/submission')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Submit or update round submission',
+    description:
+      'Create or update a submission for a specific round. Team leader only. Must be within round time window.',
+  })
+  @ApiParam({
+    name: 'slug',
+    description: 'Hackathon slug',
+    type: 'string',
+    example: 'tech-innovation-2025',
+  })
+  @ApiParam({
+    name: 'roundId',
+    description: 'Round ID',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Submission created/updated successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid submission or round not open',
+  })
+  @ApiResponse({ status: 403, description: 'Only team leader can submit' })
+  async upsertRoundSubmission(
+    @Param('slug') slug: string,
+    @Param('roundId') roundId: string,
+    @Body() dto: UpsertRoundSubmissionDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new ForbiddenException('Authentication required');
+    const safeSlug = assertNonEmptyId(slug, 'slug');
+    const safeRoundId = assertNonEmptyId(roundId, 'roundId');
+    return this.hackathonService.upsertRoundSubmission(
+      safeSlug,
+      safeRoundId,
+      userId,
+      dto,
+    );
+  }
+
+  @Put('by-slug/:slug/rounds/:roundId/teams/:teamId/qualification')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Set team qualification status for a round',
+    description:
+      'Qualify or disqualify a team for a specific round. Owner/Manager/Admin only.',
+  })
+  async setTeamRoundQualification(
+    @Param('slug') slug: string,
+    @Param('roundId') roundId: string,
+    @Param('teamId') teamId: string,
+    @Body() body: { qualified: boolean },
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Not authenticated');
+    }
+    return this.hackathonService.setTeamRoundQualification(
+      slug,
+      roundId,
+      teamId,
+      body.qualified,
+      userId,
+    );
+  }
+
+  @Put('by-slug/:slug/rounds/:roundId/bulk-qualification')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Bulk qualify/disqualify teams for a round',
+    description:
+      'Set qualification status for multiple teams at once. Owner/Manager/Admin only.',
+  })
+  async bulkSetTeamRoundQualification(
+    @Param('slug') slug: string,
+    @Param('roundId') roundId: string,
+    @Body() body: { teamIds: string[]; qualified: boolean },
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Not authenticated');
+    }
+    return this.hackathonService.bulkSetTeamRoundQualification(
+      slug,
+      roundId,
+      body.teamIds,
+      body.qualified,
       userId,
     );
   }

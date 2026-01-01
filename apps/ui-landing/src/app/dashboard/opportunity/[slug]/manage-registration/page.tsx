@@ -15,6 +15,18 @@ export default function Page() {
 
   const [currentStage, setCurrentStage] = useState("All registrations");
 
+  const selectedRoundId = useMemo(() => {
+    if (!data) return null;
+    if (currentStage === "All registrations") return null;
+
+    const match = currentStage.match(/^R(\d+)\s*-/);
+    if (!match) return null;
+
+    const order = parseInt(match[1], 10);
+    const round = data.rounds.find((r) => r.order === order);
+    return round?.id ?? null;
+  }, [currentStage, data]);
+
   // Build stages from rounds data
   const stages = useMemo(() => {
     if (!data) return [];
@@ -34,24 +46,15 @@ export default function Page() {
   const participants: Participant[] = useMemo(() => {
     if (!data) return [];
 
-    // Find the selected round (if not "All registrations")
-    let selectedRoundId: string | null = null;
-    if (currentStage !== "All registrations" && data.rounds.length > 0) {
-      // Parse "R{order} - {name}" format
-      const match = currentStage.match(/^R(\d+)\s*-/);
-      if (match) {
-        const order = parseInt(match[1], 10);
-        const round = data.rounds.find((r) => r.order === order);
-        if (round) {
-          selectedRoundId = round.id;
-        }
-      }
-    }
-
     return data.teams.map((team, index) => {
       // Determine current round status
       let currentRound = "Registered";
       let status: "Completed" | "Incomplete" = "Completed";
+      let qualificationStatus:
+        | "Qualified"
+        | "Not Qualified"
+        | "Awaiting"
+        | null = null;
 
       if (selectedRoundId) {
         const submission = team.roundSubmissions[selectedRoundId];
@@ -61,6 +64,15 @@ export default function Page() {
         } else {
           currentRound = "Not Submitted";
           status = "Incomplete";
+        }
+
+        const qualification = team.roundQualifications?.[selectedRoundId];
+        if (qualification) {
+          qualificationStatus = qualification.qualified
+            ? "Qualified"
+            : "Not Qualified";
+        } else {
+          qualificationStatus = "Awaiting";
         }
       }
 
@@ -74,9 +86,10 @@ export default function Page() {
         avatarUrl: team.leader.imageUrl || "",
         status,
         currentRound,
+        qualificationStatus,
       };
     });
-  }, [data, currentStage]);
+  }, [data, selectedRoundId]);
 
   if (isLoading) {
     return (
@@ -133,7 +146,7 @@ export default function Page() {
           onSelectStage={setCurrentStage}
         />
         <div className="h-px my-6 w-full bg-foreground/30" />
-        <Participants data={participants} />
+        <Participants data={participants} selectedRoundId={selectedRoundId} />
       </div>
     </div>
   );
