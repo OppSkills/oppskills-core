@@ -7,10 +7,12 @@ import {
   getCoreRowModel,
   useReactTable,
   getFilteredRowModel,
+  getPaginationRowModel,
   ColumnDef,
 } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Search,
   Filter,
@@ -101,7 +103,9 @@ const UserDetailModal = ({
     enabled: isOpen && !!slug && !!participant?.id,
   });
 
-  const formatAnswerValue = (value: string | string[] | number | null | undefined): string => {
+  const formatAnswerValue = (
+    value: string | string[] | number | null | undefined
+  ): string => {
     if (value === null || value === undefined) return "—";
     if (Array.isArray(value)) return value.join(", ");
     return String(value);
@@ -353,11 +357,17 @@ export default function ManageRegistrationPage() {
       rowSelection,
       globalFilter,
     },
+    initialState: {
+      pagination: {
+        pageSize: 20,
+      },
+    },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
   // Loading state
@@ -530,6 +540,35 @@ export default function ManageRegistrationPage() {
               ))
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="w-full max-w-5xl flex items-center justify-between py-4">
+        <div className="text-sm text-muted-foreground">
+          Showing {table.getFilteredRowModel().rows.length} entries
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-foreground">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount() || 1}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </Button>
         </div>
       </div>
     </div>
