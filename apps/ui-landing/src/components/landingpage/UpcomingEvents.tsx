@@ -1,13 +1,10 @@
 "use client";
-
-import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { format } from "date-fns";
 import { Dot, Loader2 } from "lucide-react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { useEvents, type EventListItem } from "@/hooks/useEvents";
+import { formatInTimeZone } from "date-fns-tz";
 
 /**
  * Format event mode/location type for display.
@@ -153,11 +150,19 @@ export const UpcomingEvents = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayEvents.map((event) => {
             const startDate = new Date(event.startDate);
-            const formattedDate = format(startDate, "dd MMM yyyy");
-            const formattedTime = format(startDate, "hh:mm a");
+            const formattedDate = formatInTimeZone(
+              startDate,
+              "UTC",
+              "dd MMM yyyy"
+            );
+            const formattedTime = formatInTimeZone(startDate, "UTC", "hh:mm a");
             // Safely handle null registrationDeadline
             const formattedDeadLineDate = event.registrationDeadline
-              ? format(new Date(event.registrationDeadline), "dd MMM yyyy")
+              ? formatInTimeZone(
+                  new Date(event.registrationDeadline),
+                  "UTC",
+                  "dd MMM yyyy"
+                )
               : "N/A";
             const mode = formatMode(event.locationType);
             const entryFee = formatEntryFee(event);
