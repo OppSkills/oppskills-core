@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronLeft, UserCircle2, Loader2, ClipboardList } from "lucide-react";
+import {
+  ChevronLeft,
+  UserCircle2,
+  Loader2,
+  ClipboardList,
+  FileText,
+  Download,
+  ExternalLink,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useRouter, useParams } from "next/navigation";
@@ -332,12 +340,138 @@ export default function TeamManagementPage() {
                       : "—"}
                   </span>
                 </div>
-                <div className="bg-muted/30 rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Submission Data</h3>
-                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {JSON.stringify(selectedRoundSubmission.payload, null, 2)}
-                  </pre>
-                </div>
+
+                {selectedRoundSubmission.payload
+                  ? (() => {
+                      const payload = selectedRoundSubmission.payload as Record<
+                        string,
+                        unknown
+                      >;
+                      const files = payload.files as
+                        | Array<{
+                            url?: string;
+                            publicUrl?: string;
+                            fileName?: string;
+                            name?: string;
+                            mimeType?: string;
+                            size?: number;
+                          }>
+                        | undefined;
+                      const fileUrl = (payload.fileUrl || payload.url) as
+                        | string
+                        | undefined;
+                      const fileName = payload.fileName as string | undefined;
+
+                      return (
+                        <div className="space-y-4">
+                          {Array.isArray(files) && files.length > 0 && (
+                            <div className="space-y-3">
+                              <h3 className="font-semibold text-foreground">
+                                Submitted Files
+                              </h3>
+                              <div className="grid gap-3">
+                                {files.map((file, index) => {
+                                  const url = file.url || file.publicUrl;
+                                  const name =
+                                    file.fileName ||
+                                    file.name ||
+                                    `File ${index + 1}`;
+                                  return (
+                                    <a
+                                      key={index}
+                                      href={url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors group"
+                                    >
+                                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                                        <FileText className="h-5 w-5 text-primary" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-foreground truncate">
+                                          {name}
+                                        </p>
+                                        {file.mimeType && (
+                                          <p className="text-xs text-muted-foreground">
+                                            {file.mimeType}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                                    </a>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {!Array.isArray(files) && fileUrl && (
+                            <div className="space-y-3">
+                              <h3 className="font-semibold text-foreground">
+                                Submitted File
+                              </h3>
+                              <a
+                                href={fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors group"
+                              >
+                                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                                  <FileText className="h-5 w-5 text-primary" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-foreground">
+                                    {fileName || "Submission File"}
+                                  </p>
+                                </div>
+                                <Download className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                              </a>
+                            </div>
+                          )}
+
+                          {Object.entries(payload).filter(
+                            ([key]) =>
+                              !["files", "fileUrl", "url", "fileName"].includes(
+                                key,
+                              ),
+                          ).length > 0 && (
+                            <div className="space-y-3">
+                              <h3 className="font-semibold text-foreground">
+                                Additional Information
+                              </h3>
+                              <div className="grid gap-3">
+                                {Object.entries(payload)
+                                  .filter(
+                                    ([key]) =>
+                                      ![
+                                        "files",
+                                        "fileUrl",
+                                        "url",
+                                        "fileName",
+                                      ].includes(key),
+                                  )
+                                  .map(([key, value]) => (
+                                    <div
+                                      key={key}
+                                      className="p-3 bg-muted/30 rounded-lg"
+                                    >
+                                      <p className="text-sm font-medium text-muted-foreground capitalize">
+                                        {key.replace(/([A-Z])/g, " $1").trim()}
+                                      </p>
+                                      <p className="text-foreground mt-1">
+                                        {typeof value === "string"
+                                          ? value
+                                          : JSON.stringify(value)}
+                                      </p>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
+                  : null}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-16">

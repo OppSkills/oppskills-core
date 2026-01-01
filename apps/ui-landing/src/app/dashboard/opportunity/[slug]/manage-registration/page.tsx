@@ -46,7 +46,27 @@ export default function Page() {
   const participants: Participant[] = useMemo(() => {
     if (!data) return [];
 
-    return data.teams.map((team, index) => {
+    // Filter teams based on selected round
+    let filteredTeams = data.teams;
+
+    if (selectedRoundId) {
+      // Find the order of the selected round
+      const selectedRound = data.rounds.find((r) => r.id === selectedRoundId);
+      if (selectedRound && selectedRound.order > 1) {
+        // For rounds after the first, only show teams qualified from previous round
+        const previousRound = data.rounds.find(
+          (r) => r.order === selectedRound.order - 1,
+        );
+        if (previousRound) {
+          filteredTeams = data.teams.filter((team) => {
+            const prevQual = team.roundQualifications?.[previousRound.id];
+            return prevQual?.qualified === true;
+          });
+        }
+      }
+    }
+
+    return filteredTeams.map((team, index) => {
       // Determine current round status
       let currentRound = "Registered";
       let status: "Completed" | "Incomplete" = "Completed";

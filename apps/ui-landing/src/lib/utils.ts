@@ -33,6 +33,41 @@ export function getClerkErrorMessage(error: unknown, fallback: string): string {
     : fallback;
 }
 
+export function getApiErrorMessage(
+  error: unknown,
+  fallback = "Something went wrong",
+): string {
+  if (error == null) return fallback;
+
+  if (typeof error === "string") {
+    return error.trim().length > 0 ? error : fallback;
+  }
+
+  if (isRecord(error)) {
+    const response = error["response"];
+    if (isRecord(response)) {
+      const data = response["data"];
+      if (isRecord(data)) {
+        const message = data["message"];
+        if (typeof message === "string" && message.trim().length > 0) {
+          return message;
+        }
+        const errorField = data["error"];
+        if (typeof errorField === "string" && errorField.trim().length > 0) {
+          return errorField;
+        }
+      }
+    }
+
+    const message = error["message"];
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message;
+    }
+  }
+
+  return fallback;
+}
+
 /**
  * Generates a unique-enough username for Clerk using first/last name and time.
  *

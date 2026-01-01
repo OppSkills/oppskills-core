@@ -128,9 +128,10 @@ export function RoundsTimeline({
                     </div>
 
                     {round.description && (
-                      <p className="text-sm text-neutral-500 mb-4">
-                        {round.description}
-                      </p>
+                      <div
+                        className="prose prose-sm max-w-none text-neutral-500 mb-4"
+                        dangerouslySetInnerHTML={{ __html: round.description }}
+                      />
                     )}
 
                     <div className="space-y-2 mt-4">

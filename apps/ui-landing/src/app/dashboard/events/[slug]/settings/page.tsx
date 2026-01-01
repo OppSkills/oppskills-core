@@ -15,6 +15,7 @@ import {
   Trash2,
   Ban,
   ArrowLeft,
+  Undo2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -413,6 +414,38 @@ export default function EventSettingsPage({
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-3">
+              {(event.status === "PUBLISHED" || event.status === "ONGOING") && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="text-gray-600 border-gray-200 hover:bg-gray-50"
+                    >
+                      <Undo2 className="w-4 h-4 mr-2" />
+                      Move to Draft
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Move to Draft?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will unpublish your event and move it back to draft
+                        status. The event will no longer be visible to the
+                        public. You can publish it again later.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep Published</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => updateStatusMutation.mutate("DRAFT")}
+                      >
+                        Move to Draft
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+
               {event.status === "PUBLISHED" &&
                 event.approvalStatus === "APPROVED" && (
                   <Button

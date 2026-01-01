@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronRight,
@@ -15,7 +16,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth, SignInButton } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { checkMyHackathonTeam } from "@/lib/api/teamApi";
+import {
+  checkMyHackathonTeam,
+  type TeamDetailResponse,
+} from "@/lib/api/teamApi";
 import { getMe } from "@/lib/api/usersApi";
 import type { CompetitionDetails } from "./types";
 
@@ -30,9 +34,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
-  const [myTeam, setMyTeam] = useState<{ id: string; name: string } | null>(
-    null
-  );
+  const [myTeam, setMyTeam] = useState<TeamDetailResponse | null>(null);
 
   // Force re-check when redirected back from registration with ?registered=true
   const justRegistered = searchParams.get("registered") === "true";
@@ -49,7 +51,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
         const team = await checkMyHackathonTeam(token, competition.id);
         setIsAlreadyRegistered(!!team);
-        setMyTeam(team ? { id: team.id, name: team.name } : null);
+        setMyTeam(team);
 
         // Clear the query param after successful check to avoid re-triggering
         if (justRegistered && team) {
@@ -119,7 +121,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       }
 
       router.push(
-        `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`
+        `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`,
       );
     } catch (error) {
       console.error("Error checking onboarding status:", error);
@@ -150,7 +152,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           className="w-full bg-green-600 hover:bg-green-700 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm"
           onClick={() =>
             router.push(
-              `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`
+              `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`,
             )
           }
         >
@@ -220,7 +222,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
   const getDeterministicPseudoImpressions = (
     registrationCount: number | null | undefined,
-    createdAt: Date
+    createdAt: Date,
   ): number => {
     if (!registrationCount || registrationCount <= 0) return 0;
 
@@ -231,7 +233,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
     const hoursOld = Math.max(
       1,
-      Math.floor((now - createdTime) / (1000 * 60 * 60))
+      Math.floor((now - createdTime) / (1000 * 60 * 60)),
     );
 
     const registrationBase = registrationCount * 6;
@@ -322,6 +324,88 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           {/* Register Button */}
           {renderRegisterButton()}
 
+          {/* Team Status Card - shown when registered */}
+          {isAlreadyRegistered && myTeam && (
+            <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-green-800">
+                  Your Team
+                </span>
+                <Link
+                  href={`/team-register?hackathonId=${competition.id}&slug=${competition.slug}`}
+                  className="text-xs text-green-700 hover:text-green-900 underline"
+                >
+                  View Details
+                </Link>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2">
+                  {myTeam.leader && (
+                    <div
+                      className="w-8 h-8 rounded-full border-2 border-white bg-green-600 flex items-center justify-center text-white text-xs font-medium overflow-hidden"
+                      title={`${myTeam.leader.firstName || ""} ${myTeam.leader.lastName || ""} (Leader)`}
+                    >
+                      {myTeam.leader.imageUrl ? (
+                        <Image
+                          src={myTeam.leader.imageUrl}
+                          alt="Leader"
+                          width={32}
+                          height={32}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        (
+                          myTeam.leader.firstName?.[0] ||
+                          myTeam.leader.email?.[0] ||
+                          "L"
+                        ).toUpperCase()
+                      )}
+                    </div>
+                  )}
+                  {myTeam.members?.slice(0, 3).map((member) => (
+                    <div
+                      key={member.id}
+                      className="w-8 h-8 rounded-full border-2 border-white bg-neutral-400 flex items-center justify-center text-white text-xs font-medium overflow-hidden"
+                      title={`${member.user.firstName || ""} ${member.user.lastName || ""}`}
+                    >
+                      {member.user.imageUrl ? (
+                        <Image
+                          src={member.user.imageUrl}
+                          alt="Member"
+                          width={32}
+                          height={32}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        (
+                          member.user.firstName?.[0] ||
+                          member.user.email?.[0] ||
+                          "M"
+                        ).toUpperCase()
+                      )}
+                    </div>
+                  ))}
+                  {myTeam.members && myTeam.members.length > 3 && (
+                    <div className="w-8 h-8 rounded-full border-2 border-white bg-neutral-300 flex items-center justify-center text-neutral-600 text-xs font-medium">
+                      +{myTeam.members.length - 3}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-neutral-900 truncate">
+                    {myTeam.name}
+                  </p>
+                  <p className="text-xs text-neutral-500 truncate">
+                    Led by{" "}
+                    {myTeam.leader?.firstName ||
+                      myTeam.leader?.email?.split("@")[0] ||
+                      "Unknown"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Divider */}
           <div className="h-px bg-neutral-100  w-full my-2" />
 
@@ -350,7 +434,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
                   {competition.impressions ||
                     getDeterministicPseudoImpressions(
                       competition.registrationCount,
-                      competition.createdAt
+                      competition.createdAt,
                     )}
                 </div>
                 <div className="text-xs text-neutral-500">Impressions</div>

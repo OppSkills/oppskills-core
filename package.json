@@ -14,6 +14,7 @@
     "db:migrate": "cd packages/database && pnpm exec prisma migrate dev",
     "db:reset": "cd packages/database && pnpm exec prisma migrate reset --force",
     "db:migrate:deploy": "cd packages/database && pnpm exec prisma migrate deploy",
+    "db:migrate:resolve": "cd packages/database && pnpm exec prisma migrate resolve",
     "db:push": "cd packages/database && pnpm exec prisma db push",
     "db:studio": "cd packages/database && pnpm exec prisma studio",
     "db:generate": "cd packages/database && pnpm exec prisma generate",
