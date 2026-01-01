@@ -348,7 +348,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
                       {myTeam.leader.imageUrl ? (
                         <Image
                           src={myTeam.leader.imageUrl}
-                          alt="Leader"
+                          alt={`${myTeam.leader.firstName || myTeam.leader.email || 'Team leader'} (Leader)`}
                           width={32}
                           height={32}
                           className="w-full h-full object-cover"
@@ -371,7 +371,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
                       {member.user.imageUrl ? (
                         <Image
                           src={member.user.imageUrl}
-                          alt="Member"
+                          alt={member.user.firstName || member.user.email || 'Team member'}
                           width={32}
                           height={32}
                           className="w-full h-full object-cover"
