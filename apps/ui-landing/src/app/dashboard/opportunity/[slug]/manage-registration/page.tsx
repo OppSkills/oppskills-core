@@ -53,16 +53,18 @@ export default function Page() {
       // Find the order of the selected round
       const selectedRound = data.rounds.find((r) => r.id === selectedRoundId);
       if (selectedRound && selectedRound.order > 1) {
-        // For rounds after the first, only show teams qualified from previous round
-        const previousRound = data.rounds.find(
-          (r) => r.order === selectedRound.order - 1,
+        // For rounds after the first, only show teams that have been
+        // qualified through all prior rounds (not just the immediately previous one)
+        const requiredRounds = data.rounds.filter(
+          (r) => r.order < selectedRound.order,
         );
-        if (previousRound) {
-          filteredTeams = data.teams.filter((team) => {
-            const prevQual = team.roundQualifications?.[previousRound.id];
-            return prevQual?.qualified === true;
-          });
-        }
+
+        filteredTeams = data.teams.filter((team) =>
+          requiredRounds.every((round) => {
+            const qualification = team.roundQualifications?.[round.id];
+            return qualification?.qualified === true;
+          }),
+        );
       }
     }
 
