@@ -39,6 +39,7 @@ import { Logger } from '../_utils/logger';
 import { AdminGuard } from '../common/admin.guard';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { HackathonService } from './hackathon.service';
+import { TeamService } from '../team/team.service';
 import {
   UpdateHackathonPrizeBreakdownDto,
   UpdateHackathonRegistrationFormDto,
@@ -60,7 +61,51 @@ function assertNonEmptyId(id: string, fieldName: string): string {
 export class HackathonController {
   private readonly logger = new Logger(HackathonController.name);
 
-  constructor(private readonly hackathonService: HackathonService) {}
+  constructor(
+    private readonly hackathonService: HackathonService,
+    private readonly teamService: TeamService,
+  ) {}
+
+  @Get('my-team')
+  @ApiOperation({
+    summary: 'Check if user is in a team for a hackathon',
+    description:
+      'Returns the team if the user is already registered in a team for the specified hackathon, null otherwise.',
+  })
+  @ApiQuery({
+    name: 'hackathonId',
+    description: 'Hackathon ID',
+    type: 'string',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Team check result',
+    schema: {
+      type: 'object',
+      nullable: true,
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        name: { type: 'string' },
+        leaderId: { type: 'string' },
+        maxSize: { type: 'number' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async checkMyTeam(
+    @Query('hackathonId') hackathonId: string,
+    @Req() req: Request,
+  ) {
+    const user = req['user'];
+    if (!user) {
+      throw new UnauthorizedException('User not found in request');
+    }
+    return this.teamService.checkUserTeamInHackathon(hackathonId, user.id);
+  }
 
   /**
    * Create a hackathon as a user.
@@ -535,7 +580,7 @@ export class HackathonController {
     );
   }
 
-  @Get(':id')
+  @Get(':id(c[a-z0-9]{24})')
   @ApiOperation({
     summary: 'Get hackathon by ID',
     description: 'Retrieve detailed information about a specific hackathon',
@@ -587,7 +632,7 @@ export class HackathonController {
   }
 
   /** Update a hackathon (owner-only). */
-  @Put(':id')
+  @Put(':id(c[a-z0-9]{24})')
   @ApiOperation({
     summary: 'Update hackathon',
     description:
@@ -632,7 +677,7 @@ export class HackathonController {
     return this.hackathonService.updateHackathon(safeId, dto, userId);
   }
 
-  @Delete(':id')
+  @Delete(':id(c[a-z0-9]{24})')
   @ApiOperation({
     summary: 'Delete hackathon',
     description: 'Delete a hackathon. Only the owner can perform this action.',
@@ -667,7 +712,7 @@ export class HackathonController {
     return this.hackathonService.deleteHackathon(safeId, userId);
   }
 
-  @Patch(':id/status')
+  @Patch(':id(c[a-z0-9]{24})/status')
   @ApiOperation({
     summary: 'Update hackathon status',
     description:
@@ -717,7 +762,7 @@ export class HackathonController {
     );
   }
 
-  @Post(':id/register')
+  @Post(':id(c[a-z0-9]{24})/register')
   @ApiOperation({
     summary: 'Register for hackathon',
     description: 'Register the authenticated user for a specific hackathon',
@@ -768,7 +813,7 @@ export class HackathonController {
    * - Owner-only (or admin).
    * - Allowed only when status is DRAFT.
    */
-  @Put(':id/rounds')
+  @Put(':id(c[a-z0-9]{24})/rounds')
   @ApiOperation({
     summary: 'Update hackathon rounds',
     description:
