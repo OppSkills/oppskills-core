@@ -580,7 +580,7 @@ export class HackathonController {
     );
   }
 
-  @Get(':id(c[a-z0-9]{24})')
+  @Get(':id')
   @ApiOperation({
     summary: 'Get hackathon by ID',
     description: 'Retrieve detailed information about a specific hackathon',
@@ -632,7 +632,7 @@ export class HackathonController {
   }
 
   /** Update a hackathon (owner-only). */
-  @Put(':id(c[a-z0-9]{24})')
+  @Put(':id')
   @ApiOperation({
     summary: 'Update hackathon',
     description:
@@ -677,7 +677,7 @@ export class HackathonController {
     return this.hackathonService.updateHackathon(safeId, dto, userId);
   }
 
-  @Delete(':id(c[a-z0-9]{24})')
+  @Delete(':id')
   @ApiOperation({
     summary: 'Delete hackathon',
     description: 'Delete a hackathon. Only the owner can perform this action.',
@@ -712,7 +712,7 @@ export class HackathonController {
     return this.hackathonService.deleteHackathon(safeId, userId);
   }
 
-  @Patch(':id(c[a-z0-9]{24})/status')
+  @Patch(':id/status')
   @ApiOperation({
     summary: 'Update hackathon status',
     description:
@@ -762,7 +762,7 @@ export class HackathonController {
     );
   }
 
-  @Post(':id(c[a-z0-9]{24})/register')
+  @Post(':id/register')
   @ApiOperation({
     summary: 'Register for hackathon',
     description: 'Register the authenticated user for a specific hackathon',
@@ -813,7 +813,7 @@ export class HackathonController {
    * - Owner-only (or admin).
    * - Allowed only when status is DRAFT.
    */
-  @Put(':id(c[a-z0-9]{24})/rounds')
+  @Put(':id/rounds')
   @ApiOperation({
     summary: 'Update hackathon rounds',
     description:

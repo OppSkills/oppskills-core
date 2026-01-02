@@ -252,7 +252,7 @@ export class EventController {
    * GET /events/:id - Dashboard endpoint (auth required).
    * Returns full event data for owner/manager/admin.
    */
-  @Get(':id(c[a-z0-9]{24})')
+  @Get(':id')
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({ summary: 'Get event by ID (dashboard, auth required)' })
   @ApiParam({ name: 'id', description: 'Event ID' })
@@ -268,7 +268,7 @@ export class EventController {
     return this.eventService.getEventByIdForDashboard(validId, userId);
   }
 
-  @Put(':id(c[a-z0-9]{24})')
+  @Put(':id')
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({ summary: 'Update event' })
   @ApiParam({ name: 'id', description: 'Event ID' })
@@ -291,7 +291,7 @@ export class EventController {
     return this.eventService.updateEvent(validId, dto, userId);
   }
 
-  @Delete(':id(c[a-z0-9]{24})')
+  @Delete(':id')
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({ summary: 'Delete event' })
   @ApiParam({ name: 'id', description: 'Event ID' })
@@ -313,7 +313,7 @@ export class EventController {
   // Status Endpoint
   // ─────────────────────────────────────────────────────────────────────────────
 
-  @Patch(':id(c[a-z0-9]{24})/status')
+  @Patch(':id/status')
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({ summary: 'Update event status' })
   @ApiParam({ name: 'id', description: 'Event ID' })
