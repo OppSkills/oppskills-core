@@ -18,6 +18,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getApiErrorMessage } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -150,8 +151,8 @@ export default function EventSettingsPage({
       toast.success("Event submitted for approval!");
       queryClient.invalidateQueries({ queryKey: getEventBySlugQueryKey(slug) });
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to submit for approval");
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to submit for approval"));
     },
   });
 
@@ -166,8 +167,8 @@ export default function EventSettingsPage({
       toast.success("Event status updated!");
       queryClient.invalidateQueries({ queryKey: getEventBySlugQueryKey(slug) });
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to update status");
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to update status"));
     },
   });
 
@@ -184,8 +185,10 @@ export default function EventSettingsPage({
       toast.success("Registration settings updated!");
       queryClient.invalidateQueries({ queryKey: getEventBySlugQueryKey(slug) });
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to update registration settings");
+    onError: (error: unknown) => {
+      toast.error(
+        getApiErrorMessage(error, "Failed to update registration settings"),
+      );
     },
   });
 
@@ -200,8 +203,8 @@ export default function EventSettingsPage({
       toast.success("Event deleted successfully!");
       router.push("/dashboard");
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to delete event");
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete event"));
     },
   });
 

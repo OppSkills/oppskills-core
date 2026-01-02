@@ -20,6 +20,7 @@ import {
   checkMyHackathonTeam,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
+import { getApiErrorMessage } from "@/lib/utils";
 import { getMe } from "@/lib/api/usersApi";
 import type { CompetitionDetails } from "./types";
 
@@ -52,13 +53,6 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         const team = await checkMyHackathonTeam(token, competition.id);
         setIsAlreadyRegistered(!!team);
         setMyTeam(team);
-
-        // Clear the query param after successful check to avoid re-triggering
-        if (justRegistered && team) {
-          router.replace(`/competitions/${competition.slug}`, {
-            scroll: false,
-          });
-        }
       } catch (error) {
         console.error("Error checking registration:", error);
         setIsAlreadyRegistered(false);
@@ -69,14 +63,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     }
 
     checkRegistration();
-  }, [
-    isSignedIn,
-    competition.id,
-    competition.slug,
-    getToken,
-    justRegistered,
-    router,
-  ]);
+  }, [isSignedIn, competition.id, getToken, justRegistered]);
 
   // Check if registration is closed
   const isRegistrationClosed =
@@ -125,7 +112,9 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       );
     } catch (error) {
       console.error("Error checking onboarding status:", error);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(
+        getApiErrorMessage(error, "Something went wrong. Please try again."),
+      );
     } finally {
       setIsCheckingOnboarding(false);
     }
@@ -149,15 +138,11 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     if (isAlreadyRegistered && myTeam) {
       return (
         <Button
-          className="w-full bg-green-600 hover:bg-green-700 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm"
-          onClick={() =>
-            router.push(
-              `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`,
-            )
-          }
+          className="w-full bg-green-600 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm"
+          disabled
         >
           <CheckCircle className="w-4 h-4 mr-2" />
-          Registered: {myTeam.name}
+          Registered
         </Button>
       );
     }
@@ -332,7 +317,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
                   Your Team
                 </span>
                 <Link
-                  href={`/team-register?hackathonId=${competition.id}&slug=${competition.slug}`}
+                  href={`/competitions/${competition.slug}/team`}
                   className="text-xs text-green-700 hover:text-green-900 underline"
                 >
                   View Details

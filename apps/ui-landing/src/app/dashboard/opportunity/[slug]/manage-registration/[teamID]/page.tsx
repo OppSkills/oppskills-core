@@ -21,6 +21,7 @@ import { getTeamRegistrationAnswers } from "@/lib/api/hackathonApi";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getApiErrorMessage } from "@/lib/utils";
 
 export default function TeamManagementPage() {
   const router = useRouter();
@@ -59,6 +60,50 @@ export default function TeamManagementPage() {
     return String(value);
   };
 
+  const formatLocation = (
+    profile:
+      | TeamDetailResponse["leader"]["onboardingProfile"]
+      | null
+      | undefined,
+  ): string => {
+    if (!profile) return "—";
+    const parts = [
+      profile.locationCity,
+      profile.locationState,
+      profile.locationCountry,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : "—";
+  };
+
+  const formatEducation = (
+    profile:
+      | TeamDetailResponse["leader"]["onboardingProfile"]
+      | null
+      | undefined,
+  ): string => {
+    if (!profile) return "—";
+    if (profile.userCategory === "student") {
+      const school = profile.schoolName || profile.college?.name;
+      const classLabel = profile.schoolClass || profile.collegeCurrentYear;
+      const parts = [school, classLabel].filter(Boolean);
+      return parts.length > 0 ? parts.join(" • ") : "Student";
+    }
+
+    if (profile.userCategory === "professional") {
+      const parts = [profile.jobTitle, profile.companyName].filter(Boolean);
+      return parts.length > 0 ? parts.join(" @ ") : "Professional";
+    }
+
+    return "—";
+  };
+
+  const formatCollege = (
+    profile:
+      | TeamDetailResponse["leader"]["onboardingProfile"]
+      | null
+      | undefined,
+  ): string => profile?.college?.name || profile?.schoolName || "—";
+
   // Build members list from team data
   const members: TeamMember[] = useMemo(() => {
     if (!teamData) return [];
@@ -74,10 +119,10 @@ export default function TeamManagementPage() {
           .filter(Boolean)
           .join(" ") || team.leader.email,
       role: "Team Leader",
-      college: "—",
+      college: formatCollege(team.leader.onboardingProfile ?? null),
       email: team.leader.email,
-      location: "—",
-      education: "—",
+      location: formatLocation(team.leader.onboardingProfile ?? null),
+      education: formatEducation(team.leader.onboardingProfile ?? null),
       registeredOn: new Date(team.createdAt).toLocaleDateString("en-US", {
         day: "2-digit",
         month: "short",
@@ -97,10 +142,10 @@ export default function TeamManagementPage() {
             .filter(Boolean)
             .join(" ") || member.user.email,
         role: "Team Member",
-        college: "—",
+        college: formatCollege(member.user.onboardingProfile ?? null),
         email: member.user.email,
-        location: "—",
-        education: "—",
+        location: formatLocation(member.user.onboardingProfile ?? null),
+        education: formatEducation(member.user.onboardingProfile ?? null),
         registeredOn: new Date(member.joinedAt).toLocaleDateString("en-US", {
           day: "2-digit",
           month: "short",
@@ -151,7 +196,7 @@ export default function TeamManagementPage() {
         <div className="text-center">
           <p className="text-destructive font-medium">Failed to load team</p>
           <p className="text-muted-foreground text-sm mt-1">
-            {teamError instanceof Error ? teamError.message : "Team not found"}
+            {getApiErrorMessage(teamError) || "Team not found"}
           </p>
         </div>
       </div>
@@ -268,23 +313,28 @@ export default function TeamManagementPage() {
                             const answer = respondent.answers.find(
                               (a) => a.fieldId === field.id,
                             );
+                            const respondentName =
+                              [respondent.firstName, respondent.lastName]
+                                .filter(Boolean)
+                                .join(" ") || respondent.email;
+
                             return (
                               <div
-                                key={respondent.odooId}
+                                key={respondent.userId}
                                 className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg"
                               >
                                 <Avatar className="h-8 w-8">
                                   <AvatarImage
-                                    src={respondent.avatarUrl || undefined}
+                                    src={respondent.imageUrl || undefined}
                                   />
                                   <AvatarFallback className="text-xs">
-                                    {respondent.odooName.charAt(0)}
+                                    {respondentName.charAt(0)}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm font-medium text-foreground">
-                                      {respondent.odooName}
+                                      {respondentName}
                                     </span>
                                     {respondent.isLeader && (
                                       <Badge

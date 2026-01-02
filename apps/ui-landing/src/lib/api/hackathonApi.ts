@@ -492,10 +492,11 @@ export interface TeamRegistrationAnswer {
 }
 
 export interface TeamRespondent {
-  odooId: string;
-  odooName: string;
+  userId: string;
+  firstName: string | null;
+  lastName: string | null;
   email: string;
-  avatarUrl: string | null;
+  imageUrl: string | null;
   isLeader: boolean;
   answers: TeamRegistrationAnswer[];
 }

@@ -3,6 +3,8 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 
+import { getApiErrorMessage } from "../utils";
+
 /**
  * Normalizes the UI's API base URL so we can reliably target specific resources.
  *
@@ -20,7 +22,7 @@ export function getApiRootUrl(): string {
      */
     if (process.env.NODE_ENV === "production") {
       throw new Error(
-        "NEXT_PUBLIC_API_URL is not set. Please set it to your backend base URL (e.g. https://api.example.com)."
+        "NEXT_PUBLIC_API_URL is not set. Please set it to your backend base URL (e.g. https://api.example.com).",
       );
     }
     return "http://localhost:3001";
@@ -39,7 +41,7 @@ export function getApiRootUrl(): string {
     "/media",
   ] as const;
   const matched = knownResourceSuffixes.find((suffix) =>
-    trimmed.endsWith(suffix)
+    trimmed.endsWith(suffix),
   );
 
   return matched ? trimmed.slice(0, -matched.length) : trimmed;
@@ -72,6 +74,16 @@ export function createApiClient(resourcePath: string): AxiosInstance {
     }
     return config;
   });
+
+  client.interceptors.response.use(
+    (response) => response,
+    (error: unknown) => {
+      if (error instanceof Error) {
+        error.message = getApiErrorMessage(error, error.message);
+      }
+      return Promise.reject(error);
+    },
+  );
 
   return client;
 }

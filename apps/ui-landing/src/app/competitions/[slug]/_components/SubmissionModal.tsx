@@ -17,6 +17,7 @@ import { Upload, X, FileText, Image, File } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
 import { upsertRoundSubmission } from "@/lib/api/hackathonApi";
+import { getApiErrorMessage } from "@/lib/utils";
 
 interface SubmissionModalProps {
   round: Round;
@@ -119,7 +120,7 @@ export function SubmissionModal({
         toast.success("Files uploaded successfully");
       } catch (error) {
         console.error("Upload error:", error);
-        toast.error("Failed to upload files");
+        toast.error(getApiErrorMessage(error, "Failed to upload files"));
       } finally {
         setIsUploading(false);
         e.target.value = "";

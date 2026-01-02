@@ -4,6 +4,13 @@
 **Created**: 2026-01-02  
 **Status**: In Progress
 
+## Decisions Locked
+
+- **Round tab meaning**: Round tabs show teams currently in that round only. Round 1 shows teams not yet qualified for Round 2.
+- **Disqualify action**: Keep disqualify, but only as row-level (no bulk selection).
+- **Publish → Draft**: Moving to Draft should reset approval status/fields.
+- **Team details link**: Create a dedicated team detail page (recommended approach).
+
 ## Issues to Fix
 
 ### 1. Event Dashboard Additional Info Attachments Not Saving

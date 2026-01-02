@@ -52,6 +52,14 @@ export function getApiErrorMessage(
         if (typeof message === "string" && message.trim().length > 0) {
           return message;
         }
+        if (Array.isArray(message)) {
+          const joined = message
+            .filter((item) => typeof item === "string")
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0)
+            .join("; ");
+          if (joined.length > 0) return joined;
+        }
         const errorField = data["error"];
         if (typeof errorField === "string" && errorField.trim().length > 0) {
           return errorField;

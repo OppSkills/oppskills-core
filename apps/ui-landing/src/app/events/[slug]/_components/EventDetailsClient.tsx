@@ -17,6 +17,7 @@ import { useAuth, useClerk } from "@clerk/nextjs";
 import { joinEvent, checkMyRegistration } from "@/lib/api/eventApi";
 import { getMe } from "@/lib/api/usersApi";
 import { useQuery } from "@tanstack/react-query";
+import { getApiErrorMessage } from "@/lib/utils";
 
 // Types derived from what API returns (approximate based on usage)
 // In a real app we'd import full types
@@ -31,7 +32,7 @@ interface EventDetailsClientProps {
  */
 function getInitials(
   firstName: string | null,
-  lastName: string | null
+  lastName: string | null,
 ): string {
   const first = (firstName ?? "").trim().charAt(0).toUpperCase();
   const last = (lastName ?? "").trim().charAt(0).toUpperCase();
@@ -163,7 +164,7 @@ function buildDefaultFields(userCategory?: string): RegistrationField[] {
 
 function mergeDefaultAndCustomFields(
   customFields: RegistrationField[] | undefined,
-  userCategory?: string
+  userCategory?: string,
 ): RegistrationField[] {
   const defaults = buildDefaultFields(userCategory);
   const customs = customFields ?? [];
@@ -181,7 +182,7 @@ function mergeDefaultAndCustomFields(
   const filteredCustoms = customs.filter(
     (f) =>
       !defaultLabels.has(f.label.toLowerCase()) &&
-      !identityFieldLabels.has(f.label.toLowerCase())
+      !identityFieldLabels.has(f.label.toLowerCase()),
   );
 
   return [...defaults, ...filteredCustoms].sort((a, b) => a.order - b.order);
@@ -272,7 +273,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         []) as RegistrationField[];
       const mergedFields = mergeDefaultAndCustomFields(
         customFields,
-        onboardingProfile?.userCategory
+        onboardingProfile?.userCategory,
       );
 
       setRegistrationFields(mergedFields);
@@ -286,7 +287,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   };
 
   const handleJoinEvent = async (
-    answers: Array<{ fieldId: string; value: string | number | string[] }>
+    answers: Array<{ fieldId: string; value: string | number | string[] }>,
   ) => {
     if (!event) return;
 
@@ -305,18 +306,9 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
       await refetchRegistrationStatus();
       // Optionally refresh the page to update attendee count if server rendered
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Failed to register. Please try again.";
-      if (typeof err === "object" && err !== null && "response" in err) {
-        const axiosErr = err as { response?: { data?: { message?: string } } };
-        if (axiosErr.response?.data?.message) {
-          toast.error(axiosErr.response.data.message);
-          return;
-        }
-      }
-      toast.error(message);
+      toast.error(
+        getApiErrorMessage(err, "Failed to register. Please try again."),
+      );
     } finally {
       setIsRegistering(false);
     }
@@ -484,7 +476,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                       <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
                         {getInitials(
                           event.owner.firstName,
-                          event.owner.lastName
+                          event.owner.lastName,
                         )}
                       </div>
                     )}

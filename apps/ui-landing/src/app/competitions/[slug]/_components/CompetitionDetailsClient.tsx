@@ -47,12 +47,12 @@ export default function CompetitionDetailsClient({
             <CompetitionTabs setCurTab={setCurTab} />
 
             <div className="space-y-12">
-              <section id="rounds" className="scroll-mt-24">
-                <RoundsTimeline rounds={competition.rounds} />
-              </section>
-
               <section id="details" className="scroll-mt-24">
                 <AboutSection content={competition.about} />
+              </section>
+
+              <section id="rounds" className="scroll-mt-24">
+                <RoundsTimeline rounds={competition.rounds} />
               </section>
 
               <section className="scroll-mt-24">
@@ -61,15 +61,6 @@ export default function CompetitionDetailsClient({
 
               <section id="prizes" className="scroll-mt-24">
                 <Prizes prizes={competition.prizes} />
-              </section>
-
-              <section id="reviews" className="scroll-mt-24">
-                <h2 className="text-2xl font-bold text-foreground mb-6">
-                  Reviews
-                </h2>
-                <div className="p-12 text-center text-muted-foreground bg-neutral-50  border border-dashed rounded-xl">
-                  Reviews coming soon...
-                </div>
               </section>
             </div>
           </div>

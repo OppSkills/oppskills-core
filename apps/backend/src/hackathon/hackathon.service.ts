@@ -852,9 +852,20 @@ export class HackathonService {
       'hackathon',
     );
 
+    const updateData: Prisma.HackathonEntityUpdateInput = {
+      status: nextStatus,
+    };
+    if (nextStatus === 'DRAFT') {
+      updateData.approvalStatus = 'PENDING';
+      updateData.approvalSubmittedAt = null;
+      updateData.approvalApprovedAt = null;
+      updateData.approvalRejectedAt = null;
+      updateData.approvalNote = null;
+    }
+
     return prisma.hackathonEntity.update({
       where: { id },
-      data: { status: nextStatus },
+      data: updateData,
     });
   }
 
@@ -1729,7 +1740,7 @@ export class HackathonService {
       ReadonlyArray<LifecycleStatus>
     > = {
       DRAFT: ['PUBLISHED', 'CANCELLED'],
-      PUBLISHED: ['ONGOING', 'CANCELLED'],
+      PUBLISHED: ['DRAFT', 'ONGOING', 'CANCELLED'],
       ONGOING: ['COMPLETED', 'CANCELLED'],
       COMPLETED: [],
       CANCELLED: [],
