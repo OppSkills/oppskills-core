@@ -28,6 +28,19 @@ export default function Page() {
     return round?.id ?? null;
   }, [currentStage, data]);
 
+  /**
+   * The "Qualify to next round" action should set qualification on the NEXT round.
+   * Example: when you're on R1 tab, qualifying moves the team into R2 by setting R2.qualified=true.
+   */
+  const nextRoundId = useMemo(() => {
+    if (!data || !selectedRoundId) return null;
+    const sortedRounds = [...data.rounds].sort((a, b) => a.order - b.order);
+    const selectedRound = sortedRounds.find((r) => r.id === selectedRoundId);
+    if (!selectedRound) return null;
+    const nextRound = sortedRounds.find((r) => r.order === selectedRound.order + 1);
+    return nextRound?.id ?? null;
+  }, [data, selectedRoundId]);
+
   // Build stages from rounds data
   const stages = useMemo(() => {
     if (!data) return [];
@@ -103,13 +116,21 @@ export default function Page() {
           status = "Incomplete";
         }
 
-        const qualification = team.roundQualifications?.[selectedRoundId];
-        if (qualification) {
-          qualificationStatus = qualification.qualified
-            ? "Qualified"
-            : "Not Qualified";
+        /**
+         * Show qualification status for the NEXT round (this is what "push to next round" controls).
+         * If there is no next round (last round), we don't show a qualification status.
+         */
+        if (nextRoundId) {
+          const qualification = team.roundQualifications?.[nextRoundId];
+          if (qualification) {
+            qualificationStatus = qualification.qualified
+              ? "Qualified"
+              : "Not Qualified";
+          } else {
+            qualificationStatus = "Awaiting";
+          }
         } else {
-          qualificationStatus = "Awaiting";
+          qualificationStatus = null;
         }
       }
 
@@ -126,7 +147,7 @@ export default function Page() {
         qualificationStatus,
       };
     });
-  }, [data, selectedRoundId]);
+  }, [data, selectedRoundId, nextRoundId]);
 
   if (isLoading) {
     return (
@@ -183,7 +204,11 @@ export default function Page() {
           onSelectStage={setCurrentStage}
         />
         <div className="h-px my-6 w-full bg-foreground/30" />
-        <Participants data={participants} selectedRoundId={selectedRoundId} />
+        <Participants
+          data={participants}
+          selectedRoundId={selectedRoundId}
+          nextRoundId={nextRoundId}
+        />
       </div>
     </div>
   );
