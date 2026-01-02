@@ -115,7 +115,7 @@ export class FestivalController {
     return this.festivalService.listFestivals();
   }
 
-  @Get(':id(c[a-z0-9]{24})')
+  @Get(':id')
   @ApiOperation({
     summary: 'Get festival by ID',
     description: 'Retrieve detailed information about a specific festival',
@@ -163,7 +163,7 @@ export class FestivalController {
     return this.festivalService.getFestivalById(id);
   }
 
-  @Put(':id(c[a-z0-9]{24})')
+  @Put(':id')
   @ApiOperation({
     summary: 'Update festival',
     description:
