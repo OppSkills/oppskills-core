@@ -1026,9 +1026,10 @@ export class EventService {
 
     // Lazy-create missing default fields
     // Build a map of existing fields by label for matching
-    const existingFieldsByLabel = new Map(
-      regForm.fields.map((f) => [f.label.toLowerCase(), f]),
-    );
+    const existingFieldsByLabel = new Map<
+      string,
+      (typeof regForm.fields)[number]
+    >(regForm.fields.map((f) => [f.label.toLowerCase(), f]));
 
     // Map frontend field IDs to real DB field IDs
     const frontendIdToDbId = new Map<string, string>();
@@ -1121,12 +1122,15 @@ export class EventService {
     for (const field of registrationFields) {
       if (field.required) {
         const fieldLabelLower = field.label.toLowerCase();
-        
+
         // Skip identity fields that don't match the user's category
-        if (identityFieldLabels.has(fieldLabelLower) && fieldLabelLower !== requiredIdentityLabel) {
+        if (
+          identityFieldLabels.has(fieldLabelLower) &&
+          fieldLabelLower !== requiredIdentityLabel
+        ) {
           continue;
         }
-        
+
         if (!providedFieldIds.has(field.id)) {
           throw new BadRequestException(`Field "${field.label}" is required.`);
         }
@@ -1150,7 +1154,9 @@ export class EventService {
 
     // Validate each provided answer
     if (providedAnswers.length > 0) {
-      const fieldMap = new Map(registrationFields.map((f) => [f.id, f]));
+      const fieldMap = new Map<string, (typeof registrationFields)[number]>(
+        registrationFields.map((f) => [f.id, f]),
+      );
 
       for (const answer of providedAnswers) {
         const field = fieldMap.get(answer.fieldId);
