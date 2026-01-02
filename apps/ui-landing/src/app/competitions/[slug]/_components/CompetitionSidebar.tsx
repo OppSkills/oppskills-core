@@ -347,34 +347,36 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
                       )}
                     </div>
                   )}
-                  {myTeam.members?.slice(0, 3).map((member) => (
-                    <div
-                      key={member.id}
-                      className="w-8 h-8 rounded-full border-2 border-white bg-neutral-400 flex items-center justify-center text-white text-xs font-medium overflow-hidden"
-                      title={`${member.user.firstName || ""} ${member.user.lastName || ""}`}
-                    >
-                      {member.user.imageUrl ? (
-                        <Image
-                          src={member.user.imageUrl}
-                          alt="Member"
-                          width={32}
-                          height={32}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        (
-                          member.user.firstName?.[0] ||
-                          member.user.email?.[0] ||
-                          "M"
-                        ).toUpperCase()
-                      )}
-                    </div>
-                  ))}
-                  {myTeam.members && myTeam.members.length > 3 && (
-                    <div className="w-8 h-8 rounded-full border-2 border-white bg-neutral-300 flex items-center justify-center text-neutral-600 text-xs font-medium">
-                      +{myTeam.members.length - 3}
-                    </div>
-                  )}
+                  {Array.isArray(myTeam.members) &&
+                    myTeam.members.slice(0, 3).map((member) => (
+                      <div
+                        key={member.id}
+                        className="w-8 h-8 rounded-full border-2 border-white bg-neutral-400 flex items-center justify-center text-white text-xs font-medium overflow-hidden"
+                        title={`${member.user.firstName || ""} ${member.user.lastName || ""}`}
+                      >
+                        {member.user.imageUrl ? (
+                          <Image
+                            src={member.user.imageUrl}
+                            alt="Member"
+                            width={32}
+                            height={32}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          (
+                            member.user.firstName?.[0] ||
+                            member.user.email?.[0] ||
+                            "M"
+                          ).toUpperCase()
+                        )}
+                      </div>
+                    ))}
+                  {Array.isArray(myTeam.members) &&
+                    myTeam.members.length > 3 && (
+                      <div className="w-8 h-8 rounded-full border-2 border-white bg-neutral-300 flex items-center justify-center text-neutral-600 text-xs font-medium">
+                        +{myTeam.members.length - 3}
+                      </div>
+                    )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-neutral-900 truncate">

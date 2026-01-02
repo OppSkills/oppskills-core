@@ -281,7 +281,10 @@ export default function CompetitionDetailsPage() {
 
   const submissionsByRoundId = useMemo(() => {
     const map: Record<string, (typeof mySubmissions)[0]> = {};
-    for (const sub of mySubmissions) {
+    // Defensive: backend payloads can be malformed; never assume iterability at runtime.
+    // If `mySubmissions` is accidentally set to a non-array, this prevents a hard crash.
+    const safeSubmissions = Array.isArray(mySubmissions) ? mySubmissions : [];
+    for (const sub of safeSubmissions) {
       map[sub.roundId] = sub;
     }
     return map;
@@ -290,7 +293,11 @@ export default function CompetitionDetailsPage() {
   const qualificationsByRoundId = useMemo(() => {
     const map: Record<string, { qualified: boolean; qualifiedAt?: string }> =
       {};
-    for (const qual of myQualifications) {
+    // Defensive: backend payloads can be malformed; never assume iterability at runtime.
+    const safeQualifications = Array.isArray(myQualifications)
+      ? myQualifications
+      : [];
+    for (const qual of safeQualifications) {
       map[qual.roundId] = {
         qualified: qual.qualified,
         qualifiedAt: qual.qualifiedAt ?? undefined,
@@ -354,8 +361,22 @@ export default function CompetitionDetailsPage() {
 
           const submissionsResult = await getMyTeamSubmissions(token, slug);
           if (submissionsResult) {
-            setMySubmissions(submissionsResult.submissions);
-            setMyQualifications(submissionsResult.qualifications || []);
+            /**
+             * Runtime validation:
+             * Some older/buggy API responses have returned `submissions`/`qualifications`
+             * as non-arrays (e.g. `{}` or `null`), which will crash iteration downstream.
+             */
+            const safeSubmissions = Array.isArray(submissionsResult.submissions)
+              ? submissionsResult.submissions
+              : [];
+            const safeQualifications = Array.isArray(
+              submissionsResult.qualifications,
+            )
+              ? submissionsResult.qualifications
+              : [];
+
+            setMySubmissions(safeSubmissions);
+            setMyQualifications(safeQualifications);
             if (submissionsResult.team?.leaderId) {
               setCurrentUserId(submissionsResult.team.leaderId);
             }
