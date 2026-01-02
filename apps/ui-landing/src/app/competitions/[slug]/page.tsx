@@ -28,7 +28,7 @@ import { useAuth } from "@clerk/nextjs";
 function mapRoundStatus(
   startsAt: string,
   endsAt: string,
-  status?: string
+  status?: string,
 ): RoundStatus {
   const now = new Date();
   const start = new Date(startsAt);
@@ -211,7 +211,7 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
       data.hackathonType
         .replace(/_/g, " ")
         .toLowerCase()
-        .replace(/\b\w/g, (c) => c.toUpperCase())
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
     );
   }
   if (data.mode) {
@@ -260,7 +260,7 @@ export default function CompetitionDetailsPage() {
   const { slug } = useParams();
   const { getToken, isSignedIn } = useAuth();
   const [competition, setCompetition] = useState<CompetitionDetails | null>(
-    null
+    null,
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -317,7 +317,7 @@ export default function CompetitionDetailsPage() {
             if (token) {
               const data = (await getHackathonBySlug(
                 token,
-                slug
+                slug,
               )) as HackathonApiData;
               setCompetition(transformApiData(data));
               setIsDraft(true);
@@ -443,6 +443,10 @@ export default function CompetitionDetailsPage() {
             />
 
             <div className="space-y-12">
+              <section id="details" className="scroll-mt-24">
+                <AboutSection content={competition.about} />
+              </section>
+
               {competition.rounds.length > 0 && (
                 <section id="rounds" className="scroll-mt-24">
                   <RoundsTimeline
@@ -457,25 +461,12 @@ export default function CompetitionDetailsPage() {
                 </section>
               )}
 
-              <section id="details" className="scroll-mt-24">
-                <AboutSection content={competition.about} />
-              </section>
-
               <section className="scroll-mt-24">
                 <Organizers organizers={competition.organizers} />
               </section>
 
               <section id="prizes" className="scroll-mt-24">
                 <Prizes prizes={competition.prizes} />
-              </section>
-
-              <section id="reviews" className="scroll-mt-24">
-                <h2 className="text-2xl font-bold text-foreground mb-6">
-                  Reviews
-                </h2>
-                <div className="p-12 text-center text-muted-foreground bg-neutral-50  border border-dashed rounded-xl">
-                  Reviews coming soon...
-                </div>
               </section>
             </div>
           </div>

@@ -521,13 +521,19 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
           submissionConfigRaw as Record<string, unknown>,
           "instructions",
         );
+        const maxFilesRaw = submissionConfigRaw["maxFiles"];
+        const maxFiles =
+          typeof maxFilesRaw === "number" && Number.isInteger(maxFilesRaw)
+            ? Math.max(1, maxFilesRaw)
+            : 1;
+        const allowResubmissionRaw = submissionConfigRaw["allowResubmission"];
         submissionConfig = {
           enabled: requiresFileUpload === true,
           allowedFileTypes:
             allowedFileTypes.length > 0 ? allowedFileTypes : ["pdf"],
-          maxFiles: 1,
+          maxFiles,
           maxFileSizeBytes,
-          allowResubmission: false,
+          allowResubmission: allowResubmissionRaw === true,
           instructions,
         };
       }
@@ -889,6 +895,8 @@ export default function EditOpportunityPage() {
                   requiresFileUpload: true,
                   allowedFileTypes: r.submissionConfig.allowedFileTypes,
                   maxFileSizeBytes: r.submissionConfig.maxFileSizeBytes,
+                  maxFiles: r.submissionConfig.maxFiles,
+                  allowResubmission: r.submissionConfig.allowResubmission,
                   instructions: r.submissionConfig.instructions,
                 }
               : undefined,

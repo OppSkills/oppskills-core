@@ -15,6 +15,25 @@ export interface TeamMemberUser {
   firstName: string | null;
   lastName: string | null;
   imageUrl: string | null;
+  onboardingProfile?: {
+    userCategory: string;
+    schoolName: string | null;
+    schoolClass: string | null;
+    college: {
+      id: string;
+      name: string;
+      city: string;
+      state: string;
+      country: string;
+    } | null;
+    collegeCurrentYear: string | null;
+    collegePassoutYear: number | null;
+    companyName: string | null;
+    jobTitle: string | null;
+    locationCity: string;
+    locationState: string;
+    locationCountry: string;
+  } | null;
 }
 
 export interface TeamMember {
@@ -30,6 +49,7 @@ export interface TeamLeader {
   firstName: string | null;
   lastName: string | null;
   imageUrl: string | null;
+  onboardingProfile?: TeamMemberUser["onboardingProfile"];
 }
 
 export interface TeamDetailResponse {

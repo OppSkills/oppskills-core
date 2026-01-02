@@ -45,6 +45,7 @@ import {
   useHackathonBySlug,
   getHackathonBySlugQueryKey,
 } from "@/hooks/useHackathonBySlug";
+import { getApiErrorMessage } from "@/lib/utils";
 import {
   submitHackathonForApproval,
   updateHackathonStatus,
@@ -156,7 +157,7 @@ export default function OpportunitySettingsPage({
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to submit for approval");
+      toast.error(getApiErrorMessage(error, "Failed to submit for approval"));
     },
   });
 
@@ -174,7 +175,7 @@ export default function OpportunitySettingsPage({
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to update status");
+      toast.error(getApiErrorMessage(error, "Failed to update status"));
     },
   });
 
@@ -194,7 +195,9 @@ export default function OpportunitySettingsPage({
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to update registration settings");
+      toast.error(
+        getApiErrorMessage(error, "Failed to update registration settings"),
+      );
     },
   });
 
@@ -209,8 +212,8 @@ export default function OpportunitySettingsPage({
       toast.success("Opportunity deleted successfully!");
       router.push("/dashboard");
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to delete opportunity");
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete opportunity"));
       setIsDeleting(false);
     },
   });

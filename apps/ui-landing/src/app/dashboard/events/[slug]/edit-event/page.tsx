@@ -74,6 +74,7 @@ export interface Attachment {
   mimeType?: string;
   url?: string;
   size?: number;
+  storageKey?: string;
 }
 
 export interface AdditionalInfoData {
@@ -274,6 +275,7 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
           type: getString(a, "mimeType") ?? "file",
           url: getString(a, "publicUrl"),
           size: typeof a["sizeBytes"] === "number" ? a["sizeBytes"] : undefined,
+          storageKey: getString(a, "storageKey") ?? undefined,
         }))
     : [];
 
@@ -636,7 +638,7 @@ export default function EditEventPage() {
             : undefined;
 
           const attachments = formData.additionalInfo.attachments.map((a) => ({
-            storageKey: a.url ?? a.id,
+            storageKey: a.storageKey ?? a.id,
             publicUrl: a.url,
             fileName: a.title,
             mimeType: a.mimeType || a.type,

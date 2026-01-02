@@ -252,7 +252,38 @@ export class TeamService {
       where: { id: teamId },
       include: {
         hackathon: true,
-        leader: true,
+        leader: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+            onboardingProfile: {
+              select: {
+                userCategory: true,
+                schoolName: true,
+                schoolClass: true,
+                college: {
+                  select: {
+                    id: true,
+                    name: true,
+                    city: true,
+                    state: true,
+                    country: true,
+                  },
+                },
+                collegeCurrentYear: true,
+                collegePassoutYear: true,
+                companyName: true,
+                jobTitle: true,
+                locationCity: true,
+                locationState: true,
+                locationCountry: true,
+              },
+            },
+          },
+        },
         members: {
           include: {
             user: {
@@ -262,6 +293,29 @@ export class TeamService {
                 firstName: true,
                 lastName: true,
                 imageUrl: true,
+                onboardingProfile: {
+                  select: {
+                    userCategory: true,
+                    schoolName: true,
+                    schoolClass: true,
+                    college: {
+                      select: {
+                        id: true,
+                        name: true,
+                        city: true,
+                        state: true,
+                        country: true,
+                      },
+                    },
+                    collegeCurrentYear: true,
+                    collegePassoutYear: true,
+                    companyName: true,
+                    jobTitle: true,
+                    locationCity: true,
+                    locationState: true,
+                    locationCountry: true,
+                  },
+                },
               },
             },
           },
@@ -868,7 +922,11 @@ export class TeamService {
       value: a.value,
     }));
 
-    this.validateRegistrationAnswers(providedAnswers, registrationFields, userCategory);
+    this.validateRegistrationAnswers(
+      providedAnswers,
+      registrationFields,
+      userCategory,
+    );
 
     const requiredIdentityField = registrationFields.find(
       (f) => f.label.toLowerCase() === requiredIdentityLabel.toLowerCase(),
@@ -936,12 +994,15 @@ export class TeamService {
     for (const field of fields) {
       if (field.required && !providedFieldIds.has(field.id)) {
         const fieldLabelLower = field.label.toLowerCase();
-        
+
         // Skip identity fields that don't match the user's category
-        if (identityFieldLabels.has(fieldLabelLower) && fieldLabelLower !== requiredIdentityLabel) {
+        if (
+          identityFieldLabels.has(fieldLabelLower) &&
+          fieldLabelLower !== requiredIdentityLabel
+        ) {
           continue;
         }
-        
+
         throw new BadRequestException(`Field "${field.label}" is required.`);
       }
     }

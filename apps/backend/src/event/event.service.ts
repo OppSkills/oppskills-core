@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { prisma } from '@oppskills/db';
+import type { Prisma } from '@oppskills/db';
 import type {
   CreateEventDto,
   UpdateEventDto,
@@ -813,9 +814,18 @@ export class EventService {
     const currentStatus = event.status as LifecycleStatus;
     this.assertLifecycleTransitionAllowed(currentStatus, nextStatus);
 
+    const updateData: Prisma.EventEntityUpdateInput = { status: nextStatus };
+    if (nextStatus === 'DRAFT') {
+      updateData.approvalStatus = 'PENDING';
+      updateData.approvalSubmittedAt = null;
+      updateData.approvalApprovedAt = null;
+      updateData.approvalRejectedAt = null;
+      updateData.approvalNote = null;
+    }
+
     return prisma.eventEntity.update({
       where: { id },
-      data: { status: nextStatus },
+      data: updateData,
     });
   }
 
@@ -2507,7 +2517,7 @@ export class EventService {
       ReadonlyArray<LifecycleStatus>
     > = {
       DRAFT: ['PUBLISHED', 'CANCELLED'],
-      PUBLISHED: ['ONGOING', 'CANCELLED'],
+      PUBLISHED: ['DRAFT', 'ONGOING', 'CANCELLED'],
       ONGOING: ['COMPLETED', 'CANCELLED'],
       COMPLETED: [],
       CANCELLED: [],

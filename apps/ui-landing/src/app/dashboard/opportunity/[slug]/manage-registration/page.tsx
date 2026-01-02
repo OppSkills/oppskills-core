@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Stages from "./_components/Stages";
 import Participants, { Participant } from "./_components/Participants";
 import { useHackathonRegistrationsBySlug } from "@/hooks/useHackathonRegistrations";
+import { getApiErrorMessage } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
 export default function Page() {
@@ -50,21 +51,35 @@ export default function Page() {
     let filteredTeams = data.teams;
 
     if (selectedRoundId) {
-      // Find the order of the selected round
-      const selectedRound = data.rounds.find((r) => r.id === selectedRoundId);
-      if (selectedRound && selectedRound.order > 1) {
-        // For rounds after the first, only show teams that have been
-        // qualified through all prior rounds (not just the immediately previous one)
-        const requiredRounds = data.rounds.filter(
-          (r) => r.order < selectedRound.order,
+      const sortedRounds = [...data.rounds].sort((a, b) => a.order - b.order);
+      const selectedRound = sortedRounds.find((r) => r.id === selectedRoundId);
+
+      if (selectedRound) {
+        const requiredRounds = sortedRounds.filter(
+          (round) => round.order < selectedRound.order,
+        );
+        const nextRound = sortedRounds.find(
+          (round) => round.order === selectedRound.order + 1,
         );
 
-        filteredTeams = data.teams.filter((team) =>
-          requiredRounds.every((round) => {
+        filteredTeams = data.teams.filter((team) => {
+          const qualifiedThroughPriorRounds = requiredRounds.every((round) => {
             const qualification = team.roundQualifications?.[round.id];
             return qualification?.qualified === true;
-          }),
-        );
+          });
+
+          if (!qualifiedThroughPriorRounds) {
+            return false;
+          }
+
+          if (!nextRound) {
+            return true;
+          }
+
+          const nextRoundQualification =
+            team.roundQualifications?.[nextRound.id];
+          return nextRoundQualification?.qualified !== true;
+        });
       }
     }
 
@@ -129,7 +144,7 @@ export default function Page() {
             Failed to load registrations
           </p>
           <p className="text-muted-foreground text-sm mt-1">
-            {error instanceof Error ? error.message : "Unknown error"}
+            {getApiErrorMessage(error, "Unknown error")}
           </p>
         </div>
       </div>

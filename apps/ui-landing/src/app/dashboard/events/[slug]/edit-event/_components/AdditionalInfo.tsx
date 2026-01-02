@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import React, { useState, useRef } from "react";
-import { cn } from "@/lib/utils";
+import { cn, getApiErrorMessage } from "@/lib/utils";
 import { FormData, Contact, Attachment } from "../page";
 import {
   Dialog,
@@ -315,6 +315,7 @@ export default function AdditionalInfo({
         mimeType: attachmentForm.file?.type || "application/octet-stream",
         url: presign.publicUrl,
         size: attachmentForm.file?.size,
+        storageKey: presign.key,
       };
 
       updateInfo({ attachments: [...attachments, newAttachment] });
@@ -325,7 +326,7 @@ export default function AdditionalInfo({
     } catch (error) {
       console.error("Upload error:", error);
       alert(
-        `Upload Failed: ${error instanceof Error ? error.message : "Failed to upload attachment"}`,
+        `Upload Failed: ${getApiErrorMessage(error, "Failed to upload attachment")}`,
       );
     } finally {
       setIsUploading(false);
