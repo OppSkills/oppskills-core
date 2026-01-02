@@ -442,6 +442,22 @@ export function EventRegistrationModal({
     return isRegistrationValid && onboardingValidation.isValid;
   };
 
+  // Helper to map category to default identity field ID
+  const getIdentityFieldId = (category: UserCategory): string | null => {
+    switch (category) {
+      case UserCategory.SCHOOL_STUDENT:
+        return "default-school-name";
+      case UserCategory.COLLEGE_STUDENT:
+      case UserCategory.PROFESSIONAL_SCHOOL_STUDENT:
+      case UserCategory.FRESHER:
+        return "default-college-name";
+      case UserCategory.WORKING_PROFESSIONAL:
+        return "default-company-name";
+      default:
+        return null;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -456,6 +472,7 @@ export function EventRegistrationModal({
       value: string | number | string[];
     }> = [];
 
+    // Capture standard fields
     for (const field of supportedFields) {
       const value = values[field.id];
       if (value !== undefined && value !== "") {
@@ -464,6 +481,47 @@ export function EventRegistrationModal({
           answers.push({ fieldId: field.id, value: Number(value) });
         } else {
           answers.push({ fieldId: field.id, value });
+        }
+      }
+    }
+
+    // Determine current category to inject the correct default identity field
+    const effectiveCategory = showOnboarding
+      ? onboardingValues.userCategory
+      : userData?.userCategory;
+
+    // Determine values source
+    const valuesSource = showOnboarding ? onboardingValues : userData;
+
+    if (effectiveCategory && valuesSource) {
+      const identityFieldId = getIdentityFieldId(
+        effectiveCategory as UserCategory
+      );
+      let identityValue: string | undefined;
+
+      if (effectiveCategory === UserCategory.SCHOOL_STUDENT) {
+        identityValue = valuesSource.schoolName;
+      } else if (
+        effectiveCategory === UserCategory.COLLEGE_STUDENT ||
+        effectiveCategory === UserCategory.PROFESSIONAL_SCHOOL_STUDENT
+      ) {
+        identityValue = valuesSource.collegeName;
+      } else if (effectiveCategory === UserCategory.WORKING_PROFESSIONAL) {
+        identityValue = valuesSource.companyName;
+      }
+
+      // Inject if we have both ID and Value, and it's not already in answers
+      // (It might be in answers if the form happened to have that exact field ID, but usually dynamic fields have UUIDs)
+      // We prioritize this injection to ensure the backend gets the specific default field it expects for the category.
+      if (identityFieldId && identityValue) {
+        // Check if already exists (unlikely but safe to check)
+        const existingIndex = answers.findIndex(
+          (a) => a.fieldId === identityFieldId
+        );
+        if (existingIndex > -1) {
+          answers[existingIndex].value = identityValue;
+        } else {
+          answers.push({ fieldId: identityFieldId, value: identityValue });
         }
       }
     }
@@ -521,34 +579,43 @@ export function EventRegistrationModal({
     setOnboardingValues((prev) => ({ ...prev, [key]: value }));
   };
 
+  // Check if any dynamic field is "Gender"
+  const dynamicGenderField = supportedFields.find(
+    (f) => f.label.toLowerCase() === "gender"
+  );
+
   const renderOnboardingFields = () => {
     return (
       <div className="space-y-6 pt-4">
         {/* Step 1: Basic Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>
-              Gender <span className="text-red-500">*</span>
-            </Label>
-            <Select
-              value={onboardingValues.gender}
-              onValueChange={(v) => updateOnboardingValue("gender", v)}
-            >
-              <SelectTrigger className={cn(errors.gender && "border-red-500")}>
-                <SelectValue placeholder="Select Gender" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(Gender).map((g) => (
-                  <SelectItem key={g} value={g}>
-                    {g.replace(/_/g, " ")}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.gender && (
-              <p className="text-xs text-red-500">{errors.gender}</p>
-            )}
-          </div>
+        <div className="grid grid-cols-1">
+          {!dynamicGenderField && (
+            <div className="space-y-2">
+              <Label>
+                Gender <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={onboardingValues.gender}
+                onValueChange={(v) => updateOnboardingValue("gender", v)}
+              >
+                <SelectTrigger
+                  className={cn(errors.gender && "border-red-500")}
+                >
+                  <SelectValue placeholder="Select Gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(Gender).map((g) => (
+                    <SelectItem key={g} value={g}>
+                      {g.replace(/_/g, " ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.gender && (
+                <p className="text-xs text-red-500">{errors.gender}</p>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
             <Label>
               User Category <span className="text-red-500">*</span>
@@ -823,7 +890,12 @@ export function EventRegistrationModal({
             </Label>
             <Select
               value={typeof value === "string" ? value : ""}
-              onValueChange={(v) => setValue(field.id, v)}
+              onValueChange={(v) => {
+                setValue(field.id, v);
+                if (isGenderField) {
+                  updateOnboardingValue("gender", v);
+                }
+              }}
             >
               <SelectTrigger
                 id={field.id}
