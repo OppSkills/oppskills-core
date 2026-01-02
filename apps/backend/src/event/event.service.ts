@@ -986,7 +986,7 @@ export class EventService {
         label: 'Company Name',
         type: 'TEXT',
         order: -8,
-        required: true,
+        required: false,
         options: [],
       });
     } else {

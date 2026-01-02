@@ -8,6 +8,11 @@ import {
   EventRegistrationModal,
   RegistrationField,
   UserDataForPrefill,
+  OnboardingValues,
+  UserCategory as UserCategoryEnum,
+  ExperienceLevel,
+  TeamPreference,
+  Gender,
 } from "./EventRegistrationModal";
 import Image from "next/image";
 import { MapPin, Loader2 } from "lucide-react";
@@ -15,7 +20,8 @@ import { toast } from "sonner";
 import { formatInTimeZone } from "date-fns-tz";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { joinEvent, checkMyRegistration } from "@/lib/api/eventApi";
-import { getMe } from "@/lib/api/usersApi";
+import { getMe, submitOnboarding } from "@/lib/api/usersApi";
+import { CreateOnboardingDto } from "@oppskills/types/frontend";
 import { useQuery } from "@tanstack/react-query";
 
 // Types derived from what API returns (approximate based on usage)
@@ -200,6 +206,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [userDataForPrefill, setUserDataForPrefill] = useState<
     UserDataForPrefill | undefined
@@ -245,11 +252,8 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
       const meData = await getMe(token);
 
-      if (!meData.onboarded) {
-        const returnUrl = encodeURIComponent(window.location.href);
-        router.push(`/onboarding?returnUrl=${returnUrl}`);
-        return;
-      }
+      // Always show onboarding fields to allow user to verify/update details
+      setShowOnboarding(true);
 
       const onboardingProfile = meData.onboardingProfile;
       const fullName =
@@ -261,9 +265,31 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         email: meData.email ?? undefined,
         phone: user?.primaryPhoneNumber?.phoneNumber,
         gender: onboardingProfile?.gender,
-        collegeName: onboardingProfile?.college?.name ?? undefined,
-        companyName: onboardingProfile?.companyName ?? undefined,
+        userCategory:
+          onboardingProfile?.userCategory as unknown as UserCategoryEnum,
+
         schoolName: onboardingProfile?.schoolName ?? undefined,
+        schoolClass: onboardingProfile?.schoolClass ?? undefined,
+        schoolAddress: onboardingProfile?.schoolAddress ?? undefined,
+
+        collegeName: onboardingProfile?.college?.name ?? undefined,
+        collegeCurrentYear: onboardingProfile?.collegeCurrentYear ?? undefined,
+        collegePassoutYear: onboardingProfile?.collegePassoutYear ?? undefined,
+
+        companyName: onboardingProfile?.companyName ?? undefined,
+        jobTitle: onboardingProfile?.jobTitle ?? undefined,
+
+        locationCity: onboardingProfile?.locationCity,
+        locationState: onboardingProfile?.locationState,
+        locationCountry: onboardingProfile?.locationCountry,
+
+        interests: onboardingProfile?.interests,
+        skills: onboardingProfile?.skills,
+
+        experienceLevel:
+          onboardingProfile?.experienceLevel as unknown as ExperienceLevel,
+        teamPreference:
+          onboardingProfile?.teamPreference as unknown as TeamPreference,
       };
 
       setUserDataForPrefill(prefillData);
@@ -286,7 +312,8 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   };
 
   const handleJoinEvent = async (
-    answers: Array<{ fieldId: string; value: string | number | string[] }>
+    answers: Array<{ fieldId: string; value: string | number | string[] }>,
+    onboardingData?: OnboardingValues
   ) => {
     if (!event) return;
 
@@ -296,6 +323,15 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
       if (!token) {
         toast.error("Please sign in to register.");
         return;
+      }
+
+      if (onboardingData) {
+        await submitOnboarding(
+          token,
+          onboardingData as unknown as CreateOnboardingDto
+        );
+        // Update local user data if needed, or just proceed
+        // Ideally we might want to refetch user data but for now let's assume it worked
       }
 
       await joinEvent(token, event.id, { answers });
@@ -309,10 +345,27 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         err instanceof Error
           ? err.message
           : "Failed to register. Please try again.";
+
       if (typeof err === "object" && err !== null && "response" in err) {
-        const axiosErr = err as { response?: { data?: { message?: string } } };
+        const axiosErr = err as {
+          response?: {
+            data?: {
+              message?: string | string[];
+              error?: string;
+              statusCode?: number;
+            };
+          };
+        };
+
+        // Handle array of messages (typical NestJS validation pipe)
+        if (Array.isArray(axiosErr.response?.data?.message)) {
+          toast.error(axiosErr.response.data.message[0]);
+          return;
+        }
+
+        // Handle single message
         if (axiosErr.response?.data?.message) {
-          toast.error(axiosErr.response.data.message);
+          toast.error(axiosErr.response.data.message as string);
           return;
         }
       }
@@ -596,6 +649,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         eventName={event?.name ?? ""}
         isSubmitting={isRegistering}
         userData={userDataForPrefill}
+        showOnboarding={showOnboarding}
       />
     </div>
   );
