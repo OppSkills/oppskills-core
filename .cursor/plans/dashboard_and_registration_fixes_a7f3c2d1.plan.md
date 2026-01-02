@@ -1,7 +1,9 @@
 # Dashboard and Registration Fixes Plan
 
-**ID**: a7f3c2d1  
-**Created**: 2026-01-02  
+**ID**: a7f3c2d1
+
+**Created**: 2026-01-02
+
 **Status**: In Progress
 
 ## Decisions Locked
@@ -15,14 +17,9 @@
 
 ### 1. Event Dashboard Additional Info Attachments Not Saving
 
-**File**: `apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/_components/AdditionalInfo.tsx`  
-**Related**: `apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx`, `apps/backend/src/event/event-update-nested.dto.ts`
+**File**: `apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/_components/AdditionalInfo.tsx`
 
-**Problem**: Attachments uploaded in AdditionalInfo component are stored in local formData but not persisted to DB on save.
-
-**Fix**: Ensure the save mutation includes `additionalInfo.attachments` in the API payload and backend DTO accepts it.
-
----
+**Related**: `apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx`, `apps/backend/src/event/event-update-nested.dto.ts`**Problem**: Attachments uploaded in AdditionalInfo component are stored in local formData but not persisted to DB on save.**Fix**: Ensure the save mutation includes `additionalInfo.attachments` in the API payload and backend DTO accepts it.---
 
 ### 2. Opportunity "About" Above Rounds + Rich Text Rounds Description
 
@@ -31,9 +28,7 @@
 - Public: `apps/ui-landing/src/app/competitions/[slug]/_components/RoundsTimeline.tsx`
 - Organizer: `apps/ui-landing/src/app/dashboard/opportunity/[slug]/edit-opportunity/_components/RoundsAndStages.tsx`
 
-**Problem**: About section appears after rounds; rounds description is plain text.
-
-**Fix**:
+**Problem**: About section appears after rounds; rounds description is plain text.**Fix**:
 
 - Reorder layout so About appears above Rounds in both public and organizer views
 - Render rounds description as rich text (dangerouslySetInnerHTML or similar)
@@ -42,13 +37,7 @@
 
 ### 3. Remove "Reviews Coming Soon" Tab
 
-**File**: `apps/ui-landing/src/app/competitions/[slug]/_components/CompetitionTabs.tsx`
-
-**Problem**: Reviews tab shows "Coming Soon" placeholder.
-
-**Fix**: Remove the tab entirely from the tabs list and any related panel content.
-
----
+**File**: `apps/ui-landing/src/app/competitions/[slug]/_components/CompetitionTabs.tsx`**Problem**: Reviews tab shows "Coming Soon" placeholder.**Fix**: Remove the tab entirely from the tabs list and any related panel content.---
 
 ### 4. Global Error Toast Messaging
 
@@ -57,9 +46,7 @@
 - `apps/ui-landing/src/lib/api/apiClient.ts`
 - Various components with toast calls
 
-**Problem**: Toast shows error code instead of backend error message.
-
-**Fix**:
+**Problem**: Toast shows error code instead of backend error message.**Fix**:
 
 - Create/update error extraction helper to parse `error.response.data.message`
 - Update toast calls to use extracted message with optional description
@@ -68,11 +55,7 @@
 
 ### 5. Competition Register Button + Team Status After Registration
 
-**File**: `apps/ui-landing/src/app/competitions/[slug]/_components/CompetitionSidebar.tsx`
-
-**Problem**: After registration, button still shows "Register for free" instead of "Registered" with team status.
-
-**Fix**:
+**File**: `apps/ui-landing/src/app/competitions/[slug]/_components/CompetitionSidebar.tsx`**Problem**: After registration, button still shows "Register for free" instead of "Registered" with team status.**Fix**:
 
 - Refetch/invalidate team status query after registration
 - Change button to "Registered" (disabled) when user has a team
@@ -87,11 +70,7 @@
 - `apps/ui-landing/src/app/dashboard/opportunity/[slug]/edit-opportunity/_components/RoundsAndStages.tsx`
 - `apps/backend/src/hackathon/hackathon.service.ts`
 
-**Problem**: Enabling attachments for rounds doesn't persist after reload.
-
-**Fix**: Ensure attachment toggle state is included in round update payload and backend persists it.
-
----
+**Problem**: Enabling attachments for rounds doesn't persist after reload.**Fix**: Ensure attachment toggle state is included in round update payload and backend persists it.---
 
 ### 7. Publish → Draft Toggle for Event and Opportunity
 
@@ -100,19 +79,11 @@
 - `apps/ui-landing/src/app/dashboard/events/[slug]/settings/page.tsx`
 - `apps/ui-landing/src/app/dashboard/opportunity/[slug]/settings/page.tsx`
 
-**Problem**: No way to move a published event/opportunity back to draft.
-
-**Fix**: Add "Move to Draft" button with confirmation dialog, calling status update endpoint.
-
----
+**Problem**: No way to move a published event/opportunity back to draft.**Fix**: Add "Move to Draft" button with confirmation dialog, calling status update endpoint.---
 
 ### 8. Managed Registration Qualify/Disqualify UX
 
-**File**: `apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-registration/_components/Participants.tsx`
-
-**Problem**: Currently uses batch select + action pattern.
-
-**Fix**:
+**File**: `apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-registration/_components/Participants.tsx`**Problem**: Currently uses batch select + action pattern.**Fix**:
 
 - Add row-level actions: primary "Qualify to Next Round" button, secondary "Disqualify" button
 - Remove batch selection controls (or keep as secondary option)
@@ -121,19 +92,11 @@
 
 ### 9. Managed Registration Tabs Filtering
 
-**File**: `apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-registration/page.tsx`
-
-**Problem**: Round tabs may not filter correctly; need "All" to show everyone, round tabs to show only participants in that round.
-
-**Fix**: Ensure filtering logic correctly separates all registrations vs round-specific qualified participants.
-
----
+**File**: `apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-registration/page.tsx`**Problem**: Round tabs may not filter correctly; need "All" to show everyone, round tabs to show only participants in that round.**Fix**: Ensure filtering logic correctly separates all registrations vs round-specific qualified participants.---
 
 ### 10. Team Detail Page Fixes
 
-**File**: `apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-registration/[teamID]/page.tsx`
-
-**Problems**:
+**File**: `apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-registration/[teamID]/page.tsx`**Problems**:
 
 - Team members missing full details (only email and register date showing)
 - Registration answers showing error in console
@@ -199,4 +162,3 @@
 - [ ] Round tabs filter participants correctly
 - [ ] Team detail page shows full member info
 - [ ] Registration answers load without error
-- [ ] Submission files display as links

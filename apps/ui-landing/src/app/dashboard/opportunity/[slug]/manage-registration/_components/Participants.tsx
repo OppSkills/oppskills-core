@@ -53,11 +53,17 @@ export type Participant = {
 interface ParticipantsProps {
   data: Participant[];
   selectedRoundId?: string | null;
+  /**
+   * The round whose qualification is being set when clicking "Qualify to next round".
+   * Example: when viewing R1 tab, nextRoundId should be the R2 id.
+   */
+  nextRoundId?: string | null;
 }
 
 export default function Participants({
   data,
   selectedRoundId,
+  nextRoundId,
 }: ParticipantsProps) {
   const params = useParams();
   const slug = params.slug as string;
@@ -79,10 +85,11 @@ export default function Participants({
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
       if (!selectedRoundId) throw new Error("No round selected");
+      if (!nextRoundId) throw new Error("No next round available");
       return bulkSetTeamRoundQualification(
         token,
         slug,
-        selectedRoundId,
+        nextRoundId,
         teamIds,
         qualified,
       );
@@ -208,7 +215,7 @@ export default function Participants({
 
           return (
             <div className="flex items-center justify-center gap-2">
-              {selectedRoundId ? (
+              {selectedRoundId && nextRoundId ? (
                 <div className="flex items-center gap-1">
                   <Button
                     size="sm"
@@ -247,7 +254,7 @@ export default function Participants({
         },
       },
     ],
-    [data.length, slug, router],
+    [bulkQualify, data.length, isPending, nextRoundId, router, selectedRoundId, slug],
   );
 
   const table = useReactTable({
