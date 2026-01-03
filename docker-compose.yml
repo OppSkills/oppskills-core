@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: oppskills-postgres-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: oppskills
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data_oppskills:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: oppskills-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data_oppskills:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data_oppskills:
+  redis_data_oppskills:

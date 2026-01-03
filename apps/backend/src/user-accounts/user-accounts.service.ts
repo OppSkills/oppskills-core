@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Logger } from 'src/_utils/logger';
 import { ClerkAuthConfigService } from 'src/common/config.service';
-import { prisma } from '@oppskills/db';
+import { prisma, UserCategory } from '@oppskills/db';
 import * as crypto from 'crypto';
 import {
   ClerkWebhookRequestDto,
@@ -15,6 +15,7 @@ import {
   UserCreatedEventPayload,
   UserOnboardedEventPayload,
 } from 'src/email/email.events';
+import { CollegesService } from 'src/colleges/colleges.service';
 
 @Injectable()
 export class UserAccountsService {
@@ -23,6 +24,7 @@ export class UserAccountsService {
   constructor(
     private readonly clerkAuthConfigService: ClerkAuthConfigService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly collegesService: CollegesService,
   ) {}
 
   async create({
@@ -46,6 +48,15 @@ export class UserAccountsService {
           firstName,
           lastName,
           imageUrl,
+          onboarded: true,
+          onboardingProfile: {
+            create: {
+              userCategory: UserCategory.COLLEGE_STUDENT,
+            },
+          },
+        },
+        include: {
+          onboardingProfile: true,
         },
       });
 
@@ -202,6 +213,12 @@ export class UserAccountsService {
             firstName: null,
             lastName: null,
             imageUrl: null,
+            onboarded: true,
+            onboardingProfile: {
+              create: {
+                userCategory: UserCategory.COLLEGE_STUDENT,
+              },
+            },
           },
           include,
         });
@@ -232,76 +249,97 @@ export class UserAccountsService {
    * Validates conditional fields and upserts the profile.
    */
   async submitOnboarding(userId: string, data: CreateOnboardingDto) {
+    // Resolve college if passing name instead of ID
+    if (
+      !data.collegeSkipped &&
+      (!data.collegeId || data.collegeId.trim().length === 0) &&
+      (data as any).collegeName && // Cast to any to avoid type check until package rebuild
+      (data as any).collegeName.trim().length > 0
+    ) {
+      // Validate location presence before creating college
+      if (data.locationCity && data.locationState && data.locationCountry) {
+        try {
+          const college = await this.collegesService.findOrCreateCollege(
+            (data as any).collegeName,
+            {
+              city: data.locationCity,
+              state: data.locationState,
+              country: data.locationCountry,
+            },
+          );
+          data.collegeId = college.id;
+        } catch (error) {
+          this.logger.warn(`Failed to resolve college`, error);
+          // Allow validation to fail naturally if resolution failed
+        }
+      }
+    }
+
     // Validate conditional requirements
     this.validateOnboardingData(data);
 
     try {
-      // Use transaction to ensure atomic update
-      const result = await prisma.$transaction(async (tx) => {
-        // Upsert the onboarding profile
-        const onboardingProfile = await tx.userOnboardingProfileEntity.upsert({
-          where: { userId },
-          update: {
-            gender: data.gender,
-            userCategory: data.userCategory,
-            schoolName: data.schoolName || null,
-            schoolClass: data.schoolClass || null,
-            schoolAddress: data.schoolAddress || null,
-            collegeId: data.collegeId || null,
-            collegeCurrentYear: data.collegeCurrentYear || null,
-            collegePassoutYear: data.collegePassoutYear || null,
-            collegeSkipped: data.collegeSkipped || false,
-            companyName: data.companyName || null,
-            jobTitle: data.jobTitle || null,
-            locationCity: data.locationCity,
-            locationState: data.locationState,
-            locationCountry: data.locationCountry,
-            interests: data.interests || [],
-            skills: data.skills || [],
-            experienceLevel: data.experienceLevel || null,
-            teamPreference: data.teamPreference || null,
+      // Use atomic update with nested upsert instead of interactive transaction
+      // This prevents connection pool exhaustion and transaction timeouts
+      const result = await prisma.userEntity.update({
+        where: { id: userId },
+        data: {
+          onboarded: true,
+          onboardingProfile: {
+            upsert: {
+              update: {
+                gender: data.gender,
+                userCategory: data.userCategory,
+                schoolName: data.schoolName || null,
+                schoolClass: data.schoolClass || null,
+                schoolAddress: data.schoolAddress || null,
+                collegeId: data.collegeId || null,
+                collegeCurrentYear: data.collegeCurrentYear || null,
+                collegePassoutYear: data.collegePassoutYear || null,
+                collegeSkipped: data.collegeSkipped || false,
+                companyName: data.companyName || null,
+                jobTitle: data.jobTitle || null,
+                locationCity: data.locationCity,
+                locationState: data.locationState,
+                locationCountry: data.locationCountry,
+                interests: data.interests || [],
+                skills: data.skills || [],
+                experienceLevel: data.experienceLevel || null,
+                teamPreference: data.teamPreference || null,
+              },
+              create: {
+                gender: data.gender,
+                userCategory: data.userCategory,
+                schoolName: data.schoolName || null,
+                schoolClass: data.schoolClass || null,
+                schoolAddress: data.schoolAddress || null,
+                collegeId: data.collegeId || null,
+                collegeCurrentYear: data.collegeCurrentYear || null,
+                collegePassoutYear: data.collegePassoutYear || null,
+                collegeSkipped: data.collegeSkipped || false,
+                companyName: data.companyName || null,
+                jobTitle: data.jobTitle || null,
+                locationCity: data.locationCity,
+                locationState: data.locationState,
+                locationCountry: data.locationCountry,
+                interests: data.interests || [],
+                skills: data.skills || [],
+                experienceLevel: data.experienceLevel || null,
+                teamPreference: data.teamPreference || null,
+              },
+            },
           },
-          create: {
-            userId,
-            gender: data.gender,
-            userCategory: data.userCategory,
-            schoolName: data.schoolName || null,
-            schoolClass: data.schoolClass || null,
-            schoolAddress: data.schoolAddress || null,
-            collegeId: data.collegeId || null,
-            collegeCurrentYear: data.collegeCurrentYear || null,
-            collegePassoutYear: data.collegePassoutYear || null,
-            collegeSkipped: data.collegeSkipped || false,
-            companyName: data.companyName || null,
-            jobTitle: data.jobTitle || null,
-            locationCity: data.locationCity,
-            locationState: data.locationState,
-            locationCountry: data.locationCountry,
-            interests: data.interests || [],
-            skills: data.skills || [],
-            experienceLevel: data.experienceLevel || null,
-            teamPreference: data.teamPreference || null,
-          },
-        });
-
-        // Set user as onboarded and get user data for email
-        const user = await tx.userEntity.update({
-          where: { id: userId },
-          data: { onboarded: true },
-          select: {
-            email: true,
-            firstName: true,
-          },
-        });
-
-        return { onboardingProfile, user };
+        },
+        include: {
+          onboardingProfile: true, // Return the profile
+        },
       });
 
       // Emit user.onboarded event for onboarding complete email
       const eventPayload: UserOnboardedEventPayload = {
         userId,
-        email: result.user.email,
-        firstName: result.user.firstName || undefined,
+        email: result.email,
+        firstName: result.firstName || undefined,
         userCategory: data.userCategory,
         locationCity: data.locationCity,
       };
@@ -397,11 +435,13 @@ export class UserAccountsService {
 
       case UserCategoryValue.COLLEGE_STUDENT:
       case UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT:
-        // Required: collegeId (unless collegeSkipped=true)
+        // Required: collegeId or collegeName (unless collegeSkipped=true)
         // Optional: collegeCurrentYear, collegePassoutYear
         if (
           !data.collegeSkipped &&
-          (!data.collegeId || data.collegeId.trim().length === 0)
+          (!data.collegeId || data.collegeId.trim().length === 0) &&
+          (!(data as any).collegeName ||
+            (data as any).collegeName.trim().length === 0)
         ) {
           throw new HttpException(
             'College is required unless skipped',
