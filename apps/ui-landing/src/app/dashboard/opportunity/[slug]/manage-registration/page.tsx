@@ -37,7 +37,9 @@ export default function Page() {
     const sortedRounds = [...data.rounds].sort((a, b) => a.order - b.order);
     const selectedRound = sortedRounds.find((r) => r.id === selectedRoundId);
     if (!selectedRound) return null;
-    const nextRound = sortedRounds.find((r) => r.order === selectedRound.order + 1);
+    const nextRound = sortedRounds.find(
+      (r) => r.order === selectedRound.order + 1,
+    );
     return nextRound?.id ?? null;
   }, [data, selectedRoundId]);
 
@@ -81,17 +83,7 @@ export default function Page() {
             return qualification?.qualified === true;
           });
 
-          if (!qualifiedThroughPriorRounds) {
-            return false;
-          }
-
-          if (!nextRound) {
-            return true;
-          }
-
-          const nextRoundQualification =
-            team.roundQualifications?.[nextRound.id];
-          return nextRoundQualification?.qualified !== true;
+          return qualifiedThroughPriorRounds;
         });
       }
     }

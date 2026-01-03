@@ -3,17 +3,19 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { Loader2, ArrowLeft, CheckCircle, Copy } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, Copy, X } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { getPublicHackathonBySlug } from "@/lib/api/hackathonApi";
 import {
   checkMyHackathonTeam,
+  removeMember,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
 import Image from "next/image";
 import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
 
 interface HackathonData {
   id: string;
@@ -25,7 +27,7 @@ export default function TeamDetailsPage() {
   const params = useParams();
   const slug = params.slug as string;
   const router = useRouter();
-  const { isSignedIn, isLoaded, getToken } = useAuth();
+  const { isSignedIn, isLoaded, getToken, userId } = useAuth();
 
   const [isLoading, setIsLoading] = useState(true);
   const [hackathon, setHackathon] = useState<HackathonData | null>(null);
@@ -65,6 +67,29 @@ export default function TeamDetailsPage() {
     navigator.clipboard.writeText(text);
     toast.success("Invitation code copied to clipboard");
   };
+
+  const removeMemberMutation = useMutation({
+    mutationFn: async (memberUserId: string) => {
+      const token = await getToken();
+      if (!token || !myTeam) throw new Error("Unauthorized");
+      return removeMember(token, myTeam.id, memberUserId);
+    },
+    onSuccess: () => {
+      toast.success("Member removed successfully");
+      window.location.reload();
+    },
+    onError: () => {
+      toast.error("Failed to remove member");
+    },
+  });
+
+  const handleRemoveMember = (memberUserId: string) => {
+    if (confirm("Are you sure you want to remove this member?")) {
+      removeMemberMutation.mutate(memberUserId);
+    }
+  };
+
+  const isLeader = userId === myTeam?.leaderId;
 
   if (isLoading) {
     return (
@@ -263,6 +288,17 @@ export default function TeamDetailsPage() {
                         {member.user.email}
                       </p>
                     </div>
+                    {isLeader && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleRemoveMember(member.userId)}
+                        disabled={removeMemberMutation.isPending}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>

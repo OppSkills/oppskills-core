@@ -7,6 +7,15 @@ export interface Round {
   startDate: string;
   endDate: string;
   status: RoundStatus;
+  submissionConfig?: {
+    enabled: boolean;
+    requiresFileUpload?: boolean;
+    allowedFileTypes?: string[];
+    maxFileSizeBytes?: number;
+    requiresLinkSubmission?: boolean;
+    requiresDescription?: boolean;
+    instructions?: string;
+  };
 }
 
 export interface Organizer {
@@ -73,6 +82,12 @@ export interface CompetitionDetails {
   isFree?: boolean;
   entryFeeAmount?: number | null;
   currency?: string;
+
+  contact?: {
+    name: string;
+    email: string;
+    phone: string;
+  };
 
   createdAt: Date;
 }
