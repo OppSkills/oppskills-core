@@ -28,6 +28,8 @@ import type { EventRegistration } from "@/lib/api/eventApi";
 import { getParticipantRegistrationAnswers } from "@/lib/api/eventApi";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
+import { getEventBySlug } from "@/lib/api/eventApi";
+import { ComposeEmailModal } from "./_components/ComposeEmailModal";
 
 // --- Types ---
 type RegistrationStatus = "Completed" | "Incomplete";
@@ -244,6 +246,22 @@ export default function ManageRegistrationPage() {
   >("All");
   const [selectedParticipant, setSelectedParticipant] =
     useState<Participant | null>(null);
+  const [emailRecipient, setEmailRecipient] = useState<Participant | null>(
+    null
+  );
+
+  const { getToken } = useAuth();
+  const { data: eventDetails } = useQuery({
+    queryKey: ["event-details", slug],
+    queryFn: async () => {
+      if (!slug) return null;
+      const token = await getToken();
+      if (!token) return null;
+      return getEventBySlug(token, slug);
+    },
+    enabled: !!slug,
+  });
+
 
   const data: Participant[] = useMemo(() => {
     if (!registrations) return [];
@@ -407,6 +425,21 @@ export default function ManageRegistrationPage() {
         slug={slug}
       />
 
+      <ComposeEmailModal
+        isOpen={!!emailRecipient}
+        onClose={() => setEmailRecipient(null)}
+        participant={emailRecipient}
+        eventDetails={
+          eventDetails
+            ? {
+              id: (eventDetails as any).id,
+              slug: (eventDetails as any).slug,
+              name: (eventDetails as any).name,
+            }
+            : null
+        }
+      />
+
       {/* Header Controls */}
       <div className="w-full max-w-5xl flex flex-col md:flex-row justify-between items-center gap-4">
         {/* Tabs */}
@@ -537,7 +570,10 @@ export default function ManageRegistrationPage() {
                   </div>
                   <div className="flex justify-end">
                     <div
-                      onClick={() => setSelectedParticipant(row.original)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEmailRecipient(row.original);
+                      }}
                       className="w-10 h-10 bg-primary-100 hover:bg-primary-200 text-primary-500 hover:text-primary-600 rounded-full border border-border/50 flex items-center justify-center cursor-pointer"
                     >
                       <MailIcon />
