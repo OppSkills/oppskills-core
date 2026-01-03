@@ -1422,6 +1422,7 @@ export class HackathonService {
       },
       rounds: hackathon.rounds,
       submissions: submissionsByRoundId,
+      qualifications: qualificationsByRoundId,
     };
   }
 
