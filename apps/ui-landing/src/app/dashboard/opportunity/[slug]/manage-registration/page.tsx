@@ -24,7 +24,7 @@ export default function Page() {
     if (!match) return null;
 
     const order = parseInt(match[1], 10);
-    const round = data.rounds.find((r) => r.order === order);
+    const round = data.rounds.find((r) => r.order === order - 1);
     return round?.id ?? null;
   }, [currentStage, data]);
 
@@ -51,7 +51,7 @@ export default function Page() {
     ];
     for (const round of data.rounds) {
       stagesList.push({
-        name: `R${round.order} - ${round.name}`,
+        name: `R${round.order + 1} - ${round.name}`,
         description: `${round.roundType} round`,
       });
     }
@@ -67,7 +67,7 @@ export default function Page() {
 
     if (selectedRoundId) {
       const selectedRound = data.rounds.find((r) => r.id === selectedRoundId);
-      if (selectedRound?.order === 1) {
+      if (selectedRound?.order === 0) {
         // For first round, show teams that have submitted
         filteredTeams = data.teams.filter((team) => {
           const submission = team.roundSubmissions[selectedRoundId];
