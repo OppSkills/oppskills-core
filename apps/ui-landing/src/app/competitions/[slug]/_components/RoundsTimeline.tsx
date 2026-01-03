@@ -116,6 +116,18 @@ export function RoundsTimeline({
                             ? "Live"
                             : "Upcoming"}
                       </span>
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 text-xs font-medium rounded-full border",
+                          round.roundType === "ONLINE"
+                            ? "bg-blue-50 text-blue-700 border-blue-100"
+                            : round.roundType === "OFFLINE"
+                              ? "bg-orange-50 text-orange-700 border-orange-100"
+                              : "bg-purple-50 text-purple-700 border-purple-100",
+                        )}
+                      >
+                        {round.roundType}
+                      </span>
                     </div>
 
                     {round.description && (

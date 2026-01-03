@@ -65,6 +65,7 @@ export interface Round {
   endDate: Date;
   startTime: string;
   endTime: string;
+  roundType: "ONLINE" | "OFFLINE" | "PRESENTATION";
   submissionConfig?: RoundSubmissionConfig;
 }
 
@@ -546,6 +547,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
         endDate: endsAt,
         startTime: toTimeHHmm(startsAt),
         endTime: toTimeHHmm(endsAt),
+        roundType: (getString(r, "roundType") as any) ?? "ONLINE",
         submissionConfig,
       };
     })
@@ -889,7 +891,7 @@ export default function EditOpportunityPage() {
             startsAt: combineDateAndTimeToIso(r.startDate, r.startTime),
             endsAt: combineDateAndTimeToIso(r.endDate, r.endTime),
             order: idx,
-            roundType: "ONLINE",
+            roundType: r.roundType,
             submissionConfig: r.submissionConfig?.enabled
               ? {
                   requiresFileUpload: true,

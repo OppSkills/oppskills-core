@@ -181,6 +181,7 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     startDate: format(new Date(r.startsAt), "MMM d, yyyy h:mm a"),
     endDate: format(new Date(r.endsAt), "MMM d, yyyy h:mm a"),
     status: mapRoundStatus(r.startsAt, r.endsAt, r.status),
+    roundType: (r.roundType as any) ?? "ONLINE",
     submissionConfig: r.submissionConfig
       ? {
           ...r.submissionConfig,
