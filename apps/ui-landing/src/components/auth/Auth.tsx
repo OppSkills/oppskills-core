@@ -1,6 +1,8 @@
 import Image from "next/image";
 import { useState } from "react";
 import { Button } from "../ui/button";
+import { useClerk, useUser } from "@clerk/nextjs";
+import { useEffect } from "react";
 import Register from "./_components/Register";
 import Login from "./_components/Login";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -11,7 +13,16 @@ import { X } from "lucide-react";
 import { useQueryState } from "nuqs";
 
 export default function Auth({ onClose }: { onClose: () => void }) {
+  const { signOut } = useClerk();
+  const { isSignedIn } = useUser();
   const [authMode, setAuthMode] = useQueryState("auth");
+
+  useEffect(() => {
+    if (isSignedIn) {
+      signOut();
+    }
+  }, [isSignedIn, signOut]);
+
   const [activeIndex, setActiveIndex] = useState(0);
   const currentMode = authMode === "signup" ? "signup" : "login";
 

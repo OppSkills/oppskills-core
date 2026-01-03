@@ -24,10 +24,13 @@ export default function Login({
   const handleGoogleLogin = async () => {
     if (!isLoaded) return;
     try {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.delete("auth");
+
       await signIn.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/sso-callback",
-        redirectUrlComplete: window.location.pathname + window.location.search,
+        redirectUrlComplete: currentUrl.toString(),
       });
     } catch (err: unknown) {
       console.error("OAuth error", err);
