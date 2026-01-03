@@ -215,9 +215,9 @@ export interface OnboardingProfileResponseDto {
   collegeSkipped: boolean;
   companyName?: string | null;
   jobTitle?: string | null;
-  locationCity: string;
-  locationState: string;
-  locationCountry: string;
+  locationCity?: string | null;
+  locationState?: string | null;
+  locationCountry?: string | null;
   interests: string[];
   skills: string[];
   experienceLevel?: ExperienceLevelValue | null;
