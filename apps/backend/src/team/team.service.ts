@@ -525,6 +525,55 @@ export class TeamService {
     return { message: 'Left team successfully' };
   }
 
+  async removeMember(
+    teamId: string,
+    memberUserId: string,
+    requestingUserId: string,
+  ) {
+    const team = await prisma.teamEntity.findUnique({
+      where: { id: teamId },
+      select: {
+        id: true,
+        leaderId: true,
+        hackathonId: true,
+        members: {
+          where: { userId: memberUserId },
+        },
+      },
+    });
+
+    if (!team) throw new NotFoundException('Team not found');
+
+    if (team.leaderId !== requestingUserId) {
+      throw new ForbiddenException('Only team leader can remove members');
+    }
+
+    if (memberUserId === team.leaderId) {
+      throw new BadRequestException('Cannot remove team leader');
+    }
+
+    const member = team.members[0];
+    if (!member) throw new NotFoundException('Member not found in this team');
+
+    await prisma.$transaction(async (tx) => {
+      // Delete registration submission
+      await tx.hackathonRegistrationSubmissionEntity.deleteMany({
+        where: { teamMemberId: member.id },
+      });
+
+      // Delete team member
+      await tx.teamMemberEntity.delete({ where: { id: member.id } });
+
+      // Decrement registration count
+      await tx.hackathonEntity.update({
+        where: { id: team.hackathonId },
+        data: { registrationCount: { decrement: 1 } },
+      });
+    });
+
+    return { message: 'Member removed successfully' };
+  }
+
   /**
    * Check if user is already in a team for a hackathon.
    * Returns the team if found, null otherwise.

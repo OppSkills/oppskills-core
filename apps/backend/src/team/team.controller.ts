@@ -279,6 +279,54 @@ export class TeamController {
     return this.teamService.leaveTeam(teamId, user.id);
   }
 
+  @Delete('leave-team/:teamId/member/:userId')
+  @ApiOperation({
+    summary: 'Remove a team member',
+    description:
+      'Remove a member from the team. Only team leader can perform this action. Cannot remove the leader.',
+  })
+  @ApiParam({
+    name: 'teamId',
+    description: 'Team ID',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID of the member to remove',
+    type: 'string',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Member removed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Member removed successfully' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Cannot remove team leader',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Only team leader can remove members',
+  })
+  @ApiResponse({ status: 404, description: 'Team or member not found' })
+  async removeMember(
+    @Param('teamId') teamId: string,
+    @Param('userId') userId: string,
+    @Req() req: Request,
+  ) {
+    const user = req['user'];
+    if (!user) {
+      throw new UnauthorizedException('User not found in request');
+    }
+    return this.teamService.removeMember(teamId, userId, user.id);
+  }
+
   @Patch('team/:teamId/leader')
   @ApiOperation({
     summary: 'Change team leader',

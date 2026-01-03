@@ -895,8 +895,6 @@ export default function EditOpportunityPage() {
                   requiresFileUpload: true,
                   allowedFileTypes: r.submissionConfig.allowedFileTypes,
                   maxFileSizeBytes: r.submissionConfig.maxFileSizeBytes,
-                  maxFiles: r.submissionConfig.maxFiles,
-                  allowResubmission: r.submissionConfig.allowResubmission,
                   instructions: r.submissionConfig.instructions,
                 }
               : undefined,

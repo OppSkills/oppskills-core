@@ -140,6 +140,17 @@ export async function leaveTeam(
   return res.data as unknown;
 }
 
+export async function removeMember(
+  token: string,
+  teamId: string,
+  userId: string,
+): Promise<{ message: string }> {
+  const res = await API.delete(`/leave-team/${teamId}/member/${userId}`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data;
+}
+
 /**
  * Lists open teams for a given hackathon.
  */

@@ -94,6 +94,9 @@ interface HackathonApiData {
   organizationName: string | null;
   maxTeams?: number | null;
   registrationCount?: number;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
   owner: {
     id: string;
     firstName: string | null;
@@ -159,6 +162,7 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     startDate: format(new Date(r.startsAt), "MMM d, yyyy h:mm a"),
     endDate: format(new Date(r.endsAt), "MMM d, yyyy h:mm a"),
     status: mapRoundStatus(r.startsAt, r.endsAt, r.status),
+    submissionConfig: r.submissionConfig,
   }));
 
   const organizers: Organizer[] = [];
@@ -252,13 +256,21 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     isFree: data.isFree,
     entryFeeAmount: data.entryFeeAmount,
     currency: data.currency,
+    contact:
+      data.contactName || data.contactEmail || data.contactPhone
+        ? {
+            name: data.contactName || "",
+            email: data.contactEmail || "",
+            phone: data.contactPhone || "",
+          }
+        : undefined,
     createdAt: data.createdAt,
   };
 }
 
 export default function CompetitionDetailsPage() {
   const { slug } = useParams();
-  const { getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn, userId } = useAuth();
   const [competition, setCompetition] = useState<CompetitionDetails | null>(
     null,
   );
@@ -357,7 +369,7 @@ export default function CompetitionDetailsPage() {
             name: teamResult.name,
             leaderId: teamResult.leader.id,
           });
-          setCurrentUserId(teamResult.leader.id);
+          setCurrentUserId(userId || null);
 
           const submissionsResult = await getMyTeamSubmissions(token, slug);
           if (submissionsResult) {
@@ -483,7 +495,10 @@ export default function CompetitionDetailsPage() {
               )}
 
               <section className="scroll-mt-24">
-                <Organizers organizers={competition.organizers} />
+                <Organizers
+                  organizers={competition.organizers}
+                  contact={competition.contact}
+                />
               </section>
 
               <section id="prizes" className="scroll-mt-24">

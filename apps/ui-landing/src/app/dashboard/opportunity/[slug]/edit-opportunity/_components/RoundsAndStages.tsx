@@ -468,31 +468,6 @@ export default function RoundsAndStages({
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Label>Allow Resubmission</Label>
-                              <p className="text-xs text-muted-foreground">
-                                Let participants update their submission before
-                                deadline
-                              </p>
-                            </div>
-                            <Switch
-                              checked={
-                                tempRoundData.submissionConfig
-                                  .allowResubmission ?? true
-                              }
-                              onCheckedChange={(checked) =>
-                                setTempRoundData({
-                                  ...tempRoundData,
-                                  submissionConfig: {
-                                    ...tempRoundData.submissionConfig!,
-                                    allowResubmission: checked,
-                                  },
-                                })
-                              }
-                            />
-                          </div>
-
                           <div className="flex flex-col gap-2">
                             <Label>Submission Instructions (Optional)</Label>
                             <Input
