@@ -396,6 +396,15 @@ export class HackathonService {
             },
           },
         },
+        attachments: {
+          select: {
+            id: true,
+            fileName: true,
+            publicUrl: true,
+            mimeType: true,
+            sizeBytes: true,
+          },
+        },
       },
     });
 
@@ -1413,6 +1422,7 @@ export class HackathonService {
       },
       rounds: hackathon.rounds,
       submissions: submissionsByRoundId,
+      qualifications: qualificationsByRoundId,
     };
   }
 

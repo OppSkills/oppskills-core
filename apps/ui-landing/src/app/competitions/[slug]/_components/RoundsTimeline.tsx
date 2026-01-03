@@ -153,32 +153,44 @@ export function RoundsTimeline({
 
                   {myTeam && status === "completed" && (
                     <div className="flex flex-col items-end gap-2">
-                      {qualificationsByRoundId?.[round.id]?.qualified ? (
+                      {index < rounds.length - 1 ? (
+                        <>
+                          {qualificationsByRoundId?.[rounds[index + 1].id]
+                            ?.qualified ? (
+                            <div className="flex items-center gap-2 text-green-600">
+                              <CheckCircle2 className="w-5 h-5" />
+                              <span className="text-sm font-medium">
+                                Qualified for {rounds[index + 1].name}
+                              </span>
+                            </div>
+                          ) : qualificationsByRoundId?.[rounds[index + 1].id]
+                            ?.qualified === false ? (
+                            <div className="flex items-center gap-2 text-red-600">
+                              <XCircle className="w-5 h-5" />
+                              <span className="text-sm font-medium">
+                                Not qualified for {rounds[index + 1].name}
+                              </span>
+                            </div>
+                          ) : hasSubmitted ? (
+                            <div className="flex items-center gap-2 text-amber-600">
+                              <Clock className="w-5 h-5" />
+                              <span className="text-sm font-medium">
+                                Awaiting results
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-neutral-500">
+                              <span className="text-sm">
+                                Round ended - no submission
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
                         <div className="flex items-center gap-2 text-green-600">
                           <CheckCircle2 className="w-5 h-5" />
                           <span className="text-sm font-medium">
-                            Qualified for next round
-                          </span>
-                        </div>
-                      ) : qualificationsByRoundId?.[round.id]?.qualified ===
-                        false ? (
-                        <div className="flex items-center gap-2 text-red-600">
-                          <XCircle className="w-5 h-5" />
-                          <span className="text-sm font-medium">
-                            Not qualified
-                          </span>
-                        </div>
-                      ) : hasSubmitted ? (
-                        <div className="flex items-center gap-2 text-amber-600">
-                          <Clock className="w-5 h-5" />
-                          <span className="text-sm font-medium">
-                            Awaiting results
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-neutral-500">
-                          <span className="text-sm">
-                            Round ended - no submission
+                            Participation Completed
                           </span>
                         </div>
                       )}
@@ -189,40 +201,61 @@ export function RoundsTimeline({
                     status === "live" &&
                     round.submissionConfig?.enabled && (
                       <div className="flex flex-col items-end gap-2">
-                        {hasSubmitted ? (
-                          <div className="flex items-center gap-2 text-green-600">
-                            <CheckCircle2 className="w-5 h-5" />
-                            <span className="text-sm font-medium">
-                              Submitted ({submission.payload.files?.length ?? 0}{" "}
-                              file
-                              {(submission.payload.files?.length ?? 0) !== 1
-                                ? "s"
-                                : ""}
-                              )
+                        {index > 0 &&
+                        qualificationsByRoundId?.[round.id]?.qualified ===
+                          false ? (
+                          <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100">
+                            <XCircle className="w-5 h-5" />
+                            <span className="text-sm font-semibold">
+                              Disqualified - Cannot submit
                             </span>
                           </div>
-                        ) : (
-                          <div className="flex items-center gap-2 text-amber-600">
+                        ) : index > 0 &&
+                          !qualificationsByRoundId?.[round.id]?.qualified ? (
+                          <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100">
                             <Clock className="w-5 h-5" />
-                            <span className="text-sm font-medium">
-                              Not submitted
+                            <span className="text-sm font-semibold">
+                              Awaiting qualification to submit
                             </span>
                           </div>
-                        )}
-
-                        {isTeamLeader ? (
-                          <Button
-                            size="sm"
-                            variant={hasSubmitted ? "outline" : "default"}
-                            onClick={() => setSubmissionModalRound(round)}
-                          >
-                            <Upload className="w-4 h-4 mr-1" />
-                            {hasSubmitted ? "Edit Submission" : "Submit"}
-                          </Button>
                         ) : (
-                          <p className="text-xs text-neutral-500">
-                            Only team leader can submit
-                          </p>
+                          <>
+                            {hasSubmitted ? (
+                              <div className="flex items-center gap-2 text-green-600">
+                                <CheckCircle2 className="w-5 h-5" />
+                                <span className="text-sm font-medium">
+                                  Submitted (
+                                  {submission.payload.files?.length ?? 0} file
+                                  {(submission.payload.files?.length ?? 0) !== 1
+                                    ? "s"
+                                    : ""}
+                                  )
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-amber-600">
+                                <Clock className="w-5 h-5" />
+                                <span className="text-sm font-medium">
+                                  Not submitted
+                                </span>
+                              </div>
+                            )}
+
+                            {isTeamLeader ? (
+                              <Button
+                                size="sm"
+                                variant={hasSubmitted ? "outline" : "default"}
+                                onClick={() => setSubmissionModalRound(round)}
+                              >
+                                <Upload className="w-4 h-4 mr-1" />
+                                {hasSubmitted ? "Edit Submission" : "Submit"}
+                              </Button>
+                            ) : (
+                              <p className="text-xs text-neutral-500">
+                                Only team leader can submit
+                              </p>
+                            )}
+                          </>
                         )}
                       </div>
                     )}
