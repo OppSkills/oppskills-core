@@ -56,7 +56,10 @@ export default function CompetitionDetailsClient({
               </section>
 
               <section className="scroll-mt-24">
-                <Organizers organizers={competition.organizers} />
+                <Organizers
+                  organizers={competition.organizers}
+                  contact={competition.contact}
+                />
               </section>
 
               <section id="prizes" className="scroll-mt-24">

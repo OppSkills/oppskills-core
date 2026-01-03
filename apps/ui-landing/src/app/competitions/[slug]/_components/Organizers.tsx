@@ -3,14 +3,19 @@
 import React from "react";
 import { Organizer } from "./types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Linkedin } from "lucide-react";
+import { Linkedin, Mail, Phone, User } from "lucide-react";
 import Link from "next/link";
 
 interface OrganizersProps {
   organizers: Organizer[];
+  contact?: {
+    name: string;
+    email: string;
+    phone: string;
+  };
 }
 
-export function Organizers({ organizers }: OrganizersProps) {
+export function Organizers({ organizers, contact }: OrganizersProps) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-neutral-900 ">Organizers</h2>
@@ -52,6 +57,42 @@ export function Organizers({ organizers }: OrganizersProps) {
           </div>
         ))}
       </div>
+
+      {contact && (contact.name || contact.email || contact.phone) && (
+        <div className="mt-6 space-y-3">
+          <h3 className="text-lg font-semibold text-neutral-900">Contact</h3>
+          <div className="p-4 rounded-xl border border-neutral-200 bg-background space-y-2">
+            {contact.name && (
+              <div className="flex items-center gap-3 text-sm">
+                <User className="w-4 h-4 text-neutral-400" />
+                <span className="text-neutral-700">{contact.name}</span>
+              </div>
+            )}
+            {contact.email && (
+              <div className="flex items-center gap-3 text-sm">
+                <Mail className="w-4 h-4 text-neutral-400" />
+                <a
+                  href={`mailto:${contact.email}`}
+                  className="text-purple-600 hover:text-purple-700 hover:underline"
+                >
+                  {contact.email}
+                </a>
+              </div>
+            )}
+            {contact.phone && (
+              <div className="flex items-center gap-3 text-sm">
+                <Phone className="w-4 h-4 text-neutral-400" />
+                <a
+                  href={`tel:${contact.phone}`}
+                  className="text-neutral-700 hover:text-neutral-900"
+                >
+                  {contact.phone}
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
