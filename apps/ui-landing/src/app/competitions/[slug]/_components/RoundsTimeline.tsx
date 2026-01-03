@@ -181,7 +181,12 @@ export function RoundsTimeline({
                           <div className="flex items-center gap-2 text-green-600">
                             <CheckCircle2 className="w-5 h-5" />
                             <span className="text-sm font-medium">
-                              Submitted
+                              Submitted ({submission.payload.files?.length ?? 0}{" "}
+                              file
+                              {(submission.payload.files?.length ?? 0) !== 1
+                                ? "s"
+                                : ""}
+                              )
                             </span>
                           </div>
                         ) : (
@@ -214,8 +219,11 @@ export function RoundsTimeline({
                     <div className="flex items-center gap-2 text-green-600">
                       <CheckCircle2 className="w-5 h-5" />
                       <span className="text-sm font-medium">
-                        Submitted ({submission.files?.length ?? 0} file
-                        {(submission.files?.length ?? 0) !== 1 ? "s" : ""})
+                        Submitted ({submission.payload.files?.length ?? 0} file
+                        {(submission.payload.files?.length ?? 0) !== 1
+                          ? "s"
+                          : ""}
+                        )
                       </span>
                     </div>
                   )}
