@@ -534,10 +534,16 @@ export interface SubmissionFile {
 }
 
 export interface RoundSubmissionInfo {
+  id: string;
+  teamId: string;
   roundId: string;
+  payload: {
+    files: SubmissionFile[];
+    note: string | null;
+  };
   submittedAt: string | null;
-  files: SubmissionFile[];
-  note: string | null;
+  createdAt: string;
+  updatedAt: string;
   qualified?: boolean;
   qualifiedAt?: string | null;
 }
@@ -552,10 +558,17 @@ export interface MyTeamSubmissionsResponse {
   team: {
     id: string;
     name: string;
-    leaderId: string;
+    leaderId?: string;
+    leader: {
+      id: string;
+      email: string;
+      firstName: string | null;
+      lastName: string | null;
+      imageUrl: string | null;
+    };
   };
-  submissions: RoundSubmissionInfo[];
-  qualifications: RoundQualificationInfo[];
+  submissions: Record<string, RoundSubmissionInfo>;
+  qualifications: Record<string, RoundQualificationInfo>;
 }
 
 export async function getMyTeamSubmissions(

@@ -64,10 +64,14 @@ export function SubmissionModal({
   onSuccess,
 }: SubmissionModalProps) {
   const { getToken } = useAuth();
-  const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [note, setNote] = useState("");
+  const [files, setFiles] = useState<UploadedFile[]>(
+    existingSubmission?.payload.files || [],
+  );
+  const [note, setNote] = useState(existingSubmission?.payload.note || "");
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const allowedTypesFromConfig = round.submissionConfig?.allowedFileTypes;
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,7 +86,24 @@ export function SubmissionModal({
           toast.error(`${file.name} exceeds 50MB limit`);
           return;
         }
-        if (!ALLOWED_TYPES.includes(file.type)) {
+
+        // If config has allowed types, check against them.
+        // The backend might send extensions (e.g. "pdf") or MIME types.
+        if (allowedTypesFromConfig && allowedTypesFromConfig.length > 0) {
+          const isAllowed = allowedTypesFromConfig.some((type) => {
+            const lowerType = type.toLowerCase();
+            return (
+              file.type.toLowerCase().includes(lowerType) ||
+              file.name.toLowerCase().endsWith(`.${lowerType}`)
+            );
+          });
+          if (!isAllowed) {
+            toast.error(
+              `${file.name} is not an allowed file type (${allowedTypesFromConfig.join(", ")})`,
+            );
+            return;
+          }
+        } else if (!ALLOWED_TYPES.includes(file.type)) {
           toast.error(`${file.name} has unsupported file type`);
           return;
         }
@@ -182,7 +203,10 @@ export function SubmissionModal({
               Upload Files (max {MAX_FILES}, up to 50MB each)
             </Label>
             <p className="text-xs text-neutral-500 mb-2">
-              Accepted: PDF, PPT/PPTX, Images (PNG, JPG, GIF, WebP)
+              Accepted:{" "}
+              {allowedTypesFromConfig && allowedTypesFromConfig.length > 0
+                ? allowedTypesFromConfig.join(", ").toUpperCase()
+                : "PDF, PPT/PPTX, Images (PNG, JPG)"}
             </p>
 
             <div className="border-2 border-dashed border-neutral-200 rounded-lg p-4">
@@ -227,7 +251,13 @@ export function SubmissionModal({
                   <input
                     type="file"
                     className="hidden"
-                    accept={ALLOWED_TYPES.join(",")}
+                    accept={
+                      allowedTypesFromConfig && allowedTypesFromConfig.length > 0
+                        ? allowedTypesFromConfig
+                            .map((t) => `.${t.toLowerCase()}`)
+                            .join(",")
+                        : ALLOWED_TYPES.join(",")
+                    }
                     multiple
                     onChange={handleFileSelect}
                     disabled={isUploading}
