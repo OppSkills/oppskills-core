@@ -58,35 +58,35 @@ export function OnboardingCompleteEmail({
             <Heading style={heading}>Hi {firstName || 'there'}</Heading>
             <Heading style={subHeading}>Profile Complete!</Heading>
 
-          <Text style={paragraph}>
+            <Text style={paragraph}>
               Congratulations! You've successfully completed your OppSkills profile. You're now all set to explore and participate in opportunities that match your interests.
-          </Text>
-
-          <Section style={profileCard}>
-            <Text style={profileTitle}>Your Profile Summary</Text>
-            <Text style={profileItem}>
-              <strong>Category:</strong> {getCategoryLabel(userCategory)}
             </Text>
-            {locationCity && (
-              <Text style={profileItem}>
-                <strong>Location:</strong> {locationCity}
-              </Text>
-            )}
-          </Section>
 
-          <Text style={paragraph}>
-            Here's what you can do next:
-          </Text>
-          <Section style={listSection}>
+            <Section style={profileCard}>
+              <Text style={profileTitle}>Your Profile Summary</Text>
+              <Text style={profileItem}>
+                <strong>Category:</strong> {getCategoryLabel(userCategory)}
+              </Text>
+              {locationCity && (
+                <Text style={profileItem}>
+                  <strong>Location:</strong> {locationCity}
+                </Text>
+              )}
+            </Section>
+
+            <Text style={paragraph}>
+              Here's what you can do next:
+            </Text>
+            <Section style={listSection}>
               <Text style={listItem}>🎯 Browse hackathons tailored for you</Text>
               <Text style={listItem}>📅 Register for upcoming events</Text>
               <Text style={listItem}>👥 Find teams with your skills</Text>
-          </Section>
+            </Section>
 
-          <Section style={ctaSection}>
-            <Link href="https://oppskills.com/dashboard" style={ctaButton}>
+            <Section style={ctaSection}>
+              <Link href="https://oppskills.com/dashboard" style={ctaButton}>
                 Go to Dashboard ↗
-            </Link>
+              </Link>
             </Section>
           </Section>
 

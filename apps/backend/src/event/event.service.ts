@@ -996,7 +996,7 @@ export class EventService {
         label: 'Company Name',
         type: 'TEXT',
         order: -8,
-        required: false,
+        required: true,
         options: [],
       });
     } else {
@@ -1036,10 +1036,9 @@ export class EventService {
 
     // Lazy-create missing default fields
     // Build a map of existing fields by label for matching
-    const existingFieldsByLabel = new Map<
-      string,
-      (typeof regForm.fields)[number]
-    >(regForm.fields.map((f) => [f.label.toLowerCase(), f]));
+    const existingFieldsByLabel = new Map(
+      regForm.fields.map((f) => [f.label.toLowerCase(), f]),
+    );
 
     // Map frontend field IDs to real DB field IDs
     const frontendIdToDbId = new Map<string, string>();
@@ -1106,16 +1105,10 @@ export class EventService {
     const registrationFields = updatedRegForm?.fields ?? [];
 
     // Transform answers: replace frontend "default-*" IDs with real DB IDs
-    const providedAnswers = (answers ?? [])
-      .map((a) => ({
-        fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
-        value: a.value,
-      }))
-      .filter((a) => {
-        // If it still starts with 'default-', it means it wasn't in our current mapping
-        // (likely a field from a different user category that's no longer relevant or shouldn't be handled here)
-        return !a.fieldId.startsWith('default-');
-      });
+    const providedAnswers = (answers ?? []).map((a) => ({
+      fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
+      value: a.value,
+    }));
 
     const providedFieldIds = new Set(providedAnswers.map((a) => a.fieldId));
 
@@ -1170,9 +1163,7 @@ export class EventService {
 
     // Validate each provided answer
     if (providedAnswers.length > 0) {
-      const fieldMap = new Map<string, (typeof registrationFields)[number]>(
-        registrationFields.map((f) => [f.id, f]),
-      );
+      const fieldMap = new Map(registrationFields.map((f) => [f.id, f]));
 
       for (const answer of providedAnswers) {
         const field = fieldMap.get(answer.fieldId);

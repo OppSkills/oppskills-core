@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import { Logger } from 'src/_utils/logger';
 import type { CollegeImportItemDto } from '@oppskills/types';
-import * as crypto from 'crypto';
 
 /**
  * Result shape for bulk imports.
@@ -498,47 +497,6 @@ export class CollegesService {
         address: true,
         website: true,
         logo: true,
-      },
-    });
-  }
-
-  /**
-   * Find a college by name (exact match, case-insensitive) or create a new one.
-   */
-  async findOrCreateCollege(
-    name: string,
-    location: { city: string; state: string; country: string },
-  ) {
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      throw new Error('College name cannot be empty');
-    }
-
-    // Try finding exact match (case insensitive)
-    const existing = await prisma.collegeEntity.findFirst({
-      where: {
-        name: {
-          equals: trimmedName,
-          mode: 'insensitive',
-        },
-      },
-    });
-
-    if (existing) {
-      return existing;
-    }
-
-    // Create new
-    const newId = crypto.randomUUID();
-
-    return prisma.collegeEntity.create({
-      data: {
-        id: newId,
-        name: trimmedName,
-        city: location.city,
-        state: location.state,
-        country: location.country,
-        address: `${location.city}, ${location.state}, ${location.country}`,
       },
     });
   }

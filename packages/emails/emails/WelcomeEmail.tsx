@@ -34,22 +34,22 @@ export function WelcomeEmail({ firstName, email }: WelcomeEmailProps) {
             <Heading style={heading}>Hi {firstName || 'Consumer'}</Heading>
             <Heading style={subHeading}>Welcome To OppSkills</Heading>
 
-          <Text style={paragraph}>
+            <Text style={paragraph}>
               We're excited to have you join a growing community of learners, creators, and problem-solvers who are actively exploring real opportunities to build their skills.
-          </Text>
+            </Text>
 
-          <Text style={paragraph}>
+            <Text style={paragraph}>
               At Oppskills, we understand how overwhelming it can be to find the right competitions, challenges, and learning experiences. That's why we're building a space that brings meaningful opportunities together—so you can focus less on searching and more on growing.
-          </Text>
+            </Text>
 
-          <Text style={paragraph}>
+            <Text style={paragraph}>
               Thank you for taking the first step with us. We're glad to be a part of your journey.
-          </Text>
+            </Text>
 
-          <Section style={ctaSection}>
+            <Section style={ctaSection}>
               <Link href="https://oppskills.com/dashboard" style={ctaButton}>
                 Explore OppSkills ↗
-            </Link>
+              </Link>
             </Section>
           </Section>
 

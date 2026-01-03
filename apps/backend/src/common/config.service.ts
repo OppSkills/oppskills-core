@@ -14,7 +14,7 @@ export class ClerkAuthConfigService {
   }
 
   get clerkSecretKey(): string {
-    return this.configService.getOrThrow<string>('CLERK_SECRET_KEY');
+    return this.configService.get('CLERK_SECRET_KEY') || '';
   }
 
   get redisHost(): string {
