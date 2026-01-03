@@ -5,6 +5,7 @@ import { RoundsTimeline } from "./_components/RoundsTimeline";
 import { AboutSection } from "./_components/AboutSection";
 import { Organizers } from "./_components/Organizers";
 import { Prizes } from "./_components/Prizes";
+import { Attachments } from "./_components/Attachments";
 import type {
   CompetitionDetails,
   Round,
@@ -94,6 +95,9 @@ interface HackathonApiData {
   organizationName: string | null;
   maxTeams?: number | null;
   registrationCount?: number;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
   owner: {
     id: string;
     firstName: string | null;
@@ -114,6 +118,23 @@ interface HackathonApiData {
     order: number;
     roundType: string;
     status: string;
+    submissionConfig?: {
+      enabled?: boolean;
+      requiresFileUpload?: boolean;
+      allowedFileTypes?: string[];
+      maxFileSizeBytes?: number;
+      requiresLinkSubmission?: boolean;
+      requiresDescription?: boolean;
+      instructions?: string;
+    };
+  }>;
+  attachments?: Array<{
+    id: string;
+    storageKey: string;
+    publicUrl: string | null;
+    fileName: string | null;
+    mimeType: string | null;
+    sizeBytes: number | null;
   }>;
   prizeBreakdown: Array<{
     id: string;
@@ -159,6 +180,14 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     startDate: format(new Date(r.startsAt), "MMM d, yyyy h:mm a"),
     endDate: format(new Date(r.endsAt), "MMM d, yyyy h:mm a"),
     status: mapRoundStatus(r.startsAt, r.endsAt, r.status),
+    submissionConfig: r.submissionConfig
+      ? {
+          ...r.submissionConfig,
+          // Normalize: set enabled based on requiresFileUpload if enabled is not explicitly set
+          enabled:
+            r.submissionConfig.enabled ?? r.submissionConfig.requiresFileUpload,
+        }
+      : undefined,
   }));
 
   const organizers: Organizer[] = [];
@@ -218,6 +247,14 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     tags.push(data.mode);
   }
 
+  const attachments = (data.attachments || []).map((att) => ({
+    id: att.id,
+    fileName: att.fileName || "Attachment",
+    publicUrl: att.publicUrl || "",
+    mimeType: att.mimeType || undefined,
+    sizeBytes: att.sizeBytes || undefined,
+  }));
+
   return {
     id: data.id,
     slug: data.slug,
@@ -252,13 +289,22 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     isFree: data.isFree,
     entryFeeAmount: data.entryFeeAmount,
     currency: data.currency,
+    contact:
+      data.contactName || data.contactEmail || data.contactPhone
+        ? {
+            name: data.contactName || "",
+            email: data.contactEmail || "",
+            phone: data.contactPhone || "",
+          }
+        : undefined,
+    attachments: attachments.length > 0 ? attachments : undefined,
     createdAt: data.createdAt,
   };
 }
 
 export default function CompetitionDetailsPage() {
   const { slug } = useParams();
-  const { getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn, userId } = useAuth();
   const [competition, setCompetition] = useState<CompetitionDetails | null>(
     null,
   );
@@ -357,7 +403,7 @@ export default function CompetitionDetailsPage() {
             name: teamResult.name,
             leaderId: teamResult.leader.id,
           });
-          setCurrentUserId(teamResult.leader.id);
+          setCurrentUserId(userId || null);
 
           const submissionsResult = await getMyTeamSubmissions(token, slug);
           if (submissionsResult) {
@@ -483,8 +529,18 @@ export default function CompetitionDetailsPage() {
               )}
 
               <section className="scroll-mt-24">
-                <Organizers organizers={competition.organizers} />
+                <Organizers
+                  organizers={competition.organizers}
+                  contact={competition.contact}
+                />
               </section>
+
+              {competition.attachments &&
+                competition.attachments.length > 0 && (
+                  <section className="scroll-mt-24">
+                    <Attachments attachments={competition.attachments} />
+                  </section>
+                )}
 
               <section id="prizes" className="scroll-mt-24">
                 <Prizes prizes={competition.prizes} />

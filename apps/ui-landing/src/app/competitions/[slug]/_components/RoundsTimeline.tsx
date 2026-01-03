@@ -182,38 +182,42 @@ export function RoundsTimeline({
                     </div>
                   )}
 
-                  {myTeam && status === "live" && (
-                    <div className="flex flex-col items-end gap-2">
-                      {hasSubmitted ? (
-                        <div className="flex items-center gap-2 text-green-600">
-                          <CheckCircle2 className="w-5 h-5" />
-                          <span className="text-sm font-medium">Submitted</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-amber-600">
-                          <Clock className="w-5 h-5" />
-                          <span className="text-sm font-medium">
-                            Not submitted
-                          </span>
-                        </div>
-                      )}
+                  {myTeam &&
+                    status === "live" &&
+                    round.submissionConfig?.enabled && (
+                      <div className="flex flex-col items-end gap-2">
+                        {hasSubmitted ? (
+                          <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle2 className="w-5 h-5" />
+                            <span className="text-sm font-medium">
+                              Submitted
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-amber-600">
+                            <Clock className="w-5 h-5" />
+                            <span className="text-sm font-medium">
+                              Not submitted
+                            </span>
+                          </div>
+                        )}
 
-                      {isTeamLeader ? (
-                        <Button
-                          size="sm"
-                          variant={hasSubmitted ? "outline" : "default"}
-                          onClick={() => setSubmissionModalRound(round)}
-                        >
-                          <Upload className="w-4 h-4 mr-1" />
-                          {hasSubmitted ? "Edit Submission" : "Submit"}
-                        </Button>
-                      ) : (
-                        <p className="text-xs text-neutral-500">
-                          Only team leader can submit
-                        </p>
-                      )}
-                    </div>
-                  )}
+                        {isTeamLeader ? (
+                          <Button
+                            size="sm"
+                            variant={hasSubmitted ? "outline" : "default"}
+                            onClick={() => setSubmissionModalRound(round)}
+                          >
+                            <Upload className="w-4 h-4 mr-1" />
+                            {hasSubmitted ? "Edit Submission" : "Submit"}
+                          </Button>
+                        ) : (
+                          <p className="text-xs text-neutral-500">
+                            Only team leader can submit
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                   {myTeam && status === "completed" && hasSubmitted && (
                     <div className="flex items-center gap-2 text-green-600">

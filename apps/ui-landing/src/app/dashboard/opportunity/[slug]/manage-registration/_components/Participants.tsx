@@ -14,6 +14,7 @@ import {
   Search,
   EllipsisVertical,
   Check,
+  X,
 } from "lucide-react";
 
 import {
@@ -230,6 +231,19 @@ export default function Participants({
                   >
                     <Check className="w-4 h-4" />
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    disabled={isPending || qualStatus === "Not Qualified"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      bulkQualify({ teamIds: [teamId], qualified: false });
+                    }}
+                    title="Disqualify from next round"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
                   {qualStatus && (
                     <span
                       className={`ml-1 px-2 py-0.5 rounded-full text-xs border ${
@@ -254,7 +268,15 @@ export default function Participants({
         },
       },
     ],
-    [bulkQualify, data.length, isPending, nextRoundId, router, selectedRoundId, slug],
+    [
+      bulkQualify,
+      data.length,
+      isPending,
+      nextRoundId,
+      router,
+      selectedRoundId,
+      slug,
+    ],
   );
 
   const table = useReactTable({
