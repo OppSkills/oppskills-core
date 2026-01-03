@@ -17,6 +17,8 @@ import { Upload, X, FileText, Image, File } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
 import { upsertRoundSubmission } from "@/lib/api/hackathonApi";
+import { presignDocumentUpload } from "@/lib/api/mediaApi";
+import { uploadDocumentToS3PresignedPost } from "@/lib/uploads/uploadDocumentToS3";
 import { getApiErrorMessage } from "@/lib/utils";
 
 interface SubmissionModalProps {
@@ -40,10 +42,12 @@ const ALLOWED_TYPES = [
   "application/pdf",
   "application/vnd.ms-powerpoint",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "image/png",
   "image/jpeg",
-  "image/gif",
-  "image/webp",
 ];
 
 function getFileIcon(mimeType: string) {
@@ -60,10 +64,14 @@ export function SubmissionModal({
   onSuccess,
 }: SubmissionModalProps) {
   const { getToken } = useAuth();
-  const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [note, setNote] = useState("");
+  const [files, setFiles] = useState<UploadedFile[]>(
+    existingSubmission?.payload.files || [],
+  );
+  const [note, setNote] = useState(existingSubmission?.payload.note || "");
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const allowedTypesFromConfig = round.submissionConfig?.allowedFileTypes;
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,7 +86,24 @@ export function SubmissionModal({
           toast.error(`${file.name} exceeds 50MB limit`);
           return;
         }
-        if (!ALLOWED_TYPES.includes(file.type)) {
+
+        // If config has allowed types, check against them.
+        // The backend might send extensions (e.g. "pdf") or MIME types.
+        if (allowedTypesFromConfig && allowedTypesFromConfig.length > 0) {
+          const isAllowed = allowedTypesFromConfig.some((type) => {
+            const lowerType = type.toLowerCase();
+            return (
+              file.type.toLowerCase().includes(lowerType) ||
+              file.name.toLowerCase().endsWith(`.${lowerType}`)
+            );
+          });
+          if (!isAllowed) {
+            toast.error(
+              `${file.name} is not an allowed file type (${allowedTypesFromConfig.join(", ")})`,
+            );
+            return;
+          }
+        } else if (!ALLOWED_TYPES.includes(file.type)) {
           toast.error(`${file.name} has unsupported file type`);
           return;
         }
@@ -94,22 +119,21 @@ export function SubmissionModal({
 
         const uploadedFiles: UploadedFile[] = [];
         for (const file of selectedFiles) {
-          const formData = new FormData();
-          formData.append("file", file);
-
-          const response = await fetch("/api/media/upload", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-            body: formData,
+          // 1. Get presigned POST policy from backend
+          const presign = await presignDocumentUpload(token, {
+            purpose: "OPPORTUNITY_ATTACHMENT",
+            mimeType: file.type,
+            fileName: file.name,
           });
 
-          if (!response.ok) {
-            throw new Error(`Failed to upload ${file.name}`);
-          }
+          // 2. Upload directly to S3
+          await uploadDocumentToS3PresignedPost({
+            presign,
+            file,
+          });
 
-          const data = await response.json();
           uploadedFiles.push({
-            url: data.url || data.publicUrl,
+            url: presign.publicUrl,
             name: file.name,
             mimeType: file.type,
             size: file.size,
@@ -179,7 +203,10 @@ export function SubmissionModal({
               Upload Files (max {MAX_FILES}, up to 50MB each)
             </Label>
             <p className="text-xs text-neutral-500 mb-2">
-              Accepted: PDF, PPT/PPTX, Images (PNG, JPG, GIF, WebP)
+              Accepted:{" "}
+              {allowedTypesFromConfig && allowedTypesFromConfig.length > 0
+                ? allowedTypesFromConfig.join(", ").toUpperCase()
+                : "PDF, PPT/PPTX, Images (PNG, JPG)"}
             </p>
 
             <div className="border-2 border-dashed border-neutral-200 rounded-lg p-4">
@@ -224,7 +251,13 @@ export function SubmissionModal({
                   <input
                     type="file"
                     className="hidden"
-                    accept={ALLOWED_TYPES.join(",")}
+                    accept={
+                      allowedTypesFromConfig && allowedTypesFromConfig.length > 0
+                        ? allowedTypesFromConfig
+                            .map((t) => `.${t.toLowerCase()}`)
+                            .join(",")
+                        : ALLOWED_TYPES.join(",")
+                    }
                     multiple
                     onChange={handleFileSelect}
                     disabled={isUploading}

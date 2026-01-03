@@ -21,6 +21,13 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import RichTextEditor from "@/components/ui/editor/RichtextEditor";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format } from "date-fns";
 import React, { useState } from "react";
 import { toast } from "sonner";
@@ -48,6 +55,7 @@ export default function RoundsAndStages({
       endDate: new Date(),
       startTime: "09:00",
       endTime: "18:00",
+      roundType: "ONLINE",
       submissionConfig: {
         enabled: false,
         allowedFileTypes: [],
@@ -196,19 +204,46 @@ export default function RoundsAndStages({
                       </Button>
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                      <Label>Round Name</Label>
-                      <Input
-                        value={tempRoundData.name}
-                        onChange={(e) =>
-                          setTempRoundData({
-                            ...tempRoundData,
-                            name: e.target.value,
-                          })
-                        }
-                        placeholder="e.g. Qualification Round"
-                        className="font-semibold text-lg"
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-2">
+                        <Label>Round Name</Label>
+                        <Input
+                          value={tempRoundData.name}
+                          onChange={(e) =>
+                            setTempRoundData({
+                              ...tempRoundData,
+                              name: e.target.value,
+                            })
+                          }
+                          placeholder="e.g. Qualification Round"
+                          className="font-semibold text-lg"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Label>Round Type</Label>
+                        <Select
+                          value={tempRoundData.roundType}
+                          onValueChange={(
+                            value: "ONLINE" | "OFFLINE" | "PRESENTATION",
+                          ) =>
+                            setTempRoundData({
+                              ...tempRoundData,
+                              roundType: value,
+                            })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select round type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ONLINE">Online</SelectItem>
+                            <SelectItem value="OFFLINE">Offline</SelectItem>
+                            <SelectItem value="PRESENTATION">
+                              Presentation
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -506,6 +541,20 @@ export default function RoundsAndStages({
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="text-xl font-bold">{round.name}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span
+                            className={cn(
+                              "px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border",
+                              round.roundType === "ONLINE"
+                                ? "bg-blue-50 text-blue-600 border-blue-200"
+                                : round.roundType === "OFFLINE"
+                                  ? "bg-orange-50 text-orange-600 border-orange-200"
+                                  : "bg-purple-50 text-purple-600 border-purple-200",
+                            )}
+                          >
+                            {round.roundType}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex flex-col md:flex-row gap-2">
                         <div className="bg-secondary/30 rounded-lg px-4 py-2 text-center border border-secondary/50">

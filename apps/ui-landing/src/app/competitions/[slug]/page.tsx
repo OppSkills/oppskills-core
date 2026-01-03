@@ -20,6 +20,7 @@ import {
   getHackathonBySlug,
   getMyTeamSubmissions,
   type MyTeamSubmissionsResponse,
+  type RoundSubmissionInfo,
 } from "@/lib/api/hackathonApi";
 import { checkMyHackathonTeam } from "@/lib/api/teamApi";
 import { format, formatDistanceToNow } from "date-fns";
@@ -180,6 +181,7 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     startDate: format(new Date(r.startsAt), "MMM d, yyyy h:mm a"),
     endDate: format(new Date(r.endsAt), "MMM d, yyyy h:mm a"),
     status: mapRoundStatus(r.startsAt, r.endsAt, r.status),
+    roundType: (r.roundType as any) ?? "ONLINE",
     submissionConfig: r.submissionConfig
       ? {
           ...r.submissionConfig,
@@ -319,19 +321,16 @@ export default function CompetitionDetailsPage() {
   } | null>(null);
   const [mySubmissions, setMySubmissions] = useState<
     MyTeamSubmissionsResponse["submissions"]
-  >([]);
+  >({});
   const [myQualifications, setMyQualifications] = useState<
     MyTeamSubmissionsResponse["qualifications"]
-  >([]);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  >({});
 
   const submissionsByRoundId = useMemo(() => {
-    const map: Record<string, (typeof mySubmissions)[0]> = {};
-    // Defensive: backend payloads can be malformed; never assume iterability at runtime.
-    // If `mySubmissions` is accidentally set to a non-array, this prevents a hard crash.
-    const safeSubmissions = Array.isArray(mySubmissions) ? mySubmissions : [];
-    for (const sub of safeSubmissions) {
-      map[sub.roundId] = sub;
+    const map: Record<string, RoundSubmissionInfo> = {};
+    const safeSubmissions = mySubmissions || {};
+    for (const roundId in safeSubmissions) {
+      map[roundId] = safeSubmissions[roundId];
     }
     return map;
   }, [mySubmissions]);
@@ -339,12 +338,10 @@ export default function CompetitionDetailsPage() {
   const qualificationsByRoundId = useMemo(() => {
     const map: Record<string, { qualified: boolean; qualifiedAt?: string }> =
       {};
-    // Defensive: backend payloads can be malformed; never assume iterability at runtime.
-    const safeQualifications = Array.isArray(myQualifications)
-      ? myQualifications
-      : [];
-    for (const qual of safeQualifications) {
-      map[qual.roundId] = {
+    const safeQualifications = myQualifications || {};
+    for (const roundId in safeQualifications) {
+      const qual = safeQualifications[roundId];
+      map[roundId] = {
         qualified: qual.qualified,
         qualifiedAt: qual.qualifiedAt ?? undefined,
       };
@@ -363,6 +360,7 @@ export default function CompetitionDetailsPage() {
       try {
         const data = (await getPublicHackathonBySlug(slug)) as HackathonApiData;
         setCompetition(transformApiData(data));
+        console.log("competition data1", transformApiData(data));
       } catch (publicErr) {
         if (isSignedIn) {
           try {
@@ -373,6 +371,7 @@ export default function CompetitionDetailsPage() {
                 slug,
               )) as HackathonApiData;
               setCompetition(transformApiData(data));
+              console.log("competition data", transformApiData(data));
               setIsDraft(true);
               return;
             }
@@ -403,29 +402,11 @@ export default function CompetitionDetailsPage() {
             name: teamResult.name,
             leaderId: teamResult.leader.id,
           });
-          setCurrentUserId(userId || null);
 
           const submissionsResult = await getMyTeamSubmissions(token, slug);
           if (submissionsResult) {
-            /**
-             * Runtime validation:
-             * Some older/buggy API responses have returned `submissions`/`qualifications`
-             * as non-arrays (e.g. `{}` or `null`), which will crash iteration downstream.
-             */
-            const safeSubmissions = Array.isArray(submissionsResult.submissions)
-              ? submissionsResult.submissions
-              : [];
-            const safeQualifications = Array.isArray(
-              submissionsResult.qualifications,
-            )
-              ? submissionsResult.qualifications
-              : [];
-
-            setMySubmissions(safeSubmissions);
-            setMyQualifications(safeQualifications);
-            if (submissionsResult.team?.leaderId) {
-              setCurrentUserId(submissionsResult.team.leaderId);
-            }
+            setMySubmissions(submissionsResult.submissions || {});
+            setMyQualifications(submissionsResult.qualifications || {});
           }
         }
       } catch (err) {
@@ -524,6 +505,7 @@ export default function CompetitionDetailsPage() {
                     competitionSlug={
                       typeof slug === "string" ? slug : undefined
                     }
+                    currentUserId={userId || undefined}
                   />
                 </section>
               )}

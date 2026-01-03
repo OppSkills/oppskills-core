@@ -35,15 +35,6 @@ interface RoundsTimelineProps {
   currentUserId?: string;
 }
 
-function getRoundStatus(round: Round): "upcoming" | "live" | "completed" {
-  const now = new Date();
-  const start = new Date(round.startDate);
-  const end = new Date(round.endDate);
-  if (now < start) return "upcoming";
-  if (now > end) return "completed";
-  return "live";
-}
-
 export function RoundsTimeline({
   rounds,
   myTeam,
@@ -66,7 +57,7 @@ export function RoundsTimeline({
       <div className="space-y-6">
         {rounds.map((round, index) => {
           const roundNumber = index + 1;
-          const status = getRoundStatus(round);
+          const status = round.status;
           const submission = submissionsByRoundId[round.id];
           const hasSubmitted = !!submission?.submittedAt;
 
@@ -124,6 +115,18 @@ export function RoundsTimeline({
                           : status === "live"
                             ? "Live"
                             : "Upcoming"}
+                      </span>
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 text-xs font-medium rounded-full border",
+                          round.roundType === "ONLINE"
+                            ? "bg-blue-50 text-blue-700 border-blue-100"
+                            : round.roundType === "OFFLINE"
+                              ? "bg-orange-50 text-orange-700 border-orange-100"
+                              : "bg-purple-50 text-purple-700 border-purple-100",
+                        )}
+                      >
+                        {round.roundType}
                       </span>
                     </div>
 
@@ -190,7 +193,12 @@ export function RoundsTimeline({
                           <div className="flex items-center gap-2 text-green-600">
                             <CheckCircle2 className="w-5 h-5" />
                             <span className="text-sm font-medium">
-                              Submitted
+                              Submitted ({submission.payload.files?.length ?? 0}{" "}
+                              file
+                              {(submission.payload.files?.length ?? 0) !== 1
+                                ? "s"
+                                : ""}
+                              )
                             </span>
                           </div>
                         ) : (
@@ -223,8 +231,11 @@ export function RoundsTimeline({
                     <div className="flex items-center gap-2 text-green-600">
                       <CheckCircle2 className="w-5 h-5" />
                       <span className="text-sm font-medium">
-                        Submitted ({submission.files?.length ?? 0} file
-                        {(submission.files?.length ?? 0) !== 1 ? "s" : ""})
+                        Submitted ({submission.payload.files?.length ?? 0} file
+                        {(submission.payload.files?.length ?? 0) !== 1
+                          ? "s"
+                          : ""}
+                        )
                       </span>
                     </div>
                   )}

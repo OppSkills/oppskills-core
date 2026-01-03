@@ -1555,7 +1555,17 @@ export class EventService {
             lastName: true,
             imageUrl: true,
             onboardingProfile: {
-              include: {
+              select: {
+                id: true,
+                userCategory: true,
+                schoolName: true,
+                schoolClass: true,
+                companyName: true,
+                jobTitle: true,
+                collegeCurrentYear: true,
+                locationCity: true,
+                locationState: true,
+                locationCountry: true,
                 college: {
                   select: {
                     id: true,
@@ -2375,15 +2385,11 @@ export class EventService {
   }
 
   private async isAdminUser(userId: string): Promise<boolean> {
-    const rows = await prisma.$queryRaw<
-      Array<{ access_level: AccessLevelValue }>
-    >`
-      SELECT "access_level"
-      FROM "oppskills"."user"
-      WHERE "id" = ${userId}
-      LIMIT 1
-    `;
-    return rows[0]?.access_level === 'ADMIN';
+    const user = await prisma.userEntity.findUnique({
+      where: { id: userId },
+      select: { accessLevel: true },
+    });
+    return user?.accessLevel === 'ADMIN';
   }
 
   /**

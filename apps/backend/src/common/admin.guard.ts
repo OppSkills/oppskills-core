@@ -26,25 +26,16 @@ export class AdminGuard implements CanActivate {
       throw new ForbiddenException('User not found on request.');
     }
 
-    /**
-     * We intentionally read `access_level` via SQL instead of relying on generated Prisma types
-     * so that authorization remains stable even if editor type caches lag behind migrations.
-     */
-    const rows = await prisma.$queryRaw<
-      Array<{ access_level: AccessLevelValue }>
-    >`
-      SELECT "access_level"
-      FROM "oppskills"."user"
-      WHERE "id" = ${userId}
-      LIMIT 1
-    `;
+    const user = await prisma.userEntity.findUnique({
+      where: { id: userId },
+      select: { accessLevel: true },
+    });
 
-    const accessLevel = rows[0]?.access_level;
-    if (!accessLevel) {
+    if (!user) {
       throw new ForbiddenException('User not found in database.');
     }
 
-    if (accessLevel !== 'ADMIN') {
+    if (user.accessLevel !== 'ADMIN') {
       throw new ForbiddenException('Admin access required.');
     }
 

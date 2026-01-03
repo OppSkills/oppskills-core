@@ -7,6 +7,7 @@ export interface Round {
   startDate: string;
   endDate: string;
   status: RoundStatus;
+  roundType: "ONLINE" | "OFFLINE" | "PRESENTATION";
   submissionConfig?: {
     enabled?: boolean;
     requiresFileUpload?: boolean;
