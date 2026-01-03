@@ -17,6 +17,8 @@ import { Upload, X, FileText, Image, File } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
 import { upsertRoundSubmission } from "@/lib/api/hackathonApi";
+import { presignDocumentUpload } from "@/lib/api/mediaApi";
+import { uploadDocumentToS3PresignedPost } from "@/lib/uploads/uploadDocumentToS3";
 import { getApiErrorMessage } from "@/lib/utils";
 
 interface SubmissionModalProps {
@@ -40,10 +42,12 @@ const ALLOWED_TYPES = [
   "application/pdf",
   "application/vnd.ms-powerpoint",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "image/png",
   "image/jpeg",
-  "image/gif",
-  "image/webp",
 ];
 
 function getFileIcon(mimeType: string) {
@@ -94,22 +98,21 @@ export function SubmissionModal({
 
         const uploadedFiles: UploadedFile[] = [];
         for (const file of selectedFiles) {
-          const formData = new FormData();
-          formData.append("file", file);
-
-          const response = await fetch("/api/media/upload", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-            body: formData,
+          // 1. Get presigned POST policy from backend
+          const presign = await presignDocumentUpload(token, {
+            purpose: "OPPORTUNITY_ATTACHMENT",
+            mimeType: file.type,
+            fileName: file.name,
           });
 
-          if (!response.ok) {
-            throw new Error(`Failed to upload ${file.name}`);
-          }
+          // 2. Upload directly to S3
+          await uploadDocumentToS3PresignedPost({
+            presign,
+            file,
+          });
 
-          const data = await response.json();
           uploadedFiles.push({
-            url: data.url || data.publicUrl,
+            url: presign.publicUrl,
             name: file.name,
             mimeType: file.type,
             size: file.size,
