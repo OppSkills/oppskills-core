@@ -323,7 +323,6 @@ export default function CompetitionDetailsPage() {
   const [myQualifications, setMyQualifications] = useState<
     MyTeamSubmissionsResponse["qualifications"]
   >([]);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const submissionsByRoundId = useMemo(() => {
     const map: Record<string, (typeof mySubmissions)[0]> = {};
@@ -363,6 +362,7 @@ export default function CompetitionDetailsPage() {
       try {
         const data = (await getPublicHackathonBySlug(slug)) as HackathonApiData;
         setCompetition(transformApiData(data));
+        console.log("competition data1", transformApiData(data));
       } catch (publicErr) {
         if (isSignedIn) {
           try {
@@ -373,6 +373,7 @@ export default function CompetitionDetailsPage() {
                 slug,
               )) as HackathonApiData;
               setCompetition(transformApiData(data));
+              console.log("competition data", transformApiData(data));
               setIsDraft(true);
               return;
             }
@@ -403,7 +404,6 @@ export default function CompetitionDetailsPage() {
             name: teamResult.name,
             leaderId: teamResult.leader.id,
           });
-          setCurrentUserId(userId || null);
 
           const submissionsResult = await getMyTeamSubmissions(token, slug);
           if (submissionsResult) {
@@ -423,9 +423,6 @@ export default function CompetitionDetailsPage() {
 
             setMySubmissions(safeSubmissions);
             setMyQualifications(safeQualifications);
-            if (submissionsResult.team?.leaderId) {
-              setCurrentUserId(submissionsResult.team.leaderId);
-            }
           }
         }
       } catch (err) {
@@ -524,6 +521,7 @@ export default function CompetitionDetailsPage() {
                     competitionSlug={
                       typeof slug === "string" ? slug : undefined
                     }
+                    currentUserId={userId || undefined}
                   />
                 </section>
               )}

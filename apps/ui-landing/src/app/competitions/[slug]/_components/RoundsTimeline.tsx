@@ -35,15 +35,6 @@ interface RoundsTimelineProps {
   currentUserId?: string;
 }
 
-function getRoundStatus(round: Round): "upcoming" | "live" | "completed" {
-  const now = new Date();
-  const start = new Date(round.startDate);
-  const end = new Date(round.endDate);
-  if (now < start) return "upcoming";
-  if (now > end) return "completed";
-  return "live";
-}
-
 export function RoundsTimeline({
   rounds,
   myTeam,
@@ -66,7 +57,7 @@ export function RoundsTimeline({
       <div className="space-y-6">
         {rounds.map((round, index) => {
           const roundNumber = index + 1;
-          const status = getRoundStatus(round);
+          const status = round.status;
           const submission = submissionsByRoundId[round.id];
           const hasSubmitted = !!submission?.submittedAt;
 
