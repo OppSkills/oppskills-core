@@ -51,6 +51,14 @@ export interface RegistrationForm {
   fields: RegistrationField[];
 }
 
+export interface Attachment {
+  id: string;
+  fileName: string;
+  publicUrl: string;
+  mimeType?: string;
+  sizeBytes?: number;
+}
+
 export interface CompetitionDetails {
   id: string;
   title: string;
@@ -88,6 +96,8 @@ export interface CompetitionDetails {
     email: string;
     phone: string;
   };
+
+  attachments?: Attachment[];
 
   createdAt: Date;
 }

@@ -5,6 +5,7 @@ import { RoundsTimeline } from "./_components/RoundsTimeline";
 import { AboutSection } from "./_components/AboutSection";
 import { Organizers } from "./_components/Organizers";
 import { Prizes } from "./_components/Prizes";
+import { Attachments } from "./_components/Attachments";
 import type {
   CompetitionDetails,
   Round,
@@ -127,6 +128,14 @@ interface HackathonApiData {
       instructions?: string;
     };
   }>;
+  attachments?: Array<{
+    id: string;
+    storageKey: string;
+    publicUrl: string | null;
+    fileName: string | null;
+    mimeType: string | null;
+    sizeBytes: number | null;
+  }>;
   prizeBreakdown: Array<{
     id: string;
     position: number;
@@ -171,7 +180,14 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     startDate: format(new Date(r.startsAt), "MMM d, yyyy h:mm a"),
     endDate: format(new Date(r.endsAt), "MMM d, yyyy h:mm a"),
     status: mapRoundStatus(r.startsAt, r.endsAt, r.status),
-    submissionConfig: r.submissionConfig,
+    submissionConfig: r.submissionConfig
+      ? {
+          ...r.submissionConfig,
+          // Normalize: set enabled based on requiresFileUpload if enabled is not explicitly set
+          enabled:
+            r.submissionConfig.enabled ?? r.submissionConfig.requiresFileUpload,
+        }
+      : undefined,
   }));
 
   const organizers: Organizer[] = [];
@@ -231,6 +247,14 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     tags.push(data.mode);
   }
 
+  const attachments = (data.attachments || []).map((att) => ({
+    id: att.id,
+    fileName: att.fileName || "Attachment",
+    publicUrl: att.publicUrl || "",
+    mimeType: att.mimeType || undefined,
+    sizeBytes: att.sizeBytes || undefined,
+  }));
+
   return {
     id: data.id,
     slug: data.slug,
@@ -273,6 +297,7 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
             phone: data.contactPhone || "",
           }
         : undefined,
+    attachments: attachments.length > 0 ? attachments : undefined,
     createdAt: data.createdAt,
   };
 }
@@ -509,6 +534,13 @@ export default function CompetitionDetailsPage() {
                   contact={competition.contact}
                 />
               </section>
+
+              {competition.attachments &&
+                competition.attachments.length > 0 && (
+                  <section className="scroll-mt-24">
+                    <Attachments attachments={competition.attachments} />
+                  </section>
+                )}
 
               <section id="prizes" className="scroll-mt-24">
                 <Prizes prizes={competition.prizes} />

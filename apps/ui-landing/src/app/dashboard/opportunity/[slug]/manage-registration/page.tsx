@@ -70,20 +70,16 @@ export default function Page() {
       const selectedRound = sortedRounds.find((r) => r.id === selectedRoundId);
 
       if (selectedRound) {
-        const requiredRounds = sortedRounds.filter(
-          (round) => round.order < selectedRound.order,
-        );
         const nextRound = sortedRounds.find(
           (round) => round.order === selectedRound.order + 1,
         );
 
         filteredTeams = data.teams.filter((team) => {
-          const qualifiedThroughPriorRounds = requiredRounds.every((round) => {
-            const qualification = team.roundQualifications?.[round.id];
-            return qualification?.qualified === true;
-          });
-
-          return qualifiedThroughPriorRounds;
+          if (selectedRound.order === 1) {
+            return true;
+          }
+          const qualification = team.roundQualifications?.[selectedRoundId];
+          return qualification?.qualified === true;
         });
       }
     }
