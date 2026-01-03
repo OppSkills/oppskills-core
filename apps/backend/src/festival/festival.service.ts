@@ -279,15 +279,11 @@ export class FestivalService {
   }
 
   private async isAdminUser(userId: string): Promise<boolean> {
-    const rows = await prisma.$queryRaw<
-      Array<{ access_level: AccessLevelValue }>
-    >`
-      SELECT "access_level"
-      FROM "oppskills"."user"
-      WHERE "id" = ${userId}
-      LIMIT 1
-    `;
-    return rows[0]?.access_level === 'ADMIN';
+    const user = await prisma.userEntity.findUnique({
+      where: { id: userId },
+      select: { accessLevel: true },
+    });
+    return user?.accessLevel === 'ADMIN';
   }
 
   private assertLifecycleTransitionAllowed(
