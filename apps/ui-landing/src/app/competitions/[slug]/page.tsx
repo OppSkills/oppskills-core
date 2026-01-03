@@ -117,6 +117,15 @@ interface HackathonApiData {
     order: number;
     roundType: string;
     status: string;
+    submissionConfig?: {
+      enabled?: boolean;
+      requiresFileUpload?: boolean;
+      allowedFileTypes?: string[];
+      maxFileSizeBytes?: number;
+      requiresLinkSubmission?: boolean;
+      requiresDescription?: boolean;
+      instructions?: string;
+    };
   }>;
   prizeBreakdown: Array<{
     id: string;

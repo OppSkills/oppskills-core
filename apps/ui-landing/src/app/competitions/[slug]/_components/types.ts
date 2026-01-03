@@ -8,7 +8,7 @@ export interface Round {
   endDate: string;
   status: RoundStatus;
   submissionConfig?: {
-    enabled: boolean;
+    enabled?: boolean;
     requiresFileUpload?: boolean;
     allowedFileTypes?: string[];
     maxFileSizeBytes?: number;
