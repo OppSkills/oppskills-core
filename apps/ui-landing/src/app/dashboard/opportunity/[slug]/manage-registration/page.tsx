@@ -66,20 +66,17 @@ export default function Page() {
     let filteredTeams = data.teams;
 
     if (selectedRoundId) {
-      const sortedRounds = [...data.rounds].sort((a, b) => a.order - b.order);
-      const selectedRound = sortedRounds.find((r) => r.id === selectedRoundId);
-
-      if (selectedRound) {
-        const nextRound = sortedRounds.find(
-          (round) => round.order === selectedRound.order + 1,
-        );
-
+      const selectedRound = data.rounds.find((r) => r.id === selectedRoundId);
+      if (selectedRound?.order === 1) {
+        // For first round, show teams that have submitted
         filteredTeams = data.teams.filter((team) => {
-          if (selectedRound.order === 1) {
-            return true;
-          }
-          const qualification = team.roundQualifications?.[selectedRoundId];
-          return qualification?.qualified === true;
+          const submission = team.roundSubmissions[selectedRoundId];
+          return !!submission?.submittedAt;
+        });
+      } else {
+        // For subsequent rounds, show teams that qualified for this round
+        filteredTeams = data.teams.filter((team) => {
+          return team.roundQualifications?.[selectedRoundId]?.qualified === true;
         });
       }
     }

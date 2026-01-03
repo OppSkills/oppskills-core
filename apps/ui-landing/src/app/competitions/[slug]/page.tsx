@@ -488,6 +488,9 @@ export default function CompetitionDetailsPage() {
             <CompetitionTabs
               setCurTab={setCurTab}
               hasRounds={competition.rounds.length > 0}
+              hasAttachments={
+                !!competition.attachments && competition.attachments.length > 0
+              }
             />
 
             <div className="space-y-12">
@@ -519,7 +522,7 @@ export default function CompetitionDetailsPage() {
 
               {competition.attachments &&
                 competition.attachments.length > 0 && (
-                  <section className="scroll-mt-24">
+                  <section id="attachments" className="scroll-mt-24">
                     <Attachments attachments={competition.attachments} />
                   </section>
                 )}
