@@ -10,21 +10,25 @@ import {
   OnboardingCompleteEmailProps,
   EventPassEmail,
   EventPassEmailProps,
+  ParticipantDirectMessage,
+  ParticipantDirectMessageProps,
 } from '@oppskills/emails';
 import { Logger } from 'src/_utils/logger';
 
-export type EmailType = 'welcome' | 'onboarding-complete' | 'event-pass';
+export type EmailType = 'welcome' | 'onboarding-complete' | 'event-pass' | 'participant-direct-message';
 
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
   to: string;
   props: T extends 'welcome'
-    ? WelcomeEmailProps
-    : T extends 'onboarding-complete'
-      ? OnboardingCompleteEmailProps
-      : T extends 'event-pass'
-        ? EventPassEmailProps
-        : never;
+  ? WelcomeEmailProps
+  : T extends 'onboarding-complete'
+  ? OnboardingCompleteEmailProps
+  : T extends 'event-pass'
+  ? EventPassEmailProps
+  : T extends 'participant-direct-message'
+  ? ParticipantDirectMessageProps
+  : never;
 }
 
 @Injectable()
@@ -97,7 +101,7 @@ export class EmailService {
    */
   private async renderEmail(
     type: EmailType,
-    props: WelcomeEmailProps | OnboardingCompleteEmailProps | EventPassEmailProps,
+    props: WelcomeEmailProps | OnboardingCompleteEmailProps | EventPassEmailProps | ParticipantDirectMessageProps,
   ): Promise<{ subject: string; html: string }> {
     switch (type) {
       case 'welcome': {
@@ -124,6 +128,15 @@ export class EmailService {
         const html = await render(element);
         return {
           subject: `Your Event Pass - ${p.eventName}`,
+          html,
+        };
+      }
+      case 'participant-direct-message': {
+        const p = props as ParticipantDirectMessageProps;
+        const element = createElement(ParticipantDirectMessage, p);
+        const html = await render(element);
+        return {
+          subject: `You have a new message from the organizer of ${p.eventName}`,
           html,
         };
       }

@@ -37,4 +37,4 @@ import { EmailModule } from './email/email.module';
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],
 })
-export class AppModule {}
+export class AppModule { }

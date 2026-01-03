@@ -6,6 +6,7 @@ import type {
   UserCreatedEventPayload,
   UserOnboardedEventPayload,
   EventJoinedEventPayload,
+  EventDirectMessageEventPayload,
 } from './email.events';
 import { Logger } from 'src/_utils/logger';
 
@@ -13,7 +14,7 @@ import { Logger } from 'src/_utils/logger';
 export class EmailListener {
   private readonly logger = new Logger(EmailListener.name);
 
-  constructor(private readonly emailService: EmailService) {}
+  constructor(private readonly emailService: EmailService) { }
 
   @OnEvent(EMAIL_EVENTS.USER_CREATED)
   async handleUserCreated(payload: UserCreatedEventPayload): Promise<void> {
@@ -64,6 +65,25 @@ export class EmailListener {
         eventType: payload.eventType,
         registrationId: payload.registrationId,
         eventSlug: payload.eventSlug,
+      },
+    });
+  }
+
+  @OnEvent(EMAIL_EVENTS.EVENT_DIRECT_MESSAGE)
+  async handleEventDirectMessage(payload: EventDirectMessageEventPayload): Promise<void> {
+    this.logger.log(
+      `Handling event.direct.message event for user ${payload.userId} joining ${payload.eventName}`,
+    );
+
+    await this.emailService.send({
+      type: 'participant-direct-message',
+      to: payload.email,
+      props: {
+        firstName: payload.firstName,
+        email: payload.email,
+        eventName: payload.eventName,
+        eventSlug: payload.eventSlug,
+        body: payload.body,
       },
     });
   }

@@ -7,6 +7,7 @@ export const EMAIL_EVENTS = {
   USER_CREATED: 'user.created',
   USER_ONBOARDED: 'user.onboarded',
   EVENT_JOINED: 'event.joined',
+  EVENT_DIRECT_MESSAGE: 'event.direct.message',
 } as const;
 
 export type EmailEventType = (typeof EMAIL_EVENTS)[keyof typeof EMAIL_EVENTS];
@@ -49,3 +50,12 @@ export interface EventJoinedEventPayload {
   registrationId: string;
 }
 
+export interface EventDirectMessageEventPayload {
+  userId: string;
+  email: string;
+  firstName?: string;
+  eventId: string;
+  eventName: string;
+  eventSlug: string;
+  body: string;
+}
