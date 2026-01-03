@@ -1096,10 +1096,16 @@ export class EventService {
     const registrationFields = updatedRegForm?.fields ?? [];
 
     // Transform answers: replace frontend "default-*" IDs with real DB IDs
-    const providedAnswers = (answers ?? []).map((a) => ({
-      fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
-      value: a.value,
-    }));
+    const providedAnswers = (answers ?? [])
+      .map((a) => ({
+        fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
+        value: a.value,
+      }))
+      .filter((a) => {
+        // If it still starts with 'default-', it means it wasn't in our current mapping
+        // (likely a field from a different user category that's no longer relevant or shouldn't be handled here)
+        return !a.fieldId.startsWith('default-');
+      });
 
     const providedFieldIds = new Set(providedAnswers.map((a) => a.fieldId));
 

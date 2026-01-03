@@ -272,7 +272,9 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         schoolClass: onboardingProfile?.schoolClass ?? undefined,
         schoolAddress: onboardingProfile?.schoolAddress ?? undefined,
 
+        collegeId: onboardingProfile?.collegeId ?? undefined,
         collegeName: onboardingProfile?.college?.name ?? undefined,
+        collegeSkipped: onboardingProfile?.collegeSkipped ?? false,
         collegeCurrentYear: onboardingProfile?.collegeCurrentYear ?? undefined,
         collegePassoutYear: onboardingProfile?.collegePassoutYear ?? undefined,
 

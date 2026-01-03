@@ -18,8 +18,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useAuth } from "@clerk/nextjs";
+import { searchColleges } from "@/lib/api/collegesApi";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Default gender options matching Prisma Gender enum
 const DEFAULT_GENDER_OPTIONS = ["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"];
@@ -72,7 +88,9 @@ export interface OnboardingValues {
   schoolClass?: string;
   schoolAddress?: string;
 
-  collegeName?: string; // Using name for simplicity in modal, ideally ID if autocomplete
+  collegeId?: string;
+  collegeName?: string;
+  collegeSkipped?: boolean;
   collegeCurrentYear?: string;
   collegePassoutYear?: number;
 
@@ -118,7 +136,9 @@ export interface UserDataForPrefill {
   schoolClass?: string;
   schoolAddress?: string;
 
+  collegeId?: string;
   collegeName?: string;
+  collegeSkipped?: boolean;
   collegeCurrentYear?: string;
   collegePassoutYear?: number;
 
@@ -229,6 +249,7 @@ export function EventRegistrationModal({
   userData,
   showOnboarding = false,
 }: EventRegistrationModalProps) {
+  const { getToken } = useAuth();
   const [values, setValues] = useState<Record<string, FieldValue>>({});
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -237,6 +258,14 @@ export function EventRegistrationModal({
   const [onboardingValues, setOnboardingValues] = useState<OnboardingValues>(
     {}
   );
+
+  // College Search State
+  const [collegeSearchQuery, setCollegeSearchQuery] = useState("");
+  const [collegeSearchResults, setCollegeSearchResults] = useState<
+    Array<{ id: string; name: string; city: string; state: string }>
+  >([]);
+  const [isSearchingColleges, setIsSearchingColleges] = useState(false);
+  const [collegeComboboxOpen, setCollegeComboboxOpen] = useState(false);
 
   // Filter out unsupported field types (ATTACHMENTS)
   const supportedFields = fields.filter((f) => f.type !== "ATTACHMENTS");
@@ -274,6 +303,10 @@ export function EventRegistrationModal({
 
         if (userData.collegeName)
           startingOnboardingValues.collegeName = userData.collegeName;
+        if (userData.collegeId)
+          startingOnboardingValues.collegeId = userData.collegeId;
+        if (userData.collegeSkipped)
+          startingOnboardingValues.collegeSkipped = userData.collegeSkipped;
         if (userData.collegeCurrentYear)
           startingOnboardingValues.collegeCurrentYear =
             userData.collegeCurrentYear;
@@ -317,6 +350,32 @@ export function EventRegistrationModal({
 
   const setValue = (fieldId: string, value: FieldValue) => {
     setValues((prev) => ({ ...prev, [fieldId]: value }));
+
+    // Sync to onboarding if it's a known field
+    if (showOnboarding) {
+      const field = supportedFields.find((f) => f.id === fieldId);
+      if (field) {
+        const label = field.label.toLowerCase();
+        if (label === "gender") {
+          updateOnboardingValue("gender", value);
+        } else if (
+          label.includes("college") ||
+          label.includes("university") ||
+          label.includes("institution")
+        ) {
+          updateOnboardingValue("collegeName", value);
+        } else if (label.includes("school")) {
+          updateOnboardingValue("schoolName", value);
+        } else if (
+          label.includes("company") ||
+          label.includes("organization") ||
+          label.includes("employer")
+        ) {
+          updateOnboardingValue("companyName", value);
+        }
+      }
+    }
+
     // Clear error on change
     if (errors[fieldId]) {
       setErrors((prev) => {
@@ -353,11 +412,15 @@ export function EventRegistrationModal({
       }
     };
 
-    checkRequired("gender", "Gender", "gender");
+    if (!dynamicGenderField) {
+      checkRequired("gender", "Gender", "gender");
+    }
     checkRequired("userCategory", "User Category", "userCategory");
 
     if (onboardingValues.userCategory === UserCategory.SCHOOL_STUDENT) {
-      checkRequired("schoolName", "School Name", "schoolName");
+      if (!dynamicSchoolField) {
+        checkRequired("schoolName", "School Name", "schoolName");
+      }
       checkRequired("schoolClass", "Class", "schoolClass");
       checkRequired("schoolAddress", "School Address", "schoolAddress");
     }
@@ -366,12 +429,20 @@ export function EventRegistrationModal({
       onboardingValues.userCategory === UserCategory.COLLEGE_STUDENT ||
       onboardingValues.userCategory === UserCategory.PROFESSIONAL_SCHOOL_STUDENT
     ) {
-      checkRequired("collegeName", "College Name", "collegeName");
+      if (!dynamicCollegeField) {
+        if (!onboardingValues.collegeSkipped) {
+          checkRequired("collegeId", "College", "collegeId");
+        } else {
+          checkRequired("collegeName", "College Name", "collegeName");
+        }
+      }
       checkRequired("collegeCurrentYear", "Current Year", "collegeCurrentYear");
     }
 
     if (onboardingValues.userCategory === UserCategory.WORKING_PROFESSIONAL) {
-      checkRequired("companyName", "Company Name", "companyName");
+      if (!dynamicCompanyField) {
+        checkRequired("companyName", "Company Name", "companyName");
+      }
       checkRequired("jobTitle", "Job Title", "jobTitle");
     }
 
@@ -550,7 +621,9 @@ export function EventRegistrationModal({
         onboardingValues.userCategory ===
           UserCategory.PROFESSIONAL_SCHOOL_STUDENT
       ) {
+        filteredOnboardingData.collegeId = onboardingValues.collegeId;
         filteredOnboardingData.collegeName = onboardingValues.collegeName;
+        filteredOnboardingData.collegeSkipped = onboardingValues.collegeSkipped;
         filteredOnboardingData.collegeCurrentYear =
           onboardingValues.collegeCurrentYear;
         filteredOnboardingData.collegePassoutYear =
@@ -579,10 +652,185 @@ export function EventRegistrationModal({
     setOnboardingValues((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleCollegeSearch = async (query: string) => {
+    setCollegeSearchQuery(query);
+
+    if (query.trim().length < 2) {
+      setCollegeSearchResults([]);
+      return;
+    }
+
+    setIsSearchingColleges(true);
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      const results = await searchColleges(token, query);
+      setCollegeSearchResults(
+        results.map((c) => ({
+          id: c.id,
+          name: c.name,
+          city: c.city,
+          state: c.state,
+        }))
+      );
+    } catch (err) {
+      console.error("Failed to search colleges:", err);
+    } finally {
+      setIsSearchingColleges(false);
+    }
+  };
+
+  const isCollegeFieldLabel = (label: string) => {
+    const l = label.toLowerCase();
+    return (
+      l.includes("college") || l.includes("university") || l.includes("institution")
+    );
+  };
+
+  const renderCollegeSearch = (
+    currentValue: string,
+    onSelect: (college: { id: string; name: string }) => void,
+    onTextChange: (value: string) => void,
+    error?: string,
+    placeholder?: string
+  ) => {
+    const isSkipped = onboardingValues.collegeSkipped || false;
+
+    return (
+      <div className="space-y-4">
+        {!isSkipped ? (
+          <Popover open={collegeComboboxOpen} onOpenChange={setCollegeComboboxOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={collegeComboboxOpen}
+                className={cn(
+                  "w-full justify-between font-normal",
+                  error && "border-red-500"
+                )}
+              >
+                {currentValue || placeholder || "Search for your college..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full min-w-[300px] p-0" align="start">
+              <Command shouldFilter={false}>
+                <CommandInput
+                  placeholder="Search colleges..."
+                  value={collegeSearchQuery}
+                  onValueChange={handleCollegeSearch}
+                />
+                <CommandList>
+                  {isSearchingColleges && (
+                    <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Searching...
+                    </div>
+                  )}
+                  {!isSearchingColleges &&
+                    collegeSearchQuery.length >= 2 &&
+                    collegeSearchResults.length === 0 && (
+                      <CommandEmpty>No colleges found.</CommandEmpty>
+                    )}
+                  {collegeSearchQuery.length < 2 && !currentValue && (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      Type at least 2 characters to search...
+                    </div>
+                  )}
+                  <CommandGroup>
+                    {collegeSearchResults.map((college) => (
+                      <CommandItem
+                        key={college.id}
+                        value={college.id}
+                        onSelect={() => {
+                          onSelect(college);
+                          setCollegeSearchQuery("");
+                          setCollegeSearchResults([]);
+                          setCollegeComboboxOpen(false);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            onboardingValues.collegeId === college.id
+                              ? "opacity-100"
+                              : "opacity-0"
+                          )}
+                        />
+                        <div className="flex flex-col">
+                          <span className="font-medium">{college.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {college.city}, {college.state}
+                          </span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <Input
+            placeholder="Enter College Name"
+            value={currentValue}
+            onChange={(e) => onTextChange(e.target.value)}
+            className={cn(error && "border-red-500")}
+          />
+        )}
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="collegeSkipped"
+            checked={isSkipped}
+            onCheckedChange={(checked) => {
+              updateOnboardingValue("collegeSkipped", checked === true);
+              if (checked === true) {
+                updateOnboardingValue("collegeId", undefined);
+                onTextChange(""); // Clear value when switching to manual entry
+              }
+            }}
+          />
+          <Label
+            htmlFor="collegeSkipped"
+            className="text-sm font-normal cursor-pointer"
+          >
+            My college is not listed
+          </Label>
+        </div>
+      </div>
+    );
+  };
+
   // Check if any dynamic field is "Gender"
   const dynamicGenderField = supportedFields.find(
     (f) => f.label.toLowerCase() === "gender"
   );
+
+  const dynamicCollegeField = supportedFields.find((f) => {
+    const label = f.label.toLowerCase();
+    return (
+      label.includes("college") ||
+      label.includes("university") ||
+      label.includes("institution")
+    );
+  });
+
+  const dynamicSchoolField = supportedFields.find((f) =>
+    f.label.toLowerCase().includes("school")
+  );
+
+  const dynamicCompanyField = supportedFields.find((f) => {
+    const label = f.label.toLowerCase();
+    return (
+      label.includes("company") ||
+      label.includes("organization") ||
+      label.includes("employer")
+    );
+  });
 
   const renderOnboardingFields = () => {
     return (
@@ -646,22 +894,24 @@ export function EventRegistrationModal({
         {/* Step 2: Education/Work */}
         {onboardingValues.userCategory === UserCategory.SCHOOL_STUDENT && (
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>
-                School Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                placeholder="Enter School Name"
-                value={onboardingValues.schoolName || ""}
-                onChange={(e) =>
-                  updateOnboardingValue("schoolName", e.target.value)
-                }
-                className={cn(errors.schoolName && "border-red-500")}
-              />
-              {errors.schoolName && (
-                <p className="text-xs text-red-500">{errors.schoolName}</p>
-              )}
-            </div>
+            {!dynamicSchoolField && (
+              <div className="space-y-2">
+                <Label>
+                  School Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  placeholder="Enter School Name"
+                  value={onboardingValues.schoolName || ""}
+                  onChange={(e) =>
+                    updateOnboardingValue("schoolName", e.target.value)
+                  }
+                  className={cn(errors.schoolName && "border-red-500")}
+                />
+                {errors.schoolName && (
+                  <p className="text-xs text-red-500">{errors.schoolName}</p>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>
@@ -703,22 +953,23 @@ export function EventRegistrationModal({
           onboardingValues.userCategory ===
             UserCategory.PROFESSIONAL_SCHOOL_STUDENT) && (
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>
-                College Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                placeholder="Enter College Name"
-                value={onboardingValues.collegeName || ""}
-                onChange={(e) =>
-                  updateOnboardingValue("collegeName", e.target.value)
-                }
-                className={cn(errors.collegeName && "border-red-500")}
-              />
-              {errors.collegeName && (
-                <p className="text-xs text-red-500">{errors.collegeName}</p>
-              )}
-            </div>
+            {!dynamicCollegeField && (
+              <div className="space-y-2">
+                <Label>
+                  College <span className="text-red-500">*</span>
+                </Label>
+                {renderCollegeSearch(
+                  onboardingValues.collegeName || "",
+                  (college) => {
+                    updateOnboardingValue("collegeId", college.id);
+                    updateOnboardingValue("collegeName", college.name);
+                  },
+                  (val) => updateOnboardingValue("collegeName", val),
+                  errors.collegeId || errors.collegeName,
+                  "Search for your college..."
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>
@@ -779,22 +1030,24 @@ export function EventRegistrationModal({
         {onboardingValues.userCategory ===
           UserCategory.WORKING_PROFESSIONAL && (
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>
-                Company Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                placeholder="Enter Company Name"
-                value={onboardingValues.companyName || ""}
-                onChange={(e) =>
-                  updateOnboardingValue("companyName", e.target.value)
-                }
-                className={cn(errors.companyName && "border-red-500")}
-              />
-              {errors.companyName && (
-                <p className="text-xs text-red-500">{errors.companyName}</p>
-              )}
-            </div>
+            {!dynamicCompanyField && (
+              <div className="space-y-2">
+                <Label>
+                  Company Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  placeholder="Enter Company Name"
+                  value={onboardingValues.companyName || ""}
+                  onChange={(e) =>
+                    updateOnboardingValue("companyName", e.target.value)
+                  }
+                  className={cn(errors.companyName && "border-red-500")}
+                />
+                {errors.companyName && (
+                  <p className="text-xs text-red-500">{errors.companyName}</p>
+                )}
+              </div>
+            )}
             <div className="space-y-2">
               <Label>
                 Job Title <span className="text-red-500">*</span>
@@ -892,9 +1145,6 @@ export function EventRegistrationModal({
               value={typeof value === "string" ? value : ""}
               onValueChange={(v) => {
                 setValue(field.id, v);
-                if (isGenderField) {
-                  updateOnboardingValue("gender", v);
-                }
               }}
             >
               <SelectTrigger
@@ -982,24 +1232,43 @@ export function EventRegistrationModal({
         );
 
       case "TEXT":
-      default:
+      default: {
+        const isCollegeField = isCollegeFieldLabel(field.label);
+
         return (
           <div key={field.id} className="space-y-2">
             <Label htmlFor={field.id} className="text-sm font-medium">
               {field.label}
               {field.required && <span className="text-red-500 ml-1">*</span>}
             </Label>
-            <Input
-              id={field.id}
-              type="text"
-              placeholder={field.placeholder || ""}
-              value={typeof value === "string" ? value : ""}
-              onChange={(e) => setValue(field.id, e.target.value)}
-              className={cn(error && "border-red-500")}
-            />
+            {isCollegeField ? (
+              renderCollegeSearch(
+                typeof value === "string" ? value : "",
+                (college) => {
+                  setValue(field.id, college.name);
+                  if (showOnboarding) {
+                    updateOnboardingValue("collegeId", college.id);
+                    updateOnboardingValue("collegeName", college.name);
+                  }
+                },
+                (val) => setValue(field.id, val),
+                error,
+                field.placeholder || ""
+              )
+            ) : (
+              <Input
+                id={field.id}
+                type="text"
+                placeholder={field.placeholder || ""}
+                value={typeof value === "string" ? value : ""}
+                onChange={(e) => setValue(field.id, e.target.value)}
+                className={cn(error && "border-red-500")}
+              />
+            )}
             {error && <p className="text-xs text-red-500">{error}</p>}
           </div>
         );
+      }
     }
   };
 
