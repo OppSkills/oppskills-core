@@ -427,7 +427,8 @@ export function EventRegistrationModal({
 
     if (
       onboardingValues.userCategory === UserCategory.COLLEGE_STUDENT ||
-      onboardingValues.userCategory === UserCategory.PROFESSIONAL_SCHOOL_STUDENT
+      onboardingValues.userCategory === UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
+      onboardingValues.userCategory === UserCategory.FRESHER
     ) {
       if (!dynamicCollegeField) {
         if (!onboardingValues.collegeSkipped) {
@@ -456,8 +457,31 @@ export function EventRegistrationModal({
   const validate = (): boolean => {
     const newErrors: FieldErrors = {};
 
+    // Determine current user category
+    const currentUserCategory = showOnboarding 
+      ? onboardingValues.userCategory 
+      : userData?.userCategory;
+    const isWorkingProfessional = currentUserCategory === UserCategory.WORKING_PROFESSIONAL;
+
     // Validate Registration Fields
     for (const field of supportedFields) {
+      // Skip college fields for working professionals
+      const isCollegeField = isCollegeFieldLabel(field.label);
+      if (isCollegeField && isWorkingProfessional) {
+        continue;
+      }
+      
+      // Skip college field in registration fields if it's already shown in onboarding
+      if (isCollegeField && showOnboarding) {
+        const isCollegeCategory = 
+          currentUserCategory === UserCategory.COLLEGE_STUDENT ||
+          currentUserCategory === UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
+          currentUserCategory === UserCategory.FRESHER;
+        if (isCollegeCategory) {
+          continue; // Already validated in onboarding section
+        }
+      }
+
       const value = values[field.id];
 
       // Check required
@@ -574,7 +598,8 @@ export function EventRegistrationModal({
         identityValue = valuesSource.schoolName;
       } else if (
         effectiveCategory === UserCategory.COLLEGE_STUDENT ||
-        effectiveCategory === UserCategory.PROFESSIONAL_SCHOOL_STUDENT
+        effectiveCategory === UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
+        effectiveCategory === UserCategory.FRESHER
       ) {
         identityValue = valuesSource.collegeName;
       } else if (effectiveCategory === UserCategory.WORKING_PROFESSIONAL) {
@@ -619,7 +644,8 @@ export function EventRegistrationModal({
       } else if (
         onboardingValues.userCategory === UserCategory.COLLEGE_STUDENT ||
         onboardingValues.userCategory ===
-          UserCategory.PROFESSIONAL_SCHOOL_STUDENT
+          UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
+        onboardingValues.userCategory === UserCategory.FRESHER
       ) {
         filteredOnboardingData.collegeId = onboardingValues.collegeId;
         filteredOnboardingData.collegeName = onboardingValues.collegeName;
@@ -891,7 +917,6 @@ export function EventRegistrationModal({
           </div>
         </div>
 
-        {/* Step 2: Education/Work */}
         {onboardingValues.userCategory === UserCategory.SCHOOL_STUDENT && (
           <div className="space-y-4">
             {!dynamicSchoolField && (
@@ -951,25 +976,24 @@ export function EventRegistrationModal({
 
         {(onboardingValues.userCategory === UserCategory.COLLEGE_STUDENT ||
           onboardingValues.userCategory ===
-            UserCategory.PROFESSIONAL_SCHOOL_STUDENT) && (
+            UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
+          onboardingValues.userCategory === UserCategory.FRESHER) && (
           <div className="space-y-4">
-            {!dynamicCollegeField && (
-              <div className="space-y-2">
-                <Label>
-                  College <span className="text-red-500">*</span>
-                </Label>
-                {renderCollegeSearch(
-                  onboardingValues.collegeName || "",
-                  (college) => {
-                    updateOnboardingValue("collegeId", college.id);
-                    updateOnboardingValue("collegeName", college.name);
-                  },
-                  (val) => updateOnboardingValue("collegeName", val),
-                  errors.collegeId || errors.collegeName,
-                  "Search for your college..."
-                )}
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label>
+                College <span className="text-red-500">*</span>
+              </Label>
+              {renderCollegeSearch(
+                onboardingValues.collegeName || "",
+                (college) => {
+                  updateOnboardingValue("collegeId", college.id);
+                  updateOnboardingValue("collegeName", college.name);
+                },
+                (val) => updateOnboardingValue("collegeName", val),
+                errors.collegeId || errors.collegeName,
+                "Search for your college..."
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>
@@ -1067,7 +1091,6 @@ export function EventRegistrationModal({
           </div>
         )}
 
-        {/* Step 3: Location */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label>
@@ -1234,6 +1257,29 @@ export function EventRegistrationModal({
       case "TEXT":
       default: {
         const isCollegeField = isCollegeFieldLabel(field.label);
+        
+        // Hide college field for working professionals
+        const currentUserCategory = showOnboarding 
+          ? onboardingValues.userCategory 
+          : userData?.userCategory;
+        const isWorkingProfessional = currentUserCategory === UserCategory.WORKING_PROFESSIONAL;
+        
+        // Skip rendering college field for working professionals
+        if (isCollegeField && isWorkingProfessional) {
+          return null;
+        }
+        
+        // Hide college field in registration fields if it's already shown in onboarding
+        // This ensures college field appears right after User Category, not at the end
+        if (isCollegeField && showOnboarding) {
+          const isCollegeCategory = 
+            currentUserCategory === UserCategory.COLLEGE_STUDENT ||
+            currentUserCategory === UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
+            currentUserCategory === UserCategory.FRESHER;
+          if (isCollegeCategory) {
+            return null; // Already shown in onboarding section
+          }
+        }
 
         return (
           <div key={field.id} className="space-y-2">
@@ -1299,11 +1345,11 @@ export function EventRegistrationModal({
             </p>
           )}
 
-        {/* Render supported fields */}
-        {supportedFields.map((field) => renderField(field))}
-
-        {/* Onboarding Fields */}
+        {/* Onboarding Fields - Render first so User Category appears before other fields */}
         {showOnboarding && renderOnboardingFields()}
+
+        {/* Render supported fields - After onboarding so User Category is selected first */}
+        {supportedFields.map((field) => renderField(field))}
 
         {/* Submit button */}
         <div className="flex justify-end gap-3 pt-4 border-t">
