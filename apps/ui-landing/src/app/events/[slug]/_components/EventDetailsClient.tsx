@@ -282,9 +282,9 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         companyName: onboardingProfile?.companyName ?? undefined,
         jobTitle: onboardingProfile?.jobTitle ?? undefined,
 
-        locationCity: onboardingProfile?.locationCity,
-        locationState: onboardingProfile?.locationState,
-        locationCountry: onboardingProfile?.locationCountry,
+        locationCity: onboardingProfile?.locationCity ?? undefined,
+        locationState: onboardingProfile?.locationState ?? undefined,
+        locationCountry: onboardingProfile?.locationCountry ?? undefined,
 
         interests: onboardingProfile?.interests,
         skills: onboardingProfile?.skills,
