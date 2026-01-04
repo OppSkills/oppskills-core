@@ -113,12 +113,16 @@ export class RegistrationSubmitService {
       });
 
       if (answers.length > 0) {
+        const answerData = answers.map((a) => ({
+          submissionId: submission.id,
+          fieldId: a.fieldId,
+          valueText:
+            typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
+          valueJson: a.value,
+        }));
+
         await tx.hackathonRegistrationAnswerEntity.createMany({
-          data: answers.map((a) => ({
-            submissionId: submission.id,
-            fieldId: a.fieldId,
-            value: a.value,
-          })),
+          data: answerData,
         });
       }
 
