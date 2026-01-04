@@ -19,6 +19,7 @@ import {
   MoreVertical,
   SlidersHorizontal,
   Loader2,
+  MailIcon,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,6 +28,8 @@ import type { EventRegistration } from "@/lib/api/eventApi";
 import { getParticipantRegistrationAnswers } from "@/lib/api/eventApi";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
+import { getEventBySlug } from "@/lib/api/eventApi";
+import { ComposeEmailModal } from "./_components/ComposeEmailModal";
 
 // --- Types ---
 type RegistrationStatus = "Completed" | "Incomplete";
@@ -131,9 +134,7 @@ const UserDetailModal = ({
 
             {/* Info */}
             <div className="flex flex-col gap-3 flex-1">
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-                {participant.name}
-              </h2>
+              <DialogTitle className="text-2xl sm:text-3xl font-bold text-foreground">{participant.name}</DialogTitle>
 
               <div className="flex flex-col gap-2.5 mt-1">
                 <div className="flex items-center gap-2.5 text-muted-foreground">
@@ -245,6 +246,22 @@ export default function ManageRegistrationPage() {
   >("All");
   const [selectedParticipant, setSelectedParticipant] =
     useState<Participant | null>(null);
+  const [emailRecipient, setEmailRecipient] = useState<Participant | null>(
+    null
+  );
+
+  const { getToken } = useAuth();
+  const { data: eventDetails } = useQuery({
+    queryKey: ["event-details", slug],
+    queryFn: async () => {
+      if (!slug) return null;
+      const token = await getToken();
+      if (!token) return null;
+      return getEventBySlug(token, slug);
+    },
+    enabled: !!slug,
+  });
+
 
   const data: Participant[] = useMemo(() => {
     if (!registrations) return [];
@@ -408,6 +425,21 @@ export default function ManageRegistrationPage() {
         slug={slug}
       />
 
+      <ComposeEmailModal
+        isOpen={!!emailRecipient}
+        onClose={() => setEmailRecipient(null)}
+        participant={emailRecipient}
+        eventDetails={
+          eventDetails
+            ? {
+              id: (eventDetails as any).id,
+              slug: (eventDetails as any).slug,
+              name: (eventDetails as any).name,
+            }
+            : null
+        }
+      />
+
       {/* Header Controls */}
       <div className="w-full max-w-5xl flex flex-col md:flex-row justify-between items-center gap-4">
         {/* Tabs */}
@@ -495,8 +527,8 @@ export default function ManageRegistrationPage() {
               table.getRowModel().rows.map((row) => (
                 <div
                   key={row.id}
-                  onClick={() => setSelectedParticipant(row.original)}
-                  className="grid grid-cols-[50px_80px_1fr_200px] items-center px-4 py-4 border-b border-border/40 hover:bg-muted/5 transition-colors cursor-pointer"
+
+                  className="grid grid-cols-[50px_80px_1fr_150px_50px] items-center px-4 py-4 border-b border-border/40 hover:bg-muted/5 transition-colors cursor-pointer"
                 >
                   <div
                     className="flex justify-center"
@@ -511,7 +543,7 @@ export default function ManageRegistrationPage() {
                   <div className="text-muted-foreground text-sm font-medium pl-2">
                     {row.index + 1}
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4" onClick={() => setSelectedParticipant(row.original)}>
                     <Avatar className="w-10 h-10 border border-border/50">
                       <AvatarImage
                         src={row.original.avatarUrl || undefined}
@@ -535,6 +567,17 @@ export default function ManageRegistrationPage() {
                   </div>
                   <div className="flex justify-end">
                     <StatusBadge status={row.original.status} />
+                  </div>
+                  <div className="flex justify-end">
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEmailRecipient(row.original);
+                      }}
+                      className="w-10 h-10 bg-primary-100 hover:bg-primary-200 text-primary-500 hover:text-primary-600 rounded-full border border-border/50 flex items-center justify-center cursor-pointer"
+                    >
+                      <MailIcon />
+                    </div>
                   </div>
                 </div>
               ))
