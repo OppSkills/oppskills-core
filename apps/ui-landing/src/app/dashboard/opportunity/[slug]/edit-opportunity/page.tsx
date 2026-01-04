@@ -43,7 +43,7 @@ import RoundsAndStages from "./_components/RoundsAndStages";
 import AdditionalInfo from "./_components/AdditionalInfo";
 import Prizes from "./_components/Prizes";
 import RegistrationSettings from "./_components/RegistrationSettings";
-import CompetitionDetailsPage from "@/app/competitions/[slug]/page";
+import { CompetitionDetailsClient } from "@/app/competitions/[slug]/CompetitionDetailsClient";
 
 /**
  * Shared Types
@@ -156,7 +156,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function getString(
   obj: Record<string, unknown>,
-  key: string,
+  key: string
 ): string | undefined {
   const value = obj[key];
   return typeof value === "string" && value.trim().length > 0
@@ -198,7 +198,7 @@ function isValidUrl(value: string): boolean {
 }
 
 function toVisibilityValue(
-  label: string,
+  label: string
 ): "PUBLIC" | "PRIVATE" | "UNIVERSITY_ONLY" | undefined {
   if (label === "Public") return "PUBLIC";
   if (label === "Private") return "PRIVATE";
@@ -207,7 +207,7 @@ function toVisibilityValue(
 }
 
 function toHackathonTypeValue(
-  label: string,
+  label: string
 ):
   | "CODING_HACKATHON"
   | "IDEA_HACKATHON"
@@ -224,7 +224,7 @@ function toHackathonTypeValue(
 }
 
 function toParticipantTypeValue(
-  label: string,
+  label: string
 ):
   | "INDIVIDUAL"
   | "TEAM_OF_2"
@@ -269,7 +269,7 @@ function combineDateAndTimeToIso(date: Date, timeHHmm: string): string {
 }
 
 function mapCandidateTypesToEligibility(
-  input: ReadonlyArray<string>,
+  input: ReadonlyArray<string>
 ): HackathonAttendeeEligibilityValue[] {
   const out: HackathonAttendeeEligibilityValue[] = [];
   const add = (v: HackathonAttendeeEligibilityValue) => {
@@ -286,7 +286,7 @@ function mapCandidateTypesToEligibility(
 }
 
 function mapRegistrationQuestionsToRegistrationForm(
-  questions: ReadonlyArray<RegistrationQuestion>,
+  questions: ReadonlyArray<RegistrationQuestion>
 ): RegistrationFormDto {
   const typeMap: Record<
     RegistrationQuestion["type"],
@@ -338,7 +338,7 @@ function serializeRounds(value: ReadonlyArray<Round>): string {
 }
 
 function serializePrizeBreakdown(
-  value: ReadonlyArray<PrizeBreakdownDto>,
+  value: ReadonlyArray<PrizeBreakdownDto>
 ): string {
   return JSON.stringify(value);
 }
@@ -404,7 +404,7 @@ function formatPrizeAmount(amount: unknown): string {
 }
 
 function fromRegistrationFieldType(
-  value: string | undefined,
+  value: string | undefined
 ): RegistrationQuestion["type"] {
   const v = (value ?? "").toUpperCase();
   if (v === "PHONE_NO") return "Phone No.";
@@ -511,7 +511,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
         const allowedFileTypes = Array.isArray(allowedFileTypesRaw)
           ? (allowedFileTypesRaw.filter(
               (t): t is "pdf" | "ppt" | "image" =>
-                t === "pdf" || t === "ppt" || t === "image",
+                t === "pdf" || t === "ppt" || t === "image"
             ) as ("pdf" | "ppt" | "image")[])
           : [];
         const maxFileSizeBytes =
@@ -520,7 +520,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
             : 10 * 1024 * 1024;
         const instructions = getString(
           submissionConfigRaw as Record<string, unknown>,
-          "instructions",
+          "instructions"
         );
         const maxFilesRaw = submissionConfigRaw["maxFiles"];
         const maxFiles =
@@ -607,7 +607,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
         fixed: false,
         options: Array.isArray(f["options"])
           ? (f["options"] as ReadonlyArray<unknown>).filter(
-              (o): o is string => typeof o === "string",
+              (o): o is string => typeof o === "string"
             )
           : undefined,
       };
@@ -661,7 +661,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
     eventRegisterBy: registrationDeadline,
     hackathonType: fromHackathonType(getString(hackathon, "hackathonType")),
     participantType: fromParticipantType(
-      getString(hackathon, "participantType"),
+      getString(hackathon, "participantType")
     ),
     registrationQuestions,
     rounds,
@@ -717,7 +717,7 @@ export default function EditOpportunityPage() {
     useState<boolean>(false);
   const [hackathonId, setHackathonId] = useState<string | null>(null);
   const lastSavedMaxTeamsRef = React.useRef<number | null | undefined>(
-    undefined,
+    undefined
   );
   const lastSavedRoundsSnapshotRef = React.useRef<string | null>(null);
   const savingRoundsSnapshotRef = React.useRef<string | null>(null);
@@ -810,7 +810,7 @@ export default function EditOpportunityPage() {
       // Snapshots used to decide whether to call dedicated nested endpoints.
       const roundsSnapshot = serializeRounds(formData.rounds);
       const additionalInfoSnapshot = serializeAdditionalInfo(
-        formData.additionalInfo,
+        formData.additionalInfo
       );
 
       const base: UpdateHackathonDto = {
@@ -832,12 +832,12 @@ export default function EditOpportunityPage() {
         participantType: toParticipantTypeValue(formData.participantType),
         location: toLocationDto(formData.eventLocation),
         attendeeEligibility: mapCandidateTypesToEligibility(
-          formData.registrationSettings.candidateTypes,
+          formData.registrationSettings.candidateTypes
         ),
         registrationDeadline: formData.eventRegisterBy
           ? combineDateAndTimeToIso(
               formData.eventRegisterBy,
-              formData.registrationSettings.endTime,
+              formData.registrationSettings.endTime
             )
           : undefined,
         startDate: formData.eventDate
@@ -846,7 +846,7 @@ export default function EditOpportunityPage() {
         endDate: formData.eventDate
           ? combineDateAndTimeToIso(
               formData.eventEndDate ?? formData.eventDate,
-              formData.eventTimeTo ?? formData.eventTimeFrom,
+              formData.eventTimeTo ?? formData.eventTimeFrom
             )
           : undefined,
         prizeCertificate:
@@ -907,10 +907,10 @@ export default function EditOpportunityPage() {
       }
 
       const customRegistrationQuestions = formData.registrationQuestions.filter(
-        (q) => q.fixed !== true && q.label.trim().length > 0,
+        (q) => q.fixed !== true && q.label.trim().length > 0
       );
       const registrationForm = mapRegistrationQuestionsToRegistrationForm(
-        customRegistrationQuestions,
+        customRegistrationQuestions
       );
       await updateHackathonRegistrationForm(token, hackathonId, {
         registrationForm,
@@ -923,7 +923,7 @@ export default function EditOpportunityPage() {
       } = formData.prizes.list.reduce(
         (
           acc: { prizeItems: PrizeBreakdownDto[]; hasInvalidAmount: boolean },
-          p,
+          p
         ) => {
           const amount = parseCurrencyToDecimalString(p.amount);
           if (amount === null) {
@@ -942,11 +942,11 @@ export default function EditOpportunityPage() {
             ],
           };
         },
-        { prizeItems: [], hasInvalidAmount: false },
+        { prizeItems: [], hasInvalidAmount: false }
       );
 
       const prizeBreakdownSnapshot = serializePrizeBreakdown(
-        prizeItemsResult.prizeItems,
+        prizeItemsResult.prizeItems
       );
       if (
         prizeItemsResult.hasInvalidAmount === false &&
@@ -1003,7 +1003,7 @@ export default function EditOpportunityPage() {
   const savingSnapshotRef = React.useRef<string | null>(null);
   const lastSavedAtRef = React.useRef<number | null>(null);
   const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
-    null,
+    null
   );
   const saveQueuedRef = React.useRef<boolean>(false);
   const lastErrorToastAtRef = React.useRef<number>(0);
@@ -1104,7 +1104,7 @@ export default function EditOpportunityPage() {
     lastSavedPrizeBreakdownSnapshotRef.current =
       serializePrizeBreakdown(initialPrizeItems);
     lastSavedAdditionalInfoSnapshotRef.current = serializeAdditionalInfo(
-      formData.additionalInfo,
+      formData.additionalInfo
     );
     lastSavedAtRef.current = Date.now();
     setAutoSaveStatus("saved");
@@ -1180,7 +1180,7 @@ export default function EditOpportunityPage() {
                 "flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all whitespace-nowrap",
                 activeTab === tab.id
                   ? "bg-secondary text-secondary-foreground border-primary"
-                  : "bg-background border-border text-muted-foreground hover:bg-muted",
+                  : "bg-background border-border text-muted-foreground hover:bg-muted"
               )}
             >
               {tab.icon}
@@ -1241,7 +1241,7 @@ export default function EditOpportunityPage() {
 
         {activeTab === "preview" && (
           <div className="w-full flex flex-col gap-4">
-            <CompetitionDetailsPage />
+            <CompetitionDetailsClient />
           </div>
         )}
       </div>

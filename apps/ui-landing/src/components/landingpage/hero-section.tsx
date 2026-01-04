@@ -45,17 +45,11 @@ export default function HeroSection() {
       <div className="relative z-40 max-w-[1159px] px-4 text-center space-y-6 py-16">
         <div className="space-y-2">
           <h1 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
-            Opportunities Made{" "}
+            Global Opportunities Powered by{" "}
             <span className="text-primary-500 kaushan-script font-normal">
-              Simple
+              Skills
             </span>
           </h1>
-
-          <h2 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
-            Discover Your Next
-            <br />
-            College Event
-          </h2>
         </div>
 
         <p className="w-full max-w-[993px] mx-auto text-center text-muted-foreground text-[18px] md:text-[28px] font-normal leading-normal px-2 inter">

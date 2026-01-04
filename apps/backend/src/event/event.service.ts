@@ -31,6 +31,7 @@ type LifecycleStatus =
 export class EventService {
   private readonly logger = new Logger(EventService.name);
   private readonly GOOGLE_SHEETS_ENABLED_EVENT_ID = 'cmjn3pgst0001oz01flu5hcgw';
+  private readonly EVENT_PASS_EMAIL_DISABLED_EVENT_ID = 'cmjn3pgst0001oz01flu5hcgw';
 
   constructor(
     private readonly googleSheetsService: GoogleSheetsService,
@@ -1339,21 +1340,23 @@ export class EventService {
       eventLocation = 'Online Event';
     }
 
-    // Emit event.joined event for event pass email
-    const emailPayload: EventJoinedEventPayload = {
-      userId,
-      email: user.email,
-      firstName: user.firstName || undefined,
-      eventId: event.id,
-      eventName: event.name,
-      eventSlug: event.slug,
-      eventDate,
-      eventTime,
-      eventLocation,
-      eventType: event.eventType || undefined,
-      registrationId: result.participantId,
-    };
-    this.eventEmitter.emit(EMAIL_EVENTS.EVENT_JOINED, emailPayload);
+    // Emit event.joined event for event pass email (skip for specific events)
+    if (eventId !== this.EVENT_PASS_EMAIL_DISABLED_EVENT_ID) {
+      const emailPayload: EventJoinedEventPayload = {
+        userId,
+        email: user.email,
+        firstName: user.firstName || undefined,
+        eventId: event.id,
+        eventName: event.name,
+        eventSlug: event.slug,
+        eventDate,
+        eventTime,
+        eventLocation,
+        eventType: event.eventType || undefined,
+        registrationId: result.participantId,
+      };
+      this.eventEmitter.emit(EMAIL_EVENTS.EVENT_JOINED, emailPayload);
+    }
 
     return { message: 'Successfully joined the event.' };
   }
