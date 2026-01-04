@@ -179,7 +179,9 @@ export class RegistrationSubmitService {
           hackathonId: hackathon.id,
           teamId: team.id,
           scope: HackathonPaymentScope.TEAM,
-          paymentStatus: HackathonPaymentStatus.CAPTURED,
+          paymentStatus: {
+            in: [HackathonPaymentStatus.AUTHORIZED, HackathonPaymentStatus.CAPTURED],
+          },
         },
       });
 
@@ -194,7 +196,9 @@ export class RegistrationSubmitService {
           hackathonId: hackathon.id,
           payerUserId: userId,
           scope: HackathonPaymentScope.USER,
-          paymentStatus: HackathonPaymentStatus.CAPTURED,
+          paymentStatus: {
+            in: [HackathonPaymentStatus.AUTHORIZED, HackathonPaymentStatus.CAPTURED],
+          },
         },
       });
 
