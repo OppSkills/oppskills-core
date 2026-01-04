@@ -98,7 +98,30 @@ export class RegistrationSubmitService {
       await this.validatePaymentRequirement(hackathon, leaderTeam, userId);
     }
 
-    this.validateAnswers(hackathon.registrationForm?.fields || [], answers);
+    // Map frontend field IDs (like "default-name") to database field IDs
+    const mappedAnswers = await this.mapFieldIdsToDatabaseIds(
+      hackathon.id,
+      userId,
+      answers,
+    );
+
+    // Refetch registration form fields after mapping (in case new fields were created)
+    const updatedRegForm = await prisma.registrationFormEntity.findUnique({
+      where: { hackathonId: hackathon.id },
+      include: {
+        fields: {
+          select: {
+            id: true,
+            label: true,
+            type: true,
+            required: true,
+            options: true,
+          },
+        },
+      },
+    });
+
+    this.validateAnswers(updatedRegForm?.fields || [], mappedAnswers);
 
     const result = await prisma.$transaction(async (tx) => {
       const submission = await tx.hackathonRegistrationSubmissionEntity.create({
@@ -112,8 +135,8 @@ export class RegistrationSubmitService {
         },
       });
 
-      if (answers.length > 0) {
-        const answerData = answers.map((a) => ({
+      if (mappedAnswers.length > 0) {
+        const answerData = mappedAnswers.map((a) => ({
           submissionId: submission.id,
           fieldId: a.fieldId,
           valueText:
@@ -212,6 +235,193 @@ export class RegistrationSubmitService {
         );
       }
     }
+  }
+
+  /**
+   * Maps frontend field IDs (like "default-name") to database field IDs.
+   * Creates default fields if they don't exist.
+   */
+  private async mapFieldIdsToDatabaseIds(
+    hackathonId: string,
+    userId: string,
+    answers: Array<{ fieldId: string; value: string }>,
+  ): Promise<Array<{ fieldId: string; value: string }>> {
+    const regForm = await prisma.registrationFormEntity.findUnique({
+      where: { hackathonId },
+      include: {
+        fields: {
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    if (regForm?.externalFormLink) {
+      // External forms don't use internal field mapping
+      return answers;
+    }
+
+    const userOnboardingProfile =
+      await prisma.userOnboardingProfileEntity.findUnique({
+        where: { userId },
+        select: { userCategory: true },
+      });
+
+    const userCategory = userOnboardingProfile?.userCategory;
+
+    const DEFAULT_GENDER_OPTIONS = [
+      'MALE',
+      'FEMALE',
+      'OTHER',
+      'PREFER_NOT_TO_SAY',
+    ];
+
+    type DefaultFieldDef = {
+      label: string;
+      type: 'TEXT' | 'EMAIL' | 'PHONE_NO' | 'OPTIONS';
+      order: number;
+      required: boolean;
+      options: string[];
+      frontendId: string;
+    };
+
+    const baseDefaultFieldDefs: DefaultFieldDef[] = [
+      {
+        frontendId: 'default-name',
+        label: 'Name',
+        type: 'TEXT',
+        order: -50,
+        required: true,
+        options: [],
+      },
+      {
+        frontendId: 'default-email',
+        label: 'Email',
+        type: 'EMAIL',
+        order: -40,
+        required: true,
+        options: [],
+      },
+      {
+        frontendId: 'default-phone',
+        label: 'Phone No.',
+        type: 'PHONE_NO',
+        order: -30,
+        required: true,
+        options: [],
+      },
+      {
+        frontendId: 'default-gender',
+        label: 'Gender',
+        type: 'OPTIONS',
+        order: -20,
+        required: true,
+        options: DEFAULT_GENDER_OPTIONS,
+      },
+      {
+        frontendId: 'default-school-name',
+        label: 'School Name',
+        type: 'TEXT',
+        order: -10,
+        required: false,
+        options: [],
+      },
+      {
+        frontendId: 'default-college-name',
+        label: 'College Name',
+        type: 'TEXT',
+        order: -9,
+        required: false,
+        options: [],
+      },
+      {
+        frontendId: 'default-company-name',
+        label: 'Company Name',
+        type: 'TEXT',
+        order: -8,
+        required: false,
+        options: [],
+      },
+    ];
+
+    // Upsert registration form if missing
+    const ensuredRegForm =
+      regForm ??
+      (await prisma.registrationFormEntity.create({
+        data: { hackathonId },
+        include: {
+          fields: {
+            orderBy: { order: 'asc' },
+          },
+        },
+      }));
+
+    const existingFieldsByLabel = new Map(
+      ensuredRegForm.fields.map((f) => [f.label.toLowerCase(), f]),
+    );
+
+    const usedOrders = new Set(ensuredRegForm.fields.map((f) => f.order));
+
+    const frontendIdToDbId = new Map<string, string>();
+
+    // Map default fields
+    for (const def of baseDefaultFieldDefs) {
+      const existingField = existingFieldsByLabel.get(def.label.toLowerCase());
+
+      if (existingField) {
+        frontendIdToDbId.set(def.frontendId, existingField.id);
+
+        const updateData: Record<string, unknown> = {};
+
+        if (existingField.required !== def.required) {
+          updateData.required = def.required;
+        }
+
+        if (
+          def.label.toLowerCase() === 'gender' &&
+          existingField.type === 'OPTIONS' &&
+          (!existingField.options || existingField.options.length === 0)
+        ) {
+          updateData.options = DEFAULT_GENDER_OPTIONS;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await prisma.registrationFieldEntity.update({
+            where: { id: existingField.id },
+            data: updateData,
+          });
+        }
+      } else {
+        let orderToUse = def.order;
+        while (usedOrders.has(orderToUse)) {
+          orderToUse -= 1;
+        }
+        usedOrders.add(orderToUse);
+
+        const newField = await prisma.registrationFieldEntity.create({
+          data: {
+            registrationFormId: ensuredRegForm.id,
+            label: def.label,
+            type: def.type,
+            required: def.required,
+            order: orderToUse,
+            options: def.options,
+          },
+        });
+
+        frontendIdToDbId.set(def.frontendId, newField.id);
+      }
+    }
+
+    // Map existing fields (non-default fields use their own IDs)
+    for (const existingField of ensuredRegForm.fields) {
+      frontendIdToDbId.set(existingField.id, existingField.id);
+    }
+
+    // Map answers from frontend IDs to database IDs
+    return answers.map((a) => ({
+      fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
+      value: a.value,
+    }));
   }
 
   private validateAnswers(
