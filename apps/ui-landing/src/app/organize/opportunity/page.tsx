@@ -80,6 +80,7 @@ import { createFestival, getFestivals } from "@/lib/api/festivalApi";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 import { DialogClose } from "@radix-ui/react-dialog";
+import { useRouter } from "next/navigation";
 
 /**
  * Organizer page: creates festivals and hackathons.
@@ -88,6 +89,7 @@ import { DialogClose } from "@radix-ui/react-dialog";
  */
 export default function Page() {
   const timeInputRef = useRef<HTMLInputElement>(null);
+  const [formCompleted, setFormCompleted] = useState(false);
 
   const InputBlock = ({
     icon,
@@ -402,6 +404,12 @@ export default function Page() {
     if (label === "University only") return "UNIVERSITY_ONLY";
     return undefined;
   }
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!formCompleted) return;
+    router.push("/dashboard/opportunity");
+  }, [formCompleted]);
 
   /**
    * Maps UI hackathon type labels to backend enum values.
@@ -938,7 +946,7 @@ export default function Page() {
                           ? format(formData.eventRegisterBy, "PPP")
                           : "Select Date"
                       }
-                      subLabel="Last Date"
+                      subLabel="Registration Deadline"
                       className="bg-muted h-full"
                     />
                   </div>
@@ -1336,6 +1344,7 @@ export default function Page() {
 
                     const res = await createFestival(token, payload);
                     toast.success("Festival listed!");
+                    setFormCompleted(true);
                     setShowFestivalModal(false);
 
                     // Refresh dropdown list; ensures the new festival appears.
@@ -1353,9 +1362,13 @@ export default function Page() {
                     setIsSubmittingFestival(false);
                   }
                 }}
-                disabled={isSubmittingFestival}
+                disabled={isSubmittingFestival || formCompleted}
               >
-                {isSubmittingFestival ? "Listing..." : "List Festival"}
+                {isSubmittingFestival
+                  ? "Listing..."
+                  : formCompleted
+                    ? "Redirecting to Dashboard"
+                    : "List Festival"}
               </Button>
             </div>
           </div>
