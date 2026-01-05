@@ -48,10 +48,11 @@ export class UserAccountsService {
           firstName,
           lastName,
           imageUrl,
-          onboarded: true,
+          onboarded: false,
           onboardingProfile: {
             create: {
               userCategory: UserCategory.COLLEGE_STUDENT,
+              gender: 'MALE',
             },
           },
         },
@@ -213,10 +214,11 @@ export class UserAccountsService {
             firstName: null,
             lastName: null,
             imageUrl: null,
-            onboarded: true,
+            onboarded: false,
             onboardingProfile: {
               create: {
                 userCategory: UserCategory.COLLEGE_STUDENT,
+                gender: 'MALE', // Default
               },
             },
           },
