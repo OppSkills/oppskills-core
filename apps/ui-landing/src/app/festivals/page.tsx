@@ -3,88 +3,51 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { getFestivals } from "@/lib/api/festivalApi";
+import { GenericListingPage } from "@/components/common/GenericListingPage";
+import { ListingItem } from "@/components/common/ListingCard";
 
-/**
- * Festivals listing page.
- *
- * This exists both as a useful UI and to keep Next.js route type-generation in sync.
- * (Some builds/type generators expect `/festivals` to exist.)
- */
 export default function FestivalsPage() {
   const { getToken } = useAuth();
-
-  type FestivalRow = {
-    id: string;
-    name: string;
-    startDate?: string;
-    endDate?: string;
-    status?: string;
-  };
-
-  const [items, setItems] = useState<ReadonlyArray<FestivalRow>>([]);
+  const [items, setItems] = useState<ListingItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  /**
-   * Type guard: checks if a value is a non-null object.
-   */
-  const isRecord = (value: unknown): value is Record<string, unknown> =>
-    typeof value === "object" && value !== null;
-
-  /**
-   * Safely reads a string field from a record.
-   */
-  const getString = (obj: Record<string, unknown>, key: string): string | undefined => {
-    const value = obj[key];
-    return typeof value === "string" && value.trim().length > 0 ? value : undefined;
-  };
-
-  /**
-   * Extracts festival rows from API responses that may be either:
-   * - an array directly, OR
-   * - an object with a `data` array.
-   */
-  const extractFestivals = (data: unknown): ReadonlyArray<FestivalRow> => {
-    const raw = Array.isArray(data)
-      ? data
-      : isRecord(data) && Array.isArray(data["data"])
-        ? data["data"]
-        : [];
-
-    return raw
-      .map((row): FestivalRow | null => {
-        if (!isRecord(row)) return null;
-        const id = getString(row, "id");
-        const name = getString(row, "name");
-        if (!id || !name) return null;
-        return {
-          id,
-          name,
-          startDate: getString(row, "startDate"),
-          endDate: getString(row, "endDate"),
-          status: getString(row, "status"),
-        };
-      })
-      .filter((v): v is FestivalRow => v !== null);
-  };
 
   useEffect(() => {
     const run = async (): Promise<void> => {
       setIsLoading(true);
       try {
         const token = await getToken();
-        if (typeof token !== "string" || token.trim().length === 0) {
-          setItems([]);
-          return;
-        }
-        const res = await getFestivals(token);
-        setItems(extractFestivals(res));
-      } catch (err: unknown) {
-        setItems([]);
+        // Since getFestivals might require token broadly but public festivals specifically might allow no token?
+        // Original code used getToken so we keep it.
+        // If public viewing is needed without auth, we might need a public endpoint.
+        // Assuming user is logged in or token is string | null
+        const safeToken = token || "";
+        const res = await getFestivals(safeToken);
+
+        // Transform logic
+        const rawList = Array.isArray((res as any)?.data)
+          ? (res as any).data
+          : Array.isArray(res)
+            ? res
+            : [];
+
+        const transformed: ListingItem[] = rawList.map((f: any) => ({
+          id: f.id,
+          title: f.name,
+          slug: f.slug || f.id, // Fallback if slug missing
+          bannerUrl: f.bannerImageUrl ?? undefined, // Check if API provides this
+          startDate: f.startDate,
+          endDate: f.endDate,
+          status: f.status,
+          routePrefix: "festivals",
+          eventType: "Festival",
+          // Mapping other fields if available in festival object
+          // Festivals often have events inside them, but this is the festival listing itself
+        }));
+
+        setItems(transformed);
+      } catch (err) {
         toast.error("Failed to load festivals.");
-        // eslint-disable-next-line no-console
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -92,42 +55,15 @@ export default function FestivalsPage() {
     };
 
     void run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (isLoading) {
-    return <p className="p-6 text-center">Loading festivals...</p>;
-  }
+  }, [getToken]);
 
   return (
-    <div className="max-w-4xl mx-auto mt-8 space-y-6">
-      {items.length === 0 ? (
-        <p className="p-6 text-center text-muted-foreground">No festivals found.</p>
-      ) : (
-        items.map((festival) => (
-          <Card key={festival.id} className="shadow-md border border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-2xl font-semibold">{festival.name}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Start:</span>
-                <Badge variant="secondary">{festival.startDate ?? "N/A"}</Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">End:</span>
-                <Badge variant="secondary">{festival.endDate ?? "N/A"}</Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Status:</span>
-                <Badge className="capitalize">{festival.status ?? "N/A"}</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        ))
-      )}
-    </div>
+    <GenericListingPage
+      title="College Festivals"
+      description="Explore college festivals and cultural events."
+      items={items}
+      isLoading={isLoading}
+      routePrefix="festivals"
+    />
   );
 }
-
-

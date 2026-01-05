@@ -1,18 +1,11 @@
 import React from "react";
 import Link from "next/link";
-import { format } from "date-fns";
-import { Calendar, MapPin, Users, Trophy } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import { formatInTimeZone } from "date-fns-tz";
+import { Dot } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
-// Placeholder for the type until we have the strict backend type
-// Using a loose interface based on typical hackathon data
+// Expanded interface to match PublicHackathonListItem fields + UI needs
 export interface Competition {
   id: string;
   title: string;
@@ -24,117 +17,166 @@ export interface Competition {
   location?: string;
   bannerUrl?: string;
   status?: string;
-  prizes?: { totalPrizePool?: string; currency?: string }[];
-  maxTeams?: number;
-  _count?: {
-    participants?: number;
-  };
+  // New fields for the new design
+  isFree?: boolean;
+  entryFeeAmount?: number | null;
+  currency?: string;
+  registrationDeadline?: string | null;
+  locationType?: string | null; // e.g. "To format mode"
+  eventType?: string; // "Hackathon" usually
+  registrationCount?: number;
   tags?: string[];
-  isDraft?: boolean;
+  isDraft?: boolean; // Kept for type compatibility but won't be visually emphasized as before
 }
 
 interface CompetitionCardProps {
   competition: Competition;
 }
 
+/**
+ * Format event mode/location type for display.
+ */
+function formatMode(locationType: string | null | undefined): string {
+  if (!locationType) return "Online";
+  switch (locationType.toUpperCase()) {
+    case "VIRTUAL":
+    case "ONLINE":
+      return "Online";
+    case "OFFLINE":
+    case "IN_PERSON": // Fallback
+    case "PHYSICAL":
+      return "Offline";
+    case "HYBRID":
+      return "Hybrid";
+    default:
+      return "Online";
+  }
+}
+
+/**
+ * Format entry fee display.
+ */
+function formatEntryFee(competition: Competition): string {
+  if (competition.isFree) return "Free";
+  if (competition.entryFeeAmount) {
+    return `${competition.currency || "INR"} ${competition.entryFeeAmount.toLocaleString()}`;
+  }
+  return "Free"; // Default to Free if unknown
+}
+
+function formatCount(num: number | undefined): string {
+  if (!num) return "0";
+  if (num < 10) {
+    return `${num}`;
+  }
+
+  if (num < 1000) {
+    return `${Math.floor(num / 10) * 10}+`;
+  }
+
+  if (num < 1_000_000) {
+    const value = Math.floor(num / 100) / 10; // 1 decimal
+    return `${value % 1 === 0 ? value.toFixed(0) : value}k`;
+  }
+
+  const value = Math.floor(num / 10_000) / 100; // 2 decimals
+  return `${value % 1 === 0 ? value.toFixed(0) : value}M+`;
+}
+
 export function CompetitionCard({ competition }: CompetitionCardProps) {
   const startDate = competition.startDate
-    ? format(new Date(competition.startDate), "MMM d, yyyy")
-    : "TBD";
+    ? new Date(competition.startDate)
+    : new Date(); // Fallback to now if missing
 
-  // Fallback image if no banner
-  const bannerUrl =
-    competition.bannerUrl ||
-    "https://images.unsplash.com/photo-1504384308090-c54be3852f33?q=80&w=600&auto=format&fit=crop";
+  const formattedDate = formatInTimeZone(startDate, "UTC", "dd MMM yyyy");
+
+  // Safely handle null registrationDeadline
+  const formattedDeadLineDate = competition.registrationDeadline
+    ? formatInTimeZone(
+        new Date(competition.registrationDeadline),
+        "UTC",
+        "dd MMM yyyy"
+      )
+    : "N/A";
+
+  const mode = formatMode(competition.locationType ?? competition.mode);
+  const entryFee = formatEntryFee(competition);
+  const isFree = competition.isFree ?? true;
+
+  // Derive event type if not provided, usually "Hackathon" for this page
+  const eventType = competition.eventType || "Hackathon";
 
   return (
-    <Card className="flex py-0 gap-0 h-full flex-col overflow-hidden transition-all hover:border-primary/50 hover:shadow-md">
-      <div className="relative h-40 w-full overflow-hidden bg-muted">
-        {/* Ideally use Next.js Image, but using img for now to avoid domain config issues with arbitrary URLs */}
-        <img
-          src={bannerUrl}
-          alt={competition.title}
-          className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-        />
-        <div className="absolute right-2 top-2 flex gap-1">
-          {competition.isDraft && (
-            <Badge
-              variant="secondary"
-              className="bg-yellow-500/90 text-white backdrop-blur-sm"
-            >
-              Draft
-            </Badge>
+    <Link href={`/competitions/${competition.slug}`}>
+      <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
+        {/* Image Section */}
+        <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
+          {competition.bannerUrl ? (
+            <Image
+              src={competition.bannerUrl}
+              alt={competition.title}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-700">
+              <span className="text-background text-5xl font-bold">
+                {competition.title.charAt(0).toUpperCase()}
+              </span>
+            </div>
           )}
-          <Badge
-            variant="secondary"
-            className="bg-background/80 backdrop-blur-sm"
-          >
-            {competition.mode || "Online"}
-          </Badge>
+          <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
+            {[eventType, mode].map((item, index) => (
+              <div key={index} className="flex gap-0.5 items-center">
+                {index > 0 && <Dot />}
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <CardHeader className="p-4 pb-2">
-        <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            {startDate}
-          </span>
-          {competition.location && competition.mode !== "ONLINE" && (
-            <span
-              className="flex items-center gap-1 truncate max-w-[120px]"
-              title={competition.location}
-            >
-              <MapPin className="h-3 w-3" />
-              {competition.location}
-            </span>
-          )}
-        </div>
-        <Link
-          href={`/competitions/${competition.slug}`}
-          className="hover:underline"
-        >
-          <h3 className="line-clamp-1 text-lg font-bold">
+        {/* Content Section */}
+        <CardContent className="space-y-2 flex-grow">
+          <div className="flex gap-0.5 items-center overflow-ellipsis inter text-xs text-neutral-600">
+            {[isFree ? "Free" : "Paid", formattedDate, mode].map(
+              (item, index) => (
+                <p key={index} className="gap-0.5 flex items-center">
+                  {index > 0 && <Dot />}
+                  {item}
+                </p>
+              )
+            )}
+          </div>
+          <h3 className="font-semibold text-xl text-neutral-900 line-clamp-1">
             {competition.title}
           </h3>
-        </Link>
-        <p className="line-clamp-2 text-sm text-muted-foreground">
-          {competition.shortDescription || "No description provided."}
-        </p>
-      </CardHeader>
 
-      <CardContent className="mt-auto p-4 pt-0">
-        <div className="mt-4 flex flex-wrap gap-2">
-          {competition.tags?.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="outline" className="text-xs font-normal">
-              {tag}
-            </Badge>
-          ))}
-        </div>
-      </CardContent>
-
-      <CardFooter className="border-t bg-muted/20 p-3 text-xs text-muted-foreground">
-        <div className="flex w-full items-center justify-between gap-2">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1" title="Participants">
-              <Users className="h-3.5 w-3.5" />
-              {competition._count?.participants || 0}
-            </span>
-            <span
-              className="flex items-center gap-1 text-primary-500 font-medium"
-              title="Prize Pool"
-            >
-              <Trophy className="h-3.5 w-3.5" />
-              {/* Placeholder prize logic */}
-              $10,000
-            </span>
+          <div className="flex justify-between items-center text-sm pb-3">
+            <div className="flex flex-col gap-2 ">
+              <span className="text-xs text-neutral-600">Attendees</span>
+              <div className="flex gap-1">
+                <div className="flex">
+                  <div className="w-4 h-4 rounded-full bg-primary-500"></div>
+                  <div className="w-4 h-4 rounded-full bg-primary-400 -ml-2"></div>
+                  <div className="w-4 h-4 rounded-full bg-primary-300 -ml-2"></div>
+                </div>
+                <span className="text-neutral-700">
+                  {formatCount(competition.registrationCount)}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 ">
+              <span className="text-xs text-neutral-600">Register By</span>
+              <span className="text-neutral-700">{formattedDeadLineDate}</span>
+            </div>
+            <div className="flex flex-col gap-2  text-right">
+              <span className="text-xs text-neutral-600">Entry Fee</span>
+              <span className="text-neutral-700">{entryFee}</span>
+            </div>
           </div>
-
-          <Button size="sm" variant="ghost" className="h-7 px-2" asChild>
-            <Link href={`/competitions/${competition.slug}`}>View Details</Link>
-          </Button>
-        </div>
-      </CardFooter>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
