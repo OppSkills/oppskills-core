@@ -12,6 +12,7 @@ export default function HeroSection() {
       title: "Competitions",
       items: ["Idea Comp", "Hackathons", "Quizzes"],
       image: "/character-competitions.png",
+      link: "/competitions",
       styles: {
         bg: "bg-[#C4CAFF]",
         circle: "bg-[#8390FF]",
@@ -22,6 +23,7 @@ export default function HeroSection() {
       title: "Events",
       items: ["Workshops", "Tech events", "Innovation meets"],
       image: "/character-events.png",
+      link: "/events",
       styles: {
         bg: "bg-[#FFEFA7]",
         circle: "bg-[#F7CF04]",
@@ -32,6 +34,7 @@ export default function HeroSection() {
       title: "Communities",
       items: ["Tech", "Design", "Fitness"],
       image: "/character-communities.png",
+      link: "#comingsoon",
       styles: {
         bg: "bg-[#FDC5F5]",
         circle: "bg-[#F675D1]",
@@ -94,6 +97,9 @@ export default function HeroSection() {
         {HERO_CARDS.map((card, index) => (
           <div
             key={index}
+            onClick={() => {
+              router.push(card.link);
+            }}
             className={`relative w-full h-[182px] rounded-[24px] overflow-hidden ${card.styles.bg} flex p-6 transition-transform hover:scale-105 shadow-sm group mx-auto max-w-md md:max-w-none`}
           >
             <div className="relative z-10 flex flex-col gap-2">
