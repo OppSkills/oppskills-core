@@ -62,6 +62,10 @@ export default function DescriptionEditorModal({
     onOpenChange(false);
   };
 
+  useEffect(() => {
+    console.log(value);
+  }, [value]);
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="w-screen h-screen max-w-none flex flex-col bg-background p-0">
