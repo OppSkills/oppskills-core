@@ -35,6 +35,8 @@ export default function RichTextEditor({
       }),
       Link.configure({
         openOnClick: false,
+        autolink: true,
+        linkOnPaste: true,
         HTMLAttributes: {
           class: "text-primary-500 underline cursor-pointer",
         },

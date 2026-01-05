@@ -1,9 +1,7 @@
 "use client";
 
-import React from "react";
-
+import React, { useState, useEffect } from "react";
 import { Editor } from "@tiptap/react";
-
 import {
   Bold,
   Italic,
@@ -22,7 +20,118 @@ import {
   Heading1,
   Heading2,
   Quote,
+  Link as LinkIcon,
+  Check,
+  X,
 } from "lucide-react";
+
+import { Popover, PopoverContent, PopoverTrigger } from "../popover";
+import { Button } from "../button";
+import { Input } from "../input";
+import { Label } from "../label";
+
+interface LinkPopoverProps {
+  editor: Editor;
+  btnClass: (active: boolean) => string;
+}
+
+const LinkPopover: React.FC<LinkPopoverProps> = ({ editor, btnClass }) => {
+  const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState("");
+
+  const updateState = () => {
+    const currentLink = editor.getAttributes("link").href;
+    setUrl(currentLink || "");
+  };
+
+  useEffect(() => {
+    if (open) {
+      updateState();
+    }
+  }, [open, editor.state.selection]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!url) {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      setOpen(false);
+      return;
+    }
+
+    if (editor.state.selection.empty) {
+      // No text selected: Insert URL as text
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: "text",
+          text: url,
+          marks: [
+            {
+              type: "link",
+              attrs: { href: url },
+            },
+          ],
+        })
+        .run();
+
+      // Separate chain to ensure the link renders before we unset it for the next char
+      editor.chain().unsetLink().run();
+      editor.chain().focus().insertContent({ type: "text", text: " " }).run();
+    } else {
+      // Text selected: Link it
+      editor
+        .chain()
+        .focus()
+        .extendMarkRange("link")
+        .setLink({ href: url })
+        .setTextSelection(editor.state.selection.to) // Collapse to end
+        .run();
+
+      // Separate chain to ensure the link renders before we unset it for the next char
+      editor.chain().unsetLink().run();
+    }
+
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className={btnClass(editor.isActive("link"))} title="Link">
+          <LinkIcon className="w-4 h-4" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-4" align="start">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="link-url">URL</Label>
+            <Input
+              id="link-url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://example.com"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" size="sm">
+              Insert
+            </Button>
+          </div>
+        </form>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 export default function Toolbar({ editor }: { editor: Editor }) {
   if (!editor) return null;
@@ -121,6 +230,8 @@ export default function Toolbar({ editor }: { editor: Editor }) {
         >
           <Superscript className="w-4 h-4" />
         </button>
+
+        <LinkPopover editor={editor} btnClass={btnClass} />
       </div>
 
       {/* Headings */}
