@@ -23,8 +23,8 @@ interface FooterLinks {
 const Footer = () => {
   const footerLinks: FooterLinks = {
     Discover: [
-      { name: "Competitions", href: "#competitions" },
-      { name: "Events", href: "#events" },
+      { name: "Competitions", href: "/competitions" },
+      { name: "Events", href: "/events" },
     ],
     OppSkills: [
       { name: "Market Mafiaa", href: "https://marketmafiaa.com" },
