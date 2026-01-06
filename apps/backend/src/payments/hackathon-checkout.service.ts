@@ -13,6 +13,7 @@ import {
 } from '@oppskills/db';
 import { RazorpayService } from './razorpay.service';
 import { PaymentsRouteService } from './payments-route.service';
+import { DraftTeamService } from './draft-team.service';
 import { Decimal } from '@prisma/client/runtime/library';
 
 const PLATFORM_FEE_PERCENT = 2;
@@ -22,12 +23,15 @@ export class HackathonCheckoutService {
   constructor(
     private readonly razorpayService: RazorpayService,
     private readonly paymentsRouteService: PaymentsRouteService,
+    private readonly draftTeamService: DraftTeamService,
   ) {}
 
   async createPaymentOrder(params: {
     hackathonSlug: string;
     userId: string;
     teamId?: string;
+    teamName?: string;
+    maxSize?: number;
     discountCode?: string;
   }) {
     const hackathon = await prisma.hackathonEntity.findUnique({
@@ -95,52 +99,94 @@ export class HackathonCheckoutService {
     let leaderUserId: string = params.userId;
 
     if (scope === HackathonPaymentScope.TEAM) {
-      if (!params.teamId) {
-        throw new BadRequestException('Team ID required for per-team payment');
-      }
+      // For PER_TEAM, we can accept either teamId (existing team) or teamName (new team)
+      // If teamName is provided, we'll create team after payment verification
+      if (params.teamId) {
+        // Existing team - validate it
+        const team = await prisma.teamEntity.findUnique({
+          where: { id: params.teamId },
+          select: { id: true, hackathonId: true, leaderId: true },
+        });
 
-      const team = await prisma.teamEntity.findUnique({
-        where: { id: params.teamId },
-        select: { id: true, hackathonId: true, leaderId: true },
-      });
+        if (!team) {
+          throw new NotFoundException('Team not found');
+        }
 
-      if (!team) {
-        throw new NotFoundException('Team not found');
-      }
+        if (team.hackathonId !== hackathon.id) {
+          throw new BadRequestException('Team does not belong to this hackathon');
+        }
 
-      if (team.hackathonId !== hackathon.id) {
-        throw new BadRequestException('Team does not belong to this hackathon');
-      }
+        if (team.leaderId !== params.userId) {
+          throw new ForbiddenException('Only team leader can initiate payment');
+        }
 
-      if (team.leaderId !== params.userId) {
-        throw new ForbiddenException('Only team leader can initiate payment');
-      }
+        leaderUserId = team.leaderId;
 
-      leaderUserId = team.leaderId;
+        // Check for existing payment - allow retry if previous payment was cancelled/failed
+        const existingTeamPayment = await prisma.hackathonPaymentEntity.findFirst({
+          where: {
+            scope: HackathonPaymentScope.TEAM,
+            hackathonId: hackathon.id,
+            teamId: params.teamId,
+          },
+        });
 
-      // Check for existing payment - allow retry if previous payment was cancelled/failed
-      const existingTeamPayment = await prisma.hackathonPaymentEntity.findFirst({
-        where: {
-          scope: HackathonPaymentScope.TEAM,
-          hackathonId: hackathon.id,
-          teamId: params.teamId,
-        },
-      });
+        if (existingTeamPayment) {
+          if (
+            existingTeamPayment.paymentStatus === HackathonPaymentStatus.CAPTURED ||
+            existingTeamPayment.paymentStatus === HackathonPaymentStatus.AUTHORIZED
+          ) {
+            throw new BadRequestException(
+              'Payment already completed for this team',
+            );
+          }
+          // If payment exists with CREATED/FAILED status, we'll update it instead of creating new one
+        }
 
-      if (existingTeamPayment) {
-        if (
-          existingTeamPayment.paymentStatus === HackathonPaymentStatus.CAPTURED ||
-          existingTeamPayment.paymentStatus === HackathonPaymentStatus.AUTHORIZED
-        ) {
+        teamId = params.teamId;
+      } else if (params.teamName) {
+        // New team - validate user can create team, but don't create it yet
+        // Team will be created after payment verification
+        // Check if user already has a team for this hackathon
+        const existingTeam = await prisma.teamEntity.findFirst({
+          where: {
+            hackathonId: hackathon.id,
+            OR: [{ leaderId: params.userId }, { members: { some: { userId: params.userId } } }],
+          },
+        });
+
+        if (existingTeam) {
           throw new BadRequestException(
-            'Payment already completed for this team',
+            'You are already in a team for this hackathon',
           );
         }
-        // If payment exists with CREATED/FAILED status, we'll update it instead of creating new one
-        // This handles the unique constraint and allows payment retries
-      }
 
-      teamId = params.teamId;
+        // Check for existing payment with CREATED/FAILED status for this user (without teamId)
+        // This handles retry scenario
+        const existingUserPayment = await prisma.hackathonPaymentEntity.findFirst({
+          where: {
+            scope: HackathonPaymentScope.TEAM,
+            hackathonId: hackathon.id,
+            payerUserId: params.userId,
+            teamId: null, // Payment created before team was created
+            paymentStatus: {
+              in: [HackathonPaymentStatus.CREATED, HackathonPaymentStatus.FAILED],
+            },
+          },
+        });
+
+        if (existingUserPayment) {
+          // Will update this payment record later
+          // teamId will be set after team creation
+        }
+
+        // teamId will be null - team will be created after payment
+        teamId = null;
+      } else {
+        throw new BadRequestException(
+          'Either teamId (for existing team) or teamName (for new team) is required for per-team payment',
+        );
+      }
     } else {
       // Check for existing payment - allow retry if previous payment was cancelled/failed
       const existingPayment = await prisma.hackathonPaymentEntity.findFirst({
@@ -224,6 +270,28 @@ export class HackathonCheckoutService {
         });
       }
 
+      // For PER_TEAM with teamName, create team now (payment is already CAPTURED)
+      let createdTeamId = payment.teamId;
+      if (
+        scope === HackathonPaymentScope.TEAM &&
+        !payment.teamId &&
+        params.teamName
+      ) {
+        const draftTeam = await this.draftTeamService.createDraftTeam({
+          hackathonSlug: hackathon.slug,
+          name: params.teamName,
+          maxSize: params.maxSize,
+          leaderId: params.userId,
+        });
+        createdTeamId = draftTeam.team.id;
+
+        // Update payment with teamId
+        await prisma.hackathonPaymentEntity.update({
+          where: { id: payment.id },
+          data: { teamId: createdTeamId },
+        });
+      }
+
       return {
         paymentId: payment.id,
         razorpayKeyId: null,
@@ -232,6 +300,7 @@ export class HackathonCheckoutService {
         currency: hackathon.currency || 'INR',
         zeroAmountPayment: true,
         freeCollegeEligible: true,
+        teamId: createdTeamId, // Return teamId if team was created
       };
     }
 
@@ -269,9 +338,11 @@ export class HackathonCheckoutService {
         where: {
           scope,
           hackathonId: hackathon.id,
-          ...(scope === HackathonPaymentScope.TEAM
-            ? { teamId: teamId! }
-            : { payerUserId: params.userId }),
+          ...(scope === HackathonPaymentScope.TEAM && teamId
+            ? { teamId }
+            : scope === HackathonPaymentScope.TEAM && !teamId
+              ? { payerUserId: params.userId, teamId: null }
+              : { payerUserId: params.userId }),
         },
       });
 
@@ -319,6 +390,28 @@ export class HackathonCheckoutService {
         });
       }
 
+      // For PER_TEAM with teamName, create team now (payment is already CAPTURED)
+      let createdTeamId = payment.teamId;
+      if (
+        scope === HackathonPaymentScope.TEAM &&
+        !payment.teamId &&
+        params.teamName
+      ) {
+        const draftTeam = await this.draftTeamService.createDraftTeam({
+          hackathonSlug: hackathon.slug,
+          name: params.teamName,
+          maxSize: params.maxSize,
+          leaderId: params.userId,
+        });
+        createdTeamId = draftTeam.team.id;
+
+        // Update payment with teamId
+        await prisma.hackathonPaymentEntity.update({
+          where: { id: payment.id },
+          data: { teamId: createdTeamId },
+        });
+      }
+
       return {
         paymentId: payment.id,
         razorpayKeyId: null,
@@ -327,20 +420,30 @@ export class HackathonCheckoutService {
         currency: hackathon.currency || 'INR',
         hackathonName: hackathon.name,
         zeroAmountPayment: true,
+        teamId: createdTeamId, // Return teamId if team was created
       };
+    }
+
+    // Store teamName and maxSize in Razorpay order notes if provided (for PER_TEAM new team creation)
+    const orderNotes: Record<string, string> = {
+      hackathonId: hackathon.id,
+      hackathonSlug: hackathon.slug,
+      payerUserId: params.userId,
+      teamId: teamId || '',
+      scope,
+    };
+    if (params.teamName) {
+      orderNotes.teamName = params.teamName;
+    }
+    if (params.maxSize) {
+      orderNotes.maxSize = String(params.maxSize);
     }
 
     const razorpayOrder = await this.razorpayService.createOrder({
       amountPaise: grossAmountPaise,
       currency: hackathon.currency || 'INR',
       receipt: `hck_${hackathon.id.slice(-8)}_${Date.now()}`,
-      notes: {
-        hackathonId: hackathon.id,
-        hackathonSlug: hackathon.slug,
-        payerUserId: params.userId,
-        teamId: teamId || '',
-        scope,
-      },
+      notes: orderNotes,
     });
 
     // Check if payment record exists with CREATED/FAILED status (for retry scenario)
@@ -348,9 +451,11 @@ export class HackathonCheckoutService {
       where: {
         scope,
         hackathonId: hackathon.id,
-        ...(scope === HackathonPaymentScope.TEAM
-          ? { teamId: teamId! }
-          : { payerUserId: params.userId }),
+        ...(scope === HackathonPaymentScope.TEAM && teamId
+          ? { teamId }
+          : scope === HackathonPaymentScope.TEAM && !teamId
+            ? { payerUserId: params.userId, teamId: null }
+            : { payerUserId: params.userId }),
         paymentStatus: {
           in: [HackathonPaymentStatus.CREATED, HackathonPaymentStatus.FAILED],
         },
@@ -418,6 +523,11 @@ export class HackathonCheckoutService {
   }) {
     const payment = await prisma.hackathonPaymentEntity.findUnique({
       where: { razorpayOrderId: params.razorpayOrderId },
+      include: {
+        hackathon: {
+          select: { slug: true },
+        },
+      },
     });
 
     if (!payment) {
@@ -438,16 +548,44 @@ export class HackathonCheckoutService {
       throw new BadRequestException('Invalid payment signature');
     }
 
+    // For PER_TEAM mode, if teamName was provided but teamId is null, create team now
+    let finalTeamId = payment.teamId;
+    if (
+      payment.scope === HackathonPaymentScope.TEAM &&
+      !payment.teamId
+    ) {
+      // Fetch Razorpay order to get teamName from notes
+      const razorpayOrder = await this.razorpayService.fetchOrder(
+        params.razorpayOrderId,
+      );
+      const teamName = razorpayOrder.notes?.teamName;
+      const maxSize = razorpayOrder.notes?.maxSize
+        ? parseInt(razorpayOrder.notes.maxSize, 10)
+        : undefined;
+
+      if (teamName) {
+        // Create team after payment verification
+        const draftTeam = await this.draftTeamService.createDraftTeam({
+          hackathonSlug: payment.hackathon.slug,
+          name: teamName,
+          maxSize,
+          leaderId: params.userId,
+        });
+        finalTeamId = draftTeam.team.id;
+      }
+    }
+
     await prisma.hackathonPaymentEntity.update({
       where: { id: payment.id },
       data: {
         razorpayPaymentId: params.razorpayPaymentId,
         razorpaySignature: params.razorpaySignature,
         paymentStatus: HackathonPaymentStatus.AUTHORIZED,
+        teamId: finalTeamId, // Update with created teamId if team was created
       },
     });
 
-    return { success: true, paymentId: payment.id };
+    return { success: true, paymentId: payment.id, teamId: finalTeamId };
   }
 
   private async applyDiscountCode(

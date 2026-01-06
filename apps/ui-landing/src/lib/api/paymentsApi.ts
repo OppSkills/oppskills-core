@@ -231,8 +231,13 @@ export async function deleteDiscountCode(
 export async function createPaymentOrder(
   token: string,
   hackathonSlug: string,
-  params: { teamId?: string; discountCode?: string },
-): Promise<PaymentOrder> {
+  params: {
+    teamId?: string;
+    teamName?: string;
+    maxSize?: number;
+    discountCode?: string;
+  },
+): Promise<PaymentOrder & { teamId?: string }> {
   const res = await HackathonsAPI.post(
     `/${hackathonSlug}/payment/order`,
     params,
@@ -251,7 +256,7 @@ export async function verifyPayment(
     razorpayPaymentId: string;
     razorpaySignature: string;
   },
-): Promise<{ success: boolean; paymentId: string }> {
+): Promise<{ success: boolean; paymentId: string; teamId?: string }> {
   const res = await HackathonsAPI.post(
     `/${hackathonSlug}/payment/verify`,
     params,

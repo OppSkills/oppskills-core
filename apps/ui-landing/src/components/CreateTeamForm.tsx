@@ -261,31 +261,42 @@ export function CreateTeamForm({
     existingTeamId?: string,
   ) => {
     try {
-      // For PER_TEAM, we need teamId for payment order, so create draft team first
-      // For PER_USER, we can create payment order without teamId, then create team after payment
+      // For PER_TEAM, pass teamName instead of creating team first
+      // Team will be created AFTER payment verification
+      // For PER_USER, create team after payment
       let teamId: string | undefined = existingTeamId;
 
-      if (chargeMode === "PER_TEAM" && !teamId) {
-        // PER_TEAM: Create draft team first to get teamId for payment order
-        const draft = await createDraftTeam(token, hackathonSlug, {
-          name: teamName,
-          maxSize,
-        });
-        teamId = draft.team.id;
-      }
-
-      const orderParams = {
-        ...(chargeMode === "PER_TEAM" && teamId ? { teamId } : {}),
+      const orderParams: {
+        teamId?: string;
+        teamName?: string;
+        maxSize?: number;
+        discountCode?: string;
+      } = {
         discountCode: discountCode.trim() || undefined,
       };
+
+      if (chargeMode === "PER_TEAM") {
+        if (teamId) {
+          // Existing team
+          orderParams.teamId = teamId;
+        } else {
+          // New team - pass teamName, team will be created after payment
+          orderParams.teamName = teamName;
+          orderParams.maxSize = maxSize;
+        }
+      }
 
       const order = await createPaymentOrder(token, hackathonSlug, orderParams);
 
       // If discount makes this a zero-amount payment, backend already marks it as CAPTURED.
-      // Skip Razorpay checkout and proceed to team creation (if PER_USER) and registration submission.
+      // Backend creates team for PER_TEAM if teamName was provided
+      // For PER_USER, create team after payment is confirmed
       if (order.zeroAmountPayment || order.amountPaise === 0) {
-        // For PER_USER, create draft team after payment is confirmed
-        if (chargeMode === "PER_USER" && !teamId) {
+        // Get teamId from order response if team was created by backend
+        if (order.teamId) {
+          teamId = order.teamId;
+        } else if (chargeMode === "PER_USER" && !teamId) {
+          // For PER_USER, create draft team after payment is confirmed
           const draft = await createDraftTeam(token, hackathonSlug, {
             name: teamName,
             maxSize,
@@ -351,14 +362,17 @@ export function CreateTeamForm({
               );
             }
 
-            await verifyPayment(verifyToken, hackathonSlug, {
+            const verifyResult = await verifyPayment(verifyToken, hackathonSlug, {
               razorpayOrderId: responseOrderId,
               razorpayPaymentId: responsePaymentId,
               razorpaySignature: responseSignature,
             });
 
-            // For PER_USER, create draft team AFTER successful payment
-            if (chargeMode === "PER_USER" && !teamId) {
+            // Get teamId from verify result if team was created by backend (PER_TEAM)
+            if (verifyResult.teamId) {
+              teamId = verifyResult.teamId;
+            } else if (chargeMode === "PER_USER" && !teamId) {
+              // For PER_USER, create draft team AFTER successful payment
               const draft = await createDraftTeam(verifyToken, hackathonSlug, {
                 name: teamName,
                 maxSize,

@@ -1,9 +1,19 @@
-import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsNumber, Min, Max } from 'class-validator';
 
 export class CreateOrderDto {
   @IsOptional()
   @IsString()
   teamId?: string;
+
+  @IsOptional()
+  @IsString()
+  teamName?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(50)
+  maxSize?: number;
 
   @IsOptional()
   @IsString()

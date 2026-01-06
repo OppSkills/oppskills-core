@@ -28,6 +28,8 @@ export class HackathonCheckoutController {
       hackathonSlug: slug,
       userId,
       teamId: dto.teamId,
+      teamName: dto.teamName,
+      maxSize: dto.maxSize,
       discountCode: dto.discountCode,
     });
   }
