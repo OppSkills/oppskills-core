@@ -36,7 +36,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PayoutDetailsInput } from "@/lib/api/paymentsApi";
 import { updateHackathon } from "@/lib/api/hackathonApi";
-import { searchColleges } from "@/lib/api/collegesApi";
+import { searchColleges, getCollegesByIds } from "@/lib/api/collegesApi";
 import { format } from "date-fns";
 
 type ChargeMode = "PER_TEAM" | "PER_USER";
@@ -137,15 +137,34 @@ export default function Page() {
       setChargeMode((hackathon.chargeMode as ChargeMode) || "PER_TEAM");
       setEntryFeeAmount(hackathon.entryFeeAmount?.toString() || "");
 
-      // Hydrate freeCollegeIds - we only have IDs, not names, so store with placeholder names
-      // The names will be fetched/displayed properly when user interacts
+      // Hydrate freeCollegeIds - fetch actual college names
       if (hackathon.freeCollegeIds && hackathon.freeCollegeIds.length > 0) {
-        setSelectedColleges(
-          hackathon.freeCollegeIds.map((id) => ({
-            id,
-            name: `College ${id.slice(-6)}`,
-          })),
-        );
+        // Fetch college names asynchronously
+        const fetchCollegeNames = async () => {
+          try {
+            const token = await getToken();
+            if (!token) return;
+            const collegeIds = hackathon.freeCollegeIds || [];
+            const colleges = await getCollegesByIds(token, collegeIds);
+            setSelectedColleges(
+              colleges.map((c) => ({
+                id: c.id,
+                name: c.name,
+              })),
+            );
+          } catch (error) {
+            console.error("Failed to fetch college names:", error);
+            // Fallback to placeholder names if fetch fails
+            const collegeIds = hackathon.freeCollegeIds || [];
+            setSelectedColleges(
+              collegeIds.map((id) => ({
+                id,
+                name: `College ${id.slice(-6)}`,
+              })),
+            );
+          }
+        };
+        fetchCollegeNames();
       }
 
       const initialState: PricingState = {

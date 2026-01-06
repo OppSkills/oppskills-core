@@ -503,6 +503,36 @@ export class CollegesService {
   }
 
   /**
+   * Get multiple colleges by their IDs.
+   * Returns colleges in the same order as the input IDs (missing IDs are skipped).
+   */
+  async getCollegesByIds(ids: string[]) {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const colleges = await prisma.collegeEntity.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        name: true,
+        country: true,
+        state: true,
+        city: true,
+        address: true,
+        website: true,
+        logo: true,
+      },
+    });
+
+    // Return in the same order as input IDs
+    const collegeMap = new Map(colleges.map((c) => [c.id, c]));
+    return ids
+      .map((id) => collegeMap.get(id))
+      .filter((c): c is NonNullable<typeof c> => c !== undefined);
+  }
+
+  /**
    * Find a college by name (exact match, case-insensitive) or create a new one.
    */
   async findOrCreateCollege(

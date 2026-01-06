@@ -85,6 +85,33 @@ export class CollegesController {
     return this.collegesService.searchColleges(safeQuery);
   }
 
+  @Get('/by-ids')
+  @ApiOperation({
+    summary: 'Get colleges by IDs',
+    description: 'Returns colleges matching the provided IDs. Accepts comma-separated IDs.',
+  })
+  @ApiQuery({
+    name: 'ids',
+    required: true,
+    description: 'Comma-separated college IDs',
+    type: 'string',
+    example: 'id1,id2,id3',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Array of colleges',
+  })
+  async getCollegesByIds(@Query('ids') idsParam: string) {
+    if (!idsParam || idsParam.trim().length === 0) {
+      return [];
+    }
+    const ids = idsParam
+      .split(',')
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0);
+    return this.collegesService.getCollegesByIds(ids);
+  }
+
   /**
    * Bulk import colleges (dev-only, no auth).
    * Blocked in production for security.
