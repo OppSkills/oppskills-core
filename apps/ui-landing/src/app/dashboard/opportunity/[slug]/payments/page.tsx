@@ -36,7 +36,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PayoutDetailsInput } from "@/lib/api/paymentsApi";
 import { updateHackathon } from "@/lib/api/hackathonApi";
-import { searchColleges } from "@/lib/api/collegesApi";
+import { searchColleges, getCollegesByIds } from "@/lib/api/collegesApi";
 import { format } from "date-fns";
 
 type ChargeMode = "PER_TEAM" | "PER_USER";
@@ -137,15 +137,34 @@ export default function Page() {
       setChargeMode((hackathon.chargeMode as ChargeMode) || "PER_TEAM");
       setEntryFeeAmount(hackathon.entryFeeAmount?.toString() || "");
 
-      // Hydrate freeCollegeIds - we only have IDs, not names, so store with placeholder names
-      // The names will be fetched/displayed properly when user interacts
+      // Hydrate freeCollegeIds - fetch actual college names
       if (hackathon.freeCollegeIds && hackathon.freeCollegeIds.length > 0) {
-        setSelectedColleges(
-          hackathon.freeCollegeIds.map((id) => ({
-            id,
-            name: `College ${id.slice(-6)}`,
-          })),
-        );
+        // Fetch college names asynchronously
+        const fetchCollegeNames = async () => {
+          try {
+            const token = await getToken();
+            if (!token) return;
+            const collegeIds = hackathon.freeCollegeIds || [];
+            const colleges = await getCollegesByIds(token, collegeIds);
+            setSelectedColleges(
+              colleges.map((c) => ({
+                id: c.id,
+                name: c.name,
+              })),
+            );
+          } catch (error) {
+            console.error("Failed to fetch college names:", error);
+            // Fallback to placeholder names if fetch fails
+            const collegeIds = hackathon.freeCollegeIds || [];
+            setSelectedColleges(
+              collegeIds.map((id) => ({
+                id,
+                name: `College ${id.slice(-6)}`,
+              })),
+            );
+          }
+        };
+        fetchCollegeNames();
       }
 
       const initialState: PricingState = {
@@ -389,6 +408,23 @@ export default function Page() {
         payment settings and payout account details.
       </p>
 
+      {/* REGISTRATION STARTED WARNING */}
+      {registrationStarted && (
+        <div className="w-full p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Pricing Fields Locked
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                Cannot change pricing fields (isFree, entryFeeAmount, chargeMode) after registration has started.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* IS HACKATHON PAID */}
       <div className="flex flex-col items-start gap-4 p-6 self-stretch rounded-2xl border border-border bg-transparent">
         <div className="flex flex-col items-start gap-3">
@@ -458,10 +494,23 @@ export default function Page() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
               <div className="flex flex-col p-5 gap-2 rounded-2xl border border-border bg-card">
                 <span className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Banknote className="w-4 h-4" /> Total Payment Collected
+                </span>
+                <span className="text-2xl font-semibold text-primary">
+                  ₹{parseFloat(String(earnings.totalGross)).toFixed(2)}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {earnings.capturedPaymentsCount} payment
+                  {earnings.capturedPaymentsCount !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              <div className="flex flex-col p-5 gap-2 rounded-2xl border border-border bg-card">
+                <span className="text-sm text-muted-foreground flex items-center gap-2">
                   <IndianRupee className="w-4 h-4" /> Pending Payout
                 </span>
                 <span className="text-2xl font-semibold">
-                  ₹{earnings.pendingPayout}
+                  ₹{parseFloat(String(earnings.pendingPayout)).toFixed(2)}
                 </span>
                 {!earnings.isEligibleNow && earnings.eligibleAt && (
                   <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full w-fit">
@@ -475,7 +524,7 @@ export default function Page() {
                   <Banknote className="w-4 h-4" /> Paid Out
                 </span>
                 <span className="text-2xl font-semibold text-green-600">
-                  ₹{earnings.paidOut}
+                  ₹{parseFloat(String(earnings.paidOut)).toFixed(2)}
                 </span>
               </div>
             </div>

@@ -1,11 +1,21 @@
-import { IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, ValidateIf } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  ValidateIf,
+} from "class-validator";
+import { Type } from "class-transformer";
 import {
   GenderValue,
   UserCategoryValue,
   ExperienceLevelValue,
   TeamPreferenceValue,
-} from '../../../enums';
+} from "../../../enums";
 
 /**
  * DTO for creating/updating user onboarding profile.
@@ -38,23 +48,47 @@ export class CreateOnboardingDto {
   schoolAddress?: string;
 
   // College fields (for COLLEGE_STUDENT, PROFESSIONAL_SCHOOL_STUDENT)
-  @ValidateIf((o) =>
-    [UserCategoryValue.COLLEGE_STUDENT, UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT].includes(o.userCategory) &&
-    !o.collegeSkipped
+  @ValidateIf(
+    (o) =>
+      [
+        UserCategoryValue.COLLEGE_STUDENT,
+        UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT,
+      ].includes(o.userCategory) &&
+      !o.collegeSkipped &&
+      !o.collegeId
+  )
+  @IsString()
+  @IsNotEmpty()
+  collegeName?: string;
+
+  @ValidateIf(
+    (o) =>
+      [
+        UserCategoryValue.COLLEGE_STUDENT,
+        UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT,
+      ].includes(o.userCategory) &&
+      !o.collegeSkipped &&
+      !o.collegeName
   )
   @IsString()
   @IsNotEmpty()
   collegeId?: string;
 
   @ValidateIf((o) =>
-    [UserCategoryValue.COLLEGE_STUDENT, UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT].includes(o.userCategory)
+    [
+      UserCategoryValue.COLLEGE_STUDENT,
+      UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT,
+    ].includes(o.userCategory)
   )
   @IsString()
   @IsOptional()
   collegeCurrentYear?: string;
 
   @ValidateIf((o) =>
-    [UserCategoryValue.COLLEGE_STUDENT, UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT].includes(o.userCategory)
+    [
+      UserCategoryValue.COLLEGE_STUDENT,
+      UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT,
+    ].includes(o.userCategory)
   )
   @IsInt()
   @Min(1900)
@@ -135,6 +169,10 @@ export class UpdateOnboardingDto {
   @IsString()
   @IsOptional()
   schoolAddress?: string;
+
+  @IsString()
+  @IsOptional()
+  collegeName?: string;
 
   @IsString()
   @IsOptional()

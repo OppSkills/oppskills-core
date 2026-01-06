@@ -31,6 +31,7 @@ type LifecycleStatus =
 export class EventService {
   private readonly logger = new Logger(EventService.name);
   private readonly GOOGLE_SHEETS_ENABLED_EVENT_ID = 'cmjn3pgst0001oz01flu5hcgw';
+  private readonly EVENT_PASS_EMAIL_DISABLED_EVENT_ID = 'cmjn3pgst0001oz01flu5hcgw';
 
   constructor(
     private readonly googleSheetsService: GoogleSheetsService,
@@ -996,7 +997,7 @@ export class EventService {
         label: 'Company Name',
         type: 'TEXT',
         order: -8,
-        required: true,
+        required: false,
         options: [],
       });
     } else {
@@ -1036,9 +1037,13 @@ export class EventService {
 
     // Lazy-create missing default fields
     // Build a map of existing fields by label for matching
-    const existingFieldsByLabel = new Map(
-      regForm.fields.map((f) => [f.label.toLowerCase(), f]),
-    );
+    const existingFieldsByLabel = new Map<
+      string,
+      (typeof regForm.fields)[number]
+    >(regForm.fields.map((f) => [f.label.toLowerCase(), f]));
+
+    // Track used orders to avoid unique constraint violations
+    const usedOrders = new Set(regForm.fields.map((f) => f.order));
 
     // Map frontend field IDs to real DB field IDs
     const frontendIdToDbId = new Map<string, string>();
@@ -1063,17 +1068,64 @@ export class EventService {
         }
       } else {
         // Field doesn't exist - create it
+        // Find an available order if the desired one is taken (handles race conditions)
+        let orderToUse = def.order;
+        while (usedOrders.has(orderToUse)) {
+          orderToUse -= 1;
+        }
+        usedOrders.add(orderToUse);
+
+        try {
         const newField = await prisma.eventRegistrationFieldEntity.create({
           data: {
             registrationFormId,
             label: def.label,
             type: def.type,
             required: def.required,
-            order: def.order,
+              order: orderToUse,
             options: def.options,
           },
         });
         frontendIdToDbId.set(def.frontendId, newField.id);
+        } catch (error: any) {
+          // Handle race condition: if another request created the field concurrently,
+          // refetch and use the existing field
+          if (error?.code === 'P2002') {
+            const refetchedForm = await prisma.eventRegistrationFormEntity.findUnique({
+              where: { eventId },
+              include: {
+                fields: {
+                  orderBy: { order: 'asc' },
+                },
+              },
+            });
+            const refetchedField = refetchedForm?.fields.find(
+              (f) => f.label.toLowerCase() === def.label.toLowerCase(),
+            );
+            if (refetchedField) {
+              frontendIdToDbId.set(def.frontendId, refetchedField.id);
+            } else {
+              // If still not found, try with a different order
+              let retryOrder = orderToUse - 1;
+              while (usedOrders.has(retryOrder)) {
+                retryOrder -= 1;
+              }
+              const newField = await prisma.eventRegistrationFieldEntity.create({
+                data: {
+                  registrationFormId,
+                  label: def.label,
+                  type: def.type,
+                  required: def.required,
+                  order: retryOrder,
+                  options: def.options,
+                },
+              });
+              frontendIdToDbId.set(def.frontendId, newField.id);
+            }
+          } else {
+            throw error;
+          }
+        }
       }
     }
 
@@ -1105,10 +1157,16 @@ export class EventService {
     const registrationFields = updatedRegForm?.fields ?? [];
 
     // Transform answers: replace frontend "default-*" IDs with real DB IDs
-    const providedAnswers = (answers ?? []).map((a) => ({
-      fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
-      value: a.value,
-    }));
+    const providedAnswers = (answers ?? [])
+      .map((a) => ({
+        fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
+        value: a.value,
+      }))
+      .filter((a) => {
+        // If it still starts with 'default-', it means it wasn't in our current mapping
+        // (likely a field from a different user category that's no longer relevant or shouldn't be handled here)
+        return !a.fieldId.startsWith('default-');
+      });
 
     const providedFieldIds = new Set(providedAnswers.map((a) => a.fieldId));
 
@@ -1163,7 +1221,9 @@ export class EventService {
 
     // Validate each provided answer
     if (providedAnswers.length > 0) {
-      const fieldMap = new Map(registrationFields.map((f) => [f.id, f]));
+      const fieldMap = new Map<string, (typeof registrationFields)[number]>(
+        registrationFields.map((f) => [f.id, f]),
+      );
 
       for (const answer of providedAnswers) {
         const field = fieldMap.get(answer.fieldId);
@@ -1330,21 +1390,23 @@ export class EventService {
       eventLocation = 'Online Event';
     }
 
-    // Emit event.joined event for event pass email
-    const emailPayload: EventJoinedEventPayload = {
-      userId,
-      email: user.email,
-      firstName: user.firstName || undefined,
-      eventId: event.id,
-      eventName: event.name,
-      eventSlug: event.slug,
-      eventDate,
-      eventTime,
-      eventLocation,
-      eventType: event.eventType || undefined,
-      registrationId: result.participantId,
-    };
-    this.eventEmitter.emit(EMAIL_EVENTS.EVENT_JOINED, emailPayload);
+    // Emit event.joined event for event pass email (skip for specific events)
+    if (eventId !== this.EVENT_PASS_EMAIL_DISABLED_EVENT_ID) {
+      const emailPayload: EventJoinedEventPayload = {
+        userId,
+        email: user.email,
+        firstName: user.firstName || undefined,
+        eventId: event.id,
+        eventName: event.name,
+        eventSlug: event.slug,
+        eventDate,
+        eventTime,
+        eventLocation,
+        eventType: event.eventType || undefined,
+        registrationId: result.participantId,
+      };
+      this.eventEmitter.emit(EMAIL_EVENTS.EVENT_JOINED, emailPayload);
+    }
 
     return { message: 'Successfully joined the event.' };
   }

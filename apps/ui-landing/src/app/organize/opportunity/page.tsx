@@ -51,11 +51,11 @@ import DescriptionEditorModal from "@/components/ui/derived/DescriptionEditorMod
 import dynamic from "next/dynamic";
 const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
-  { ssr: false },
+  { ssr: false }
 );
 import { format } from "date-fns";
 import Image from "next/image";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
@@ -79,6 +79,8 @@ import {
 import { createFestival, getFestivals } from "@/lib/api/festivalApi";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
+import { DialogClose } from "@radix-ui/react-dialog";
+import { useRouter } from "next/navigation";
 
 /**
  * Organizer page: creates festivals and hackathons.
@@ -86,6 +88,9 @@ import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
  * Image upload is intentionally NOT implemented yet (S3 integration later).
  */
 export default function Page() {
+  const timeInputRef = useRef<HTMLInputElement>(null);
+  const [formCompleted, setFormCompleted] = useState(false);
+
   const InputBlock = ({
     icon,
     label,
@@ -138,7 +143,7 @@ export default function Page() {
     eventStartDate: undefined,
     eventEndDate: undefined,
     eventLocation: "",
-    eventTimeFrom: "",
+    eventTimeFrom: "12:00",
     eventDescription: "",
     eventThumbnail: "",
     hackathonType: "",
@@ -181,7 +186,7 @@ export default function Page() {
   type FestivalListItem = { id: string; name: string };
 
   const [festivals, setFestivals] = useState<ReadonlyArray<FestivalListItem>>(
-    [],
+    []
   );
   const [isLoadingFestivals, setIsLoadingFestivals] = useState<boolean>(false);
   const [isSubmittingHackathon, setIsSubmittingHackathon] =
@@ -193,7 +198,7 @@ export default function Page() {
   const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
   const bannerInputId = useMemo(
     () => `organizer-banner-upload-${crypto.randomUUID()}`,
-    [],
+    []
   );
 
   /**
@@ -228,7 +233,7 @@ export default function Page() {
    * - an object with a `data` array.
    */
   function extractFestivalList(
-    input: unknown,
+    input: unknown
   ): ReadonlyArray<FestivalListItem> {
     const listRaw = Array.isArray(input)
       ? input
@@ -327,7 +332,7 @@ export default function Page() {
    * Maps modal question types to backend registration field types.
    */
   function toRegistrationFieldTypeValue(
-    type: RegistrationQuestion["type"],
+    type: RegistrationQuestion["type"]
   ): RegistrationFieldTypeValue {
     if (type === "Text") return "TEXT";
     if (type === "Phone No.") return "PHONE_NO";
@@ -342,7 +347,7 @@ export default function Page() {
    * Validates labels and OPTIONS values.
    */
   function mapRegistrationQuestionsToRegistrationFields(
-    questions: ReadonlyArray<RegistrationQuestion>,
+    questions: ReadonlyArray<RegistrationQuestion>
   ): ReadonlyArray<RegistrationFieldDto> {
     const fields: RegistrationFieldDto[] = [];
 
@@ -379,7 +384,7 @@ export default function Page() {
    * If the input is a URL, we treat it as VIRTUAL; otherwise PHYSICAL.
    */
   function toLocationDto(
-    input: string,
+    input: string
   ): HackathonLocationDto | FestivalLocationDto | undefined {
     const trimmed = input.trim();
     if (trimmed.length === 0) return undefined;
@@ -399,6 +404,12 @@ export default function Page() {
     if (label === "University only") return "UNIVERSITY_ONLY";
     return undefined;
   }
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!formCompleted) return;
+    router.push("/dashboard/opportunity");
+  }, [formCompleted]);
 
   /**
    * Maps UI hackathon type labels to backend enum values.
@@ -416,7 +427,7 @@ export default function Page() {
    * Maps UI participant type labels to backend enum values.
    */
   function toParticipantTypeValue(
-    label: string,
+    label: string
   ): ParticipantTypeValue | undefined {
     if (label === "Individual Participants") return "INDIVIDUAL";
     if (label === "Team of 2") return "TEAM_OF_2";
@@ -486,7 +497,7 @@ export default function Page() {
               htmlFor={bannerInputId}
               className={cn(
                 "absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-background/20 hover:bg-background/40 transition-colors cursor-pointer",
-                isUploadingBanner ? "opacity-60 cursor-not-allowed" : "",
+                isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
               )}
               aria-disabled={isUploadingBanner}
             >
@@ -791,15 +802,21 @@ export default function Page() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button type="submit">Save changes</Button>
+                    <DialogClose asChild>
+                      <Button type="button">Save changes</Button>
+                    </DialogClose>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
 
               <div className="bg-muted-foreground/5 rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group">
-                <div className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
+                <div
+                  onClick={() => timeInputRef.current?.focus()}
+                  className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors"
+                >
                   <Clock className="w-6 h-6" />
-                  <input
+                  <Input
+                    ref={timeInputRef}
                     type="time"
                     value={formData.eventTimeFrom}
                     onChange={(e) =>
@@ -808,7 +825,6 @@ export default function Page() {
                         eventTimeFrom: e.target.value,
                       })
                     }
-                    className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
                   />
                 </div>
                 <p className="text-muted-foreground/60 text-sm pl-9">
@@ -849,7 +865,7 @@ export default function Page() {
               onSave={(val) =>
                 setFormData({ ...formData, eventDescription: val })
               }
-              title="Event Description"
+              title="Opportunity Description"
             />
 
             {/* Event Details */}
@@ -930,7 +946,7 @@ export default function Page() {
                           ? format(formData.eventRegisterBy, "PPP")
                           : "Select Date"
                       }
-                      subLabel="Last Date"
+                      subLabel="Registration Deadline"
                       className="bg-muted h-full"
                     />
                   </div>
@@ -989,7 +1005,7 @@ export default function Page() {
                 // Validate dates
                 if (formData.eventRegisterBy > formData.eventStartDate) {
                   toast.error(
-                    "Registration Last Date must be before the Start Date",
+                    "Registration Last Date must be before the Start Date"
                   );
                   return;
                 }
@@ -1018,20 +1034,20 @@ export default function Page() {
                     visibility: toVisibilityValue(formData.eventFestVisibility),
                     hackathonType: toHackathonTypeValue(formData.hackathonType),
                     participantType: toParticipantTypeValue(
-                      formData.participantType,
+                      formData.participantType
                     ),
                     location: toLocationDto(formData.eventLocation) as
                       | HackathonLocationDto
                       | undefined,
                     registrationDeadline: toIsoDateOnly(
-                      formData.eventRegisterBy,
+                      formData.eventRegisterBy
                     ),
                   };
 
                   // Pre-validate registration questions (so we don't create a hackathon and then fail saving fields).
                   const registrationFields =
                     mapRegistrationQuestionsToRegistrationFields(
-                      formData.registrationQuestions,
+                      formData.registrationQuestions
                     );
                   const invalidOptions = registrationFields.some((f) => {
                     if (f.type !== "OPTIONS") return false;
@@ -1039,7 +1055,7 @@ export default function Page() {
                   });
                   if (invalidOptions) {
                     toast.error(
-                      "Please add at least one option for every Options question.",
+                      "Please add at least one option for every Options question."
                     );
                     return;
                   }
@@ -1048,7 +1064,7 @@ export default function Page() {
                   const hackathonId = extractHackathonId(created);
                   if (!hackathonId) {
                     toast.error(
-                      "Event was created but we couldn't read its id from the server response.",
+                      "Event was created but we couldn't read its id from the server response."
                     );
                     return;
                   }
@@ -1328,13 +1344,14 @@ export default function Page() {
 
                     const res = await createFestival(token, payload);
                     toast.success("Festival listed!");
+                    setFormCompleted(true);
                     setShowFestivalModal(false);
 
                     // Refresh dropdown list; ensures the new festival appears.
                     setFestivals(
                       extractFestivalList(res).length > 0
                         ? extractFestivalList(res)
-                        : festivals,
+                        : festivals
                     );
                     await loadFestivals();
                   } catch (err: unknown) {
@@ -1345,9 +1362,13 @@ export default function Page() {
                     setIsSubmittingFestival(false);
                   }
                 }}
-                disabled={isSubmittingFestival}
+                disabled={isSubmittingFestival || formCompleted}
               >
-                {isSubmittingFestival ? "Listing..." : "List Festival"}
+                {isSubmittingFestival
+                  ? "Listing..."
+                  : formCompleted
+                    ? "Redirecting to Dashboard"
+                    : "List Festival"}
               </Button>
             </div>
           </div>

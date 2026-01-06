@@ -51,6 +51,7 @@ import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 // Reusing the InputBlock logic
 const InputBlock = ({
@@ -370,7 +371,9 @@ export default function BasicDetails({
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Save Changes</Button>
+                <DialogClose asChild>
+                  <Button type="submit">Save Changes</Button>
+                </DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>

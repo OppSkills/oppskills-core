@@ -108,12 +108,12 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       }
 
       router.push(
-        `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`,
+        `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`
       );
     } catch (error) {
       console.error("Error checking onboarding status:", error);
       toast.error(
-        getApiErrorMessage(error, "Something went wrong. Please try again."),
+        getApiErrorMessage(error, "Something went wrong. Please try again.")
       );
     } finally {
       setIsCheckingOnboarding(false);
@@ -207,7 +207,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
   const getDeterministicPseudoImpressions = (
     registrationCount: number | null | undefined,
-    createdAt: Date,
+    createdAt: Date
   ): number => {
     if (!registrationCount || registrationCount <= 0) return 0;
 
@@ -218,7 +218,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
     const hoursOld = Math.max(
       1,
-      Math.floor((now - createdTime) / (1000 * 60 * 60)),
+      Math.floor((now - createdTime) / (1000 * 60 * 60))
     );
 
     const registrationBase = registrationCount * 6;
@@ -421,7 +421,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
                   {competition.impressions ||
                     getDeterministicPseudoImpressions(
                       competition.registrationCount,
-                      competition.createdAt,
+                      competition.createdAt
                     )}
                 </div>
                 <div className="text-xs text-neutral-500">Impressions</div>

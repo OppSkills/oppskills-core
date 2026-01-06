@@ -12,6 +12,7 @@ export default function HeroSection() {
       title: "Competitions",
       items: ["Idea Comp", "Hackathons", "Quizzes"],
       image: "/character-competitions.png",
+      link: "/competitions",
       styles: {
         bg: "bg-[#C4CAFF]",
         circle: "bg-[#8390FF]",
@@ -22,6 +23,7 @@ export default function HeroSection() {
       title: "Events",
       items: ["Workshops", "Tech events", "Innovation meets"],
       image: "/character-events.png",
+      link: "/events",
       styles: {
         bg: "bg-[#FFEFA7]",
         circle: "bg-[#F7CF04]",
@@ -32,6 +34,7 @@ export default function HeroSection() {
       title: "Communities",
       items: ["Tech", "Design", "Fitness"],
       image: "/character-communities.png",
+      link: "#comingsoon",
       styles: {
         bg: "bg-[#FDC5F5]",
         circle: "bg-[#F675D1]",
@@ -45,17 +48,11 @@ export default function HeroSection() {
       <div className="relative z-40 max-w-[1159px] px-4 text-center space-y-6 py-16">
         <div className="space-y-2">
           <h1 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
-            Opportunities Made{" "}
+            Global Opportunities Powered by{" "}
             <span className="text-primary-500 kaushan-script font-normal">
-              Simple
+              Skills
             </span>
           </h1>
-
-          <h2 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
-            Discover Your Next
-            <br />
-            College Event
-          </h2>
         </div>
 
         <p className="w-full max-w-[993px] mx-auto text-center text-muted-foreground text-[18px] md:text-[28px] font-normal leading-normal px-2 inter">
@@ -100,6 +97,9 @@ export default function HeroSection() {
         {HERO_CARDS.map((card, index) => (
           <div
             key={index}
+            onClick={() => {
+              router.push(card.link);
+            }}
             className={`relative w-full h-[182px] rounded-[24px] overflow-hidden ${card.styles.bg} flex p-6 transition-transform hover:scale-105 shadow-sm group mx-auto max-w-md md:max-w-none`}
           >
             <div className="relative z-10 flex flex-col gap-2">

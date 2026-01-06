@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import { Logger } from 'src/_utils/logger';
 import type { CollegeImportItemDto } from '@oppskills/types';
+import * as crypto from 'crypto';
 
 /**
  * Result shape for bulk imports.
@@ -497,6 +498,77 @@ export class CollegesService {
         address: true,
         website: true,
         logo: true,
+      },
+    });
+  }
+
+  /**
+   * Get multiple colleges by their IDs.
+   * Returns colleges in the same order as the input IDs (missing IDs are skipped).
+   */
+  async getCollegesByIds(ids: string[]) {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const colleges = await prisma.collegeEntity.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        name: true,
+        country: true,
+        state: true,
+        city: true,
+        address: true,
+        website: true,
+        logo: true,
+      },
+    });
+
+    // Return in the same order as input IDs
+    const collegeMap = new Map(colleges.map((c) => [c.id, c]));
+    return ids
+      .map((id) => collegeMap.get(id))
+      .filter((c): c is NonNullable<typeof c> => c !== undefined);
+  }
+
+  /**
+   * Find a college by name (exact match, case-insensitive) or create a new one.
+   */
+  async findOrCreateCollege(
+    name: string,
+    location: { city: string; state: string; country: string },
+  ) {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      throw new Error('College name cannot be empty');
+    }
+
+    // Try finding exact match (case insensitive)
+    const existing = await prisma.collegeEntity.findFirst({
+      where: {
+        name: {
+          equals: trimmedName,
+          mode: 'insensitive',
+        },
+      },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    // Create new
+    const newId = crypto.randomUUID();
+
+    return prisma.collegeEntity.create({
+      data: {
+        id: newId,
+        name: trimmedName,
+        city: location.city,
+        state: location.state,
+        country: location.country,
+        address: `${location.city}, ${location.state}, ${location.country}`,
       },
     });
   }

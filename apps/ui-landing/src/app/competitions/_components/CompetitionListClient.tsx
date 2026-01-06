@@ -84,7 +84,6 @@ export default function CompetitionListClient({
           </h1>
           <p className="text-muted-foreground">
             Explore active hackathons, design challenges, and coding contests.
-            The best Unstop hackathon alternative.
           </p>
         </div>
 

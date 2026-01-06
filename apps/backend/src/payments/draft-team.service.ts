@@ -4,7 +4,14 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { prisma, LifecycleStatus, ApprovalStatus } from '@oppskills/db';
+import {
+  prisma,
+  LifecycleStatus,
+  ApprovalStatus,
+  HackathonChargeMode,
+  HackathonPaymentScope,
+  HackathonPaymentStatus,
+} from '@oppskills/db';
 import { Logger } from 'src/_utils/logger';
 
 @Injectable()
@@ -124,6 +131,7 @@ export class DraftTeamService {
             isRegistrationPaused: true,
             registrationDeadline: true,
             isFree: true,
+            chargeMode: true,
           },
         },
         members: { select: { userId: true } },
@@ -170,6 +178,49 @@ export class DraftTeamService {
 
     if (!team.isOpen) {
       throw new BadRequestException('Team is not accepting new members');
+    }
+
+    // For paid hackathons, validate payment before allowing user to join
+    if (!team.hackathon.isFree) {
+      if (team.hackathon.chargeMode === HackathonChargeMode.PER_TEAM) {
+        // PER_TEAM: Members (not leader) must wait for leader to complete payment
+        if (team.leaderId !== userId) {
+          const teamPayment = await prisma.hackathonPaymentEntity.findFirst({
+            where: {
+              hackathonId: team.hackathon.id,
+              teamId: team.id,
+              scope: HackathonPaymentScope.TEAM,
+              paymentStatus: {
+                in: [HackathonPaymentStatus.AUTHORIZED, HackathonPaymentStatus.CAPTURED],
+              },
+            },
+          });
+
+          if (!teamPayment) {
+            throw new BadRequestException(
+              'Team payment must be completed by the leader before members can join',
+            );
+          }
+        }
+      } else if (team.hackathon.chargeMode === HackathonChargeMode.PER_USER) {
+        // PER_USER: Every user (including members) must complete their own payment before joining
+        const userPayment = await prisma.hackathonPaymentEntity.findFirst({
+          where: {
+            hackathonId: team.hackathon.id,
+            payerUserId: userId,
+            scope: HackathonPaymentScope.USER,
+            paymentStatus: {
+              in: [HackathonPaymentStatus.AUTHORIZED, HackathonPaymentStatus.CAPTURED],
+            },
+          },
+        });
+
+        if (!userPayment) {
+          throw new BadRequestException(
+            'You must complete payment before joining a team',
+          );
+        }
+      }
     }
 
     const member = await prisma.teamMemberEntity.create({

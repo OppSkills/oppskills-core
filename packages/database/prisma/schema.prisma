@@ -5,8 +5,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
   schemas  = ["oppskills"]
+  url      = env("DATABASE_URL")
 }
 
 enum HackathonMode {
@@ -1101,8 +1101,8 @@ model UserOnboardingProfileEntity {
   user   UserEntity @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Step 1: Primary Identity
-  gender       Gender
-  userCategory UserCategory @map("user_category")
+  gender       Gender?
+  userCategory UserCategory @default(COLLEGE_STUDENT) @map("user_category")
 
   // Step 2: Education/Work Details
   // School fields (for SCHOOL_STUDENT)

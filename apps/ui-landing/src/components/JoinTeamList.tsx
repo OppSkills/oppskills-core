@@ -317,21 +317,37 @@ export function JoinTeamList({
   const processPaymentAndRegistration = async (
     token: string,
     answers: Array<{ fieldId: string; value: string | number | string[] }>,
+    teamId?: string,
+    invitationCode?: string,
   ) => {
     try {
+      // Create payment order first (before joining team)
+      // Note: This function is only for PER_USER mode
+      // PER_TEAM members should use the direct join flow (they don't pay)
+      if (chargeMode !== "PER_USER") {
+        throw new Error(
+          "processPaymentAndRegistration should only be called for PER_USER mode",
+        );
+      }
+
       const order = await createPaymentOrder(token, hackathonSlug, {});
 
       // If discount makes this a zero-amount payment, backend already marks it as CAPTURED.
-      // Skip Razorpay checkout and proceed to registration submission (PER_USER flow).
+      // Skip Razorpay checkout and proceed to team join and registration submission.
       if (order.zeroAmountPayment || order.amountPaise === 0) {
-        if (chargeMode === "PER_USER") {
+        // Join team after payment is confirmed (zero amount = free entry)
+        if (teamId) {
+          await joinDraftTeam(token, hackathonSlug, { teamId });
+        } else if (invitationCode) {
+          await joinDraftTeam(token, hackathonSlug, { invitationCode });
+        }
+
+        // Submit registration (for PER_USER mode)
           const formattedAnswers = answers.map((a) => ({
             fieldId: a.fieldId,
             value: String(a.value),
           }));
-
           await submitRegistration(token, hackathonSlug, formattedAnswers);
-        }
 
         setIsSuccess(true);
         toast.success("Registration successful!");
@@ -340,6 +356,8 @@ export function JoinTeamList({
           router.push(`/competitions/${hackathonSlug}`);
         }, 2000);
 
+        setIsSubmittingRegistration(false);
+        setShowRegistrationModal(false);
         return;
       }
 
@@ -352,6 +370,13 @@ export function JoinTeamList({
 
       if (!razorpayOrderId) {
         throw new Error("Payment initialization failed (missing Razorpay order id)");
+      }
+
+      // Ensure Razorpay script is loaded
+      if (!window.Razorpay) {
+        throw new Error(
+          "Razorpay payment gateway is not loaded. Please refresh the page and try again.",
+        );
       }
 
       const options = {
@@ -376,14 +401,21 @@ export function JoinTeamList({
               );
             }
 
+            // Verify payment first
             await verifyPayment(verifyToken, hackathonSlug, {
               razorpayOrderId: responseOrderId,
               razorpayPaymentId: responsePaymentId,
               razorpaySignature: responseSignature,
             });
 
-            if (chargeMode === "PER_USER") {
-              // For PER_USER, registration is submitted after payment
+            // Only after successful payment verification, join the team
+            if (teamId) {
+              await joinDraftTeam(verifyToken, hackathonSlug, { teamId });
+            } else if (invitationCode) {
+              await joinDraftTeam(verifyToken, hackathonSlug, { invitationCode });
+            }
+
+            // Submit registration after joining team (for PER_USER mode)
               const formattedAnswers = answers.map((a) => ({
                 fieldId: a.fieldId,
                 value: String(a.value),
@@ -393,12 +425,6 @@ export function JoinTeamList({
                 hackathonSlug,
                 formattedAnswers,
               );
-            }
-            // For PER_TEAM, registration was already submitted by leader,
-            // we just needed to pay (if we were paying, but logic suggests PER_TEAM members join free?)
-            // Actually, JoinTeamList logic for PER_TEAM seems to skip payment if isFree...
-            // Wait, if chargeMode is PER_TEAM, members usually join for free if leader paid.
-            // But if there is a fee for joining (unlikely for PER_TEAM mode member), we handle it.
 
             setIsSuccess(true);
             toast.success("Payment successful! You have joined the team.");
@@ -422,8 +448,9 @@ export function JoinTeamList({
         },
         modal: {
           ondismiss: () => {
+            // Payment cancelled - user did NOT join team
             setIsSubmittingRegistration(false);
-            toast.info("Payment cancelled");
+            toast.info("Payment cancelled. You have not joined the team.");
           },
         },
       };
@@ -436,6 +463,7 @@ export function JoinTeamList({
         error instanceof Error ? error.message : "Failed to initiate payment";
       toast.error(message);
       setIsSubmittingRegistration(false);
+      // User did NOT join team since payment failed
     }
   };
 
@@ -452,6 +480,7 @@ export function JoinTeamList({
       }
 
       if (isFree) {
+        // Free hackathons: join team directly
         await joinTeam(token, { teamId, answers });
         const team = teams.find((t) => t.id === teamId);
         setJoinedTeamName(team?.name || "the team");
@@ -465,20 +494,25 @@ export function JoinTeamList({
         setJoiningTeamId(null);
         setShowRegistrationModal(false);
       } else {
-        await joinDraftTeam(token, hackathonSlug, { teamId });
-
-        const team = teams.find((t) => t.id === teamId);
-        setJoinedTeamName(team?.name || "the team");
-
+        // Paid hackathons: Payment first, then join team after successful payment
         if (chargeMode === "PER_USER") {
-          await processPaymentAndRegistration(token, answers);
+          // PER_USER: Create payment order → Pay → Join team → Submit registration
+          await processPaymentAndRegistration(token, answers, teamId);
         } else {
+          // PER_TEAM: For members, check if leader has paid, then join and submit registration
+          // Members don't pay, but can only join if team payment is complete
+          // The backend will validate payment when submitting registration
+          // So we can join draft team first, then submit registration (backend validates)
+          try {
+            await joinDraftTeam(token, hackathonSlug, { teamId });
           const formattedAnswers = answers.map((a) => ({
             fieldId: a.fieldId,
             value: String(a.value),
           }));
           await submitRegistration(token, hackathonSlug, formattedAnswers);
 
+            const team = teams.find((t) => t.id === teamId);
+            setJoinedTeamName(team?.name || "the team");
           setIsSuccess(true);
           toast.success("Successfully joined!");
 
@@ -488,6 +522,16 @@ export function JoinTeamList({
 
           setJoiningTeamId(null);
           setShowRegistrationModal(false);
+          } catch (error: unknown) {
+            // If payment validation fails, user is not in team
+            const message =
+              error instanceof Error
+                ? error.message
+                : "Failed to join team. Team payment may not be complete.";
+            toast.error(message);
+            setJoiningTeamId(null);
+            setShowRegistrationModal(false);
+          }
         }
       }
     } catch (error: unknown) {
@@ -513,6 +557,7 @@ export function JoinTeamList({
       }
 
       if (isFree) {
+        // Free hackathons: join team directly
         await joinTeamByCode(token, code, answers);
         setJoinedTeamName("the team");
         setIsSuccess(true);
@@ -525,18 +570,23 @@ export function JoinTeamList({
         setIsJoiningByCode(false);
         setShowRegistrationModal(false);
       } else {
-        await joinDraftTeam(token, hackathonSlug, { invitationCode: code });
-        setJoinedTeamName("the team");
-
+        // Paid hackathons: Payment first, then join team after successful payment
         if (chargeMode === "PER_USER") {
-          await processPaymentAndRegistration(token, answers);
+          // PER_USER: Create payment order → Pay → Join team → Submit registration
+          await processPaymentAndRegistration(token, answers, undefined, code);
         } else {
+          // PER_TEAM: For members, check if leader has paid, then join and submit registration
+          // Members don't pay, but can only join if team payment is complete
+          // The backend will validate payment when submitting registration
+          try {
+            await joinDraftTeam(token, hackathonSlug, { invitationCode: code });
           const formattedAnswers = answers.map((a) => ({
             fieldId: a.fieldId,
             value: String(a.value),
           }));
           await submitRegistration(token, hackathonSlug, formattedAnswers);
 
+            setJoinedTeamName("the team");
           setIsSuccess(true);
           toast.success("Successfully joined!");
 
@@ -546,6 +596,16 @@ export function JoinTeamList({
 
           setIsJoiningByCode(false);
           setShowRegistrationModal(false);
+          } catch (error: unknown) {
+            // If payment validation fails, user is not in team
+            const message =
+              error instanceof Error
+                ? error.message
+                : "Failed to join team. Team payment may not be complete.";
+            toast.error(message);
+            setIsJoiningByCode(false);
+            setShowRegistrationModal(false);
+          }
         }
       }
     } catch (error: unknown) {
