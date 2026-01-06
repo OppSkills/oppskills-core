@@ -1042,6 +1042,9 @@ export class EventService {
       (typeof regForm.fields)[number]
     >(regForm.fields.map((f) => [f.label.toLowerCase(), f]));
 
+    // Track used orders to avoid unique constraint violations
+    const usedOrders = new Set(regForm.fields.map((f) => f.order));
+
     // Map frontend field IDs to real DB field IDs
     const frontendIdToDbId = new Map<string, string>();
 
@@ -1065,17 +1068,64 @@ export class EventService {
         }
       } else {
         // Field doesn't exist - create it
-        const newField = await prisma.eventRegistrationFieldEntity.create({
-          data: {
-            registrationFormId,
-            label: def.label,
-            type: def.type,
-            required: def.required,
-            order: def.order,
-            options: def.options,
-          },
-        });
-        frontendIdToDbId.set(def.frontendId, newField.id);
+        // Find an available order if the desired one is taken (handles race conditions)
+        let orderToUse = def.order;
+        while (usedOrders.has(orderToUse)) {
+          orderToUse -= 1;
+        }
+        usedOrders.add(orderToUse);
+
+        try {
+          const newField = await prisma.eventRegistrationFieldEntity.create({
+            data: {
+              registrationFormId,
+              label: def.label,
+              type: def.type,
+              required: def.required,
+              order: orderToUse,
+              options: def.options,
+            },
+          });
+          frontendIdToDbId.set(def.frontendId, newField.id);
+        } catch (error: any) {
+          // Handle race condition: if another request created the field concurrently,
+          // refetch and use the existing field
+          if (error?.code === 'P2002') {
+            const refetchedForm = await prisma.eventRegistrationFormEntity.findUnique({
+              where: { eventId },
+              include: {
+                fields: {
+                  orderBy: { order: 'asc' },
+                },
+              },
+            });
+            const refetchedField = refetchedForm?.fields.find(
+              (f) => f.label.toLowerCase() === def.label.toLowerCase(),
+            );
+            if (refetchedField) {
+              frontendIdToDbId.set(def.frontendId, refetchedField.id);
+            } else {
+              // If still not found, try with a different order
+              let retryOrder = orderToUse - 1;
+              while (usedOrders.has(retryOrder)) {
+                retryOrder -= 1;
+              }
+              const newField = await prisma.eventRegistrationFieldEntity.create({
+                data: {
+                  registrationFormId,
+                  label: def.label,
+                  type: def.type,
+                  required: def.required,
+                  order: retryOrder,
+                  options: def.options,
+                },
+              });
+              frontendIdToDbId.set(def.frontendId, newField.id);
+            }
+          } else {
+            throw error;
+          }
+        }
       }
     }
 

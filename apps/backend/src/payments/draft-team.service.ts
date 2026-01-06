@@ -4,7 +4,14 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { prisma, LifecycleStatus, ApprovalStatus } from '@oppskills/db';
+import {
+  prisma,
+  LifecycleStatus,
+  ApprovalStatus,
+  HackathonChargeMode,
+  HackathonPaymentScope,
+  HackathonPaymentStatus,
+} from '@oppskills/db';
 import { Logger } from 'src/_utils/logger';
 
 @Injectable()
@@ -124,6 +131,7 @@ export class DraftTeamService {
             isRegistrationPaused: true,
             registrationDeadline: true,
             isFree: true,
+            chargeMode: true,
           },
         },
         members: { select: { userId: true } },
@@ -170,6 +178,31 @@ export class DraftTeamService {
 
     if (!team.isOpen) {
       throw new BadRequestException('Team is not accepting new members');
+    }
+
+    // For PER_TEAM mode, validate that team payment is complete before allowing member to join
+    if (
+      !team.hackathon.isFree &&
+      team.hackathon.chargeMode === HackathonChargeMode.PER_TEAM &&
+      team.leaderId !== userId
+    ) {
+      // User is a member (not leader), check if team payment is complete
+      const teamPayment = await prisma.hackathonPaymentEntity.findFirst({
+        where: {
+          hackathonId: team.hackathon.id,
+          teamId: team.id,
+          scope: HackathonPaymentScope.TEAM,
+          paymentStatus: {
+            in: [HackathonPaymentStatus.AUTHORIZED, HackathonPaymentStatus.CAPTURED],
+          },
+        },
+      });
+
+      if (!teamPayment) {
+        throw new BadRequestException(
+          'Team payment must be completed by the leader before members can join',
+        );
+      }
     }
 
     const member = await prisma.teamMemberEntity.create({
