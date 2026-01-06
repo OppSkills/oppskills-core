@@ -14,6 +14,44 @@ import {
 } from '@oppskills/db';
 import { Logger } from 'src/_utils/logger';
 
+/**
+ * Get max team size from participant type.
+ */
+function getMaxSizeFromParticipantType(participantType: string): number {
+  switch (participantType) {
+    case 'INDIVIDUAL':
+      return 1;
+    case 'TEAM_OF_2':
+      return 2;
+    case 'TEAM_OF_3':
+      return 3;
+    case 'TEAM_OF_4':
+      return 4;
+    case 'TEAM_OF_5':
+      return 5;
+    case 'TEAM_OF_6':
+      return 6;
+    case 'MORE_THAN_6':
+      return 10;
+    case 'TEAM_OF_2_3':
+      return 3;
+    case 'TEAM_OF_2_4':
+      return 4;
+    case 'TEAM_OF_3_4':
+      return 4;
+    case 'TEAM_OF_3_5':
+      return 5;
+    case 'TEAM_OF_4_5':
+      return 5;
+    case 'TEAM_OF_4_6':
+      return 6;
+    case 'TEAM_OF_5_6':
+      return 6;
+    default:
+      return 4;
+  }
+}
+
 @Injectable()
 export class DraftTeamService {
   private readonly logger = new Logger(DraftTeamService.name);
@@ -39,6 +77,7 @@ export class DraftTeamService {
         registrationDeadline: true,
         isFree: true,
         maxTeams: true,
+        participantType: true,
         _count: { select: { teams: true } },
       },
     });
@@ -72,10 +111,14 @@ export class DraftTeamService {
 
     const invitationCode = this.generateInvitationCode();
 
+    // Determine max size from hackathon's participantType if not explicitly provided
+    const effectiveMaxSize =
+      maxSize ?? getMaxSizeFromParticipantType(hackathon.participantType);
+
     const team = await prisma.teamEntity.create({
       data: {
         name,
-        maxSize: maxSize ?? 4,
+        maxSize: effectiveMaxSize,
         hackathonId: hackathon.id,
         leaderId,
         creatorId: leaderId,
