@@ -31,7 +31,7 @@ export default function CompetitionsPage() {
   return (
     <GenericListingPage
       title="College Hackathons & Competitions"
-      description="Explore active hackathons, design challenges, and coding contests. The best Unstop hackathon alternative."
+      description="Explore active hackathons, design challenges, and coding contests."
       items={items}
       isLoading={isLoading}
       error={error}
