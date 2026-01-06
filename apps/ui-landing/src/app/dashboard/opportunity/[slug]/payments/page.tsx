@@ -389,6 +389,23 @@ export default function Page() {
         payment settings and payout account details.
       </p>
 
+      {/* REGISTRATION STARTED WARNING */}
+      {registrationStarted && (
+        <div className="w-full p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Pricing Fields Locked
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                Cannot change pricing fields (isFree, entryFeeAmount, chargeMode) after registration has started.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* IS HACKATHON PAID */}
       <div className="flex flex-col items-start gap-4 p-6 self-stretch rounded-2xl border border-border bg-transparent">
         <div className="flex flex-col items-start gap-3">
