@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 export interface StageData {
   name: string;
   description: string;
+  displayName?: string;
 }
 
 interface StagesProps {
@@ -84,7 +85,7 @@ export default function Stages({
             </div>
           )}
           <Card
-            title={stage.name}
+            title={stage.displayName ?? stage.name}
             description={stage.description}
             isActive={selectedStage === stage.name}
             onClick={() => onSelectStage(stage.name)}

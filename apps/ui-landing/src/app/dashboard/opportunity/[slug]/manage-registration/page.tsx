@@ -46,16 +46,67 @@ export default function Page() {
   // Build stages from rounds data
   const stages = useMemo(() => {
     if (!data) return [];
-    const stagesList = [
+
+    // helper that returns filtered teams for a stage (same logic used later for participants)
+    const getFilteredForRound = (roundId: string | null) => {
+      if (!roundId) return data.teams;
+
+      const selectedRound = data.rounds.find((r) => r.id === roundId);
+      if (!selectedRound) return [];
+
+      if (selectedRound.order === 0) {
+        return data.teams.filter((team) => {
+          const submission = team.roundSubmissions[roundId];
+          return !!submission?.submittedAt;
+        });
+      }
+
+      return data.teams.filter((team) => {
+        return team.roundQualifications?.[roundId]?.qualified === true;
+      });
+    };
+
+    const stagesList: Array<{ name: string; description: string; displayName?: string }> = [
       { name: "All registrations", description: "All registered teams" },
     ];
+
+    // Add rounds with counts
     for (const round of data.rounds) {
+      const name = `R${round.order + 1} - ${round.name}`;
       stagesList.push({
-        name: `R${round.order + 1} - ${round.name}`,
+        name,
         description: `${round.roundType} round`,
       });
     }
-    return stagesList;
+
+    // Compute display names with counts (completed / total)
+    const withCounts = stagesList.map((s) => {
+      // determine roundId for this stage (null for All)
+      if (s.name === 'All registrations') {
+        const total = data.teams.length;
+        const completed = data.teams.reduce((acc, team) => {
+          const meets =
+            team.minSize !== undefined
+              ? team.memberCount >= team.minSize
+              : team.memberCount >= (team.maxSize ?? 0);
+          return acc + (meets ? 1 : 0);
+        }, 0);
+        return { ...s, displayName: `${s.name} (${total}) ${completed}/${total}` };
+      }
+
+      const match = s.name.match(/^R(\d+)\s*-/);
+      if (!match) return s;
+      const order = parseInt(match[1], 10);
+      const round = data.rounds.find((r) => r.order === order - 1);
+      const roundId = round?.id ?? null;
+      const filtered = getFilteredForRound(roundId);
+      const total = filtered.length;
+      // For 'completed' we consider submitted or qualified depending on round
+      const completed = filtered.length; // filtered already represents completed for that stage
+      return { ...s, displayName: `${s.name} (${completed}/${total})` };
+    });
+
+    return withCounts;
   }, [data]);
 
   // Map teams to Participant format for the selected stage
