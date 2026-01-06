@@ -256,20 +256,43 @@ export function CreateTeamForm({
 
   const processPaymentAndRegistration = async (
     token: string,
-    teamId: string,
+    teamName: string,
     answers: Array<{ fieldId: string; value: string | number | string[] }>,
+    existingTeamId?: string,
   ) => {
     try {
+      // For PER_TEAM, we need teamId for payment order, so create draft team first
+      // For PER_USER, we can create payment order without teamId, then create team after payment
+      let teamId: string | undefined = existingTeamId;
+
+      if (chargeMode === "PER_TEAM" && !teamId) {
+        // PER_TEAM: Create draft team first to get teamId for payment order
+        const draft = await createDraftTeam(token, hackathonSlug, {
+          name: teamName,
+          maxSize,
+        });
+        teamId = draft.team.id;
+      }
+
       const orderParams = {
-        ...(chargeMode === "PER_TEAM" ? { teamId } : {}),
+        ...(chargeMode === "PER_TEAM" && teamId ? { teamId } : {}),
         discountCode: discountCode.trim() || undefined,
       };
 
       const order = await createPaymentOrder(token, hackathonSlug, orderParams);
 
       // If discount makes this a zero-amount payment, backend already marks it as CAPTURED.
-      // Skip Razorpay checkout and proceed to registration submission.
+      // Skip Razorpay checkout and proceed to team creation (if PER_USER) and registration submission.
       if (order.zeroAmountPayment || order.amountPaise === 0) {
+        // For PER_USER, create draft team after payment is confirmed
+        if (chargeMode === "PER_USER" && !teamId) {
+          const draft = await createDraftTeam(token, hackathonSlug, {
+            name: teamName,
+            maxSize,
+          });
+          teamId = draft.team.id;
+        }
+
         const formattedAnswers = answers.map((a) => ({
           fieldId: a.fieldId,
           value: String(a.value),
@@ -284,6 +307,9 @@ export function CreateTeamForm({
           router.push(`/competitions/${hackathonSlug}?registered=true`);
         }, 2000);
 
+        setIsLoading(false);
+        setIsSubmittingRegistration(false);
+        setShowRegistrationModal(false);
         return;
       }
 
@@ -331,6 +357,15 @@ export function CreateTeamForm({
               razorpaySignature: responseSignature,
             });
 
+            // For PER_USER, create draft team AFTER successful payment
+            if (chargeMode === "PER_USER" && !teamId) {
+              const draft = await createDraftTeam(verifyToken, hackathonSlug, {
+                name: teamName,
+                maxSize,
+              });
+              teamId = draft.team.id;
+            }
+
             const formattedAnswers = answers.map((a) => ({
               fieldId: a.fieldId,
               value: String(a.value),
@@ -363,12 +398,24 @@ export function CreateTeamForm({
         },
         modal: {
           ondismiss: () => {
+            // Payment cancelled - user did NOT complete registration
             setIsLoading(false);
             setIsSubmittingRegistration(false);
-            toast.info("Payment cancelled");
+            toast.info(
+              "Payment cancelled. Team creation and registration were not completed.",
+            );
+            // Note: For PER_TEAM, draft team may have been created but registration is not submitted
+            // User can retry payment later if they want
           },
         },
       };
+
+      // Ensure Razorpay script is loaded
+      if (!window.Razorpay) {
+        throw new Error(
+          "Razorpay payment gateway is not loaded. Please refresh the page and try again.",
+        );
+      }
 
       const rzp = new window.Razorpay(options);
       rzp.open();
@@ -379,6 +426,8 @@ export function CreateTeamForm({
       toast.error(message);
       setIsLoading(false);
       setIsSubmittingRegistration(false);
+      // For PER_TEAM, draft team may have been created but payment failed
+      // User can retry payment later, but registration is not submitted
     }
   };
 
@@ -419,12 +468,15 @@ export function CreateTeamForm({
         setIsLoading(false);
         setShowRegistrationModal(false);
       } else {
-        const draft = await createDraftTeam(token, hackathonSlug, {
-          name: finalTeamName,
-          maxSize,
-        });
-
-        await processPaymentAndRegistration(token, draft.team.id, answers);
+        // Paid hackathons: Payment first, then create team (for PER_USER) or use existing team (for PER_TEAM)
+        // For PER_TEAM, we need to create draft team first to get teamId for payment order
+        // For PER_USER, we can create payment order without teamId, then create team after payment
+        await processPaymentAndRegistration(
+          token,
+          finalTeamName,
+          answers,
+          undefined, // No existing teamId
+        );
       }
     } catch (error: unknown) {
       console.error("Failed to create team:", error);
