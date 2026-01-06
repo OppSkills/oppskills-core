@@ -1076,17 +1076,17 @@ export class EventService {
         usedOrders.add(orderToUse);
 
         try {
-          const newField = await prisma.eventRegistrationFieldEntity.create({
-            data: {
-              registrationFormId,
-              label: def.label,
-              type: def.type,
-              required: def.required,
+        const newField = await prisma.eventRegistrationFieldEntity.create({
+          data: {
+            registrationFormId,
+            label: def.label,
+            type: def.type,
+            required: def.required,
               order: orderToUse,
-              options: def.options,
-            },
-          });
-          frontendIdToDbId.set(def.frontendId, newField.id);
+            options: def.options,
+          },
+        });
+        frontendIdToDbId.set(def.frontendId, newField.id);
         } catch (error: any) {
           // Handle race condition: if another request created the field concurrently,
           // refetch and use the existing field

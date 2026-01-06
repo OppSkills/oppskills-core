@@ -343,11 +343,11 @@ export function JoinTeamList({
         }
 
         // Submit registration (for PER_USER mode)
-        const formattedAnswers = answers.map((a) => ({
-          fieldId: a.fieldId,
-          value: String(a.value),
-        }));
-        await submitRegistration(token, hackathonSlug, formattedAnswers);
+          const formattedAnswers = answers.map((a) => ({
+            fieldId: a.fieldId,
+            value: String(a.value),
+          }));
+          await submitRegistration(token, hackathonSlug, formattedAnswers);
 
         setIsSuccess(true);
         toast.success("Registration successful!");
@@ -416,15 +416,15 @@ export function JoinTeamList({
             }
 
             // Submit registration after joining team (for PER_USER mode)
-            const formattedAnswers = answers.map((a) => ({
-              fieldId: a.fieldId,
-              value: String(a.value),
-            }));
-            await submitRegistration(
-              verifyToken,
-              hackathonSlug,
-              formattedAnswers,
-            );
+              const formattedAnswers = answers.map((a) => ({
+                fieldId: a.fieldId,
+                value: String(a.value),
+              }));
+              await submitRegistration(
+                verifyToken,
+                hackathonSlug,
+                formattedAnswers,
+              );
 
             setIsSuccess(true);
             toast.success("Payment successful! You have joined the team.");
@@ -505,23 +505,23 @@ export function JoinTeamList({
           // So we can join draft team first, then submit registration (backend validates)
           try {
             await joinDraftTeam(token, hackathonSlug, { teamId });
-            const formattedAnswers = answers.map((a) => ({
-              fieldId: a.fieldId,
-              value: String(a.value),
-            }));
-            await submitRegistration(token, hackathonSlug, formattedAnswers);
+          const formattedAnswers = answers.map((a) => ({
+            fieldId: a.fieldId,
+            value: String(a.value),
+          }));
+          await submitRegistration(token, hackathonSlug, formattedAnswers);
 
             const team = teams.find((t) => t.id === teamId);
             setJoinedTeamName(team?.name || "the team");
-            setIsSuccess(true);
-            toast.success("Successfully joined!");
+          setIsSuccess(true);
+          toast.success("Successfully joined!");
 
-            setTimeout(() => {
-              router.push(`/competitions/${hackathonSlug}`);
-            }, 2000);
+          setTimeout(() => {
+            router.push(`/competitions/${hackathonSlug}`);
+          }, 2000);
 
-            setJoiningTeamId(null);
-            setShowRegistrationModal(false);
+          setJoiningTeamId(null);
+          setShowRegistrationModal(false);
           } catch (error: unknown) {
             // If payment validation fails, user is not in team
             const message =
@@ -580,22 +580,22 @@ export function JoinTeamList({
           // The backend will validate payment when submitting registration
           try {
             await joinDraftTeam(token, hackathonSlug, { invitationCode: code });
-            const formattedAnswers = answers.map((a) => ({
-              fieldId: a.fieldId,
-              value: String(a.value),
-            }));
-            await submitRegistration(token, hackathonSlug, formattedAnswers);
+          const formattedAnswers = answers.map((a) => ({
+            fieldId: a.fieldId,
+            value: String(a.value),
+          }));
+          await submitRegistration(token, hackathonSlug, formattedAnswers);
 
             setJoinedTeamName("the team");
-            setIsSuccess(true);
-            toast.success("Successfully joined!");
+          setIsSuccess(true);
+          toast.success("Successfully joined!");
 
-            setTimeout(() => {
-              router.push(`/competitions/${hackathonSlug}`);
-            }, 2000);
+          setTimeout(() => {
+            router.push(`/competitions/${hackathonSlug}`);
+          }, 2000);
 
-            setIsJoiningByCode(false);
-            setShowRegistrationModal(false);
+          setIsJoiningByCode(false);
+          setShowRegistrationModal(false);
           } catch (error: unknown) {
             // If payment validation fails, user is not in team
             const message =

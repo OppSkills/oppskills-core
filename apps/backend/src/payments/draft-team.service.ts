@@ -180,28 +180,46 @@ export class DraftTeamService {
       throw new BadRequestException('Team is not accepting new members');
     }
 
-    // For PER_TEAM mode, validate that team payment is complete before allowing member to join
-    if (
-      !team.hackathon.isFree &&
-      team.hackathon.chargeMode === HackathonChargeMode.PER_TEAM &&
-      team.leaderId !== userId
-    ) {
-      // User is a member (not leader), check if team payment is complete
-      const teamPayment = await prisma.hackathonPaymentEntity.findFirst({
-        where: {
-          hackathonId: team.hackathon.id,
-          teamId: team.id,
-          scope: HackathonPaymentScope.TEAM,
-          paymentStatus: {
-            in: [HackathonPaymentStatus.AUTHORIZED, HackathonPaymentStatus.CAPTURED],
-          },
-        },
-      });
+    // For paid hackathons, validate payment before allowing user to join
+    if (!team.hackathon.isFree) {
+      if (team.hackathon.chargeMode === HackathonChargeMode.PER_TEAM) {
+        // PER_TEAM: Members (not leader) must wait for leader to complete payment
+        if (team.leaderId !== userId) {
+          const teamPayment = await prisma.hackathonPaymentEntity.findFirst({
+            where: {
+              hackathonId: team.hackathon.id,
+              teamId: team.id,
+              scope: HackathonPaymentScope.TEAM,
+              paymentStatus: {
+                in: [HackathonPaymentStatus.AUTHORIZED, HackathonPaymentStatus.CAPTURED],
+              },
+            },
+          });
 
-      if (!teamPayment) {
-        throw new BadRequestException(
-          'Team payment must be completed by the leader before members can join',
-        );
+          if (!teamPayment) {
+            throw new BadRequestException(
+              'Team payment must be completed by the leader before members can join',
+            );
+          }
+        }
+      } else if (team.hackathon.chargeMode === HackathonChargeMode.PER_USER) {
+        // PER_USER: Every user (including members) must complete their own payment before joining
+        const userPayment = await prisma.hackathonPaymentEntity.findFirst({
+          where: {
+            hackathonId: team.hackathon.id,
+            payerUserId: userId,
+            scope: HackathonPaymentScope.USER,
+            paymentStatus: {
+              in: [HackathonPaymentStatus.AUTHORIZED, HackathonPaymentStatus.CAPTURED],
+            },
+          },
+        });
+
+        if (!userPayment) {
+          throw new BadRequestException(
+            'You must complete payment before joining a team',
+          );
+        }
       }
     }
 

@@ -333,6 +333,7 @@ export class HackathonService {
         isFree: true,
         entryFeeAmount: true,
         currency: true,
+        chargeMode: true,
         prizeTotalWorthAmount: true,
         prizeDescription: true,
         prizeCertificate: true,
