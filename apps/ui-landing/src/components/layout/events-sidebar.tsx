@@ -24,11 +24,11 @@ import {
 } from "@/components/ui/sidebar";
 
 const getEventNavItems = (slug: string) => [
-  // {
-  //   title: "Dashboard",
-  //   url: `/dashboard/events/${slug}`,
-  //   icon: IconDashboard,
-  // },
+  {
+    title: "Dashboard",
+    url: `/dashboard/events/${slug}`,
+    icon: IconDashboard,
+  },
   {
     title: "Manage Registration",
     url: `/dashboard/events/${slug}/manage-registration`,

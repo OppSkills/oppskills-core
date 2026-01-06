@@ -56,11 +56,11 @@ const getOpportunityNavItems = (slug: string) => [
     url: `/dashboard/opportunity/${slug}/manage-roles`,
     icon: IconUserCog,
   },
-  {
-    title: "Send Notifications",
-    url: `/dashboard/opportunity/${slug}/send-notifications`,
-    icon: IconMail,
-  },
+  // {
+  //   title: "Send Notifications",
+  //   url: `/dashboard/opportunity/${slug}/send-notifications`,
+  //   icon: IconMail,
+  // },
   {
     title: "Settings",
     url: `/dashboard/opportunity/${slug}/settings`,
