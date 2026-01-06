@@ -79,34 +79,7 @@ export default function Page() {
       });
     }
 
-    // Compute display names with counts (completed / total)
-    const withCounts = stagesList.map((s) => {
-      // determine roundId for this stage (null for All)
-      if (s.name === 'All registrations') {
-        const total = data.teams.length;
-        const completed = data.teams.reduce((acc, team) => {
-          const meets =
-            team.minSize !== undefined
-              ? team.memberCount >= team.minSize
-              : team.memberCount >= (team.maxSize ?? 0);
-          return acc + (meets ? 1 : 0);
-        }, 0);
-        return { ...s, displayName: `${s.name} (${total}) ${completed}/${total}` };
-      }
-
-      const match = s.name.match(/^R(\d+)\s*-/);
-      if (!match) return s;
-      const order = parseInt(match[1], 10);
-      const round = data.rounds.find((r) => r.order === order - 1);
-      const roundId = round?.id ?? null;
-      const filtered = getFilteredForRound(roundId);
-      const total = filtered.length;
-      // For 'completed' we consider submitted or qualified depending on round
-      const completed = filtered.length; // filtered already represents completed for that stage
-      return { ...s, displayName: `${s.name} (${completed}/${total})` };
-    });
-
-    return withCounts;
+  return stagesList;
   }, [data]);
 
   // Map teams to Participant format for the selected stage

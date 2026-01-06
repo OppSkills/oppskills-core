@@ -299,30 +299,39 @@ export default function Participants({
       {/* HEADER */}
       <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
         <div className="flex flex-wrap gap-2 items-center">
-          <Button
-            size="sm"
-            className="border-2"
-            onClick={() => setFilteredValue("all")}
-            variant={filterValue === "all" ? "default" : "outline"}
-          >
-            All ({data.length})
-          </Button>
-          <Button
-            size="sm"
-            className="border-2"
-            onClick={() => setFilteredValue("completed")}
-            variant={filterValue === "completed" ? "default" : "outline"}
-          >
-            Completed
-          </Button>
-          <Button
-            size="sm"
-            className="border-2"
-            onClick={() => setFilteredValue("incomplete")}
-            variant={filterValue === "incomplete" ? "default" : "outline"}
-          >
-            Incomplete
-          </Button>
+          {(() => {
+            const total = data.length;
+            const completedCount = data.filter((d) => d.status === 'Completed').length;
+            const incompleteCount = data.filter((d) => d.status === 'Incomplete').length;
+            return (
+              <>
+                <Button
+                  size="sm"
+                  className="border-2"
+                  onClick={() => setFilteredValue("all")}
+                  variant={filterValue === "all" ? "default" : "outline"}
+                >
+                  All ({total})
+                </Button>
+                <Button
+                  size="sm"
+                  className="border-2"
+                  onClick={() => setFilteredValue("completed")}
+                  variant={filterValue === "completed" ? "default" : "outline"}
+                >
+                  Completed ({completedCount})
+                </Button>
+                <Button
+                  size="sm"
+                  className="border-2"
+                  onClick={() => setFilteredValue("incomplete")}
+                  variant={filterValue === "incomplete" ? "default" : "outline"}
+                >
+                  Incomplete ({incompleteCount})
+                </Button>
+              </>
+            );
+          })()}
         </div>
         <div className="flex items-center gap-2">
           <div className="relative w-full md:w-auto">

@@ -85,7 +85,7 @@ export default function Stages({
             </div>
           )}
           <Card
-            title={stage.displayName ?? stage.name}
+            title={stage.name}
             description={stage.description}
             isActive={selectedStage === stage.name}
             onClick={() => onSelectStage(stage.name)}
