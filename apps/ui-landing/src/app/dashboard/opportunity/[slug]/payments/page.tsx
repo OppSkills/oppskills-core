@@ -704,7 +704,8 @@ export default function Page() {
                 Fee Breakdown
               </h6>
               <p className="font-sans text-muted-foreground text-base font-normal leading-normal">
-                Platform fee is 2% of the entry fee amount
+                Deductions include platform fee (2%) and GST on platform fee
+                (18%)
               </p>
             </div>
 
@@ -713,16 +714,21 @@ export default function Page() {
                 title="Fee Structure"
                 isSelected={true}
                 onClick={() => {}}
-                values={{
-                  reg: `₹ ${entryFeeAmount || "0"}`,
-                  service: `₹ ${(
-                    parseFloat(entryFeeAmount || "0") * 0.02
-                  ).toFixed(2)} (2%)`,
-                  userPay: `₹ ${entryFeeAmount || "0"}`,
-                  youGet: `₹ ${(
-                    parseFloat(entryFeeAmount || "0") * 0.98
-                  ).toFixed(2)}`,
-                }}
+                values={(() => {
+                  const entryFee = parseFloat(entryFeeAmount || "0");
+                  const platformFee = entryFee * 0.02;
+                  const gst = platformFee * 0.18;
+                  const totalDeduction = platformFee + gst;
+                  const youGet = entryFee - totalDeduction;
+
+                  return {
+                    reg: `₹ ${entryFee.toFixed(2)}`,
+                    platformFee: `₹ ${platformFee.toFixed(2)} (2%)`,
+                    gst: `₹ ${gst.toFixed(2)} (18% of fee)`,
+                    totalDeduction: `₹ ${totalDeduction.toFixed(2)}`,
+                    youGet: `₹ ${youGet.toFixed(2)}`,
+                  };
+                })()}
               />
             </div>
           </div>
@@ -821,8 +827,9 @@ interface CalculationCardProps {
   onClick: () => void;
   values: {
     reg: string;
-    service: string;
-    userPay: string;
+    platformFee: string;
+    gst: string;
+    totalDeduction: string;
     youGet: string;
   };
 }
@@ -869,16 +876,25 @@ const CalculationCard = ({
             Platform Fee:
           </span>
           <span className="font-sans text-primary-500 text-base font-normal leading-relaxed">
-            {values.service}
+            {values.platformFee}
           </span>
         </div>
 
         <div className="flex justify-between items-center self-stretch">
           <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-            User Pays:
+            GST on Fee:
           </span>
           <span className="font-sans text-primary-500 text-base font-normal leading-relaxed">
-            {values.userPay}
+            {values.gst}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center self-stretch">
+          <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
+            Total Deduction:
+          </span>
+          <span className="font-sans text-primary-500 text-base font-normal leading-relaxed">
+            {values.totalDeduction}
           </span>
         </div>
       </div>

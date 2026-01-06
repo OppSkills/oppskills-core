@@ -328,7 +328,16 @@ export class HackathonCheckoutService {
       .times(PLATFORM_FEE_PERCENT)
       .dividedBy(100)
       .toDecimalPlaces(2);
-    const organizerShareAmount = grossAmount.minus(platformFeeAmount);
+    
+    // Add 18% GST on the platform fee
+    const platformFeeGstAmount = platformFeeAmount
+      .times(18)
+      .dividedBy(100)
+      .toDecimalPlaces(2);
+    
+    const totalDeduction = platformFeeAmount.plus(platformFeeGstAmount);
+    
+    const organizerShareAmount = grossAmount.minus(totalDeduction);
 
     const grossAmountPaise = grossAmount.times(100).toNumber();
 
@@ -470,7 +479,7 @@ export class HackathonCheckoutService {
         data: {
           razorpayOrderId: razorpayOrder.id,
           grossAmount,
-          platformFeeAmount,
+          platformFeeAmount: totalDeduction, // Total deduction includes Platform Fee + GST
           organizerShareAmount,
           orderStatus: HackathonPaymentOrderStatus.CREATED,
           paymentStatus: HackathonPaymentStatus.CREATED,
@@ -492,7 +501,7 @@ export class HackathonCheckoutService {
         teamId,
         currency: hackathon.currency || 'INR',
         grossAmount,
-        platformFeeAmount,
+        platformFeeAmount: totalDeduction, // Total deduction includes Platform Fee + GST
         organizerShareAmount,
         razorpayOrderId: razorpayOrder.id,
         transferOnHold: false,
