@@ -34,6 +34,60 @@ function getMaxSizeFromParticipantType(participantType: string): number {
       return 6;
     case 'MORE_THAN_6':
       return 10;
+    case 'TEAM_OF_2_3':
+      return 3;
+    case 'TEAM_OF_2_4':
+      return 4;
+    case 'TEAM_OF_3_4':
+      return 4;
+    case 'TEAM_OF_3_5':
+      return 5;
+    case 'TEAM_OF_4_5':
+      return 5;
+    case 'TEAM_OF_4_6':
+      return 6;
+    case 'TEAM_OF_5_6':
+      return 6;
+    default:
+      return 4;
+  }
+}
+
+/**
+ * Get min team size from participant type.
+ * For absolute values, returns the same as max.
+ * For range values, returns the minimum value.
+ */
+function getMinSizeFromParticipantType(participantType: string): number {
+  switch (participantType) {
+    case 'INDIVIDUAL':
+      return 1;
+    case 'TEAM_OF_2':
+      return 2;
+    case 'TEAM_OF_3':
+      return 3;
+    case 'TEAM_OF_4':
+      return 4;
+    case 'TEAM_OF_5':
+      return 5;
+    case 'TEAM_OF_6':
+      return 6;
+    case 'MORE_THAN_6':
+      return 10;
+    case 'TEAM_OF_2_3':
+      return 2;
+    case 'TEAM_OF_2_4':
+      return 2;
+    case 'TEAM_OF_3_4':
+      return 3;
+    case 'TEAM_OF_3_5':
+      return 3;
+    case 'TEAM_OF_4_5':
+      return 4;
+    case 'TEAM_OF_4_6':
+      return 4;
+    case 'TEAM_OF_5_6':
+      return 5;
     default:
       return 4;
   }

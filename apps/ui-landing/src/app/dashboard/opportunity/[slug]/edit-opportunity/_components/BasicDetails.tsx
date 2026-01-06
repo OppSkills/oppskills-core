@@ -493,18 +493,31 @@ export default function BasicDetails({
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                {["Individual", "Team of 2", "Team of 3", "Team of 4"].map(
-                  (t) => (
-                    <DropdownMenuItem
-                      key={t}
-                      onClick={() =>
-                        setFormData({ ...formData, participantType: t })
-                      }
-                    >
-                      {t}
-                    </DropdownMenuItem>
-                  )
-                )}
+                {[
+                  "Individual",
+                  "Team of 2",
+                  "Team of 3",
+                  "Team of 4",
+                  "Team of 5",
+                  "Team of 6",
+                  "More than 6",
+                  "Team of 2-3",
+                  "Team of 2-4",
+                  "Team of 3-4",
+                  "Team of 3-5",
+                  "Team of 4-5",
+                  "Team of 4-6",
+                  "Team of 5-6",
+                ].map((t) => (
+                  <DropdownMenuItem
+                    key={t}
+                    onClick={() =>
+                      setFormData({ ...formData, participantType: t })
+                    }
+                  >
+                    {t}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

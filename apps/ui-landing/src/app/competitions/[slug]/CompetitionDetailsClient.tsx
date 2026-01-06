@@ -57,6 +57,20 @@ function mapTeamSize(participantType: string): string {
       return "6 Members";
     case "MORE_THAN_6":
       return "6+ Members";
+    case "TEAM_OF_2_3":
+      return "2-3 Members";
+    case "TEAM_OF_2_4":
+      return "2-4 Members";
+    case "TEAM_OF_3_4":
+      return "3-4 Members";
+    case "TEAM_OF_3_5":
+      return "3-5 Members";
+    case "TEAM_OF_4_5":
+      return "4-5 Members";
+    case "TEAM_OF_4_6":
+      return "4-6 Members";
+    case "TEAM_OF_5_6":
+      return "5-6 Members";
     default:
       return "1+ Members";
   }

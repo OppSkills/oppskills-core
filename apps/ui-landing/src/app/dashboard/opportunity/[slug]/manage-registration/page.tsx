@@ -117,6 +117,17 @@ export default function Page() {
         } else {
           qualificationStatus = null;
         }
+      } else {
+        // When viewing "All registrations", determine status based on team size
+        // For range teams: Completed if memberCount >= minSize
+        // For absolute teams: Completed if memberCount >= maxSize
+        if (team.minSize !== undefined) {
+          // Range team
+          status = team.memberCount >= team.minSize ? "Completed" : "Incomplete";
+        } else {
+          // Absolute team (existing logic)
+          status = team.memberCount >= team.maxSize ? "Completed" : "Incomplete";
+        }
       }
 
       return {

@@ -436,6 +436,13 @@ export default function Page() {
     if (label === "Team of 5") return "TEAM_OF_5";
     if (label === "Team of 6") return "TEAM_OF_6";
     if (label === "More than 6") return "MORE_THAN_6";
+    if (label === "Team of 2-3") return "TEAM_OF_2_3";
+    if (label === "Team of 2-4") return "TEAM_OF_2_4";
+    if (label === "Team of 3-4") return "TEAM_OF_3_4";
+    if (label === "Team of 3-5") return "TEAM_OF_3_5";
+    if (label === "Team of 4-5") return "TEAM_OF_4_5";
+    if (label === "Team of 4-6") return "TEAM_OF_4_6";
+    if (label === "Team of 5-6") return "TEAM_OF_5_6";
     return undefined;
   }
 
@@ -922,6 +929,13 @@ export default function Page() {
                     "Team of 5",
                     "Team of 6",
                     "More than 6",
+                    "Team of 2-3",
+                    "Team of 2-4",
+                    "Team of 3-4",
+                    "Team of 3-5",
+                    "Team of 4-5",
+                    "Team of 4-6",
+                    "Team of 5-6",
                   ].map((type) => (
                     <DropdownMenuItem
                       key={type}

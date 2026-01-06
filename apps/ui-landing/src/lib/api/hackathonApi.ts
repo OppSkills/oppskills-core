@@ -354,6 +354,7 @@ export interface HackathonTeamRegistration {
   teamName: string;
   memberCount: number;
   maxSize: number;
+  minSize?: number;
   createdAt: string;
   leader: HackathonTeamLeader;
   roundSubmissions: Record<string, HackathonTeamRoundSubmission>;

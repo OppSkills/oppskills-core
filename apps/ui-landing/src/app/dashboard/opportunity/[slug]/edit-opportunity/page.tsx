@@ -233,6 +233,13 @@ function toParticipantTypeValue(
   | "TEAM_OF_5"
   | "TEAM_OF_6"
   | "MORE_THAN_6"
+  | "TEAM_OF_2_3"
+  | "TEAM_OF_2_4"
+  | "TEAM_OF_3_4"
+  | "TEAM_OF_3_5"
+  | "TEAM_OF_4_5"
+  | "TEAM_OF_4_6"
+  | "TEAM_OF_5_6"
   | undefined {
   if (label === "Individual") return "INDIVIDUAL";
   if (label === "Team of 2") return "TEAM_OF_2";
@@ -241,6 +248,13 @@ function toParticipantTypeValue(
   if (label === "Team of 5") return "TEAM_OF_5";
   if (label === "Team of 6") return "TEAM_OF_6";
   if (label === "More than 6") return "MORE_THAN_6";
+  if (label === "Team of 2-3") return "TEAM_OF_2_3";
+  if (label === "Team of 2-4") return "TEAM_OF_2_4";
+  if (label === "Team of 3-4") return "TEAM_OF_3_4";
+  if (label === "Team of 3-5") return "TEAM_OF_3_5";
+  if (label === "Team of 4-5") return "TEAM_OF_4_5";
+  if (label === "Team of 4-6") return "TEAM_OF_4_6";
+  if (label === "Team of 5-6") return "TEAM_OF_5_6";
   return undefined;
 }
 
@@ -371,6 +385,13 @@ function fromParticipantType(value: string | undefined): string {
   if (v === "TEAM_OF_5") return "Team of 5";
   if (v === "TEAM_OF_6") return "Team of 6";
   if (v === "MORE_THAN_6") return "More than 6";
+  if (v === "TEAM_OF_2_3") return "Team of 2-3";
+  if (v === "TEAM_OF_2_4") return "Team of 2-4";
+  if (v === "TEAM_OF_3_4") return "Team of 3-4";
+  if (v === "TEAM_OF_3_5") return "Team of 3-5";
+  if (v === "TEAM_OF_4_5") return "Team of 4-5";
+  if (v === "TEAM_OF_4_6") return "Team of 4-6";
+  if (v === "TEAM_OF_5_6") return "Team of 5-6";
   return "Individual";
 }
 

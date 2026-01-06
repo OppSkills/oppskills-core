@@ -27,6 +27,46 @@ type LifecycleStatus =
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 
+/**
+ * Get min team size from participant type.
+ * For absolute values, returns the same as max.
+ * For range values, returns the minimum value.
+ */
+function getMinSizeFromParticipantType(participantType: string): number {
+  switch (participantType) {
+    case 'INDIVIDUAL':
+      return 1;
+    case 'TEAM_OF_2':
+      return 2;
+    case 'TEAM_OF_3':
+      return 3;
+    case 'TEAM_OF_4':
+      return 4;
+    case 'TEAM_OF_5':
+      return 5;
+    case 'TEAM_OF_6':
+      return 6;
+    case 'MORE_THAN_6':
+      return 10;
+    case 'TEAM_OF_2_3':
+      return 2;
+    case 'TEAM_OF_2_4':
+      return 2;
+    case 'TEAM_OF_3_4':
+      return 3;
+    case 'TEAM_OF_3_5':
+      return 3;
+    case 'TEAM_OF_4_5':
+      return 4;
+    case 'TEAM_OF_4_6':
+      return 4;
+    case 'TEAM_OF_5_6':
+      return 5;
+    default:
+      return 4;
+  }
+}
+
 /** Default attendee eligibility when not provided. */
 const DEFAULT_ATTENDEE_ELIGIBILITY: HackathonAttendeeEligibilityValue[] = [
   'EVERYONE_CAN_APPLY',
@@ -2072,7 +2112,7 @@ export class HackathonService {
     // Find hackathon by slug
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { slug },
-      select: { id: true, ownerId: true },
+      select: { id: true, ownerId: true, participantType: true },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
@@ -2247,11 +2287,15 @@ export class HackathonService {
           >,
         );
 
+        // Calculate minSize based on hackathon participantType
+        const minSize = getMinSizeFromParticipantType(hackathon.participantType);
+
         return {
           teamId: team.id,
           teamName: team.name,
           memberCount: team.members.length + 1, // +1 for leader
           maxSize: team.maxSize,
+          minSize,
           createdAt: team.createdAt,
           leader: {
             id: leader.id,

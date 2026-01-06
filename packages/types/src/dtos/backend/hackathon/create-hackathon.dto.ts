@@ -49,6 +49,13 @@ const PARTICIPANT_TYPE_VALUES = [
   "TEAM_OF_5",
   "TEAM_OF_6",
   "MORE_THAN_6",
+  "TEAM_OF_2_3",
+  "TEAM_OF_2_4",
+  "TEAM_OF_3_4",
+  "TEAM_OF_3_5",
+  "TEAM_OF_4_5",
+  "TEAM_OF_4_6",
+  "TEAM_OF_5_6",
 ] as const;
 export type ParticipantTypeValue = (typeof PARTICIPANT_TYPE_VALUES)[number];
 
