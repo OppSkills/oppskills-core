@@ -108,13 +108,13 @@ export interface PaymentOrder {
 export interface EarningsData {
   hackathonId: string;
   hackathonName: string;
-  totalGross: number;
-  totalPlatformFee: number;
-  totalOrganizerShare: number;
-  totalRefunded: number;
-  netEarnings: number;
-  paidOut: number;
-  pendingPayout: number;
+  totalGross: string | number;
+  totalPlatformFee: string | number;
+  totalOrganizerShare: string | number;
+  totalRefunded: string | number;
+  netEarnings: string | number;
+  paidOut: string | number;
+  pendingPayout: string | number;
   eligibleAt: string | null;
   isEligibleNow: boolean;
   capturedPaymentsCount: number;

@@ -497,7 +497,7 @@ export default function Page() {
                   <Banknote className="w-4 h-4" /> Total Payment Collected
                 </span>
                 <span className="text-2xl font-semibold text-primary">
-                  ₹{earnings.totalGross.toFixed(2)}
+                  ₹{parseFloat(String(earnings.totalGross)).toFixed(2)}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {earnings.capturedPaymentsCount} payment
@@ -510,7 +510,7 @@ export default function Page() {
                   <IndianRupee className="w-4 h-4" /> Pending Payout
                 </span>
                 <span className="text-2xl font-semibold">
-                  ₹{earnings.pendingPayout.toFixed(2)}
+                  ₹{parseFloat(String(earnings.pendingPayout)).toFixed(2)}
                 </span>
                 {!earnings.isEligibleNow && earnings.eligibleAt && (
                   <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full w-fit">
@@ -524,7 +524,7 @@ export default function Page() {
                   <Banknote className="w-4 h-4" /> Paid Out
                 </span>
                 <span className="text-2xl font-semibold text-green-600">
-                  ₹{earnings.paidOut.toFixed(2)}
+                  ₹{parseFloat(String(earnings.paidOut)).toFixed(2)}
                 </span>
               </div>
             </div>
