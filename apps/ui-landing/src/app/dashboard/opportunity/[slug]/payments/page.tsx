@@ -458,10 +458,23 @@ export default function Page() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
               <div className="flex flex-col p-5 gap-2 rounded-2xl border border-border bg-card">
                 <span className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Banknote className="w-4 h-4" /> Total Payment Collected
+                </span>
+                <span className="text-2xl font-semibold text-primary">
+                  ₹{earnings.totalGross.toFixed(2)}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {earnings.capturedPaymentsCount} payment
+                  {earnings.capturedPaymentsCount !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              <div className="flex flex-col p-5 gap-2 rounded-2xl border border-border bg-card">
+                <span className="text-sm text-muted-foreground flex items-center gap-2">
                   <IndianRupee className="w-4 h-4" /> Pending Payout
                 </span>
                 <span className="text-2xl font-semibold">
-                  ₹{earnings.pendingPayout}
+                  ₹{earnings.pendingPayout.toFixed(2)}
                 </span>
                 {!earnings.isEligibleNow && earnings.eligibleAt && (
                   <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full w-fit">
@@ -475,7 +488,7 @@ export default function Page() {
                   <Banknote className="w-4 h-4" /> Paid Out
                 </span>
                 <span className="text-2xl font-semibold text-green-600">
-                  ₹{earnings.paidOut}
+                  ₹{earnings.paidOut.toFixed(2)}
                 </span>
               </div>
             </div>

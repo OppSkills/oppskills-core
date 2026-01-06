@@ -704,7 +704,9 @@ export class HackathonCheckoutService {
     const payments = await prisma.hackathonPaymentEntity.findMany({
       where: {
         hackathonId: hackathon.id,
-        paymentStatus: 'CAPTURED',
+        paymentStatus: {
+          in: [HackathonPaymentStatus.AUTHORIZED, HackathonPaymentStatus.CAPTURED],
+        },
       },
     });
 
