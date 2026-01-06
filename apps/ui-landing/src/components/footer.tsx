@@ -31,6 +31,10 @@ const Footer = () => {
       { name: "About Us", href: "/about" },
       { name: "Contact", href: "/contact" },
     ],
+    Legal: [
+      { name: "Privacy Policy", href: "/privacy" },
+      { name: "Terms of Use", href: "/terms" },
+    ],
   };
 
   const socialLinks: SocialLink[] = [
@@ -78,7 +82,7 @@ const Footer = () => {
         {/* Bottom Section */}
         <div className="flex flex-col lg:flex-row justify-between gap-12 lg:gap-8">
           {/* Links Columns */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-16 lg:gap-24 grow">
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-8 md:gap-16 lg:gap-24 grow">
             {/* Account Links */}
             <div className="space-y-6">
               <h4 className="text-lg font-semibold text-gray-200">
@@ -163,6 +167,13 @@ const Footer = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Copyright */}
+        <div className="mt-12 pt-8 border-t border-background/10">
+          <p className="text-center text-gray-400 text-sm">
+            © {new Date().getFullYear()} OppSkills. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
