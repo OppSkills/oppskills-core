@@ -38,7 +38,7 @@ export function EventPassEmail({
   registrationId,
   eventSlug,
 }: EventPassEmailProps) {
-  const previewText = `Your Event Pass for ${eventName} - Registration Confirmed!`;
+  const previewText = `Your registration for ${eventName} is pending review`;
 
   const getEventTypeLabel = (type?: string) => {
     switch (type) {
@@ -70,12 +70,11 @@ export function EventPassEmail({
           {/* Content */}
           <Section style={contentSection}>
             <Heading style={heading}>Hi {firstName || "Guest"}</Heading>
-            <Heading style={subHeading}>Registration Confirmed!</Heading>
+            <Heading style={subHeading}>Registration Pending</Heading>
 
             <Text style={paragraph}>
-              Your registration for <strong>{eventName}</strong> is successful.
-              Here is your event pass. Please keep this email handy for
-              check-in.
+              Your registration for <strong>{eventName}</strong> has been received. 
+              Our team is currently reviewing it, and we will notify you once it is confirmed.
             </Text>
 
             {/* Event Pass Card */}
@@ -126,12 +125,12 @@ export function EventPassEmail({
 
               <Section style={passFooter}>
                 <Text style={passFooterText}>
-                  Present this pass at the entrance
+                  Your pass will be activated upon confirmation
                 </Text>
               </Section>
             </Section>
 
-            <Text style={paragraph}>
+            {/* <Text style={paragraph}>
               <strong>Important Reminders:</strong>
             </Text>
             <Section style={listSection}>
@@ -144,7 +143,7 @@ export function EventPassEmail({
               <Text style={listItem}>
                 • Have your Registration ID ready for verification.
               </Text>
-            </Section>
+            </Section> */}
 
             <Section style={ctaSection}>
               <Link
