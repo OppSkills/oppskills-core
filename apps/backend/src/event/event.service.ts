@@ -31,7 +31,8 @@ type LifecycleStatus =
 export class EventService {
   private readonly logger = new Logger(EventService.name);
   private readonly GOOGLE_SHEETS_ENABLED_EVENT_ID = 'cmjn3pgst0001oz01flu5hcgw';
-  private readonly EVENT_PASS_EMAIL_DISABLED_EVENT_ID = 'cmjn3pgst0001oz01flu5hcgw';
+  private readonly EVENT_PASS_EMAIL_DISABLED_EVENT_ID =
+    'cmjn3pgst0001oz01flu5hcgw';
 
   constructor(
     private readonly googleSheetsService: GoogleSheetsService,
@@ -1076,29 +1077,30 @@ export class EventService {
         usedOrders.add(orderToUse);
 
         try {
-        const newField = await prisma.eventRegistrationFieldEntity.create({
-          data: {
-            registrationFormId,
-            label: def.label,
-            type: def.type,
-            required: def.required,
+          const newField = await prisma.eventRegistrationFieldEntity.create({
+            data: {
+              registrationFormId,
+              label: def.label,
+              type: def.type,
+              required: def.required,
               order: orderToUse,
-            options: def.options,
-          },
-        });
-        frontendIdToDbId.set(def.frontendId, newField.id);
+              options: def.options,
+            },
+          });
+          frontendIdToDbId.set(def.frontendId, newField.id);
         } catch (error: any) {
           // Handle race condition: if another request created the field concurrently,
           // refetch and use the existing field
           if (error?.code === 'P2002') {
-            const refetchedForm = await prisma.eventRegistrationFormEntity.findUnique({
-              where: { eventId },
-              include: {
-                fields: {
-                  orderBy: { order: 'asc' },
+            const refetchedForm =
+              await prisma.eventRegistrationFormEntity.findUnique({
+                where: { eventId },
+                include: {
+                  fields: {
+                    orderBy: { order: 'asc' },
+                  },
                 },
-              },
-            });
+              });
             const refetchedField = refetchedForm?.fields.find(
               (f) => f.label.toLowerCase() === def.label.toLowerCase(),
             );
@@ -1110,16 +1112,18 @@ export class EventService {
               while (usedOrders.has(retryOrder)) {
                 retryOrder -= 1;
               }
-              const newField = await prisma.eventRegistrationFieldEntity.create({
-                data: {
-                  registrationFormId,
-                  label: def.label,
-                  type: def.type,
-                  required: def.required,
-                  order: retryOrder,
-                  options: def.options,
+              const newField = await prisma.eventRegistrationFieldEntity.create(
+                {
+                  data: {
+                    registrationFormId,
+                    label: def.label,
+                    type: def.type,
+                    required: def.required,
+                    order: retryOrder,
+                    options: def.options,
+                  },
                 },
-              });
+              );
               frontendIdToDbId.set(def.frontendId, newField.id);
             }
           } else {
