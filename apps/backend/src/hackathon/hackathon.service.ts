@@ -17,6 +17,7 @@ import type {
   RegistrationFormDto,
 } from '@oppskills/types';
 import type { UpdateHackathonPrizeBreakdownDto } from './hackathon-update-nested.dto';
+import { AnalyticsService } from 'src/analytics/analytics.service';
 
 type LifecycleStatus =
   | 'DRAFT'
@@ -79,6 +80,9 @@ export class HackathonService {
    * - If `festivalId` is null/undefined => standalone hackathon.
    * - If `rounds` is not provided, no default rounds are created (organizers add them later).
    */
+
+  constructor(private readonly analyticsService: AnalyticsService) {}
+
   async createHackathon(dto: CreateHackathonDto, userId: string) {
     if (dto.festivalId) {
       const festival = await prisma.festivalEntity.findUnique({
@@ -463,6 +467,7 @@ export class HackathonService {
         'Hackathon not found or not publicly visible',
       );
     }
+    this.analyticsService.trackPageView('opportunity', slug);
 
     return hackathon;
   }
@@ -2288,7 +2293,9 @@ export class HackathonService {
         );
 
         // Calculate minSize based on hackathon participantType
-        const minSize = getMinSizeFromParticipantType(hackathon.participantType);
+        const minSize = getMinSizeFromParticipantType(
+          hackathon.participantType,
+        );
 
         return {
           teamId: team.id,

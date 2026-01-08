@@ -18,6 +18,7 @@ import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
 import { Logger } from '../_utils/logger';
 import { EMAIL_EVENTS } from '../email/email.events';
 import type { EventJoinedEventPayload } from '../email/email.events';
+import { AnalyticsService } from 'src/analytics/analytics.service';
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 type LifecycleStatus =
@@ -37,7 +38,9 @@ export class EventService {
   constructor(
     private readonly googleSheetsService: GoogleSheetsService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly analyticsService: AnalyticsService,
   ) {}
+
   /**
    * Create an event as a user.
    * - If `festivalId` is null/undefined => standalone event.
@@ -262,6 +265,8 @@ export class EventService {
     if (!isPubliclyVisible) {
       throw new NotFoundException('Event not found or not publicly visible');
     }
+
+    this.analyticsService.trackPageView('event', slug);
 
     return event;
   }

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import type { Prisma } from '@oppskills/db';
 import Redis from 'ioredis';
@@ -6,8 +6,7 @@ import Redis from 'ioredis';
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
-
-  constructor(private readonly redis: Redis) {}
+  constructor(@Inject('REDIS') private readonly redis: Redis) {}
 
   async trackPageView(type: 'event' | 'opportunity', slug: string) {
     this.redis.incr(`pv:${type}:${slug}`).catch(() => {});
