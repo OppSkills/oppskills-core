@@ -66,10 +66,21 @@ export interface PublicHackathonListItem {
  * No authentication required.
  */
 export async function getPublicHackathons(
-  festivalId?: string,
+  params: {
+    festival_id?: string;
+    page?: number;
+    appendResults?: boolean;
+    q?: string;
+  } = {},
 ): Promise<PublicHackathonListItem[]> {
-  const params = festivalId ? { festival_id: festivalId } : {};
-  const res = await API.get("/public", { params });
+  const res = await API.get("/public", {
+    params: {
+      festival_id: params.festival_id,
+      page: params.page,
+      appendResults: params.appendResults,
+      q: params.q,
+    },
+  });
   return res.data as PublicHackathonListItem[];
 }
 

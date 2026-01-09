@@ -67,7 +67,11 @@ export const UpcomingEvents = () => {
   const { data: events, isLoading, error } = useEvents();
 
   // Filter to only show published events
-  const publishedEvents = (events ?? []).filter(
+  // Flatten the pages to get all events
+  const allEvents = events?.pages.flat() ?? [];
+
+  // Filter to only show published events
+  const publishedEvents = allEvents.filter(
     (e) => e.status === "PUBLISHED" || e.status === "ONGOING"
   );
 
@@ -176,17 +180,17 @@ export const UpcomingEvents = () => {
             // Safely handle null registrationDeadline
             const formattedDeadLineDate = event.registrationDeadline
               ? formatInTimeZone(
-                  new Date(event.registrationDeadline),
-                  "UTC",
-                  "dd MMM yyyy"
-                )
+                new Date(event.registrationDeadline),
+                "UTC",
+                "dd MMM yyyy"
+              )
               : "N/A";
             const mode = formatMode(event.locationType);
             const entryFee = formatEntryFee(event);
             const isFree = event.isFree;
 
             return (
-              <Link key={event.id} href={`/events/${event.slug}`}>
+              <Link key={event.id} href={`/events/${event.slug}`} prefetch={false}>
                 <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
                   {/* Image Section */}
                   <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">

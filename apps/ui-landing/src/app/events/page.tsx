@@ -1,14 +1,27 @@
 "use client";
 
+import { useState } from "react";
+
 import { useEvents } from "@/hooks/useEvents";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import { ListingItem } from "@/components/common/ListingCard";
 
 export default function EventsPage() {
-  const { data: events, isLoading, error } = useEvents();
+  const [searchTerm, setSearchTerm] = useState("");
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useEvents(searchTerm);
 
-  // Filter to only show published events
-  const publishedEvents = (events ?? []).filter(
+  // Flatten duplicate pages into a single array
+  const events = data?.pages.flat() ?? [];
+
+  // Filter to only show published events (Client-side fail-safe, generally backend handles this)
+  const publishedEvents = events.filter(
     (e) => e.status === "PUBLISHED" || e.status === "ONGOING"
   );
 
@@ -32,6 +45,10 @@ export default function EventsPage() {
     routePrefix: "events",
   }));
 
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
   return (
     <GenericListingPage
       title="Upcoming College Events"
@@ -40,6 +57,12 @@ export default function EventsPage() {
       isLoading={isLoading}
       error={error}
       routePrefix="events"
+      onSearch={handleSearch}
+      onLoadMore={fetchNextPage}
+      hasMore={hasNextPage}
+      isFetchingNextPage={isFetchingNextPage}
     />
   );
+
+
 }

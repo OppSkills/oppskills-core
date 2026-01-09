@@ -1,13 +1,25 @@
 "use client";
 
+import { useState } from "react";
+
 import { usePublicHackathons } from "@/hooks/usePublicHackathons";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import { ListingItem } from "@/components/common/ListingCard";
 
 export default function CompetitionsPage() {
-  const { data: publicHackathons, isLoading, error } = usePublicHackathons();
+  const [searchTerm, setSearchTerm] = useState("");
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = usePublicHackathons(undefined, searchTerm);
 
-  const items: ListingItem[] = (publicHackathons ?? []).map((h) => ({
+  const hackathons = data?.pages.flat() ?? [];
+
+  const items: ListingItem[] = hackathons.map((h) => ({
     id: h.id,
     title: h.name,
     slug: h.slug,
@@ -28,6 +40,10 @@ export default function CompetitionsPage() {
     routePrefix: "competitions",
   }));
 
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
   return (
     <GenericListingPage
       title="College Hackathons & Competitions"
@@ -36,6 +52,10 @@ export default function CompetitionsPage() {
       isLoading={isLoading}
       error={error}
       routePrefix="competitions"
+      onSearch={handleSearch}
+      onLoadMore={fetchNextPage}
+      hasMore={hasNextPage}
+      isFetchingNextPage={isFetchingNextPage}
     />
   );
 }

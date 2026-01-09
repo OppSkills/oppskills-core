@@ -21,8 +21,14 @@ const API = createApiClient("/events");
  * Returns sanitized data without participants or registrant PII.
  * This is used for the public /events listing page and landing page.
  */
-export async function getPublicEvents(): Promise<unknown> {
-  const res = await API.get("/public");
+export async function getPublicEvents(
+  params: {
+    page?: number;
+    appendResults?: boolean;
+    q?: string;
+  } = {},
+): Promise<unknown> {
+  const res = await API.get("/public", { params });
   return res.data as unknown;
 }
 

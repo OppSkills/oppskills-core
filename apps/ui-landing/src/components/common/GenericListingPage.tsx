@@ -1,15 +1,12 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Grid, LayoutList, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Grid, LayoutList, SlidersHorizontal, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { ListingCard, ListingItem } from "./ListingCard";
-// We can reuse the existing filter sidebar by making it generic enough or just accepting props
-// For now, let's assume we want to reuse the sidebar structure but maybe make the filters generic?
-// Or we can import the specific sidebar if passed as a prop.
-// A simpler approach for the Prompt is to implement a generic sidebar here or cleaner: accept a FilterComponent prop.
 import {
   GenericFilterSidebar,
   FilterState,
@@ -23,7 +20,11 @@ interface GenericListingPageProps {
   items: ListingItem[];
   isLoading: boolean;
   error?: unknown;
-  routePrefix: string; // "competitions", "events", "festivals"
+  routePrefix: string;
+  onSearch?: (term: string) => void;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  isFetchingNextPage?: boolean;
 }
 
 export function GenericListingPage({
@@ -34,14 +35,34 @@ export function GenericListingPage({
   isLoading,
   error,
   routePrefix,
+  onSearch,
+  onLoadMore,
+  hasMore,
+  isFetchingNextPage,
 }: GenericListingPageProps) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [searchValue, setSearchValue] = useState("");
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     modes: [],
     status: [],
     types: [],
   });
+
+  // Debounce search input
+  // If useDebounce hook doesn't exist, we'll implement a simple effect here.
+  // Assuming useDebounce hook exists or I will create a simple useEffect.
+  // Let's implement debounce inside useEffect for safety if hook is missing.
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (onSearch) {
+        onSearch(searchValue);
+      }
+      setFilters(prev => ({ ...prev, search: searchValue }));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchValue, onSearch]);
 
   // Dynamically calculate filter options from the items
   const filterOptions: FilterOptions = useMemo(() => {
@@ -51,13 +72,7 @@ export function GenericListingPage({
 
     items.forEach((item) => {
       if (item.mode) modes.add(item.mode);
-      // Support location type mapping if mode is missing or just use explicit mode
-      // Logic: GenericListingPage assumes item.mode is already formatted or raw.
-      // Let's assume item.mode is the display value or consistent enum.
-
       if (item.status) status.add(item.status);
-
-      // For types, we use tags if available, or eventType
       if (item.tags) {
         item.tags.forEach((t) => types.add(t));
       } else if (item.eventType) {
@@ -74,28 +89,36 @@ export function GenericListingPage({
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
-      // 1. Search (AND logic)
-      if (
-        filters.search &&
-        !item.title.toLowerCase().includes(filters.search.toLowerCase())
-      ) {
-        return false;
-      }
+      // 1. Search is now handled by API for main text, but we keep local filter for immediate feedback or strict filtering if needed.
+      // However, if we do server side search, local filter might hide items that backend returned matching the search.
+      // If we are strictly server-side search, we should probably SKIP local search filter if onSearch is provided?
+      // Yes. If onSearch is provided, we assume items are already filtered by search.
+      // But wait! Users might want to filter the *existing* list further? 
+      // Typically, "search" input above content is global search (API).
+      // Sidebar search is usually "filter within results".
+      // Let's assume the prop `onSearch` drives the main API query.
+      // The filter sidebar also has a "search" field in `filters.search`. 
+      // If we use the main search bar, we should sync it or treat them as same?
+      // Let's treat the Main Search Bar (to be added) as the primary API search.
 
-      // 2. Status (OR logic within category)
+      // We will skip local search filtering if we trust the API.
+      // But `GenericFilterSidebar` updates `filters.search`.
+      // Let's keep existing logic but just sync the `searchValue` state with `filters.search`?
+      // Actually, let's allow local filtering as secondary.
+
+      // 2. Status
       const matchStatus =
         filters.status.length === 0 ||
         (item.status && filters.status.includes(item.status));
       if (!matchStatus) return false;
 
-      // 3. Mode (OR logic within category)
+      // 3. Mode
       const matchMode =
         filters.modes.length === 0 ||
-        (item.mode && filters.modes.some((m) => item.mode === m)); // Exact match or logic mapping needed?
-      // Let's assume item.mode matches the filter value exactly for now.
+        (item.mode && filters.modes.some((m) => item.mode === m));
       if (!matchMode) return false;
 
-      // 4. Types (OR logic within category)
+      // 4. Types
       const matchType =
         filters.types.length === 0 ||
         (item.tags &&
@@ -103,12 +126,6 @@ export function GenericListingPage({
             filters.types.some((t) => tag.includes(t))
           )) ||
         (item.eventType && filters.types.includes(item.eventType));
-
-      // Note: The previous logic was "match ANY type".
-      // User says: "if user chooses upcoming and open then filter will show him all items which are upcoming OR open"
-      // -> This contradicts "AND between categories".
-      // Wait, User said: "different categories section will work AND wise... if a user chooses upcoming and open then filter will show him all the items which are upcoming or those items which are open".
-      // This confirms: OR within Status, OR within Mode, AND between Status and Mode.
 
       if (!matchType) return false;
 
@@ -129,9 +146,26 @@ export function GenericListingPage({
       />
 
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
           <p className="text-muted-foreground">{description}</p>
+        </div>
+
+        {/* Search Bar - Center aligned or next to title? */}
+        <div className="flex-1 max-w-md mx-4">
+          <div className="relative">
+            <div className="h-full p-2 absolute flex items-center left-1">
+              <Search className="h-4 w-4 text-muted-foreground" />
+
+            </div>
+            <Input
+              type="search"
+              placeholder="Annual Conference"
+              className="pl-8 w-full"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -236,6 +270,26 @@ export function GenericListingPage({
                   <ListingCard item={item} />
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Load More Button */}
+          {hasMore && !isLoading && (
+            <div className="mt-8 flex justify-center">
+              <Button
+                variant="outline"
+                onClick={onLoadMore}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load More"
+                )}
+              </Button>
             </div>
           )}
         </div>
