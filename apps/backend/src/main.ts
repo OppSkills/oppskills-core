@@ -5,6 +5,14 @@ import { json, urlencoded } from 'express';
 import type { Request } from 'express';
 import { AppModule } from './app.module';
 
+// Patch BigInt to serialize as Number (safe for < 2^53)
+// This is required because Prisma returns BigInt for certain numeric types (like counts)
+// and Express/JSON.stringify fails to serialize BigInt by default.
+// @ts-ignore
+BigInt.prototype.toJSON = function () {
+  return Number(this);
+};
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -42,18 +50,18 @@ async function bootstrap() {
   const allowedOrigins: string[] =
     process.env.NODE_ENV === 'production'
       ? [
-          'https://oppskills.com',
-          'https://www.oppskills.com',
-          // If the app is hosted on a subdomain (common), allow it explicitly.
-          'https://app.oppskills.com',
-        ]
+        'https://oppskills.com',
+        'https://www.oppskills.com',
+        // If the app is hosted on a subdomain (common), allow it explicitly.
+        'https://app.oppskills.com',
+      ]
       : [
-          'http://localhost:3000',
-          'http://127.0.0.1:3000',
-          'https://oppskills.com',
-          'https://www.oppskills.com',
-          'https://app.oppskills.com',
-        ];
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'https://oppskills.com',
+        'https://www.oppskills.com',
+        'https://app.oppskills.com',
+      ];
 
   app.enableCors({
     origin: (

@@ -39,7 +39,7 @@ export class EventService {
     private readonly googleSheetsService: GoogleSheetsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
-  ) {}
+  ) { }
 
   /**
    * Create an event as a user.
@@ -111,7 +111,14 @@ export class EventService {
    * List public events (PUBLISHED/ONGOING + APPROVED only).
    * Returns sanitized data without participants or roles.
    */
-  async listPublicEvents(input: { festivalId?: string } = {}) {
+  async listPublicEvents(
+    input: {
+      festivalId?: string;
+      page?: number;
+      appendResults?: boolean;
+      search?: string;
+    } = {},
+  ) {
     const baseWhere: Record<string, unknown> = {
       status: { in: ['PUBLISHED', 'ONGOING'] },
       approvalStatus: 'APPROVED',
@@ -120,9 +127,27 @@ export class EventService {
       baseWhere.festivalId = input.festivalId;
     }
 
+    if (input.search) {
+      baseWhere.OR = [
+        { name: { contains: input.search, mode: 'insensitive' } },
+        { description: { contains: input.search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Pagination logic
+    // Default 10 results. If appendResults=true, then 20 results.
+    const take =
+      String(input.appendResults) === 'true' || input.appendResults === true
+        ? 20
+        : 10;
+    const page = input.page ? Math.max(1, Number(input.page)) : 1;
+    const skip = (page - 1) * take;
+
     // Query events with sanitized fields - no participants or registrant PII
     const events = await prisma.eventEntity.findMany({
       where: baseWhere,
+      skip,
+      take,
       select: {
         id: true,
         slug: true,
@@ -172,6 +197,15 @@ export class EventService {
         },
       },
       orderBy: { startDate: 'asc' },
+    });
+
+    // Track impressions for all returned events
+    Promise.all(
+      events.map((event) =>
+        this.analyticsService.trackPostImpression('event', event.slug),
+      ),
+    ).catch((err) => {
+      this.logger.error('Failed to track impressions', err);
     });
 
     return events;
@@ -1276,7 +1310,7 @@ export class EventService {
             // Use field options, or default gender options for Gender field
             const effectiveOptions =
               field.label.toLowerCase() === 'gender' &&
-              (!field.options || field.options.length === 0)
+                (!field.options || field.options.length === 0)
                 ? DEFAULT_GENDER_OPTIONS
                 : field.options;
 

@@ -81,7 +81,7 @@ export class HackathonService {
    * - If `rounds` is not provided, no default rounds are created (organizers add them later).
    */
 
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(private readonly analyticsService: AnalyticsService) { }
 
   async createHackathon(dto: CreateHackathonDto, userId: string) {
     if (dto.festivalId) {
@@ -110,16 +110,16 @@ export class HackathonService {
     // Build rounds data - either from DTO or empty (no default rounds)
     const roundsData = dto.rounds
       ? dto.rounds.map((round) => ({
-          name: round.name,
-          description: round.description,
-          startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
-          endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
-          order: round.order,
-          roundType: round.roundType,
-          submissionConfig: round.submissionConfig
-            ? (round.submissionConfig as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-        }))
+        name: round.name,
+        description: round.description,
+        startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
+        endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
+        order: round.order,
+        roundType: round.roundType,
+        submissionConfig: round.submissionConfig
+          ? (round.submissionConfig as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
+      }))
       : []; // Don't create default rounds - organizers can add them later
 
     // Determine attendee eligibility
@@ -180,22 +180,22 @@ export class HackathonService {
 
           registrationForm: dto.registrationForm
             ? {
-                create: {
-                  externalFormLink: dto.registrationForm.externalFormLink,
-                  fields: {
-                    create: (dto.registrationForm.fields ?? []).map(
-                      (field) => ({
-                        label: field.label,
-                        type: field.type,
-                        required: field.required,
-                        order: field.order,
-                        options: field.options ?? [],
-                        placeholder: field.placeholder,
-                      }),
-                    ),
-                  },
+              create: {
+                externalFormLink: dto.registrationForm.externalFormLink,
+                fields: {
+                  create: (dto.registrationForm.fields ?? []).map(
+                    (field) => ({
+                      label: field.label,
+                      type: field.type,
+                      required: field.required,
+                      order: field.order,
+                      options: field.options ?? [],
+                      placeholder: field.placeholder,
+                    }),
+                  ),
                 },
-              }
+              },
+            }
             : undefined,
 
           rounds: {
@@ -204,25 +204,25 @@ export class HackathonService {
 
           prizeBreakdown: dto.prizeBreakdown
             ? {
-                create: dto.prizeBreakdown.map((prize) => ({
-                  position: prize.position,
-                  amount: prize.amount,
-                  description: prize.description,
-                })),
-              }
+              create: dto.prizeBreakdown.map((prize) => ({
+                position: prize.position,
+                amount: prize.amount,
+                description: prize.description,
+              })),
+            }
             : undefined,
 
           // New attachments relation
           attachments: dto.additionalInfo?.attachments
             ? {
-                create: dto.additionalInfo.attachments.map((att) => ({
-                  storageKey: att.storageKey,
-                  publicUrl: att.publicUrl,
-                  fileName: att.fileName,
-                  mimeType: att.mimeType,
-                  sizeBytes: att.sizeBytes,
-                })),
-              }
+              create: dto.additionalInfo.attachments.map((att) => ({
+                storageKey: att.storageKey,
+                publicUrl: att.publicUrl,
+                fileName: att.fileName,
+                mimeType: att.mimeType,
+                sizeBytes: att.sizeBytes,
+              })),
+            }
             : undefined,
         },
         include: this.getHackathonIncludeClause(),
@@ -270,7 +270,14 @@ export class HackathonService {
    * List public hackathons (PUBLISHED/ONGOING + APPROVED only).
    * Returns sanitized data without teams or participant PII.
    */
-  async listPublicHackathons(input: { festivalId?: string } = {}) {
+  async listPublicHackathons(
+    input: {
+      festivalId?: string;
+      page?: number;
+      appendResults?: boolean;
+      search?: string;
+    } = {},
+  ) {
     const baseWhere: Record<string, unknown> = {
       status: { in: ['PUBLISHED', 'ONGOING'] },
       approvalStatus: 'APPROVED',
@@ -279,8 +286,25 @@ export class HackathonService {
       baseWhere.festivalId = input.festivalId;
     }
 
+    if (input.search) {
+      baseWhere.OR = [
+        { name: { contains: input.search, mode: 'insensitive' } },
+        { description: { contains: input.search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Pagination logic
+    const take =
+      String(input.appendResults) === 'true' || input.appendResults === true
+        ? 20
+        : 10;
+    const page = input.page ? Math.max(1, Number(input.page)) : 1;
+    const skip = (page - 1) * take;
+
     const hackathons = await prisma.hackathonEntity.findMany({
       where: baseWhere,
+      skip,
+      take,
       select: {
         id: true,
         slug: true,
@@ -312,6 +336,8 @@ export class HackathonService {
         organizationName: true,
         organizationLogoUrl: true,
         attendeeEligibility: true,
+        views: true,
+        impressions: true,
         createdAt: true,
         // Owner info (public: name only)
         owner: {
@@ -347,6 +373,23 @@ export class HackathonService {
         },
       },
       orderBy: { startDate: 'asc' },
+    });
+
+    // Track impressions for all returned hackathons (type 'opportunity')
+    Promise.all(
+      hackathons.map((hackathon) =>
+        this.analyticsService.trackPostImpression('opportunity', hackathon.slug),
+      ),
+    ).catch((err) => {
+      // Logger might not be instantiated in HackathonService or might be different property
+      // Checked Step 51: private readonly logger = new Logger(HackathonController.name); IS IN CONTROLLER. 
+      // Service doesn't seem to have a logger property based on lines 1-84 shown in Step 51.
+      // Wait, Step 51 shows lines 1-800. Let's check constructor.
+      // Line 84: constructor(private readonly analyticsService: AnalyticsService) {}
+      // No logger in HackathonService. I'll skip logging error or just console.error/ignore since trackPostImpression already catches inside.
+      // Actually trackPostImpression catches itself: .catch(() => {})
+      // So I don't strictly need a catch block here if I don't await. 
+      // But Promise.all returns a Promise.
     });
 
     return hackathons;
@@ -394,6 +437,8 @@ export class HackathonService {
         contactName: true,
         contactEmail: true,
         contactPhone: true,
+        views: true,
+        impressions: true,
         createdAt: true,
         owner: {
           select: {
@@ -513,6 +558,8 @@ export class HackathonService {
         contactName: true,
         contactEmail: true,
         contactPhone: true,
+        views: true,
+        impressions: true,
         createdAt: true,
         owner: {
           select: {
@@ -1166,7 +1213,7 @@ export class HackathonService {
 
     const externalFormLink =
       typeof dto.externalFormLink === 'string' &&
-      dto.externalFormLink.trim().length > 0
+        dto.externalFormLink.trim().length > 0
         ? dto.externalFormLink.trim()
         : undefined;
 
@@ -1643,14 +1690,14 @@ export class HackathonService {
     const existing = await prisma.hackathonEntity.findFirst({
       where: excludeId
         ? {
-            slug: base,
-            NOT: {
-              id: excludeId,
-            },
-          }
-        : {
-            slug: base,
+          slug: base,
+          NOT: {
+            id: excludeId,
           },
+        }
+        : {
+          slug: base,
+        },
       select: { id: true },
     });
 
@@ -1750,7 +1797,7 @@ export class HackathonService {
       (dto.isFree !== undefined && dto.isFree !== currentHackathon.isFree) ||
       (dto.entryFeeAmount !== undefined &&
         String(dto.entryFeeAmount) !==
-          String(currentHackathon.entryFeeAmount)) ||
+        String(currentHackathon.entryFeeAmount)) ||
       ('chargeMode' in dto && dto.chargeMode !== currentHackathon.chargeMode);
 
     if (!isPricingFieldChanging) return;
@@ -2678,12 +2725,12 @@ export class HackathonService {
   private formatAnswersForUser(
     submission:
       | {
-          answers: Array<{
-            fieldId: string;
-            valueText: string | null;
-            valueJson: unknown;
-          }>;
-        }
+        answers: Array<{
+          fieldId: string;
+          valueText: string | null;
+          valueJson: unknown;
+        }>;
+      }
       | undefined,
     fields: Array<{ id: string }>,
   ): Array<{ fieldId: string; value: string | null }> {
