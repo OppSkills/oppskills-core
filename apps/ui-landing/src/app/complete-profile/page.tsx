@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSignUp } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { generateClerkUsername, getClerkErrorMessage } from "@/lib/utils";
+import { getClerkErrorMessage } from "@/lib/utils";
 
 /**
  * Completes an OAuth-based sign-up when Clerk requires additional fields.
@@ -32,17 +32,6 @@ export default function CompleteProfilePage() {
       setIsWorking(true);
 
       try {
-        /**
-         * Attempt to set a generated username. If Clerk requires username, this
-         * should unblock the sign-up completion for OAuth users.
-         */
-        const username = generateClerkUsername({
-          firstName: signUp.firstName ?? "",
-          lastName: signUp.lastName ?? "",
-        });
-
-        await signUp.update({ username });
-
         // If sign-up completed, activate the created session and go to dashboard.
         if (signUp.status === "complete") {
           const sessionId = signUp.createdSessionId;
