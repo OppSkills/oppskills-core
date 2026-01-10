@@ -101,4 +101,6 @@ export interface CompetitionDetails {
   attachments?: Attachment[];
 
   createdAt: Date;
+  startDate?: Date;
+  endDate?: Date;
 }

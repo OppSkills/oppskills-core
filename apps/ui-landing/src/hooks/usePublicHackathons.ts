@@ -16,7 +16,11 @@ import { useInfiniteQuery } from "@tanstack/react-query";
  * Fetches public hackathons (no auth required).
  * Returns hackathons that are PUBLISHED/ONGOING and APPROVED.
  */
-export function usePublicHackathons(festivalId?: string, search?: string) {
+export function usePublicHackathons(
+  festivalId?: string,
+  search?: string,
+  options?: { enabled?: boolean }
+) {
   return useInfiniteQuery<PublicHackathonListItem[], Error>({
     queryKey: ["public-hackathons", festivalId, search] as const,
     queryFn: async ({ pageParam = 1 }) => {
@@ -32,6 +36,7 @@ export function usePublicHackathons(festivalId?: string, search?: string) {
       if (!lastPage || lastPage.length === 0) return undefined;
       return allPages.length + 1;
     },
+    enabled: options?.enabled,
   });
 }
 

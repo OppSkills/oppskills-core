@@ -26,6 +26,7 @@ export async function getPublicEvents(
     page?: number;
     appendResults?: boolean;
     q?: string;
+    festival_id?: string;
   } = {},
 ): Promise<unknown> {
   const res = await API.get("/public", { params });

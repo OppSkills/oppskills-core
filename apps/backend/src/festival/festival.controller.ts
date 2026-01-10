@@ -124,7 +124,7 @@ export class FestivalController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async listFestivals() {
-    return this.festivalService.listFestivals();
+    return this.festivalService.listPublicFestivals();
   }
 
   @Get('my')

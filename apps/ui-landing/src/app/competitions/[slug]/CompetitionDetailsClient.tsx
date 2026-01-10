@@ -198,11 +198,11 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     roundType: (r.roundType as any) ?? "ONLINE",
     submissionConfig: r.submissionConfig
       ? {
-          ...r.submissionConfig,
-          // Normalize: set enabled based on requiresFileUpload if enabled is not explicitly set
-          enabled:
-            r.submissionConfig.enabled ?? r.submissionConfig.requiresFileUpload,
-        }
+        ...r.submissionConfig,
+        // Normalize: set enabled based on requiresFileUpload if enabled is not explicitly set
+        enabled:
+          r.submissionConfig.enabled ?? r.submissionConfig.requiresFileUpload,
+      }
       : undefined,
   }));
 
@@ -308,13 +308,15 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     contact:
       data.contactName || data.contactEmail || data.contactPhone
         ? {
-            name: data.contactName || "",
-            email: data.contactEmail || "",
-            phone: data.contactPhone || "",
-          }
+          name: data.contactName || "",
+          email: data.contactEmail || "",
+          phone: data.contactPhone || "",
+        }
         : undefined,
     attachments: attachments.length > 0 ? attachments : undefined,
     createdAt: data.createdAt,
+    startDate,
+    endDate,
   };
 }
 
@@ -389,7 +391,7 @@ export function CompetitionDetailsClient() {
               setIsDraft(true);
               return;
             }
-          } catch {}
+          } catch { }
         }
         console.error("Failed to fetch competition:", publicErr);
         setError("Competition not found or not available.");

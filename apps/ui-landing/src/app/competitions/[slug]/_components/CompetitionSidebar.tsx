@@ -22,6 +22,7 @@ import {
 } from "@/lib/api/teamApi";
 import { getApiErrorMessage } from "@/lib/utils";
 import { getMe } from "@/lib/api/usersApi";
+import { format } from "date-fns";
 import type { CompetitionDetails } from "./types";
 
 interface CompetitionSidebarProps {
@@ -275,21 +276,46 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           <div className="flex gap-4 items-center">
             <div className="flex-shrink-0 w-12 h-12 bg-neutral-50  rounded-xl border border-neutral-100  flex flex-col items-center justify-center">
               <span className="text-[10px] uppercase text-neutral-500 font-medium leading-none mb-0.5">
-                Jan
+                {competition.startDate ? format(competition.startDate, "MMM") : "TBD"}
               </span>
               <span className="text-lg font-bold text-neutral-900  leading-none">
-                05
+                {competition.startDate ? format(competition.startDate, "dd") : "--"}
               </span>
             </div>
             <div>
               <h4 className="font-semibold text-neutral-900  text-[15px]">
-                {competition.specificDate || "Monday, 5 January 2026"}
+                {(() => {
+                  if (competition.startDate && competition.endDate) {
+                    const isSameDay = competition.startDate.toDateString() === competition.endDate.toDateString();
+                    if (isSameDay) {
+                      return format(competition.startDate, "EEEE, d MMMM yyyy");
+                    } else {
+                      return `${format(competition.startDate, "MMM d")} - ${format(competition.endDate, "MMM d, yyyy")}`;
+                    }
+                  }
+                  return competition.specificDate || "Date TBD";
+                })()}
               </h4>
               <p className="text-sm text-neutral-500">
-                {competition.specificTime || "8:00 - 20:00 GMT-8"}
+                {(() => {
+                  if (competition.startDate && competition.endDate) {
+                    const isSameDay = competition.startDate.toDateString() === competition.endDate.toDateString();
+                    if (isSameDay) {
+                      return `${format(competition.startDate, "h:mm a")} - ${format(competition.endDate, "h:mm a")}`;
+                    } else {
+                      // For different days, maybe showing time is less critical or we show full range?
+                      // User asked: "show starting date time and enfing date time"
+                      // Since the header already shows date range, maybe detailed time here?
+                      // Let's show: Starts <Time> - Ends <Time> (on respective days)
+                      return `${format(competition.startDate, "h:mm a")} - ${format(competition.endDate, "h:mm a")}`;
+                    }
+                  }
+                  return competition.specificTime || "Time TBD";
+                })()}
               </p>
             </div>
           </div>
+
 
           {/* Location Row */}
           <div className="flex gap-4 items-center">
