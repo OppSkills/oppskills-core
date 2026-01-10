@@ -53,7 +53,7 @@ export class EmailListener {
     );
 
     await this.emailService.send({
-      type: 'event-pass',
+      type: 'event-pass-pending',
       to: payload.email,
       props: {
         firstName: payload.firstName,
