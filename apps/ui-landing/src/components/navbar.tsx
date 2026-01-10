@@ -15,8 +15,9 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Home", href: "/" },
+    { name: "Events", href: "/events" },
+    { name: "Festivals", href: "/festivals" },
     { name: "Opportunities", href: "/competitions" },
-    { name: "Communities", href: "/communities" },
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
   ];
@@ -35,7 +36,7 @@ const Navbar = () => {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 px-4 md:px-8 py-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between relative">
         {/* --- LOGO SECTION --- */}
         <Link
           href="/"
@@ -46,17 +47,17 @@ const Navbar = () => {
         </Link>
 
         {/* --- DESKTOP NAVIGATION --- */}
-        {/* <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-8 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}
-              className="text-foreground hover:text-primary-500 transition-colors text-sm font-medium"
+              className="text-foreground hover:text-primary transition-colors text-sm font-medium"
             >
               {link.name}
             </Link>
           ))}
-        </div> */}
+        </div>
 
         {/* --- RIGHT SIDE ACTIONS --- */}
         <div className="flex items-center gap-3">
