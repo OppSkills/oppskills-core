@@ -76,7 +76,8 @@ import {
   createHackathon,
   updateHackathonRegistrationForm,
 } from "@/lib/api/hackathonApi";
-import { createFestival, getFestivals } from "@/lib/api/festivalApi";
+import { getMyFestivals } from "@/lib/api/festivalApi";
+import CreateFestivalModal from "@/components/ui/derived/CreateFestivalModal";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 import { DialogClose } from "@radix-ui/react-dialog";
@@ -153,30 +154,10 @@ export default function Page() {
   });
 
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
-  const [showFestivalDescriptionModal, setShowFestivalDescriptionModal] =
-    useState(false);
 
   const [showFestivalModal, setShowFestivalModal] = useState(false);
 
-  interface FestivalFormData {
-    poster: string;
-    website: string;
-    name: string;
-    location: string;
-    description: string;
-    startDate: Date | undefined;
-    endDate: Date | undefined;
-  }
 
-  const [festivalFormData, setFestivalFormData] = useState<FestivalFormData>({
-    poster: "",
-    website: "",
-    name: "",
-    location: "",
-    description: "",
-    startDate: undefined,
-    endDate: undefined,
-  });
 
   const { getToken } = useAuth();
 
@@ -190,8 +171,6 @@ export default function Page() {
   );
   const [isLoadingFestivals, setIsLoadingFestivals] = useState<boolean>(false);
   const [isSubmittingHackathon, setIsSubmittingHackathon] =
-    useState<boolean>(false);
-  const [isSubmittingFestival, setIsSubmittingFestival] =
     useState<boolean>(false);
 
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
@@ -408,7 +387,8 @@ export default function Page() {
 
   useEffect(() => {
     if (!formCompleted) return;
-    router.push("/dashboard/opportunity");
+    toast.success("Redirecting to Dashboard....");
+    router.push("/dashboard");
   }, [formCompleted]);
 
   /**
@@ -463,7 +443,7 @@ export default function Page() {
         setFestivals([]);
         return;
       }
-      const res = await getFestivals(token);
+      const res = await getMyFestivals(token);
       setFestivals(extractFestivalList(res));
     } catch (err: unknown) {
       setFestivals([]);
@@ -493,7 +473,7 @@ export default function Page() {
               height={371}
               src={
                 typeof formData.eventThumbnail === "string" &&
-                formData.eventThumbnail.trim().length > 0
+                  formData.eventThumbnail.trim().length > 0
                   ? formData.eventThumbnail.trim()
                   : "/tmp/hackathon.jpg"
               }
@@ -857,7 +837,7 @@ export default function Page() {
                   subLabel={
                     formData.eventDescription
                       ? formData.eventDescription.replace(/<[^>]*>?/gm, "") +
-                        (formData.eventDescription.length > 50 ? "..." : "")
+                      (formData.eventDescription.length > 50 ? "..." : "")
                       : undefined
                   }
                   className="h-full"
@@ -1097,6 +1077,7 @@ export default function Page() {
                   }
 
                   toast.success("Event listed successfully!");
+                  setFormCompleted(true);
                 } catch (err: unknown) {
                   toast.error("Failed to list event. Please try again.");
                   // eslint-disable-next-line no-console
@@ -1105,289 +1086,24 @@ export default function Page() {
                   setIsSubmittingHackathon(false);
                 }
               }}
-              disabled={isSubmittingHackathon}
+              disabled={isSubmittingHackathon || formCompleted}
             >
-              {isSubmittingHackathon ? "Listing..." : "List Event"}
+              {isSubmittingHackathon
+                ? "Listing..."
+                : formCompleted
+                  ? "Redirecting to Dashboard"
+                  : "List Event"}
             </Button>
           </div>
         </div>
       </div>
       {/* Create Festival Modal */}
-      <Dialog open={showFestivalModal} onOpenChange={setShowFestivalModal}>
-        <DialogContent className="max-w-5xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">
-              Festivals Details
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr] gap-8 mt-4">
-            {/* Left Column */}
-            <div className="flex flex-col gap-4">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">
-                  Add Festival Poster
-                </Label>
-                <div className="relative w-full aspect-video bg-muted rounded-xl overflow-hidden group cursor-pointer border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-colors">
-                  {festivalFormData.poster ? (
-                    <Image
-                      src={festivalFormData.poster}
-                      alt="Poster"
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
-                      <Image
-                        src="/tmp/hackathon.jpg"
-                        alt="Preview"
-                        fill
-                        className="object-cover opacity-50"
-                      />
-                      <div className="absolute inset-0 bg-foreground/40" />
-                      <div className="z-10 bg-foreground/40 backdrop-blur-md text-background px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium border border-background/20">
-                        <Upload className="w-4 h-4" /> Upload
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <Input
-                placeholder="Website"
-                className="rounded-full h-12 px-6 bg-muted/50 border-transparent focus:bg-background transition-colors"
-                value={festivalFormData.website}
-                onChange={(e) =>
-                  setFestivalFormData({
-                    ...festivalFormData,
-                    website: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            {/* Right Column */}
-            <div className="flex flex-col gap-4">
-              <div>
-                <Label className="text-muted-foreground mb-1 block">
-                  Festival Name
-                </Label>
-                <input
-                  value={festivalFormData.name}
-                  onChange={(e) =>
-                    setFestivalFormData({
-                      ...festivalFormData,
-                      name: e.target.value,
-                    })
-                  }
-                  className="text-3xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50 w-full"
-                  placeholder="Festival Name"
-                />
-              </div>
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <div>
-                    <InputBlock
-                      icon={<MapPin className="w-6 h-6" />}
-                      label={
-                        festivalFormData.location || "Add Festival Location"
-                      }
-                      subLabel="Offline location or virtual link"
-                    />
-                  </div>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Festival Location</DialogTitle>
-                  </DialogHeader>
-                  <Input
-                    value={festivalFormData.location}
-                    onChange={(e) =>
-                      setFestivalFormData({
-                        ...festivalFormData,
-                        location: e.target.value,
-                      })
-                    }
-                    placeholder="Enter location"
-                  />
-                </DialogContent>
-              </Dialog>
-
-              <div
-                onClick={() => setShowFestivalDescriptionModal(true)}
-                className="cursor-pointer"
-              >
-                <div>
-                  <InputBlock
-                    icon={<AlignLeft className="w-6 h-6" />}
-                    label={
-                      festivalFormData.description
-                        ? "Description"
-                        : "Add Description"
-                    }
-                    subLabel={
-                      festivalFormData.description
-                        ? festivalFormData.description
-                            .replace(/<[^>]*>?/gm, "")
-                            .substring(0, 50) + "..."
-                        : undefined
-                    }
-                  />
-                </div>
-              </div>
-
-              <DescriptionEditorModal
-                open={showFestivalDescriptionModal}
-                onOpenChange={setShowFestivalDescriptionModal}
-                initialValue={festivalFormData.description}
-                onSave={(val) =>
-                  setFestivalFormData({ ...festivalFormData, description: val })
-                }
-                title="Festival Description"
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <div>
-                      <InputBlock
-                        icon={<CalendarIcon className="w-6 h-6" />}
-                        label={
-                          festivalFormData.startDate
-                            ? format(festivalFormData.startDate, "PPP")
-                            : "Start Date"
-                        }
-                        subLabel="Start Date"
-                        className="bg-muted"
-                      />
-                    </div>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={festivalFormData.startDate}
-                      onSelect={(date) =>
-                        setFestivalFormData({
-                          ...festivalFormData,
-                          startDate: date,
-                        })
-                      }
-                    />
-                  </PopoverContent>
-                </Popover>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <div>
-                      <InputBlock
-                        icon={<CalendarIcon className="w-6 h-6" />}
-                        label={
-                          festivalFormData.endDate
-                            ? format(festivalFormData.endDate, "PPP")
-                            : "End Date"
-                        }
-                        subLabel="End Date"
-                        className="bg-muted"
-                      />
-                    </div>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={festivalFormData.endDate}
-                      onSelect={(date) =>
-                        setFestivalFormData({
-                          ...festivalFormData,
-                          endDate: date,
-                        })
-                      }
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <Button
-                className="w-full rounded-full mt-4 font-semibold text-lg h-12"
-                onClick={async () => {
-                  if (!festivalFormData.name.trim()) {
-                    toast.error("Festival Name is required");
-                    return;
-                  }
-                  if (!festivalFormData.startDate) {
-                    toast.error("Start Date is required");
-                    return;
-                  }
-                  if (!festivalFormData.endDate) {
-                    toast.error("End Date is required");
-                    return;
-                  }
-                  if (festivalFormData.endDate < festivalFormData.startDate) {
-                    toast.error("End Date must be after Start Date");
-                    return;
-                  }
-
-                  setIsSubmittingFestival(true);
-                  try {
-                    const token = await getToken();
-                    if (
-                      typeof token !== "string" ||
-                      token.trim().length === 0
-                    ) {
-                      toast.error("Please sign in to list a festival.");
-                      return;
-                    }
-
-                    const payload: CreateFestivalDto = {
-                      name: festivalFormData.name.trim(),
-                      description:
-                        festivalFormData.description.trim().length > 0
-                          ? festivalFormData.description
-                          : undefined,
-                      websiteUrl: isValidUrl(festivalFormData.website)
-                        ? festivalFormData.website.trim()
-                        : undefined,
-                      posterImageUrl: isValidUrl(festivalFormData.poster)
-                        ? festivalFormData.poster.trim()
-                        : undefined,
-                      location: toLocationDto(festivalFormData.location) as
-                        | FestivalLocationDto
-                        | undefined,
-                      startDate: toIsoDateOnly(festivalFormData.startDate),
-                      endDate: toIsoDateOnly(festivalFormData.endDate),
-                    };
-
-                    const res = await createFestival(token, payload);
-                    toast.success("Festival listed!");
-                    setFormCompleted(true);
-                    setShowFestivalModal(false);
-
-                    // Refresh dropdown list; ensures the new festival appears.
-                    setFestivals(
-                      extractFestivalList(res).length > 0
-                        ? extractFestivalList(res)
-                        : festivals
-                    );
-                    await loadFestivals();
-                  } catch (err: unknown) {
-                    toast.error("Failed to list festival. Please try again.");
-                    // eslint-disable-next-line no-console
-                    console.error(err);
-                  } finally {
-                    setIsSubmittingFestival(false);
-                  }
-                }}
-                disabled={isSubmittingFestival || formCompleted}
-              >
-                {isSubmittingFestival
-                  ? "Listing..."
-                  : formCompleted
-                    ? "Redirecting to Dashboard"
-                    : "List Festival"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Create Festival Modal */}
+      <CreateFestivalModal
+        open={showFestivalModal}
+        onOpenChange={setShowFestivalModal}
+        onSuccess={loadFestivals}
+      />
       <RegistrationQuestionsModal
         open={showRegistrationModal}
         onOpenChange={setShowRegistrationModal}

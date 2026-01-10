@@ -69,6 +69,21 @@ export class FestivalService {
     });
   }
 
+  async listUserFestivals(userId: string) {
+    return prisma.festivalEntity.findMany({
+      where: { organizerId: userId },
+      include: {
+        hackathons: {
+          select: { id: true, slug: true, name: true },
+        },
+        events: {
+          select: { id: true, slug: true, name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async getFestivalById(id: string) {
     const festival = await prisma.festivalEntity.findUnique({
       where: { id },
@@ -216,6 +231,22 @@ export class FestivalService {
       include: { rounds: true },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async getFestivalBySlug(slug: string) {
+    const festival = await prisma.festivalEntity.findUnique({
+      where: { slug },
+      include: {
+        hackathons: {
+          include: {
+            rounds: true,
+          },
+        },
+        events: true,
+      },
+    });
+    if (!festival) throw new NotFoundException('Festival not found');
+    return festival;
   }
 
   private parseDate(value: string, fieldName: string): Date {

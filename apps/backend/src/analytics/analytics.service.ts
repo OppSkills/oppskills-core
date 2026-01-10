@@ -5,14 +5,14 @@ import Redis from 'ioredis';
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
-  constructor(@Inject('REDIS') private readonly redis: Redis) {}
+  constructor(@Inject('REDIS') private readonly redis: Redis) { }
 
   async trackPageView(type: 'event' | 'opportunity', slug: string) {
-    this.redis.incr(`pv:${type}:${slug}`).catch(() => {});
+    this.redis.incr(`pv:${type}:${slug}`).catch(() => { });
   }
 
   async trackPostImpression(type: 'event' | 'opportunity', slug: string) {
-    this.redis.incr(`pi:${type}:${slug}`).catch(() => {});
+    this.redis.incr(`pi:${type}:${slug}`).catch(() => { });
   }
 
   async flushToDb() {
@@ -56,5 +56,43 @@ export class AnalyticsService {
         }
       }
     }
+  }
+
+  async getEventGeneralStats(slug: string) {
+    const event = await prisma.eventEntity.findUnique({
+      where: { slug },
+      select: {
+        registrationCount: true,
+        views: true,
+        impressions: true,
+      },
+    });
+
+    if (!event) return null;
+
+    return {
+      registrations: event.registrationCount,
+      views: event.views.toString(),
+      impressions: event.impressions.toString(),
+    };
+  }
+
+  async getHackathonGeneralStats(slug: string) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug },
+      select: {
+        registrationCount: true,
+        views: true,
+        impressions: true,
+      },
+    });
+
+    if (!hackathon) return null;
+
+    return {
+      registrations: hackathon.registrationCount,
+      views: hackathon.views.toString(),
+      impressions: hackathon.impressions.toString(),
+    };
   }
 }

@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:16
     container_name: oppskills-postgres-db
     environment:
       POSTGRES_USER: postgres
@@ -15,7 +13,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     container_name: oppskills-redis
     ports:
       - "6380:6379"

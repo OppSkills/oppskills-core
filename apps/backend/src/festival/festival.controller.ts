@@ -28,15 +28,20 @@ import {
 } from '@oppskills/types';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { FestivalService } from './festival.service';
+import { UserAccountsService } from '../user-accounts/user-accounts.service';
 
 @ApiTags('Festivals')
 @ApiBearerAuth('clerk-auth')
 @Controller('festivals')
-@UseGuards(ClerkAuthGuard)
+
 export class FestivalController {
-  constructor(private readonly festivalService: FestivalService) {}
+  constructor(
+    private readonly festivalService: FestivalService,
+    private readonly userAccountsService: UserAccountsService,
+  ) { }
 
   @Post()
+  @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Create a new festival',
     description: 'Create a new festival event. Requires authentication.',
@@ -76,6 +81,13 @@ export class FestivalController {
   async createFestival(@Body() dto: CreateFestivalDto, @Req() req: Request) {
     const userId = req.user?.id;
     if (!userId) throw new UnauthorizedException('User not found');
+
+    // Ensure user exists in our DB
+    await this.userAccountsService.getMe({
+      userId,
+      email: req.user?.email,
+    });
+
     return this.festivalService.createFestival(dto, userId);
   }
 
@@ -113,6 +125,45 @@ export class FestivalController {
   })
   async listFestivals() {
     return this.festivalService.listFestivals();
+  }
+
+  @Get('my')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'List user festivals',
+    description: 'Retrieve a list of festivals organized by the current user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of user festivals retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          name: { type: 'string' },
+          slug: { type: 'string' },
+          description: { type: 'string' },
+          status: {
+            type: 'string',
+            enum: ['DRAFT', 'PUBLISHED', 'ONGOING', 'COMPLETED', 'CANCELLED'],
+          },
+          startDate: { type: 'string', format: 'date-time' },
+          endDate: { type: 'string', format: 'date-time' },
+          posterImageUrl: { type: 'string', format: 'uri' },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async listUserFestivals(@Req() req: Request) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+    return this.festivalService.listUserFestivals(userId);
   }
 
   @Get(':id')
@@ -164,6 +215,7 @@ export class FestivalController {
   }
 
   @Put(':id')
+  @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Update festival',
     description:
@@ -209,6 +261,7 @@ export class FestivalController {
   }
 
   @Delete(':id')
+  @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Delete festival',
     description: 'Delete a festival. Only the owner can perform this action.',
@@ -245,6 +298,7 @@ export class FestivalController {
   }
 
   @Patch(':id/status')
+  @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Update festival status',
     description:
@@ -331,5 +385,27 @@ export class FestivalController {
     if (!id || id.trim().length === 0)
       throw new BadRequestException('id is required.');
     return this.festivalService.getHackathonsUnderFestival(id);
+  }
+
+  @Get('slug/:slug')
+  @ApiOperation({
+    summary: 'Get festival by Slug',
+    description: 'Retrieve detailed information about a specific festival by its slug',
+  })
+  @ApiParam({
+    name: 'slug',
+    description: 'Festival Slug',
+    type: 'string',
+    example: 'tech-fest-2025',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Festival details retrieved successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Festival not found' })
+  async getFestivalBySlug(@Param('slug') slug: string) {
+    if (!slug || slug.trim().length === 0)
+      throw new BadRequestException('slug is required.');
+    return this.festivalService.getFestivalBySlug(slug);
   }
 }
