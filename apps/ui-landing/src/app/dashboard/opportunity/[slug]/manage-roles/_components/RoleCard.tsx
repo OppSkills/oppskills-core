@@ -61,14 +61,14 @@ export default function RoleCard({
         )}
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-bold text-lg text-foreground">{name}</h3>
+            <h3 className="font-bold text-lg text-foreground break-words">{name}</h3>
             {isOwner && (
               <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#A020F0] text-background">
                 Owner
               </span>
             )}
           </div>
-          <span className="text-sm text-muted-foreground">{email}</span>
+          <span className="text-sm text-muted-foreground break-all">{email}</span>
         </div>
       </div>
 

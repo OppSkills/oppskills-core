@@ -195,7 +195,7 @@ export default function UpcomingCompetitions() {
                         </p>
                       ))}
                     </div>
-                    <h3 className="font-semibold text-xl text-neutral-900">
+                    <h3 className="font-semibold text-xl text-neutral-900 break-words">
                       {hackathon.name}
                     </h3>
 

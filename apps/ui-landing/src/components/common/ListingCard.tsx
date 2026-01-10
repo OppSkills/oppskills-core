@@ -156,7 +156,7 @@ export function ListingCard({ item }: ListingCardProps) {
               )
             )}
           </div>
-          <h3 className="font-semibold text-xl text-neutral-900 line-clamp-1">
+          <h3 className="font-semibold text-xl text-neutral-900 break-words">
             {item.title}
           </h3>
 

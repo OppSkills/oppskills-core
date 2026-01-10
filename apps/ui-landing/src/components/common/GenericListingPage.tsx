@@ -147,8 +147,8 @@ export function GenericListingPage({
 
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-          <p className="text-muted-foreground">{description}</p>
+          <h1 className="text-3xl font-bold tracking-tight break-words">{title}</h1>
+          <p className="text-muted-foreground break-words">{description}</p>
         </div>
 
         {/* Search Bar - Center aligned or next to title? */}

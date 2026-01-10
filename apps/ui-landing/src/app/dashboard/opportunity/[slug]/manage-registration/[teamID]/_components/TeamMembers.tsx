@@ -57,15 +57,14 @@ export default function TeamMembers({ members }: TeamMembersProps) {
               <div className="flex flex-col gap-2">
                 <Badge
                   variant="secondary"
-                  className={`w-fit px-3 py-1 text-xs font-medium rounded-full ${
-                    member.role === "Team Leader"
-                      ? "bg-blue-100 text-blue-600 hover:bg-blue-100"
-                      : "bg-pink-100 text-pink-600 hover:bg-pink-100"
-                  }`}
+                  className={`w-fit px-3 py-1 text-xs font-medium rounded-full ${member.role === "Team Leader"
+                    ? "bg-blue-100 text-blue-600 hover:bg-blue-100"
+                    : "bg-pink-100 text-pink-600 hover:bg-pink-100"
+                    }`}
                 >
                   {member.role}
                 </Badge>
-                <h3 className="text-2xl font-bold font-poppins text-foreground">
+                <h3 className="text-2xl font-bold font-poppins text-foreground break-words">
                   {member.name}
                 </h3>
               </div>
@@ -73,22 +72,22 @@ export default function TeamMembers({ members }: TeamMembersProps) {
               <div className="grid gap-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Building2 className="h-4 w-4 shrink-0" />
-                  <span>{member.college}</span>
+                  <span className="break-words">{member.college}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 shrink-0" />
-                  <span>{member.email}</span>
+                  <span className="break-all">{member.email}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 shrink-0" />
-                  <span>{member.location}</span>
+                  <span className="break-words">{member.location}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4 shrink-0" />
-                  <span>{member.education}</span>
+                  <span className="break-words">{member.education}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
