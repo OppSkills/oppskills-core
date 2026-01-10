@@ -1,0 +1,326 @@
+:root {
+  --size: 1;
+  --background: #0a0a0f;
+  --surface: #111116;
+  --text: #ffffff;
+  --text-muted: #6b7280;
+  --text-secondary: #9ca3af;
+  /* Border gradient colors - Golden Gradient */
+  --color1: #7A5C1E;
+  --color2: #D4AF37;
+  --color3: #FFF1A8;
+  --color4: #D4AF37;
+  --color5: #7A5C1E;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ticket-visual_visual {
+  width: 720px;
+  height: 320px;
+  margin: 50px auto;
+  position: relative;
+  transition: all 400ms cubic-bezier(0.03, 0.98, 0.53, 0.99) 0s;
+  background: linear-gradient(to right, var(--color1), var(--color2), var(--color3), var(--color4), var(--color5));
+  border-radius: 20px;
+  padding: 3px;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+}
+
+.ticket-visual_visual:hover {
+  box-shadow: 0 25px 50px -15px rgba(0, 0, 0, 0.6);
+}
+
+/* Circular cutouts on left and right border - gradient circles */
+.ticket-visual_visual:before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: -33px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--color1);
+  z-index: 2;
+}
+
+.ticket-visual_visual:after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: -33px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--color4);
+  z-index: 2;
+}
+
+.ticket-visual-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: var(--surface);
+  border-radius: 18px;
+  overflow: visible;
+}
+
+/* Inner circular cutouts - these create the background circles */
+.ticket-visual-wrapper:before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: -30px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--background);
+  z-index: 3;
+}
+
+.ticket-visual-wrapper:after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: -30px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--background);
+  z-index: 3;
+}
+
+/* Black rectangles to hide outer half of circles */
+.left {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: -50px;
+  width: 50px;
+  height: 100px;
+  background: var(--background);
+  z-index: 4;
+}
+
+.right {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: -50px;
+  width: 50px;
+  height: 100px;
+  background: var(--background);
+  z-index: 4;
+}
+
+/* Vertical dashed separator line */
+.vertical-separator {
+  position: absolute;
+  right: 180px;
+  top: 35px;
+  bottom: 35px;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(255, 255, 255, 0.2) 20%,
+    rgba(255, 255, 255, 0.2) 80%,
+    transparent
+  );
+  z-index: 4;
+}
+
+/* Ticket Content */
+.ticket-content {
+  display: flex;
+  height: 100%;
+  padding: 25px 30px;
+  position: relative;
+  z-index: 5;
+}
+
+.ticket-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-right: 30px;
+}
+
+/* Ticket Right Section */
+.ticket-right {
+  width: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-left: 20px;
+  position: relative;
+}
+
+.ticket-right::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 100px;
+  height: 200px;
+  background: radial-gradient(circle at center, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ticket-right-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  transform: rotate(90deg) translateX(10px);
+  position: relative;
+  z-index: 1;
+}
+
+.ticket-id-vertical {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 14px;
+  color: var(--text-secondary);
+  letter-spacing: 3px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.barcode-image {
+  width: 250px;
+  height: 40px;
+  object-fit: cover;
+  opacity: 0.8;
+  mix-blend-mode: screen;
+  filter: brightness(1.2) contrast(1.2);
+}
+
+/* Presented By Section */
+.presented-by {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.presented-text {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.oppskills-logo {
+  height: 18px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Event Row - Like Next.js Conf layout */
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
+
+.event-name-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.event-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.event-datetime {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.event-date {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+
+.event-time {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Left Side Attendee Section */
+.attendee-section-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.attendee-image-left {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, var(--color1), var(--color3));
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.3);
+}
+
+.attendee-info-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.attendee-info-left .attendee-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.attendee-info-left .attendee-college {
+  font-size: 16px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.attendee-info-left .attendee-email {
+  font-size: 15px;
+  color: var(--text-muted);
+  font-weight: 400;
+}

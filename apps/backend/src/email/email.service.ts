@@ -8,14 +8,14 @@ import {
   WelcomeEmailProps,
   OnboardingCompleteEmail,
   OnboardingCompleteEmailProps,
-  EventPassEmail,
-  EventPassEmailProps,
+  EventPassPendingEmail,
+  EventPassPendingEmailProps,
   ParticipantDirectMessage,
   ParticipantDirectMessageProps,
 } from '@oppskills/emails';
 import { Logger } from 'src/_utils/logger';
 
-export type EmailType = 'welcome' | 'onboarding-complete' | 'event-pass' | 'participant-direct-message';
+export type EmailType = 'welcome' | 'onboarding-complete' | 'event-pass-pending' | 'participant-direct-message';
 
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
@@ -24,8 +24,8 @@ export interface SendEmailOptions<T extends EmailType> {
   ? WelcomeEmailProps
   : T extends 'onboarding-complete'
   ? OnboardingCompleteEmailProps
-  : T extends 'event-pass'
-  ? EventPassEmailProps
+  : T extends 'event-pass-pending'
+  ? EventPassPendingEmailProps
   : T extends 'participant-direct-message'
   ? ParticipantDirectMessageProps
   : never;
@@ -101,7 +101,7 @@ export class EmailService {
    */
   private async renderEmail(
     type: EmailType,
-    props: WelcomeEmailProps | OnboardingCompleteEmailProps | EventPassEmailProps | ParticipantDirectMessageProps,
+    props: WelcomeEmailProps | OnboardingCompleteEmailProps | EventPassPendingEmailProps | ParticipantDirectMessageProps,
   ): Promise<{ subject: string; html: string }> {
     switch (type) {
       case 'welcome': {
@@ -122,12 +122,12 @@ export class EmailService {
           html,
         };
       }
-      case 'event-pass': {
-        const p = props as EventPassEmailProps;
-        const element = createElement(EventPassEmail, p);
+      case 'event-pass-pending': {
+        const p = props as EventPassPendingEmailProps;
+        const element = createElement(EventPassPendingEmail, p);
         const html = await render(element);
         return {
-          subject: `Your Event Pass - ${p.eventName}`,
+          subject: `Your registration for ${p.eventName} is pending review`,
           html,
         };
       }

@@ -1,4 +1,4 @@
 export * from './WelcomeEmail';
 export * from './OnboardingCompleteEmail';
-export * from './EventPassEmail';
+export * from './EventPassPendingEmail';
 export * from './ParticipantDirectMessage';

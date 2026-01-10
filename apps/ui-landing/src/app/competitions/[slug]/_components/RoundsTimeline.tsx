@@ -49,12 +49,12 @@ export function RoundsTimeline({
     myTeam && currentUserId && myTeam.leaderId === currentUserId;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       <h2 className="text-2xl font-bold text-neutral-900 mb-6">
         Rounds Timeline
       </h2>
 
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {rounds.map((round, index) => {
           const roundNumber = index + 1;
           const status = round.status;
@@ -62,9 +62,9 @@ export function RoundsTimeline({
           const hasSubmitted = !!submission?.submittedAt;
 
           return (
-            <div key={round.id} className="flex gap-6 relative">
+            <div key={round.id} className="flex gap-4 md:gap-6 relative">
               {index !== rounds.length - 1 && (
-                <div className="absolute left-[24px] top-[48px] bottom-[-24px] w-[2px] bg-[#eaccf7]" />
+                <div className="absolute left-[24px] top-[48px] bottom-[-16px] md:bottom-[-24px] w-[2px] bg-[#eaccf7]" />
               )}
 
               <div className="flex-shrink-0 flex flex-col items-center">
@@ -93,10 +93,10 @@ export function RoundsTimeline({
                 </div>
               </div>
 
-              <div className="flex-1 bg-background rounded-2xl border border-neutral-200 p-6">
-                <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 bg-background rounded-2xl border border-neutral-200 p-4 md:p-6">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       <h3 className="text-xl font-bold text-neutral-900">
                         {round.name}
                       </h3>
@@ -152,7 +152,7 @@ export function RoundsTimeline({
                   </div>
 
                   {myTeam && status === "completed" && (
-                    <div className="flex flex-col items-end gap-2">
+                    <div className="flex flex-col items-start md:items-end gap-2 w-full md:w-auto border-t md:border-t-0 pt-4 md:pt-0 border-neutral-100 mt-2 md:mt-0">
                       {index < rounds.length - 1 ? (
                         <>
                           {qualificationsByRoundId?.[rounds[index + 1].id]
@@ -200,9 +200,9 @@ export function RoundsTimeline({
                   {myTeam &&
                     status === "live" &&
                     round.submissionConfig?.enabled && (
-                      <div className="flex flex-col items-end gap-2">
+                      <div className="flex flex-col items-start md:items-end gap-2 w-full md:w-auto border-t md:border-t-0 pt-4 md:pt-0 border-neutral-100 mt-2 md:mt-0">
                         {index > 0 &&
-                        qualificationsByRoundId?.[round.id]?.qualified ===
+                          qualificationsByRoundId?.[round.id]?.qualified ===
                           false ? (
                           <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100">
                             <XCircle className="w-5 h-5" />
@@ -246,6 +246,7 @@ export function RoundsTimeline({
                                 size="sm"
                                 variant={hasSubmitted ? "outline" : "default"}
                                 onClick={() => setSubmissionModalRound(round)}
+                                className="w-full md:w-auto"
                               >
                                 <Upload className="w-4 h-4 mr-1" />
                                 {hasSubmitted ? "Edit Submission" : "Submit"}
@@ -261,7 +262,7 @@ export function RoundsTimeline({
                     )}
 
                   {myTeam && status === "completed" && hasSubmitted && (
-                    <div className="flex items-center gap-2 text-green-600">
+                    <div className="flex items-center gap-2 text-green-600 md:ml-auto">
                       <CheckCircle2 className="w-5 h-5" />
                       <span className="text-sm font-medium">
                         Submitted ({submission.payload.files?.length ?? 0} file

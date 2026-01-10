@@ -15,7 +15,7 @@ import * as React from "react";
 import { Header } from "./_components/Header";
 import { Footer } from "./_components/Footer";
 
-export interface EventPassEmailProps {
+export interface EventPassPendingEmailProps {
   firstName?: string;
   email: string;
   eventName: string;
@@ -27,7 +27,7 @@ export interface EventPassEmailProps {
   eventSlug: string;
 }
 
-export function EventPassEmail({
+export function EventPassPendingEmail({
   firstName,
   email,
   eventName,
@@ -37,7 +37,7 @@ export function EventPassEmail({
   eventType,
   registrationId,
   eventSlug,
-}: EventPassEmailProps) {
+}: EventPassPendingEmailProps) {
   const previewText = `Your registration for ${eventName} is pending review`;
 
   const getEventTypeLabel = (type?: string) => {
@@ -162,7 +162,7 @@ export function EventPassEmail({
   );
 }
 
-export default EventPassEmail;
+export default EventPassPendingEmail;
 
 const main = {
   backgroundColor: "#f3f4f6",

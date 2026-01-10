@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Check, CheckIcon, Loader2, Mail, User } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { generateClerkUsername, getClerkErrorMessage } from "@/lib/utils";
+import { getClerkErrorMessage } from "@/lib/utils";
 
 import RTooltip from "@/components/ui/Rtooltip";
 import { FloatingLabelInput } from "@/components/ui/derived/FloatingInput";
@@ -95,18 +95,12 @@ export default function Register({
 
     setIsLoading(true);
     try {
-      const username = generateClerkUsername({
-        firstName: userDetails.firstName,
-        lastName: userDetails.lastName,
-      });
-
       // Update user details and complete registration
       // Capture the return value to get the fresh status
       const updatedSignUp = await signUp.update({
         firstName: userDetails.firstName,
         lastName: userDetails.lastName,
         password: userDetails.password,
-        username,
         unsafeMetadata: {
           phone: userDetails.phone,
         },
