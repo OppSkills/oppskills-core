@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, Logger } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import Redis from 'ioredis';
 
@@ -67,17 +67,24 @@ export class AnalyticsService {
     }
   }
 
-  async getEventGeneralStats(slug: string) {
+  async getEventGeneralStats(slug: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
       where: { slug },
-      select: {
-        registrationCount: true,
-        views: true,
-        impressions: true,
+      include: {
+        userRoles: {
+          where: { userId, role: 'MANAGER' },
+        },
       },
     });
 
     if (!event) return null;
+
+    // Security check: Owner OR Manager
+    if (event.ownerId !== userId && event.userRoles.length === 0) {
+      throw new ForbiddenException(
+        'You are not allowed to view analytics for this event.',
+      );
+    }
 
     return {
       registrations: event.registrationCount,
@@ -86,17 +93,24 @@ export class AnalyticsService {
     };
   }
 
-  async getHackathonGeneralStats(slug: string) {
+  async getHackathonGeneralStats(slug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { slug },
-      select: {
-        registrationCount: true,
-        views: true,
-        impressions: true,
+      include: {
+        userRoles: {
+          where: { userId, role: 'MANAGER' },
+        },
       },
     });
 
     if (!hackathon) return null;
+
+    // Security check: Owner OR Manager
+    if (hackathon.ownerId !== userId && hackathon.userRoles.length === 0) {
+      throw new ForbiddenException(
+        'You are not allowed to view analytics for this hackathon.',
+      );
+    }
 
     return {
       registrations: hackathon.registrationCount,
