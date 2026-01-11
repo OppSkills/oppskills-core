@@ -28,7 +28,7 @@ const Footer = () => {
       { name: "Festivals", href: "/festivals" },
     ],
     OppSkills: [
-      { name: "Market Mafiaa", href: "https://marketmafiaa.com" },
+      // { name: "Market Mafiaa", href: "https://marketmafiaa.com" },
       { name: "About Us", href: "/about" },
       { name: "Contact", href: "/contact" },
     ],

@@ -92,7 +92,7 @@ export default function ContactPage() {
                   </div>
                 </CardContent>
               </Card>
-
+              {/* 
               <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-background/50 overflow-hidden group hover:border-primary/50 transition-colors">
                 <CardContent className="p-6 flex items-start gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-pink-100  text-pink-600  group-hover:scale-110 transition-transform duration-300">
@@ -123,7 +123,7 @@ export default function ContactPage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
             </div>
 
             <Card className="relative overflow-hidden border-none shadow-xl bg-gradient-to-br from-primary-500 via-purple-600 to-blue-600 text-background mt-4">
