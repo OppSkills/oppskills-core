@@ -17,7 +17,7 @@ import {
 import Image from "next/image";
 import { MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { formatInTimeZone } from "date-fns-tz";
+import { format, isSameDay, isSameYear } from "date-fns";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { joinEvent, checkMyRegistration } from "@/lib/api/eventApi";
 import { getMe, submitOnboarding } from "@/lib/api/usersApi";
@@ -382,39 +382,24 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   const startDate = new Date(event.startDate);
   const endDate = new Date(event.endDate);
 
-  // Use date-fns functions for reliable date comparison
-  const isSameDay =
-    formatInTimeZone(startDate, "UTC", "yyyy-MM-dd") ===
-    formatInTimeZone(endDate, "UTC", "yyyy-MM-dd");
+  const sameDay = isSameDay(startDate, endDate);
 
   // Format date display
   let formattedDate: string;
-  if (isSameDay) {
-    formattedDate = formatInTimeZone(startDate, "UTC", "EEEE, d MMM yyyy");
+  if (sameDay) {
+    formattedDate = format(startDate, "EEEE, d MMM yyyy");
   } else {
-    // Check if same month and year
-    const isSameMonth =
-      formatInTimeZone(startDate, "UTC", "yyyy-MM") ===
-      formatInTimeZone(endDate, "UTC", "yyyy-MM");
-
-    if (isSameMonth) {
-      // e.g., "10-12 March 2026"
-      const startDay = formatInTimeZone(startDate, "UTC", "d");
-      const endDay = formatInTimeZone(endDate, "UTC", "d");
-      const monthYear = formatInTimeZone(endDate, "UTC", "MMMM yyyy");
-      formattedDate = `${startDay}-${endDay} ${monthYear}`;
+    // Check if same year
+    if (isSameYear(startDate, endDate)) {
+      formattedDate = `${format(startDate, "MMM d")} - ${format(endDate, "MMM d, yyyy")}`;
     } else {
-      // Different months, e.g., "30 Jan - 2 Feb 2026"
-      const startFormatted = formatInTimeZone(startDate, "UTC", "d MMM");
-      const endFormatted = formatInTimeZone(endDate, "UTC", "d MMM yyyy");
-      formattedDate = `${startFormatted} - ${endFormatted}`;
+      formattedDate = `${format(startDate, "MMM d, yyyy")} - ${format(endDate, "MMM d, yyyy")}`;
     }
   }
 
-  const formattedTime =
-    formatInTimeZone(startDate, "UTC", "h:mm a") + " Onwards";
-  const monthShort = formatInTimeZone(startDate, "UTC", "MMM");
-  const dayNum = formatInTimeZone(startDate, "UTC", "dd");
+  const formattedTime = format(startDate, "h:mm a") + " Onwards";
+  const monthShort = format(startDate, "MMM");
+  const dayNum = format(startDate, "dd");
 
   const { venueName, venueAddress } = formatLocation(event);
 
@@ -448,7 +433,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             </div>
           )}
 
-          <h1 className="text-3xl md:text-5xl font-extrabold text-foreground leading-tight mb-6 poppins tracking-tight">
+          <h1 className="text-3xl md:text-5xl font-extrabold text-foreground leading-tight mb-6 poppins tracking-tight break-words">
             {event.name}
           </h1>
 
@@ -475,10 +460,10 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                 <MapPin className="w-5 h-5 text-neutral-700 " />
               </div>
               <div>
-                <h4 className="font-semibold text-neutral-900  text-[15px]">
+                <h4 className="font-semibold text-neutral-900  text-[15px] break-words">
                   {venueName}
                 </h4>
-                <p className="text-sm text-neutral-500">{venueAddress}</p>
+                <p className="text-sm text-neutral-500 break-words">{venueAddress}</p>
               </div>
             </div>
           </div>
@@ -529,9 +514,8 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                     {event.owner.imageUrl ? (
                       <Image
                         src={event.owner.imageUrl}
-                        alt={`${event.owner.firstName || ""} ${
-                          event.owner.lastName || ""
-                        }`}
+                        alt={`${event.owner.firstName || ""} ${event.owner.lastName || ""
+                          }`}
                         width={48}
                         height={48}
                         className="w-12 h-12 rounded-full object-cover flex-shrink-0"
@@ -545,12 +529,12 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                       </div>
                     )}
                     <div>
-                      <h4 className="font-bold text-foreground">
+                      <h4 className="font-bold text-foreground break-words">
                         {event.owner.firstName || ""}{" "}
                         {event.owner.lastName || "Organizer"}
                       </h4>
                       {event.owner.email && (
-                        <p className="text-xs text-neutral-500">
+                        <p className="text-xs text-neutral-500 break-all">
                           {event.owner.email}
                         </p>
                       )}
@@ -573,7 +557,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                         {event.contactName.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <h4 className="font-bold text-foreground">
+                        <h4 className="font-bold text-foreground break-words">
                           {event.contactName}
                         </h4>
                         {event.contactPhone && (
@@ -582,7 +566,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                           </p>
                         )}
                         {event.contactEmail && (
-                          <p className="text-xs text-neutral-500">
+                          <p className="text-xs text-neutral-500 break-all">
                             {event.contactEmail}
                           </p>
                         )}
@@ -610,7 +594,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                           {event.currency} {prize.amount.toLocaleString()}
                         </p>
                         {prize.description && (
-                          <p className="text-sm text-neutral-500 mt-2">
+                          <p className="text-sm text-neutral-500 mt-2 break-words">
                             {prize.description}
                           </p>
                         )}
@@ -633,10 +617,10 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
               user={
                 user
                   ? {
-                      name: user.firstName ?? user.username ?? "User",
-                      email: user.primaryEmailAddress?.emailAddress ?? "",
-                      avatar: user.imageUrl ?? "",
-                    }
+                    name: user.firstName ?? user.username ?? "User",
+                    email: user.primaryEmailAddress?.emailAddress ?? "",
+                    avatar: user.imageUrl ?? "",
+                  }
                   : undefined
               }
             />

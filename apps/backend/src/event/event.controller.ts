@@ -56,7 +56,7 @@ function assertNonEmptyId(id: string, fieldName: string): string {
 export class EventController {
   private readonly logger = new Logger(EventController.name);
 
-  constructor(private readonly eventService: EventService) {}
+  constructor(private readonly eventService: EventService) { }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // PUBLIC Endpoints (no auth required) - sanitized data only
@@ -75,12 +75,40 @@ export class EventController {
     required: false,
     description: 'Filter events by festival ID',
   })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default 1)',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'appendResults',
+    required: false,
+    description: 'If true, returns 20 results instead of 10',
+    type: Boolean,
+  })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    description: 'Search query (searches name and description)',
+    type: String,
+  })
   @ApiResponse({
     status: 200,
     description: 'List of public events (sanitized)',
   })
-  async listPublicEvents(@Query('festival_id') festivalId?: string) {
-    return this.eventService.listPublicEvents({ festivalId });
+  async listPublicEvents(
+    @Query('festival_id') festivalId?: string,
+    @Query('page') page?: number,
+    @Query('appendResults') appendResults?: boolean,
+    @Query('q') search?: string,
+  ) {
+    return this.eventService.listPublicEvents({
+      festivalId,
+      page,
+      appendResults,
+      search,
+    });
   }
 
   /**

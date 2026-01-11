@@ -149,7 +149,7 @@ export default function Participants({
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                   <span
-                    className="font-semibold hover:text-primary-500 cursor-pointer"
+                    className="font-semibold hover:text-primary-500 cursor-pointer break-words"
                     onClick={() => {
                       router.push(
                         `/dashboard/opportunity/${slug}/manage-registration/${row.original.id}`,
@@ -162,8 +162,8 @@ export default function Participants({
                     {memberCount} Members Joined
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground">{email}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground break-all">{email}</span>
+                <span className="text-xs text-muted-foreground break-words">
                   {university}
                 </span>
               </div>
@@ -191,11 +191,10 @@ export default function Participants({
           return (
             <div className="flex justify-center">
               <span
-                className={`rounded-xs px-4 py-1 text-xs ${
-                  status === "Completed"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-destructive/10 text-destructive-foreground"
-                }`}
+                className={`rounded-xs px-4 py-1 text-xs ${status === "Completed"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-destructive/10 text-destructive-foreground"
+                  }`}
               >
                 {status}
               </span>
@@ -246,13 +245,12 @@ export default function Participants({
                   </Button>
                   {qualStatus && (
                     <span
-                      className={`ml-1 px-2 py-0.5 rounded-full text-xs border ${
-                        qualStatus === "Qualified"
-                          ? "border-green-200 bg-green-50 text-green-700"
-                          : qualStatus === "Not Qualified"
-                            ? "border-red-200 bg-red-50 text-red-700"
-                            : "border-yellow-200 bg-yellow-50 text-yellow-700"
-                      }`}
+                      className={`ml-1 px-2 py-0.5 rounded-full text-xs border ${qualStatus === "Qualified"
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : qualStatus === "Not Qualified"
+                          ? "border-red-200 bg-red-50 text-red-700"
+                          : "border-yellow-200 bg-yellow-50 text-yellow-700"
+                        }`}
                     >
                       {qualStatus}
                     </span>

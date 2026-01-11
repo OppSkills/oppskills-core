@@ -35,7 +35,7 @@ export default function FestivalsPage() {
           id: f.id,
           title: f.name,
           slug: f.slug || f.id, // Fallback if slug missing
-          bannerUrl: f.bannerImageUrl ?? undefined, // Check if API provides this
+          bannerUrl: f.thumbnailUrl || f.posterImageUrl || f.bannerImageUrl || undefined,
           startDate: f.startDate,
           endDate: f.endDate,
           status: f.status,

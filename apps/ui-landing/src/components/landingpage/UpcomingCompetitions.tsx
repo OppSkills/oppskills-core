@@ -40,7 +40,7 @@ export default function UpcomingCompetitions() {
   const { data: hackathons, isLoading, error } = usePublicHackathons();
 
   // Show only the first 6 hackathons
-  const displayHackathons = (hackathons ?? []).slice(0, 6);
+  const displayHackathons = (hackathons?.pages.flat() ?? []).slice(0, 6);
 
   // Loading state
   if (isLoading) {
@@ -147,7 +147,7 @@ export default function UpcomingCompetitions() {
             const entryFee = formatEntryFee(hackathon);
 
             return (
-              <Link key={hackathon.id} href={`/competitions/${hackathon.slug}`}>
+              <Link key={hackathon.id} href={`/competitions/${hackathon.slug}`} prefetch={false}>
                 <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
                   {/* Image Section */}
                   <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
@@ -195,7 +195,7 @@ export default function UpcomingCompetitions() {
                         </p>
                       ))}
                     </div>
-                    <h3 className="font-semibold text-xl text-neutral-900">
+                    <h3 className="font-semibold text-xl text-neutral-900 break-words">
                       {hackathon.name}
                     </h3>
 

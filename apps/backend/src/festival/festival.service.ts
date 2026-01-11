@@ -55,8 +55,47 @@ export class FestivalService {
     });
   }
 
+  async listPublicFestivals() {
+    return prisma.festivalEntity.findMany({
+      where: {
+        approvalStatus: 'APPROVED',
+        status: { in: ['PUBLISHED', 'ONGOING', 'COMPLETED'] },
+      },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        posterImageUrl: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        locationType: true,
+        locationCity: true,
+        organizationName: true,
+        organizationLogoUrl: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async listFestivals() {
     return prisma.festivalEntity.findMany({
+      include: {
+        hackathons: {
+          select: { id: true, slug: true, name: true },
+        },
+        events: {
+          select: { id: true, slug: true, name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async listUserFestivals(userId: string) {
+    return prisma.festivalEntity.findMany({
+      where: { organizerId: userId },
       include: {
         hackathons: {
           select: { id: true, slug: true, name: true },
@@ -216,6 +255,15 @@ export class FestivalService {
       include: { rounds: true },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async getFestivalBySlug(slug: string) {
+    const festival = await prisma.festivalEntity.findUnique({
+      where: { slug },
+      // Optimization: Do NOT include hackathons/events here. They are fetched via separate public APIs.
+    });
+    if (!festival) throw new NotFoundException('Festival not found');
+    return festival;
   }
 
   private parseDate(value: string, fieldName: string): Date {

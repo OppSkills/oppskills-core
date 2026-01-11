@@ -29,7 +29,7 @@ function assertNonEmptyId(id: string, fieldName: string): string {
 @ApiTags('Hackathons (Public)')
 @Controller('hackathons/public')
 export class HackathonPublicController {
-  constructor(private readonly hackathonService: HackathonService) {}
+  constructor(private readonly hackathonService: HackathonService) { }
 
   /**
    * GET /hackathons/public - List public hackathons (PUBLISHED/ONGOING + APPROVED only).
@@ -44,12 +44,40 @@ export class HackathonPublicController {
     required: false,
     description: 'Filter hackathons by festival ID',
   })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default 1)',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'appendResults',
+    required: false,
+    description: 'If true, returns 20 results instead of 10',
+    type: Boolean,
+  })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    description: 'Search query (searches name and description)',
+    type: String,
+  })
   @ApiResponse({
     status: 200,
     description: 'List of public hackathons (sanitized)',
   })
-  async listPublicHackathons(@Query('festival_id') festivalId?: string) {
-    return this.hackathonService.listPublicHackathons({ festivalId });
+  async listPublicHackathons(
+    @Query('festival_id') festivalId?: string,
+    @Query('page') page?: number,
+    @Query('appendResults') appendResults?: boolean,
+    @Query('q') search?: string,
+  ) {
+    return this.hackathonService.listPublicHackathons({
+      festivalId,
+      page,
+      appendResults,
+      search,
+    });
   }
 
   /**

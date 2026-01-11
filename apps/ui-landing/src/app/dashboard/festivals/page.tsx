@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import FestivalsTable, { FestivalItem } from "../_components/FestivalsTable";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
-import { getFestivals } from "@/lib/api/festivalApi";
+import { getMyFestivals } from "@/lib/api/festivalApi";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -32,23 +32,38 @@ export default function FestivalsDashboardPage() {
         const token = await getTokenRef.current();
         if (!token) return;
 
-        const res = await getFestivals(token);
+        const res = await getMyFestivals(token);
 
         // Transform the data
         let rows: FestivalItem[] = [];
         if (isRecord(res) && Array.isArray(res["data"])) {
           rows = res["data"].map((item: any) => {
-            // Mapping logic based on expected API response - adjusting as needed
-            // Assuming backend structure similar to what we mocked or standard DTO
             return {
               id: item.id,
               name: item.name,
+              slug: item.slug,
               description: item.description,
-              tag: "Festival", // Default tag
-              status: item.status || "Upcoming",
+              tag: "Festival",
+              status: item.status || "DRAFT",
               startDate: item.startDate || new Date().toISOString(),
               endDate: item.endDate || new Date().toISOString(),
-              candidates: 0, // Placeholder if backend doesn't send this yet
+              candidates: 0, // Placeholder
+              registrationOpen: false, // Placeholder
+            };
+          });
+        } else if (Array.isArray(res)) {
+          // Handle case where API returns array directly
+          rows = res.map((item: any) => {
+            return {
+              id: item.id,
+              name: item.name,
+              slug: item.slug,
+              description: item.description,
+              tag: "Festival",
+              status: item.status || "DRAFT",
+              startDate: item.startDate || new Date().toISOString(),
+              endDate: item.endDate || new Date().toISOString(),
+              candidates: 0, // Placeholder
               registrationOpen: false, // Placeholder
             };
           });

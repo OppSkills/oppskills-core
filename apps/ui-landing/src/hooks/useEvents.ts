@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+
 import { getPublicEvents } from "@/lib/api/eventApi";
 
 /**
@@ -54,12 +54,36 @@ export function getEventsQueryKey() {
  * Fetches all public events (no auth required).
  * Used for the /events listing page.
  */
-export function useEvents() {
-  return useQuery<EventListItem[]>({
-    queryKey: getEventsQueryKey(),
-    queryFn: async () => {
-      const data = await getPublicEvents();
+import { useInfiniteQuery } from "@tanstack/react-query";
+
+// ...
+
+/**
+ * Fetches all public events (no auth required).
+ * Used for the /events listing page.
+ */
+export function useEvents(
+  festivalId?: string,
+  search?: string,
+  options?: { enabled?: boolean }
+) {
+  return useInfiniteQuery<EventListItem[], Error>({
+    queryKey: ["events", festivalId, search] as const,
+    queryFn: async ({ pageParam = 1 }) => {
+      const data = await getPublicEvents({
+        festival_id: festivalId,
+        page: pageParam as number,
+        q: search,
+        appendResults: true,
+      });
       return data as EventListItem[];
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      // Backend returns a list. If list is empty or < 10 (or < 20 if appendResults), no more pages.
+      if (!lastPage || lastPage.length === 0) return undefined;
+      return allPages.length + 1;
+    },
+    enabled: options?.enabled,
   });
 }

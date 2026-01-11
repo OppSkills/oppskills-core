@@ -71,7 +71,8 @@ import type {
   EventLocationDto,
 } from "@oppskills/types/frontend";
 import { createEvent } from "@/lib/api/eventApi";
-import { createFestival, getFestivals } from "@/lib/api/festivalApi";
+import { getMyFestivals } from "@/lib/api/festivalApi";
+import CreateFestivalModal from "@/components/ui/derived/CreateFestivalModal";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 
@@ -186,15 +187,6 @@ export default function Page() {
   // ============================================================================
 
   const [showFestivalModal, setShowFestivalModal] = useState(false);
-  const [festivalFormData, setFestivalFormData] = useState({
-    poster: "",
-    website: "",
-    name: "",
-    location: "",
-    description: "",
-    startDate: undefined as Date | undefined,
-    endDate: undefined as Date | undefined,
-  });
 
   type FestivalListItem = { id: string; name: string };
   const [festivals, setFestivals] = useState<ReadonlyArray<FestivalListItem>>(
@@ -202,7 +194,6 @@ export default function Page() {
   );
   const [isLoadingFestivals, setIsLoadingFestivals] = useState(false);
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
-  const [isSubmittingFestival, setIsSubmittingFestival] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
   const bannerInputId = useMemo(
@@ -421,7 +412,7 @@ export default function Page() {
         setFestivals([]);
         return;
       }
-      const res = await getFestivals(token);
+      const res = await getMyFestivals(token);
       setFestivals(extractFestivalList(res));
     } catch (err) {
       setFestivals([]);
@@ -538,7 +529,7 @@ export default function Page() {
   useEffect(() => {
     if (!formCompleted) return;
     toast.success("Redirecting to Dashboard....");
-    router.push("/dashboard/events");
+    router.push("/dashboard");
   }, [formCompleted]);
 
   // ============================================================================
@@ -561,7 +552,7 @@ export default function Page() {
                     height={371}
                     src={
                       typeof values.eventThumbnail === "string" &&
-                      values.eventThumbnail.trim().length > 0
+                        values.eventThumbnail.trim().length > 0
                         ? values.eventThumbnail.trim()
                         : "/tmp/hackathon.jpg"
                     }
@@ -975,180 +966,11 @@ export default function Page() {
       </div>
 
       {/* Create Festival Modal */}
-      <Dialog open={showFestivalModal} onOpenChange={setShowFestivalModal}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
-              Create New Festival
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="flex flex-col gap-4 mt-4">
-            <div className="space-y-2">
-              <Label>Festival Name</Label>
-              <Input
-                value={festivalFormData.name}
-                onChange={(e) =>
-                  setFestivalFormData({
-                    ...festivalFormData,
-                    name: e.target.value,
-                  })
-                }
-                placeholder="Enter festival name"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Location</Label>
-              <Input
-                value={festivalFormData.location}
-                onChange={(e) =>
-                  setFestivalFormData({
-                    ...festivalFormData,
-                    location: e.target.value,
-                  })
-                }
-                placeholder="City, Country"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start font-normal"
-                    >
-                      {festivalFormData.startDate
-                        ? format(festivalFormData.startDate, "PPP")
-                        : "Select date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={festivalFormData.startDate}
-                      onSelect={(date) =>
-                        setFestivalFormData({
-                          ...festivalFormData,
-                          startDate: date,
-                        })
-                      }
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="space-y-2">
-                <Label>End Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start font-normal"
-                    >
-                      {festivalFormData.endDate
-                        ? format(festivalFormData.endDate, "PPP")
-                        : "Select date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={festivalFormData.endDate}
-                      onSelect={(date) =>
-                        setFestivalFormData({
-                          ...festivalFormData,
-                          endDate: date,
-                        })
-                      }
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={festivalFormData.description}
-                onChange={(e) =>
-                  setFestivalFormData({
-                    ...festivalFormData,
-                    description: e.target.value,
-                  })
-                }
-                placeholder="Describe your festival..."
-                className="min-h-[100px]"
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowFestivalModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={async () => {
-                if (!festivalFormData.name) {
-                  toast.error("Festival name is required");
-                  return;
-                }
-                if (!festivalFormData.startDate || !festivalFormData.endDate) {
-                  toast.error("Start and end dates are required");
-                  return;
-                }
-
-                setIsSubmittingFestival(true);
-                try {
-                  const token = await getToken();
-                  if (!token) {
-                    toast.error("Please sign in to create a festival");
-                    return;
-                  }
-
-                  const payload: CreateFestivalDto = {
-                    name: festivalFormData.name,
-                    description: festivalFormData.description || undefined,
-                    startDate: toIsoDateOnly(festivalFormData.startDate),
-                    endDate: toIsoDateOnly(festivalFormData.endDate),
-                    location: toLocationDto(festivalFormData.location) as
-                      | FestivalLocationDto
-                      | undefined,
-                  };
-
-                  await createFestival(token, payload);
-                  toast.success("Festival created successfully!");
-                  setShowFestivalModal(false);
-                  setFestivalFormData({
-                    poster: "",
-                    website: "",
-                    name: "",
-                    location: "",
-                    description: "",
-                    startDate: undefined,
-                    endDate: undefined,
-                  });
-                  await loadFestivals();
-                } catch (err) {
-                  toast.error("Failed to create festival");
-                  console.error(err);
-                } finally {
-                  setIsSubmittingFestival(false);
-                }
-              }}
-              disabled={isSubmittingFestival}
-            >
-              {isSubmittingFestival ? "Creating..." : "Create Festival"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateFestivalModal
+        open={showFestivalModal}
+        onOpenChange={setShowFestivalModal}
+        onSuccess={loadFestivals}
+      />
     </div>
   );
 }

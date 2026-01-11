@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+
 import {
   getPublicHackathons,
   type PublicHackathonListItem,
@@ -8,10 +8,35 @@ import {
  * Fetches public hackathons (no auth required).
  * Returns hackathons that are PUBLISHED/ONGOING and APPROVED.
  */
-export function usePublicHackathons(festivalId?: string) {
-  return useQuery<PublicHackathonListItem[]>({
-    queryKey: ["public-hackathons", festivalId],
-    queryFn: () => getPublicHackathons(festivalId),
+import { useInfiniteQuery } from "@tanstack/react-query";
+
+// ...
+
+/**
+ * Fetches public hackathons (no auth required).
+ * Returns hackathons that are PUBLISHED/ONGOING and APPROVED.
+ */
+export function usePublicHackathons(
+  festivalId?: string,
+  search?: string,
+  options?: { enabled?: boolean }
+) {
+  return useInfiniteQuery<PublicHackathonListItem[], Error>({
+    queryKey: ["public-hackathons", festivalId, search] as const,
+    queryFn: async ({ pageParam = 1 }) => {
+      return getPublicHackathons({
+        festival_id: festivalId,
+        page: pageParam as number,
+        q: search,
+        appendResults: true,
+      });
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage || lastPage.length === 0) return undefined;
+      return allPages.length + 1;
+    },
+    enabled: options?.enabled,
   });
 }
 

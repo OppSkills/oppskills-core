@@ -101,10 +101,10 @@ export function ListingCard({ item }: ListingCardProps) {
   // Safely handle null registrationDeadline
   const formattedDeadLineDate = item.registrationDeadline
     ? formatInTimeZone(
-        new Date(item.registrationDeadline),
-        "UTC",
-        "dd MMM yyyy"
-      )
+      new Date(item.registrationDeadline),
+      "UTC",
+      "dd MMM yyyy"
+    )
     : "N/A";
 
   const mode = formatMode(item.mode, item.locationType);
@@ -115,7 +115,7 @@ export function ListingCard({ item }: ListingCardProps) {
   const eventType = item.eventType || "Event";
 
   return (
-    <Link href={`/${item.routePrefix}/${item.slug}`}>
+    <Link href={`/${item.routePrefix}/${item.slug}`} prefetch={false}>
       <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
         {/* Image Section */}
         <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
@@ -156,7 +156,7 @@ export function ListingCard({ item }: ListingCardProps) {
               )
             )}
           </div>
-          <h3 className="font-semibold text-xl text-neutral-900 line-clamp-1">
+          <h3 className="font-semibold text-xl text-neutral-900 break-words">
             {item.title}
           </h3>
 
