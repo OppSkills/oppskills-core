@@ -7,6 +7,7 @@ import { Dot, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePublicHackathons } from "@/hooks/usePublicHackathons";
 import type { PublicHackathonListItem } from "@/lib/api/hackathonApi";
+import { formatCount } from "@/lib/tools";
 
 /**
  * Format hackathon mode for display.
@@ -201,10 +202,17 @@ export default function UpcomingCompetitions() {
 
                     <div className="flex justify-between items-center text-sm pb-3">
                       <div className="flex flex-col gap-2 ">
-                        <span className="text-xs text-neutral-500">Teams</span>
-                        <span className="text-neutral-700">
-                          {hackathon.registrationCount}
-                        </span>
+                        <span className="text-xs text-neutral-500">Members</span>
+                        <div className="flex gap-1">
+                          <div className="flex">
+                            <div className="w-4 h-4 rounded-full bg-primary-500"></div>
+                            <div className="w-4 h-4 rounded-full bg-primary-400 -ml-2"></div>
+                            <div className="w-4 h-4 rounded-full bg-primary-300 -ml-2"></div>
+                          </div>
+                          <span className="text-neutral-700">
+                            {formatCount(hackathon.registrationCount)}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex flex-col gap-2 ">
                         <span className="text-xs text-neutral-500">

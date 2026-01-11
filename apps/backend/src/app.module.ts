@@ -14,6 +14,7 @@ import { EventModule } from './event/event.module';
 import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
 import { PaymentsModule } from './payments/payments.module';
 import { EmailModule } from './email/email.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { EmailModule } from './email/email.module';
     GoogleSheetsModule,
     PaymentsModule,
     EmailModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],

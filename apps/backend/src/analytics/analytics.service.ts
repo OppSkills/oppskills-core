@@ -23,7 +23,15 @@ export class AnalyticsService {
 
     for await (const keys of stream) {
       for (const key of keys) {
-        const value = await this.redis.get(key);
+        // Atomic GET and DEL to prevent race condition
+        // If a new increment comes during this op, Redis blocks effectively,
+        // or if it comes after, it creates a new key (safe).
+        const value = await this.redis.eval(
+          "local v = redis.call('GET', KEYS[1]); redis.call('DEL', KEYS[1]); return v",
+          1,
+          key,
+        );
+
         if (!value) continue;
 
         const count = Number(value);
@@ -49,10 +57,11 @@ export class AnalyticsService {
               },
             });
           }
-
-          await this.redis.del(key);
         } catch (err) {
           this.logger.error(`Failed flushing ${key}`, err);
+          // If update failed, we might want to put the count back? 
+          // For now, logging is safer than risking infinite loops or double counting.
+          // In a high-integrity system, we might push back to Redis or a dead-letter queue.
         }
       }
     }
