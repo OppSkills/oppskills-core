@@ -10,12 +10,14 @@ import {
   OnboardingCompleteEmailProps,
   EventPassPendingEmail,
   EventPassPendingEmailProps,
+  EventPassEmail,
+  EventPassEmailProps,
   ParticipantDirectMessage,
   ParticipantDirectMessageProps,
 } from '@oppskills/emails';
 import { Logger } from 'src/_utils/logger';
 
-export type EmailType = 'welcome' | 'onboarding-complete' | 'event-pass-pending' | 'participant-direct-message';
+export type EmailType = 'welcome' | 'onboarding-complete' | 'event-pass-pending' | 'event-pass' | 'participant-direct-message';
 
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
@@ -26,6 +28,8 @@ export interface SendEmailOptions<T extends EmailType> {
   ? OnboardingCompleteEmailProps
   : T extends 'event-pass-pending'
   ? EventPassPendingEmailProps
+  : T extends 'event-pass'
+  ? EventPassEmailProps
   : T extends 'participant-direct-message'
   ? ParticipantDirectMessageProps
   : never;
@@ -101,7 +105,7 @@ export class EmailService {
    */
   private async renderEmail(
     type: EmailType,
-    props: WelcomeEmailProps | OnboardingCompleteEmailProps | EventPassPendingEmailProps | ParticipantDirectMessageProps,
+    props: WelcomeEmailProps | OnboardingCompleteEmailProps | EventPassPendingEmailProps | EventPassEmailProps | ParticipantDirectMessageProps,
   ): Promise<{ subject: string; html: string }> {
     switch (type) {
       case 'welcome': {
@@ -113,21 +117,30 @@ export class EmailService {
           html,
         };
       }
-      case 'onboarding-complete': {
-        const p = props as OnboardingCompleteEmailProps;
-        const element = createElement(OnboardingCompleteEmail, p);
-        const html = await render(element);
-        return {
-          subject: 'Profile Complete - Start Exploring OppSkills!',
-          html,
-        };
-      }
+      // case 'onboarding-complete': {
+      //   const p = props as OnboardingCompleteEmailProps;
+      //   const element = createElement(OnboardingCompleteEmail, p);
+      //   const html = await render(element);
+      //   return {
+      //     subject: 'Profile Complete - Start Exploring OppSkills!',
+      //     html,
+      //   };
+      // }
       case 'event-pass-pending': {
         const p = props as EventPassPendingEmailProps;
         const element = createElement(EventPassPendingEmail, p);
         const html = await render(element);
         return {
           subject: `Your registration for ${p.eventName} is pending review`,
+          html,
+        };
+      }
+      case 'event-pass': {
+        const p = props as EventPassEmailProps;
+        const element = createElement(EventPassEmail, p);
+        const html = await render(element);
+        return {
+          subject: `Your event pass for ${p.eventName} is ready!`,
           html,
         };
       }

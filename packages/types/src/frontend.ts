@@ -135,4 +135,10 @@ export type {
 // Also export the value constant (it's just an array, no NestJS deps)
 export { EventUserRoleValues } from './dtos/backend/event/event-roles.dto';
 
+export type {
+  EventPassDto,
+  ScanEventPassDto,
+  ScanResultDto,
+} from './dtos/backend/event/event-pass.dto';
+
 

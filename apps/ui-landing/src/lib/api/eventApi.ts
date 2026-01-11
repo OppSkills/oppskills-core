@@ -406,6 +406,10 @@ export interface EventRegistration {
   course: string;
   status: "Completed" | "Incomplete";
   registeredOn: string;
+  approved: boolean;
+  passEmailSent: boolean;
+  passEmailSentAt?: string;
+  approvedAt?: string;
 }
 
 /**
@@ -456,4 +460,70 @@ export async function getParticipantRegistrationAnswers(
     { headers: buildAuthHeaders(token) },
   );
   return res.data as ParticipantRegistrationAnswersResponse;
+}
+
+/**
+ * Approve a participant for an event (owner/manager/admin only).
+ */
+export async function approveParticipant(
+  token: string,
+  eventSlug: string,
+  participantId: string,
+): Promise<void> {
+  await API.post(
+    `/by-slug/${encodeURIComponent(eventSlug)}/participants/${encodeURIComponent(participantId)}/approve`,
+    {},
+    { headers: buildAuthHeaders(token) },
+  );
+}
+
+// =====================
+// Event Pass API Functions
+// =====================
+
+import type { EventPassDto, ScanResultDto, ScanEventPassDto } from '@oppskills/types';
+
+const EVENT_PASS_API = createApiClient('/event-pass');
+const EVENT_PASS_SCAN_API = createApiClient('/events');
+
+/**
+ * Get event pass by ID (authenticated, user must own the pass)
+ */
+export async function getEventPass(
+  token: string,
+  passId: string,
+): Promise<EventPassDto> {
+  const response = await EVENT_PASS_API.get(`/${encodeURIComponent(passId)}`, {
+    headers: buildAuthHeaders(token),
+  });
+  return response.data as EventPassDto;
+}
+
+/**
+ * Get all event passes for authenticated user
+ */
+export async function getMyEventPasses(
+  token: string,
+): Promise<EventPassDto[]> {
+  const response = await EVENT_PASS_API.get('/my-passes', {
+    headers: buildAuthHeaders(token),
+  });
+  return response.data as EventPassDto[];
+}
+
+/**
+ * Scan and validate event pass token
+ * Only event owners/managers can scan passes
+ */
+export async function scanEventPass(
+  token: string,
+  eventId: string,
+  passToken: string,
+): Promise<ScanResultDto> {
+  const response = await EVENT_PASS_SCAN_API.post(
+    `/${encodeURIComponent(eventId)}/passes/scan`,
+    { token: passToken } as ScanEventPassDto,
+    { headers: buildAuthHeaders(token) },
+  );
+  return response.data as ScanResultDto;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import {
   flexRender,
@@ -20,6 +20,7 @@ import {
   SlidersHorizontal,
   Loader2,
   MailIcon,
+  QrCode,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,9 +28,18 @@ import { useEventRegistrationsBySlug } from "@/hooks/useEventRegistrationsBySlug
 import type { EventRegistration } from "@/lib/api/eventApi";
 import { getParticipantRegistrationAnswers } from "@/lib/api/eventApi";
 import { useAuth } from "@clerk/nextjs";
-import { useQuery } from "@tanstack/react-query";
-import { getEventBySlug } from "@/lib/api/eventApi";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getEventBySlug, approveParticipant } from "@/lib/api/eventApi";
 import { ComposeEmailModal } from "./_components/ComposeEmailModal";
+import { QRScannerModal } from "./_components/QRScannerModal";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // --- Types ---
 type RegistrationStatus = "Completed" | "Incomplete";
@@ -44,6 +54,10 @@ interface Participant {
   location: string;
   course: string;
   registeredOn: string;
+  approved: boolean;
+  passEmailSent: boolean;
+  passEmailSentAt?: string;
+  approvedAt?: string;
 }
 
 // --- Components ---
@@ -51,8 +65,8 @@ interface Participant {
 const StatusBadge = ({ status }: { status: RegistrationStatus }) => {
   const styles =
     status === "Completed"
-      ? "bg-primary-100 text-primary-700"
-      : "bg-destructive text-destructive-foreground-foreground";
+      ? "bg-primary-100 text-primary-700 text-xs"
+      : "bg-destructive text-destructive-foreground-foreground text-xs";
 
   return (
     <div
@@ -249,8 +263,11 @@ export default function ManageRegistrationPage() {
   const [emailRecipient, setEmailRecipient] = useState<Participant | null>(
     null
   );
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
 
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
   const { data: eventDetails } = useQuery({
     queryKey: ["event-details", slug],
     queryFn: async () => {
@@ -262,6 +279,7 @@ export default function ManageRegistrationPage() {
     enabled: !!slug,
   });
 
+  const eventId = eventDetails ? (eventDetails as any).id : null;
 
   const data: Participant[] = useMemo(() => {
     if (!registrations) return [];
@@ -275,8 +293,36 @@ export default function ManageRegistrationPage() {
       location: reg.location,
       course: reg.course,
       registeredOn: reg.registeredOn,
+      approved: reg.approved ?? false,
+      passEmailSent: reg.passEmailSent ?? false,
+      passEmailSentAt: reg.passEmailSentAt,
+      approvedAt: reg.approvedAt,
     }));
   }, [registrations]);
+
+  const handleApprove = useCallback(async (participantId: string) => {
+    if (!slug) return;
+    
+    setApprovingId(participantId);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Authentication required");
+        return;
+      }
+      
+      await approveParticipant(token, slug, participantId);
+      toast.success("Participant approved! Event pass is being sent.");
+      
+      // Refresh the list
+      queryClient.invalidateQueries({ queryKey: ['event-registrations-by-slug', slug] });
+    } catch (error) {
+      console.error('Error approving participant:', error);
+      toast.error("Failed to approve participant");
+    } finally {
+      setApprovingId(null);
+    }
+  }, [slug, getToken, queryClient]);
 
   const columns = useMemo<ColumnDef<Participant>[]>(
     () => [
@@ -358,8 +404,85 @@ export default function ManageRegistrationPage() {
           </div>
         ),
       },
+      {
+        accessorKey: "passEmailSent",
+        header: "Pass Status",
+        cell: ({ row }) => {
+          const sent = row.original.passEmailSent;
+          const approved = row.original.approved;
+          
+          if (sent) {
+            return (
+              <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+                ✓ Pass Sent
+              </Badge>
+            );
+          } else if (approved) {
+            return (
+              <Badge variant="secondary">
+                Approved (Sending...)
+              </Badge>
+            );
+          } else {
+            return (
+              <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">
+                Pending Approval
+              </Badge>
+            );
+          }
+        },
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => {
+          const participant = row.original;
+          const needsApproval = !participant.approved;
+          
+          return (
+            <div className="flex items-center gap-2">
+              {needsApproval && (
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => handleApprove(participant.id)}
+                  disabled={approvingId === participant.id}
+                >
+                  {approvingId === participant.id ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin mr-1" /> Approving...
+                    </>
+                  ) : (
+                    'Approve'
+                  )}
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedParticipant(participant)}
+              >
+                View
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setEmailRecipient(participant)}>
+                    <MailIcon className="w-4 h-4 mr-2" />
+                    Send Email
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      },
     ],
-    [data.length]
+    [data.length, approvingId, handleApprove]
   );
 
   const filteredData = useMemo(() => {
@@ -440,6 +563,15 @@ export default function ManageRegistrationPage() {
         }
       />
 
+      {eventId && slug && (
+        <QRScannerModal
+          isOpen={isQRScannerOpen}
+          onClose={() => setIsQRScannerOpen(false)}
+          eventId={eventId}
+          eventSlug={slug}
+        />
+      )}
+
       {/* Header Controls */}
       <div className="w-full max-w-5xl flex flex-col md:flex-row justify-between items-center gap-4">
         {/* Tabs */}
@@ -486,6 +618,15 @@ export default function ManageRegistrationPage() {
             />
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsQRScannerOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <QrCode className="w-4 h-4" />
+            Scan QR Code
+          </Button>
           <button className="p-2 rounded-full border border-border hover:bg-muted text-muted-foreground transition-colors">
             <MoreVertical className="w-5 h-5" />
           </button>
@@ -496,7 +637,7 @@ export default function ManageRegistrationPage() {
       <div className="w-full max-w-5xl rounded-xl overflow-x-auto border border-border/50 shadow-sm">
         <div className="min-w-[800px]">
           {/* Custom Header with Purple Background */}
-          <div className="bg-primary-600 text-background px-4 py-3 grid grid-cols-[50px_80px_1fr_200px] items-center text-sm font-medium">
+          <div className="bg-primary-600 text-background px-4 py-3 grid grid-cols-[50px_80px_1fr_150px_150px_200px] items-center text-sm font-medium">
             <div className="flex justify-center">
               <Checkbox
                 className="border-background data-[state=checked]:bg-background data-[state=checked]:text-primary-600"
@@ -515,6 +656,8 @@ export default function ManageRegistrationPage() {
               <Filter className="w-4 h-4" /> Reg. Status{" "}
               <SlidersHorizontal className="w-4 h-4" />
             </div>
+            <div className="text-center">Pass Status</div>
+            <div className="text-center">Actions</div>
           </div>
 
           {/* Table Body */}
@@ -527,8 +670,7 @@ export default function ManageRegistrationPage() {
               table.getRowModel().rows.map((row) => (
                 <div
                   key={row.id}
-
-                  className="grid grid-cols-[50px_80px_1fr_150px_50px] items-center px-4 py-4 border-b border-border/40 hover:bg-muted/5 transition-colors cursor-pointer"
+                  className="grid grid-cols-[50px_80px_1fr_150px_150px_200px] items-center px-4 py-4 border-b border-border/40 hover:bg-muted/5 transition-colors"
                 >
                   <div
                     className="flex justify-center"
@@ -543,7 +685,7 @@ export default function ManageRegistrationPage() {
                   <div className="text-muted-foreground text-sm font-medium pl-2">
                     {row.index + 1}
                   </div>
-                  <div className="flex items-center gap-4" onClick={() => setSelectedParticipant(row.original)}>
+                  <div className="flex items-center gap-4 cursor-pointer" onClick={() => setSelectedParticipant(row.original)}>
                     <Avatar className="w-10 h-10 border border-border/50">
                       <AvatarImage
                         src={row.original.avatarUrl || undefined}
@@ -568,16 +710,69 @@ export default function ManageRegistrationPage() {
                   <div className="flex justify-end">
                     <StatusBadge status={row.original.status} />
                   </div>
-                  <div className="flex justify-end">
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEmailRecipient(row.original);
-                      }}
-                      className="w-10 h-10 bg-primary-100 hover:bg-primary-200 text-primary-500 hover:text-primary-600 rounded-full border border-border/50 flex items-center justify-center cursor-pointer"
+                  <div className="flex justify-center">
+                    {(() => {
+                      const sent = row.original.passEmailSent;
+                      const approved = row.original.approved;
+                      
+                      if (sent) {
+                        return (
+                          <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+                            ✓ Pass Sent
+                          </Badge>
+                        );
+                      } else if (approved) {
+                        return (
+                          <Badge variant="secondary">
+                            Approved (Sending...)
+                          </Badge>
+                        );
+                      } else {
+                        return (
+                          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">
+                            Pending Approval
+                          </Badge>
+                        );
+                      }
+                    })()}
+                  </div>
+                  <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    {!row.original.approved && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => handleApprove(row.original.id)}
+                        disabled={approvingId === row.original.id}
+                      >
+                        {approvingId === row.original.id ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin mr-1" /> Approving...
+                          </>
+                        ) : (
+                          'Approve'
+                        )}
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSelectedParticipant(row.original)}
                     >
-                      <MailIcon />
-                    </div>
+                      View
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEmailRecipient(row.original)}>
+                          <MailIcon className="w-4 h-4 mr-2" />
+                          Send Email
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               ))

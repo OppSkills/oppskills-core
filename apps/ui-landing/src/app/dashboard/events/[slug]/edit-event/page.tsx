@@ -16,6 +16,7 @@ import BasicDetails from "./_components/BasicDetails";
 import RegistrationSettings from "./_components/RegistrationSettings";
 import AdditionalInfo from "./_components/AdditionalInfo";
 import Prizes from "./_components/Prizes";
+import PassSettings from "./_components/PassSettings";
 import { useQueryState } from "nuqs";
 import { useEventBySlug } from "@/hooks/useEventBySlug";
 import { useAuth } from "@clerk/nextjs";
@@ -82,6 +83,14 @@ export interface AdditionalInfoData {
   attachments: Attachment[];
 }
 
+export interface PassSettingsData {
+  passSendingMode: "IMMEDIATE" | "APPROVAL";
+  collegeRestrictionEnabled: boolean;
+  allowedCollegeIds: string[];
+  allowedEmailDomains: string[];
+  collegeMatchMode: "PROFILE_ONLY" | "EMAIL_ONLY" | "EITHER_OR" | "BOTH_REQUIRED";
+}
+
 export interface FormData {
   eventFestName: string;
   festivalId?: string;
@@ -99,6 +108,7 @@ export interface FormData {
   registrationSettings: RegistrationSettingsData;
   prizes: PrizesData;
   additionalInfo: AdditionalInfoData;
+  passSettings: PassSettingsData;
   maxUsers: number | undefined;
   organizationName: string;
   // New fields mapped from backend
@@ -379,6 +389,31 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
       contacts,
       attachments,
     },
+    passSettings: {
+      passSendingMode:
+        (getString(event, "passSendingMode") as "IMMEDIATE" | "APPROVAL") ??
+        "IMMEDIATE",
+      collegeRestrictionEnabled:
+        typeof event["collegeRestrictionEnabled"] === "boolean"
+          ? event["collegeRestrictionEnabled"]
+          : false,
+      allowedCollegeIds: Array.isArray(event["allowedCollegeIds"])
+        ? event["allowedCollegeIds"].filter(
+            (id): id is string => typeof id === "string"
+          )
+        : [],
+      allowedEmailDomains: Array.isArray(event["allowedEmailDomains"])
+        ? event["allowedEmailDomains"].filter(
+            (d): d is string => typeof d === "string"
+          )
+        : [],
+      collegeMatchMode:
+        (getString(event, "collegeMatchMode") as
+          | "PROFILE_ONLY"
+          | "EMAIL_ONLY"
+          | "EITHER_OR"
+          | "BOTH_REQUIRED") ?? "EITHER_OR",
+    },
     maxUsers: maxUsersValue,
     organizationName: getString(event, "organizationName") ?? "",
     visibility,
@@ -424,22 +459,16 @@ export default function EditEventPage() {
       draftOnly: false,
     },
     {
-      id: "registration-settings",
-      label: "Registration Settings",
-      icon: <Settings className="w-4 h-4" />,
-      draftOnly: true, // DRAFT-only: maxUsers, eligibility settings
-    },
-    {
-      id: "prizes",
-      label: "Prizes",
-      icon: <Trophy className="w-4 h-4" />,
-      draftOnly: true, // DRAFT-only: prize breakdown updates
-    },
-    {
       id: "additional-info",
       label: "Additional Info",
       icon: <FileText className="w-4 h-4" />,
       draftOnly: true, // DRAFT-only: contacts, attachments
+    },
+    {
+      id: "pass-settings",
+      label: "Pass Settings",
+      icon: <Settings className="w-4 h-4" />,
+      draftOnly: true, // DRAFT-only: pass sending mode, college restrictions
     },
   ];
 
@@ -480,6 +509,13 @@ export default function EditEventPage() {
       list: [],
     },
     additionalInfo: { contacts: [], attachments: [] },
+    passSettings: {
+      passSendingMode: "IMMEDIATE",
+      collegeRestrictionEnabled: false,
+      allowedCollegeIds: [],
+      allowedEmailDomains: [],
+      collegeMatchMode: "EITHER_OR",
+    },
     maxUsers: undefined,
     organizationName: "",
   }));
@@ -611,6 +647,12 @@ export default function EditEventPage() {
         >,
         prizeDescription: { summary: formData.prizes.description },
         prizeCertificate: formData.prizes.certificateProvided ?? false,
+        // Pass Settings
+        passSendingMode: formData.passSettings.passSendingMode,
+        collegeRestrictionEnabled: formData.passSettings.collegeRestrictionEnabled,
+        allowedCollegeIds: formData.passSettings.allowedCollegeIds,
+        allowedEmailDomains: formData.passSettings.allowedEmailDomains,
+        collegeMatchMode: formData.passSettings.collegeMatchMode,
       };
 
       await updateEvent(token, eventId, payload);
@@ -951,6 +993,10 @@ export default function EditEventPage() {
 
         {activeTab === "additional-info" && (
           <AdditionalInfo formData={formData} setFormData={setFormData} />
+        )}
+
+        {activeTab === "pass-settings" && (
+          <PassSettings formData={formData} setFormData={setFormData} />
         )}
 
         {activeTab === "preview" && slugParam && (

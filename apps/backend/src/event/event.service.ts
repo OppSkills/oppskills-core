@@ -778,6 +778,13 @@ export class EventService {
 
       organizationName: dto.organizationName,
       organizationLogoUrl: dto.organizationLogoUrl,
+
+      // Pass Settings
+      passSendingMode: dto.passSendingMode,
+      collegeRestrictionEnabled: dto.collegeRestrictionEnabled,
+      allowedCollegeIds: dto.allowedCollegeIds,
+      allowedEmailDomains: dto.allowedEmailDomains,
+      collegeMatchMode: dto.collegeMatchMode,
     };
 
     // If an approved event's basic info is being changed, reset approval status
@@ -905,6 +912,11 @@ export class EventService {
         maxUsers: true,
         registrationCount: true,
         registrationDeadline: true,
+        passSendingMode: true,
+        collegeRestrictionEnabled: true,
+        allowedCollegeIds: true,
+        allowedEmailDomains: true,
+        collegeMatchMode: true,
       },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -1335,12 +1347,25 @@ export class EventService {
       }
     }
 
-    // Fetch user data for email
+    // Fetch user data for email and validation
     const user = await prisma.userEntity.findUnique({
       where: { id: userId },
-      select: { email: true, firstName: true },
+      select: {
+        email: true,
+        firstName: true,
+        onboardingProfile: {
+          select: {
+            collegeId: true,
+          },
+        },
+      },
     });
     if (!user) throw new NotFoundException('User not found');
+
+    // NEW: Validate college restrictions
+    if (event.collegeRestrictionEnabled) {
+      this.validateCollegeEligibility(event, user);
+    }
 
     // Check capacity (use transaction for atomic update)
     const result = await prisma.$transaction(async (tx) => {
@@ -1359,10 +1384,15 @@ export class EventService {
       }
 
       // Create participant and increment count
+      // Set approval fields based on pass sending mode
+      const isImmediate = event.passSendingMode === 'IMMEDIATE';
       const participant = await tx.eventParticipantEntity.create({
         data: {
           eventId,
           userId,
+          approved: isImmediate,
+          approvedAt: isImmediate ? new Date() : null,
+          passEmailSent: false, // Will be set by email listener
         },
       });
 
@@ -1433,25 +1463,125 @@ export class EventService {
       eventLocation = 'Online Event';
     }
 
-    // Emit event.joined event for event pass email (skip for specific events)
+    // Emit event.participant.registered for pass email sending (skip for specific events)
     if (eventId !== this.EVENT_PASS_EMAIL_DISABLED_EVENT_ID) {
-      const emailPayload: EventJoinedEventPayload = {
-        userId,
-        email: user.email,
-        firstName: user.firstName || undefined,
+      this.eventEmitter.emit('event.participant.registered', {
         eventId: event.id,
-        eventName: event.name,
-        eventSlug: event.slug,
-        eventDate,
-        eventTime,
-        eventLocation,
-        eventType: event.eventType || undefined,
-        registrationId: result.participantId,
-      };
-      this.eventEmitter.emit(EMAIL_EVENTS.EVENT_JOINED, emailPayload);
+        userId,
+        participantId: result.participantId,
+        passSendingMode: event.passSendingMode,
+      });
     }
 
     return { message: 'Successfully joined the event.' };
+  }
+
+  /**
+   * Validates if a user is eligible to register for an event based on college restrictions.
+   */
+  private validateCollegeEligibility(
+    event: {
+      collegeRestrictionEnabled: boolean;
+      allowedCollegeIds: string[];
+      allowedEmailDomains: string[];
+      collegeMatchMode: string;
+    },
+    user: {
+      email: string;
+      onboardingProfile?: { collegeId: string | null } | null;
+    },
+  ): void {
+    if (!event.collegeRestrictionEnabled) return;
+
+    const { allowedCollegeIds, allowedEmailDomains, collegeMatchMode } = event;
+
+    const userCollegeId = user.onboardingProfile?.collegeId;
+    const userEmail = user.email;
+
+    // Extract domain from email
+    const emailDomain = userEmail.split('@')[1]?.toLowerCase();
+
+    // Check matches based on mode
+    const collegeMatches =
+      userCollegeId && allowedCollegeIds.includes(userCollegeId);
+    const emailMatches =
+      emailDomain &&
+      allowedEmailDomains.some(
+        (domain) => emailDomain === domain.toLowerCase(),
+      );
+
+    let isEligible = false;
+
+    switch (collegeMatchMode) {
+      case 'PROFILE_ONLY':
+        isEligible = !!collegeMatches;
+        break;
+      case 'EMAIL_ONLY':
+        isEligible = !!emailMatches;
+        break;
+      case 'EITHER_OR':
+        isEligible = !!collegeMatches || !!emailMatches;
+        break;
+      case 'BOTH_REQUIRED':
+        isEligible = !!collegeMatches && !!emailMatches;
+        break;
+    }
+
+    if (!isEligible) {
+      throw new ForbiddenException(
+        'You are not eligible to register for this event. ' +
+          'This event is restricted to specific colleges or email domains.',
+      );
+    }
+  }
+
+  /**
+   * Approves a participant for an event and triggers pass email sending.
+   */
+  async approveParticipant(
+    eventId: string,
+    participantId: string,
+    approverId: string,
+  ): Promise<void> {
+    // Verify approver has permission (owner/manager)
+    const event = await this.getEventByIdForDashboard(eventId, approverId);
+
+    const participant = await prisma.eventParticipantEntity.findUnique({
+      where: { id: participantId },
+      include: {
+        user: true,
+        event: true,
+      },
+    });
+
+    if (!participant) {
+      throw new NotFoundException('Participant not found');
+    }
+
+    if (participant.eventId !== eventId) {
+      throw new BadRequestException('Participant does not belong to this event');
+    }
+
+    if (participant.approved) {
+      throw new BadRequestException('Participant already approved');
+    }
+
+    // Update participant
+    await prisma.eventParticipantEntity.update({
+      where: { id: participantId },
+      data: {
+        approved: true,
+        approvedAt: new Date(),
+        approvedById: approverId,
+      },
+    });
+
+    // Emit event to send pass email
+    this.eventEmitter.emit('event.participant.approved', {
+      participantId,
+      eventId,
+      userId: participant.userId,
+    });
   }
 
   /**
@@ -1752,6 +1882,10 @@ export class EventService {
         course,
         status: p.submission ? 'Completed' : 'Incomplete',
         registeredOn: p.joinedAt.toISOString(),
+        approved: p.approved,
+        passEmailSent: p.passEmailSent,
+        passEmailSentAt: p.passEmailSentAt?.toISOString(),
+        approvedAt: p.approvedAt?.toISOString(),
       };
     });
   }

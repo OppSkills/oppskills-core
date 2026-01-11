@@ -625,6 +625,21 @@ export class CreateEventDto {
   additionalInfo?: EventAdditionalInfoDto;
 }
 
+// =====================
+// Event Pass Settings Types (defined before UpdateEventDto for use in decorators)
+// =====================
+
+const PASS_SENDING_MODE_VALUES = ["IMMEDIATE", "APPROVAL"] as const;
+export type PassSendingModeValue = (typeof PASS_SENDING_MODE_VALUES)[number];
+
+const COLLEGE_MATCH_MODE_VALUES = [
+  "PROFILE_ONLY",
+  "EMAIL_ONLY",
+  "EITHER_OR",
+  "BOTH_REQUIRED",
+] as const;
+export type CollegeMatchModeValue = (typeof COLLEGE_MATCH_MODE_VALUES)[number];
+
 /**
  * Partial update payload for events.
  * All fields are optional to support partial updates.
@@ -745,6 +760,31 @@ export class UpdateEventDto {
   @ValidateNested()
   @Type(() => EventAdditionalInfoDto)
   additionalInfo?: EventAdditionalInfoDto;
+
+  // Event Pass Settings
+  @IsOptional()
+  @IsString()
+  @IsIn(PASS_SENDING_MODE_VALUES)
+  passSendingMode?: PassSendingModeValue;
+
+  @IsOptional()
+  @IsBoolean()
+  collegeRestrictionEnabled?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  allowedCollegeIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  allowedEmailDomains?: string[];
+
+  @IsOptional()
+  @IsString()
+  @IsIn(COLLEGE_MATCH_MODE_VALUES)
+  collegeMatchMode?: CollegeMatchModeValue;
 }
 
 /**
@@ -926,5 +966,34 @@ export class JoinEventDto {
   @ValidateNested({ each: true })
   @Type(() => EventRegistrationAnswerDto)
   answers?: EventRegistrationAnswerDto[];
+}
+
+/**
+ * Event pass settings interface.
+ */
+export interface EventPassSettings {
+  passSendingMode: PassSendingModeValue;
+  collegeRestrictionEnabled: boolean;
+  allowedCollegeIds: string[];
+  allowedEmailDomains: string[];
+  collegeMatchMode: CollegeMatchModeValue;
+}
+
+/**
+ * Event participant with approval and pass status.
+ */
+export interface EventParticipantWithStatus {
+  id: string;
+  name: string;
+  email: string;
+  university: string;
+  avatarUrl?: string;
+  location?: string;
+  course?: string;
+  registeredOn: string;
+  approved: boolean;
+  passEmailSent: boolean;
+  passEmailSentAt?: string;
+  approvedAt?: string;
 }
 

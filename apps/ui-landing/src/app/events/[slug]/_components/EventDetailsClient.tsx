@@ -352,6 +352,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
       if (typeof err === "object" && err !== null && "response" in err) {
         const axiosErr = err as {
           response?: {
+            status?: number;
             data?: {
               message?: string | string[];
               error?: string;
@@ -359,6 +360,17 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             };
           };
         };
+
+        // Handle eligibility errors (403 Forbidden)
+        if (axiosErr.response?.status === 403) {
+          const errorMessage = Array.isArray(axiosErr.response?.data?.message)
+            ? axiosErr.response.data.message[0]
+            : axiosErr.response?.data?.message ||
+              axiosErr.response?.data?.error ||
+              "You are not eligible for this event. This event is restricted to specific colleges or email domains.";
+          toast.error(errorMessage, { duration: 5000 });
+          return;
+        }
 
         // Handle array of messages (typical NestJS validation pipe)
         if (Array.isArray(axiosErr.response?.data?.message)) {
