@@ -385,6 +385,8 @@ export class EventService {
       throw new NotFoundException('Event not found or not publicly visible');
     }
 
+    this.analyticsService.trackPageView('event', event.slug);
+
     return event;
   }
 

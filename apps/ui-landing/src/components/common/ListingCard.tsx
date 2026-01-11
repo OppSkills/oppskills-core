@@ -34,8 +34,10 @@ export interface ListingItem {
   routePrefix: string;
 }
 
-interface ListingCardProps {
+
+export interface ListingCardProps {
   item: ListingItem;
+  layout?: "grid" | "list";
 }
 
 /**
@@ -93,7 +95,7 @@ function formatCount(num: number | undefined): string {
   return `${value % 1 === 0 ? value.toFixed(0) : value}M+`;
 }
 
-export function ListingCard({ item }: ListingCardProps) {
+export function ListingCard({ item, layout = "grid" }: ListingCardProps) {
   const startDate = item.startDate ? new Date(item.startDate) : new Date(); // Fallback to now if missing
 
   const formattedDate = formatInTimeZone(startDate, "UTC", "dd MMM yyyy");
@@ -114,76 +116,85 @@ export function ListingCard({ item }: ListingCardProps) {
   // Derive event type if not provided
   const eventType = item.eventType || "Event";
 
-  return (
-    <Link href={`/${item.routePrefix}/${item.slug}`} prefetch={false}>
-      <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
-        {/* Image Section */}
-        <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
-          {item.bannerUrl ? (
-            <Image
-              src={item.bannerUrl}
-              alt={item.title}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-700">
-              <span className="text-background text-5xl font-bold">
-                {item.title.charAt(0).toUpperCase()}
-              </span>
+  // Common inner content
+  const Content = () => (
+    <CardContent className="space-y-2 flex-grow p-4">
+      <div className="flex gap-0.5 items-center overflow-ellipsis inter text-xs text-neutral-600">
+        {[isFree ? "Free" : "Paid", formattedDate, mode].map((tag, index) => (
+          <p key={index} className="gap-0.5 flex items-center">
+            {index > 0 && <Dot />}
+            {tag}
+          </p>
+        ))}
+      </div>
+      <h3 className="font-semibold text-xl text-neutral-900 break-words line-clamp-2">
+        {item.title}
+      </h3>
+
+      <div className="flex justify-between items-center text-sm pt-2 mt-auto">
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-medium">Attendees</span>
+          <div className="flex gap-1 items-center">
+            <div className="flex -space-x-2">
+              <div className="w-5 h-5 rounded-full bg-primary-100 border-2 border-background ring-1 ring-background" />
+              <div className="w-5 h-5 rounded-full bg-primary-200 border-2 border-background ring-1 ring-background" />
+              <div className="w-5 h-5 rounded-full bg-primary-300 border-2 border-background ring-1 ring-background" />
             </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
-            {[eventType, mode].map((tag, index) => (
-              <div key={index} className="flex gap-0.5 items-center">
-                {index > 0 && <Dot />}
-                <span>{tag}</span>
-              </div>
-            ))}
+            <span className="text-neutral-700 font-medium ml-1">
+              {formatCount(item.registrationCount)}
+            </span>
           </div>
         </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-medium">Register By</span>
+          <span className="text-neutral-700 font-medium">{formattedDeadLineDate}</span>
+        </div>
+        <div className="flex flex-col gap-1 text-right">
+          <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-medium">Entry Fee</span>
+          <span className="text-neutral-700 font-medium">{entryFee}</span>
+        </div>
+      </div>
+    </CardContent>
+  );
 
-        {/* Content Section */}
-        <CardContent className="space-y-2 flex-grow">
-          <div className="flex gap-0.5 items-center overflow-ellipsis inter text-xs text-neutral-600">
-            {[isFree ? "Free" : "Paid", formattedDate, mode].map(
-              (tag, index) => (
-                <p key={index} className="gap-0.5 flex items-center">
-                  {index > 0 && <Dot />}
-                  {tag}
-                </p>
-              )
-            )}
-          </div>
-          <h3 className="font-semibold text-xl text-neutral-900 break-words">
-            {item.title}
-          </h3>
+  const ImageSection = () => (
+    <div className={`relative overflow-hidden bg-muted group-hover:scale-[1.02] transition-transform duration-500 ${layout === 'list' ? 'w-full sm:w-48 md:w-64 h-48 sm:h-full shrink-0' : 'w-full h-48 sm:h-56'}`}>
+      {item.bannerUrl ? (
+        <Image
+          src={item.bannerUrl}
+          alt={item.title}
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-110"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-700">
+          <span className="text-background text-5xl font-bold">
+            {item.title.charAt(0).toUpperCase()}
+          </span>
+        </div>
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="absolute bottom-0 right-0 left-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+        <div className="flex flex-wrap gap-2 justify-end">
+          {/* Tags overlay only on grid or bottom of image in list */}
+          {[eventType, mode].map((tag, index) => (
+            <span key={index} className="px-2 py-0.5 rounded-full bg-background/90 text-foreground text-[10px] font-medium shadow-sm backdrop-blur-sm">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
-          <div className="flex justify-between items-center text-sm pb-3">
-            <div className="flex flex-col gap-2 ">
-              <span className="text-xs text-neutral-600">Attendees</span>
-              <div className="flex gap-1">
-                <div className="flex">
-                  <div className="w-4 h-4 rounded-full bg-primary-500"></div>
-                  <div className="w-4 h-4 rounded-full bg-primary-400 -ml-2"></div>
-                  <div className="w-4 h-4 rounded-full bg-primary-300 -ml-2"></div>
-                </div>
-                <span className="text-neutral-700">
-                  {formatCount(item.registrationCount)}
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 ">
-              <span className="text-xs text-neutral-600">Register By</span>
-              <span className="text-neutral-700">{formattedDeadLineDate}</span>
-            </div>
-            <div className="flex flex-col gap-2  text-right">
-              <span className="text-xs text-neutral-600">Entry Fee</span>
-              <span className="text-neutral-700">{entryFee}</span>
-            </div>
-          </div>
-        </CardContent>
+  return (
+    <Link href={`/${item.routePrefix}/${item.slug}`} prefetch={false} className="h-full block">
+      <Card className={`
+        group overflow-hidden border-border/50 hover:shadow-lg hover:border-primary/20 transition-all duration-300 bg-card h-full
+        ${layout === 'list' ? 'flex flex-col sm:flex-row h-auto sm:h-52' : 'flex flex-col'}
+      `}>
+        <ImageSection />
+        <Content />
       </Card>
     </Link>
   );

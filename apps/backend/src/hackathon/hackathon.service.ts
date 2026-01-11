@@ -18,6 +18,7 @@ import type {
 } from '@oppskills/types';
 import type { UpdateHackathonPrizeBreakdownDto } from './hackathon-update-nested.dto';
 import { AnalyticsService } from 'src/analytics/analytics.service';
+import { Logger } from '../_utils/logger';
 
 type LifecycleStatus =
   | 'DRAFT'
@@ -75,6 +76,7 @@ const DEFAULT_ATTENDEE_ELIGIBILITY: HackathonAttendeeEligibilityValue[] = [
 
 @Injectable()
 export class HackathonService {
+  private readonly logger = new Logger(HackathonService.name);
   /**
    * Create a hackathon as a user.
    * - If `festivalId` is null/undefined => standalone hackathon.
@@ -84,6 +86,7 @@ export class HackathonService {
   constructor(private readonly analyticsService: AnalyticsService) { }
 
   async createHackathon(dto: CreateHackathonDto, userId: string) {
+    this.logger.log(`Creating hackathon for user ${userId} with payload: ${JSON.stringify(dto)}`);
     if (dto.festivalId) {
       const festival = await prisma.festivalEntity.findUnique({
         where: { id: dto.festivalId },
@@ -140,7 +143,7 @@ export class HackathonService {
 
           // Extended fields
           slug,
-          festivalId: dto.festivalId ?? null,
+          festivalId: dto.festivalId,
           bannerImageUrl: dto.bannerImageUrl,
           visibility: dto.visibility ?? 'PUBLIC',
           hackathonType: dto.hackathonType ?? 'CODING_HACKATHON',
@@ -381,15 +384,7 @@ export class HackathonService {
         this.analyticsService.trackPostImpression('opportunity', hackathon.slug),
       ),
     ).catch((err) => {
-      // Logger might not be instantiated in HackathonService or might be different property
-      // Checked Step 51: private readonly logger = new Logger(HackathonController.name); IS IN CONTROLLER. 
-      // Service doesn't seem to have a logger property based on lines 1-84 shown in Step 51.
-      // Wait, Step 51 shows lines 1-800. Let's check constructor.
-      // Line 84: constructor(private readonly analyticsService: AnalyticsService) {}
-      // No logger in HackathonService. I'll skip logging error or just console.error/ignore since trackPostImpression already catches inside.
-      // Actually trackPostImpression catches itself: .catch(() => {})
-      // So I don't strictly need a catch block here if I don't await. 
-      // But Promise.all returns a Promise.
+      this.logger.error('Failed to track impressions', err);
     });
 
     return hackathons;
@@ -633,6 +628,8 @@ export class HackathonService {
         'Hackathon not found or not publicly visible',
       );
     }
+
+    this.analyticsService.trackPageView('opportunity', hackathon.slug);
 
     return hackathon;
   }

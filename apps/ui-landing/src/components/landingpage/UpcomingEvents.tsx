@@ -5,6 +5,7 @@ import { Dot, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEvents, type EventListItem } from "@/hooks/useEvents";
 import { formatInTimeZone } from "date-fns-tz";
+import { formatCount } from "@/lib/tools";
 
 /**
  * Format event mode/location type for display.
@@ -45,23 +46,7 @@ function calculateTotalPrize(event: EventListItem): string {
   // Return a placeholder or calculate if available
   return "Prizes";
 }
-function formatCount(num: number): string {
-  if (num < 10) {
-    return `${num}`;
-  }
 
-  if (num < 1000) {
-    return `${Math.floor(num / 10) * 10}+`;
-  }
-
-  if (num < 1_000_000) {
-    const value = Math.floor(num / 100) / 10; // 1 decimal
-    return `${value % 1 === 0 ? value.toFixed(0) : value}k`;
-  }
-
-  const value = Math.floor(num / 10_000) / 100; // 2 decimals
-  return `${value % 1 === 0 ? value.toFixed(0) : value}M+`;
-}
 
 export const UpcomingEvents = () => {
   const { data: events, isLoading, error } = useEvents();

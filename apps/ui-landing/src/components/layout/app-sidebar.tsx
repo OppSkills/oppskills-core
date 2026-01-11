@@ -49,11 +49,11 @@ const data = {
       url: "/dashboard/festivals",
       icon: IconConfetti,
     },
-    {
-      title: "Talent pipeline",
-      url: "/dashboard/talent-pipeline",
-      icon: IconUsers,
-    },
+    // {
+    //   title: "Talent pipeline",
+    //   url: "/dashboard/talent-pipeline",
+    //   icon: IconUsers,
+    // },
   ],
 };
 

@@ -262,12 +262,9 @@ export function GenericListingPage({
               {filteredItems.map((item) => (
                 <div
                   key={item.id}
-                  className={viewMode === "list" ? "max-w-3xl" : ""}
+                  className={viewMode === "list" ? "w-full" : ""}
                 >
-                  {/* In list mode we might want a horizontal card, but for now reusing ListingCard */}
-                  {/* To strictly follow "list view", we could make ListingCard accept a "variant" prop */}
-                  {/* For MVP refactor, using the same card is acceptable or wrapping it */}
-                  <ListingCard item={item} />
+                  <ListingCard item={item} layout={viewMode} />
                 </div>
               ))}
             </div>
