@@ -481,10 +481,41 @@ export async function approveParticipant(
 // Event Pass API Functions
 // =====================
 
-import type { EventPassDto, ScanResultDto, ScanEventPassDto } from '@oppskills/types';
+import type { EventPassDto, ScanResultDto, ScanEventPassDto, PublicPassLookupDto } from '@oppskills/types';
 
 const EVENT_PASS_API = createApiClient('/event-pass');
 const EVENT_PASS_SCAN_API = createApiClient('/events');
+
+/**
+ * Protected lookup of event pass by token
+ * Requires authentication and organizer permissions
+ */
+export async function lookupPassByToken(
+  authToken: string,
+  passToken: string,
+): Promise<PublicPassLookupDto> {
+  const response = await EVENT_PASS_API.get(`/lookup/${encodeURIComponent(passToken)}`, {
+    headers: buildAuthHeaders(authToken),
+  });
+  return response.data as PublicPassLookupDto;
+}
+
+/**
+ * Validate and mark pass as used (requires authentication + event permission)
+ * This is called by organizers after scanning
+ */
+export async function validateEventPass(
+  authToken: string,
+  eventId: string,
+  passToken: string,
+): Promise<ScanResultDto> {
+  const response = await EVENT_PASS_SCAN_API.post(
+    `/${encodeURIComponent(eventId)}/passes/scan`,
+    { token: passToken } as ScanEventPassDto,
+    { headers: buildAuthHeaders(authToken) },
+  );
+  return response.data as ScanResultDto;
+}
 
 /**
  * Get event pass by ID (authenticated, user must own the pass)

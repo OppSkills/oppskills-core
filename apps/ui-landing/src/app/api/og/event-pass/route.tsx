@@ -50,8 +50,9 @@ export async function GET(request: NextRequest) {
     let qrCodeDataUrl = '';
     if (token) {
       // Use a QR code API service for Edge runtime compatibility
-      // Format: https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={token}
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(token)}&ecc=H`;
+      // The QR code contains the validation URL, not just the token
+      const validationUrl = `${baseUrl}/pass/validate/${token}`;
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(validationUrl)}&ecc=H`;
       qrCodeDataUrl = await loadImageAsData(qrCodeUrl);
     } else {
       // Fallback to barcode if no token
@@ -225,7 +226,7 @@ export async function GET(request: NextRequest) {
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  paddingRight: '40px',
+                  paddingRight: '50px',
                 }}
               >
                 {/* Attendee Section */}
@@ -277,6 +278,11 @@ export async function GET(request: NextRequest) {
                         fontWeight: 500,
                         letterSpacing: '0.2px',
                         display: 'block',
+                        maxWidth: '320px',
+                        whiteSpace: 'pre-line',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word',
+                        overflow: 'hidden',
                       }}
                     >
                       {participantCollege}
@@ -380,7 +386,7 @@ export async function GET(request: NextRequest) {
               <div
                 style={{
                   position: 'absolute',
-                  right: '220px',
+                  right: '290px',
                   top: '50px',
                   bottom: '50px',
                   width: '1px',
@@ -391,21 +397,20 @@ export async function GET(request: NextRequest) {
               {/* Right Section */}
               <div
                 style={{
-                  width: '200px',
+                  width: '240px',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  paddingLeft: '25px',
+                  paddingLeft: '40px',
                 }}
               >
                 <div
                   style={{
                     display: 'flex',
-                    flexDirection: 'column',
+                    flexDirection: 'column-reverse',
                     alignItems: 'center',
                     gap: '20px',
-                    transform: 'rotate(90deg)',
                     transformOrigin: 'center',
                   }}
                 >
@@ -419,13 +424,13 @@ export async function GET(request: NextRequest) {
                       display: 'block',
                     }}
                   >
-                    {ticketId}
+                    {`№ ${ticketId.slice(-6).toUpperCase()}`}
                   </div>
                   <img
                     src={qrCodeDataUrl}
                     alt="QR Code"
-                    width={300}
-                    height={300}
+                    width={200}
+                    height={200}
                     style={{
                       objectFit: 'contain',
                       opacity: 0.9,

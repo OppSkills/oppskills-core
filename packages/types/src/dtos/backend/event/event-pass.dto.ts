@@ -50,3 +50,26 @@ export interface ScanResultDto {
   wasAlreadyUsed: boolean;
 }
 
+/**
+ * Public pass lookup response - limited info for security
+ * Does NOT include token, internal IDs, or sensitive data
+ */
+export interface PublicPassLookupDto {
+  ticketId: string;
+  eventId: string;
+  eventSlug: string;
+  isUsed: boolean;
+  scannedAt?: string;
+  scannedByName?: string;
+  participant: {
+    name: string;
+    email: string;
+    imageUrl?: string;
+    collegeName?: string;
+  };
+  event: {
+    name: string;
+    startDate: string;
+  };
+}
+

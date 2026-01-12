@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import { Logger } from '../_utils/logger';
-import type { EventPassDto, ScanResultDto } from '@oppskills/types';
+import type { EventPassDto, ScanResultDto, PublicPassLookupDto } from '@oppskills/types';
 
 @Injectable()
 export class EventPassService {
@@ -227,6 +227,74 @@ export class EventPassService {
     }
 
     return this.mapToDto(pass);
+  }
+
+  /**
+   * Public lookup by token - returns limited info for security
+   * Does NOT require authentication
+   */
+  async lookupPassByToken(token: string): Promise<PublicPassLookupDto | null> {
+    const pass = await prisma.eventPassEntity.findUnique({
+      where: { token },
+      include: {
+        user: {
+          include: {
+            onboardingProfile: {
+              include: {
+                college: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        event: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            startDate: true,
+          },
+        },
+        scannedBy: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    if (!pass) {
+      return null;
+    }
+
+    const collegeName = pass.user?.onboardingProfile?.college?.name || undefined;
+    const participantName = `${pass.user.firstName || ''} ${pass.user.lastName || ''}`.trim() || 'Participant';
+    const scannedByName = pass.scannedBy
+      ? `${pass.scannedBy.firstName || ''} ${pass.scannedBy.lastName || ''}`.trim() || 'Organizer'
+      : undefined;
+
+    return {
+      ticketId: pass.ticketId,
+      eventId: pass.eventId,
+      eventSlug: pass.event.slug,
+      isUsed: pass.isUsed,
+      scannedAt: pass.scannedAt?.toISOString(),
+      scannedByName,
+      participant: {
+        name: participantName,
+        email: pass.user.email,
+        imageUrl: pass.user.imageUrl || undefined,
+        collegeName,
+      },
+      event: {
+        name: pass.event.name,
+        startDate: pass.event.startDate.toISOString(),
+      },
+    };
   }
 
   /**

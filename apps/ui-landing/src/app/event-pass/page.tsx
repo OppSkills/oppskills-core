@@ -141,15 +141,16 @@ const EventPassPage = () => {
             {/* Right Section */}
             <div className="ticket-right">
               <div className="ticket-right-content">
-                <span className="ticket-id-vertical">{passData.ticketId}</span>
                 <div className="qr-code-vertical">
                   <QRCodeSVG
-                    value={passData.token}
+                    value={`${typeof window !== 'undefined' ? window.location.origin : 'https://oppskills.com'}/pass/validate/${passData.token}`}
                     size={250}
                     level="H"
                     className="qr-code-svg"
                   />
                 </div>
+                <span className="ticket-id-vertical">{passData.ticketId}</span>
+
               </div>
             </div>
           </div>

@@ -21,6 +21,7 @@ import {
   Loader2,
   MailIcon,
   QrCode,
+  Smartphone,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,7 +32,6 @@ import { useAuth } from "@clerk/nextjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getEventBySlug, approveParticipant } from "@/lib/api/eventApi";
 import { ComposeEmailModal } from "./_components/ComposeEmailModal";
-import { QRScannerModal } from "./_components/QRScannerModal";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -264,7 +264,6 @@ export default function ManageRegistrationPage() {
     null
   );
   const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
 
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
@@ -278,8 +277,6 @@ export default function ManageRegistrationPage() {
     },
     enabled: !!slug,
   });
-
-  const eventId = eventDetails ? (eventDetails as any).id : null;
 
   const data: Participant[] = useMemo(() => {
     if (!registrations) return [];
@@ -563,15 +560,6 @@ export default function ManageRegistrationPage() {
         }
       />
 
-      {eventId && slug && (
-        <QRScannerModal
-          isOpen={isQRScannerOpen}
-          onClose={() => setIsQRScannerOpen(false)}
-          eventId={eventId}
-          eventSlug={slug}
-        />
-      )}
-
       {/* Header Controls */}
       <div className="w-full max-w-5xl flex flex-col md:flex-row justify-between items-center gap-4">
         {/* Tabs */}
@@ -618,15 +606,34 @@ export default function ManageRegistrationPage() {
             />
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsQRScannerOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <QrCode className="w-4 h-4" />
-            Scan QR Code
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <QrCode className="w-4 h-4" />
+                Validate Passes
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72">
+              <div className="p-3">
+                <div className="flex items-start gap-3 mb-3">
+                  <Smartphone className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm">How to validate passes</h4>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Use your phone&apos;s camera or any QR scanner app to scan participant passes. You&apos;ll be taken to a validation page.
+                    </p>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
+                  <strong>Tip:</strong> On iPhone, open Camera app. On Android, use Google Lens or any QR scanner.
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button className="p-2 rounded-full border border-border hover:bg-muted text-muted-foreground transition-colors">
             <MoreVertical className="w-5 h-5" />
           </button>

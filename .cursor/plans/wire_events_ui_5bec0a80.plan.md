@@ -1,35 +1,3 @@
----
-name: Wire Events UI
-overview: Connect the existing Events dashboard pages to the Events backend using the same Axios + Clerk + React Query patterns as Hackathons, replacing mock data and removing unsafe `any` usage.
-todos:
-  - id: types-export-events-frontend
-    content: Export Event DTO types from packages/types/src/frontend.ts so ui-landing can import them without backend deps.
-    status: pending
-  - id: ui-event-api-client
-    content: Replace eventApi.ts any-typed functions with strict typed functions (my/events/by-slug/roles add/remove) using @oppskills/types/frontend.
-    status: pending
-    dependencies:
-      - types-export-events-frontend
-  - id: ui-event-react-query-hooks
-    content: Add useEventBySlug + useEventRoles hooks mirroring hackathon hooks, including role mutations + query invalidation.
-    status: pending
-    dependencies:
-      - ui-event-api-client
-  - id: ui-dashboard-events-list
-    content: Update dashboard/events/page.tsx to call getMyEvents and parse response safely (no any), mapping fields like registrationCount and isOpen consistently.
-    status: pending
-    dependencies:
-      - ui-event-api-client
-  - id: ui-dashboard-events-roles
-    content: Update dashboard/events/[slug]/manage-roles/page.tsx to use new hooks and remove all mock role data.
-    status: pending
-    dependencies:
-      - ui-event-react-query-hooks
-  - id: ui-api-client-root-normalization
-    content: Update apiClient.ts knownResourceSuffixes to include /events for robust NEXT_PUBLIC_API_URL normalization.
-    status: pending
----
-
 # Connect Events dashboard to backend
 
 ## Goal
@@ -140,4 +108,3 @@ Change:
 ## Out-of-scope for this PR (can follow-up)
 
 - `dashboard/events/[slug]/edit-event/*`: currently modeled like hackathons (prizes/registration settings). Events DTOs are simpler, so we should redesign that screen after the baseline wiring is stable.
-- `dashboard/events/[slug]/manage-registration`: currently mock; to wire it properly we’d need a backend endpoint to list participants for an event (e.g. `GET /events/:id/participants`) and decide what fields to show.

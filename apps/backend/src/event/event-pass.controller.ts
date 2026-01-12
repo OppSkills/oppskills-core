@@ -7,6 +7,7 @@ import {
   UseGuards,
   Req,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,24 +23,77 @@ import {
   ScanEventPassDto,
   ScanResultDto,
   EventPassDto,
+  PublicPassLookupDto,
 } from '@oppskills/types';
 import { EventService } from './event.service';
 
 @ApiTags('Event Passes')
-@ApiBearerAuth()
 @Controller('event-pass')
 export class EventPassController {
   private readonly logger = new Logger(EventPassController.name);
 
   constructor(
     private readonly eventPassService: EventPassService,
+    private readonly eventService: EventService,
   ) {}
+
+  /**
+   * GET /event-pass/lookup/:token
+   * Protected lookup - returns pass details only for event organizers/managers
+   */
+  @Get('lookup/:token')
+  @ApiBearerAuth()
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Protected pass lookup by token',
+    description: 'Returns pass details. Requires authentication and organizer/manager permissions for the associated event.',
+  })
+  @ApiParam({
+    name: 'token',
+    description: 'Pass token from QR code URL',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pass details',
+    type: Object as any,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - User is not an organizer of the event',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Pass not found',
+  })
+  async lookupPassByToken(
+    @Param('token') token: string,
+    @Req() req: Request,
+  ): Promise<PublicPassLookupDto> {
+    const userId = (req as any).user.id;
+    
+    // 1. Get the pass info (needs eventId to check permissions)
+    const passInfo = await this.eventPassService.lookupPassByToken(token);
+    if (!passInfo) {
+      throw new NotFoundException('Pass not found');
+    }
+
+    // 2. Verify user has permission for this specific event
+    try {
+      await this.eventService.getEventByIdForDashboard(passInfo.eventId, userId);
+    } catch (err) {
+      this.logger.warn(`User ${userId} attempted to lookup pass ${token} without permission`);
+      throw err; // Will be ForbiddenException from getEventByIdForDashboard
+    }
+
+    return passInfo;
+  }
 
   /**
    * GET /event-pass/my-passes
    * Get all passes for authenticated user
    */
   @Get('my-passes')
+  @ApiBearerAuth()
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Get all event passes for authenticated user',
@@ -60,6 +114,7 @@ export class EventPassController {
    * Get specific pass details (authenticated, user must own the pass)
    */
   @Get(':passId')
+  @ApiBearerAuth()
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Get event pass by ID',

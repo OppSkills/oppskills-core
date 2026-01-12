@@ -148,7 +148,7 @@
   /* Vertical dashed separator line */
   .event-pass-container .vertical-separator {
     position: absolute;
-    right: 180px;
+    right: 250px;
     top: 35px;
     bottom: 35px;
     width: 1px;
@@ -176,17 +176,17 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding-right: 30px;
+    padding-right: 50px;
   }
   
   /* Ticket Right Section */
   .event-pass-container .ticket-right {
-    width: 160px;
+    width: 240px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding-left: 20px;
+    padding-left: 40px;
     position: relative;
   }
   
@@ -208,9 +208,9 @@
     flex-direction: column;
     align-items: center;
     gap: 15px;
-    transform: rotate(90deg) translateX(10px);
     position: relative;
     z-index: 1;
+    justify-content: center;
   }
   
   .event-pass-container .ticket-id-vertical {
@@ -223,8 +223,8 @@
   }
   
   .event-pass-container .qr-code-vertical {
-    width: 250px;
-    height: 250px;
+    width: 180px;
+    height: 180px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -338,6 +338,11 @@
   }
   
   .event-pass-container .attendee-info-left .attendee-college {
+    max-width: 320px;
+    white-space: pre-line;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    overflow: hidden;
     font-size: 16px;
     color: var(--text-secondary);
     font-weight: 500;

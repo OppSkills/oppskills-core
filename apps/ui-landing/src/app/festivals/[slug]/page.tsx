@@ -86,7 +86,7 @@ export default function FestivalDetailsPage() {
                 )}
 
                 {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-foreground/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
                 <div className="container relative h-full flex flex-col justify-end pb-12 px-4 mx-auto z-10">
                     {/* Status Badge */}
@@ -170,12 +170,21 @@ export default function FestivalDetailsPage() {
                                         className="group relative flex flex-col bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-primary/50"
                                     >
                                         <div className="aspect-[16/9] w-full bg-muted relative overflow-hidden">
-                                            {/* Ideally use hackathon.bannerUrl if available, falling back to pattern */}
-                                            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 group-hover:scale-105 transition-transform duration-500" />
-                                            {/* Placeholder for hackathon Image if available */}
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <Trophy className="h-12 w-12 text-muted-foreground/30" />
-                                            </div>
+                                            {hackathon.bannerImageUrl ? (
+                                                <Image
+                                                    src={hackathon.bannerImageUrl}
+                                                    alt={hackathon.name}
+                                                    fill
+                                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                            ) : (
+                                                <>
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 group-hover:scale-105 transition-transform duration-500" />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <Trophy className="h-12 w-12 text-muted-foreground/30" />
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
 
                                         <div className="p-5 flex flex-col flex-1">
