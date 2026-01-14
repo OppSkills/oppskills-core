@@ -152,6 +152,11 @@
   }
 }
 
+body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
 /* EXPLORE COMMUNITIES SECTION CSS */
 .communities-swiper {
   overflow: hidden;
@@ -169,14 +174,14 @@
 
 .line-clamp-1 {
   display: -webkit-box;
-  -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .line-clamp-2 {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -304,7 +309,7 @@ h6 {
   outline: none;
 }
 
-.ProseMirror > * + * {
+.ProseMirror>*+* {
   margin-top: 0.75em;
 }
 

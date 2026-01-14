@@ -138,7 +138,6 @@ export default async function FestivalDashboard(props: {
                 </div>
 
                 {/* Analytics Section with Loader */}
-                {/* @ts-expect-error - Suspense type mismatch in React 19 */}
                 <Suspense fallback={<AnalyticsLoader />}>
                     <AnalyticsSection />
                 </Suspense>

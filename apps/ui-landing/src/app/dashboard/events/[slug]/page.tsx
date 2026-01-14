@@ -170,7 +170,7 @@ export default async function EventDashboard(props: {
         </div>
 
         {/* Analytics Section with Loader */}
-        {/* @ts-expect-error - Suspense type mismatch in React 19 */}
+
         <Suspense fallback={<AnalyticsLoader />}>
           <AnalyticsSection token={token} slug={slug} />
         </Suspense>

@@ -366,8 +366,8 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
           const errorMessage = Array.isArray(axiosErr.response?.data?.message)
             ? axiosErr.response.data.message[0]
             : axiosErr.response?.data?.message ||
-              axiosErr.response?.data?.error ||
-              "You are not eligible for this event. This event is restricted to specific colleges or email domains.";
+            axiosErr.response?.data?.error ||
+            "You are not eligible for this event. This event is restricted to specific colleges or email domains.";
           toast.error(errorMessage, { duration: 5000 });
           return;
         }
@@ -506,9 +506,10 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                 <h2 className="text-2xl font-bold mb-4 text-foreground poppins">
                   About Event
                 </h2>
-                <div className="prose  max-w-none text-neutral-600  inter">
+                <div className="ProseMirror  max-w-none text-neutral-600  inter">
                   {event.description ? (
                     <div
+                      className="html-content whitespace-pre-line break-words"
                       dangerouslySetInnerHTML={{ __html: event.description }}
                     />
                   ) : (
