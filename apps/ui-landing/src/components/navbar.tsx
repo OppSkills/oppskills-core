@@ -47,7 +47,7 @@ const Navbar = () => {
         </Link>
 
         {/* --- DESKTOP NAVIGATION --- */}
-        <div className="hidden md:flex items-center gap-8 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div className="hidden lg:flex items-center gap-8 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           {navLinks.map((link) => (
             <Link
               key={link.name}
@@ -62,7 +62,7 @@ const Navbar = () => {
         {/* --- RIGHT SIDE ACTIONS --- */}
         <div className="flex items-center gap-3">
           {/* Desktop Buttons (Hidden on Mobile) */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             {/* Logic for Authenticated Users */}
             <SignedIn>
               <Link href="/organize">
@@ -97,7 +97,7 @@ const Navbar = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="lg:hidden"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -107,7 +107,7 @@ const Navbar = () => {
 
       {/* --- MOBILE MENU --- */}
       {isOpen && (
-        <div className="md:hidden pt-4 pb-6 space-y-4 animate-in slide-in-from-top-5">
+        <div className="lg:hidden pt-4 pb-6 space-y-4 animate-in slide-in-from-top-5">
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <Link
