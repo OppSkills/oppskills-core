@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import React from "react";
 import { OpportunitySidebar } from "./layout/opportunity-sidebar";
 import { EventsSidebar } from "./layout/events-sidebar";
+import { FestivalsSidebar } from "./layout/festivals-sidebar";
 import { MobileNavigationProvider } from "./layout/mobile-navigation-context";
 
 export default function LayoutProvider({
@@ -28,7 +29,8 @@ export default function LayoutProvider({
   if (isOnboarding) {
     return (
       <main className="min-h-screen bg-background">
-        {children}
+
+        {children as any}
         <Toaster position="bottom-right" duration={5000} richColors />
       </main>
     );
@@ -58,7 +60,22 @@ export default function LayoutProvider({
     return [false, null];
   }, [pathname]);
 
-  const hasSecondarySidebar = isOpportunityDetail || isEventsDashboard;
+  /**
+   * Check if the current route is in the festivals section
+   * Pattern: /dashboard/festivals/[slug]...
+   * Excludes the festivals list page: /dashboard/festivals
+   */
+  const [isFestivalsDashboard, festivalsSlug] = React.useMemo(() => {
+    const festivalsDetailPattern = /^\/dashboard\/festivals\/([^/]+)/;
+    const match = pathname.match(festivalsDetailPattern);
+    if (match) {
+      return [true, match[1]];
+    }
+    return [false, null];
+  }, [pathname]);
+
+  const hasSecondarySidebar =
+    isOpportunityDetail || isEventsDashboard || isFestivalsDashboard;
 
   /**
    * Control the main sidebar's open state
@@ -85,6 +102,7 @@ export default function LayoutProvider({
   // Dashboard layout with dual-sidebar support
   if (isDashboard) {
     return (
+
       <MobileNavigationProvider
         value={{
           mobileMenuOpen,
@@ -145,6 +163,17 @@ export default function LayoutProvider({
                     }}
                   />
                 )}
+                {isFestivalsDashboard && festivalsSlug && (
+                  <FestivalsSidebar
+                    slug={festivalsSlug}
+                    side="left"
+                    variant="floating"
+                    collapsible="icon"
+                    style={{
+                      left: "calc(var(--sidebar-width-icon) + 1rem)",
+                    }}
+                  />
+                )}
                 <SidebarInset
                   className={cn("bg-neutral-200 p-2 space-y-4 my-1")}
                 >
@@ -153,7 +182,8 @@ export default function LayoutProvider({
                     className="flex-1 flex min-h-0 rounded-[20px] overflow-hidden w-full min-w-0 bg-background
 "
                   >
-                    {children}
+
+                    {children as any}
                   </div>
                 </SidebarInset>
               </SidebarContextProvider>
@@ -161,7 +191,8 @@ export default function LayoutProvider({
               <SidebarInset className={cn("bg-neutral-200 p-2 space-y-4 my-1")}>
                 <SiteHeader />
                 <div className="flex flex-1 rounded-[20px] overflow-hidden w-full min-w-0 bg-background">
-                  {children}
+
+                  {children as any}
                 </div>
               </SidebarInset>
             )}
@@ -175,7 +206,8 @@ export default function LayoutProvider({
   return (
     <main>
       <Navbar />
-      {children}
+
+      {children as any}
       <Footer />
       <Toaster position="bottom-right" duration={5000} richColors />
     </main>

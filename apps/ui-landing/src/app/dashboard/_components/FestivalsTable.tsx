@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import ActionDropdown from "./ActionDropdown";
 import { ArrowUpDown } from "lucide-react";
+import Link from "next/link";
 
 export interface FestivalItem {
   id: string;
@@ -81,7 +82,10 @@ export default function FestivalsTable({
       cell: (info) => {
         const item = info.row.original;
         return (
-          <div className="flex flex-col gap-1 py-2">
+          <Link
+            href={`/dashboard/festivals/${item.slug || item.id}`}
+            className="flex flex-col gap-1 py-2 hover:underline"
+          >
             <span className="font-semibold text-base">{item.name}</span>
             {item.description && (
               <span className="text-muted-foreground text-xs line-clamp-1 max-w-[200px]">
@@ -93,7 +97,7 @@ export default function FestivalsTable({
                 {item.tag}
               </span>
             </div>
-          </div>
+          </Link>
         );
       },
     }),
@@ -199,6 +203,8 @@ export default function FestivalsTable({
             <ActionDropdown
               onEdit={() => onEdit?.(info.row.original.id)}
               className="border-none hover:bg-muted"
+              editHref={`/dashboard/festivals/${info.row.original.slug}/edit-festival`}
+              settingsHref={`/dashboard/festivals/${info.row.original.slug}/settings`}
             />
           </div>
         );

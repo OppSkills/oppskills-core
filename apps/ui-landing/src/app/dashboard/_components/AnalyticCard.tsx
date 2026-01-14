@@ -50,9 +50,9 @@ export default function AnalyticCard({
           >
             {badge}
           </p>
-          <Badge variant={type === "highlight" ? "default" : "gradient"}>
+          {/* <Badge variant={type === "highlight" ? "default" : "gradient"}>
             {badgeValue}
-          </Badge>
+          </Badge> */}
         </div>
       </div>
     </div>

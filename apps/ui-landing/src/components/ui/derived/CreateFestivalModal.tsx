@@ -32,6 +32,16 @@ import { cn } from "@/lib/utils";
 import { Upload } from "lucide-react";
 import Image from "next/image";
 
+import dynamic from "next/dynamic";
+
+const RichTextEditor = dynamic(
+    () => import("@/components/ui/editor/RichtextEditor"),
+    {
+        ssr: false,
+        loading: () => <div className="h-[200px] bg-muted animate-pulse rounded-lg" />
+    }
+);
+
 interface CreateFestivalModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -356,16 +366,16 @@ export default function CreateFestivalModal({
 
                     <div className="space-y-2">
                         <Label>Description</Label>
-                        <Textarea
+                        <RichTextEditor
                             value={formData.description}
-                            onChange={(e) =>
+                            onChange={(content) =>
                                 setFormData({
                                     ...formData,
-                                    description: e.target.value,
+                                    description: content,
                                 })
                             }
                             placeholder="Describe your festival..."
-                            className="min-h-[100px]"
+                            className="min-h-[200px]"
                         />
                     </div>
                 </div>

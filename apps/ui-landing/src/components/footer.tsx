@@ -71,7 +71,7 @@ const Footer = () => {
               href="/organize/event"
               className="text-primary-foreground hover:underline"
             >
-              <span>Create your events. </span>
+              <span>Wanna Organize Events or Opportunity? </span>
               <span className="text-primary-400">Click here</span>
             </Link>
           </div>

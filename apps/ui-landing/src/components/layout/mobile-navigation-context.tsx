@@ -23,4 +23,4 @@ export function useMobileNavigation() {
   return context;
 }
 
-export const MobileNavigationProvider = MobileNavigationContext.Provider;
+export const MobileNavigationProvider = MobileNavigationContext.Provider as any;
