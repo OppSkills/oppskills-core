@@ -145,7 +145,7 @@ export default async function FestivalDashboard(props: {
                 {/* CHARTS */}
                 <MotionContainer className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                     <MotionItem>
-                        <RegistrationLineChart />
+                        <RegistrationLineChart data={[]} />
                     </MotionItem>
                     <MotionItem>
                         <Alerts />
@@ -157,7 +157,7 @@ export default async function FestivalDashboard(props: {
                         <DomainsChart />
                     </MotionItem>
                     <MotionItem>
-                        <GenderDiversityChart />
+                        <GenderDiversityChart data={{}} />
                     </MotionItem>
                     <MotionItem>
                         <ImpressionsChart />

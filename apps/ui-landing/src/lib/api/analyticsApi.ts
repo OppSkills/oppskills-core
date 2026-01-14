@@ -32,3 +32,33 @@ export async function getHackathonGeneralStats(token: string, slug: string): Pro
     });
     return res.data;
 }
+
+/**
+ * Fetch detailed statistics for an event.
+ * Requires an authentication token.
+ * 
+ * @param token - The user's authentication token.
+ * @param slug - The unique slug of the event.
+ * @returns Promise<any> - Returns detailed stats (registrations array and gender distribution).
+ */
+export async function getEventDetailedStats(token: string, slug: string): Promise<any> {
+    const res = await API.get(`/event/${slug}/detailed`, {
+        headers: buildAuthHeaders(token),
+    });
+    return res.data;
+}
+
+/**
+ * Fetch detailed statistics for a hackathon.
+ * Requires an authentication token.
+ * 
+ * @param token - The user's authentication token.
+ * @param slug - The unique slug of the hackathon.
+ * @returns Promise<any> - Returns detailed stats (registrations array and gender distribution).
+ */
+export async function getHackathonDetailedStats(token: string, slug: string): Promise<any> {
+    const res = await API.get(`/hackathon/${slug}/detailed`, {
+        headers: buildAuthHeaders(token),
+    });
+    return res.data;
+}

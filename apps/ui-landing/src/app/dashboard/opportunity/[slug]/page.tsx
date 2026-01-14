@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { Clock1, Loader2 } from "lucide-react";
 
 import { currentUser, auth } from "@clerk/nextjs/server";
-import { getHackathonGeneralStats } from "@/lib/api/analyticsApi";
+import { getHackathonGeneralStats, getHackathonDetailedStats } from "@/lib/api/analyticsApi";
 import { getHackathonBySlug } from "@/lib/api/hackathonApi";
 import GenderDiversityChart from "@/app/dashboard/_components/GenderDiversityChart";
 import ImpressionsChart from "@/app/dashboard/_components/ImpressionsChart";
@@ -121,6 +121,40 @@ async function AnalyticsSection({
   );
 }
 
+// Async component for Detailed Analytics (Charts)
+async function DetailedAnalyticsSection({
+  token,
+  slug,
+}: {
+  token: string;
+  slug: string;
+}) {
+  let chartsData = { registrations: [], gender: {} };
+
+  try {
+    const rawStats = await getHackathonDetailedStats(token, slug);
+    if (rawStats) {
+      chartsData = {
+        registrations: rawStats.registrations || [],
+        gender: rawStats.gender || {},
+      };
+    }
+  } catch (error) {
+    console.error(`Failed to fetch Hackathon detailed analytics:`, error);
+  }
+
+  return (
+    <MotionContainer className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+      <MotionItem>
+        <RegistrationLineChart data={chartsData.registrations} />
+      </MotionItem>
+      <MotionItem>
+        <GenderDiversityChart data={chartsData.gender} />
+      </MotionItem>
+    </MotionContainer>
+  );
+}
+
 // Helper to fetch details
 async function getHackathonName(
   token: string,
@@ -180,34 +214,9 @@ export default async function OpportunityDashboard(props: {
         </Suspense>
 
         {/* CHARTS */}
-        <div className="flex w-full px-4 py-10 bg-primary-100 text-primary-600">
-          <div>
-            <Clock1 className="h-6 w-6" />
-            <p className="text-sm md:text-[16px] text-muted-foreground pt-1 md:pt-2">
-              Under Maintenance
-            </p>
-          </div>
-        </div>
-        {/* <MotionContainer className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-          <MotionItem>
-            <RegistrationLineChart />
-          </MotionItem>
-          <MotionItem>
-            <Alerts />
-          </MotionItem>
-          <MotionItem>
-            <RoundStats />
-          </MotionItem>
-          <MotionItem>
-            <DomainsChart />
-          </MotionItem>
-          <MotionItem>
-            <GenderDiversityChart />
-          </MotionItem>
-          <MotionItem>
-            <ImpressionsChart />
-          </MotionItem>
-        </MotionContainer> */}
+        <Suspense fallback={<AnalyticsLoader />}>
+          <DetailedAnalyticsSection token={token} slug={slug} />
+        </Suspense>
       </div>
     </div>
   );
