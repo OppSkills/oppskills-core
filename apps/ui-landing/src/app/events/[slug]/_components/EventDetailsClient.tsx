@@ -500,7 +500,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
           ? axiosErr.response.data.message[0]
           : axiosErr.response?.data?.message ||
             axiosErr.response?.data?.error ||
-            "You are not eligible for this event. This event is restricted to specific colleges or email domains.";
+            "Registration is not allowed for this event.";
         toast.error(errorMessage, { duration: 5000 });
         return;
       }

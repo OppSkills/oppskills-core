@@ -1566,8 +1566,7 @@ export class EventService {
 
     if (!isEligible) {
       throw new ForbiddenException(
-        'You are not eligible to register for this event. ' +
-          'This event is restricted to specific colleges or email domains.',
+        'Registration is not allowed for this event.',
       );
     }
   }
