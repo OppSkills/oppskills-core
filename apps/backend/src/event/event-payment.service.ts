@@ -12,6 +12,7 @@ import {
 } from '@oppskills/db';
 import { RazorpayService } from '../payments/razorpay.service';
 import { Decimal } from '@prisma/client/runtime/library';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 const PLATFORM_FEE_PERCENT = 2;
 
@@ -19,7 +20,10 @@ const PLATFORM_FEE_PERCENT = 2;
 export class EventPaymentService {
   private readonly logger = new Logger(EventPaymentService.name);
 
-  constructor(private readonly razorpayService: RazorpayService) {}
+  constructor(
+    private readonly razorpayService: RazorpayService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   /**
    * Create a payment order for event registration.
@@ -453,7 +457,7 @@ export class EventPaymentService {
                 submissionId: submission.id,
                 fieldId: answer.fieldId,
                 valueText: typeof answer.value === 'string' ? answer.value : null,
-                valueJson: typeof answer.value !== 'string' ? answer.value : undefined,
+                valueJson: typeof answer.value !== 'string' ? (answer.value as any) : undefined,
               },
             });
           }
@@ -485,6 +489,14 @@ export class EventPaymentService {
       }
 
       return { participantId: participant.id };
+    });
+
+    // Emit event for pass email sending
+    this.eventEmitter.emit('event.participant.registered', {
+      eventId: payment.event.id,
+      userId: params.userId,
+      participantId: result.participantId,
+      passSendingMode: payment.event.passSendingMode,
     });
 
     return {
