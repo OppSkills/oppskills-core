@@ -9,6 +9,7 @@ import {
   IconUsers,
   IconBell,
   IconSettings,
+  IconCreditCard,
 } from "@tabler/icons-react";
 
 import { MobileSidebarSwitcher } from "./mobile-sidebar-switcher";
@@ -38,6 +39,11 @@ const getEventNavItems = (slug: string) => [
     title: "Edit Event",
     url: `/dashboard/events/${slug}/edit-event`,
     icon: IconPencil,
+  },
+  {
+    title: "Payments",
+    url: `/dashboard/events/${slug}/payments`,
+    icon: IconCreditCard,
   },
   // {
   //   title: "Tickets",
