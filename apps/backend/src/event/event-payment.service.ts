@@ -417,6 +417,13 @@ export class EventPaymentService {
       throw new BadRequestException('Invalid payment signature');
     }
 
+    // Map frontend field IDs to database field IDs (same logic as joinEvent)
+    const mappedAnswers = await this.mapFrontendFieldIdsToDbIds(
+      payment.event.id,
+      params.userId,
+      params.answers || [],
+    );
+
     // Create participant within transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create participant
@@ -438,7 +445,7 @@ export class EventPaymentService {
       });
 
       // Create registration submission if answers provided
-      if (params.answers && params.answers.length > 0) {
+      if (mappedAnswers.length > 0) {
         const submission = await tx.eventRegistrationSubmissionEntity.create({
           data: {
             eventId: payment.event.id,
@@ -448,7 +455,7 @@ export class EventPaymentService {
         });
 
         // Create answers - match the format used in free events flow
-        const answerData = params.answers.map((a) => ({
+        const answerData = mappedAnswers.map((a) => ({
           submissionId: submission.id,
           fieldId: a.fieldId,
           valueText:
@@ -501,6 +508,262 @@ export class EventPaymentService {
       paymentId: payment.id,
       participantId: result.participantId,
     };
+  }
+
+  /**
+   * Map frontend field IDs (e.g., "default-name") to database field IDs.
+   * Creates default fields if they don't exist, similar to joinEvent flow.
+   */
+  private async mapFrontendFieldIdsToDbIds(
+    eventId: string,
+    userId: string,
+    answers: Array<{ fieldId: string; value: string | number | string[] }>,
+  ): Promise<Array<{ fieldId: string; value: string | number | string[] }>> {
+    if (!answers || answers.length === 0) {
+      return [];
+    }
+
+    // Fetch user's category to determine which default fields to create
+    const userOnboardingProfile =
+      await prisma.userOnboardingProfileEntity.findUnique({
+        where: { userId },
+        select: { userCategory: true },
+      });
+    const userCategory = userOnboardingProfile?.userCategory;
+
+    // Default gender options
+    const DEFAULT_GENDER_OPTIONS = [
+      'MALE',
+      'FEMALE',
+      'OTHER',
+      'PREFER_NOT_TO_SAY',
+    ];
+
+    // Define default fields that should be lazy-created
+    type DefaultFieldDef = {
+      label: string;
+      type: 'TEXT' | 'EMAIL' | 'PHONE_NO' | 'OPTIONS';
+      order: number;
+      required: boolean;
+      options: string[];
+      frontendId: string;
+    };
+
+    const defaultFieldDefs: DefaultFieldDef[] = [
+      {
+        frontendId: 'default-name',
+        label: 'Name',
+        type: 'TEXT',
+        order: -50,
+        required: true,
+        options: [],
+      },
+      {
+        frontendId: 'default-email',
+        label: 'Email',
+        type: 'EMAIL',
+        order: -40,
+        required: true,
+        options: [],
+      },
+      {
+        frontendId: 'default-phone',
+        label: 'Phone No.',
+        type: 'PHONE_NO',
+        order: -30,
+        required: true,
+        options: [],
+      },
+      {
+        frontendId: 'default-gender',
+        label: 'Gender',
+        type: 'OPTIONS',
+        order: -20,
+        required: true,
+        options: DEFAULT_GENDER_OPTIONS,
+      },
+    ];
+
+    // Add conditional identity field based on userCategory
+    if (userCategory === 'SCHOOL_STUDENT') {
+      defaultFieldDefs.push({
+        frontendId: 'default-school-name',
+        label: 'School Name',
+        type: 'TEXT',
+        order: -10,
+        required: true,
+        options: [],
+      });
+    } else if (
+      userCategory === 'COLLEGE_STUDENT' ||
+      userCategory === 'PROFESSIONAL_SCHOOL_STUDENT' ||
+      userCategory === 'FRESHER'
+    ) {
+      defaultFieldDefs.push({
+        frontendId: 'default-college-name',
+        label: 'College Name',
+        type: 'TEXT',
+        order: -9,
+        required: true,
+        options: [],
+      });
+    } else if (userCategory === 'WORKING_PROFESSIONAL') {
+      defaultFieldDefs.push({
+        frontendId: 'default-company-name',
+        label: 'Company Name',
+        type: 'TEXT',
+        order: -8,
+        required: false,
+        options: [],
+      });
+    } else {
+      // Fallback: if no category, ask for College Name
+      defaultFieldDefs.push({
+        frontendId: 'default-college-name',
+        label: 'College Name',
+        type: 'TEXT',
+        order: -9,
+        required: true,
+        options: [],
+      });
+    }
+
+    // Upsert registration form if missing
+    let regForm = await prisma.eventRegistrationFormEntity.findUnique({
+      where: { eventId },
+      include: {
+        fields: {
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    if (!regForm) {
+      regForm = await prisma.eventRegistrationFormEntity.create({
+        data: { eventId },
+        include: {
+          fields: {
+            orderBy: { order: 'asc' },
+          },
+        },
+      });
+    }
+
+    const registrationFormId = regForm.id;
+
+    // Build a map of existing fields by label for matching
+    const existingFieldsByLabel = new Map<
+      string,
+      (typeof regForm.fields)[number]
+    >(regForm.fields.map((f) => [f.label.toLowerCase(), f]));
+
+    // Track used orders to avoid unique constraint violations
+    const usedOrders = new Set(regForm.fields.map((f) => f.order));
+
+    // Map frontend field IDs to real DB field IDs
+    const frontendIdToDbId = new Map<string, string>();
+
+    for (const def of defaultFieldDefs) {
+      const existingField = existingFieldsByLabel.get(def.label.toLowerCase());
+
+      if (existingField) {
+        // Field already exists - map the frontend ID to the existing DB ID
+        frontendIdToDbId.set(def.frontendId, existingField.id);
+
+        // If it's the Gender field and options are empty, update with default options
+        if (
+          def.label.toLowerCase() === 'gender' &&
+          existingField.type === 'OPTIONS' &&
+          (!existingField.options || existingField.options.length === 0)
+        ) {
+          await prisma.eventRegistrationFieldEntity.update({
+            where: { id: existingField.id },
+            data: { options: DEFAULT_GENDER_OPTIONS },
+          });
+        }
+      } else {
+        // Field doesn't exist - create it
+        let orderToUse = def.order;
+        while (usedOrders.has(orderToUse)) {
+          orderToUse -= 1;
+        }
+        usedOrders.add(orderToUse);
+
+        try {
+          const newField = await prisma.eventRegistrationFieldEntity.create({
+            data: {
+              registrationFormId,
+              label: def.label,
+              type: def.type,
+              required: def.required,
+              order: orderToUse,
+              options: def.options,
+            },
+          });
+          frontendIdToDbId.set(def.frontendId, newField.id);
+        } catch (error: any) {
+          // Handle race condition: if another request created the field concurrently,
+          // refetch and use the existing field
+          if (error?.code === 'P2002') {
+            const refetchedForm =
+              await prisma.eventRegistrationFormEntity.findUnique({
+                where: { eventId },
+                include: {
+                  fields: {
+                    orderBy: { order: 'asc' },
+                  },
+                },
+              });
+            const refetchedField = refetchedForm?.fields.find(
+              (f) => f.label.toLowerCase() === def.label.toLowerCase(),
+            );
+            if (refetchedField) {
+              frontendIdToDbId.set(def.frontendId, refetchedField.id);
+            } else {
+              // If still not found, try with a different order
+              let retryOrder = orderToUse - 1;
+              while (usedOrders.has(retryOrder)) {
+                retryOrder -= 1;
+              }
+              const newField = await prisma.eventRegistrationFieldEntity.create({
+                data: {
+                  registrationFormId,
+                  label: def.label,
+                  type: def.type,
+                  required: def.required,
+                  order: retryOrder,
+                  options: def.options,
+                },
+              });
+              frontendIdToDbId.set(def.frontendId, newField.id);
+            }
+          } else {
+            throw error;
+          }
+        }
+      }
+    }
+
+    // Update existing field IDs for non-default fields (already in DB with real IDs)
+    for (const existingField of regForm.fields) {
+      if (!existingField.id.startsWith('default-')) {
+        frontendIdToDbId.set(existingField.id, existingField.id);
+      }
+    }
+
+    // Transform answers: replace frontend "default-*" IDs with real DB IDs
+    const mappedAnswers = answers
+      .map((a) => ({
+        fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
+        value: a.value,
+      }))
+      .filter((a) => {
+        // If it still starts with 'default-', it means it wasn't in our mapping
+        // (likely a field from a different user category that's no longer relevant)
+        return !a.fieldId.startsWith('default-');
+      });
+
+    return mappedAnswers;
   }
 
   /**
