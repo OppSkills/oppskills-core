@@ -92,7 +92,7 @@ export default async function page() {
         {/* Charts Row */}
         <MotionContainer className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
           <MotionItem className="w-full">
-            <RegistrationLineChart />
+            <RegistrationLineChart data={[]} />
           </MotionItem>
           <MotionItem className="w-full">
             <DomainsChart />

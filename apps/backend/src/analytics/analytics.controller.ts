@@ -12,8 +12,19 @@ export class AnalyticsController {
         @Param('slug') slug: string,
         @Req() req: any,
     ) {
-        const userId = req.auth.userId;
+        const userId = req.user?.id;
         const stats = await this.analyticsService.getEventGeneralStats(slug, userId);
+        if (!stats) throw new NotFoundException('Event not found');
+        return stats;
+    }
+
+    @Get('event/:slug/detailed')
+    async getEventDetailedStats(
+        @Param('slug') slug: string,
+        @Req() req: any,
+    ) {
+        const userId = req.user?.id;
+        const stats = await this.analyticsService.getEventDetailedStats(slug, userId);
         if (!stats) throw new NotFoundException('Event not found');
         return stats;
     }
@@ -23,8 +34,19 @@ export class AnalyticsController {
         @Param('slug') slug: string,
         @Req() req: any,
     ) {
-        const userId = req.auth.userId;
+        const userId = req.user?.id;
         const stats = await this.analyticsService.getHackathonGeneralStats(slug, userId);
+        if (!stats) throw new NotFoundException('Hackathon not found');
+        return stats;
+    }
+
+    @Get('hackathon/:slug/detailed')
+    async getHackathonDetailedStats(
+        @Param('slug') slug: string,
+        @Req() req: any,
+    ) {
+        const userId = req.user?.id;
+        const stats = await this.analyticsService.getHackathonDetailedStats(slug, userId);
         if (!stats) throw new NotFoundException('Hackathon not found');
         return stats;
     }
