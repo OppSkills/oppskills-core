@@ -401,6 +401,18 @@ model UserEntity {
   // Payouts received as organizer
   payoutsReceived HackathonPayoutEntity[] @relation("UserPayoutsReceived")
 
+  // Event Payments as organizer (receiving funds)
+  eventPaymentsAsOrganizer EventPaymentEntity[] @relation("EventPaymentOrganizer")
+
+  // Event Payments as payer (user paying for registration)
+  eventPaymentsAsPayer EventPaymentEntity[] @relation("EventPaymentPayer")
+
+  // Event discount code redemptions
+  eventDiscountRedemptions EventDiscountRedemptionEntity[] @relation("UserEventDiscountRedemptions")
+
+  // Event payouts received as organizer
+  eventPayoutsReceived EventPayoutEntity[] @relation("UserEventPayoutsReceived")
+
   @@map("user")
   @@schema("oppskills")
 }
@@ -583,10 +595,11 @@ model EventEntity {
   locationCity        String?       @map("location_city")
   locationVirtualLink String?       @map("location_virtual_link")
 
-  // Pricing (metadata only, no payment integration)
+  // Pricing (with payment integration)
   isFree         Boolean  @default(true) @map("is_free")
   entryFeeAmount Decimal? @map("entry_fee_amount") @db.Decimal(12, 2)
   currency       String   @default("INR")
+  freeCollegeIds String[] @default([]) @map("free_college_ids")
 
   // Capacity
   maxUsers          Int? @map("max_users")
@@ -655,6 +668,11 @@ model EventEntity {
   registrationSubmissions EventRegistrationSubmissionEntity[]
   eventPasses             EventPassEntity[] @relation("EventPasses")
 
+  // Payment relations
+  payments      EventPaymentEntity[]
+  discountCodes EventDiscountCodeEntity[]
+  payouts       EventPayoutEntity[]
+
   @@index([festivalId])
   @@index([ownerId])
   @@map("event")
@@ -683,6 +701,9 @@ model EventParticipantEntity {
 
   // Event Pass relation
   eventPass EventPassEntity?
+
+  // Payment relation (for paid events)
+  payment EventPaymentEntity?
 
   @@unique([eventId, userId])
   @@index([eventId])
@@ -1452,5 +1473,184 @@ model HackathonPayoutItemEntity {
   @@index([payoutId])
   @@index([paymentId])
   @@map("hackathon_payout_item")
+  @@schema("oppskills")
+}
+
+// =============================================================================
+// EVENT PAYMENT MODELS
+// =============================================================================
+
+/// Status of event payment.
+enum EventPaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+
+  @@map("EventPaymentStatus")
+  @@schema("oppskills")
+}
+
+/// Status of event payment order.
+enum EventPaymentOrderStatus {
+  CREATED
+  PAID
+  FAILED
+
+  @@map("EventPaymentOrderStatus")
+  @@schema("oppskills")
+}
+
+/// Payment record for event registration (individual participation).
+model EventPaymentEntity {
+  id          String      @id @default(cuid())
+  eventId     String      @map("event_id")
+  event       EventEntity @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  organizerId String      @map("organizer_id")
+  organizer   UserEntity  @relation("EventPaymentOrganizer", fields: [organizerId], references: [id])
+  payerUserId String      @map("payer_user_id")
+  payerUser   UserEntity  @relation("EventPaymentPayer", fields: [payerUserId], references: [id])
+
+  // Link to participant (created after payment verification)
+  participantId String?                 @unique @map("participant_id")
+  participant   EventParticipantEntity? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  // Money
+  currency             String  @default("INR")
+  grossAmount          Decimal @map("gross_amount") @db.Decimal(12, 2)
+  platformFeeAmount    Decimal @map("platform_fee_amount") @db.Decimal(12, 2)
+  organizerShareAmount Decimal @map("organizer_share_amount") @db.Decimal(12, 2)
+
+  // Razorpay order/payment
+  razorpayOrderId   String  @unique @map("razorpay_order_id")
+  razorpayPaymentId String? @unique @map("razorpay_payment_id")
+  razorpaySignature String? @map("razorpay_signature")
+
+  // Razorpay transfer (Route)
+  razorpayTransferId  String? @map("razorpay_transfer_id")
+  transferOnHold      Boolean @default(true) @map("transfer_on_hold")
+  transferOnHoldUntil Int?    @map("transfer_on_hold_until")
+  transferStatus      String? @map("transfer_status")
+  settlementStatus    String? @map("settlement_status")
+
+  // Status
+  orderStatus   EventPaymentOrderStatus @default(CREATED) @map("order_status")
+  paymentStatus EventPaymentStatus      @default(CREATED) @map("payment_status")
+
+  // Discount
+  discountCodeId String?                   @map("discount_code_id")
+  discountCode   EventDiscountCodeEntity? @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
+  discountAmount Decimal?                  @map("discount_amount") @db.Decimal(12, 2)
+
+  // Refund
+  razorpayRefundId String?       @unique @map("razorpay_refund_id")
+  refundStatus     RefundStatus? @map("refund_status")
+  refundedAmount   Decimal       @default(0) @map("refunded_amount") @db.Decimal(12, 2)
+  refundedAt       DateTime?     @map("refunded_at")
+
+  // Timestamps
+  capturedAt DateTime? @map("captured_at")
+  failedAt   DateTime? @map("failed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  // Discount redemption link
+  discountRedemption EventDiscountRedemptionEntity?
+
+  // Payout items (which payouts include this payment)
+  payoutItems EventPayoutItemEntity[]
+
+  @@unique([eventId, payerUserId])
+  @@index([eventId])
+  @@index([organizerId])
+  @@index([payerUserId])
+  @@map("event_payment")
+  @@schema("oppskills")
+}
+
+/// Discount code for an event (supports PERCENT and FIXED types).
+model EventDiscountCodeEntity {
+  id             String           @id @default(cuid())
+  eventId        String           @map("event_id")
+  event          EventEntity      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  code           String
+  type           DiscountCodeType
+  value          Decimal          @db.Decimal(12, 2)
+  active         Boolean          @default(true)
+  maxRedemptions Int?             @map("max_redemptions")
+  maxPerUser     Int              @default(1) @map("max_per_user")
+  validFrom      DateTime?        @map("valid_from")
+  validUntil     DateTime?        @map("valid_until")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  redemptions EventDiscountRedemptionEntity[]
+  payments    EventPaymentEntity[]
+
+  @@unique([eventId, code])
+  @@index([eventId])
+  @@map("event_discount_code")
+  @@schema("oppskills")
+}
+
+/// Tracks redemption of an event discount code by a user.
+model EventDiscountRedemptionEntity {
+  id             String                   @id @default(cuid())
+  discountCodeId String                   @map("discount_code_id")
+  discountCode   EventDiscountCodeEntity  @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  userId         String                   @map("user_id")
+  user           UserEntity               @relation("UserEventDiscountRedemptions", fields: [userId], references: [id], onDelete: Cascade)
+  paymentId      String                   @unique @map("payment_id")
+  payment        EventPaymentEntity       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  redeemedAt     DateTime                 @default(now()) @map("redeemed_at")
+
+  @@unique([discountCodeId, userId])
+  @@index([discountCodeId])
+  @@index([userId])
+  @@map("event_discount_redemption")
+  @@schema("oppskills")
+}
+
+/// Record of a manual payout to an organizer for an event.
+model EventPayoutEntity {
+  id          String      @id @default(cuid())
+  eventId     String      @map("event_id")
+  event       EventEntity @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  organizerId String      @map("organizer_id")
+  organizer   UserEntity  @relation("UserEventPayoutsReceived", fields: [organizerId], references: [id])
+  amount      Decimal     @db.Decimal(12, 2)
+  currency    String      @default("INR")
+  status      PayoutStatus @default(PAID)
+  eligibleAt  DateTime    @map("eligible_at")
+  paidAt      DateTime    @map("paid_at")
+  reference   String // UTR / bank transfer reference
+  notes       String?     @db.Text
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  // Line items (which payments were covered)
+  items EventPayoutItemEntity[]
+
+  @@index([eventId])
+  @@index([organizerId])
+  @@map("event_payout")
+  @@schema("oppskills")
+}
+
+/// Links an event payout to the individual payments it covers.
+model EventPayoutItemEntity {
+  id              String             @id @default(cuid())
+  payoutId        String             @map("payout_id")
+  payout          EventPayoutEntity  @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+  paymentId       String             @map("payment_id")
+  payment         EventPaymentEntity @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amountAllocated Decimal            @map("amount_allocated") @db.Decimal(12, 2)
+  createdAt       DateTime           @default(now()) @map("created_at")
+
+  @@unique([payoutId, paymentId])
+  @@index([payoutId])
+  @@index([paymentId])
+  @@map("event_payout_item")
   @@schema("oppskills")
 }

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import { EventRegistrationCard } from "./EventRegistrationCard";
 import { EventTabs } from "./EventTabs";
 import {
@@ -19,11 +20,23 @@ import { MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format, isSameDay, isSameYear } from "date-fns";
 import { useAuth, useClerk } from "@clerk/nextjs";
-import { joinEvent, checkMyRegistration } from "@/lib/api/eventApi";
+import {
+  joinEvent,
+  checkMyRegistration,
+  createEventPaymentOrder,
+  verifyEventPayment,
+} from "@/lib/api/eventApi";
 import { getMe, submitOnboarding } from "@/lib/api/usersApi";
 import { CreateOnboardingDto } from "@oppskills/types/frontend";
 import { useQuery } from "@tanstack/react-query";
 import { getApiErrorMessage } from "@/lib/utils";
+
+// Razorpay global type
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 // Types derived from what API returns (approximate based on usage)
 // In a real app we'd import full types
@@ -215,6 +228,8 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   const [registrationFields, setRegistrationFields] = useState<
     RegistrationField[]
   >([]);
+  const [discountCode, setDiscountCode] = useState("");
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
   // Fetch registration status if logged in
   const { data: registrationStatus, refetch: refetchRegistrationStatus } =
@@ -328,66 +343,181 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         return;
       }
 
+      // Submit onboarding data first if provided
       if (onboardingData) {
         await submitOnboarding(
           token,
           onboardingData as unknown as CreateOnboardingDto
         );
-        // Update local user data if needed, or just proceed
-        // Ideally we might want to refetch user data but for now let's assume it worked
       }
 
-      await joinEvent(token, event.id, { answers });
+      // Check if event is paid
+      const isPaidEvent = !event.isFree && event.entryFeeAmount && event.entryFeeAmount > 0;
 
-      toast.success("Successfully registered for the event!");
-      setIsModalOpen(false);
-      await refetchRegistrationStatus();
-      // Optionally refresh the page to update attendee count if server rendered
+      if (isPaidEvent) {
+        // Process payment flow for paid events
+        await processPaymentAndRegistration(token, answers);
+      } else {
+        // Free event - direct registration
+        await joinEvent(token, event.id, { answers });
+        toast.success("Successfully registered for the event!");
+        setIsModalOpen(false);
+        await refetchRegistrationStatus();
+      }
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Failed to register. Please try again.";
-
-      if (typeof err === "object" && err !== null && "response" in err) {
-        const axiosErr = err as {
-          response?: {
-            status?: number;
-            data?: {
-              message?: string | string[];
-              error?: string;
-              statusCode?: number;
-            };
-          };
-        };
-
-        // Handle eligibility errors (403 Forbidden)
-        if (axiosErr.response?.status === 403) {
-          const errorMessage = Array.isArray(axiosErr.response?.data?.message)
-            ? axiosErr.response.data.message[0]
-            : axiosErr.response?.data?.message ||
-            axiosErr.response?.data?.error ||
-            "You are not eligible for this event. This event is restricted to specific colleges or email domains.";
-          toast.error(errorMessage, { duration: 5000 });
-          return;
-        }
-
-        // Handle array of messages (typical NestJS validation pipe)
-        if (Array.isArray(axiosErr.response?.data?.message)) {
-          toast.error(axiosErr.response.data.message[0]);
-          return;
-        }
-
-        // Handle single message
-        if (axiosErr.response?.data?.message) {
-          toast.error(axiosErr.response.data.message as string);
-          return;
-        }
-      }
-      toast.error(message);
+      handleRegistrationError(err);
     } finally {
       setIsRegistering(false);
     }
+  };
+
+  const processPaymentAndRegistration = async (
+    token: string,
+    answers: Array<{ fieldId: string; value: string | number | string[] }>
+  ) => {
+    try {
+      // Create payment order
+      const orderResponse = await createEventPaymentOrder(token, event.slug, {
+        discountCode: discountCode || undefined,
+      });
+
+      // Handle zero-amount payment (free college or 100% discount)
+      if (orderResponse.zeroAmountPayment) {
+        // For zero-amount, backend has already created the participant
+        // Just need to join with answers
+        await joinEvent(token, event.id, { answers });
+        toast.success("Successfully registered for the event!");
+        setIsModalOpen(false);
+        setDiscountCode("");
+        await refetchRegistrationStatus();
+        return;
+      }
+
+      // Require Razorpay for real payment
+      if (!window.Razorpay || !razorpayLoaded) {
+        toast.error("Payment system is loading. Please try again.");
+        return;
+      }
+
+      const razorpayKey = orderResponse.razorpayKey;
+      const razorpayOrderId = orderResponse.razorpayOrderId;
+
+      if (!razorpayKey || !razorpayOrderId) {
+        throw new Error("Payment configuration error");
+      }
+
+      // Open Razorpay modal
+      const options = {
+        key: razorpayKey,
+        amount: orderResponse.amountPaise,
+        currency: orderResponse.currency,
+        name: event.name,
+        description: "Event Registration",
+        order_id: razorpayOrderId,
+        handler: async (response: any) => {
+          try {
+            setIsRegistering(true);
+            const verifyToken = await getToken();
+            if (!verifyToken) throw new Error("Authentication required");
+
+            const responseOrderId = response?.razorpay_order_id;
+            const responsePaymentId = response?.razorpay_payment_id;
+            const responseSignature = response?.razorpay_signature;
+
+            if (!responseOrderId || !responsePaymentId || !responseSignature) {
+              throw new Error(
+                "Payment verification failed (missing Razorpay fields). Please try again."
+              );
+            }
+
+            // Verify payment - this also creates the participant
+            await verifyEventPayment(verifyToken, event.slug, {
+              razorpayOrderId: responseOrderId,
+              razorpayPaymentId: responsePaymentId,
+              razorpaySignature: responseSignature,
+              answers,
+            });
+
+            toast.success("Payment successful! You are now registered.");
+            setIsModalOpen(false);
+            setDiscountCode("");
+            await refetchRegistrationStatus();
+          } catch (err) {
+            console.error("Payment verification error:", err);
+            toast.error(
+              err instanceof Error
+                ? err.message
+                : "Payment verification failed. Please contact support."
+            );
+          } finally {
+            setIsRegistering(false);
+          }
+        },
+        prefill: {
+          name: user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "",
+          email: user?.primaryEmailAddress?.emailAddress || "",
+          contact: user?.primaryPhoneNumber?.phoneNumber || "",
+        },
+        theme: {
+          color: "#5B2E63",
+        },
+        modal: {
+          ondismiss: () => {
+            setIsRegistering(false);
+            toast.info("Payment cancelled");
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (err: unknown) {
+      throw err;
+    }
+  };
+
+  const handleRegistrationError = (err: unknown) => {
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Failed to register. Please try again.";
+
+    if (typeof err === "object" && err !== null && "response" in err) {
+      const axiosErr = err as {
+        response?: {
+          status?: number;
+          data?: {
+            message?: string | string[];
+            error?: string;
+            statusCode?: number;
+          };
+        };
+      };
+
+      // Handle eligibility errors (403 Forbidden)
+      if (axiosErr.response?.status === 403) {
+        const errorMessage = Array.isArray(axiosErr.response?.data?.message)
+          ? axiosErr.response.data.message[0]
+          : axiosErr.response?.data?.message ||
+            axiosErr.response?.data?.error ||
+            "You are not eligible for this event. This event is restricted to specific colleges or email domains.";
+        toast.error(errorMessage, { duration: 5000 });
+        return;
+      }
+
+      // Handle array of messages (typical NestJS validation pipe)
+      if (Array.isArray(axiosErr.response?.data?.message)) {
+        toast.error(axiosErr.response.data.message[0]);
+        return;
+      }
+
+      // Handle single message
+      if (axiosErr.response?.data?.message) {
+        toast.error(axiosErr.response.data.message as string);
+        return;
+      }
+    }
+    toast.error(message);
   };
 
   // Format dates
@@ -428,6 +558,13 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
   return (
     <div className="min-h-screen bg-transparent py-8 font-sans">
+      {/* Load Razorpay SDK for paid events */}
+      {!event.isFree && (
+        <Script
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          onLoad={() => setRazorpayLoaded(true)}
+        />
+      )}
       <div className="container mx-auto px-4 max-w-7xl">
         {/* TOP HEADER SECTION */}
         <div className="mb-8">

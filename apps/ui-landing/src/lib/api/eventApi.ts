@@ -558,3 +558,220 @@ export async function scanEventPass(
   );
   return response.data as ScanResultDto;
 }
+
+// =====================
+// Event Payment API Functions
+// =====================
+
+/**
+ * Event payment order response.
+ */
+export interface EventPaymentOrderResponse {
+  paymentId: string;
+  razorpayKey: string | null;
+  razorpayOrderId: string | null;
+  amountPaise: number;
+  currency: string;
+  eventName: string;
+  eventSlug: string;
+  originalAmount: number;
+  finalAmount: number;
+  discountAmount?: number;
+  zeroAmountPayment?: boolean;
+  isCollegeFree?: boolean;
+}
+
+/**
+ * Event payment verification response.
+ */
+export interface EventPaymentVerifyResponse {
+  success: boolean;
+  paymentId: string;
+  participantId: string;
+}
+
+/**
+ * Event earnings data for organizer dashboard.
+ */
+export interface EventEarningsData {
+  totalGross: string;
+  totalPlatformFees: string;
+  totalOrganizerShare: string;
+  pendingPayout: string;
+  paidOut: string;
+  capturedPaymentsCount: number;
+  isEligibleNow: boolean;
+  eligibleAt: string | null;
+}
+
+/**
+ * Event discount code data.
+ */
+export interface EventDiscountCode {
+  id: string;
+  code: string;
+  type: "PERCENT" | "FIXED";
+  value: number;
+  active: boolean;
+  maxRedemptions: number | null;
+  maxPerUser: number;
+  validFrom: string | null;
+  validUntil: string | null;
+  redemptionCount: number;
+  createdAt: string;
+}
+
+/**
+ * Event pricing data.
+ */
+export interface EventPricingData {
+  isFree: boolean;
+  entryFeeAmount: string | null;
+  currency: string;
+  freeCollegeIds: string[];
+}
+
+/**
+ * Create a payment order for event registration.
+ */
+export async function createEventPaymentOrder(
+  token: string,
+  eventSlug: string,
+  params: { discountCode?: string },
+): Promise<EventPaymentOrderResponse> {
+  const res = await API.post(
+    `/${encodeURIComponent(eventSlug)}/payment/order`,
+    params,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as EventPaymentOrderResponse;
+}
+
+/**
+ * Verify event payment and complete registration.
+ */
+export async function verifyEventPayment(
+  token: string,
+  eventSlug: string,
+  params: {
+    razorpayOrderId: string;
+    razorpayPaymentId: string;
+    razorpaySignature: string;
+    answers?: Array<{ fieldId: string; value: string | number | string[] }>;
+  },
+): Promise<EventPaymentVerifyResponse> {
+  const res = await API.post(
+    `/${encodeURIComponent(eventSlug)}/payment/verify`,
+    params,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as EventPaymentVerifyResponse;
+}
+
+/**
+ * Get event earnings (organizer only).
+ */
+export async function getEventEarnings(
+  token: string,
+  eventSlug: string,
+): Promise<EventEarningsData> {
+  const res = await API.get(`/${encodeURIComponent(eventSlug)}/earnings`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as EventEarningsData;
+}
+
+/**
+ * Update event pricing settings.
+ */
+export async function updateEventPricing(
+  token: string,
+  eventSlug: string,
+  params: {
+    isFree?: boolean;
+    entryFeeAmount?: string;
+    freeCollegeIds?: string[];
+  },
+): Promise<EventPricingData> {
+  const res = await API.patch(
+    `/${encodeURIComponent(eventSlug)}/pricing`,
+    params,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as EventPricingData;
+}
+
+/**
+ * Create a discount code for event.
+ */
+export async function createEventDiscountCode(
+  token: string,
+  eventSlug: string,
+  params: {
+    code: string;
+    type: "PERCENT" | "FIXED";
+    value: number;
+    maxRedemptions?: number;
+    maxPerUser?: number;
+    validFrom?: string;
+    validUntil?: string;
+    active?: boolean;
+  },
+): Promise<EventDiscountCode> {
+  const res = await API.post(
+    `/${encodeURIComponent(eventSlug)}/discount-codes`,
+    params,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as EventDiscountCode;
+}
+
+/**
+ * Get all discount codes for event.
+ */
+export async function getEventDiscountCodes(
+  token: string,
+  eventSlug: string,
+): Promise<EventDiscountCode[]> {
+  const res = await API.get(
+    `/${encodeURIComponent(eventSlug)}/discount-codes`,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as EventDiscountCode[];
+}
+
+/**
+ * Update a discount code.
+ */
+export async function updateEventDiscountCode(
+  token: string,
+  eventSlug: string,
+  codeId: string,
+  params: {
+    active?: boolean;
+    maxRedemptions?: number;
+    validUntil?: string;
+  },
+): Promise<EventDiscountCode> {
+  const res = await API.patch(
+    `/${encodeURIComponent(eventSlug)}/discount-codes/${encodeURIComponent(codeId)}`,
+    params,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as EventDiscountCode;
+}
+
+/**
+ * Delete a discount code.
+ */
+export async function deleteEventDiscountCode(
+  token: string,
+  eventSlug: string,
+  codeId: string,
+): Promise<{ success: boolean }> {
+  const res = await API.delete(
+    `/${encodeURIComponent(eventSlug)}/discount-codes/${encodeURIComponent(codeId)}`,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as { success: boolean };
+}
