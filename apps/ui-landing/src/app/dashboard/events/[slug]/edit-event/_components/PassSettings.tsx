@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { FormData } from "../page";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
-import { searchColleges } from "@/lib/api/collegesApi";
+import { searchColleges, getCollegesByIds } from "@/lib/api/collegesApi";
 
 interface PassSettingsProps {
   formData: FormData;
@@ -32,6 +32,10 @@ export default function PassSettings({
 }: PassSettingsProps) {
   const { getToken } = useAuth();
   const [collegeSearch, setCollegeSearch] = useState("");
+  // Store college ID -> name mapping for selected colleges
+  const [collegeNamesMap, setCollegeNamesMap] = useState<Record<string, string>>({});
+  // Track which IDs we're currently fetching to avoid duplicate requests
+  const fetchingRef = useRef<Set<string>>(new Set());
 
   const { data: colleges } = useQuery({
     queryKey: ["colleges", collegeSearch],
@@ -42,6 +46,43 @@ export default function PassSettings({
     },
     enabled: collegeSearch.length >= 2,
   });
+
+  // Fetch college names for selected college IDs that don't have names yet
+  useEffect(() => {
+    const fetchMissingCollegeNames = async () => {
+      const selectedIds = formData.passSettings.allowedCollegeIds;
+      if (selectedIds.length === 0) return;
+
+      // Find IDs that don't have names and aren't currently being fetched
+      const missingIds = selectedIds.filter(
+        (id) => !collegeNamesMap[id] && !fetchingRef.current.has(id)
+      );
+      if (missingIds.length === 0) return;
+
+      const token = await getToken();
+      if (!token) return;
+
+      // Mark as fetching
+      missingIds.forEach((id) => fetchingRef.current.add(id));
+
+      try {
+        const colleges = await getCollegesByIds(token, missingIds);
+        const namesMap: Record<string, string> = {};
+        colleges.forEach((college) => {
+          namesMap[college.id] = college.name;
+          fetchingRef.current.delete(college.id);
+        });
+        setCollegeNamesMap((prev) => ({ ...prev, ...namesMap }));
+      } catch (error) {
+        console.error("Failed to fetch college names:", error);
+        // Remove from fetching set on error
+        missingIds.forEach((id) => fetchingRef.current.delete(id));
+      }
+    };
+
+    fetchMissingCollegeNames();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.passSettings.allowedCollegeIds]); // Only depend on selected IDs
 
   const updatePassSettings = (
     updates: Partial<FormData["passSettings"]>
@@ -55,7 +96,7 @@ export default function PassSettings({
     }));
   };
 
-  const addCollege = (collegeId: string) => {
+  const addCollege = (collegeId: string, collegeName: string) => {
     if (!formData.passSettings.allowedCollegeIds.includes(collegeId)) {
       updatePassSettings({
         allowedCollegeIds: [
@@ -63,6 +104,11 @@ export default function PassSettings({
           collegeId,
         ],
       });
+      // Store the college name in the mapping
+      setCollegeNamesMap((prev) => ({
+        ...prev,
+        [collegeId]: collegeName,
+      }));
     }
   };
 
@@ -71,6 +117,12 @@ export default function PassSettings({
       allowedCollegeIds: formData.passSettings.allowedCollegeIds.filter(
         (id) => id !== collegeId
       ),
+    });
+    // Remove the college name from the mapping
+    setCollegeNamesMap((prev) => {
+      const updated = { ...prev };
+      delete updated[collegeId];
+      return updated;
     });
   };
 
@@ -212,7 +264,7 @@ export default function PassSettings({
                         <div
                           key={college.id}
                           className="p-2 hover:bg-accent cursor-pointer"
-                          onClick={() => addCollege(college.id)}
+                          onClick={() => addCollege(college.id, college.name)}
                         >
                           {college.name} - {college.city}, {college.state}
                         </div>
@@ -223,10 +275,10 @@ export default function PassSettings({
                   {formData.passSettings.allowedCollegeIds.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {formData.passSettings.allowedCollegeIds.map((collegeId) => {
-                        const college = colleges?.find((c) => c.id === collegeId);
+                        const collegeName = collegeNamesMap[collegeId] || collegeId;
                         return (
                           <Badge key={collegeId} variant="secondary">
-                            {college?.name || collegeId}
+                            {collegeName}
                             <button
                               onClick={() => removeCollege(collegeId)}
                               className="ml-2 hover:text-destructive"

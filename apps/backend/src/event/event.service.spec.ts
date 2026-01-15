@@ -31,18 +31,28 @@ jest.mock('@oppskills/db', () => {
 
 import { EventService } from './event.service';
 import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { prisma } from '@oppskills/db';
 
 describe('EventService - Google Sheets logging', () => {
   let service: EventService;
   let googleSheetsService: GoogleSheetsService;
+  let eventEmitter: EventEmitter2;
+  let analyticsService: AnalyticsService;
   const prismaMock = prisma as any;
 
   beforeEach(() => {
     googleSheetsService = {
       appendRegistrationRow: jest.fn(),
     } as any;
-    service = new EventService(googleSheetsService);
+    eventEmitter = {
+      emit: jest.fn(),
+    } as any;
+    analyticsService = {
+      trackEvent: jest.fn(),
+    } as any;
+    service = new EventService(googleSheetsService, eventEmitter, analyticsService);
     jest.clearAllMocks();
   });
 

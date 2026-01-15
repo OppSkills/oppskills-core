@@ -919,6 +919,8 @@ export class EventService {
         allowedCollegeIds: true,
         allowedEmailDomains: true,
         collegeMatchMode: true,
+        isFree: true,
+        freeCollegeIds: true,
       },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -958,6 +960,39 @@ export class EventService {
     });
     if (existing) {
       throw new ConflictException('You have already joined this event.');
+    }
+
+    // For paid events, verify payment has been captured
+    // (Payment flow creates participant via EventPaymentService.verifyPayment)
+    if (!event.isFree) {
+      // Check if user is from a free college
+      let isCollegeFree = false;
+      if (event.freeCollegeIds && event.freeCollegeIds.length > 0) {
+        const userProfile = await prisma.userOnboardingProfileEntity.findUnique({
+          where: { userId },
+          select: { collegeId: true },
+        });
+        if (userProfile?.collegeId && event.freeCollegeIds.includes(userProfile.collegeId)) {
+          isCollegeFree = true;
+        }
+      }
+
+      if (!isCollegeFree) {
+        // Check for captured payment
+        const capturedPayment = await prisma.eventPaymentEntity.findFirst({
+          where: {
+            eventId,
+            payerUserId: userId,
+            paymentStatus: 'CAPTURED',
+          },
+        });
+
+        if (!capturedPayment) {
+          throw new BadRequestException(
+            'Payment required. Please complete payment before registering for this event.',
+          );
+        }
+      }
     }
 
     // Fetch user's onboarding profile to determine userCategory
