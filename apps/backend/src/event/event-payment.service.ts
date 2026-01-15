@@ -438,8 +438,7 @@ export class EventPaymentService {
       });
 
       // Create registration submission if answers provided
-      if (params.answers && params.answers.length > 0 && payment.event.registrationForm) {
-        const registrationFields = payment.event.registrationForm.fields;
+      if (params.answers && params.answers.length > 0) {
         const submission = await tx.eventRegistrationSubmissionEntity.create({
           data: {
             eventId: payment.event.id,
@@ -448,20 +447,18 @@ export class EventPaymentService {
           },
         });
 
-        // Create answer records
-        for (const answer of params.answers) {
-          const field = registrationFields.find((f) => f.id === answer.fieldId);
-          if (field) {
-            await tx.eventRegistrationAnswerEntity.create({
-              data: {
-                submissionId: submission.id,
-                fieldId: answer.fieldId,
-                valueText: typeof answer.value === 'string' ? answer.value : null,
-                valueJson: typeof answer.value !== 'string' ? (answer.value as any) : undefined,
-              },
-            });
-          }
-        }
+        // Create answers - match the format used in free events flow
+        const answerData = params.answers.map((a) => ({
+          submissionId: submission.id,
+          fieldId: a.fieldId,
+          valueText:
+            typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
+          valueJson: a.value,
+        }));
+
+        await tx.eventRegistrationAnswerEntity.createMany({
+          data: answerData,
+        });
       }
 
       // Update payment record
