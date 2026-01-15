@@ -21,11 +21,6 @@ import {
 
 const getFestivalNavItems = (slug: string) => [
     {
-        title: "Dashboard",
-        url: `/dashboard/festivals/${slug}`,
-        icon: IconDashboard,
-    },
-    {
         title: "Edit Festival",
         url: `/dashboard/festivals/${slug}/edit-festival`,
         icon: IconPencil,
