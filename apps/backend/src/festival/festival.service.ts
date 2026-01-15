@@ -237,9 +237,14 @@ export class FestivalService {
       'festival',
     );
 
+    const data: any = { status: nextStatus };
+    if (currentStatus === 'PUBLISHED' && nextStatus === 'DRAFT') {
+      data.approvalStatus = 'PENDING';
+    }
+
     return prisma.festivalEntity.update({
       where: { id },
-      data: { status: nextStatus },
+      data,
     });
   }
 
@@ -353,7 +358,7 @@ export class FestivalService {
       ReadonlyArray<LifecycleStatus>
     > = {
       DRAFT: ['PUBLISHED', 'CANCELLED'],
-      PUBLISHED: ['ONGOING', 'CANCELLED'],
+      PUBLISHED: ['DRAFT', 'ONGOING', 'CANCELLED'],
       ONGOING: ['COMPLETED', 'CANCELLED'],
       COMPLETED: [],
       CANCELLED: [],

@@ -41,6 +41,22 @@ export async function updateFestival(
 }
 
 /**
+ * Updates a festival's status.
+ */
+export async function updateFestivalStatus(
+  token: string,
+  id: string,
+  status: "DRAFT" | "PUBLISHED" | "ONGOING" | "COMPLETED" | "CANCELLED",
+): Promise<unknown> {
+  const res = await API.patch(
+    `/${id}/status`,
+    { status },
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as unknown;
+}
+
+/**
  * Deletes a festival.
  */
 export async function deleteFestival(token: string, id: string): Promise<unknown> {
