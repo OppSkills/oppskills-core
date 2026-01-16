@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, CheckCircle, Users, Globe, Zap } from "lucide-react";
+import Link from "next/link";
 
 export default function AboutPage() {
   return (
@@ -139,12 +140,16 @@ export default function AboutPage() {
               </p>
             </div>
             <div className="flex flex-col gap-2 min-[400px]:flex-row">
-              <Button size="lg" className="px-8">
-                Explore Competitions <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="lg" className="px-8">
-                Contact Us
-              </Button>
+              <Link href="/competitions">
+                <Button size="lg" className="px-8">
+                  Explore Competitions <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/contact">
+                <Button variant="outline" size="lg" className="px-8">
+                  Contact Us
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

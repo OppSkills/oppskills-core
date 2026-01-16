@@ -198,7 +198,7 @@ export default function FestivalSettingsPage({
                 </div>
 
                 {/* Status Overview */}
-                <Card>
+                <Card className="py-6">
                     <CardHeader>
                         <CardTitle className="text-lg">Status Overview</CardTitle>
                         <CardDescription>
@@ -260,7 +260,7 @@ export default function FestivalSettingsPage({
 
                 {/* Status Actions */}
                 {!isTerminal && (
-                    <Card>
+                    <Card className="py-6">
                         <CardHeader>
                             <CardTitle className="text-lg">Actions</CardTitle>
                             <CardDescription>
@@ -439,7 +439,7 @@ export default function FestivalSettingsPage({
                 </Card>
 
                 {/* Quick Links */}
-                <Card>
+                <Card className="py-6">
                     <CardHeader>
                         <CardTitle className="text-lg">Quick Links</CardTitle>
                     </CardHeader>

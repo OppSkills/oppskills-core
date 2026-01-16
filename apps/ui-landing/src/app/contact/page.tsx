@@ -125,35 +125,11 @@ export default function ContactPage() {
                 </CardContent>
               </Card> */}
             </div>
-
-            <Card className="relative overflow-hidden border-none shadow-xl bg-gradient-to-br from-primary-500 via-purple-600 to-blue-600 text-background mt-4">
-              <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl font-bold">
-                  <MessageSquare className="h-6 w-6" />
-                  Community
-                </CardTitle>
-                <CardDescription className="text-background/80 text-base">
-                  Join our Discord server to connect with 10,000+ developers and
-                  organizers.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  variant="secondary"
-                  className="w-full bg-background text-primary-500 hover:bg-background/90 shadow-md font-semibold gap-2 group"
-                >
-                  {/* Join Discord{" "}
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" /> */}
-                  Coming Soon
-                </Button>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Contact Form */}
           <div className="lg:col-span-7">
-            <Card className="border-border/50 shadow-2xl backdrop-blur-md bg-background/80 relative overflow-hidden">
+            <Card className="border-border/50 py-6 shadow-2xl backdrop-blur-md bg-background/80 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-bl-full pointer-events-none -z-10"></div>
 
               <CardHeader className="pb-8">

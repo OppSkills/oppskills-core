@@ -265,7 +265,7 @@ export default function EventSettingsPage({
         </div>
 
         {/* Status Overview */}
-        <Card>
+        <Card className="py-6">
           <CardHeader>
             <CardTitle className="text-lg">Status Overview</CardTitle>
             <CardDescription>
@@ -319,7 +319,7 @@ export default function EventSettingsPage({
         </Card>
 
         {/* Approval Section */}
-        <Card>
+        <Card className="py-6">
           <CardHeader>
             <CardTitle className="text-lg">Publishing & Approval</CardTitle>
             <CardDescription>
@@ -357,7 +357,7 @@ export default function EventSettingsPage({
 
         {/* Registration Control */}
         {(event.status === "PUBLISHED" || event.status === "ONGOING") && (
-          <Card>
+          <Card className="py-6">
             <CardHeader>
               <CardTitle className="text-lg">Registration Control</CardTitle>
               <CardDescription>
@@ -409,7 +409,7 @@ export default function EventSettingsPage({
 
         {/* Status Actions */}
         {!isTerminal && (
-          <Card>
+          <Card className="py-6">
             <CardHeader>
               <CardTitle className="text-lg">Event Actions</CardTitle>
               <CardDescription>
@@ -574,7 +574,7 @@ export default function EventSettingsPage({
         </Card>
 
         {/* Quick Links */}
-        <Card>
+        <Card className="py-6">
           <CardHeader>
             <CardTitle className="text-lg">Quick Links</CardTitle>
           </CardHeader>

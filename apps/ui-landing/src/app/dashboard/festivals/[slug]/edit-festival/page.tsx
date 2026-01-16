@@ -195,7 +195,7 @@ export default function EditFestivalPage() {
     }
 
     return (
-        <div className="flex flex-col h-full bg-neutral-50/50">
+        <div className="flex flex-col h-full bg-neutral-50/50 w-full">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 bg-background border-b sticky top-0 z-10 transition-all duration-200">
                 <h1 className="text-xl font-bold">Edit Festival</h1>

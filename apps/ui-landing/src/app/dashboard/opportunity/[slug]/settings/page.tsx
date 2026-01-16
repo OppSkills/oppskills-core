@@ -288,7 +288,7 @@ export default function OpportunitySettingsPage({
         </div>
 
         {/* Status Overview */}
-        <Card>
+        <Card className="py-6">
           <CardHeader>
             <CardTitle className="text-lg">Status Overview</CardTitle>
             <CardDescription>
@@ -343,7 +343,7 @@ export default function OpportunitySettingsPage({
         </Card>
 
         {/* Approval Section */}
-        <Card>
+        <Card className="py-6">
           <CardHeader>
             <CardTitle className="text-lg">Publishing & Approval</CardTitle>
             <CardDescription>
@@ -382,60 +382,60 @@ export default function OpportunitySettingsPage({
         {/* Registration Control */}
         {(hackathon.status === "PUBLISHED" ||
           hackathon.status === "ONGOING") && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Registration Control</CardTitle>
-              <CardDescription>
-                Pause registrations while keeping the opportunity publicly
-                visible
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="pause-registrations" className="text-base">
-                    Pause Registrations
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    {hackathon.isRegistrationPaused
-                      ? "Registrations are currently paused"
-                      : "Registrations are open"}
-                  </p>
+            <Card className="py-6">
+              <CardHeader>
+                <CardTitle className="text-lg">Registration Control</CardTitle>
+                <CardDescription>
+                  Pause registrations while keeping the opportunity publicly
+                  visible
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="pause-registrations" className="text-base">
+                      Pause Registrations
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {hackathon.isRegistrationPaused
+                        ? "Registrations are currently paused"
+                        : "Registrations are open"}
+                    </p>
+                  </div>
+                  <Switch
+                    id="pause-registrations"
+                    checked={hackathon.isRegistrationPaused ?? false}
+                    onCheckedChange={(checked) =>
+                      toggleRegistrationPauseMutation.mutate(checked)
+                    }
+                    disabled={toggleRegistrationPauseMutation.isPending}
+                  />
                 </div>
-                <Switch
-                  id="pause-registrations"
-                  checked={hackathon.isRegistrationPaused ?? false}
-                  onCheckedChange={(checked) =>
-                    toggleRegistrationPauseMutation.mutate(checked)
-                  }
-                  disabled={toggleRegistrationPauseMutation.isPending}
-                />
-              </div>
 
-              {hackathon.isRegistrationPaused && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-center gap-2">
-                  <Pause className="w-4 h-4 text-yellow-700" />
-                  <p className="text-sm text-yellow-800">
-                    New registrations are blocked. Toggle off to resume.
-                  </p>
-                </div>
-              )}
+                {hackathon.isRegistrationPaused && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-center gap-2">
+                    <Pause className="w-4 h-4 text-yellow-700" />
+                    <p className="text-sm text-yellow-800">
+                      New registrations are blocked. Toggle off to resume.
+                    </p>
+                  </div>
+                )}
 
-              {!hackathon.isRegistrationPaused && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-md flex items-center gap-2">
-                  <Play className="w-4 h-4 text-green-700" />
-                  <p className="text-sm text-green-800">
-                    Registrations are open and accepting participants.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                {!hackathon.isRegistrationPaused && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-md flex items-center gap-2">
+                    <Play className="w-4 h-4 text-green-700" />
+                    <p className="text-sm text-green-800">
+                      Registrations are open and accepting participants.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
         {/* Status Actions */}
         {!isTerminal && (
-          <Card>
+          <Card className="py-6">
             <CardHeader>
               <CardTitle className="text-lg">Opportunity Actions</CardTitle>
               <CardDescription>
@@ -445,36 +445,36 @@ export default function OpportunitySettingsPage({
             <CardContent className="flex flex-wrap gap-3">
               {(hackathon.status === "PUBLISHED" ||
                 hackathon.status === "ONGOING") && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="text-gray-600 border-gray-200 hover:bg-gray-50"
-                    >
-                      <Undo2 className="w-4 h-4 mr-2" />
-                      Move to Draft
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Move to Draft?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will unpublish your opportunity and move it back to
-                        draft status. The opportunity will no longer be visible
-                        to the public. You can publish it again later.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Keep Published</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => updateStatusMutation.mutate("DRAFT")}
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="text-gray-600 border-gray-200 hover:bg-gray-50"
                       >
+                        <Undo2 className="w-4 h-4 mr-2" />
                         Move to Draft
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Move to Draft?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will unpublish your opportunity and move it back to
+                          draft status. The opportunity will no longer be visible
+                          to the public. You can publish it again later.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Keep Published</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => updateStatusMutation.mutate("DRAFT")}
+                        >
+                          Move to Draft
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
 
               {hackathon.status === "PUBLISHED" &&
                 hackathon.approvalStatus === "APPROVED" && (
@@ -601,7 +601,7 @@ export default function OpportunitySettingsPage({
         </Card>
 
         {/* Quick Links */}
-        <Card>
+        <Card className="py-6">
           <CardHeader>
             <CardTitle className="text-lg">Quick Links</CardTitle>
           </CardHeader>
