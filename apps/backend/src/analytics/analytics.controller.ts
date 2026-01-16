@@ -50,4 +50,19 @@ export class AnalyticsController {
         if (!stats) throw new NotFoundException('Hackathon not found');
         return stats;
     }
+
+    @Get('organizer-stats')
+    async getOrganizerStats(@Req() req: any) {
+        const userId = req.user?.id;
+        // userId is guaranteed by ClerkAuthGuard but let's be safe
+        if (!userId) throw new NotFoundException('User not found');
+        return this.analyticsService.getOrganizerStats(userId);
+    }
+
+    @Get('organizer-trends')
+    async getOrganizerRegistrationTrends(@Req() req: any) {
+        const userId = req.user?.id;
+        if (!userId) throw new NotFoundException('User not found');
+        return this.analyticsService.getOrganizerRegistrationTrends(userId);
+    }
 }

@@ -62,3 +62,23 @@ export async function getHackathonDetailedStats(token: string, slug: string): Pr
     });
     return res.data;
 }
+
+/**
+ * Fetch organizer stats (overview of all events/hackathons/festivals).
+ */
+export async function getOrganizerStats(token: string): Promise<unknown> {
+    const res = await API.get("/organizer-stats", {
+        headers: buildAuthHeaders(token),
+    });
+    return res.data;
+}
+
+/**
+ * Fetch organizer registration trends (last 7 days).
+ */
+export async function getOrganizerRegistrationTrends(token: string): Promise<unknown> {
+    const res = await API.get("/organizer-trends", {
+        headers: buildAuthHeaders(token),
+    });
+    return res.data;
+}

@@ -408,4 +408,193 @@ export class AnalyticsService {
       gender: genderData,
     };
   }
+  async getOrganizerStats(userId: string) {
+    // 1. Calculate Event Stats
+    const events = await prisma.eventEntity.findMany({
+      where: { ownerId: userId },
+      select: {
+        id: true,
+        status: true,
+        _count: {
+          select: { participants: true },
+        },
+      },
+    });
+
+    const eventStats = {
+      active: events.filter((e) => ['PUBLISHED', 'ONGOING'].includes(e.status))
+        .length,
+      total: events.length,
+    };
+
+    const eventParticipants = events.reduce(
+      (acc, e) => acc + (e._count?.participants ?? 0),
+      0,
+    );
+
+    // 2. Calculate Hackathon Stats
+    const hackathons = await prisma.hackathonEntity.findMany({
+      where: { ownerId: userId },
+      select: {
+        id: true,
+        status: true,
+        _count: {
+          select: {
+            teams: true,
+          },
+        },
+        registrationCount: true,
+      },
+    });
+
+    const hackathonStats = {
+      active: hackathons.filter((h) =>
+        ['PUBLISHED', 'ONGOING'].includes(h.status),
+      ).length,
+      total: hackathons.length,
+    };
+
+    const hackathonParticipants = hackathons.reduce(
+      (acc, h) => acc + (h.registrationCount || 0),
+      0,
+    );
+
+    // 3. Calculate Festival Stats
+    const festivals = await prisma.festivalEntity.findMany({
+      where: { organizerId: userId },
+      select: { status: true },
+    });
+
+    const festivalStats = {
+      active: festivals.filter((f) =>
+        ['PUBLISHED', 'ONGOING'].includes(f.status),
+      ).length,
+      total: festivals.length,
+    };
+
+    const totalParticipants = eventParticipants + hackathonParticipants;
+
+    return {
+      total_participants: totalParticipants,
+      hackathon: hackathonStats,
+      event: eventStats,
+      festival: festivalStats,
+    };
+  }
+
+  async getOrganizerRegistrationTrends(userId: string) {
+    const now = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(now.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    // 1. Fetch Event Registrations
+    const eventRegistrations = await prisma.eventParticipantEntity.findMany({
+      where: {
+        event: { ownerId: userId },
+        joinedAt: { gte: sevenDaysAgo },
+      },
+      select: {
+        joinedAt: true,
+        user: {
+          select: { onboardingProfile: { select: { gender: true } } },
+        },
+      },
+    });
+
+    // 2. Fetch Hackathon Registrations (Leaders)
+    const hackathonLeaders = await prisma.teamEntity.findMany({
+      where: {
+        hackathon: { ownerId: userId },
+        createdAt: { gte: sevenDaysAgo },
+      },
+      select: {
+        createdAt: true,
+        leader: {
+          select: { onboardingProfile: { select: { gender: true } } },
+        },
+      },
+    });
+
+    // 3. Fetch Hackathon Registrations (Members)
+    const hackathonMembers = await prisma.teamMemberEntity.findMany({
+      where: {
+        team: { hackathon: { ownerId: userId } },
+        joinedAt: { gte: sevenDaysAgo },
+      },
+      select: {
+        joinedAt: true,
+        user: {
+          select: { onboardingProfile: { select: { gender: true } } },
+        },
+      },
+    });
+
+    // Initialize Result Structures
+    const registrationTrend: Record<string, { events: number; hackathon: number }> = {};
+    const genderRegistrationTrend: Record<string, { male: number; female: number }> = {};
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(now.getDate() - i);
+      const day = d.getDate().toString().padStart(2, '0');
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      const year = d.getFullYear();
+      const dateKey = `${day}-${month}-${year}`;
+
+      registrationTrend[dateKey] = { events: 0, hackathon: 0 };
+      genderRegistrationTrend[dateKey] = { male: 0, female: 0 };
+    }
+
+    // Helper to process gender
+    const processGender = (dateKey: string, gender?: string | null) => {
+      const g = gender?.toLowerCase();
+      if (g === 'male' || g === 'men') {
+        genderRegistrationTrend[dateKey].male++;
+      } else if (g === 'female' || g === 'women') {
+        genderRegistrationTrend[dateKey].female++;
+      }
+    };
+
+    // Helper to get date key
+    const getDateKey = (date: Date) => {
+      const d = new Date(date);
+      const day = d.getDate().toString().padStart(2, '0');
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    };
+
+    // Aggregate Event Data
+    eventRegistrations.forEach((reg) => {
+      const dateKey = getDateKey(reg.joinedAt);
+      if (registrationTrend[dateKey]) {
+        registrationTrend[dateKey].events++;
+        processGender(dateKey, reg.user?.onboardingProfile?.gender);
+      }
+    });
+
+    // Aggregate Hackathon Data (Leaders)
+    hackathonLeaders.forEach((leader) => {
+      const dateKey = getDateKey(leader.createdAt);
+      if (registrationTrend[dateKey]) {
+        registrationTrend[dateKey].hackathon++;
+        processGender(dateKey, leader.leader?.onboardingProfile?.gender);
+      }
+    });
+
+    // Aggregate Hackathon Data (Members)
+    hackathonMembers.forEach((member) => {
+      const dateKey = getDateKey(member.joinedAt);
+      if (registrationTrend[dateKey]) {
+        registrationTrend[dateKey].hackathon++;
+        processGender(dateKey, member.user?.onboardingProfile?.gender);
+      }
+    });
+
+    return {
+      registrationTrend,
+      genderRegistrationTrend,
+    };
+  }
 }
