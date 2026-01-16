@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Twitter, Linkedin, Facebook, Instagram } from "lucide-react";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
+import { IconBrandThreads } from "@tabler/icons-react";
 
 interface FooterLink {
   name: string;
@@ -11,9 +12,10 @@ interface FooterLink {
 }
 
 interface SocialLink {
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>> | React.ComponentType<any>;
   href: string;
   label: string;
+  type?: "internal" | "external";
 }
 
 interface FooterLinks {
@@ -49,6 +51,12 @@ const Footer = () => {
       href: "https://www.instagram.com/oppskills.global/",
       label: "Instagram",
     },
+    {
+      icon: IconBrandThreads,
+      href: "https://www.threads.net/@oppskills.global",
+      label: "Threads",
+      type: "external"
+    }
   ];
 
   return (
@@ -161,7 +169,7 @@ const Footer = () => {
                       className="w-10 h-10 flex items-center justify-center rounded-full bg-background/10 hover:bg-background/20 transition-colors text-background"
                       aria-label={social.label}
                     >
-                      <Icon className="w-5 h-5" />
+                      {social.type === "external" ? <social.icon /> : <Icon className="w-5 h-5" />}
                     </a>
                   );
                 })}

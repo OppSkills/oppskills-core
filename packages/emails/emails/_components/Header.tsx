@@ -8,7 +8,7 @@ import {
 import * as React from 'react';
 
 const baseUrl = 'https://www.oppskills.com';
-const iconColor = '7C737E'; 
+const iconColor = '7C737E';
 
 const logoUrl = `${baseUrl}/logo.png`;
 
@@ -44,6 +44,16 @@ export function Header() {
                   width="24"
                   height="24"
                   alt="LinkedIn"
+                />
+              </Link>
+            </Column>
+            <Column style={socialColumn}>
+              <Link href="https://www.threads.com/@oppskills.global">
+                <Img
+                  src={`https://img.icons8.com/ios-filled/50/${iconColor}/threads.png`}
+                  width="24"
+                  height="24"
+                  alt="Threads"
                 />
               </Link>
             </Column>
