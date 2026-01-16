@@ -65,4 +65,18 @@ export class AnalyticsController {
         if (!userId) throw new NotFoundException('User not found');
         return this.analyticsService.getOrganizerRegistrationTrends(userId);
     }
+
+    @Get('organizer-top-listings')
+    async getTopListings(@Req() req: any) {
+        const userId = req.user?.id;
+        if (!userId) throw new NotFoundException('User not found');
+        return this.analyticsService.getTopListings(userId);
+    }
+
+    @Get('organizer-highest-performing')
+    async getHighestPerformingListings(@Req() req: any) {
+        const userId = req.user?.id;
+        if (!userId) throw new NotFoundException('User not found');
+        return this.analyticsService.getHighestPerformingListings(userId);
+    }
 }

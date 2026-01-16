@@ -597,4 +597,115 @@ export class AnalyticsService {
       genderRegistrationTrend,
     };
   }
+
+  async getTopListings(userId: string) {
+    // 1. Fetch Top 3 Events
+    const topEvents = await prisma.eventEntity.findMany({
+      where: { ownerId: userId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        bannerImageUrl: true,
+        _count: {
+          select: { participants: true },
+        },
+      },
+      orderBy: {
+        participants: {
+          _count: 'desc',
+        },
+      },
+      take: 3,
+    });
+
+    // 2. Fetch Top 3 Hackathons
+    const topHackathons = await prisma.hackathonEntity.findMany({
+      where: { ownerId: userId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        bannerImageUrl: true,
+        registrationCount: true,
+      },
+      orderBy: {
+        registrationCount: 'desc',
+      },
+      take: 3,
+    });
+
+    const formattedEvents = topEvents.map((e) => ({
+      title: e.name,
+      slug: e.slug,
+      thumbnail: e.bannerImageUrl,
+      tregistrations: e._count?.participants ?? 0,
+      type: 'EVENT',
+    }));
+
+    const formattedHackathons = topHackathons.map((h) => ({
+      title: h.name,
+      slug: h.slug,
+      thumbnail: h.bannerImageUrl,
+      tregistrations: h.registrationCount ?? 0,
+      type: 'HACKATHON',
+    }));
+
+    // Combine and Sort
+    const allListings = [...formattedEvents, ...formattedHackathons];
+    allListings.sort((a, b) => b.tregistrations - a.tregistrations);
+
+    return allListings.slice(0, 3);
+  }
+
+  async getHighestPerformingListings(userId: string) {
+    // 1. Highest Performing Event
+    const topEvent = await prisma.eventEntity.findFirst({
+      where: { ownerId: userId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        bannerImageUrl: true,
+        _count: {
+          select: { participants: true },
+        },
+      },
+      orderBy: {
+        participants: {
+          _count: 'desc',
+        },
+      },
+    });
+
+    // 2. Highest Performing Hackathon
+    const topHackathon = await prisma.hackathonEntity.findFirst({
+      where: { ownerId: userId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        bannerImageUrl: true,
+        registrationCount: true,
+      },
+      orderBy: {
+        registrationCount: 'desc',
+      },
+    });
+
+    return {
+      event: topEvent ? {
+        title: topEvent.name,
+        slug: topEvent.slug,
+        thumbnail: topEvent.bannerImageUrl,
+        tregistrations: topEvent._count?.participants ?? 0,
+      } : null,
+      hackathon: topHackathon ? {
+        title: topHackathon.name,
+        slug: topHackathon.slug,
+        thumbnail: topHackathon.bannerImageUrl,
+        tregistrations: topHackathon.registrationCount ?? 0,
+      } : null,
+    };
+  }
 }

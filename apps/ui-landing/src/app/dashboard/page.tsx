@@ -12,7 +12,8 @@ import { Link, Plus, Loader2 } from "lucide-react";
 
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
-import { getOrganizerStats, getOrganizerRegistrationTrends } from "@/lib/api/analyticsApi";
+import { getOrganizerStats, getOrganizerRegistrationTrends, getTopListings, getHighestPerformingListings } from "@/lib/api/analyticsApi";
+import { cn } from "@/lib/utils";
 
 import {
   MotionContainer,
@@ -38,6 +39,26 @@ interface GenderTrend {
 interface TrendsResponse {
   registrationTrend: RegistrationTrend;
   genderRegistrationTrend: GenderTrend;
+}
+
+export interface ListingItem {
+  title: string;
+  slug: string;
+  thumbnail: string | null;
+  tregistrations: number;
+  type: string;
+}
+
+interface HighestPerformingItem {
+  title: string;
+  slug: string;
+  thumbnail: string | null;
+  tregistrations: number;
+}
+
+export interface HighestPerformingData {
+  event: HighestPerformingItem | null;
+  hackathon: HighestPerformingItem | null;
 }
 
 export default function Page() {
@@ -66,7 +87,29 @@ export default function Page() {
     },
   });
 
-  const isLoading = !isUserLoaded || isStatsLoading || isTrendsLoading;
+  // Fetch Top Listings
+  const { data: topListingsRaw, isLoading: isTopListingsLoading } = useQuery({
+    queryKey: ["organizer-top-listings"],
+    enabled: isAuthLoaded,
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return getTopListings(token);
+    },
+  });
+
+  // Fetch Highest Performing
+  const { data: highestPerformingRaw, isLoading: isHighestPerformingLoading } = useQuery({
+    queryKey: ["organizer-highest-performing"],
+    enabled: isAuthLoaded,
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return getHighestPerformingListings(token);
+    },
+  });
+
+  const isLoading = !isUserLoaded || isStatsLoading || isTrendsLoading || isTopListingsLoading || isHighestPerformingLoading;
 
   // Process Stats for Cards
   const stats = statsRaw as OrganizerStats | undefined;
@@ -104,6 +147,11 @@ export default function Page() {
     },
   ];
 
+  const highestPerforming = highestPerformingRaw as HighestPerformingData | null;
+  const showEventAlert = highestPerforming?.event ? highestPerforming.event.tregistrations > 1000 : false;
+  const showHackathonAlert = highestPerforming?.hackathon ? highestPerforming.hackathon.tregistrations > 1000 : false;
+  const showAlerts = showEventAlert || showHackathonAlert;
+
   // Process Trends for Charts
   const trends = trendsRaw as TrendsResponse | undefined;
 
@@ -129,26 +177,28 @@ export default function Page() {
     { key: "hackathon", color: "#ec4899", label: "Hackathons" }, // Pink
   ];
 
-  // 2. Gender Pie Chart Data
-  // Aggregating gender stats over the trend period
-  // Since API returns trend, we sum it up for the pie chart representation
-  const genderData = trends
-    ? Object.values(trends.genderRegistrationTrend).reduce((acc, curr) => {
-      acc.male += curr.male;
-      acc.female += curr.female;
-      return acc;
-    }, { male: 0, female: 0 })
-    : { male: 0, female: 0 };
+  // 2. Gender Line Chart Data
+  // User requested line chart for gender as well.
+  // We can just use the provided api data which is gender trends by date.
+  const genderChartData = trends
+    ? Object.entries(trends.genderRegistrationTrend).map(([date, counts]) => ({
+      date,
+      male: counts.male,
+      female: counts.female,
+    })).sort((a, b) => {
+      const [d1, m1, y1] = a.date.split("-").map(Number);
+      const [d2, m2, y2] = b.date.split("-").map(Number);
+      return new Date(y1, m1 - 1, d1).getTime() - new Date(y2, m2 - 1, d2).getTime();
+    })
+    : [];
 
-  // Check if we have total participants but no gender data (e.g. older data or missing profiles)
-  // For now, visualize what we have from the trend.
-  const genderChartData = [
-    { name: "Male", value: genderData.male, color: "#8b5cf6" },
-    { name: "Female", value: genderData.female, color: "#ec4899" },
-  ].filter(d => d.value > 0);
+  const genderLines = [
+    { key: "male", color: "#8b5cf6", label: "Male" },
+    { key: "female", color: "#ec4899", label: "Female" },
+  ];
 
 
-  if (isLoading && !stats && !trends) {
+  if (isLoading && !stats && !trends && !topListingsRaw && !highestPerformingRaw) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#FAFAFA]">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
@@ -189,7 +239,6 @@ export default function Page() {
                 value={item.value}
                 badge={item.badge}
                 badgeValue={item.badgeValue}
-                themeColor={item.themeColor}
               />
             </MotionItem>
           ))}
@@ -205,19 +254,25 @@ export default function Page() {
             />
           </MotionItem>
           <MotionItem className="w-full">
-            {/* Swapped DomainsChart for GenderChart based on request */}
-            <GenderChart data={genderChartData} />
+            {/* Swapped to LineChart for Gender as requested */}
+            <RegistrationLineChart
+              data={genderChartData}
+              lines={genderLines}
+              title="Gender Registration Trends (7 Days)"
+            />
           </MotionItem>
         </MotionContainer>
 
         {/* Bottom Row: Recent Listings and Alerts */}
         <MotionContainer className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full pb-10">
-          <MotionItem className="w-full">
-            <RecentListing />
+          <MotionItem className={cn("w-full", !showAlerts && "lg:col-span-2")}>
+            <RecentListing data={topListingsRaw as ListingItem[] || []} />
           </MotionItem>
-          <MotionItem className="w-full">
-            <Alerts />
-          </MotionItem>
+          {showAlerts && (
+            <MotionItem className="w-full">
+              <Alerts data={highestPerforming} />
+            </MotionItem>
+          )}
         </MotionContainer>
       </div>
     </div>

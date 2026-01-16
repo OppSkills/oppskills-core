@@ -82,3 +82,23 @@ export async function getOrganizerRegistrationTrends(token: string): Promise<unk
     });
     return res.data;
 }
+
+/**
+ * Fetch organizer top listings (top 3 by registrations).
+ */
+export async function getTopListings(token: string): Promise<unknown> {
+    const res = await API.get("/organizer-top-listings", {
+        headers: buildAuthHeaders(token),
+    });
+    return res.data;
+}
+
+/**
+ * Fetch highest performing listings (Event and Hackathon).
+ */
+export async function getHighestPerformingListings(token: string): Promise<unknown> {
+    const res = await API.get("/organizer-highest-performing", {
+        headers: buildAuthHeaders(token),
+    });
+    return res.data;
+}
