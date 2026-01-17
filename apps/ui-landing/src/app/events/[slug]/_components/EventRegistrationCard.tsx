@@ -132,27 +132,25 @@ export function EventRegistrationCard({
             </div>
           )}
 
-          {isDeadlineExceeded && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm font-medium text-center">
-                Registration deadline has passed
-              </p>
-            </div>
-          )}
-
-          <Button
-            className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-background font-semibold text-[18px]"
-            onClick={onRegister}
-            disabled={isRegistering || isDeadlineExceeded}
-          >
-            {isDeadlineExceeded
-              ? "Deadline Exceeded"
-              : isRegistering
+          {
+            isDeadlineExceeded ? <Button
+              className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm cursor-not-allowed"
+              disabled
+            >
+              Registration Closed
+            </Button> : <Button
+              className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-background font-semibold text-[18px]"
+              onClick={onRegister}
+              disabled={isRegistering}
+            >
+              {isRegistering
                 ? "Registering..."
                 : user
                   ? "One Click RSVP"
                   : "Sign In to Register"}
-          </Button>
+            </Button>
+          }
+
         </div>
       </div>
     );
@@ -230,14 +228,6 @@ export function EventRegistrationCard({
               </span>
               <span className="text-neutral-500 text-sm">{user.email}</span>
             </div>
-          </div>
-        )}
-
-        {isDeadlineExceeded && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-600 text-sm font-medium text-center">
-              Registration deadline has passed
-            </p>
           </div>
         )}
 
