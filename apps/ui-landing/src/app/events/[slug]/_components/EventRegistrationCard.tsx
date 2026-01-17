@@ -27,6 +27,7 @@ interface EventRegistrationCardProps {
   onRegister?: () => Promise<void> | void;
   isRegistering?: boolean;
   isRegistered?: boolean; // If true, shows "Registered" state
+  registrationDeadline?: string | Date; // New prop
 }
 
 export function EventRegistrationCard({
@@ -37,6 +38,7 @@ export function EventRegistrationCard({
   onRegister,
   isRegistering = false,
   isRegistered = false,
+  registrationDeadline,
 }: EventRegistrationCardProps) {
   // Use controlled state if provided, otherwise fall back to internal state
   const [internalSelectedTicketId, setInternalSelectedTicketId] = useState<
@@ -55,6 +57,14 @@ export function EventRegistrationCard({
   };
 
   const hasPaidTickets = tickets.some((t) => t.price > 0);
+
+  // Check if deadline is exceeded
+  const isDeadlineExceeded = React.useMemo(() => {
+    if (!registrationDeadline) return false;
+    const deadline = new Date(registrationDeadline);
+    const now = new Date();
+    return now > deadline;
+  }, [registrationDeadline]);
 
   // If only free ticket(s) or no specific paid logic required for "Free State" view:
   // The design shows two distinct states.
@@ -122,16 +132,26 @@ export function EventRegistrationCard({
             </div>
           )}
 
+          {isDeadlineExceeded && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm font-medium text-center">
+                Registration deadline has passed
+              </p>
+            </div>
+          )}
+
           <Button
             className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-background font-semibold text-[18px]"
             onClick={onRegister}
-            disabled={isRegistering}
+            disabled={isRegistering || isDeadlineExceeded}
           >
-            {isRegistering
-              ? "Registering..."
-              : user
-                ? "One Click RSVP"
-                : "Sign In to Register"}
+            {isDeadlineExceeded
+              ? "Deadline Exceeded"
+              : isRegistering
+                ? "Registering..."
+                : user
+                  ? "One Click RSVP"
+                  : "Sign In to Register"}
           </Button>
         </div>
       </div>
@@ -155,12 +175,14 @@ export function EventRegistrationCard({
             return (
               <div
                 key={ticket.id}
-                onClick={() => handleTicketSelect(ticket.id)}
+                onClick={isDeadlineExceeded ? undefined : () => handleTicketSelect(ticket.id)}
                 className={cn(
-                  "cursor-pointer rounded-2xl border p-4 transition-all duration-200 relative",
+                  "rounded-2xl border p-4 transition-all duration-200 relative",
+                  isDeadlineExceeded ? "cursor-not-allowed opacity-60" : "cursor-pointer",
                   isSelected
                     ? "border-[#9C00E5] bg-[#FDF2FF]/50  ring-1 ring-[#9C00E5]"
-                    : "border-neutral-200  hover:border-neutral-300  bg-transparent"
+                    : "border-neutral-200 bg-transparent",
+                  !isDeadlineExceeded && "hover:border-neutral-300"
                 )}
               >
                 <div className="flex justify-between items-start mb-2">
@@ -211,16 +233,26 @@ export function EventRegistrationCard({
           </div>
         )}
 
+        {isDeadlineExceeded && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm font-medium text-center">
+              Registration deadline has passed
+            </p>
+          </div>
+        )}
+
         <Button
           className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-background font-semibold text-[18px]"
           onClick={onRegister}
-          disabled={isRegistering || !selectedTicketId}
+          disabled={isRegistering || !selectedTicketId || isDeadlineExceeded}
         >
-          {isRegistering
-            ? "Registering..."
-            : user
-              ? "Click To Book"
-              : "Sign In to Register"}
+          {isDeadlineExceeded
+            ? "Deadline Exceeded"
+            : isRegistering
+              ? "Registering..."
+              : user
+                ? "Click To Book"
+                : "Sign In to Register"}
         </Button>
       </div>
     </div>

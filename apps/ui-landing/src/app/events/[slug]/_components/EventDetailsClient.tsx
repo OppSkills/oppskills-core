@@ -647,6 +647,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
               onRegister={handleRegistration}
               isRegistering={isRegistering || isCheckingOnboarding}
               isRegistered={isUserRegistered}
+              registrationDeadline={event.registrationDeadline}
               user={
                 user
                   ? {
@@ -805,6 +806,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                 onRegister={handleRegistration}
                 isRegistering={isRegistering || isCheckingOnboarding}
                 isRegistered={isUserRegistered}
+                registrationDeadline={event.registrationDeadline}
                 user={
                   user
                     ? {
