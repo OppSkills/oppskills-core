@@ -96,6 +96,10 @@ NEXT_PUBLIC_API_URL="http://localhost:3001"
 # Clerk
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..." # Get from Clerk dashboard
 CLERK_SECRET_KEY="sk_test_..." # Same as backend
+
+# PostHog Analytics (optional)
+NEXT_PUBLIC_POSTHOG_KEY="phc_..." # Get from PostHog project settings
+NEXT_PUBLIC_POSTHOG_HOST="https://us.i.posthog.com" # Optional, defaults to US instance
 ```
 
 ### 5. Set Up Database
