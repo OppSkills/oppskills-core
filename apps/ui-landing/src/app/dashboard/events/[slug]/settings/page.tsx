@@ -507,7 +507,7 @@ export default function EventSettingsPage({
         )}
 
         {/* Danger Zone */}
-        <Card className="border-red-200">
+        <Card className="border-red-200 py-6">
           <CardHeader>
             <CardTitle className="text-lg text-red-600">Danger Zone</CardTitle>
             <CardDescription>
