@@ -27,7 +27,7 @@ export default function OrganizePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
           {/* Opportunity Card */}
           <Link href="/organize/opportunity" className="group cursor-pointer">
-            <Card className="h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-slate-200 hover:border-orange-200 relative overflow-hidden bg-background">
+            <Card className="h-full py-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-slate-200 hover:border-orange-200 relative overflow-hidden bg-background">
               <div className="absolute z-10 top-0 right-0 p-5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
                 <ArrowRight className="w-6 h-6 text-orange-500" />
               </div>
@@ -66,7 +66,7 @@ export default function OrganizePage() {
 
           {/* Event Card */}
           <Link href="/organize/event" className="group cursor-pointer">
-            <Card className="h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-slate-200 hover:border-blue-200 relative overflow-hidden bg-background">
+            <Card className="h-full py-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-slate-200 hover:border-blue-200 relative overflow-hidden bg-background">
               <div className="absolute z-10 top-0 right-0 p-5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
                 <ArrowRight className="w-6 h-6 text-blue-500" />
               </div>
