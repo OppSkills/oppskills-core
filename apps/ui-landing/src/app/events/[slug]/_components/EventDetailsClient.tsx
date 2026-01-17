@@ -723,8 +723,17 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                       )}
                       <div>
                         <h4 className="font-bold text-foreground break-words">
-                          {event.organization_name || event.owner.firstName + " " + event.owner.lastName}
+                          {(() => {
+                            const orgName = event?.organization_name;
+
+                            const ownerName = [event?.owner?.firstName, event?.owner?.lastName]
+                              .filter(Boolean)
+                              .join(" ");
+
+                            return orgName || ownerName || "Organizer";
+                          })()}
                         </h4>
+
                         {event.owner.email && (
                           <p className="text-xs text-neutral-500 break-all">
                             {event.owner.email}
