@@ -63,7 +63,7 @@ export const metadata: Metadata = {
   ],
   authors: [
     {
-      name: "Vijay Singh",
+      name: "OppSkills Team",
     },
   ],
   publisher: "OppSkills",
