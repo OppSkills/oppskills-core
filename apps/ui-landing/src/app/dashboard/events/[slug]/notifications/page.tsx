@@ -1,68 +1,119 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import RichTextEditor from "@/components/ui/editor/RichtextEditor";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Send, Bell, AlertTriangle } from "lucide-react";
+import { Send, Bell, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@clerk/nextjs";
+import { getEventBySlug } from "@/lib/api/eventApi";
+import { sendBulkEmail } from "@/lib/api/sendEmail";
 
 export default function NotificationsPage() {
-  const [recipientGroup, setRecipientGroup] = React.useState<string>("");
-  const [subject, setSubject] = React.useState("");
-  const [message, setMessage] = React.useState("");
-  const [notifications, setNotifications] = React.useState<
-    {
-      id: string;
-      subject: string;
-      message: string;
-      group: string;
-      date: Date;
-      status: "Sent" | "Draft";
-    }[]
-  >([]);
+  const params = useParams();
+  const slug = params?.slug as string;
+  const { getToken } = useAuth();
 
-  const handleSend = () => {
-    if (!recipientGroup || !subject || !message) {
-      alert("Please fill all fields");
+  const [message, setMessage] = useState("");
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [fetchingEvent, setFetchingEvent] = useState(true);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    const fetchEventId = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const eventData: any = await getEventBySlug(token, slug);
+        if (eventData && eventData.id) {
+          setEventId(eventData.id);
+        } else {
+          toast.error("Could not load event details.");
+        }
+      } catch (error) {
+        console.error("Failed to fetch event", error);
+        toast.error("Failed to load event details.");
+      } finally {
+        setFetchingEvent(false);
+      }
+    };
+
+    if (slug) {
+      fetchEventId();
+    }
+  }, [slug, getToken]);
+
+  const handleSend = async () => {
+    if (!message || message === "<p></p>") {
+      toast.error("Please enter a message body");
+      return;
+    }
+    if (!eventId) {
+      toast.error("Event ID not found. Please refresh.");
       return;
     }
 
-    const newNotification = {
-      id: crypto.randomUUID(),
-      subject,
-      message,
-      group: recipientGroup,
-      date: new Date(),
-      status: "Sent" as const,
-    };
+    try {
+      setLoading(true);
+      const token = await getToken();
+      await sendBulkEmail(token, {
+        eventId,
+        htmlBody: message
+      });
 
-    setNotifications([newNotification, ...notifications]);
-    setSubject("");
-    setMessage("");
-    setRecipientGroup("");
-    alert("Notification Sent!");
+      setSuccess(true);
+      setMessage("");
+      toast.success("Broadcast initiated successfully!");
+    } catch (error) {
+      console.error("Failed to send broadcast", error);
+      toast.error("Failed to send broadcast. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (fetchingEvent) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (success) {
+    return (
+      <div className="w-full bg-neutral-200 min-h-screen p-6 flex flex-col items-center justify-center gap-6">
+        <div className="w-full max-w-md bg-background rounded-2xl p-8 shadow-sm flex flex-col items-center text-center gap-4">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-2">
+            <CheckCircle2 className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-bold font-poppins text-neutral-800">Broadcast Initiated!</h2>
+          <p className="text-muted-foreground">
+            Your email broadcast has been queued and will be circulated to all registered participants shortly.
+          </p>
+          <div className="text-sm bg-neutral-50 p-4 rounded-lg border border-neutral-100 w-full mt-2">
+            <p className="font-medium text-neutral-700">What happens next?</p>
+            <p className="text-neutral-500 mt-1">You will receive a confirmation email with the final delivery metrics once the process is complete.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-neutral-200 min-h-screen p-6 flex flex-col items-center gap-6">
-      <div className="w-full max-w-3xl bg-background rounded-2xl p-6 shadow-sm flex flex-col gap-6">
-        {/* WARNING BANNER - UI Only Feature */}
-        <div className="flex items-center gap-3 p-4 w-full rounded-lg border border-amber-500/30 bg-amber-500/10">
-          <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+      <div className="w-full max-w-4xl bg-background rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+        {/* INFO BANNER */}
+        <div className="flex items-center gap-3 p-4 w-full rounded-lg border border-blue-500/30 bg-blue-500/10">
+          <AlertTriangle className="h-5 w-5 text-blue-600 flex-shrink-0" />
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-amber-700">
-              Feature Under Development
+            <span className="text-sm font-medium text-blue-700">
+              Broadcast Mode
             </span>
-            <span className="text-xs text-amber-600">
-              This page is a UI preview only. Notifications sent here are not
-              actually delivered. Full functionality coming soon.
+            <span className="text-xs text-blue-600">
+              Your message will be sent to <strong>ALL</strong> registered attendees and participants of this event.
             </span>
           </div>
         </div>
@@ -73,93 +124,43 @@ export default function NotificationsPage() {
               <Bell className="w-6 h-6" />
             </div>
             <h1 className="text-2xl font-semibold font-poppins">
-              Send Notification
+              Send Broadcast Notification
             </h1>
           </div>
           <p className="text-muted-foreground text-sm">
-            Broadcast messages to your event attendees via email or push
-            notification.
+            Compose your email update below. This will be sent as a direct email to all users associated with this event.
           </p>
         </div>
 
         <div className="space-y-4 border-t border-border pt-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Recipient Group</label>
-            <Select value={recipientGroup} onValueChange={setRecipientGroup}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select who sees this message" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All Attendees">All Attendees</SelectItem>
-                <SelectItem value="Ticket Holders">
-                  Ticket Holders Only
-                </SelectItem>
-                <SelectItem value="Waitlist">Waitlist</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Subject</label>
-            <Input
-              placeholder="Enter notification title..."
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Message</label>
+            <label className="text-sm font-medium">Email Body</label>
             <RichTextEditor
-              placeholder="Type your message here..."
+              placeholder="Type your broadcast message here..."
               value={message}
               onChange={(content) => setMessage(content)}
             />
-
-            <p className="text-xs text-muted-foreground text-right">
-              {message.length}/500 characters
-            </p>
           </div>
 
           <div className="pt-4 flex justify-end gap-3">
-            <Button variant="outline">Save Draft</Button>
-            <Button className="gap-2" onClick={handleSend}>
-              <Send className="w-4 h-4" /> Send Broadcast
+            <Button
+              className="gap-2 w-full sm:w-auto"
+              onClick={handleSend}
+              disabled={loading || !eventId}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" /> Send Broadcast to All Users
+                </>
+              )}
             </Button>
           </div>
         </div>
       </div>
-
-      {/* History Section */}
-      {notifications.length > 0 && (
-        <div className="w-full max-w-3xl bg-background rounded-2xl p-6 shadow-sm flex flex-col gap-4">
-          <h3 className="text-lg font-semibold">Past Notifications</h3>
-          <div className="flex flex-col gap-3">
-            {notifications.map((notif) => (
-              <div
-                key={notif.id}
-                className="p-4 border rounded-xl flex justify-between items-start"
-              >
-                <div>
-                  <h4 className="font-medium">{notif.subject}</h4>
-                  <p className="text-sm text-muted-foreground line-clamp-1">
-                    {notif.message}
-                  </p>
-                  <div className="flex gap-2 mt-2 text-xs text-muted-foreground">
-                    <span className="px-2 py-0.5 bg-secondary/30 rounded-full text-secondary-foreground">
-                      {notif.group}
-                    </span>
-                    <span>• {notif.date.toLocaleDateString()}</span>
-                  </div>
-                </div>
-                <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                  {notif.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -55,11 +55,11 @@ const getEventNavItems = (slug: string) => [
     url: `/dashboard/events/${slug}/manage-roles`,
     icon: IconUsers,
   },
-  // {
-  //   title: "Send Notifications",
-  //   url: `/dashboard/events/${slug}/notifications`,
-  //   icon: IconBell,
-  // },
+  {
+    title: "Send Notifications",
+    url: `/dashboard/events/${slug}/notifications`,
+    icon: IconBell,
+  },
   {
     title: "Settings",
     url: `/dashboard/events/${slug}/settings`,
