@@ -13,6 +13,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import LayoutProvider from "@/components/layout-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Suspense } from "react";
+import { PostHogProvider } from "@/components/posthog-provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -62,7 +63,7 @@ export const metadata: Metadata = {
   ],
   authors: [
     {
-      name: "Vijay Singh",
+      name: "OppSkills Team",
     },
   ],
   publisher: "OppSkills",
@@ -147,18 +148,20 @@ export default function RootLayout({
         >
           <JsonLd data={[organizationSchema, websiteSchema]} />
           <Suspense>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="light"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <ClientProviders>
-                <NuqsAdapter>
-                  <LayoutProvider>{children}</LayoutProvider>
-                </NuqsAdapter>
-              </ClientProviders>
-            </ThemeProvider>
+            <PostHogProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="light"
+                enableSystem
+                disableTransitionOnChange
+              >
+                <ClientProviders>
+                  <NuqsAdapter>
+                    <LayoutProvider>{children}</LayoutProvider>
+                  </NuqsAdapter>
+                </ClientProviders>
+              </ThemeProvider>
+            </PostHogProvider>
           </Suspense>
         </body>
       </html>

@@ -638,7 +638,9 @@ CLERK_SECRET_KEY=sk_live_...
 # Backend API
 NEXT_PUBLIC_API_URL=https://api.oppskills.com
 
-# Optional: Analytics, monitoring, etc.
+# PostHog Analytics (optional)
+NEXT_PUBLIC_POSTHOG_KEY=phc_...
+NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 ```
 
 #### Local Development
@@ -652,6 +654,10 @@ CLERK_SECRET_KEY=sk_test_...
 
 # Backend API (local)
 NEXT_PUBLIC_API_URL=http://localhost:3001
+
+# PostHog Analytics (optional)
+NEXT_PUBLIC_POSTHOG_KEY=phc_...
+NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 ```
 
 ### Database Package

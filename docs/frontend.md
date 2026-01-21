@@ -1408,6 +1408,13 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 ```
 
+Optional (for analytics):
+```bash
+# PostHog Analytics
+NEXT_PUBLIC_POSTHOG_KEY=phc_... # Get from PostHog project settings
+NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com # Optional, defaults to US instance
+```
+
 ### Building
 
 ```bash
