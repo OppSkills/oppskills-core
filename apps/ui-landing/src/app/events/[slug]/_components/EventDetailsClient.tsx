@@ -439,7 +439,6 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             });
 
             toast.success("Payment successful! You are now registered.");
-            setIsModalOpen(false);
             setDiscountCode("");
             await refetchRegistrationStatus();
           } catch (err) {
@@ -468,6 +467,11 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
           },
         },
       };
+
+      // Close the registration modal BEFORE opening Razorpay.
+      // This prevents the Radix UI Dialog from blocking interaction with the Razorpay iframe
+      // (focus trapping and pointer-events: none on body).
+      setIsModalOpen(false);
 
       const razorpay = new window.Razorpay(options);
       razorpay.open();
