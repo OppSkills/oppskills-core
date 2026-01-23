@@ -1,12 +1,16 @@
 import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import { createElement } from 'react';
+import { render } from '@react-email/components';
 import { EmailService } from './email.service';
 import { EMAIL_EVENTS } from './email.events';
+import { EventNotificationEmail } from '@oppskills/emails';
 import type {
   UserCreatedEventPayload,
   UserOnboardedEventPayload,
   EventJoinedEventPayload,
   EventDirectMessageEventPayload,
+  EventBulkEmailPayload,
 } from './email.events';
 import { Logger } from 'src/_utils/logger';
 import { prisma } from '@oppskills/db';
@@ -282,6 +286,82 @@ export class EmailListener {
         },
       });
     }
+  }
+  @OnEvent(EMAIL_EVENTS.EVENT_BULK_EMAIL)
+  async handleBulkEmail(payload: EventBulkEmailPayload): Promise<void> {
+    const { eventId, htmlBody, organizerEmail, organizerName, eventName } = payload;
+    this.logger.log(`Starting bulk email for event ${eventId}`);
+
+    // Fetch event slug and participants
+    const event = await prisma.eventEntity.findUnique({
+      where: { id: eventId },
+      select: { slug: true },
+    });
+
+    if (!event) {
+      this.logger.error(`Event ${eventId} not found for bulk email`);
+      return;
+    }
+
+    const participants = await prisma.eventParticipantEntity.findMany({
+      where: { eventId },
+      include: {
+        user: {
+          select: {
+            email: true,
+            firstName: true,
+          },
+        },
+      },
+    });
+
+    const BATCH_SIZE = 100;
+    let sentCount = 0;
+
+    for (let i = 0; i < participants.length; i += BATCH_SIZE) {
+      const batch = participants.slice(i, i + BATCH_SIZE);
+      const emailBatch: Array<{ to: string; subject: string; html: string }> = [];
+
+      for (const participant of batch) {
+        if (!participant.user.email) continue;
+
+        const emailHtml = await render(
+          createElement(EventNotificationEmail, {
+            firstName: participant.user.firstName || 'Participant',
+            eventName,
+            eventSlug: event.slug,
+            htmlBody,
+          })
+        );
+
+        emailBatch.push({
+          to: participant.user.email,
+          subject: `Update from ${eventName}`,
+          html: emailHtml,
+        });
+      }
+
+      if (emailBatch.length > 0) {
+        await this.emailService.sendBatch(emailBatch);
+        sentCount += emailBatch.length;
+      }
+
+      // reliable sleep
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+
+    // Send success email to organizer
+    await this.emailService.send({
+      type: 'bulk-email-success',
+      to: organizerEmail,
+      props: {
+        firstName: organizerName,
+        eventName,
+        count: sentCount,
+      },
+    });
+
+    this.logger.log(`Finished bulk email for event ${eventId}. Sent ${sentCount} emails.`);
   }
 }
 
