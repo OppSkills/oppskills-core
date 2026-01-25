@@ -3,6 +3,7 @@ import { RazorpayService } from './razorpay.service';
 import { PaymentsRouteService } from './payments-route.service';
 import { PaymentsRouteController } from './payments-route.controller';
 import { RazorpayWebhookController } from './razorpay-webhook.controller';
+import { RazorpayWebhookService } from './razorpay-webhook.service';
 import { HackathonCheckoutService } from './hackathon-checkout.service';
 import { HackathonCheckoutController } from './hackathon-checkout.controller';
 import { DraftTeamService } from './draft-team.service';
@@ -32,6 +33,7 @@ import { AdminPayoutsController } from './admin-payouts.controller';
   ],
   providers: [
     RazorpayService,
+    RazorpayWebhookService,
     PaymentsRouteService,
     HackathonCheckoutService,
     DraftTeamService,
@@ -43,6 +45,7 @@ import { AdminPayoutsController } from './admin-payouts.controller';
   ],
   exports: [
     RazorpayService,
+    RazorpayWebhookService,
     PaymentsRouteService,
     HackathonCheckoutService,
     DraftTeamService,

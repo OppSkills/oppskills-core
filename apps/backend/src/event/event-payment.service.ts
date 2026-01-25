@@ -359,6 +359,7 @@ export class EventPaymentService {
 
   /**
    * Verify Razorpay payment and create event participant.
+   * This method is idempotent - safe to call multiple times or concurrently with webhook.
    */
   async verifyPayment(params: {
     razorpayOrderId: string;
@@ -394,27 +395,51 @@ export class EventPaymentService {
       throw new ForbiddenException('Payment does not belong to this user');
     }
 
-    if (payment.paymentStatus === EventPaymentStatus.CAPTURED) {
-      // Payment already processed - return existing participant
-      if (payment.participantId) {
-        return {
-          success: true,
-          paymentId: payment.id,
-          participantId: payment.participantId,
-        };
-      }
-      throw new BadRequestException('Payment already captured but participant not found');
-    }
-
-    // Verify Razorpay signature
-    const isValid = this.razorpayService.verifyCheckoutSignature({
-      orderId: params.razorpayOrderId,
-      paymentId: params.razorpayPaymentId,
-      signature: params.razorpaySignature,
+    // Check for existing participant first (might have been created by webhook)
+    const existingParticipant = await prisma.eventParticipantEntity.findUnique({
+      where: {
+        eventId_userId: {
+          eventId: payment.event.id,
+          userId: params.userId,
+        },
+      },
     });
 
-    if (!isValid) {
-      throw new BadRequestException('Invalid payment signature');
+    // If participant already exists, just return success
+    if (existingParticipant) {
+      // Update payment with participantId if not already linked (webhook might have created participant)
+      if (!payment.participantId) {
+        await prisma.eventPaymentEntity.update({
+          where: { id: payment.id },
+          data: {
+            participantId: existingParticipant.id,
+            razorpayPaymentId: params.razorpayPaymentId,
+            razorpaySignature: params.razorpaySignature,
+            paymentStatus: EventPaymentStatus.CAPTURED,
+            orderStatus: EventPaymentOrderStatus.PAID,
+            capturedAt: payment.capturedAt || new Date(),
+          },
+        });
+      }
+
+      return {
+        success: true,
+        paymentId: payment.id,
+        participantId: existingParticipant.id,
+      };
+    }
+
+    // If payment is not yet captured, verify the signature
+    if (payment.paymentStatus !== EventPaymentStatus.CAPTURED) {
+      const isValid = this.razorpayService.verifyCheckoutSignature({
+        orderId: params.razorpayOrderId,
+        paymentId: params.razorpayPaymentId,
+        signature: params.razorpaySignature,
+      });
+
+      if (!isValid) {
+        throw new BadRequestException('Invalid payment signature');
+      }
     }
 
     // Map frontend field IDs to database field IDs (same logic as joinEvent)
@@ -424,90 +449,167 @@ export class EventPaymentService {
       params.answers || [],
     );
 
-    // Create participant within transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Create participant
-      const isImmediate = payment.event.passSendingMode === 'IMMEDIATE';
-      const participant = await tx.eventParticipantEntity.create({
-        data: {
-          eventId: payment.event.id,
-          userId: params.userId,
-          approved: isImmediate,
-          approvedAt: isImmediate ? new Date() : null,
-          passEmailSent: false,
-        },
-      });
+    // Create participant within transaction with race condition handling
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        // Double-check for existing participant inside transaction (handles race with webhook)
+        const participantCheck = await tx.eventParticipantEntity.findUnique({
+          where: {
+            eventId_userId: {
+              eventId: payment.event.id,
+              userId: params.userId,
+            },
+          },
+        });
 
-      // Update event registration count
-      await tx.eventEntity.update({
-        where: { id: payment.event.id },
-        data: { registrationCount: { increment: 1 } },
-      });
+        if (participantCheck) {
+          // Webhook beat us to it - just link and return
+          await tx.eventPaymentEntity.update({
+            where: { id: payment.id },
+            data: {
+              participantId: participantCheck.id,
+              razorpayPaymentId: params.razorpayPaymentId,
+              razorpaySignature: params.razorpaySignature,
+              paymentStatus: EventPaymentStatus.CAPTURED,
+              orderStatus: EventPaymentOrderStatus.PAID,
+              capturedAt: payment.capturedAt || new Date(),
+            },
+          });
+          return { participantId: participantCheck.id, alreadyExisted: true };
+        }
 
-      // Create registration submission if answers provided
-      if (mappedAnswers.length > 0) {
-        const submission = await tx.eventRegistrationSubmissionEntity.create({
+        // Create participant
+        const isImmediate = payment.event.passSendingMode === 'IMMEDIATE';
+        const participant = await tx.eventParticipantEntity.create({
           data: {
             eventId: payment.event.id,
             userId: params.userId,
-            participantId: participant.id,
+            approved: isImmediate,
+            approvedAt: isImmediate ? new Date() : null,
+            passEmailSent: false,
           },
         });
 
-        // Create answers - match the format used in free events flow
-        const answerData = mappedAnswers.map((a) => ({
-          submissionId: submission.id,
-          fieldId: a.fieldId,
-          valueText:
-            typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
-          valueJson: a.value,
-        }));
-
-        await tx.eventRegistrationAnswerEntity.createMany({
-          data: answerData,
+        // Update event registration count
+        await tx.eventEntity.update({
+          where: { id: payment.event.id },
+          data: { registrationCount: { increment: 1 } },
         });
-      }
 
-      // Update payment record
-      await tx.eventPaymentEntity.update({
-        where: { id: payment.id },
-        data: {
-          razorpayPaymentId: params.razorpayPaymentId,
-          razorpaySignature: params.razorpaySignature,
-          paymentStatus: EventPaymentStatus.CAPTURED,
-          orderStatus: EventPaymentOrderStatus.PAID,
-          participantId: participant.id,
-          capturedAt: new Date(),
-        },
+        // Create registration submission if answers provided
+        if (mappedAnswers.length > 0) {
+          const submission = await tx.eventRegistrationSubmissionEntity.create({
+            data: {
+              eventId: payment.event.id,
+              userId: params.userId,
+              participantId: participant.id,
+            },
+          });
+
+          // Create answers
+          const answerData = mappedAnswers.map((a) => ({
+            submissionId: submission.id,
+            fieldId: a.fieldId,
+            valueText:
+              typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
+            valueJson: a.value,
+          }));
+
+          await tx.eventRegistrationAnswerEntity.createMany({
+            data: answerData,
+          });
+        }
+
+        // Update payment record
+        await tx.eventPaymentEntity.update({
+          where: { id: payment.id },
+          data: {
+            razorpayPaymentId: params.razorpayPaymentId,
+            razorpaySignature: params.razorpaySignature,
+            paymentStatus: EventPaymentStatus.CAPTURED,
+            orderStatus: EventPaymentOrderStatus.PAID,
+            participantId: participant.id,
+            capturedAt: new Date(),
+          },
+        });
+
+        // Create discount redemption if discount was used
+        if (payment.discountCodeId) {
+          try {
+            await tx.eventDiscountRedemptionEntity.create({
+              data: {
+                discountCodeId: payment.discountCodeId,
+                userId: params.userId,
+                paymentId: payment.id,
+              },
+            });
+          } catch (discountError: any) {
+            // Ignore duplicate redemption (might have been created by webhook)
+            if (discountError?.code !== 'P2002') {
+              throw discountError;
+            }
+          }
+        }
+
+        return { participantId: participant.id, alreadyExisted: false };
       });
 
-      // Create discount redemption if discount was used
-      if (payment.discountCodeId) {
-        await tx.eventDiscountRedemptionEntity.create({
-          data: {
-            discountCodeId: payment.discountCodeId,
-            userId: params.userId,
-            paymentId: payment.id,
-          },
+      // Emit event for pass email sending (only if we created the participant)
+      if (!result.alreadyExisted) {
+        this.eventEmitter.emit('event.participant.registered', {
+          eventId: payment.event.id,
+          userId: params.userId,
+          participantId: result.participantId,
+          passSendingMode: payment.event.passSendingMode,
         });
       }
 
-      return { participantId: participant.id };
-    });
+      return {
+        success: true,
+        paymentId: payment.id,
+        participantId: result.participantId,
+      };
+    } catch (error: any) {
+      // Handle race condition - if participant was created by webhook during our transaction
+      if (error?.code === 'P2002') {
+        this.logger.warn(
+          `Race condition handled: Participant already exists for user ${params.userId} in event ${payment.event.id}`,
+        );
 
-    // Emit event for pass email sending
-    this.eventEmitter.emit('event.participant.registered', {
-      eventId: payment.event.id,
-      userId: params.userId,
-      participantId: result.participantId,
-      passSendingMode: payment.event.passSendingMode,
-    });
+        // Fetch the participant that was created by the webhook
+        const raceParticipant = await prisma.eventParticipantEntity.findUnique({
+          where: {
+            eventId_userId: {
+              eventId: payment.event.id,
+              userId: params.userId,
+            },
+          },
+        });
 
-    return {
-      success: true,
-      paymentId: payment.id,
-      participantId: result.participantId,
-    };
+        if (raceParticipant) {
+          // Make sure payment is linked
+          await prisma.eventPaymentEntity.update({
+            where: { id: payment.id },
+            data: {
+              participantId: raceParticipant.id,
+              razorpayPaymentId: params.razorpayPaymentId,
+              razorpaySignature: params.razorpaySignature,
+              paymentStatus: EventPaymentStatus.CAPTURED,
+              orderStatus: EventPaymentOrderStatus.PAID,
+              capturedAt: payment.capturedAt || new Date(),
+            },
+          });
+
+          return {
+            success: true,
+            paymentId: payment.id,
+            participantId: raceParticipant.id,
+          };
+        }
+      }
+
+      throw error;
+    }
   }
 
   /**
