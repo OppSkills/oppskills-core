@@ -1,4 +1,3 @@
-import ActiveCommunitypage from "@/components/landingpage/ActiveCommunitypage";
 import HeroSection from "@/components/landingpage/hero-section";
 import OppskillsFlow from "@/components/landingpage/OppskillsFlow";
 import PromoPoster from "@/components/landingpage/PromoPoster";
@@ -12,7 +11,7 @@ const Home = () => {
       <HeroSection />
       <UpcomingEvents />
       <UpcomingCompetitions />
-      <ActiveCommunitypage />
+      {/* <ActiveCommunitypage /> */}
       <OppskillsFlow />
       <UpcomingFeatures />
       <PromoPoster />

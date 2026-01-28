@@ -7,8 +7,8 @@ export default function PromoPoster() {
     return (
         <div className='bg-accent-pink-100 md:p-8 rounded-xl md:flex w-full relative'>
             <div className='lg:w-[500px] h-full bg-[url("/illustrations/lines.svg")] bg-no-repeat bg-cover absolute top-0 right-0'></div>
-            <div className='md:w-2/5 p-4 font-semibold text-foreground flex flex-col gap-16'>
-                <h3 className='text-3xl'>List Your College Opportunities Easily on Oppskills</h3>
+            <div className='w-full md:w-2/3 p-4 font-semibold text-foreground flex flex-col gap-16'>
+                <h3 className='text-3xl lg:max-w-2/5'>List Your College Opportunities Easily on Oppskills</h3>
                 <div className='grid gap-4 grid-cols-1 md:grid-cols-3'>
                     {
                         [

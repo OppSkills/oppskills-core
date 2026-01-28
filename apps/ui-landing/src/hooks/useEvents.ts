@@ -74,7 +74,6 @@ export function useEvents(
         festival_id: festivalId,
         page: pageParam as number,
         q: search,
-        appendResults: true,
       });
       return data as EventListItem[];
     },

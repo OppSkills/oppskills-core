@@ -3,11 +3,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Dot, Loader2 } from "lucide-react";
+import { Dot, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePublicHackathons } from "@/hooks/usePublicHackathons";
 import type { PublicHackathonListItem } from "@/lib/api/hackathonApi";
 import { formatCount } from "@/lib/tools";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+import { Navigation, Pagination } from "swiper/modules";
+import React from "react";
+
 
 /**
  * Format hackathon mode for display.
@@ -39,6 +46,9 @@ function formatEntryFee(hackathon: PublicHackathonListItem): string {
 
 export default function UpcomingCompetitions() {
   const { data: hackathons, isLoading, error } = usePublicHackathons();
+  const prevRef = React.useRef<HTMLButtonElement>(null);
+  const nextRef = React.useRef<HTMLButtonElement>(null);
+  const paginationRef = React.useRef<HTMLDivElement>(null);
 
   // Show only the first 6 hackathons
   const displayHackathons = (hackathons?.pages.flat() ?? []).slice(0, 6);
@@ -137,7 +147,52 @@ export default function UpcomingCompetitions() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex justify-end gap-2 mb-4">
+          <button
+            ref={prevRef}
+            className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <button
+            ref={nextRef}
+            className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="w-5 h-5 text-foreground" />
+          </button>
+        </div>
+
+        <Swiper
+          modules={[Navigation, Pagination]}
+          spaceBetween={24}
+          breakpoints={{
+            0: { slidesPerView: 1 },
+            768: { slidesPerView: 2 },
+            1024: { slidesPerView: 3 },
+            1280: { slidesPerView: 4 },
+          }}
+          loop
+          pagination={{
+            clickable: true,
+            el: paginationRef.current,
+            bulletClass: "inline-block w-2.5 h-2.5 bg-muted-foreground/30 rounded-full mx-1 cursor-pointer transition-all duration-300 hover:bg-primary/50",
+            bulletActiveClass: "!bg-primary !w-6",
+          }}
+          navigation={{
+            prevEl: prevRef.current,
+            nextEl: nextRef.current,
+          }}
+          onBeforeInit={(swiper) => {
+            // @ts-ignore
+            swiper.params.navigation.prevEl = prevRef.current;
+            // @ts-ignore
+            swiper.params.navigation.nextEl = nextRef.current;
+            // @ts-ignore
+            swiper.params.pagination.el = paginationRef.current;
+          }}
+        >
           {displayHackathons.map((hackathon) => {
             const startDate = new Date(hackathon.startDate);
             const formattedDate = format(startDate, "dd MMM yyyy");
@@ -148,97 +203,100 @@ export default function UpcomingCompetitions() {
             const entryFee = formatEntryFee(hackathon);
 
             return (
-              <Link key={hackathon.id} href={`/competitions/${hackathon.slug}`} prefetch={false}>
-                <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
-                  {/* Image Section */}
-                  <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
-                    {hackathon.bannerImageUrl ? (
-                      <Image
-                        src={hackathon.bannerImageUrl}
-                        alt={hackathon.name}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-700">
-                        <span className="text-background text-5xl font-bold">
-                          {hackathon.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
-                      {[hackathon.hackathonType, hackathon.mode].map(
-                        (item, index) => (
-                          <div
-                            key={index}
-                            className="flex gap-0.5 items-center"
-                          >
-                            {index > 0 && <Dot />}
-                            <span>{item}</span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Content Section */}
-                  <CardContent className="space-y-2 flex-grow">
-                    <div className="flex gap-0.5 items-center overflow-ellipsis inter text-xs text-neutral-600">
-                      {[
-                        hackathon.isFree ? "Free" : "Paid",
-                        formattedDate,
-                        mode,
-                      ].map((item, index) => (
-                        <p key={index} className="gap-0.5 flex items-center">
-                          {index > 0 && <Dot />}
-                          {item}
-                        </p>
-                      ))}
-                    </div>
-                    <h3 className="font-semibold text-xl text-neutral-900 break-words">
-                      {hackathon.name}
-                    </h3>
-
-                    <div className="flex justify-between items-center text-sm pb-3">
-                      <div className="flex flex-col gap-2 ">
-                        <span className="text-xs text-neutral-500">Members</span>
-                        <div className="flex gap-1">
-                          <div className="flex">
-                            <div className="w-4 h-4 rounded-full bg-primary-500"></div>
-                            <div className="w-4 h-4 rounded-full bg-primary-400 -ml-2"></div>
-                            <div className="w-4 h-4 rounded-full bg-primary-300 -ml-2"></div>
-                          </div>
-                          <span className="text-neutral-700">
-                            {formatCount(hackathon.registrationCount)}
+              <SwiperSlide key={hackathon.id}>
+                <Link href={`/competitions/${hackathon.slug}`} prefetch={false}>
+                  <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
+                    {/* Image Section */}
+                    <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
+                      {hackathon.bannerImageUrl ? (
+                        <Image
+                          src={hackathon.bannerImageUrl}
+                          alt={hackathon.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-700">
+                          <span className="text-background text-5xl font-bold">
+                            {hackathon.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
-                      </div>
-                      <div className="flex flex-col gap-2 ">
-                        <span className="text-xs text-neutral-500">
-                          Register By
-                        </span>
-                        <span className="text-neutral-700">
-                          {formattedDeadLineDate}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-2  text-right">
-                        <span className="text-xs text-neutral-500">
-                          Entry Fee
-                        </span>
-                        <span className="text-neutral-700">{entryFee}</span>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
+                        {[hackathon.hackathonType, hackathon.mode].map(
+                          (item, index) => (
+                            <div
+                              key={index}
+                              className="flex gap-0.5 items-center"
+                            >
+                              {index > 0 && <Dot />}
+                              <span>{item}</span>
+                            </div>
+                          )
+                        )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+
+                    {/* Content Section */}
+                    <CardContent className="space-y-2 flex-grow">
+                      <div className="flex gap-0.5 items-center overflow-ellipsis inter text-xs text-neutral-600">
+                        {[
+                          hackathon.isFree ? "Free" : "Paid",
+                          formattedDate,
+                          mode,
+                        ].map((item, index) => (
+                          <p key={index} className="gap-0.5 flex items-center">
+                            {index > 0 && <Dot />}
+                            {item}
+                          </p>
+                        ))}
+                      </div>
+                      <h3 className="font-semibold text-xl text-neutral-900 whitespace-nowrap overflow-ellipsis overflow-hidden">
+                        {hackathon.name}
+                      </h3>
+
+                      <div className="flex justify-between items-center text-sm pb-3">
+                        <div className="flex flex-col gap-2 ">
+                          <span className="text-xs text-neutral-500">Members</span>
+                          <div className="flex gap-1">
+                            <div className="flex">
+                              <div className="w-4 h-4 rounded-full bg-primary-500"></div>
+                              <div className="w-4 h-4 rounded-full bg-primary-400 -ml-2"></div>
+                              <div className="w-4 h-4 rounded-full bg-primary-300 -ml-2"></div>
+                            </div>
+                            <span className="text-neutral-700">
+                              {formatCount(hackathon.registrationCount)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 ">
+                          <span className="text-xs text-neutral-500">
+                            Register By
+                          </span>
+                          <span className="text-neutral-700">
+                            {formattedDeadLineDate}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-2  text-right">
+                          <span className="text-xs text-neutral-500">
+                            Entry Fee
+                          </span>
+                          <span className="text-neutral-700">{entryFee}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </SwiperSlide>
             );
           })}
-          {displayHackathons.length === 1 && (
-            <div className="col-span-2 bg-[url('/competition_placeholder.png')] bg-cover bg-center bg-no-repeat"></div>
-          )}
-        </div>
-      </div>
-    </section>
+        </Swiper>
+        <div
+          ref={paginationRef}
+          className="flex justify-center items-center mt-8 gap-1 h-6"
+        />
+      </div >
+    </section >
   );
 }
