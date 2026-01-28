@@ -1,7 +1,10 @@
 import ActiveCommunitypage from "@/components/landingpage/ActiveCommunitypage";
 import HeroSection from "@/components/landingpage/hero-section";
+import OppskillsFlow from "@/components/landingpage/OppskillsFlow";
+import PromoPoster from "@/components/landingpage/PromoPoster";
 import UpcomingCompetitions from "@/components/landingpage/UpcomingCompetitions";
 import { UpcomingEvents } from "@/components/landingpage/UpcomingEvents";
+import UpcomingFeatures from "@/components/landingpage/UpcomingFeatures";
 
 const Home = () => {
   return (
@@ -9,7 +12,10 @@ const Home = () => {
       <HeroSection />
       <UpcomingEvents />
       <UpcomingCompetitions />
-      {/* <ActiveCommunitypage /> */}
+      <ActiveCommunitypage />
+      <OppskillsFlow />
+      <UpcomingFeatures />
+      <PromoPoster />
     </div>
   );
 };

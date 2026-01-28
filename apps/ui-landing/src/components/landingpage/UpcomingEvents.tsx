@@ -6,10 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useEvents, type EventListItem } from "@/hooks/useEvents";
 import { formatInTimeZone } from "date-fns-tz";
 import { formatCount } from "@/lib/tools";
-
-/**
- * Format event mode/location type for display.
- */
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css"
 function formatMode(locationType: string | null): string {
   if (!locationType) return "Online";
   switch (locationType.toUpperCase()) {
@@ -153,8 +151,17 @@ export const UpcomingEvents = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayEvents.map((event) => {
+        <Swiper
+          spaceBetween={24}
+          breakpoints={{
+            0: { slidesPerView: 1 },
+            768: { slidesPerView: 2 },
+            1024: { slidesPerView: 3 },
+            1280: { slidesPerView: 4 },
+          }}
+          loop
+        >
+          {displayEvents.map((event, i) => {
             const startDate = new Date(event.startDate);
             const formattedDate = formatInTimeZone(
               startDate,
@@ -175,98 +182,97 @@ export const UpcomingEvents = () => {
             const isFree = event.isFree;
 
             return (
-              <Link key={event.id} href={`/events/${event.slug}`} prefetch={false}>
-                <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
-                  {/* Image Section */}
-                  <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
-                    {event.bannerImageUrl ? (
-                      <Image
-                        src={event.bannerImageUrl}
-                        alt={event.name}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-700">
-                        <span className="text-background text-5xl font-bold">
-                          {event.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
-                      {[event.eventType, event.locationType].map(
-                        (item, index) => (
-                          <div
-                            key={index}
-                            className="flex gap-0.5 items-center"
-                          >
-                            {index > 0 && <Dot />}
-                            <span>{item}</span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Content Section */}
-                  <CardContent className="space-y-2 flex-grow">
-                    <div className="flex gap-0.5 items-center overflow-ellipsis inter text-xs text-neutral-600">
-                      {[
-                        event.isFree ? "Free" : "Paid",
-                        formattedDate,
-                        mode,
-                      ].map((item, index) => (
-                        <p key={index} className="gap-0.5 flex items-center">
-                          {index > 0 && <Dot />}
-                          {item}
-                        </p>
-                      ))}
-                    </div>
-                    <h3 className="font-semibold text-xl text-neutral-900">
-                      {event.name}
-                    </h3>
-
-                    <div className="flex justify-between items-center text-sm pb-3">
-                      <div className="flex flex-col gap-2 ">
-                        <span className="text-xs text-neutral-600">
-                          Attendees
-                        </span>
-                        <div className="flex gap-1">
-                          <div className="flex">
-                            <div className="w-4 h-4 rounded-full bg-primary-500"></div>
-                            <div className="w-4 h-4 rounded-full bg-primary-400 -ml-2"></div>
-                            <div className="w-4 h-4 rounded-full bg-primary-300 -ml-2"></div>
-                          </div>
-                          <span className="text-neutral-700">
-                            {formatCount(event.registrationCount)}
+              <SwiperSlide key={i}>
+                <Link href={`/events/${event.slug}`} prefetch={false}>
+                  <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
+                    {/* Image Section */}
+                    <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
+                      {event.bannerImageUrl ? (
+                        <Image
+                          src={event.bannerImageUrl}
+                          alt={event.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-700">
+                          <span className="text-background text-5xl font-bold">
+                            {event.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
-                      </div>
-                      <div className="flex flex-col gap-2 ">
-                        <span className="text-xs text-neutral-600">
-                          Register By
-                        </span>
-                        <span className="text-neutral-700">
-                          {formattedDeadLineDate}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-2  text-right">
-                        <span className="text-xs text-neutral-600">
-                          Entry Fee
-                        </span>
-                        <span className="text-neutral-700">{entryFee}</span>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
+                        {[event.eventType, event.locationType].map(
+                          (item, index) => (
+                            <div
+                              key={index}
+                              className="flex gap-0.5 items-center"
+                            >
+                              {index > 0 && <Dot />}
+                              <span>{item}</span>
+                            </div>
+                          )
+                        )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+
+                    {/* Content Section */}
+                    <CardContent className="space-y-2 flex-grow">
+                      <div className="flex gap-0.5 items-center overflow-ellipsis inter text-xs text-neutral-600">
+                        {[
+                          event.isFree ? "Free" : "Paid",
+                          formattedDate,
+                          mode,
+                        ].map((item, index) => (
+                          <p key={index} className="gap-0.5 flex items-center">
+                            {index > 0 && <Dot />}
+                            {item}
+                          </p>
+                        ))}
+                      </div>
+                      <h3 className="font-semibold text-xl text-neutral-900">
+                        {event.name}
+                      </h3>
+
+                      <div className="flex justify-between items-center text-sm pb-3">
+                        <div className="flex flex-col gap-2 ">
+                          <span className="text-xs text-neutral-600">
+                            Attendees
+                          </span>
+                          <div className="flex gap-1">
+                            <div className="flex">
+                              <div className="w-4 h-4 rounded-full bg-primary-500"></div>
+                              <div className="w-4 h-4 rounded-full bg-primary-400 -ml-2"></div>
+                              <div className="w-4 h-4 rounded-full bg-primary-300 -ml-2"></div>
+                            </div>
+                            <span className="text-neutral-700">
+                              {formatCount(event.registrationCount)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 ">
+                          <span className="text-xs text-neutral-600">
+                            Register By
+                          </span>
+                          <span className="text-neutral-700">
+                            {formattedDeadLineDate}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-2  text-right">
+                          <span className="text-xs text-neutral-600">
+                            Entry Fee
+                          </span>
+                          <span className="text-neutral-700">{entryFee}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </SwiperSlide>
             );
           })}
-          {displayEvents.length == 1 && (
-            <div className="col-span-2 bg-[url('/event_placeholder.png')] bg-cover bg-center bg-no-repeat"></div>
-          )}
-        </div>
+        </Swiper>
       </div>
     </section>
   );
