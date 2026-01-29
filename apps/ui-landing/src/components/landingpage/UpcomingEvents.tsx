@@ -17,9 +17,11 @@ export const UpcomingEvents = () => {
     isLoading,
     isError,
   } = useUpcomingEvents();
-  const prevRef = React.useRef<HTMLButtonElement>(null);
-  const nextRef = React.useRef<HTMLButtonElement>(null);
-  const paginationRef = React.useRef<HTMLDivElement>(null);
+  const [prevEl, setPrevEl] = React.useState<HTMLButtonElement | null>(null);
+  const [nextEl, setNextEl] = React.useState<HTMLButtonElement | null>(null);
+  const [paginationEl, setPaginationEl] = React.useState<HTMLDivElement | null>(
+    null
+  );
 
   // Flatten the pages to get all events
   const allEvents = events?.pages.flat() ?? [];
@@ -82,22 +84,14 @@ export const UpcomingEvents = () => {
           loop={displayEvents.length > 4} // Only loop if enough slides
           pagination={{
             clickable: true,
-            el: paginationRef.current,
+            el: paginationEl,
             bulletClass:
               "inline-block w-2.5 h-2.5 bg-muted-foreground/30 rounded-full mx-1 cursor-pointer transition-all duration-300 hover:bg-primary/50",
             bulletActiveClass: "!bg-primary !w-6",
           }}
           navigation={{
-            prevEl: prevRef.current,
-            nextEl: nextRef.current,
-          }}
-          onBeforeInit={(swiper) => {
-            // @ts-ignore
-            swiper.params.navigation.prevEl = prevRef.current;
-            // @ts-ignore
-            swiper.params.navigation.nextEl = nextRef.current;
-            // @ts-ignore
-            swiper.params.pagination.el = paginationRef.current;
+            prevEl,
+            nextEl,
           }}
         >
           {displayEvents.map((event, i) => {
@@ -110,18 +104,18 @@ export const UpcomingEvents = () => {
         </Swiper>
         <div className="flex justify-center items-center mt-8 gap-4">
           <button
-            ref={prevRef}
+            ref={setPrevEl}
             className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
             aria-label="Previous slide"
           >
             <ChevronLeft className="w-5 h-5 text-foreground" />
           </button>
           <div
-            ref={paginationRef}
+            ref={setPaginationEl}
             className="flex justify-center items-center gap-1 h-6 w-auto"
           />
           <button
-            ref={nextRef}
+            ref={setNextEl}
             className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
             aria-label="Next slide"
           >

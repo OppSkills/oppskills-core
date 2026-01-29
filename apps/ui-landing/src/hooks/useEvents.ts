@@ -118,15 +118,24 @@ export function useUpcomingEvents(
   });
 }
 
+import type { PublicHackathonListItem } from "@/lib/api/hackathonApi";
+
 /**
- * Fetches past public events.
+ * Union type for the combined past events and hackathons listing.
+ */
+export type PastOpportunityItem =
+  | (EventListItem & { type: "EVENT" })
+  | (PublicHackathonListItem & { type: "HACKATHON" });
+
+/**
+ * Fetches past public events (now merged with hackathons).
  */
 export function usePastEvents(
   festivalId?: string,
   search?: string,
   options?: { enabled?: boolean }
 ) {
-  return useInfiniteQuery<EventListItem[], Error>({
+  return useInfiniteQuery<PastOpportunityItem[], Error>({
     queryKey: ["events", "past", festivalId, search] as const,
     queryFn: async ({ pageParam = 1 }) => {
       const data = await getPublicPastEvents({
@@ -134,7 +143,7 @@ export function usePastEvents(
         page: pageParam as number,
         q: search,
       });
-      return data as EventListItem[];
+      return data as PastOpportunityItem[];
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {

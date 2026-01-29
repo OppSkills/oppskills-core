@@ -6,10 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dot } from "lucide-react";
 import { formatInTimeZone } from "date-fns-tz";
 import { formatCount } from "@/lib/tools";
-import type { EventListItem } from "@/hooks/useEvents";
+import type { EventListItem, PastOpportunityItem } from "@/hooks/useEvents";
 
 interface EventCardProps {
-    event: EventListItem;
+    event: EventListItem | PastOpportunityItem;
     hideRegistrationInfo?: boolean;
 }
 
@@ -30,7 +30,7 @@ function formatMode(locationType: string | null): string {
     }
 }
 
-function formatEntryFee(event: EventListItem): string {
+function formatEntryFee(event: EventListItem | PastOpportunityItem): string {
     if (event.isFree) return "Free";
     if (event.entryFeeAmount) {
         return `${event.currency} ${event.entryFeeAmount.toLocaleString()}`;
@@ -54,8 +54,10 @@ export function EventCard({ event, hideRegistrationInfo }: EventCardProps) {
     const mode = formatMode(event.locationType);
     const entryFee = formatEntryFee(event);
 
+    const baseUrl = 'type' in event && event.type === 'HACKATHON' ? '/competitions' : '/events';
+
     return (
-        <Link href={`/events/${event.slug}`} prefetch={false}>
+        <Link href={`${baseUrl}/${event.slug}`} prefetch={false}>
             <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
                 {/* Image Section */}
                 <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
@@ -74,8 +76,16 @@ export function EventCard({ event, hideRegistrationInfo }: EventCardProps) {
                         </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                    {/* Type Badge */}
+                    {'type' in event && (
+                        <div className="absolute top-2 right-2 bg-background/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground shadow-sm">
+                            {event.type}
+                        </div>
+                    )}
+
                     <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
-                        {[event.eventType, event.locationType].map((item, index) => (
+                        {['hackathonType' in event ? event.hackathonType : event.eventType, event.locationType].map((item, index) => (
                             <div key={index} className="flex gap-0.5 items-center">
                                 {index > 0 && <Dot />}
                                 <span>{item}</span>

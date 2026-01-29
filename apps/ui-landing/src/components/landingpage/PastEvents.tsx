@@ -2,7 +2,7 @@
 
 import { usePastEvents } from "@/hooks/useEvents";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -22,9 +22,10 @@ export default function PastEvents() {
         isError,
     } = usePastEvents();
 
-    const prevRef = useRef<HTMLButtonElement>(null);
-    const nextRef = useRef<HTMLButtonElement>(null);
-    const paginationRef = useRef<HTMLDivElement>(null);
+    // Replaced useRef with useState for Swiper navigation and pagination elements
+    const [prevEl, setPrevEl] = useState<HTMLButtonElement | null>(null);
+    const [nextEl, setNextEl] = useState<HTMLButtonElement | null>(null);
+    const [paginationEl, setPaginationEl] = useState<HTMLDivElement | null>(null);
 
     // Helper to extract all events from infinite query pages
     const allEvents = data?.pages.flatMap((page) => page) || [];
@@ -80,24 +81,17 @@ export default function PastEvents() {
                         }}
                         loop={allEvents.length > 4}
                         navigation={{
-                            prevEl: prevRef.current,
-                            nextEl: nextRef.current,
+                            prevEl, // Updated to use state variable
+                            nextEl, // Updated to use state variable
                         }}
                         pagination={{
                             clickable: true,
-                            el: paginationRef.current,
+                            el: paginationEl, // Updated to use state variable
                             bulletClass:
                                 "inline-block w-2.5 h-2.5 bg-muted-foreground/30 rounded-full mx-1 cursor-pointer transition-all duration-300 hover:bg-primary/50",
                             bulletActiveClass: "!bg-primary !w-6",
                         }}
-                        onBeforeInit={(swiper) => {
-                            // @ts-ignore
-                            swiper.params.navigation.prevEl = prevRef.current;
-                            // @ts-ignore
-                            swiper.params.navigation.nextEl = nextRef.current;
-                            // @ts-ignore
-                            swiper.params.pagination.el = paginationRef.current;
-                        }}
+                        // onBeforeInit is no longer needed as state ensures elements are available
                         // Use standard overflow-hidden (default) or the specific class from UpcomingEvents
                         // UpcomingEvents uses default.
                         onReachEnd={() => {
@@ -127,18 +121,18 @@ export default function PastEvents() {
                     {/* Navigation & Pagination Controls */}
                     <div className="flex justify-center items-center mt-8 gap-4">
                         <button
-                            ref={prevRef}
+                            ref={setPrevEl} // Updated to use state setter
                             className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
                             aria-label="Previous slide"
                         >
                             <ChevronLeft className="w-5 h-5 text-foreground" />
                         </button>
                         <div
-                            ref={paginationRef}
+                            ref={setPaginationEl} // Updated to use state setter
                             className="flex justify-center items-center gap-1 h-6 w-auto"
                         />
                         <button
-                            ref={nextRef}
+                            ref={setNextEl} // Updated to use state setter
                             className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
                             aria-label="Next slide"
                         >

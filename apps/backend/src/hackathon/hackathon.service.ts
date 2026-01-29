@@ -279,6 +279,7 @@ export class HackathonService {
       page?: number;
       appendResults?: boolean;
       search?: string;
+      filterMode?: 'UPCOMING' | 'PAST';
     } = {},
   ) {
     const baseWhere: Record<string, unknown> = {
@@ -294,6 +295,36 @@ export class HackathonService {
         { name: { contains: input.search, mode: 'insensitive' } },
         { description: { contains: input.search, mode: 'insensitive' } },
       ];
+    }
+
+    // Filter by registration deadline if filterMode is provided
+    if (input.filterMode === 'UPCOMING') {
+      // Upcoming: Deadline is in the future OR is null (no deadline = always open)
+      const dateFilter = {
+        OR: [
+          { registrationDeadline: { gt: new Date() } },
+          { registrationDeadline: null },
+        ],
+      };
+
+      if (baseWhere.OR) {
+        // If we already have an OR for search, we need to AND it with the date filter
+        baseWhere.AND = [dateFilter];
+      } else {
+        // Otherwise just merge the OR directly
+        Object.assign(baseWhere, dateFilter);
+      }
+    } else if (input.filterMode === 'PAST') {
+      // Past: Deadline is in the past
+      const dateFilter = {
+        registrationDeadline: { lt: new Date() },
+      };
+
+      if (baseWhere.OR) {
+        baseWhere.AND = [dateFilter];
+      } else {
+        Object.assign(baseWhere, dateFilter);
+      }
     }
 
     // Pagination logic

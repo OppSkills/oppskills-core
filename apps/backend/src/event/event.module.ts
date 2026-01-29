@@ -8,9 +8,10 @@ import { EventPaymentController } from './event-payment.controller';
 import { GoogleSheetsModule } from '../google-sheets/google-sheets.module';
 import { AnalyticsModule } from 'src/analytics/analytics.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { HackathonModule } from 'src/hackathon/hackathon.module';
 
 @Module({
-  imports: [GoogleSheetsModule, AnalyticsModule, PaymentsModule],
+  imports: [GoogleSheetsModule, AnalyticsModule, PaymentsModule, HackathonModule],
   controllers: [
     EventController,
     EventPassController,
@@ -20,4 +21,4 @@ import { PaymentsModule } from '../payments/payments.module';
   providers: [EventService, EventPassService, EventPaymentService],
   exports: [EventService, EventPassService, EventPaymentService],
 })
-export class EventModule {}
+export class EventModule { }

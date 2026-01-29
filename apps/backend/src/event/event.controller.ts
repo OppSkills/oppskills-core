@@ -41,6 +41,7 @@ import {
   UpdateEventPrizeBreakdownDto,
   UpdateEventMaxUsersDto,
 } from './event-update-nested.dto';
+import { HackathonService } from '../hackathon/hackathon.service';
 
 /** Validate that a string ID is non-empty. */
 function assertNonEmptyId(id: string, fieldName: string): string {
@@ -56,7 +57,10 @@ function assertNonEmptyId(id: string, fieldName: string): string {
 export class EventController {
   private readonly logger = new Logger(EventController.name);
 
-  constructor(private readonly eventService: EventService) { }
+  constructor(
+    private readonly eventService: EventService,
+    private readonly hackathonService: HackathonService,
+  ) { }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // PUBLIC Endpoints (no auth required) - sanitized data only
@@ -189,20 +193,58 @@ export class EventController {
     description: 'Search query',
     type: String,
   })
-  @ApiResponse({ status: 200, description: 'List of past public events' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of past public events and hackathons',
+  })
   async listPublicPastEvents(
     @Query('festival_id') festivalId?: string,
     @Query('page') page?: number,
     @Query('appendResults') appendResults?: boolean,
     @Query('q') search?: string,
   ) {
-    return this.eventService.listPublicEvents({
-      festivalId,
-      page,
-      appendResults,
-      search,
-      filterMode: 'PAST',
+    const [events, hackathons] = await Promise.all([
+      this.eventService.listPublicEvents({
+        festivalId,
+        page,
+        appendResults,
+        search,
+        filterMode: 'PAST',
+      }),
+      this.hackathonService.listPublicHackathons({
+        festivalId,
+        page,
+        appendResults,
+        search,
+        filterMode: 'PAST',
+      }),
+    ]);
+
+    // Normalize and merge
+    const normalizedEvents = (events as any[]).map((e) => ({
+      ...e,
+      type: 'EVENT',
+    }));
+
+    const normalizedHackathons = (hackathons as any[]).map((h) => ({
+      ...h,
+      type: 'HACKATHON',
+    }));
+
+    const merged = [...normalizedEvents, ...normalizedHackathons];
+
+    // Sort by registrationDeadline descending (most recent first)
+    merged.sort((a, b) => {
+      const dateA = a.registrationDeadline
+        ? new Date(a.registrationDeadline).getTime()
+        : 0;
+      const dateB = b.registrationDeadline
+        ? new Date(b.registrationDeadline).getTime()
+        : 0;
+      return dateB - dateA;
     });
+
+    return merged;
   }
 
   /**
