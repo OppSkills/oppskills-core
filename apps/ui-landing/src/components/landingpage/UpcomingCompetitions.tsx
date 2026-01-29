@@ -147,22 +147,7 @@ export default function UpcomingCompetitions() {
           </p>
         </div>
 
-        <div className="flex justify-end gap-2 mb-4">
-          <button
-            ref={prevRef}
-            className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
-            aria-label="Previous slide"
-          >
-            <ChevronLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <button
-            ref={nextRef}
-            className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
-            aria-label="Next slide"
-          >
-            <ChevronRight className="w-5 h-5 text-foreground" />
-          </button>
-        </div>
+
 
         <Swiper
           modules={[Navigation, Pagination]}
@@ -292,10 +277,26 @@ export default function UpcomingCompetitions() {
             );
           })}
         </Swiper>
-        <div
-          ref={paginationRef}
-          className="flex justify-center items-center mt-8 gap-1 h-6"
-        />
+        <div className="flex justify-center items-center mt-8 gap-4">
+          <button
+            ref={prevRef}
+            className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <div
+            ref={paginationRef}
+            className="flex justify-center items-center gap-1 h-6 w-auto"
+          />
+          <button
+            ref={nextRef}
+            className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="w-5 h-5 text-foreground" />
+          </button>
+        </div>
       </div >
     </section >
   );

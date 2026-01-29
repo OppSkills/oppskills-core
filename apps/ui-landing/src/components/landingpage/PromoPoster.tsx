@@ -31,7 +31,6 @@ export default function PromoPoster() {
                                         <h2 className='text-neutral-800'>{e.text}</h2>
                                     </div>
                                     <ArrowRight className='text-accent-pink-500 group-hover:scale-120 w-6 h-6' />
-
                                 </Card>
                             </Link>
                         ))
