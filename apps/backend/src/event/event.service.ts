@@ -117,6 +117,7 @@ export class EventService {
       page?: number;
       appendResults?: boolean;
       search?: string;
+      filterMode?: 'UPCOMING' | 'PAST';
     } = {},
   ) {
     const baseWhere: Record<string, unknown> = {
@@ -127,11 +128,44 @@ export class EventService {
       baseWhere.festivalId = input.festivalId;
     }
 
-    if (input.search) {
+    // Filter by Deadline
+    const now = new Date();
+    if (input.filterMode === 'UPCOMING') {
       baseWhere.OR = [
+        { registrationDeadline: { gt: now } },
+        { registrationDeadline: null },
+      ];
+    } else if (input.filterMode === 'PAST') {
+      baseWhere.registrationDeadline = { lt: now };
+    }
+
+    if (input.search) {
+      const searchCondition = [
         { name: { contains: input.search, mode: 'insensitive' } },
         { description: { contains: input.search, mode: 'insensitive' } },
       ];
+
+      // If we already have an OR for date (UPCOMING), we need to maintain strict AND logic
+      // (Deadline is future) AND (Name matches OR Desc matches)
+      // Prisma's top-level AND/OR structure can be tricky.
+      // If UPCOMING: (Deadline > now OR null) AND (Name OR Desc)
+      if (input.filterMode === 'UPCOMING') {
+        baseWhere.AND = [
+          {
+            OR: [
+              { registrationDeadline: { gt: now } },
+              { registrationDeadline: null },
+            ],
+          },
+          {
+            OR: searchCondition,
+          },
+        ];
+        delete baseWhere.OR; // Remove the previous OR set by filterMode
+      } else {
+        // Normal OR for search if no complex date logic or strict PAST logic
+        baseWhere.OR = searchCondition;
+      }
     }
 
     // Pagination logic

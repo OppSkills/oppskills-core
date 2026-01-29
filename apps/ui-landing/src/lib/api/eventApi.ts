@@ -60,6 +60,36 @@ export async function getPublicEventById(id: string): Promise<unknown> {
   return res.data as unknown;
 }
 
+/**
+ * Lists upcoming public events (Deadline > Now or Null).
+ */
+export async function getPublicUpcomingEvents(
+  params: {
+    page?: number;
+    appendResults?: boolean;
+    q?: string;
+    festival_id?: string;
+  } = {},
+): Promise<unknown> {
+  const res = await API.get("/public/upcoming", { params });
+  return res.data as unknown;
+}
+
+/**
+ * Lists past public events (Deadline < Now).
+ */
+export async function getPublicPastEvents(
+  params: {
+    page?: number;
+    appendResults?: boolean;
+    q?: string;
+    festival_id?: string;
+  } = {},
+): Promise<unknown> {
+  const res = await API.get("/public/past", { params });
+  return res.data as unknown;
+}
+
 // =====================
 // Authenticated API Functions
 // =====================

@@ -112,6 +112,100 @@ export class EventController {
   }
 
   /**
+   * GET /events/public/upcoming - List upcoming public events.
+   * Registration deadline is in the future or not set.
+   */
+  @Get('public/upcoming')
+  @ApiOperation({
+    summary: 'List upcoming public events (Deadline > Now or Null)',
+  })
+  @ApiQuery({
+    name: 'festival_id',
+    required: false,
+    description: 'Filter events by festival ID',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default 1)',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'appendResults',
+    required: false,
+    description: 'If true, returns 20 results instead of 10',
+    type: Boolean,
+  })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    description: 'Search query',
+    type: String,
+  })
+  @ApiResponse({ status: 200, description: 'List of upcoming public events' })
+  async listPublicUpcomingEvents(
+    @Query('festival_id') festivalId?: string,
+    @Query('page') page?: number,
+    @Query('appendResults') appendResults?: boolean,
+    @Query('q') search?: string,
+  ) {
+    return this.eventService.listPublicEvents({
+      festivalId,
+      page,
+      appendResults,
+      search,
+      filterMode: 'UPCOMING',
+    });
+  }
+
+  /**
+   * GET /events/public/past - List past public events.
+   * Registration deadline has exceeded.
+   */
+  @Get('public/past')
+  @ApiOperation({
+    summary: 'List past public events (Deadline < Now)',
+  })
+  @ApiQuery({
+    name: 'festival_id',
+    required: false,
+    description: 'Filter events by festival ID',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default 1)',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'appendResults',
+    required: false,
+    description: 'If true, returns 20 results instead of 10',
+    type: Boolean,
+  })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    description: 'Search query',
+    type: String,
+  })
+  @ApiResponse({ status: 200, description: 'List of past public events' })
+  async listPublicPastEvents(
+    @Query('festival_id') festivalId?: string,
+    @Query('page') page?: number,
+    @Query('appendResults') appendResults?: boolean,
+    @Query('q') search?: string,
+  ) {
+    return this.eventService.listPublicEvents({
+      festivalId,
+      page,
+      appendResults,
+      search,
+      filterMode: 'PAST',
+    });
+  }
+
+  /**
    * GET /events/public/by-slug/:slug - Get public event by slug.
    * Returns sanitized data without participants, roles, or registrant PII.
    */

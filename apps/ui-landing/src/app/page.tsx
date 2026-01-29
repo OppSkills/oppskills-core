@@ -3,6 +3,7 @@ import OppskillsFlow from "@/components/landingpage/OppskillsFlow";
 import PromoPoster from "@/components/landingpage/PromoPoster";
 import UpcomingCompetitions from "@/components/landingpage/UpcomingCompetitions";
 import { UpcomingEvents } from "@/components/landingpage/UpcomingEvents";
+import PastEvents from "@/components/landingpage/PastEvents";
 import UpcomingFeatures from "@/components/landingpage/UpcomingFeatures";
 
 const Home = () => {
@@ -11,6 +12,7 @@ const Home = () => {
       <HeroSection />
       <UpcomingEvents />
       <UpcomingCompetitions />
+      <PastEvents />
       {/* <ActiveCommunitypage /> */}
       <OppskillsFlow />
       <UpcomingFeatures />

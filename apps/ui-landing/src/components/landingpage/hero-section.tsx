@@ -100,7 +100,7 @@ export default function HeroSection() {
             onClick={() => {
               router.push(card.link);
             }}
-            className={`relative w-full h-[182px] rounded-3xl overflow-hidden ${card.styles.bg} flex p-6 transition-transform hover:scale-105 shadow-sm shadow-inner group mx-auto max-w-md md:max-w-none`}
+            className={`relative w-full h-[182px] rounded-3xl overflow-hidden ${card.styles.bg} flex p-6 transition-transform hover:scale-105 shadow-inner group mx-auto max-w-md md:max-w-none`}
           >
             <div className="relative z-10 flex flex-col gap-2">
               <p

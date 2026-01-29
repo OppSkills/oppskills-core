@@ -57,7 +57,7 @@ export default function UpcomingCompetitions() {
   if (isLoading) {
     return (
       <section
-        className="w-full py-12 md:py-16 lg:py-20 bg-background"
+        className="w-full pt-12 md:pt-16 lg:pt-20 bg-background"
         id="competitions"
       >
         <div className="container px-4 md:px-6 mx-auto">
@@ -82,7 +82,7 @@ export default function UpcomingCompetitions() {
   if (error || displayHackathons.length === 0) {
     return (
       <section
-        className="w-full py-12 md:py-16 lg:py-20 bg-background"
+        className="w-full pt-12 md:pt-16 lg:pt-20 bg-background"
         id="competitions"
       >
         <div className="container px-4 md:px-6 mx-auto">
@@ -133,7 +133,7 @@ export default function UpcomingCompetitions() {
 
   return (
     <section
-      className="w-full py-12 md:py-16 lg:py-20 bg-background"
+      className="w-full pt-12 md:pt-16 lg:pt-20 bg-background"
       id="competitions"
     >
       <div className="container px-4 md:px-6 mx-auto">
