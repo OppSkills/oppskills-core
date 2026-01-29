@@ -62,10 +62,10 @@ export default function PastEvents() {
                 <div className="mb-8 space-y-2 flex flex-col gap-2">
                     {/* 'Previous' badge removed to match UpcomingEvents style, or can be kept if desired */}
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
-                        Past Events
+                        Past Events & Hackathons
                     </h2>
                     <p className="text-muted-foreground text-lg inter">
-                        Explore our history of successful hackathons and workshops.
+                        Explore our history of successful listings of events and hackathons.
                     </p>
                 </div>
 

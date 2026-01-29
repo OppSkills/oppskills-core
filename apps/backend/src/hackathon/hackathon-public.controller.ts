@@ -81,6 +81,53 @@ export class HackathonPublicController {
   }
 
   /**
+   * GET /hackathons/public/upcoming - List upcoming public hackathons.
+   * Registration deadline is in the future or not set.
+   */
+  @Get('upcoming')
+  @ApiOperation({
+    summary: 'List upcoming public hackathons (Deadline > Now or Null)',
+  })
+  @ApiQuery({
+    name: 'festival_id',
+    required: false,
+    description: 'Filter hackathons by festival ID',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default 1)',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'appendResults',
+    required: false,
+    description: 'If true, returns 20 results instead of 10',
+    type: Boolean,
+  })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    description: 'Search query',
+    type: String,
+  })
+  @ApiResponse({ status: 200, description: 'List of upcoming public hackathons' })
+  async listPublicUpcomingHackathons(
+    @Query('festival_id') festivalId?: string,
+    @Query('page') page?: number,
+    @Query('appendResults') appendResults?: boolean,
+    @Query('q') search?: string,
+  ) {
+    return this.hackathonService.listPublicHackathons({
+      festivalId,
+      page,
+      appendResults,
+      search,
+      filterMode: 'UPCOMING',
+    });
+  }
+
+  /**
    * GET /hackathons/public/by-slug/:slug - Get public hackathon by slug.
    * Returns sanitized data without teams, participants, or PII.
    */

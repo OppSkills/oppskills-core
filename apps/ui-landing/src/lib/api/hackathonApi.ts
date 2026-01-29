@@ -85,6 +85,28 @@ export async function getPublicHackathons(
 }
 
 /**
+ * Fetches upcoming public hackathons (Deadline > Now or Null).
+ */
+export async function getPublicUpcomingHackathons(
+  params: {
+    festival_id?: string;
+    page?: number;
+    appendResults?: boolean;
+    q?: string;
+  } = {},
+): Promise<PublicHackathonListItem[]> {
+  const res = await API.get("/public/upcoming", {
+    params: {
+      festival_id: params.festival_id,
+      page: params.page,
+      appendResults: params.appendResults,
+      q: params.q,
+    },
+  });
+  return res.data as PublicHackathonListItem[];
+}
+
+/**
  * Fetches a public hackathon by slug.
  * No authentication required.
  */
