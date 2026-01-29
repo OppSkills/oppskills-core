@@ -9,7 +9,7 @@ export default function PromoPoster() {
             <div className='lg:w-[500px] h-full bg-[url("/illustrations/lines.svg")] bg-no-repeat bg-cover absolute top-0 right-0'></div>
             <div className='w-full p-4 font-semibold text-foreground flex flex-col gap-16'>
                 <h3 className='text-3xl lg:max-w-2/5'>List Your College Opportunities Easily on Oppskills</h3>
-                <div className='grid gap-4 grid-cols-1 md:grid-cols-3 w-1/2'>
+                <div className='grid gap-4 grid-cols-1 md:grid-cols-3 w-full lg:w-1/2'>
                     {
                         [
                             {
