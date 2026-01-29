@@ -4,7 +4,7 @@ import { Bell, BellIcon } from 'lucide-react'
 import Image from 'next/image'
 import React from 'react'
 
-export default function FlowCard({
+export default function UpcomingFeaturesCard({
     title,
     description,
     image
@@ -14,7 +14,7 @@ export default function FlowCard({
     image: string;
 }) {
     return (
-        <Card className='p-4'>
+        <Card className='p-4 shadow-[0_2px_8px_2px_rgba(69,69,69,0.10)]'>
             <div className='flex w-full h-full'>
                 <div className='flex flex-col gap-6 w-2/3'>
                     <h2 className='font-semibold text-2xl text-foreground'>{title}</h2>
