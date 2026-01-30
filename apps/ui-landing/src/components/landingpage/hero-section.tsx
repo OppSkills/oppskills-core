@@ -93,7 +93,7 @@ export default function HeroSection() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full justify-center gap-4 px-4 py-8 md:py-12 lg:py-15">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full justify-center gap-4 py-8 md:py-12 lg:py-15">
         {HERO_CARDS.map((card, index) => (
           <div
             key={index}

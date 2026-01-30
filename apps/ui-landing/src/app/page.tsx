@@ -9,7 +9,7 @@ import UpcomingFeatures from "@/components/landingpage/UpcomingFeatures";
 const Home = () => {
   return (
     <>
-      <div className="px-8 xl:px-25">
+      <div className="px-4 sm:px-8 md:px-12 xl:px-25">
         <HeroSection />
         <UpcomingEvents />
         <UpcomingCompetitions />
