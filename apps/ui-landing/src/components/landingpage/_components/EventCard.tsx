@@ -1,16 +1,15 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
-import { Card, CardContent } from "@/components/ui/card";
 import { Dot } from "lucide-react";
 import { formatInTimeZone } from "date-fns-tz";
 import { formatCount } from "@/lib/tools";
 import type { EventListItem, PastOpportunityItem } from "@/hooks/useEvents";
+import { OpportunityCard } from "./OpportunityCard";
 
 interface EventCardProps {
     event: EventListItem | PastOpportunityItem;
     hideRegistrationInfo?: boolean;
+    organizationName?: string | null;
 }
 
 function formatMode(locationType: string | null): string {
@@ -38,7 +37,7 @@ function formatEntryFee(event: EventListItem | PastOpportunityItem): string {
     return "Free";
 }
 
-export function EventCard({ event, hideRegistrationInfo }: EventCardProps) {
+export function EventCard({ event, hideRegistrationInfo, organizationName }: EventCardProps) {
     const startDate = new Date(event.startDate);
     const formattedDate = formatInTimeZone(startDate, "UTC", "dd MMM yyyy");
 
@@ -51,96 +50,70 @@ export function EventCard({ event, hideRegistrationInfo }: EventCardProps) {
         )
         : "N/A";
 
+    // ... (rest of function until return)
+
+    // Fallback logic: Use prop if provided, otherwise event.locationAddress, otherwise null
+    const displayOrgName = organizationName !== undefined ? organizationName : event.locationAddress;
+    // Note: Typescript might still complain about event.locationAddress if it thinks it doesn't exist.
+    // Since we verified the types, it should be fine.
+
+
     const mode = formatMode(event.locationType);
     const entryFee = formatEntryFee(event);
 
     const baseUrl = 'type' in event && event.type === 'HACKATHON' ? '/competitions' : '/events';
 
-    return (
-        <Link href={`${baseUrl}/${event.slug}`} prefetch={false}>
-            <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
-                {/* Image Section */}
-                <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
-                    {event.bannerImageUrl ? (
-                        <Image
-                            src={event.bannerImageUrl}
-                            alt={event.name}
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-700">
-                            <span className="text-background text-5xl font-bold">
-                                {event.name.charAt(0).toUpperCase()}
-                            </span>
-                        </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    const topRightBadge = (
+        'type' in event ? (
+            <div className="bg-background/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground shadow-sm">
+                {event.type}
+            </div>
+        ) : null
+    );
 
-                    {/* Type Badge */}
-                    {'type' in event && (
-                        <div className="absolute top-2 right-2 bg-background/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground shadow-sm">
-                            {event.type}
-                        </div>
-                    )}
+    const footerContent = (
+        <div className="flex justify-between items-center text-sm pb-1 w-full pt-2">
 
-                    <div className="absolute bottom-0 right-0 bg-background rounded-tl-lg px-3 flex text-primary-500 text-xs">
-                        {['hackathonType' in event ? event.hackathonType : event.eventType, event.locationType].map((item, index) => (
-                            <div key={index} className="flex gap-0.5 items-center">
-                                {index > 0 && <Dot />}
-                                <span>{item}</span>
-                            </div>
-                        ))}
+            <div className="flex flex-col gap-1 ">
+                <span className="text-xs text-neutral-600">Attendees</span>
+                <div className="flex gap-1">
+                    <div className="flex">
+                        <div className="w-4 h-4 rounded-full bg-primary-500"></div>
+                        <div className="w-4 h-4 rounded-full bg-primary-400 -ml-2"></div>
+                        <div className="w-4 h-4 rounded-full bg-primary-300 -ml-2"></div>
                     </div>
+                    <span className="text-neutral-700 font-medium">
+                        {formatCount(event.registrationCount)}
+                    </span>
                 </div>
+            </div>
 
-                {/* Content Section */}
-                <CardContent className="space-y-2 flex-grow">
-                    <div className="flex gap-0.5 items-center overflow-ellipsis inter text-xs text-neutral-600">
-                        {[event.isFree ? "Free" : "Paid", formattedDate, mode].map(
-                            (item, index) => (
-                                <p key={index} className="gap-0.5 flex items-center">
-                                    {index > 0 && <Dot />}
-                                    {item}
-                                </p>
-                            )
-                        )}
-                    </div>
-                    <h3 className="font-semibold text-xl text-neutral-900 whitespace-nowrap overflow-ellipsis overflow-hidden">
-                        {event.name}
-                    </h3>
+            {!hideRegistrationInfo && (
+                <div className="flex flex-col gap-1 ">
+                    <span className="text-xs text-neutral-600">Register By</span>
+                    <span className="text-neutral-700 font-medium">
+                        {formattedDeadLineDate}
+                    </span>
+                </div>
+            )}
 
-                    <div className="flex justify-between items-center text-sm pb-3">
-                        <div className="flex flex-col gap-2 ">
-                            <span className="text-xs text-neutral-600">Attendees</span>
-                            <div className="flex gap-1">
-                                <div className="flex">
-                                    <div className="w-4 h-4 rounded-full bg-primary-500"></div>
-                                    <div className="w-4 h-4 rounded-full bg-primary-400 -ml-2"></div>
-                                    <div className="w-4 h-4 rounded-full bg-primary-300 -ml-2"></div>
-                                </div>
-                                <span className="text-neutral-700">
-                                    {formatCount(event.registrationCount)}
-                                </span>
-                            </div>
-                        </div>
+            <div className={`flex flex-col gap-1 ${hideRegistrationInfo ? 'text-left' : 'text-right'}`}>
+                <span className="text-xs text-neutral-600">Entry Fee</span>
+                <span className="text-neutral-700 font-medium">{entryFee}</span>
+            </div>
+        </div>
+    );
 
-                        {!hideRegistrationInfo && (
-                            <div className="flex flex-col gap-2 ">
-                                <span className="text-xs text-neutral-600">Register By</span>
-                                <span className="text-neutral-700">
-                                    {formattedDeadLineDate}
-                                </span>
-                            </div>
-                        )}
-
-                        <div className={`flex flex-col gap-2 ${hideRegistrationInfo ? 'text-left' : 'text-right'}`}>
-                            <span className="text-xs text-neutral-600">Entry Fee</span>
-                            <span className="text-neutral-700">{entryFee}</span>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </Link>
+    return (
+        <OpportunityCard
+            href={`${baseUrl}/${event.slug}`}
+            imageSrc={event.bannerImageUrl}
+            title={event.name}
+            organizationName={organizationName ?? event.locationAddress}
+            isFree={event.isFree}
+            mode={mode}
+            topRightBadge={topRightBadge}
+            footerContent={footerContent}
+        />
     );
 }

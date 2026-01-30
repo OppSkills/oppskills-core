@@ -1,7 +1,7 @@
 "use client";
 
 import { usePastEvents } from "@/hooks/useEvents";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+
 import { useRef, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
@@ -11,6 +11,7 @@ import "swiper/css/pagination";
 import { EventsSectionSkeleton } from "./_components/EventsSectionSkeleton";
 import { EventsEmptyState } from "./_components/EventsEmptyState";
 import { EventCard } from "./_components/EventCard";
+import { SwiperControls } from "./_components/SwiperControls";
 
 export default function PastEvents() {
     const {
@@ -102,8 +103,8 @@ export default function PastEvents() {
                     >
                         {allEvents.map((event) => {
                             return (
-                                <SwiperSlide key={event.id} className="h-auto">
-                                    <EventCard event={event} hideRegistrationInfo={true} />
+                                <SwiperSlide key={event.id} className="!h-auto">
+                                    <EventCard event={event} hideRegistrationInfo={true} organizationName={event.locationAddress} />
                                 </SwiperSlide>
                             );
                         })}
@@ -118,27 +119,11 @@ export default function PastEvents() {
                         )}
                     </Swiper>
 
-                    {/* Navigation & Pagination Controls */}
-                    <div className="flex justify-center items-center mt-8 gap-4">
-                        <button
-                            ref={setPrevEl} // Updated to use state setter
-                            className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
-                            aria-label="Previous slide"
-                        >
-                            <ChevronLeft className="w-5 h-5 text-foreground" />
-                        </button>
-                        <div
-                            ref={setPaginationEl} // Updated to use state setter
-                            className="flex justify-center items-center gap-1 h-6 w-auto"
-                        />
-                        <button
-                            ref={setNextEl} // Updated to use state setter
-                            className="w-10 h-10 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
-                            aria-label="Next slide"
-                        >
-                            <ChevronRight className="w-5 h-5 text-foreground" />
-                        </button>
-                    </div>
+                    <SwiperControls
+                        setPrevEl={setPrevEl}
+                        setNextEl={setNextEl}
+                        setPaginationEl={setPaginationEl}
+                    />
                 </div>
             </div>
         </section>
