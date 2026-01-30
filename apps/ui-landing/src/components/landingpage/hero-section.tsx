@@ -45,7 +45,7 @@ export default function HeroSection() {
 
   return (
     <section className="relative min-h-[90vh] flex flex-col items-center justify-between bg-background overflow-hidden">
-      <div className="relative z-40 max-w-[1159px] px-4 text-center space-y-6 py-16">
+      <div className="relative z-40 max-w-[1159px] text-center space-y-6 py-16">
         <div className="space-y-2">
           <h1 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
             Global Opportunities Powered by{" "}
@@ -93,7 +93,7 @@ export default function HeroSection() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full justify-center gap-4 px-4 py-8 md:py-12 lg:py-15 max-w-[1400px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full justify-center gap-4 px-4 py-8 md:py-12 lg:py-15">
         {HERO_CARDS.map((card, index) => (
           <div
             key={index}

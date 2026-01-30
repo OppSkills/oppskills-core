@@ -60,8 +60,8 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="w-full px-4 sm:px-6 lg:px-8 pb-8 pt-12">
-      <div className="max-w-340 mx-auto bg-[#030005] text-background rounded-[2.5rem] p-8 md:p-12 lg:p-16 overflow-hidden relative">
+    <footer className="w-full px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25">
+      <div className="bg-primary-900 text-background sm:rounded-3xl p-8 md:p-12 lg:p-16 overflow-hidden relative">
         {/* Top Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-12">
           <div className="flex items-center gap-3">

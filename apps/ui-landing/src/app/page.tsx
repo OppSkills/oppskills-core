@@ -8,16 +8,21 @@ import UpcomingFeatures from "@/components/landingpage/UpcomingFeatures";
 
 const Home = () => {
   return (
-    <div className="px-2 sm:px-4 md:px-10 lg:px-20 xl:px-25">
-      <HeroSection />
-      <UpcomingEvents />
-      <UpcomingCompetitions />
-      <PastEvents />
-      {/* <ActiveCommunitypage /> */}
-      <OppskillsFlow />
-      <UpcomingFeatures />
-      <PromoPoster />
-    </div>
+    <>
+      <div className="px-8 xl:px-25">
+        <HeroSection />
+        <UpcomingEvents />
+        <UpcomingCompetitions />
+        <PastEvents />
+        {/* <ActiveCommunitypage /> */}
+        <OppskillsFlow />
+        <UpcomingFeatures />
+      </div>
+      <div className="sm:px-6 lg:px-8 sm:pt-12 xl:px-25">
+
+        <PromoPoster />
+      </div>
+    </>
   );
 };
 
