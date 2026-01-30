@@ -62,9 +62,9 @@ export function CompetitionCard({ hackathon }: CompetitionCardProps) {
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
                     <div className="absolute -bottom-0.5 left-0 flex items-center">
-                        <div className="p-1 pl-5 bg-background text-primary-500 text-xs rounded-tr-lg">
+                        <div className="py-1 pr-3 pl-5 bg-background text-primary-500 text-xs rounded-tr-lg flex gap-2 items-center">
                             <span>{isFree ? "Free" : "Paid"}</span>
-                            <span>  |  </span>
+                            <span className="text-[6px]">  ●  </span>
                             <span>{mode}</span>
                         </div>
                         <div className="relative self-stretch w-5  flex-1 overflow-hidden">
