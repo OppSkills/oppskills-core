@@ -8,10 +8,11 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { Navigation, Pagination } from "swiper/modules";
+import { CompetitionCard } from "./_components/CompetitionCard";
+// import { EventCard } from "./_components/EventCard"; // No longer needed here
+import type { PastOpportunityItem } from "@/hooks/useEvents";
 import { EventsSectionSkeleton } from "./_components/EventsSectionSkeleton";
 import { EventsEmptyState } from "./_components/EventsEmptyState";
-import { EventCard } from "./_components/EventCard";
-import type { PastOpportunityItem } from "@/hooks/useEvents";
 
 export default function UpcomingCompetitions() {
   const {
@@ -87,16 +88,10 @@ export default function UpcomingCompetitions() {
           }}
         >
           {displayHackathons.map((hackathon) => {
-            // Adapt to EventCard compatible type
-            const eventCardItem: PastOpportunityItem = {
-              ...hackathon,
-              type: "HACKATHON",
-            };
-
             return (
               <SwiperSlide key={hackathon.id} className="h-full pb-1">
                 <div className="h-full">
-                  <EventCard event={eventCardItem} />
+                  <CompetitionCard hackathon={hackathon} />
                 </div>
               </SwiperSlide>
             );
