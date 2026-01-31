@@ -413,6 +413,9 @@ model UserEntity {
   // Event payouts received as organizer
   eventPayoutsReceived EventPayoutEntity[] @relation("UserEventPayoutsReceived")
 
+  // Feature waitlist
+  featureWaitlist FeatureWaitlistEntity[] @relation("UserFeatureWaitlist")
+
   @@map("user")
   @@schema("oppskills")
 }
@@ -1652,5 +1655,20 @@ model EventPayoutItemEntity {
   @@index([payoutId])
   @@index([paymentId])
   @@map("event_payout_item")
+  @@schema("oppskills")
+}
+
+/// Waitlist for upcoming features - users can sign up to be notified when features launch.
+model FeatureWaitlistEntity {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      UserEntity @relation("UserFeatureWaitlist", fields: [userId], references: [id], onDelete: Cascade)
+  feature   String   // Feature identifier (e.g., "skill-based-learning-tracks", "mentor-led-sessions")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, feature])
+  @@index([userId])
+  @@index([feature])
+  @@map("feature_waitlist")
   @@schema("oppskills")
 }
