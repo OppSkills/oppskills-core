@@ -16,6 +16,8 @@ import {
   ParticipantDirectMessageProps,
   BulkEmailSuccessEmail,
   BulkEmailSuccessEmailProps,
+  IncompleteRegistrationEmail,
+  IncompleteRegistrationEmailProps,
 } from '@oppskills/emails';
 import { Logger } from 'src/_utils/logger';
 
@@ -25,7 +27,8 @@ export type EmailType =
   | 'event-pass-pending'
   | 'event-pass'
   | 'participant-direct-message'
-  | 'bulk-email-success';
+  | 'bulk-email-success'
+  | 'incomplete-registration';
 
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
@@ -42,7 +45,9 @@ export interface SendEmailOptions<T extends EmailType> {
             ? ParticipantDirectMessageProps
             : T extends 'bulk-email-success'
               ? BulkEmailSuccessEmailProps
-              : never;
+              : T extends 'incomplete-registration'
+                ? IncompleteRegistrationEmailProps
+                : never;
 }
 
 @Injectable()
@@ -158,7 +163,8 @@ export class EmailService {
       | EventPassPendingEmailProps
       | EventPassEmailProps
       | ParticipantDirectMessageProps
-      | BulkEmailSuccessEmailProps,
+      | BulkEmailSuccessEmailProps
+      | IncompleteRegistrationEmailProps,
   ): Promise<{ subject: string; html: string }> {
     switch (type) {
       case 'welcome': {
@@ -212,6 +218,15 @@ export class EmailService {
         const html = await render(element);
         return {
           subject: `Bulk email sent for ${p.eventName}`,
+          html,
+        };
+      }
+      case 'incomplete-registration': {
+        const p = props as IncompleteRegistrationEmailProps;
+        const element = createElement(IncompleteRegistrationEmail, p);
+        const html = await render(element);
+        return {
+          subject: `Action Required: Complete your registration for ${p.eventName}`,
           html,
         };
       }

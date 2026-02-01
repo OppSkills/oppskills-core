@@ -5,3 +5,4 @@ export * from './EventPassEmail';
 export * from './ParticipantDirectMessage';
 export * from './EventNotificationEmail';
 export * from './BulkEmailSuccessEmail';
+export * from './IncompleteRegistrationEmail';
