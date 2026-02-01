@@ -657,6 +657,40 @@ export class EventController {
     return this.eventService.checkUserRegistration(validId, userId);
   }
 
+  @Post(':id/complete-registration')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Submit missing registration answers for paid users',
+  })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  @ApiResponse({
+    status: 201,
+    description: 'Registration form submitted successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request (not registered, already submitted, or payment missing)',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async submitMissingRegistrationAnswers(
+    @Param('id') id: string,
+    @Body() dto: JoinEventDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+
+    const validId = assertNonEmptyId(id, 'id');
+    return this.eventService.submitMissingRegistrationAnswers(
+      validId,
+      userId,
+      dto.answers || [],
+    );
+  }
+
   @Delete(':id/leave')
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({ summary: 'Leave an event' })

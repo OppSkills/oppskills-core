@@ -407,6 +407,10 @@ export async function joinEvent(
  */
 export interface MyRegistrationResponse {
   isRegistered: boolean;
+  isPaidButIncomplete: boolean;
+  hasRegistrationAnswers: boolean;
+  paymentCompleted: boolean;
+  participantId: string | null;
   registeredAt: string | null;
 }
 
@@ -421,6 +425,23 @@ export async function checkMyRegistration(
     headers: buildAuthHeaders(token),
   });
   return res.data as MyRegistrationResponse;
+}
+
+/**
+ * Submit missing registration answers for paid users.
+ * Use this when payment is complete but registration form was not saved.
+ */
+export async function submitMissingRegistrationAnswers(
+  token: string,
+  eventId: string,
+  answers: Array<{ fieldId: string; value: string | number | string[] }>,
+): Promise<{ success: boolean; message: string; participantId: string }> {
+  const res = await API.post(
+    `/${eventId}/complete-registration`,
+    { answers },
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as { success: boolean; message: string; participantId: string };
 }
 
 /**

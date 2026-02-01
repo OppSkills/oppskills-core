@@ -1798,11 +1798,16 @@ export class EventService {
 
   /**
    * Check if a user is registered for an event.
+   * Returns detailed status including payment and registration form completion.
    */
   async checkUserRegistration(eventId: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
       where: { id: eventId },
-      select: { id: true },
+      select: {
+        id: true,
+        isFree: true,
+        entryFeeAmount: true,
+      },
     });
     if (!event) throw new NotFoundException('Event not found');
 
@@ -1816,9 +1821,198 @@ export class EventService {
       },
     });
 
+    // Check if registration answers exist
+    const registrationSubmission =
+      await prisma.eventRegistrationSubmissionEntity.findFirst({
+        where: { eventId, userId },
+        select: { id: true },
+      });
+    const hasRegistrationAnswers = !!registrationSubmission;
+
+    // Check if payment exists and is captured (for paid events)
+    let paymentCompleted = false;
+    if (!event.isFree && event.entryFeeAmount) {
+      const payment = await prisma.eventPaymentEntity.findFirst({
+        where: {
+          eventId,
+          payerUserId: userId,
+          paymentStatus: 'CAPTURED',
+        },
+        select: { id: true },
+      });
+      paymentCompleted = !!payment;
+    } else {
+      // Free events don't require payment
+      paymentCompleted = true;
+    }
+
+    // Determine registration status:
+    // - isRegistered: true only if participant exists AND answers are submitted
+    // - isPaidButIncomplete: payment done but answers missing (needs to re-submit form)
+    const isPaidButIncomplete =
+      !!participant && paymentCompleted && !hasRegistrationAnswers;
+    const isFullyRegistered =
+      !!participant && paymentCompleted && hasRegistrationAnswers;
+
     return {
-      isRegistered: !!participant,
+      isRegistered: isFullyRegistered,
+      isPaidButIncomplete,
+      hasRegistrationAnswers,
+      paymentCompleted,
+      participantId: participant?.id ?? null,
       registeredAt: participant?.joinedAt ?? null,
+    };
+  }
+
+  /**
+   * Submit registration answers for a user who has paid but is missing answers.
+   * This allows paid users to complete their registration form without paying again.
+   */
+  async submitMissingRegistrationAnswers(
+    eventId: string,
+    userId: string,
+    answers: Array<{ fieldId: string; value: string | number | string[] }>,
+  ) {
+    const event = await prisma.eventEntity.findUnique({
+      where: { id: eventId },
+      select: {
+        id: true,
+        isFree: true,
+        entryFeeAmount: true,
+        registrationForm: {
+          include: { fields: true },
+        },
+      },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    // Check if user is a participant
+    const participant = await prisma.eventParticipantEntity.findUnique({
+      where: {
+        eventId_userId: { eventId, userId },
+      },
+      select: { id: true },
+    });
+
+    if (!participant) {
+      throw new BadRequestException(
+        'You are not registered for this event. Please complete registration first.',
+      );
+    }
+
+    // Check if registration answers already exist
+    const existingSubmission =
+      await prisma.eventRegistrationSubmissionEntity.findFirst({
+        where: { eventId, userId },
+      });
+
+    if (existingSubmission) {
+      throw new BadRequestException(
+        'Registration form has already been submitted.',
+      );
+    }
+
+    // For paid events, verify payment was completed
+    if (!event.isFree && event.entryFeeAmount) {
+      const payment = await prisma.eventPaymentEntity.findFirst({
+        where: {
+          eventId,
+          payerUserId: userId,
+          paymentStatus: 'CAPTURED',
+        },
+        select: { id: true },
+      });
+
+      if (!payment) {
+        throw new BadRequestException(
+          'Payment not found. Please complete payment first.',
+        );
+      }
+    }
+
+    // Map frontend field IDs to DB field IDs
+    // Since payment was already made, the registration form and fields should exist
+    const regForm = event.registrationForm;
+
+    // Get user's category to determine which identity field to expect
+    const userOnboardingProfile =
+      await prisma.userOnboardingProfileEntity.findUnique({
+        where: { userId },
+        select: { userCategory: true },
+      });
+    const userCategory = userOnboardingProfile?.userCategory;
+
+    // Build mapping from frontend IDs to DB IDs
+    const frontendIdToDbId = new Map<string, string>();
+
+    // Map label-based matching for default fields
+    const defaultFieldLabels: Record<string, string> = {
+      'default-name': 'name',
+      'default-email': 'email',
+      'default-phone': 'phone no.',
+      'default-gender': 'gender',
+      'default-school-name': 'school name',
+      'default-college-name': 'college name',
+      'default-company-name': 'company name',
+    };
+
+    if (regForm?.fields) {
+      for (const field of regForm.fields) {
+        // Map existing DB field IDs directly
+        frontendIdToDbId.set(field.id, field.id);
+
+        // Also map by matching labels for default fields
+        const labelLower = field.label.toLowerCase();
+        for (const [frontendId, label] of Object.entries(defaultFieldLabels)) {
+          if (labelLower === label) {
+            frontendIdToDbId.set(frontendId, field.id);
+          }
+        }
+      }
+    }
+
+    // Transform answers: replace frontend "default-*" IDs with real DB IDs
+    const mappedAnswers = answers
+      .map((a) => ({
+        fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
+        value: a.value,
+      }))
+      .filter((a) => {
+        // If it still starts with 'default-', skip it (field doesn't exist or wrong category)
+        return !a.fieldId.startsWith('default-');
+      });
+
+    // Create submission and save answers
+    const submission = await prisma.eventRegistrationSubmissionEntity.create({
+      data: {
+        eventId,
+        userId,
+        participantId: participant.id,
+      },
+    });
+
+    if (mappedAnswers.length > 0) {
+      const answerData = mappedAnswers.map((a) => ({
+        submissionId: submission.id,
+        fieldId: a.fieldId,
+        valueText:
+          typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
+        valueJson: a.value,
+      }));
+
+      await prisma.eventRegistrationAnswerEntity.createMany({
+        data: answerData,
+      });
+    }
+
+    this.logger.log(
+      `Saved ${mappedAnswers.length} missing registration answers for user ${userId} in event ${eventId}`,
+    );
+
+    return {
+      success: true,
+      message: 'Registration form submitted successfully.',
+      participantId: participant.id,
     };
   }
 

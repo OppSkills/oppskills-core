@@ -25,6 +25,7 @@ import {
   checkMyRegistration,
   createEventPaymentOrder,
   verifyEventPayment,
+  submitMissingRegistrationAnswers,
 } from "@/lib/api/eventApi";
 import { getMe, submitOnboarding } from "@/lib/api/usersApi";
 import { CreateOnboardingDto } from "@oppskills/types/frontend";
@@ -244,6 +245,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     });
 
   const isUserRegistered = !!registrationStatus?.isRegistered;
+  const isPaidButIncomplete = !!registrationStatus?.isPaidButIncomplete;
 
   const TABS = ["About Event", "Contact Details"];
 
@@ -349,6 +351,15 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
           token,
           onboardingData as unknown as CreateOnboardingDto
         );
+      }
+
+      // If user has paid but registration form is incomplete, just submit the answers
+      if (isPaidButIncomplete) {
+        await submitMissingRegistrationAnswers(token, event.id, answers);
+        toast.success("Registration form submitted successfully!");
+        setIsModalOpen(false);
+        await refetchRegistrationStatus();
+        return;
       }
 
       // Check if event is paid
@@ -651,6 +662,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
               onRegister={handleRegistration}
               isRegistering={isRegistering || isCheckingOnboarding}
               isRegistered={isUserRegistered}
+              isPaidButIncomplete={isPaidButIncomplete}
               registrationDeadline={event.registrationDeadline}
               user={
                 user
@@ -819,6 +831,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                 onRegister={handleRegistration}
                 isRegistering={isRegistering || isCheckingOnboarding}
                 isRegistered={isUserRegistered}
+                isPaidButIncomplete={isPaidButIncomplete}
                 registrationDeadline={event.registrationDeadline}
                 user={
                   user
