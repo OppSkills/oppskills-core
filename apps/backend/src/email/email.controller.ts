@@ -11,7 +11,11 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { IsString, IsNotEmpty, IsEmail, IsOptional } from 'class-validator';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
-import { EMAIL_EVENTS, EventDirectMessageEventPayload, EventBulkEmailPayload } from './email.events';
+import {
+  EMAIL_EVENTS,
+  EventDirectMessageEventPayload,
+  EventBulkEmailPayload,
+} from './email.events';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { EventService } from '../event/event.service';
 
@@ -60,7 +64,7 @@ export class EmailController {
   constructor(
     private readonly eventEmitter: EventEmitter2,
     private readonly EventService: EventService,
-  ) { }
+  ) {}
 
   @Post('messages/direct')
   @UseGuards(ClerkAuthGuard)
@@ -119,7 +123,8 @@ export class EmailController {
 
     return {
       success: true,
-      message: 'Bulk email started successfully. You will be notified when it is finished.',
+      message:
+        'Bulk email started successfully. You will be notified when it is finished.',
     };
   }
 }

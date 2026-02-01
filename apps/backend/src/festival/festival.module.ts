@@ -9,4 +9,4 @@ import { UserAccountsModule } from '../user-accounts/user-accounts.module';
   providers: [FestivalService],
   exports: [FestivalService],
 })
-export class FestivalModule { }
+export class FestivalModule {}

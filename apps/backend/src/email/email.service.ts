@@ -19,24 +19,30 @@ import {
 } from '@oppskills/emails';
 import { Logger } from 'src/_utils/logger';
 
-export type EmailType = 'welcome' | 'onboarding-complete' | 'event-pass-pending' | 'event-pass' | 'participant-direct-message' | 'bulk-email-success';
+export type EmailType =
+  | 'welcome'
+  | 'onboarding-complete'
+  | 'event-pass-pending'
+  | 'event-pass'
+  | 'participant-direct-message'
+  | 'bulk-email-success';
 
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
   to: string;
   props: T extends 'welcome'
-  ? WelcomeEmailProps
-  : T extends 'onboarding-complete'
-  ? OnboardingCompleteEmailProps
-  : T extends 'event-pass-pending'
-  ? EventPassPendingEmailProps
-  : T extends 'event-pass'
-  ? EventPassEmailProps
-  : T extends 'participant-direct-message'
-  ? ParticipantDirectMessageProps
-  : T extends 'bulk-email-success'
-  ? BulkEmailSuccessEmailProps
-  : never;
+    ? WelcomeEmailProps
+    : T extends 'onboarding-complete'
+      ? OnboardingCompleteEmailProps
+      : T extends 'event-pass-pending'
+        ? EventPassPendingEmailProps
+        : T extends 'event-pass'
+          ? EventPassEmailProps
+          : T extends 'participant-direct-message'
+            ? ParticipantDirectMessageProps
+            : T extends 'bulk-email-success'
+              ? BulkEmailSuccessEmailProps
+              : never;
 }
 
 @Injectable()
@@ -48,7 +54,10 @@ export class EmailService {
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
-    const fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL', 'OppSkills <noreply@oppskills.com>');
+    const fromEmail = this.configService.get<string>(
+      'RESEND_FROM_EMAIL',
+      'OppSkills <noreply@oppskills.com>',
+    );
     this.fromEmail = fromEmail;
     this.enabled = !!apiKey;
 
@@ -107,7 +116,9 @@ export class EmailService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       if (!this.enabled) {
-        this.logger.log(`[DRY RUN] Would send batch of ${emails.length} emails`);
+        this.logger.log(
+          `[DRY RUN] Would send batch of ${emails.length} emails`,
+        );
         return { success: true };
       }
 
@@ -121,13 +132,14 @@ export class EmailService {
       const result = await this.resend.batch.send(batchPayload);
 
       if (result.error) {
-        this.logger.error(`Failed to send batch emails: ${result.error.message}`);
+        this.logger.error(
+          `Failed to send batch emails: ${result.error.message}`,
+        );
         return { success: false, error: result.error.message };
       }
 
       this.logger.log(`Sent batch of ${emails.length} emails`);
       return { success: true };
-
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error sending batch emails: ${message}`);
@@ -140,7 +152,13 @@ export class EmailService {
    */
   private async renderEmail(
     type: EmailType,
-    props: WelcomeEmailProps | OnboardingCompleteEmailProps | EventPassPendingEmailProps | EventPassEmailProps | ParticipantDirectMessageProps | BulkEmailSuccessEmailProps,
+    props:
+      | WelcomeEmailProps
+      | OnboardingCompleteEmailProps
+      | EventPassPendingEmailProps
+      | EventPassEmailProps
+      | ParticipantDirectMessageProps
+      | BulkEmailSuccessEmailProps,
   ): Promise<{ subject: string; html: string }> {
     switch (type) {
       case 'welcome': {
@@ -202,4 +220,3 @@ export class EmailService {
     }
   }
 }
-

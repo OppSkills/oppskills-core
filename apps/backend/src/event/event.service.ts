@@ -39,7 +39,7 @@ export class EventService {
     private readonly googleSheetsService: GoogleSheetsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
-  ) { }
+  ) {}
 
   /**
    * Create an event as a user.
@@ -1002,11 +1002,16 @@ export class EventService {
       // Check if user is from a free college
       let isCollegeFree = false;
       if (event.freeCollegeIds && event.freeCollegeIds.length > 0) {
-        const userProfile = await prisma.userOnboardingProfileEntity.findUnique({
-          where: { userId },
-          select: { collegeId: true },
-        });
-        if (userProfile?.collegeId && event.freeCollegeIds.includes(userProfile.collegeId)) {
+        const userProfile = await prisma.userOnboardingProfileEntity.findUnique(
+          {
+            where: { userId },
+            select: { collegeId: true },
+          },
+        );
+        if (
+          userProfile?.collegeId &&
+          event.freeCollegeIds.includes(userProfile.collegeId)
+        ) {
           isCollegeFree = true;
         }
       }
@@ -1393,7 +1398,7 @@ export class EventService {
             // Use field options, or default gender options for Gender field
             const effectiveOptions =
               field.label.toLowerCase() === 'gender' &&
-                (!field.options || field.options.length === 0)
+              (!field.options || field.options.length === 0)
                 ? DEFAULT_GENDER_OPTIONS
                 : field.options;
 
@@ -1629,7 +1634,9 @@ export class EventService {
     }
 
     if (participant.eventId !== eventId) {
-      throw new BadRequestException('Participant does not belong to this event');
+      throw new BadRequestException(
+        'Participant does not belong to this event',
+      );
     }
 
     if (participant.approved) {

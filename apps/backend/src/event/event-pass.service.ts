@@ -5,7 +5,11 @@ import {
 } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import { Logger } from '../_utils/logger';
-import type { EventPassDto, ScanResultDto, PublicPassLookupDto } from '@oppskills/types';
+import type {
+  EventPassDto,
+  ScanResultDto,
+  PublicPassLookupDto,
+} from '@oppskills/types';
 
 @Injectable()
 export class EventPassService {
@@ -271,10 +275,14 @@ export class EventPassService {
       return null;
     }
 
-    const collegeName = pass.user?.onboardingProfile?.college?.name || undefined;
-    const participantName = `${pass.user.firstName || ''} ${pass.user.lastName || ''}`.trim() || 'Participant';
+    const collegeName =
+      pass.user?.onboardingProfile?.college?.name || undefined;
+    const participantName =
+      `${pass.user.firstName || ''} ${pass.user.lastName || ''}`.trim() ||
+      'Participant';
     const scannedByName = pass.scannedBy
-      ? `${pass.scannedBy.firstName || ''} ${pass.scannedBy.lastName || ''}`.trim() || 'Organizer'
+      ? `${pass.scannedBy.firstName || ''} ${pass.scannedBy.lastName || ''}`.trim() ||
+        'Organizer'
       : undefined;
 
     return {
@@ -439,9 +447,7 @@ export class EventPassService {
 
     // Verify pass belongs to the event being scanned
     if (pass.eventId !== eventId) {
-      throw new BadRequestException(
-        'This pass does not belong to this event',
-      );
+      throw new BadRequestException('This pass does not belong to this event');
     }
 
     const wasAlreadyUsed = pass.isUsed;
@@ -525,8 +531,9 @@ export class EventPassService {
    * Map Prisma model to DTO
    */
   private mapToDto(pass: any): EventPassDto {
-    const collegeName = pass.user?.onboardingProfile?.college?.name || 'College Name';
-    
+    const collegeName =
+      pass.user?.onboardingProfile?.college?.name || 'College Name';
+
     return {
       id: pass.id,
       ticketId: pass.ticketId,
@@ -539,7 +546,9 @@ export class EventPassService {
       scannedBy: pass.scannedBy
         ? {
             id: pass.scannedBy.id,
-            name: `${pass.scannedBy.firstName || ''} ${pass.scannedBy.lastName || ''}`.trim() || 'Unknown',
+            name:
+              `${pass.scannedBy.firstName || ''} ${pass.scannedBy.lastName || ''}`.trim() ||
+              'Unknown',
           }
         : undefined,
       createdAt: pass.createdAt.toISOString(),
@@ -560,4 +569,3 @@ export class EventPassService {
     };
   }
 }
-

@@ -5,14 +5,14 @@ import Redis from 'ioredis';
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
-  constructor(@Inject('REDIS') private readonly redis: Redis) { }
+  constructor(@Inject('REDIS') private readonly redis: Redis) {}
 
   async trackPageView(type: 'event' | 'opportunity', slug: string) {
-    this.redis.incr(`pv:${type}:${slug}`).catch(() => { });
+    this.redis.incr(`pv:${type}:${slug}`).catch(() => {});
   }
 
   async trackPostImpression(type: 'event' | 'opportunity', slug: string) {
-    this.redis.incr(`pi:${type}:${slug}`).catch(() => { });
+    this.redis.incr(`pi:${type}:${slug}`).catch(() => {});
   }
 
   async flushToDb() {
@@ -59,7 +59,7 @@ export class AnalyticsService {
           }
         } catch (err) {
           this.logger.error(`Failed flushing ${key}`, err);
-          // If update failed, we might want to put the count back? 
+          // If update failed, we might want to put the count back?
           // For now, logging is safer than risking infinite loops or double counting.
           // In a high-integrity system, we might push back to Redis or a dead-letter queue.
         }
@@ -139,10 +139,7 @@ export class AnalyticsService {
       },
     });
 
-    const registrationsMap = new Map<
-      string,
-      { men: number; women: number }
-    >();
+    const registrationsMap = new Map<string, { men: number; women: number }>();
 
     // Initialize last 7 days with 0
     for (let i = 0; i < 7; i++) {
@@ -312,10 +309,7 @@ export class AnalyticsService {
       },
     });
 
-    const registrationsMap = new Map<
-      string,
-      { men: number; women: number }
-    >();
+    const registrationsMap = new Map<string, { men: number; women: number }>();
 
     // Initialize map
     for (let i = 0; i < 7; i++) {
@@ -347,11 +341,11 @@ export class AnalyticsService {
     };
 
     recentTeams.forEach((t) =>
-      processEntry(t.createdAt, t.leader?.onboardingProfile?.gender)
+      processEntry(t.createdAt, t.leader?.onboardingProfile?.gender),
     );
 
     recentMembers.forEach((m) =>
-      processEntry(m.joinedAt, m.user?.onboardingProfile?.gender)
+      processEntry(m.joinedAt, m.user?.onboardingProfile?.gender),
     );
 
     const registrations: { date: string; men: number; women: number }[] = [];
@@ -531,8 +525,14 @@ export class AnalyticsService {
     });
 
     // Initialize Result Structures
-    const registrationTrend: Record<string, { events: number; hackathon: number }> = {};
-    const genderRegistrationTrend: Record<string, { male: number; female: number }> = {};
+    const registrationTrend: Record<
+      string,
+      { events: number; hackathon: number }
+    > = {};
+    const genderRegistrationTrend: Record<
+      string,
+      { male: number; female: number }
+    > = {};
 
     for (let i = 0; i < 7; i++) {
       const d = new Date();
@@ -694,18 +694,22 @@ export class AnalyticsService {
     });
 
     return {
-      event: topEvent ? {
-        title: topEvent.name,
-        slug: topEvent.slug,
-        thumbnail: topEvent.bannerImageUrl,
-        tregistrations: topEvent._count?.participants ?? 0,
-      } : null,
-      hackathon: topHackathon ? {
-        title: topHackathon.name,
-        slug: topHackathon.slug,
-        thumbnail: topHackathon.bannerImageUrl,
-        tregistrations: topHackathon.registrationCount ?? 0,
-      } : null,
+      event: topEvent
+        ? {
+            title: topEvent.name,
+            slug: topEvent.slug,
+            thumbnail: topEvent.bannerImageUrl,
+            tregistrations: topEvent._count?.participants ?? 0,
+          }
+        : null,
+      hackathon: topHackathon
+        ? {
+            title: topHackathon.name,
+            slug: topHackathon.slug,
+            thumbnail: topHackathon.bannerImageUrl,
+            tregistrations: topHackathon.registrationCount ?? 0,
+          }
+        : null,
     };
   }
 }

@@ -44,26 +44,28 @@ jest.mock('@oppskills/db', () => ({
     userOnboardingProfileEntity: {
       findUnique: jest.fn(),
     },
-    $transaction: jest.fn((fn) => fn({
-      eventParticipantEntity: {
-        create: jest.fn().mockResolvedValue({ id: 'participant-1' }),
-      },
-      eventEntity: {
-        update: jest.fn(),
-      },
-      eventRegistrationSubmissionEntity: {
-        create: jest.fn().mockResolvedValue({ id: 'submission-1' }),
-      },
-      eventRegistrationAnswerEntity: {
-        create: jest.fn(),
-      },
-      eventPaymentEntity: {
-        update: jest.fn(),
-      },
-      eventDiscountRedemptionEntity: {
-        create: jest.fn(),
-      },
-    })),
+    $transaction: jest.fn((fn) =>
+      fn({
+        eventParticipantEntity: {
+          create: jest.fn().mockResolvedValue({ id: 'participant-1' }),
+        },
+        eventEntity: {
+          update: jest.fn(),
+        },
+        eventRegistrationSubmissionEntity: {
+          create: jest.fn().mockResolvedValue({ id: 'submission-1' }),
+        },
+        eventRegistrationAnswerEntity: {
+          create: jest.fn(),
+        },
+        eventPaymentEntity: {
+          update: jest.fn(),
+        },
+        eventDiscountRedemptionEntity: {
+          create: jest.fn(),
+        },
+      }),
+    ),
   },
   EventPaymentStatus: {
     CREATED: 'CREATED',
@@ -178,9 +180,11 @@ describe('EventPaymentService', () => {
 
     it('should throw BadRequestException if user already registered', async () => {
       (prisma.eventEntity.findUnique as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventParticipantEntity.findUnique as jest.Mock).mockResolvedValue({
-        id: 'existing-participant',
-      });
+      (prisma.eventParticipantEntity.findUnique as jest.Mock).mockResolvedValue(
+        {
+          id: 'existing-participant',
+        },
+      );
 
       await expect(
         service.createPaymentOrder({
@@ -220,10 +224,12 @@ describe('EventPaymentService', () => {
         id: 'event-1',
         ownerId: 'user-1',
       });
-      (prisma.eventDiscountCodeEntity.findFirst as jest.Mock).mockResolvedValue({
-        id: 'existing-code',
-        code: 'TEST10',
-      });
+      (prisma.eventDiscountCodeEntity.findFirst as jest.Mock).mockResolvedValue(
+        {
+          id: 'existing-code',
+          code: 'TEST10',
+        },
+      );
 
       await expect(
         service.createDiscountCode('test-event', 'user-1', {
@@ -256,9 +262,9 @@ describe('EventPaymentService', () => {
         id: 'event-1',
         ownerId: 'user-1',
       });
-      (prisma.eventDiscountCodeEntity.findUnique as jest.Mock).mockResolvedValue(
-        null,
-      );
+      (
+        prisma.eventDiscountCodeEntity.findUnique as jest.Mock
+      ).mockResolvedValue(null);
 
       await expect(
         service.deleteDiscountCode('test-event', 'nonexistent-code', 'user-1'),
@@ -266,4 +272,3 @@ describe('EventPaymentService', () => {
     });
   });
 });
-

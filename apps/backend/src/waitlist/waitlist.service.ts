@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import { Logger } from 'src/_utils/logger';
 
@@ -9,7 +13,10 @@ export class WaitlistService {
   /**
    * Add user to waitlist for a feature.
    */
-  async addToWaitlist(userId: string, feature: string): Promise<{ success: boolean; message: string }> {
+  async addToWaitlist(
+    userId: string,
+    feature: string,
+  ): Promise<{ success: boolean; message: string }> {
     if (!feature || feature.trim().length === 0) {
       throw new BadRequestException('Feature identifier is required');
     }
@@ -29,7 +36,9 @@ export class WaitlistService {
       });
 
       if (existing) {
-        throw new ConflictException('You are already on the waitlist for this feature');
+        throw new ConflictException(
+          'You are already on the waitlist for this feature',
+        );
       }
 
       // Add to waitlist
@@ -40,7 +49,9 @@ export class WaitlistService {
         },
       });
 
-      this.logger.log(`User ${userId} added to waitlist for feature: ${normalizedFeature}`);
+      this.logger.log(
+        `User ${userId} added to waitlist for feature: ${normalizedFeature}`,
+      );
 
       return {
         success: true,
@@ -51,7 +62,9 @@ export class WaitlistService {
         throw error;
       }
       this.logger.error(`Error adding user to waitlist: ${error}`);
-      throw new BadRequestException('Failed to add to waitlist. Please try again.');
+      throw new BadRequestException(
+        'Failed to add to waitlist. Please try again.',
+      );
     }
   }
 
@@ -73,4 +86,3 @@ export class WaitlistService {
     return !!entry;
   }
 }
-

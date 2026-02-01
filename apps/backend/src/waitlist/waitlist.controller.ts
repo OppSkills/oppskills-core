@@ -28,7 +28,8 @@ export class WaitlistController {
   @Post()
   @ApiOperation({
     summary: 'Add user to feature waitlist',
-    description: 'Adds the authenticated user to the waitlist for a specific feature.',
+    description:
+      'Adds the authenticated user to the waitlist for a specific feature.',
   })
   @ApiBody({
     schema: {
@@ -36,7 +37,8 @@ export class WaitlistController {
       properties: {
         feature: {
           type: 'string',
-          description: 'Feature identifier (e.g., "skill-based-learning-tracks", "mentor-led-sessions")',
+          description:
+            'Feature identifier (e.g., "skill-based-learning-tracks", "mentor-led-sessions")',
           example: 'skill-based-learning-tracks',
         },
       },
@@ -86,7 +88,8 @@ export class WaitlistController {
   @Get(':feature')
   @ApiOperation({
     summary: 'Check if user is on waitlist',
-    description: 'Checks if the authenticated user is on the waitlist for a specific feature.',
+    description:
+      'Checks if the authenticated user is on the waitlist for a specific feature.',
   })
   @ApiParam({
     name: 'feature',
@@ -121,8 +124,10 @@ export class WaitlistController {
       throw new Error('User ID not found in request');
     }
 
-    const isOnWaitlist = await this.waitlistService.isOnWaitlist(userId, feature);
+    const isOnWaitlist = await this.waitlistService.isOnWaitlist(
+      userId,
+      feature,
+    );
     return { isOnWaitlist };
   }
 }
-

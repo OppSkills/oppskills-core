@@ -60,7 +60,7 @@ export class EventController {
   constructor(
     private readonly eventService: EventService,
     private readonly hackathonService: HackathonService,
-  ) { }
+  ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // PUBLIC Endpoints (no auth required) - sanitized data only
@@ -862,7 +862,10 @@ export class EventController {
   })
   @ApiParam({ name: 'slug', description: 'Event slug' })
   @ApiParam({ name: 'participantId', description: 'Participant ID' })
-  @ApiResponse({ status: 200, description: 'Participant approved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Participant approved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Event or participant not found' })
@@ -877,11 +880,7 @@ export class EventController {
     }
 
     const event = await this.eventService.getEventBySlug(slug);
-    await this.eventService.approveParticipant(
-      event.id,
-      participantId,
-      userId,
-    );
+    await this.eventService.approveParticipant(event.id, participantId, userId);
     return { success: true };
   }
 }

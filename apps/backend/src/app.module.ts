@@ -41,4 +41,4 @@ import { WaitlistModule } from './waitlist/waitlist.module';
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],
 })
-export class AppModule { }
+export class AppModule {}

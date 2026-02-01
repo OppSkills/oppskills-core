@@ -10,4 +10,3 @@ import { CommonModule } from '../common/common.module';
   exports: [WaitlistService],
 })
 export class WaitlistModule {}
-

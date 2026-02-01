@@ -88,7 +88,8 @@ export class CollegesController {
   @Get('/by-ids')
   @ApiOperation({
     summary: 'Get colleges by IDs',
-    description: 'Returns colleges matching the provided IDs. Accepts comma-separated IDs.',
+    description:
+      'Returns colleges matching the provided IDs. Accepts comma-separated IDs.',
   })
   @ApiQuery({
     name: 'ids',

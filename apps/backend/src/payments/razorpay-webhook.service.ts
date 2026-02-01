@@ -137,18 +137,20 @@ export class RazorpayWebhookService {
       await prisma.$transaction(async (tx) => {
         // Re-check payment status inside transaction to prevent race condition
         const currentPayment = await tx.eventPaymentEntity.findUnique({
-          where: { id: paymentRecord!.id },
+          where: { id: paymentRecord.id },
           select: { paymentStatus: true, participantId: true },
         });
 
         if (currentPayment?.paymentStatus === 'CAPTURED') {
-          this.logger.log(`Event payment already captured (inside tx) for order: ${orderId}`);
+          this.logger.log(
+            `Event payment already captured (inside tx) for order: ${orderId}`,
+          );
           return;
         }
 
         // Update the record
         await tx.eventPaymentEntity.update({
-          where: { id: paymentRecord!.id },
+          where: { id: paymentRecord.id },
           data: {
             razorpayOrderId: orderId,
             razorpayPaymentId: payment.id,
@@ -162,19 +164,19 @@ export class RazorpayWebhookService {
         const existingParticipant = await tx.eventParticipantEntity.findUnique({
           where: {
             eventId_userId: {
-              eventId: paymentRecord!.eventId,
-              userId: paymentRecord!.payerUserId,
+              eventId: paymentRecord.eventId,
+              userId: paymentRecord.payerUserId,
             },
           },
         });
 
         if (!existingParticipant) {
           this.logger.log(
-            `Creating participant via webhook for user ${paymentRecord!.payerUserId} in event ${paymentRecord!.eventId}`,
+            `Creating participant via webhook for user ${paymentRecord.payerUserId} in event ${paymentRecord.eventId}`,
           );
 
           const event = await tx.eventEntity.findUnique({
-            where: { id: paymentRecord!.eventId },
+            where: { id: paymentRecord.eventId },
             select: { passSendingMode: true },
           });
 
@@ -182,8 +184,8 @@ export class RazorpayWebhookService {
 
           const participant = await tx.eventParticipantEntity.create({
             data: {
-              eventId: paymentRecord!.eventId,
-              userId: paymentRecord!.payerUserId,
+              eventId: paymentRecord.eventId,
+              userId: paymentRecord.payerUserId,
               approved: isImmediate,
               approvedAt: isImmediate ? new Date() : null,
             },
@@ -191,20 +193,20 @@ export class RazorpayWebhookService {
 
           // Link participant to payment
           await tx.eventPaymentEntity.update({
-            where: { id: paymentRecord!.id },
+            where: { id: paymentRecord.id },
             data: { participantId: participant.id },
           });
 
           // Update registration count
           await tx.eventEntity.update({
-            where: { id: paymentRecord!.eventId },
+            where: { id: paymentRecord.eventId },
             data: { registrationCount: { increment: 1 } },
           });
         } else {
           // Participant already exists (created by verifyPayment), just link it
           if (!currentPayment?.participantId) {
             await tx.eventPaymentEntity.update({
-              where: { id: paymentRecord!.id },
+              where: { id: paymentRecord.id },
               data: { participantId: existingParticipant.id },
             });
           }
@@ -232,8 +234,15 @@ export class RazorpayWebhookService {
           },
         });
       } catch (error) {
-        if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')) {
-          this.logger.error(`Error creating event discount redemption: ${error}`);
+        if (
+          !(
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2002'
+          )
+        ) {
+          this.logger.error(
+            `Error creating event discount redemption: ${error}`,
+          );
         }
       }
     }
@@ -241,7 +250,9 @@ export class RazorpayWebhookService {
     this.logger.log(`Event payment captured for order: ${orderId}`);
   }
 
-  private async handleHackathonPaymentCaptured(payload: RazorpayWebhookPayload) {
+  private async handleHackathonPaymentCaptured(
+    payload: RazorpayWebhookPayload,
+  ) {
     const payment = payload.payload?.payment?.entity!;
     const orderId = payment.order_id;
     const notes = payment.notes || {};
@@ -256,23 +267,33 @@ export class RazorpayWebhookService {
     if (!paymentRecord && hackathonId) {
       if (teamId) {
         paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
-          where: { unique_team_payment: { scope: 'TEAM', hackathonId, teamId } },
+          where: {
+            unique_team_payment: { scope: 'TEAM', hackathonId, teamId },
+          },
         });
       } else if (userId) {
         paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
-          where: { unique_user_payment: { scope: (notes.scope as any) || 'USER', hackathonId, payerUserId: userId } },
+          where: {
+            unique_user_payment: {
+              scope: (notes.scope as any) || 'USER',
+              hackathonId,
+              payerUserId: userId,
+            },
+          },
         });
       }
     }
 
     if (!paymentRecord) {
-      this.logger.warn(`Hackathon payment record not found for order: ${orderId}`);
+      this.logger.warn(
+        `Hackathon payment record not found for order: ${orderId}`,
+      );
       return;
     }
 
     await prisma.$transaction(async (tx) => {
       await tx.hackathonPaymentEntity.update({
-        where: { id: paymentRecord!.id },
+        where: { id: paymentRecord.id },
         data: {
           razorpayOrderId: orderId,
           razorpayPaymentId: payment.id,
@@ -283,10 +304,7 @@ export class RazorpayWebhookService {
       });
 
       // For PER_TEAM mode, if teamName was provided in notes and teamId is null, create team
-      if (
-        paymentRecord!.scope === 'TEAM' &&
-        !paymentRecord!.teamId
-      ) {
+      if (paymentRecord.scope === 'TEAM' && !paymentRecord.teamId) {
         const teamName = notes.teamName;
         const maxSize = notes.maxSize ? parseInt(notes.maxSize, 10) : undefined;
 
@@ -309,8 +327,15 @@ export class RazorpayWebhookService {
           },
         });
       } catch (error) {
-        if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')) {
-          this.logger.error(`Error creating hackathon discount redemption: ${error}`);
+        if (
+          !(
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2002'
+          )
+        ) {
+          this.logger.error(
+            `Error creating hackathon discount redemption: ${error}`,
+          );
         }
       }
     }
@@ -376,11 +401,19 @@ export class RazorpayWebhookService {
       if (!paymentRecord && hackathonId) {
         if (teamId) {
           paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
-            where: { unique_team_payment: { scope: 'TEAM', hackathonId, teamId } },
+            where: {
+              unique_team_payment: { scope: 'TEAM', hackathonId, teamId },
+            },
           });
         } else if (userId) {
           paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
-            where: { unique_user_payment: { scope: (notes.scope as any) || 'USER', hackathonId, payerUserId: userId } },
+            where: {
+              unique_user_payment: {
+                scope: (notes.scope as any) || 'USER',
+                hackathonId,
+                payerUserId: userId,
+              },
+            },
           });
         }
       }
@@ -415,8 +448,12 @@ export class RazorpayWebhookService {
     });
 
     if (hackathonPayment) {
-      const newRefundedAmount = new Prisma.Decimal(hackathonPayment.refundedAmount).add(refundAmountInRupees);
-      const isFullyRefunded = newRefundedAmount.gte(hackathonPayment.grossAmount);
+      const newRefundedAmount = new Prisma.Decimal(
+        hackathonPayment.refundedAmount,
+      ).add(refundAmountInRupees);
+      const isFullyRefunded = newRefundedAmount.gte(
+        hackathonPayment.grossAmount,
+      );
 
       await prisma.hackathonPaymentEntity.update({
         where: { id: hackathonPayment.id },
@@ -438,7 +475,9 @@ export class RazorpayWebhookService {
     });
 
     if (eventPayment) {
-      const newRefundedAmount = new Prisma.Decimal(eventPayment.refundedAmount).add(refundAmountInRupees);
+      const newRefundedAmount = new Prisma.Decimal(
+        eventPayment.refundedAmount,
+      ).add(refundAmountInRupees);
       const isFullyRefunded = newRefundedAmount.gte(eventPayment.grossAmount);
 
       await prisma.eventPaymentEntity.update({
@@ -512,7 +551,10 @@ export class RazorpayWebhookService {
     this.logger.log(`Transfer settled: ${transfer.id}`);
   }
 
-  private async handleRouteAccountStatusChange(eventType: string, payload: RazorpayWebhookPayload) {
+  private async handleRouteAccountStatusChange(
+    eventType: string,
+    payload: RazorpayWebhookPayload,
+  ) {
     const account = payload.payload?.account?.entity;
     if (!account) return;
 
@@ -521,11 +563,20 @@ export class RazorpayWebhookService {
 
     let status: RazorpayRouteStatus;
     switch (eventType) {
-      case 'account.under_review': status = 'UNDER_REVIEW'; break;
-      case 'account.needs_clarification': status = 'NEEDS_CLARIFICATION'; break;
-      case 'account.activated': status = 'ACTIVATED'; break;
-      case 'account.suspended': status = 'SUSPENDED'; break;
-      default: return;
+      case 'account.under_review':
+        status = 'UNDER_REVIEW';
+        break;
+      case 'account.needs_clarification':
+        status = 'NEEDS_CLARIFICATION';
+        break;
+      case 'account.activated':
+        status = 'ACTIVATED';
+        break;
+      case 'account.suspended':
+        status = 'SUSPENDED';
+        break;
+      default:
+        return;
     }
 
     const requirements = account.requirements || null;
@@ -535,7 +586,9 @@ export class RazorpayWebhookService {
       where: { razorpayAccountId: accountId },
       data: {
         status,
-        requirements: requirements ? JSON.parse(JSON.stringify(requirements)) : undefined,
+        requirements: requirements
+          ? JSON.parse(JSON.stringify(requirements))
+          : undefined,
         resolutionUrl,
       },
     });
@@ -543,4 +596,3 @@ export class RazorpayWebhookService {
     this.logger.log(`Route account ${accountId} status changed to: ${status}`);
   }
 }
-
