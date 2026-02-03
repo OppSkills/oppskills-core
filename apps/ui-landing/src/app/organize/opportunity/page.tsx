@@ -1,5 +1,5 @@
 "use client";
-
+import TimePicker from "@/components/ui/time-picker";
 import { Button } from "@/components/ui/button";
 import {
   AlignLeft,
@@ -51,7 +51,7 @@ import DescriptionEditorModal from "@/components/ui/derived/DescriptionEditorMod
 import dynamic from "next/dynamic";
 const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
-  { ssr: false }
+  { ssr: false },
 );
 import { format } from "date-fns";
 import Image from "next/image";
@@ -106,7 +106,7 @@ export default function Page() {
     className?: string;
   }) => (
     <div
-      className={`bg-muted-foreground/5 rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group ${className}`}
+      className={`bg-neutral-200 rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group ${className}`}
     >
       <div className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
         {icon}
@@ -157,8 +157,6 @@ export default function Page() {
 
   const [showFestivalModal, setShowFestivalModal] = useState(false);
 
-
-
   const { getToken } = useAuth();
 
   /**
@@ -167,7 +165,7 @@ export default function Page() {
   type FestivalListItem = { id: string; name: string };
 
   const [festivals, setFestivals] = useState<ReadonlyArray<FestivalListItem>>(
-    []
+    [],
   );
   const [isLoadingFestivals, setIsLoadingFestivals] = useState<boolean>(false);
   const [isSubmittingHackathon, setIsSubmittingHackathon] =
@@ -177,7 +175,7 @@ export default function Page() {
   const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
   const bannerInputId = useMemo(
     () => `organizer-banner-upload-${crypto.randomUUID()}`,
-    []
+    [],
   );
 
   /**
@@ -212,7 +210,7 @@ export default function Page() {
    * - an object with a `data` array.
    */
   function extractFestivalList(
-    input: unknown
+    input: unknown,
   ): ReadonlyArray<FestivalListItem> {
     const listRaw = Array.isArray(input)
       ? input
@@ -311,7 +309,7 @@ export default function Page() {
    * Maps modal question types to backend registration field types.
    */
   function toRegistrationFieldTypeValue(
-    type: RegistrationQuestion["type"]
+    type: RegistrationQuestion["type"],
   ): RegistrationFieldTypeValue {
     if (type === "Text") return "TEXT";
     if (type === "Phone No.") return "PHONE_NO";
@@ -326,7 +324,7 @@ export default function Page() {
    * Validates labels and OPTIONS values.
    */
   function mapRegistrationQuestionsToRegistrationFields(
-    questions: ReadonlyArray<RegistrationQuestion>
+    questions: ReadonlyArray<RegistrationQuestion>,
   ): ReadonlyArray<RegistrationFieldDto> {
     const fields: RegistrationFieldDto[] = [];
 
@@ -363,7 +361,7 @@ export default function Page() {
    * If the input is a URL, we treat it as VIRTUAL; otherwise PHYSICAL.
    */
   function toLocationDto(
-    input: string
+    input: string,
   ): HackathonLocationDto | FestivalLocationDto | undefined {
     const trimmed = input.trim();
     if (trimmed.length === 0) return undefined;
@@ -407,7 +405,7 @@ export default function Page() {
    * Maps UI participant type labels to backend enum values.
    */
   function toParticipantTypeValue(
-    label: string
+    label: string,
   ): ParticipantTypeValue | undefined {
     if (label === "Individual Participants") return "INDIVIDUAL";
     if (label === "Team of 2") return "TEAM_OF_2";
@@ -461,6 +459,30 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * Formats "HH:mm" 24h string to "h:mm A" 12h string.
+   */
+  function formatTime(time: string | undefined): string {
+    if (!time) return "12:00 AM";
+    const [h, m] = time.split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) return time;
+    const period = h >= 12 ? "PM" : "AM";
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${m.toString().padStart(2, "0")} ${period}`;
+  }
+
+  function formatDateRange(start: Date | undefined, end: Date | undefined) {
+    if (!start) return "Select Date";
+    if (!end) return format(start, "PPP");
+    if (
+      start.getMonth() === end.getMonth() &&
+      start.getFullYear() === end.getFullYear()
+    ) {
+      return `${format(start, "d")}-${format(end, "d")} ${format(start, "MMM yyyy")}`;
+    }
+    return `${format(start, "d MMM")} - ${format(end, "d MMM yyyy")}`;
+  }
+
   return (
     <div className="w-full flex justify-center py-8 px-6 md:px-0">
       <div className="w-full xl:max-w-[1161px] flex flex-col lg:flex-row p-2 gap-6">
@@ -473,7 +495,7 @@ export default function Page() {
               height={371}
               src={
                 typeof formData.eventThumbnail === "string" &&
-                  formData.eventThumbnail.trim().length > 0
+                formData.eventThumbnail.trim().length > 0
                   ? formData.eventThumbnail.trim()
                   : "/tmp/hackathon.jpg"
               }
@@ -484,7 +506,7 @@ export default function Page() {
               htmlFor={bannerInputId}
               className={cn(
                 "absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-background/20 hover:bg-background/40 transition-colors cursor-pointer",
-                isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
+                isUploadingBanner ? "opacity-60 cursor-not-allowed" : "",
               )}
               aria-disabled={isUploadingBanner}
             >
@@ -687,68 +709,89 @@ export default function Page() {
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <div className="h-full">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <div className="h-full col-span-2">
                       <InputBlock
                         icon={<CalendarIcon className="w-6 h-6" />}
-                        label={
-                          formData.eventStartDate
-                            ? format(formData.eventStartDate, "PPP")
-                            : "Select Date"
-                        }
-                        subLabel="Start Date"
+                        label={formatDateRange(
+                          formData.eventStartDate,
+                          formData.eventEndDate,
+                        )}
+                        subLabel="Hackathon Date"
                         className="bg-muted h-full"
                       />
                     </div>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Start Date</label>
-
-                      <div className="not-prose border rounded-md p-2">
-                        <Calendar
-                          mode="single"
-                          selected={formData.eventStartDate}
-                          onSelect={(date) =>
-                            setFormData({ ...formData, eventStartDate: date })
-                          }
-                        />
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[660px] w-full">
+                    <DialogHeader>
+                      <DialogTitle>Event Date</DialogTitle>
+                      <DialogDescription>
+                        Select the start and end dates for the event.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col md:flex-row gap-8 justify-center items-start py-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          Start Date
+                        </label>
+                        <div className="border rounded-md p-2">
+                          <Calendar
+                            mode="single"
+                            selected={formData.eventStartDate}
+                            onSelect={(date) => {
+                              if (
+                                date &&
+                                formData.eventEndDate &&
+                                date > formData.eventEndDate
+                              ) {
+                                setFormData({
+                                  ...formData,
+                                  eventStartDate: date,
+                                  eventEndDate: undefined,
+                                });
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  eventStartDate: date,
+                                });
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">End Date</label>
+                        <div className="border rounded-md p-2">
+                          <Calendar
+                            mode="single"
+                            selected={formData.eventEndDate}
+                            onSelect={(date) => {
+                              if (
+                                date &&
+                                formData.eventStartDate &&
+                                date < formData.eventStartDate
+                              ) {
+                                return; // Prevent selecting end date before start date
+                              }
+                              setFormData({ ...formData, eventEndDate: date });
+                            }}
+                            disabled={(date) =>
+                              formData.eventStartDate
+                                ? date < formData.eventStartDate
+                                : false
+                            }
+                          />
+                        </div>
                       </div>
                     </div>
-                  </PopoverContent>
-                </Popover>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <div className="h-full">
-                      <InputBlock
-                        icon={<CalendarIcon className="w-6 h-6" />}
-                        label={
-                          formData.eventEndDate
-                            ? format(formData.eventEndDate, "PPP")
-                            : "Select Date"
-                        }
-                        subLabel="End Date"
-                        className="bg-muted h-full"
-                      />
-                    </div>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">End Date</label>
-
-                      <div className="not-prose border rounded-md p-2">
-                        <Calendar
-                          mode="single"
-                          selected={formData.eventEndDate}
-                          onSelect={(date) =>
-                            setFormData({ ...formData, eventEndDate: date })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button type="button">Save changes</Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
 
@@ -796,28 +839,42 @@ export default function Page() {
                 </DialogContent>
               </Dialog>
 
-              <div className="bg-muted-foreground/5 rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group">
-                <div
-                  onClick={() => timeInputRef.current?.focus()}
-                  className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors"
-                >
-                  <Clock className="w-6 h-6" />
-                  <Input
-                    ref={timeInputRef}
-                    type="time"
-                    value={formData.eventTimeFrom}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        eventTimeFrom: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <p className="text-muted-foreground/60 text-sm pl-9">
-                  Hackathon Time
-                </p>
-              </div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div className="h-full">
+                    <InputBlock
+                      icon={<Clock className="w-6 h-6" />}
+                      label={formatTime(formData.eventTimeFrom)}
+                      subLabel="Hackathon Time"
+                      className="h-full"
+                    />
+                  </div>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Event Time</DialogTitle>
+                    <DialogDescription>
+                      Enter the time when the event will take place.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="time">Time</Label>
+                      <TimePicker
+                        value={formData.eventTimeFrom}
+                        onChange={(val) =>
+                          setFormData({ ...formData, eventTimeFrom: val })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button">Save changes</Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {/* Description */}
@@ -837,7 +894,7 @@ export default function Page() {
                   subLabel={
                     formData.eventDescription
                       ? formData.eventDescription.replace(/<[^>]*>?/gm, "") +
-                      (formData.eventDescription.length > 50 ? "..." : "")
+                        (formData.eventDescription.length > 50 ? "..." : "")
                       : undefined
                   }
                   className="h-full"
@@ -999,7 +1056,7 @@ export default function Page() {
                 // Validate dates
                 if (formData.eventRegisterBy > formData.eventStartDate) {
                   toast.error(
-                    "Registration Last Date must be before the Start Date"
+                    "Registration Last Date must be before the Start Date",
                   );
                   return;
                 }
@@ -1028,20 +1085,20 @@ export default function Page() {
                     visibility: toVisibilityValue(formData.eventFestVisibility),
                     hackathonType: toHackathonTypeValue(formData.hackathonType),
                     participantType: toParticipantTypeValue(
-                      formData.participantType
+                      formData.participantType,
                     ),
                     location: toLocationDto(formData.eventLocation) as
                       | HackathonLocationDto
                       | undefined,
                     registrationDeadline: toIsoDateOnly(
-                      formData.eventRegisterBy
+                      formData.eventRegisterBy,
                     ),
                   };
 
                   // Pre-validate registration questions (so we don't create a hackathon and then fail saving fields).
                   const registrationFields =
                     mapRegistrationQuestionsToRegistrationFields(
-                      formData.registrationQuestions
+                      formData.registrationQuestions,
                     );
                   const invalidOptions = registrationFields.some((f) => {
                     if (f.type !== "OPTIONS") return false;
@@ -1049,7 +1106,7 @@ export default function Page() {
                   });
                   if (invalidOptions) {
                     toast.error(
-                      "Please add at least one option for every Options question."
+                      "Please add at least one option for every Options question.",
                     );
                     return;
                   }
@@ -1058,7 +1115,7 @@ export default function Page() {
                   const hackathonId = extractHackathonId(created);
                   if (!hackathonId) {
                     toast.error(
-                      "Event was created but we couldn't read its id from the server response."
+                      "Event was created but we couldn't read its id from the server response.",
                     );
                     return;
                   }

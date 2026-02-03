@@ -7,9 +7,13 @@ import {
   CalendarDays,
   ChevronDown,
   Clock,
+  FileEdit,
   MapPin,
   Plus,
   Upload,
+  Users,
+  Building2,
+  Banknote,
 } from "lucide-react";
 import { z } from "zod";
 import EventCard from "@/components/ui/derived/EventCard";
@@ -31,25 +35,17 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import dynamic from "next/dynamic";
-
-const RichTextEditor = dynamic(
-  () => import("@/components/ui/editor/RichtextEditor"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-[200px] bg-muted animate-pulse rounded-lg" />
-    ),
-  }
-);
-
+import TimePicker from "@/components/ui/time-picker";
+import DescriptionEditorModal from "@/components/ui/derived/DescriptionEditorModal";
 import { format } from "date-fns";
 import Image from "next/image";
 import React, {
@@ -65,10 +61,9 @@ import { useAuth } from "@clerk/nextjs";
 import { useForm } from "@tanstack/react-form";
 import { cn } from "@/lib/utils";
 import type {
-  CreateFestivalDto,
   CreateEventDto,
-  FestivalLocationDto,
   EventLocationDto,
+  FestivalLocationDto,
 } from "@oppskills/types/frontend";
 import { createEvent } from "@/lib/api/eventApi";
 import { getMyFestivals } from "@/lib/api/festivalApi";
@@ -79,6 +74,7 @@ import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 /**
  * Organizer page for creating Events.
  * Uses TanStack Form for form state management.
+ * UI Pattern matches Organize Opportunity page.
  */
 export default function Page() {
   const router = useRouter();
@@ -102,14 +98,17 @@ export default function Page() {
     className?: string;
   }) => (
     <div
-      className={`bg-muted-foreground/5 rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group ${className}`}
+      className={cn(
+        "bg-neutral-200 rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group",
+        className
+      )}
     >
       <div className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
         {icon}
-        <span className="font-medium text-lg">{label}</span>
+        <span className="font-medium text-lg truncate w-full">{label}</span>
       </div>
       {subLabel && (
-        <p className="text-muted-foreground/60 text-sm pl-9">{subLabel}</p>
+        <p className="text-muted-foreground/60 text-sm pl-9 truncate">{subLabel}</p>
       )}
       {children}
     </div>
@@ -144,10 +143,6 @@ export default function Page() {
   // TANSTACK FORM
   // ============================================================================
 
-  // Date picker open states
-  const [eventStartDateOpen, setEventStartDateOpen] = useState(false);
-  const [eventEndDateOpen, setEventEndDateOpen] = useState(false);
-  const [registerByOpen, setRegisterByOpen] = useState(false);
   const [formCompleted, setFormCompleted] = useState(false);
 
   const form = useForm({
@@ -187,6 +182,7 @@ export default function Page() {
   // ============================================================================
 
   const [showFestivalModal, setShowFestivalModal] = useState(false);
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
 
   type FestivalListItem = { id: string; name: string };
   const [festivals, setFestivals] = useState<ReadonlyArray<FestivalListItem>>(
@@ -260,17 +256,6 @@ export default function Page() {
     }
   }
 
-  function toIsoDateOnly(value: Date): string {
-    const y = value.getFullYear();
-    const m = String(value.getMonth() + 1).padStart(2, "0");
-    const d = String(value.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }
-
-  /**
-   * Combines a Date object and a time string (HH:mm format) into an ISO datetime string.
-   * This ensures the time component is preserved in the API payload.
-   */
   function combineDateAndTimeToIso(date: Date, timeHHmm: string): string {
     const [hoursRaw, minutesRaw] = timeHHmm.split(":");
     const hours = Number(hoursRaw) || 0;
@@ -289,6 +274,27 @@ export default function Page() {
       return { type: "VIRTUAL", virtualLink: trimmed };
     }
     return { type: "PHYSICAL", address: trimmed };
+  }
+
+  function formatTime(time: string | undefined): string {
+    if (!time) return "10:00 AM";
+    const [h, m] = time.split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) return time;
+    const period = h >= 12 ? "PM" : "AM";
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${m.toString().padStart(2, "0")} ${period}`;
+  }
+
+  function formatDateRange(start: Date | undefined, end: Date | undefined) {
+    if (!start) return "Select Date";
+    if (!end) return format(start, "PPP");
+    if (
+      start.getMonth() === end.getMonth() &&
+      start.getFullYear() === end.getFullYear()
+    ) {
+      return `${format(start, "d")}-${format(end, "d")} ${format(start, "MMM yyyy")}`;
+    }
+    return `${format(start, "d MMM")} - ${format(end, "d MMM yyyy")}`;
   }
 
   // ============================================================================
@@ -320,7 +326,7 @@ export default function Page() {
         }
 
         const presign = await presignImageUpload(token, {
-          purpose: "HACKATHON_BANNER", // Reusing hackathon banner purpose for now
+          purpose: "HACKATHON_BANNER",
           mimeType: file.type,
         });
 
@@ -367,6 +373,12 @@ export default function Page() {
           );
         if (parsed.organizationName)
           form.setFieldValue("organizationName", parsed.organizationName);
+        if (parsed.maxUsers)
+          form.setFieldValue("maxUsers", parsed.maxUsers);
+        if (typeof parsed.isFree === "boolean")
+          form.setFieldValue("isFree", parsed.isFree);
+        if (parsed.entryFeeAmount)
+          form.setFieldValue("entryFeeAmount", parsed.entryFeeAmount);
       }
     } catch (err) {
       console.error("Error loading saved form:", err);
@@ -479,7 +491,6 @@ export default function Page() {
         bannerImageUrl: isValidUrl(values.eventThumbnail)
           ? values.eventThumbnail.trim()
           : undefined,
-        // Use combineDateAndTimeToIso to preserve time component
         startDate: combineDateAndTimeToIso(
           values.eventStartDate,
           values.eventTimeFrom
@@ -491,7 +502,6 @@ export default function Page() {
         location: toLocationDto(values.eventLocation) as
           | EventLocationDto
           | undefined,
-        // Use end of day (23:59) for registration deadline if not otherwise specified
         registrationDeadline: values.eventRegisterBy
           ? combineDateAndTimeToIso(values.eventRegisterBy, "23:59")
           : undefined,
@@ -695,255 +705,406 @@ export default function Page() {
           </div>
 
           {/* Form Grid */}
-          <div className="flex flex-col gap-6">
-            {/* Event Name */}
-            <div className="flex items-center min-h-[80px]">
-              <form.Field name="eventName">
-                {(field) => (
-                  <input
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    className="text-4xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50 w-full"
-                    placeholder="Event Name"
-                  />
-                )}
-              </form.Field>
-            </div>
+          <div className="flex flex-col gap-4">
 
-            {/* Date and Time Row */}
-            <div className="flex flex-wrap gap-4">
-              {/* Start Date */}
-              <div className="flex flex-col gap-2">
-                <Label className="px-1 text-sm font-medium text-muted-foreground">
-                  Start Date
-                </Label>
-                <Popover
-                  open={eventStartDateOpen}
-                  onOpenChange={setEventStartDateOpen}
-                >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-40 justify-between font-normal"
-                    >
-                      <form.Subscribe
-                        selector={(state) => state.values.eventStartDate}
-                        children={(eventStartDate) =>
-                          eventStartDate
-                            ? format(eventStartDate, "PP")
-                            : "Select date"
-                        }
-                      />
-                      <ChevronDown className="w-4 h-4 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto overflow-hidden p-0"
-                    align="start"
-                  >
-                    <form.Subscribe
-                      selector={(state) => state.values.eventStartDate}
-                      children={(eventStartDate) => (
-                        <Calendar
-                          mode="single"
-                          selected={eventStartDate}
-                          captionLayout="dropdown"
-                          onSelect={(date) => {
-                            form.setFieldValue("eventStartDate", date);
-                            setEventStartDateOpen(false);
-                          }}
-                        />
-                      )}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* End Date */}
-              <div className="flex flex-col gap-2">
-                <Label className="px-1 text-sm font-medium text-muted-foreground">
-                  End Date
-                </Label>
-                <Popover
-                  open={eventEndDateOpen}
-                  onOpenChange={setEventEndDateOpen}
-                >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-40 justify-between font-normal"
-                    >
-                      <form.Subscribe
-                        selector={(state) => state.values.eventEndDate}
-                        children={(eventEndDate) =>
-                          eventEndDate
-                            ? format(eventEndDate, "PP")
-                            : "Select date"
-                        }
-                      />
-                      <ChevronDown className="w-4 h-4 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto overflow-hidden p-0"
-                    align="start"
-                  >
-                    <form.Subscribe
-                      selector={(state) => state.values.eventEndDate}
-                      children={(eventEndDate) => (
-                        <Calendar
-                          mode="single"
-                          selected={eventEndDate}
-                          captionLayout="dropdown"
-                          onSelect={(date) => {
-                            form.setFieldValue("eventEndDate", date);
-                            setEventEndDateOpen(false);
-                          }}
-                        />
-                      )}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* Event Time */}
-              <div className="flex flex-col gap-2">
-                <Label className="px-1 text-sm font-medium text-muted-foreground">
-                  Time
-                </Label>
-                <form.Field name="eventTimeFrom">
+            {/* ROW 1: Name and Date */}
+            <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4">
+              <div className="flex items-center min-h-[100px]">
+                <form.Field name="eventName">
                   {(field) => (
-                    <Input
-                      type="time"
+                    <input
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      className="w-32 h-9 bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                      className="text-4xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50 w-full"
+                      placeholder="Event Name"
                     />
                   )}
                 </form.Field>
               </div>
-
-              {/* Registration Deadline */}
-              <div className="flex flex-col gap-2">
-                <Label className="px-1 text-sm font-medium text-muted-foreground">
-                  Registration Deadline
-                </Label>
-                <Popover open={registerByOpen} onOpenChange={setRegisterByOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-40 justify-between font-normal"
-                    >
+              <div className="grid grid-cols-2 gap-4">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <div className="h-full col-span-2">
                       <form.Subscribe
-                        selector={(state) => state.values.eventRegisterBy}
-                        children={(eventRegisterBy) =>
-                          eventRegisterBy
-                            ? format(eventRegisterBy, "PP")
-                            : "Select date"
-                        }
+                        selector={(state) => [state.values.eventStartDate, state.values.eventEndDate]}
+                        children={([start, end]: any[]) => (
+                          <InputBlock
+                            icon={<CalendarIcon className="w-6 h-6" />}
+                            label={formatDateRange(start, end)}
+                            subLabel="Event Date"
+                            className="bg-muted h-full"
+                          />
+                        )}
                       />
-                      <ChevronDown className="w-4 h-4 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto overflow-hidden p-0"
-                    align="start"
-                  >
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[660px] w-full">
+                    <DialogHeader>
+                      <DialogTitle>Event Date</DialogTitle>
+                      <DialogDescription>
+                        Select the start and end dates for the event.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col md:flex-row gap-8 justify-center items-start py-4">
+                      <form.Subscribe
+                        selector={state => state.values}
+                        children={(values) => (
+                          <>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Start Date</label>
+                              <div className="border rounded-md p-2">
+                                <Calendar
+                                  mode="single"
+                                  selected={values.eventStartDate}
+                                  onSelect={(date) => {
+                                    if (date && values.eventEndDate && date > values.eventEndDate) {
+                                      form.setFieldValue("eventStartDate", date);
+                                      form.setFieldValue("eventEndDate", undefined);
+                                    } else {
+                                      form.setFieldValue("eventStartDate", date);
+                                    }
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">End Date</label>
+                              <div className="border rounded-md p-2">
+                                <Calendar
+                                  mode="single"
+                                  selected={values.eventEndDate}
+                                  onSelect={(date) => {
+                                    if (date && values.eventStartDate && date < values.eventStartDate) return;
+                                    form.setFieldValue("eventEndDate", date);
+                                  }}
+                                  disabled={(date) => values.eventStartDate ? date < values.eventStartDate : false}
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      />
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button type="button">Save changes</Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+
+            {/* ROW 2: Location and Time */}
+            <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4">
+              {/* Location Dialog */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div className="h-full">
                     <form.Subscribe
-                      selector={(state) => state.values.eventRegisterBy}
-                      children={(eventRegisterBy) => (
-                        <Calendar
-                          mode="single"
-                          selected={eventRegisterBy}
-                          captionLayout="dropdown"
-                          onSelect={(date) => {
-                            form.setFieldValue("eventRegisterBy", date);
-                            setRegisterByOpen(false);
-                          }}
+                      selector={(state) => state.values.eventLocation}
+                      children={(loc) => (
+                        <InputBlock
+                          icon={<MapPin className="w-6 h-6" />}
+                          label={loc || "Add Event Location"}
+                          subLabel="Offline location or virtual link"
+                          className="h-full"
                         />
                       )}
                     />
-                  </PopoverContent>
-                </Popover>
-              </div>
+                  </div>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Event Location</DialogTitle>
+                    <DialogDescription>
+                      Enter the location where the event will take place.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="flex flex-col gap-3">
+                      <Label htmlFor="location">Location</Label>
+                      <form.Field name="eventLocation">
+                        {(field) => (
+                          <Input
+                            id="location"
+                            value={field.state.value}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            placeholder="e.g. San Francisco, CA or https://zoom.us/..."
+                          />
+                        )}
+                      </form.Field>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button">Save changes</Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Time Dialog */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div className="h-full">
+                    <form.Subscribe
+                      selector={(state) => state.values.eventTimeFrom}
+                      children={(time) => (
+                        <InputBlock
+                          icon={<Clock className="w-6 h-6" />}
+                          label={formatTime(time)}
+                          subLabel="Event Time"
+                          className="h-full"
+                        />
+                      )}
+                    />
+                  </div>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Event Time</DialogTitle>
+                    <DialogDescription>
+                      Enter the time when the event will take place.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="flex flex-col gap-3">
+                      <Label htmlFor="time">Time</Label>
+                      <form.Subscribe
+                        selector={(state) => state.values.eventTimeFrom}
+                        children={(time) => (
+                          <TimePicker
+                            value={time}
+                            onChange={(val) => form.setFieldValue("eventTimeFrom", val)}
+                          />
+                        )}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button">Save changes</Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
 
-            {/* Location */}
-            <div className="flex flex-col gap-2">
-              <Label className="px-1 text-sm font-medium text-muted-foreground">
-                Location
-              </Label>
-              <form.Field name="eventLocation">
-                {(field) => (
-                  <Input
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder="e.g. San Francisco, CA or https://zoom.us/..."
-                    className="bg-background"
-                  />
-                )}
-              </form.Field>
-            </div>
-
-            {/* Description - INLINE with RichTextEditor */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-3 text-muted-foreground px-1">
-                <AlignLeft className="w-5 h-5" />
-                <span className="font-medium">Description</span>
-              </div>
-              <form.Field name="eventDescription">
-                {(field) => (
-                  <RichTextEditor
-                    value={field.state.value}
-                    onChange={(content: string) => field.handleChange(content)}
-                    placeholder="Describe your event..."
-                    className="min-h-[200px]"
-                  />
-                )}
-              </form.Field>
-            </div>
-
-            {/* Additional Fields Row */}
-            <div className="flex flex-wrap gap-4">
-              {/* Max Users */}
-              <div className="flex flex-col gap-2">
-                <Label className="px-1 text-sm font-medium text-muted-foreground">
-                  Max Attendees
-                </Label>
-                <form.Field name="maxUsers">
-                  {(field) => (
-                    <Input
-                      type="number"
-                      min={1}
-                      value={field.state.value ?? ""}
-                      onChange={(e) =>
-                        field.handleChange(
-                          e.target.value ? Number(e.target.value) : undefined
-                        )
+            {/* ROW 3: Description Modal */}
+            <div onClick={() => setShowDescriptionModal(true)} className="cursor-pointer">
+              <div className="h-full">
+                <form.Subscribe
+                  selector={state => state.values.eventDescription}
+                  children={(desc) => (
+                    <InputBlock
+                      icon={<AlignLeft className="w-6 h-6" />}
+                      label={desc ? "Description" : "Add Description"}
+                      subLabel={
+                        desc
+                          ? desc.replace(/<[^>]*>?/gm, "") + (desc.length > 50 ? "..." : "")
+                          : undefined
                       }
-                      placeholder="Unlimited"
-                      className="w-32 bg-background"
+                      className="h-full"
                     />
                   )}
-                </form.Field>
+                />
               </div>
+            </div>
+
+            <form.Subscribe
+              selector={state => state.values.eventDescription}
+              children={(desc) => (
+                <DescriptionEditorModal
+                  open={showDescriptionModal}
+                  onOpenChange={setShowDescriptionModal}
+                  initialValue={desc}
+                  onSave={(val) => form.setFieldValue("eventDescription", val)}
+                  title="Event Description"
+                />
+              )}
+            />
+
+            {/* ROW 4: Extra Details (Max Users, Org, Deadline, Fee) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Max Users */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div className="h-full">
+                    <form.Subscribe
+                      selector={state => state.values.maxUsers}
+                      children={max => (
+                        <InputBlock
+                          icon={<Users className="w-5 h-5" />}
+                          label={max ? `${max} Users` : "Unlimited Users"}
+                          subLabel="Max Attendees"
+                          className="h-full"
+                        />
+                      )}
+                    />
+                  </div>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Max Users</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4 flex flex-col gap-3">
+                    <Label>Max Attendees</Label>
+                    <form.Field name="maxUsers">
+                      {field => (
+                        <Input
+                          type="number"
+                          min={1}
+                          value={field.state.value ?? ""}
+                          onChange={e => field.handleChange(e.target.value ? Number(e.target.value) : undefined)}
+                          placeholder="Leave empty for unlimited"
+                        />
+                      )}
+                    </form.Field>
+                  </div>
+                  <DialogFooter><DialogClose asChild><Button>Save</Button></DialogClose></DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               {/* Organization Name */}
-              <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
-                <Label className="px-1 text-sm font-medium text-muted-foreground">
-                  Organization Name
-                </Label>
-                <form.Field name="organizationName">
-                  {(field) => (
-                    <Input
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="Your organization or club name"
-                      className="bg-background"
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div className="h-full">
+                    <form.Subscribe
+                      selector={state => state.values.organizationName}
+                      children={name => (
+                        <InputBlock
+                          icon={<Building2 className="w-5 h-5" />}
+                          label={name || "Organization Name"}
+                          subLabel="Who is organizing?"
+                          className="h-full"
+                        />
+                      )}
                     />
-                  )}
-                </form.Field>
-              </div>
+                  </div>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Organization</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4 flex flex-col gap-3">
+                    <Label>Organization Name</Label>
+                    <form.Field name="organizationName">
+                      {field => (
+                        <Input
+                          value={field.state.value}
+                          onChange={e => field.handleChange(e.target.value)}
+                          placeholder="e.g. Coding Club"
+                        />
+                      )}
+                    </form.Field>
+                  </div>
+                  <DialogFooter><DialogClose asChild><Button>Save</Button></DialogClose></DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Registration Deadline */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <div className="h-full">
+                    <form.Subscribe
+                      selector={state => state.values.eventRegisterBy}
+                      children={date => (
+                        <InputBlock
+                          icon={<CalendarDays className="w-5 h-5" />}
+                          label={date ? format(date, "PPP") : "Select Date"}
+                          subLabel="Registration Deadline"
+                          className="bg-muted h-full"
+                        />
+                      )}
+                    />
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <form.Subscribe
+                    selector={state => state.values.eventRegisterBy}
+                    children={date => (
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={(d) => form.setFieldValue("eventRegisterBy", d)}
+                        initialFocus
+                      />
+                    )}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {/* Ticketing / Fee */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div className="h-full">
+                    <form.Subscribe
+                      selector={state => state.values}
+                      children={vals => (
+                        <InputBlock
+                          icon={<Banknote className="w-5 h-5" />}
+                          label={vals.isFree ? "Free Event" : `${vals.currency} ${vals.entryFeeAmount}`}
+                          subLabel="Ticketing"
+                          className="h-full"
+                        />
+                      )}
+                    />
+                  </div>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Ticketing</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4 flex flex-col gap-4">
+                    <form.Subscribe
+                      selector={s => s.values.isFree}
+                      children={isFree => (
+                        <div className="flex bg-muted rounded-lg p-1">
+                          <button
+                            className={cn("flex-1 py-2 text-sm font-medium rounded-md transition-all", isFree ? "bg-background shadow" : "text-muted-foreground")}
+                            onClick={() => form.setFieldValue("isFree", true)}
+                          >
+                            Free
+                          </button>
+                          <button
+                            className={cn("flex-1 py-2 text-sm font-medium rounded-md transition-all", !isFree ? "bg-background shadow" : "text-muted-foreground")}
+                            onClick={() => form.setFieldValue("isFree", false)}
+                          >
+                            Paid
+                          </button>
+                        </div>
+                      )}
+                    />
+
+                    <form.Subscribe
+                      selector={s => s.values}
+                      children={vals => !vals.isFree && (
+                        <div className="flex gap-2">
+                          <div className="w-24 flex flex-col gap-2">
+                            <Label>Currency</Label>
+                            <Input
+                              value={vals.currency}
+                              onChange={e => form.setFieldValue("currency", e.target.value)}
+                            />
+                          </div>
+                          <div className="flex-1 flex flex-col gap-2">
+                            <Label>Amount</Label>
+                            <Input
+                              type="number"
+                              value={vals.entryFeeAmount}
+                              onChange={e => form.setFieldValue("entryFeeAmount", e.target.value)}
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    />
+                  </div>
+                  <DialogFooter><DialogClose asChild><Button>Save</Button></DialogClose></DialogFooter>
+                </DialogContent>
+              </Dialog>
+
             </div>
 
             {/* Submit Button */}

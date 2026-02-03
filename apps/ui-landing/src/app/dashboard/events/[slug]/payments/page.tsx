@@ -465,11 +465,11 @@ export default function Page() {
             initialData={
               payoutDetails
                 ? {
-                    accountHolderName: payoutDetails.accountHolderName,
-                    accountNumber: "",
-                    ifsc: payoutDetails.ifsc,
-                    upiId: payoutDetails.upiId || "",
-                  }
+                  accountHolderName: payoutDetails.accountHolderName,
+                  accountNumber: "",
+                  ifsc: payoutDetails.ifsc,
+                  upiId: payoutDetails.upiId || "",
+                }
                 : undefined
             }
             isLoading={upsertPayoutDetails.isPending}
@@ -653,7 +653,7 @@ export default function Page() {
               <CalculationCard
                 title="Fee Structure"
                 isSelected={true}
-                onClick={() => {}}
+                onClick={() => { }}
                 values={(() => {
                   const entryFee = parseFloat(entryFeeAmount || "0");
                   const platformFee = entryFee * 0.02;
