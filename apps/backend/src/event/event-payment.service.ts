@@ -59,9 +59,7 @@ export class EventPaymentService {
     }
 
     if (event.isFree) {
-      throw new BadRequestException(
-        'This event is free, no payment required',
-      );
+      throw new BadRequestException('This event is free, no payment required');
     }
 
     if (!event.entryFeeAmount) {
@@ -80,17 +78,11 @@ export class EventPaymentService {
       throw new BadRequestException('Registration is paused');
     }
 
-    if (
-      event.registrationDeadline &&
-      new Date() > event.registrationDeadline
-    ) {
+    if (event.registrationDeadline && new Date() > event.registrationDeadline) {
       throw new BadRequestException('Registration deadline has passed');
     }
 
-    if (
-      event.maxUsers !== null &&
-      event.registrationCount >= event.maxUsers
-    ) {
+    if (event.maxUsers !== null && event.registrationCount >= event.maxUsers) {
       throw new BadRequestException('Event is at full capacity');
     }
 
@@ -105,7 +97,9 @@ export class EventPaymentService {
     });
 
     if (existingParticipant) {
-      throw new BadRequestException('You are already registered for this event');
+      throw new BadRequestException(
+        'You are already registered for this event',
+      );
     }
 
     // Check for existing payment - allow retry if previous payment was cancelled/failed
@@ -244,7 +238,9 @@ export class EventPaymentService {
             orderStatus: EventPaymentOrderStatus.PAID,
             paymentStatus: EventPaymentStatus.CAPTURED,
             discountCodeId,
-            discountAmount: discountAmount.greaterThan(0) ? discountAmount : null,
+            discountAmount: discountAmount.greaterThan(0)
+              ? discountAmount
+              : null,
             razorpayPaymentId: null,
             razorpaySignature: null,
             capturedAt: new Date(),
@@ -266,7 +262,9 @@ export class EventPaymentService {
             orderStatus: EventPaymentOrderStatus.PAID,
             paymentStatus: EventPaymentStatus.CAPTURED,
             discountCodeId,
-            discountAmount: discountAmount.greaterThan(0) ? discountAmount : null,
+            discountAmount: discountAmount.greaterThan(0)
+              ? discountAmount
+              : null,
             capturedAt: new Date(),
           },
         });
@@ -353,7 +351,9 @@ export class EventPaymentService {
       eventSlug: event.slug,
       originalAmount: Number(event.entryFeeAmount),
       finalAmount: Number(grossAmount),
-      discountAmount: discountAmount.greaterThan(0) ? Number(discountAmount) : undefined,
+      discountAmount: discountAmount.greaterThan(0)
+        ? Number(discountAmount)
+        : undefined,
     };
   }
 
@@ -395,7 +395,28 @@ export class EventPaymentService {
       throw new ForbiddenException('Payment does not belong to this user');
     }
 
-    // Check for existing participant first (might have been created by webhook)
+    // If payment is not yet captured, verify the signature
+    if (payment.paymentStatus !== EventPaymentStatus.CAPTURED) {
+      const isValid = this.razorpayService.verifyCheckoutSignature({
+        orderId: params.razorpayOrderId,
+        paymentId: params.razorpayPaymentId,
+        signature: params.razorpaySignature,
+      });
+
+      if (!isValid) {
+        throw new BadRequestException('Invalid payment signature');
+      }
+    }
+
+    // Map frontend field IDs to database field IDs EARLY (before participant check)
+    // This ensures we have mapped answers for saving even if participant already exists
+    const mappedAnswers = await this.mapFrontendFieldIdsToDbIds(
+      payment.event.id,
+      params.userId,
+      params.answers || [],
+    );
+
+    // Check for existing participant (might have been created by webhook)
     const existingParticipant = await prisma.eventParticipantEntity.findUnique({
       where: {
         eventId_userId: {
@@ -405,7 +426,7 @@ export class EventPaymentService {
       },
     });
 
-    // If participant already exists, just return success
+    // If participant already exists, save answers if not already saved, then return
     if (existingParticipant) {
       // Update payment with participantId if not already linked (webhook might have created participant)
       if (!payment.participantId) {
@@ -422,32 +443,20 @@ export class EventPaymentService {
         });
       }
 
+      // Save registration answers if not already saved (webhook doesn't have access to answers)
+      await this.saveRegistrationAnswersIfMissing(
+        payment.event.id,
+        params.userId,
+        existingParticipant.id,
+        mappedAnswers,
+      );
+
       return {
         success: true,
         paymentId: payment.id,
         participantId: existingParticipant.id,
       };
     }
-
-    // If payment is not yet captured, verify the signature
-    if (payment.paymentStatus !== EventPaymentStatus.CAPTURED) {
-      const isValid = this.razorpayService.verifyCheckoutSignature({
-        orderId: params.razorpayOrderId,
-        paymentId: params.razorpayPaymentId,
-        signature: params.razorpaySignature,
-      });
-
-      if (!isValid) {
-        throw new BadRequestException('Invalid payment signature');
-      }
-    }
-
-    // Map frontend field IDs to database field IDs (same logic as joinEvent)
-    const mappedAnswers = await this.mapFrontendFieldIdsToDbIds(
-      payment.event.id,
-      params.userId,
-      params.answers || [],
-    );
 
     // Create participant within transaction with race condition handling
     try {
@@ -463,7 +472,7 @@ export class EventPaymentService {
         });
 
         if (participantCheck) {
-          // Webhook beat us to it - just link and return
+          // Webhook beat us to it - link payment and save answers
           await tx.eventPaymentEntity.update({
             where: { id: payment.id },
             data: {
@@ -475,6 +484,44 @@ export class EventPaymentService {
               capturedAt: payment.capturedAt || new Date(),
             },
           });
+
+          // Save registration answers (webhook doesn't have access to them)
+          if (mappedAnswers.length > 0) {
+            // Check if submission already exists
+            const existingSubmission =
+              await tx.eventRegistrationSubmissionEntity.findFirst({
+                where: {
+                  eventId: payment.event.id,
+                  userId: params.userId,
+                },
+              });
+
+            if (!existingSubmission) {
+              const submission =
+                await tx.eventRegistrationSubmissionEntity.create({
+                  data: {
+                    eventId: payment.event.id,
+                    userId: params.userId,
+                    participantId: participantCheck.id,
+                  },
+                });
+
+              const answerData = mappedAnswers.map((a) => ({
+                submissionId: submission.id,
+                fieldId: a.fieldId,
+                valueText:
+                  typeof a.value === 'string'
+                    ? a.value
+                    : JSON.stringify(a.value),
+                valueJson: a.value,
+              }));
+
+              await tx.eventRegistrationAnswerEntity.createMany({
+                data: answerData,
+              });
+            }
+          }
+
           return { participantId: participantCheck.id, alreadyExisted: true };
         }
 
@@ -600,6 +647,14 @@ export class EventPaymentService {
             },
           });
 
+          // Save registration answers (webhook doesn't have access to them)
+          await this.saveRegistrationAnswersIfMissing(
+            payment.event.id,
+            params.userId,
+            raceParticipant.id,
+            mappedAnswers,
+          );
+
           return {
             success: true,
             paymentId: payment.id,
@@ -610,6 +665,63 @@ export class EventPaymentService {
 
       throw error;
     }
+  }
+
+  /**
+   * Save registration answers for a participant if not already saved.
+   * Called when participant was created by webhook (which has no access to answers).
+   */
+  private async saveRegistrationAnswersIfMissing(
+    eventId: string,
+    userId: string,
+    participantId: string,
+    mappedAnswers: Array<{
+      fieldId: string;
+      value: string | number | string[];
+    }>,
+  ): Promise<void> {
+    if (!mappedAnswers || mappedAnswers.length === 0) {
+      return;
+    }
+
+    // Check if submission already exists
+    const existingSubmission =
+      await prisma.eventRegistrationSubmissionEntity.findFirst({
+        where: {
+          eventId,
+          userId,
+        },
+      });
+
+    if (existingSubmission) {
+      // Answers already saved
+      return;
+    }
+
+    // Create submission and save answers
+    const submission = await prisma.eventRegistrationSubmissionEntity.create({
+      data: {
+        eventId,
+        userId,
+        participantId,
+      },
+    });
+
+    const answerData = mappedAnswers.map((a) => ({
+      submissionId: submission.id,
+      fieldId: a.fieldId,
+      valueText:
+        typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
+      valueJson: a.value,
+    }));
+
+    await prisma.eventRegistrationAnswerEntity.createMany({
+      data: answerData,
+    });
+
+    this.logger.log(
+      `Saved ${answerData.length} registration answers for participant ${participantId} in event ${eventId}`,
+    );
   }
 
   /**
@@ -827,16 +939,18 @@ export class EventPaymentService {
               while (usedOrders.has(retryOrder)) {
                 retryOrder -= 1;
               }
-              const newField = await prisma.eventRegistrationFieldEntity.create({
-                data: {
-                  registrationFormId,
-                  label: def.label,
-                  type: def.type,
-                  required: def.required,
-                  order: retryOrder,
-                  options: def.options,
+              const newField = await prisma.eventRegistrationFieldEntity.create(
+                {
+                  data: {
+                    registrationFormId,
+                    label: def.label,
+                    type: def.type,
+                    required: def.required,
+                    order: retryOrder,
+                    options: def.options,
+                  },
                 },
-              });
+              );
               frontendIdToDbId.set(def.frontendId, newField.id);
             }
           } else {
@@ -911,12 +1025,14 @@ export class EventPaymentService {
     }
 
     // Check per-user redemptions
-    const userRedemption = await prisma.eventDiscountRedemptionEntity.findFirst({
-      where: {
-        discountCodeId: discountCode.id,
-        userId,
+    const userRedemption = await prisma.eventDiscountRedemptionEntity.findFirst(
+      {
+        where: {
+          discountCodeId: discountCode.id,
+          userId,
+        },
       },
-    });
+    );
 
     if (userRedemption) {
       throw new BadRequestException('You have already used this discount code');
@@ -1123,7 +1239,9 @@ export class EventPaymentService {
     }
 
     if (event.ownerId !== userId) {
-      throw new ForbiddenException('Only the organizer can create discount codes');
+      throw new ForbiddenException(
+        'Only the organizer can create discount codes',
+      );
     }
 
     const normalizedCode = params.code.toUpperCase().trim();
@@ -1180,7 +1298,9 @@ export class EventPaymentService {
     }
 
     if (event.ownerId !== userId) {
-      throw new ForbiddenException('Only the organizer can view discount codes');
+      throw new ForbiddenException(
+        'Only the organizer can view discount codes',
+      );
     }
 
     const codes = await prisma.eventDiscountCodeEntity.findMany({
@@ -1219,7 +1339,9 @@ export class EventPaymentService {
     }
 
     if (event.ownerId !== userId) {
-      throw new ForbiddenException('Only the organizer can delete discount codes');
+      throw new ForbiddenException(
+        'Only the organizer can delete discount codes',
+      );
     }
 
     const code = await prisma.eventDiscountCodeEntity.findUnique({
@@ -1257,7 +1379,9 @@ export class EventPaymentService {
     }
 
     if (event.ownerId !== userId) {
-      throw new ForbiddenException('Only the organizer can update discount codes');
+      throw new ForbiddenException(
+        'Only the organizer can update discount codes',
+      );
     }
 
     const code = await prisma.eventDiscountCodeEntity.findUnique({
@@ -1364,4 +1488,3 @@ export class EventPaymentService {
     };
   }
 }
-

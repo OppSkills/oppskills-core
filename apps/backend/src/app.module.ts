@@ -15,6 +15,7 @@ import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
 import { PaymentsModule } from './payments/payments.module';
 import { EmailModule } from './email/email.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { WaitlistModule } from './waitlist/waitlist.module';
 
 @Module({
   imports: [
@@ -35,8 +36,9 @@ import { AnalyticsModule } from './analytics/analytics.module';
     PaymentsModule,
     EmailModule,
     AnalyticsModule,
+    WaitlistModule,
   ],
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],
 })
-export class AppModule { }
+export class AppModule {}

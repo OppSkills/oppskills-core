@@ -60,7 +60,7 @@ export class EventController {
   constructor(
     private readonly eventService: EventService,
     private readonly hackathonService: HackathonService,
-  ) { }
+  ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // PUBLIC Endpoints (no auth required) - sanitized data only
@@ -657,6 +657,40 @@ export class EventController {
     return this.eventService.checkUserRegistration(validId, userId);
   }
 
+  @Post(':id/complete-registration')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Submit missing registration answers for paid users',
+  })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  @ApiResponse({
+    status: 201,
+    description: 'Registration form submitted successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request (not registered, already submitted, or payment missing)',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async submitMissingRegistrationAnswers(
+    @Param('id') id: string,
+    @Body() dto: JoinEventDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+
+    const validId = assertNonEmptyId(id, 'id');
+    return this.eventService.submitMissingRegistrationAnswers(
+      validId,
+      userId,
+      dto.answers || [],
+    );
+  }
+
   @Delete(':id/leave')
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({ summary: 'Leave an event' })
@@ -862,7 +896,10 @@ export class EventController {
   })
   @ApiParam({ name: 'slug', description: 'Event slug' })
   @ApiParam({ name: 'participantId', description: 'Participant ID' })
-  @ApiResponse({ status: 200, description: 'Participant approved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Participant approved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Event or participant not found' })
@@ -877,11 +914,7 @@ export class EventController {
     }
 
     const event = await this.eventService.getEventBySlug(slug);
-    await this.eventService.approveParticipant(
-      event.id,
-      participantId,
-      userId,
-    );
+    await this.eventService.approveParticipant(event.id, participantId, userId);
     return { success: true };
   }
 }

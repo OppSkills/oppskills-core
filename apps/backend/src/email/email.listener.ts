@@ -24,7 +24,7 @@ export class EmailListener {
     private readonly emailService: EmailService,
     @Inject(forwardRef(() => EventPassService))
     private readonly eventPassService: EventPassService,
-  ) { }
+  ) {}
 
   @OnEvent(EMAIL_EVENTS.USER_CREATED)
   async handleUserCreated(payload: UserCreatedEventPayload): Promise<void> {
@@ -80,7 +80,9 @@ export class EmailListener {
   }
 
   @OnEvent(EMAIL_EVENTS.EVENT_DIRECT_MESSAGE)
-  async handleEventDirectMessage(payload: EventDirectMessageEventPayload): Promise<void> {
+  async handleEventDirectMessage(
+    payload: EventDirectMessageEventPayload,
+  ): Promise<void> {
     this.logger.log(
       `Handling event.direct.message event for user ${payload.userId} joining ${payload.eventName}`,
     );
@@ -143,16 +145,20 @@ export class EmailListener {
         month: 'long',
         day: 'numeric',
       });
-      const eventTime = event.startDate.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }) + ' onwards';
+      const eventTime =
+        event.startDate.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }) + ' onwards';
       let eventLocation: string | undefined;
       if (event.locationType === 'PHYSICAL') {
         eventLocation = [event.locationAddress, event.locationCity]
           .filter(Boolean)
           .join(', ');
-      } else if (event.locationType === 'VIRTUAL' && event.locationVirtualLink) {
+      } else if (
+        event.locationType === 'VIRTUAL' &&
+        event.locationVirtualLink
+      ) {
         eventLocation = 'Online Event';
       }
 
@@ -206,7 +212,11 @@ export class EmailListener {
     }
 
     // Send event pass email
-    await this.sendEventPassEmail(participant, participant.user, participant.event);
+    await this.sendEventPassEmail(
+      participant,
+      participant.user,
+      participant.event,
+    );
   }
 
   private async sendEventPassEmail(
@@ -242,20 +252,26 @@ export class EmailListener {
       startDate: Date;
     },
   ): Promise<void> {
-    const participantName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Participant Name';
-    const participantCollege = user.onboardingProfile?.college?.name || 'College Name';
+    const participantName =
+      `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+      'Participant Name';
+    const participantCollege =
+      user.onboardingProfile?.college?.name || 'College Name';
     const eventDate = event.startDate.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
-    const eventTime = event.startDate.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }) + ' onwards';
+    const eventTime =
+      event.startDate.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }) + ' onwards';
 
     // Generate event pass in database BEFORE sending email
-    const eventPass = await this.eventPassService.generateEventPass(participant.id);
+    const eventPass = await this.eventPassService.generateEventPass(
+      participant.id,
+    );
 
     const result = await this.emailService.send({
       type: 'event-pass',
@@ -289,7 +305,8 @@ export class EmailListener {
   }
   @OnEvent(EMAIL_EVENTS.EVENT_BULK_EMAIL)
   async handleBulkEmail(payload: EventBulkEmailPayload): Promise<void> {
-    const { eventId, htmlBody, organizerEmail, organizerName, eventName } = payload;
+    const { eventId, htmlBody, organizerEmail, organizerName, eventName } =
+      payload;
     this.logger.log(`Starting bulk email for event ${eventId}`);
 
     // Fetch event slug and participants
@@ -320,7 +337,8 @@ export class EmailListener {
 
     for (let i = 0; i < participants.length; i += BATCH_SIZE) {
       const batch = participants.slice(i, i + BATCH_SIZE);
-      const emailBatch: Array<{ to: string; subject: string; html: string }> = [];
+      const emailBatch: Array<{ to: string; subject: string; html: string }> =
+        [];
 
       for (const participant of batch) {
         if (!participant.user.email) continue;
@@ -331,7 +349,7 @@ export class EmailListener {
             eventName,
             eventSlug: event.slug,
             htmlBody,
-          })
+          }),
         );
 
         emailBatch.push({
@@ -361,7 +379,8 @@ export class EmailListener {
       },
     });
 
-    this.logger.log(`Finished bulk email for event ${eventId}. Sent ${sentCount} emails.`);
+    this.logger.log(
+      `Finished bulk email for event ${eventId}. Sent ${sentCount} emails.`,
+    );
   }
 }
-

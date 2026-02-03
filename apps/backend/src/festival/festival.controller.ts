@@ -33,12 +33,11 @@ import { UserAccountsService } from '../user-accounts/user-accounts.service';
 @ApiTags('Festivals')
 @ApiBearerAuth('clerk-auth')
 @Controller('festivals')
-
 export class FestivalController {
   constructor(
     private readonly festivalService: FestivalService,
     private readonly userAccountsService: UserAccountsService,
-  ) { }
+  ) {}
 
   @Post()
   @UseGuards(ClerkAuthGuard)
@@ -390,7 +389,8 @@ export class FestivalController {
   @Get('slug/:slug')
   @ApiOperation({
     summary: 'Get festival by Slug',
-    description: 'Retrieve detailed information about a specific festival by its slug',
+    description:
+      'Retrieve detailed information about a specific festival by its slug',
   })
   @ApiParam({
     name: 'slug',

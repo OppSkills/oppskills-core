@@ -46,7 +46,8 @@ export class EventPassController {
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Protected pass lookup by token',
-    description: 'Returns pass details. Requires authentication and organizer/manager permissions for the associated event.',
+    description:
+      'Returns pass details. Requires authentication and organizer/manager permissions for the associated event.',
   })
   @ApiParam({
     name: 'token',
@@ -70,7 +71,7 @@ export class EventPassController {
     @Req() req: Request,
   ): Promise<PublicPassLookupDto> {
     const userId = (req as any).user.id;
-    
+
     // 1. Get the pass info (needs eventId to check permissions)
     const passInfo = await this.eventPassService.lookupPassByToken(token);
     if (!passInfo) {
@@ -79,9 +80,14 @@ export class EventPassController {
 
     // 2. Verify user has permission for this specific event
     try {
-      await this.eventService.getEventByIdForDashboard(passInfo.eventId, userId);
+      await this.eventService.getEventByIdForDashboard(
+        passInfo.eventId,
+        userId,
+      );
     } catch (err) {
-      this.logger.warn(`User ${userId} attempted to lookup pass ${token} without permission`);
+      this.logger.warn(
+        `User ${userId} attempted to lookup pass ${token} without permission`,
+      );
       throw err; // Will be ForbiddenException from getEventByIdForDashboard
     }
 

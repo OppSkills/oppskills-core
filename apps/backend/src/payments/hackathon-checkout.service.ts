@@ -103,38 +103,43 @@ export class HackathonCheckoutService {
       // If teamName is provided, we'll create team after payment verification
       if (params.teamId) {
         // Existing team - validate it
-      const team = await prisma.teamEntity.findUnique({
-        where: { id: params.teamId },
-        select: { id: true, hackathonId: true, leaderId: true },
-      });
+        const team = await prisma.teamEntity.findUnique({
+          where: { id: params.teamId },
+          select: { id: true, hackathonId: true, leaderId: true },
+        });
 
-      if (!team) {
-        throw new NotFoundException('Team not found');
-      }
+        if (!team) {
+          throw new NotFoundException('Team not found');
+        }
 
-      if (team.hackathonId !== hackathon.id) {
-        throw new BadRequestException('Team does not belong to this hackathon');
-      }
+        if (team.hackathonId !== hackathon.id) {
+          throw new BadRequestException(
+            'Team does not belong to this hackathon',
+          );
+        }
 
-      if (team.leaderId !== params.userId) {
-        throw new ForbiddenException('Only team leader can initiate payment');
-      }
+        if (team.leaderId !== params.userId) {
+          throw new ForbiddenException('Only team leader can initiate payment');
+        }
 
-      leaderUserId = team.leaderId;
+        leaderUserId = team.leaderId;
 
         // Check for existing payment - allow retry if previous payment was cancelled/failed
-        const existingTeamPayment = await prisma.hackathonPaymentEntity.findFirst({
-        where: {
-          scope: HackathonPaymentScope.TEAM,
-          hackathonId: hackathon.id,
-          teamId: params.teamId,
-          },
-        });
+        const existingTeamPayment =
+          await prisma.hackathonPaymentEntity.findFirst({
+            where: {
+              scope: HackathonPaymentScope.TEAM,
+              hackathonId: hackathon.id,
+              teamId: params.teamId,
+            },
+          });
 
         if (existingTeamPayment) {
           if (
-            existingTeamPayment.paymentStatus === HackathonPaymentStatus.CAPTURED ||
-            existingTeamPayment.paymentStatus === HackathonPaymentStatus.AUTHORIZED
+            existingTeamPayment.paymentStatus ===
+              HackathonPaymentStatus.CAPTURED ||
+            existingTeamPayment.paymentStatus ===
+              HackathonPaymentStatus.AUTHORIZED
           ) {
             throw new BadRequestException(
               'Payment already completed for this team',
@@ -151,7 +156,10 @@ export class HackathonCheckoutService {
         const existingTeam = await prisma.teamEntity.findFirst({
           where: {
             hackathonId: hackathon.id,
-            OR: [{ leaderId: params.userId }, { members: { some: { userId: params.userId } } }],
+            OR: [
+              { leaderId: params.userId },
+              { members: { some: { userId: params.userId } } },
+            ],
           },
         });
 
@@ -163,17 +171,21 @@ export class HackathonCheckoutService {
 
         // Check for existing payment with CREATED/FAILED status for this user (without teamId)
         // This handles retry scenario
-        const existingUserPayment = await prisma.hackathonPaymentEntity.findFirst({
-          where: {
-            scope: HackathonPaymentScope.TEAM,
-            hackathonId: hackathon.id,
-            payerUserId: params.userId,
-            teamId: null, // Payment created before team was created
-            paymentStatus: {
-              in: [HackathonPaymentStatus.CREATED, HackathonPaymentStatus.FAILED],
+        const existingUserPayment =
+          await prisma.hackathonPaymentEntity.findFirst({
+            where: {
+              scope: HackathonPaymentScope.TEAM,
+              hackathonId: hackathon.id,
+              payerUserId: params.userId,
+              teamId: null, // Payment created before team was created
+              paymentStatus: {
+                in: [
+                  HackathonPaymentStatus.CREATED,
+                  HackathonPaymentStatus.FAILED,
+                ],
+              },
             },
-        },
-      });
+          });
 
         if (existingUserPayment) {
           // Will update this payment record later
@@ -202,7 +214,7 @@ export class HackathonCheckoutService {
           existingPayment.paymentStatus === HackathonPaymentStatus.CAPTURED ||
           existingPayment.paymentStatus === HackathonPaymentStatus.AUTHORIZED
         ) {
-        throw new BadRequestException('Payment already completed');
+          throw new BadRequestException('Payment already completed');
         }
         // If payment exists with CREATED/FAILED status, we'll update it instead of creating new one
         // This handles the unique constraint and allows payment retries
@@ -216,15 +228,17 @@ export class HackathonCheckoutService {
 
     if (isEligibleForFreeEntry) {
       // Check if payment already exists (for retry scenario)
-      const existingFreePayment = await prisma.hackathonPaymentEntity.findFirst({
-        where: {
-          scope,
-          hackathonId: hackathon.id,
-          ...(scope === HackathonPaymentScope.TEAM
-            ? { teamId: teamId! }
-            : { payerUserId: params.userId }),
+      const existingFreePayment = await prisma.hackathonPaymentEntity.findFirst(
+        {
+          where: {
+            scope,
+            hackathonId: hackathon.id,
+            ...(scope === HackathonPaymentScope.TEAM
+              ? { teamId: teamId! }
+              : { payerUserId: params.userId }),
+          },
         },
-      });
+      );
 
       let payment;
       if (existingFreePayment) {
@@ -250,24 +264,24 @@ export class HackathonCheckoutService {
         // Create new payment record
         payment = await prisma.hackathonPaymentEntity.create({
           data: {
-          scope,
-          hackathonId: hackathon.id,
-          organizerId: hackathon.ownerId,
-          payerUserId: params.userId,
-          teamId,
-          currency: hackathon.currency || 'INR',
-          grossAmount: new Decimal(0),
-          platformFeeAmount: new Decimal(0),
-          organizerShareAmount: new Decimal(0),
-          razorpayOrderId: `free_college_${hackathon.id}_${Date.now()}`,
-          transferOnHold: false,
-          transferOnHoldUntil: null,
-          orderStatus: HackathonPaymentOrderStatus.PAID,
-          paymentStatus: HackathonPaymentStatus.CAPTURED,
-          discountCodeId: null,
-          discountAmount: null,
-        },
-      });
+            scope,
+            hackathonId: hackathon.id,
+            organizerId: hackathon.ownerId,
+            payerUserId: params.userId,
+            teamId,
+            currency: hackathon.currency || 'INR',
+            grossAmount: new Decimal(0),
+            platformFeeAmount: new Decimal(0),
+            organizerShareAmount: new Decimal(0),
+            razorpayOrderId: `free_college_${hackathon.id}_${Date.now()}`,
+            transferOnHold: false,
+            transferOnHoldUntil: null,
+            orderStatus: HackathonPaymentOrderStatus.PAID,
+            paymentStatus: HackathonPaymentStatus.CAPTURED,
+            discountCodeId: null,
+            discountAmount: null,
+          },
+        });
       }
 
       // For PER_TEAM with teamName, create team now (payment is already CAPTURED)
@@ -328,32 +342,34 @@ export class HackathonCheckoutService {
       .times(PLATFORM_FEE_PERCENT)
       .dividedBy(100)
       .toDecimalPlaces(2);
-    
+
     // Add 18% GST on the platform fee
     const platformFeeGstAmount = platformFeeAmount
       .times(18)
       .dividedBy(100)
       .toDecimalPlaces(2);
-    
+
     const totalDeduction = platformFeeAmount.plus(platformFeeGstAmount);
-    
+
     const organizerShareAmount = grossAmount.minus(totalDeduction);
 
     const grossAmountPaise = grossAmount.times(100).toNumber();
 
     if (grossAmountPaise === 0) {
       // Check if payment already exists (for retry scenario)
-      const existingZeroPayment = await prisma.hackathonPaymentEntity.findFirst({
-        where: {
-          scope,
-          hackathonId: hackathon.id,
-          ...(scope === HackathonPaymentScope.TEAM && teamId
-            ? { teamId }
-            : scope === HackathonPaymentScope.TEAM && !teamId
-              ? { payerUserId: params.userId, teamId: null }
-              : { payerUserId: params.userId }),
+      const existingZeroPayment = await prisma.hackathonPaymentEntity.findFirst(
+        {
+          where: {
+            scope,
+            hackathonId: hackathon.id,
+            ...(scope === HackathonPaymentScope.TEAM && teamId
+              ? { teamId }
+              : scope === HackathonPaymentScope.TEAM && !teamId
+                ? { payerUserId: params.userId, teamId: null }
+                : { payerUserId: params.userId }),
+          },
         },
-      });
+      );
 
       let payment;
       if (existingZeroPayment) {
@@ -370,7 +386,9 @@ export class HackathonCheckoutService {
             orderStatus: HackathonPaymentOrderStatus.PAID,
             paymentStatus: HackathonPaymentStatus.CAPTURED,
             discountCodeId,
-            discountAmount: discountAmount.greaterThan(0) ? discountAmount : null,
+            discountAmount: discountAmount.greaterThan(0)
+              ? discountAmount
+              : null,
             razorpayPaymentId: null,
             razorpaySignature: null,
           },
@@ -379,24 +397,26 @@ export class HackathonCheckoutService {
         // Create new payment record
         payment = await prisma.hackathonPaymentEntity.create({
           data: {
-          scope,
-          hackathonId: hackathon.id,
-          organizerId: hackathon.ownerId,
-          payerUserId: params.userId,
-          teamId,
-          currency: hackathon.currency || 'INR',
-          grossAmount: new Decimal(0),
-          platformFeeAmount: new Decimal(0),
-          organizerShareAmount: new Decimal(0),
-          razorpayOrderId: `free_${hackathon.id}_${Date.now()}`,
-          transferOnHold: false,
-          transferOnHoldUntil: null,
-          orderStatus: HackathonPaymentOrderStatus.PAID,
-          paymentStatus: HackathonPaymentStatus.CAPTURED,
-          discountCodeId,
-          discountAmount: discountAmount.greaterThan(0) ? discountAmount : null,
-        },
-      });
+            scope,
+            hackathonId: hackathon.id,
+            organizerId: hackathon.ownerId,
+            payerUserId: params.userId,
+            teamId,
+            currency: hackathon.currency || 'INR',
+            grossAmount: new Decimal(0),
+            platformFeeAmount: new Decimal(0),
+            organizerShareAmount: new Decimal(0),
+            razorpayOrderId: `free_${hackathon.id}_${Date.now()}`,
+            transferOnHold: false,
+            transferOnHoldUntil: null,
+            orderStatus: HackathonPaymentOrderStatus.PAID,
+            paymentStatus: HackathonPaymentStatus.CAPTURED,
+            discountCodeId,
+            discountAmount: discountAmount.greaterThan(0)
+              ? discountAmount
+              : null,
+          },
+        });
       }
 
       // For PER_TEAM with teamName, create team now (payment is already CAPTURED)
@@ -493,25 +513,25 @@ export class HackathonCheckoutService {
     } else {
       // Create new payment record
       payment = await prisma.hackathonPaymentEntity.create({
-      data: {
-        scope,
-        hackathonId: hackathon.id,
-        organizerId: hackathon.ownerId,
-        payerUserId: params.userId,
-        teamId,
-        currency: hackathon.currency || 'INR',
-        grossAmount,
-        platformFeeAmount: totalDeduction, // Total deduction includes Platform Fee + GST
-        organizerShareAmount,
-        razorpayOrderId: razorpayOrder.id,
-        transferOnHold: false,
-        transferOnHoldUntil: null,
-        orderStatus: HackathonPaymentOrderStatus.CREATED,
-        paymentStatus: HackathonPaymentStatus.CREATED,
-        discountCodeId,
-        discountAmount: discountAmount.greaterThan(0) ? discountAmount : null,
-      },
-    });
+        data: {
+          scope,
+          hackathonId: hackathon.id,
+          organizerId: hackathon.ownerId,
+          payerUserId: params.userId,
+          teamId,
+          currency: hackathon.currency || 'INR',
+          grossAmount,
+          platformFeeAmount: totalDeduction, // Total deduction includes Platform Fee + GST
+          organizerShareAmount,
+          razorpayOrderId: razorpayOrder.id,
+          transferOnHold: false,
+          transferOnHoldUntil: null,
+          orderStatus: HackathonPaymentOrderStatus.CREATED,
+          paymentStatus: HackathonPaymentStatus.CREATED,
+          discountCodeId,
+          discountAmount: discountAmount.greaterThan(0) ? discountAmount : null,
+        },
+      });
     }
 
     return {
@@ -559,10 +579,7 @@ export class HackathonCheckoutService {
 
     // For PER_TEAM mode, if teamName was provided but teamId is null, create team now
     let finalTeamId = payment.teamId;
-    if (
-      payment.scope === HackathonPaymentScope.TEAM &&
-      !payment.teamId
-    ) {
+    if (payment.scope === HackathonPaymentScope.TEAM && !payment.teamId) {
       // Fetch Razorpay order to get teamName from notes
       const razorpayOrder = await this.razorpayService.fetchOrder(
         params.razorpayOrderId,
@@ -714,7 +731,10 @@ export class HackathonCheckoutService {
       where: {
         hackathonId: hackathon.id,
         paymentStatus: {
-          in: [HackathonPaymentStatus.AUTHORIZED, HackathonPaymentStatus.CAPTURED],
+          in: [
+            HackathonPaymentStatus.AUTHORIZED,
+            HackathonPaymentStatus.CAPTURED,
+          ],
         },
       },
     });

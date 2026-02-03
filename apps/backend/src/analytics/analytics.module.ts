@@ -11,4 +11,4 @@ import { RedisProvider } from 'src/redis.provider';
   providers: [AnalyticsService, AnalyticsCron, RedisProvider],
   exports: [AnalyticsService],
 })
-export class AnalyticsModule { }
+export class AnalyticsModule {}

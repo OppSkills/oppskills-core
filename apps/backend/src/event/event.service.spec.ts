@@ -52,7 +52,11 @@ describe('EventService - Google Sheets logging', () => {
     analyticsService = {
       trackEvent: jest.fn(),
     } as any;
-    service = new EventService(googleSheetsService, eventEmitter, analyticsService);
+    service = new EventService(
+      googleSheetsService,
+      eventEmitter,
+      analyticsService,
+    );
     jest.clearAllMocks();
   });
 

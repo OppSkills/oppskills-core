@@ -69,7 +69,10 @@ export class EventPaymentController {
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({ summary: 'Verify payment and complete registration' })
   @ApiParam({ name: 'slug', description: 'Event slug' })
-  @ApiResponse({ status: 201, description: 'Payment verified and registration completed' })
+  @ApiResponse({
+    status: 201,
+    description: 'Payment verified and registration completed',
+  })
   @ApiResponse({ status: 400, description: 'Invalid payment signature' })
   @ApiResponse({ status: 404, description: 'Payment not found' })
   async verifyPayment(
@@ -136,7 +139,10 @@ export class EventPaymentController {
   @ApiOperation({ summary: 'Update event pricing settings' })
   @ApiParam({ name: 'slug', description: 'Event slug' })
   @ApiResponse({ status: 200, description: 'Pricing updated' })
-  @ApiResponse({ status: 400, description: 'Cannot change pricing after registration started' })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot change pricing after registration started',
+  })
   @ApiResponse({ status: 403, description: 'Not the organizer' })
   @ApiResponse({ status: 404, description: 'Event not found' })
   async updatePricing(
@@ -253,4 +259,3 @@ export class EventPaymentController {
     return this.eventPaymentService.deleteDiscountCode(slug, codeId, userId);
   }
 }
-

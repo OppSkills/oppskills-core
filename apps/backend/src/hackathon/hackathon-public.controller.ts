@@ -29,7 +29,7 @@ function assertNonEmptyId(id: string, fieldName: string): string {
 @ApiTags('Hackathons (Public)')
 @Controller('hackathons/public')
 export class HackathonPublicController {
-  constructor(private readonly hackathonService: HackathonService) { }
+  constructor(private readonly hackathonService: HackathonService) {}
 
   /**
    * GET /hackathons/public - List public hackathons (PUBLISHED/ONGOING + APPROVED only).
@@ -111,7 +111,10 @@ export class HackathonPublicController {
     description: 'Search query',
     type: String,
   })
-  @ApiResponse({ status: 200, description: 'List of upcoming public hackathons' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of upcoming public hackathons',
+  })
   async listPublicUpcomingHackathons(
     @Query('festival_id') festivalId?: string,
     @Query('page') page?: number,

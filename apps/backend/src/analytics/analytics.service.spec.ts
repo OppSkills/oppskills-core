@@ -73,7 +73,9 @@ describe('AnalyticsService', () => {
       ]);
 
       // Mock gender stats
-      (prisma.userOnboardingProfileEntity.groupBy as jest.Mock).mockResolvedValue([
+      (
+        prisma.userOnboardingProfileEntity.groupBy as jest.Mock
+      ).mockResolvedValue([
         { gender: 'MALE', _count: { gender: 10 } },
         { gender: 'FEMALE', _count: { gender: 5 } },
       ]);
@@ -108,7 +110,9 @@ describe('AnalyticsService', () => {
         userRoles: [],
       });
 
-      await expect(service.getEventDetailedStats(slug, userId)).rejects.toThrow('You are not allowed');
+      await expect(service.getEventDetailedStats(slug, userId)).rejects.toThrow(
+        'You are not allowed',
+      );
     });
   });
 });

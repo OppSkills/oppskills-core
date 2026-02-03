@@ -27,6 +27,7 @@ interface EventRegistrationCardProps {
   onRegister?: () => Promise<void> | void;
   isRegistering?: boolean;
   isRegistered?: boolean; // If true, shows "Registered" state
+  isPaidButIncomplete?: boolean; // If true, shows "Complete Registration" state
   registrationDeadline?: string | Date; // New prop
 }
 
@@ -38,6 +39,7 @@ export function EventRegistrationCard({
   onRegister,
   isRegistering = false,
   isRegistered = false,
+  isPaidButIncomplete = false,
   registrationDeadline,
 }: EventRegistrationCardProps) {
   // Use controlled state if provided, otherwise fall back to internal state
@@ -91,6 +93,60 @@ export function EventRegistrationCard({
             You have successfully registered for this event. We look forward to
             seeing you!
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show "Complete Registration" state for users who have paid but missing registration form
+  if (isPaidButIncomplete) {
+    return (
+      <div className="w-full bg-background rounded-[20px] border border-neutral-200 overflow-hidden shadow-sm font-sans">
+        <div className="bg-[#FEF3C7] px-6 py-4 border-b border-amber-200">
+          <h3 className="text-[#92400E] font-semibold text-lg flex items-center gap-2">
+            <CheckCircle className="w-5 h-5" />
+            Payment Complete
+          </h3>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <p className="text-amber-800 text-[15px] font-medium">
+              Your payment was successful! Please complete the registration form
+              to finish your registration.
+            </p>
+            <p className="text-amber-700 text-sm mt-2">
+              No additional payment required.
+            </p>
+          </div>
+
+          {user && (
+            <div className="flex items-center gap-3">
+              <div className="relative w-10 h-10 rounded-full overflow-hidden bg-neutral-200">
+                {user.avatar && (
+                  <Image
+                    src={user.avatar}
+                    alt={user.name}
+                    fill
+                    className="object-cover"
+                  />
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                <span className="font-semibold text-neutral-900 text-[16px]">
+                  {user.name}
+                </span>
+                <span className="text-neutral-500 text-sm">{user.email}</span>
+              </div>
+            </div>
+          )}
+
+          <Button
+            className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-background font-semibold text-[18px]"
+            onClick={onRegister}
+            disabled={isRegistering}
+          >
+            {isRegistering ? "Submitting..." : "Complete Registration Form"}
+          </Button>
         </div>
       </div>
     );

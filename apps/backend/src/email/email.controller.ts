@@ -6,14 +6,22 @@ import {
   UseGuards,
   Request,
   ForbiddenException,
+  Param,
+  Logger,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { IsString, IsNotEmpty, IsEmail, IsOptional } from 'class-validator';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 
-import { EMAIL_EVENTS, EventDirectMessageEventPayload, EventBulkEmailPayload } from './email.events';
+import {
+  EMAIL_EVENTS,
+  EventDirectMessageEventPayload,
+  EventBulkEmailPayload,
+} from './email.events';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { EventService } from '../event/event.service';
+import { EmailService } from './email.service';
+import { prisma } from '@oppskills/db';
 
 export class SendBulkEmailDto {
   @IsString()
@@ -57,10 +65,13 @@ export class SendDirectMessageDto {
 @ApiTags('Email')
 @Controller('email')
 export class EmailController {
+  private readonly logger = new Logger(EmailController.name);
+
   constructor(
     private readonly eventEmitter: EventEmitter2,
     private readonly EventService: EventService,
-  ) { }
+    private readonly emailService: EmailService,
+  ) {}
 
   @Post('messages/direct')
   @UseGuards(ClerkAuthGuard)
@@ -119,7 +130,148 @@ export class EmailController {
 
     return {
       success: true,
-      message: 'Bulk email started successfully. You will be notified when it is finished.',
+      message:
+        'Bulk email started successfully. You will be notified when it is finished.',
+    };
+  }
+
+  @Post('incomplete-registration/:eventId')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({
+    summary: 'Send emails to users with incomplete registrations',
+  })
+  @ApiParam({ name: 'eventId', description: 'Event ID' })
+  async sendIncompleteRegistrationEmails(
+    @Request() req: { user: { id: string } },
+    @Param('eventId') eventId: string,
+  ) {
+    const senderId = req.user.id;
+
+    // Verify ownership/permission
+    const event = await this.EventService.getEventByIdForDashboard(
+      eventId,
+      senderId,
+    );
+
+    const isOwner = event.ownerId === senderId;
+    if (!isOwner) {
+      throw new ForbiddenException(
+        'Only organizers can send incomplete registration emails.',
+      );
+    }
+
+    // Find users with incomplete registrations:
+    // - Have a participant record (payment completed)
+    // - Have a captured payment
+    // - Do NOT have a registration submission
+    const incompleteUsers = await prisma.$queryRaw<
+      Array<{
+        participantId: string;
+        userId: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
+      }>
+    >`
+      SELECT 
+        p.id as "participantId",
+        p."userId",
+        u.email,
+        u."firstName",
+        u."lastName"
+      FROM oppskills."EventParticipantEntity" p
+      INNER JOIN oppskills."UserAccountEntity" u ON u.id = p."userId"
+      INNER JOIN oppskills."EventPaymentEntity" pay 
+        ON pay."eventId" = p."eventId" 
+        AND pay."payerUserId" = p."userId"
+        AND pay."paymentStatus" = 'CAPTURED'
+      WHERE p."eventId" = ${eventId}
+      AND NOT EXISTS (
+        SELECT 1 FROM oppskills."EventRegistrationSubmissionEntity" sub
+        WHERE sub."eventId" = p."eventId" AND sub."userId" = p."userId"
+      )
+    `;
+
+    if (incompleteUsers.length === 0) {
+      return {
+        success: true,
+        message: 'No users with incomplete registrations found.',
+        emailsSent: 0,
+      };
+    }
+
+    this.logger.log(
+      `Found ${incompleteUsers.length} users with incomplete registrations for event ${eventId}`,
+    );
+
+    // Format event date and time
+    const eventDate = event.startDate.toLocaleDateString('en-IN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const eventTime = event.startDate.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    // Determine event location
+    let eventLocation = 'Check event details';
+    const locType = event.locationType as string | null;
+    if (locType === 'ONLINE' || locType === 'VIRTUAL') {
+      eventLocation = 'Online';
+    } else if (event.locationCity || event.locationAddress) {
+      eventLocation = [event.locationAddress, event.locationCity]
+        .filter(Boolean)
+        .join(', ');
+    }
+
+    // Send emails
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const user of incompleteUsers) {
+      try {
+        const result = await this.emailService.send({
+          type: 'incomplete-registration',
+          to: user.email,
+          props: {
+            firstName: user.firstName || undefined,
+            email: user.email,
+            eventName: event.name,
+            eventDate,
+            eventTime,
+            eventLocation,
+            eventType: event.eventType,
+            eventSlug: event.slug,
+          },
+        });
+
+        if (result.success) {
+          successCount++;
+          this.logger.log(
+            `Sent incomplete registration email to ${user.email}`,
+          );
+        } else {
+          failCount++;
+          this.logger.error(
+            `Failed to send email to ${user.email}: ${result.error}`,
+          );
+        }
+      } catch (error) {
+        failCount++;
+        this.logger.error(`Error sending email to ${user.email}:`, error);
+      }
+    }
+
+    return {
+      success: true,
+      message: `Sent ${successCount} emails, ${failCount} failed.`,
+      emailsSent: successCount,
+      emailsFailed: failCount,
+      totalIncompleteUsers: incompleteUsers.length,
     };
   }
 }
