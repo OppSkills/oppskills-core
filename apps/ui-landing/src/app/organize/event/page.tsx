@@ -726,11 +726,11 @@ export default function Page() {
                   <DialogTrigger asChild>
                     <div className="h-full col-span-2">
                       <form.Subscribe
-                        selector={(state) => [state.values.eventStartDate, state.values.eventEndDate]}
-                        children={([start, end]: any[]) => (
+                        selector={(state) => state.values}
+                        children={(values) => (
                           <InputBlock
                             icon={<CalendarIcon className="w-6 h-6" />}
-                            label={formatDateRange(start, end)}
+                            label={formatDateRange(values.eventStartDate, values.eventEndDate)}
                             subLabel="Event Date"
                             className="bg-muted h-full"
                           />
