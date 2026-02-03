@@ -732,7 +732,7 @@ export default function Page() {
                             icon={<CalendarIcon className="w-6 h-6" />}
                             label={formatDateRange(values.eventStartDate, values.eventEndDate)}
                             subLabel="Event Date"
-                            className="bg-muted h-full"
+                            className="h-full"
                           />
                         )}
                       />
@@ -1014,7 +1014,7 @@ export default function Page() {
                           icon={<CalendarDays className="w-5 h-5" />}
                           label={date ? format(date, "PPP") : "Select Date"}
                           subLabel="Registration Deadline"
-                          className="bg-muted h-full"
+                          className="h-full"
                         />
                       )}
                     />
