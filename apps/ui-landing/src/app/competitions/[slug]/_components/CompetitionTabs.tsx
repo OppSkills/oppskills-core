@@ -4,6 +4,7 @@ import React, { useEffect, useMemo } from "react";
 import { useQueryState } from "nuqs";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 
 const ALL_TABS = [
   { id: "rounds", label: "Rounds & Status" },
@@ -46,28 +47,12 @@ export function CompetitionTabs({
   }, [activeTab]);
 
   return (
-    <div className="w-full border-b border-neutral-200  mb-8 overflow-x-auto">
-      <div className="flex items-center gap-8 min-w-max">
+    <div className="w-full my-8 overflow-x-auto">
+      <div className="flex items-center gap-5 min-w-max">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "relative py-4 text-sm font-medium transition-colors hover:text-purple-600",
-                isActive ? "text-purple-600" : "text-neutral-600 ",
-              )}
-            >
-              {tab.label}
-              {isActive && (
-                <motion.div
-                  layoutId="activeTabIndicator"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                />
-              )}
-            </button>
+            <Badge key={tab.id} variant="outline" onClick={() => setActiveTab(tab.id)} className="px-3 py-2 cursor-pointer text-base font-medium">{tab.label}</Badge>
           );
         })}
       </div>

@@ -33,7 +33,7 @@ export async function generateMetadata(
   // We assume description is plain text or roughly readable.
   const description = data.description
     ? data.description.substring(0, 160) +
-      (data.description.length > 160 ? "..." : "")
+    (data.description.length > 160 ? "..." : "")
     : `Join ${data.name} on OppSkills.`;
 
   let imageUrl = data.bannerImageUrl;

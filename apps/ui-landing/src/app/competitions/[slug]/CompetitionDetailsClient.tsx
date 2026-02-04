@@ -510,10 +510,6 @@ export function CompetitionDetailsClient() {
             />
 
             <div className="space-y-12">
-              <section id="details" className="scroll-mt-24">
-                <AboutSection content={competition.about} />
-              </section>
-
               {competition.rounds.length > 0 && (
                 <section id="rounds" className="scroll-mt-24">
                   <RoundsTimeline
@@ -528,6 +524,12 @@ export function CompetitionDetailsClient() {
                   />
                 </section>
               )}
+
+              <section id="details" className="scroll-mt-24">
+                <AboutSection content={competition.about} />
+              </section>
+
+
 
               <section className="scroll-mt-24">
                 <Organizers

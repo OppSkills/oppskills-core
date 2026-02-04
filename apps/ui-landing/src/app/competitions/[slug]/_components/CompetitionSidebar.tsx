@@ -245,12 +245,12 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     <div className="space-y-5 font-sans">
       {/* Featured In Pill */}
       {competition.featuredIn && (
-        <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-neutral-100  rounded-full text-sm text-neutral-600 ">
-          <span className="font-normal text-muted-foreground">Featured in</span>
-          <span className="font-semibold text-neutral-900 ">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-200  rounded-md text-sm text-neutral-600 ">
+          <span className="font-normal text-neutral-600">Featured in</span>
+          <span className="font-semibold text-neutral-800 ">
             {competition.featuredIn}
           </span>
-          <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
+          <ChevronRight className="w-4 h-4 text-neutral-800" />
         </div>
       )}
 
@@ -274,7 +274,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         <div className="space-y-5">
           {/* Date Row */}
           <div className="flex gap-4 items-center">
-            <div className="flex-shrink-0 w-12 h-12 bg-neutral-50  rounded-xl border border-neutral-100  flex flex-col items-center justify-center">
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl border border-neutral-400  flex flex-col items-center justify-center">
               <span className="text-[10px] uppercase text-neutral-500 font-medium leading-none mb-0.5">
                 {competition.startDate ? format(competition.startDate, "MMM") : "TBD"}
               </span>
@@ -319,7 +319,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
           {/* Location Row */}
           <div className="flex gap-4 items-center">
-            <div className="flex-shrink-0 w-12 h-12 bg-neutral-50  rounded-xl border border-neutral-100  flex items-center justify-center">
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
               <MapPin className="w-5 h-5 text-neutral-700 " />
             </div>
             <div>
@@ -426,8 +426,8 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           <div className="space-y-4">
             {/* Team Size */}
             <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-neutral-50  rounded-xl border border-neutral-100  flex items-center justify-center">
-                <Users className="w-5 h-5 text-neutral-600 " />
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm shadow-sm">
+                <Users className="w-5 h-5 text-neutral-800 " />
               </div>
               <div>
                 <div className="font-semibold text-neutral-900  text-sm">
@@ -439,8 +439,8 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
             {/* Impressions */}
             <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-neutral-50  rounded-xl border border-neutral-100  flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-neutral-600 " />
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
+                <Sparkles className="w-5 h-5 text-neutral-800 " />
               </div>
               <div>
                 <div className="font-semibold text-neutral-900  text-sm">
@@ -456,8 +456,8 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
             {/* Deadline */}
             <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-neutral-50  rounded-xl border border-neutral-100  flex items-center justify-center">
-                <Clock className="w-5 h-5 text-neutral-600 " />
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
+                <Clock className="w-5 h-5 text-neutral-800 " />
               </div>
               <div>
                 <div className="font-semibold text-neutral-900  text-sm">
