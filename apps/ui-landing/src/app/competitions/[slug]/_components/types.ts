@@ -34,6 +34,8 @@ export interface Prize {
   amount: string;
   description: string;
   icon?: "trophy" | "medal" | "star";
+  image?: string;
+  tags?: string[];
 }
 
 export interface RegistrationField {

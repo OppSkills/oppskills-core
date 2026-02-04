@@ -1,74 +1,53 @@
 "use client";
 
-import React from "react";
 import { Prize } from "./types";
 import { Trophy, Medal, Star } from "lucide-react";
+import { MOCK_PRIZES } from "./mock-prizes";
 
 interface PrizesProps {
   prizes: Prize[];
 }
 
-export function Prizes({ prizes }: PrizesProps) {
-  const getIcon = (type?: string) => {
-    switch (type) {
-      case "trophy":
-        return <Trophy className="w-8 h-8 text-yellow-500" />;
-      case "medal":
-        return <Medal className="w-8 h-8 text-neutral-400" />;
-      case "star":
-        return <Star className="w-8 h-8 text-orange-500" />;
-      default:
-        return <Trophy className="w-8 h-8 text-purple-500" />;
-    }
-  };
-
-  const getGradient = (index: number) => {
-    const gradients = [
-      "bg-gradient-to-br from-yellow-50 to-orange-50   border-yellow-200 ",
-      "bg-gradient-to-br from-neutral-50 to-slate-50   border-neutral-200 ",
-      "bg-gradient-to-br from-orange-50 to-red-50   border-orange-200 ",
-    ];
-    return gradients[index % gradients.length];
-  };
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function Prizes({ prizes: _prizes }: PrizesProps) {
+  // Use mock data for now as requested
+  const prizes = MOCK_PRIZES;
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-neutral-900  mb-6">Prizes</h2>
-      {prizes.length === 0 ? (
-        <div className="p-12 text-center text-muted-foreground bg-neutral-50  border border-dashed rounded-xl">
-          No prizes announced yet.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {prizes.map((prize, index) => (
-            <div
-              key={prize.id}
-              className={`
-                relative p-6 rounded-2xl border flex flex-col items-center text-center space-y-4
-                ${getGradient(index)}
-                hover:shadow-lg transition-all duration-300 hover:-translate-y-1
-              `}
-            >
-              <div className="p-4 bg-background  rounded-full shadow-sm mb-2">
-                {getIcon(prize.icon)}
-              </div>
+    <div className="space-y-8">
+      <h2 className="text-3xl font-semibold text-neutral-800">Prizes</h2>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {prizes.map((prize) => (
+          <div
+            key={prize.id}
+            className="relative overflow-hidden border border-neutral-400 rounded-3xl p-6 h-48 md:h-56 shadow-sm hover:shadow-md transition-all duration-300"
+          >
+            {/* Content Left */}
+            <div className="relative z-10 flex flex-col justify-between h-full max-w-[60%]">
               <div>
-                <h3 className="text-lg font-bold text-neutral-900 ">
-                  {prize.title}
-                </h3>
-                <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-neutral-900 to-neutral-600   mt-1">
+                <p className="text-lg font-medium text-neutral-500 mb-1">{prize.title}</p>
+                <h3 className="text-2xl md:text-3xl font-bold text-neutral-900 leading-tight">
                   {prize.amount}
-                </div>
+                </h3>
               </div>
 
-              <p className="text-sm text-neutral-600  leading-relaxed">
-                {prize.description}
-              </p>
+              {/* Certificate Pill */}
+              {prize.tags && prize.tags.length > 0 && (
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 rounded-full w-fit">
+                  {prize.icon === "trophy" && <Trophy className="w-4 h-4 text-neutral-700" />}
+                  {prize.icon === "medal" && <Medal className="w-4 h-4 text-neutral-700" />}
+                  {prize.icon === "star" && <Star className="w-4 h-4 text-neutral-700" />}
+                  <span className="text-xs font-base bg-primary-100 text-neutral-700">
+                    {prize.tags[0]}
+                  </span>
+                </div>
+              )}
             </div>
-          ))}
-        </div>
-      )}
+
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

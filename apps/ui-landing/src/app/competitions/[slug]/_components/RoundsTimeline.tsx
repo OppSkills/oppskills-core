@@ -50,7 +50,7 @@ export function RoundsTimeline({
 
   return (
     <div className="space-y-6 md:space-y-8">
-      <h2 className="text-2xl font-bold text-neutral-900 mb-6">
+      <h2 className="text-3xl font-semibold text-neutral-800 mb-6">
         Rounds Timeline
       </h2>
 

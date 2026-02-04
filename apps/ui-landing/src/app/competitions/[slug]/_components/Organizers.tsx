@@ -18,7 +18,7 @@ interface OrganizersProps {
 export function Organizers({ organizers, contact }: OrganizersProps) {
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-neutral-900 ">Organizers</h2>
+      <h2 className="text-3xl font-semibold text-neutral-800">Organizers</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {organizers.map((organizer) => (
           <div

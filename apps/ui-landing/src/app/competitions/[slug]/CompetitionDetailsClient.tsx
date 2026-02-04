@@ -497,7 +497,7 @@ export function CompetitionDetailsClient() {
           </div>
 
           <div className="lg:col-span-2">
-            <h1 className="text-3xl font-extrabold text-foreground leading-tight mb-6">
+            <h1 className="text-4xl font-semibold text-neutral-900 leading-tight mb-6">
               {competition.title}
             </h1>
 
