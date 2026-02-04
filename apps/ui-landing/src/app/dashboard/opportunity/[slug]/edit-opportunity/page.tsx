@@ -7,8 +7,16 @@ import {
   CheckCircle2,
   FileText,
   Settings,
+  Calendar as CalendarIcon,
+  Clock,
+  AlignLeft,
+  MapPin,
+  ChevronDown,
+  Wand2,
+  Users,
+  Globe,
 } from "lucide-react";
-import { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
+import RegistrationQuestionsModal, { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
 import React, { useEffect, useMemo, useState } from "react";
 import { useQueryState } from "nuqs";
 import { cn } from "@/lib/utils";
@@ -17,6 +25,39 @@ import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Calendar } from "@/components/ui/calendar";
+import dynamic from "next/dynamic";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
+
+const RichTextEditor = dynamic(
+  () => import("@/components/ui/editor/RichtextEditor"),
+  { ssr: false },
+);
 import type {
   HackathonAttendeeEligibilityValue,
   HackathonLocationDto,
@@ -38,12 +79,13 @@ import {
 } from "@/lib/api/hackathonApi";
 
 // Import new components
-import BasicDetails from "./_components/BasicDetails";
+// import BasicDetails from "./_components/BasicDetails"; // Removed
 import RoundsAndStages from "./_components/RoundsAndStages";
 import AdditionalInfo from "./_components/AdditionalInfo";
 import Prizes from "./_components/Prizes";
 import RegistrationSettings from "./_components/RegistrationSettings";
 import { CompetitionDetailsClient } from "@/app/competitions/[slug]/CompetitionDetailsClient";
+import { presignImageUpload } from "@/lib/api/mediaApi";
 
 /**
  * Shared Types
@@ -509,8 +551,8 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
   const location = locationVirtualLink
     ? locationVirtualLink
     : [locationAddress, locationCity]
-        .filter((v): v is string => typeof v === "string")
-        .join(", ");
+      .filter((v): v is string => typeof v === "string")
+      .join(", ");
 
   const roundsRaw = Array.isArray(hackathon["rounds"])
     ? (hackathon["rounds"] as ReadonlyArray<unknown>)
@@ -531,9 +573,9 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
         const allowedFileTypesRaw = submissionConfigRaw["allowedFileTypes"];
         const allowedFileTypes = Array.isArray(allowedFileTypesRaw)
           ? (allowedFileTypesRaw.filter(
-              (t): t is "pdf" | "ppt" | "image" =>
-                t === "pdf" || t === "ppt" || t === "image"
-            ) as ("pdf" | "ppt" | "image")[])
+            (t): t is "pdf" | "ppt" | "image" =>
+              t === "pdf" || t === "ppt" || t === "image"
+          ) as ("pdf" | "ppt" | "image")[])
           : [];
         const maxFileSizeBytes =
           typeof submissionConfigRaw["maxFileSizeBytes"] === "number"
@@ -602,7 +644,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
   const prizeDescriptionRaw = hackathon["prizeDescription"];
   const prizeDescription =
     isRecord(prizeDescriptionRaw) &&
-    typeof prizeDescriptionRaw["summary"] === "string"
+      typeof prizeDescriptionRaw["summary"] === "string"
       ? (prizeDescriptionRaw["summary"] as string)
       : "";
 
@@ -628,8 +670,8 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
         fixed: false,
         options: Array.isArray(f["options"])
           ? (f["options"] as ReadonlyArray<unknown>).filter(
-              (o): o is string => typeof o === "string"
-            )
+            (o): o is string => typeof o === "string"
+          )
           : undefined,
       };
     })
@@ -640,16 +682,16 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
   const contactPhone = getString(hackathon, "contactPhone") ?? "";
   const contacts: Contact[] =
     contactName.trim().length > 0 ||
-    contactEmail.trim().length > 0 ||
-    contactPhone.trim().length > 0
+      contactEmail.trim().length > 0 ||
+      contactPhone.trim().length > 0
       ? [
-          {
-            id: "contact-1",
-            name: contactName,
-            email: contactEmail,
-            phone: contactPhone,
-          },
-        ]
+        {
+          id: "contact-1",
+          name: contactName,
+          email: contactEmail,
+          phone: contactPhone,
+        },
+      ]
       : [];
 
   const attachmentsRaw = Array.isArray(hackathon["attachments"])
@@ -857,18 +899,18 @@ export default function EditOpportunityPage() {
         ),
         registrationDeadline: formData.eventRegisterBy
           ? combineDateAndTimeToIso(
-              formData.eventRegisterBy,
-              formData.registrationSettings.endTime
-            )
+            formData.eventRegisterBy,
+            formData.registrationSettings.endTime
+          )
           : undefined,
         startDate: formData.eventDate
           ? combineDateAndTimeToIso(formData.eventDate, formData.eventTimeFrom)
           : undefined,
         endDate: formData.eventDate
           ? combineDateAndTimeToIso(
-              formData.eventEndDate ?? formData.eventDate,
-              formData.eventTimeTo ?? formData.eventTimeFrom
-            )
+            formData.eventEndDate ?? formData.eventDate,
+            formData.eventTimeTo ?? formData.eventTimeFrom
+          )
           : undefined,
         prizeCertificate:
           typeof formData.prizes.certificateProvided === "boolean"
@@ -886,8 +928,8 @@ export default function EditOpportunityPage() {
         formData.registrationSettings.maxTeamsNoLimit === true
           ? null
           : typeof formData.registrationSettings.maxTeams === "number" &&
-              Number.isInteger(formData.registrationSettings.maxTeams) &&
-              formData.registrationSettings.maxTeams >= 1
+            Number.isInteger(formData.registrationSettings.maxTeams) &&
+            formData.registrationSettings.maxTeams >= 1
             ? formData.registrationSettings.maxTeams
             : undefined;
 
@@ -915,11 +957,11 @@ export default function EditOpportunityPage() {
             roundType: r.roundType,
             submissionConfig: r.submissionConfig?.enabled
               ? {
-                  requiresFileUpload: true,
-                  allowedFileTypes: r.submissionConfig.allowedFileTypes,
-                  maxFileSizeBytes: r.submissionConfig.maxFileSizeBytes,
-                  instructions: r.submissionConfig.instructions,
-                }
+                requiresFileUpload: true,
+                allowedFileTypes: r.submissionConfig.allowedFileTypes,
+                maxFileSizeBytes: r.submissionConfig.maxFileSizeBytes,
+                instructions: r.submissionConfig.instructions,
+              }
               : undefined,
           })),
         };
@@ -988,18 +1030,18 @@ export default function EditOpportunityPage() {
         const payload: UpdateHackathonAdditionalInfoDto = {
           contact: first
             ? {
-                name: first.name.trim(),
-                email:
-                  first.email.trim().length > 0
-                    ? first.email.trim()
-                    : undefined,
-                phone: first.phone.trim(),
-              }
+              name: first.name.trim(),
+              email:
+                first.email.trim().length > 0
+                  ? first.email.trim()
+                  : undefined,
+              phone: first.phone.trim(),
+            }
             : {
-                name: "",
-                email: undefined,
-                phone: "",
-              },
+              name: "",
+              email: undefined,
+              phone: "",
+            },
           attachments: formData.additionalInfo.attachments.map((a) => ({
             storageKey: a.url ?? a.id,
             publicUrl: a.url,
@@ -1168,6 +1210,94 @@ export default function EditOpportunityPage() {
     runSaveMutation,
   ]);
 
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const bannerInputId = useMemo(
+    () => `edit-opp-banner-upload-${crypto.randomUUID()}`,
+    [],
+  );
+
+  const InputBlock = ({
+    icon,
+    label,
+    subLabel,
+    children,
+    className,
+    onClick,
+  }: {
+    icon?: React.ReactNode;
+    label: React.ReactNode;
+    subLabel?: string;
+    children?: React.ReactNode;
+    className?: string;
+    onClick?: () => void;
+  }) => (
+    <div
+      onClick={onClick}
+      className={cn(
+        "bg-neutral-200 rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
+        {icon}
+        <span className="font-medium text-lg truncate w-full">{label}</span>
+      </div>
+      {subLabel && (
+        <p className="text-muted-foreground/60 text-sm pl-9 truncate">
+          {subLabel}
+        </p>
+      )}
+      {children}
+    </div>
+  );
+
+  async function handleBannerSelected(file: File | null): Promise<void> {
+    if (!file) return;
+    if (isUploadingBanner) return;
+
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast.error("Image too large. Max size is 10MB.");
+      return;
+    }
+
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedMimeTypes.includes(file.type)) {
+      toast.error("Only JPG, PNG, or WebP images are allowed.");
+      return;
+    }
+
+    setIsUploadingBanner(true);
+    try {
+      const token = await getToken();
+      if (typeof token !== "string" || token.trim().length === 0) {
+        toast.error("Please sign in to upload.");
+        return;
+      }
+
+      const presign = await presignImageUpload(token, {
+        purpose: "HACKATHON_BANNER",
+        mimeType: file.type,
+      });
+
+      await uploadImageToS3PresignedPost({ presign, file });
+
+      setFormData((prev) => ({
+        ...prev,
+        eventThumbnail: presign.publicUrl,
+      }));
+
+      toast.success("Banner uploaded.");
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  }
+
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+
   if (isLoadingHackathon) {
     return (
       <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
@@ -1237,7 +1367,424 @@ export default function EditOpportunityPage() {
 
       <div className="w-full">
         {activeTab === "basic-details" && (
-          <BasicDetails formData={formData} setFormData={setFormData} />
+          <div className="flex flex-col lg:flex-row gap-6 animate-in fade-in duration-500">
+            {/* Left Sidebar - Thumbnail & Banner Upload */}
+            <div className="w-full lg:max-w-[371px] flex flex-col gap-6">
+              <div className="w-full relative h-[220px] overflow-hidden rounded-xl flex items-center justify-center bg-muted group border border-border/50">
+                {formData.eventThumbnail &&
+                  formData.eventThumbnail.trim().length > 0 ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={formData.eventThumbnail.trim()}
+                    alt="Hackathon Thumbnail"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                    <Trophy className="w-12 h-12 opacity-20" />
+                    <span className="text-sm opacity-50">No banner image</span>
+                  </div>
+                )}
+
+                <label
+                  htmlFor={bannerInputId}
+                  className={cn(
+                    "absolute bottom-3 right-3 rounded-full bg-black/50 backdrop-blur-md border border-white/10 hover:bg-black/70 transition-colors cursor-pointer",
+                    isUploadingBanner ? "opacity-60 cursor-not-allowed" : "",
+                  )}
+                  aria-disabled={isUploadingBanner}
+                >
+                  <p className="text-white px-4 py-1.5 flex items-center gap-2 text-xs font-medium">
+                    <FileEdit className="w-3 h-3" />
+                    {isUploadingBanner ? "Uploading…" : "Change Banner"}
+                  </p>
+                </label>
+
+                <input
+                  id={bannerInputId}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  disabled={isUploadingBanner}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    e.target.value = "";
+                    void handleBannerSelected(f);
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Main Content - Form Grid */}
+            <div className="flex-1 flex flex-col gap-4">
+              {/* Context & Visibility Dropdowns */}
+              <div className="flex w-full justify-between items-center bg-transparent">
+                {/* Event Context Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className="cursor-pointer">
+                      <div className="flex items-center gap-2 bg-neutral-200 px-4 py-2 rounded-lg text-sm font-medium">
+                        {formData.eventFestName || "Individual Hackathon"}
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[300px]">
+                    <DropdownMenuLabel>Type</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          eventFestName: "Individual Hackathon",
+                        })
+                      }
+                    >
+                      Individual Hackathon
+                    </DropdownMenuItem>
+                    {/* Add more items/loading logic here */}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Visibility Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className="cursor-pointer">
+                      <div className="flex items-center gap-2 bg-neutral-200 px-4 py-2 rounded-lg text-sm font-medium">
+                        <Globe className="w-4 h-4 text-muted-foreground" />
+                        {formData.eventFestVisibility || "Public"}
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[200px]">
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          eventFestVisibility: "Public",
+                        })
+                      }
+                    >
+                      Public
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          eventFestVisibility: "Private",
+                        })
+                      }
+                    >
+                      Private
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Hackathon Name InputBlock */}
+              <div className="w-full">
+                <InputBlock
+                  icon={null}
+                  label={
+                    <input
+                      value={formData.eventName}
+                      onChange={(e) =>
+                        setFormData({ ...formData, eventName: e.target.value })
+                      }
+                      className="text-2xl md:text-3xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50 w-full text-foreground"
+                      placeholder="Hackathon Name"
+                    />
+                  }
+                  subLabel="Enter the name of your hackathon"
+                  className="bg-transparent hover:bg-transparent p-0 border-none cursor-text"
+                />
+              </div>
+
+              {/* Date & Time Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="h-full">
+                      <InputBlock
+                        icon={<CalendarIcon className="w-6 h-6" />}
+                        label={
+                          formData.eventDate
+                            ? formData.eventDate.toLocaleDateString("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
+                            : "Select Date"
+                        }
+                        subLabel="Hackathon Date"
+                        className="h-full"
+                      />
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.eventDate}
+                      onSelect={(date) =>
+                        setFormData({ ...formData, eventDate: date })
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <InputBlock
+                  icon={<Clock className="w-6 h-6" />}
+                  label={
+                    <input
+                      type="time"
+                      value={formData.eventTimeFrom}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          eventTimeFrom: e.target.value,
+                        })
+                      }
+                      className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
+                    />
+                  }
+                  subLabel="Hackathon Time"
+                  className="h-full"
+                />
+              </div>
+
+              {/* End Date & End Time Row (optional) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="h-full">
+                      <InputBlock
+                        icon={<CalendarIcon className="w-6 h-6" />}
+                        label={
+                          formData.eventEndDate
+                            ? formData.eventEndDate.toLocaleDateString(
+                              "en-GB",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )
+                            : "Select End Date"
+                        }
+                        subLabel="Hackathon End Date (optional)"
+                        className="h-full"
+                      />
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.eventEndDate}
+                      onSelect={(date) =>
+                        setFormData({ ...formData, eventEndDate: date })
+                      }
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <InputBlock
+                  icon={<Clock className="w-6 h-6" />}
+                  label={
+                    <input
+                      type="time"
+                      value={formData.eventTimeTo ?? ""}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setFormData({
+                          ...formData,
+                          eventTimeTo:
+                            next.trim().length > 0 ? next : undefined,
+                        });
+                      }}
+                      className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
+                    />
+                  }
+                  subLabel="Hackathon End Time (optional)"
+                  className="h-full"
+                />
+              </div>
+
+              {/* Location */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div className="h-full">
+                    <InputBlock
+                      icon={<MapPin className="w-6 h-6" />}
+                      label={
+                        formData.eventLocation || "Add Hackathon Location"
+                      }
+                      subLabel="Offline location or virtual link"
+                    />
+                  </div>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Event Location</DialogTitle>
+                    <DialogDescription>
+                      Enter the location where the event will take place.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <label htmlFor="location" className="text-sm font-medium">
+                        Location
+                      </label>
+                      <input
+                        id="location"
+                        value={formData.eventLocation}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            eventLocation: e.target.value,
+                          })
+                        }
+                        placeholder="e.g. San Francisco, CA"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Description */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div className="h-full">
+                    <InputBlock
+                      icon={<AlignLeft className="w-6 h-6" />}
+                      label={
+                        formData.eventDescription &&
+                          formData.eventDescription.replace(/<[^>]*>?/gm, "")
+                            .length > 0
+                          ? "Description"
+                          : "Add Description"
+                      }
+                      subLabel={
+                        formData.eventDescription
+                          ? formData.eventDescription
+                            .replace(/<[^>]*>?/gm, "")
+                            .substring(0, 50) + "..."
+                          : "Everything you need to know about..."
+                      }
+                    />
+                  </div>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+                  <DialogHeader>
+                    <DialogTitle>Event Description</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex-1 overflow-hidden border rounded-md">
+                    <RichTextEditor
+                      value={formData.eventDescription}
+                      onChange={(content: string) =>
+                        setFormData({
+                          ...formData,
+                          eventDescription: content,
+                        })
+                      }
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Hackathon Type & Participant Type Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className="h-full">
+                      <InputBlock
+                        icon={<Wand2 className="w-6 h-6" />}
+                        label={formData.hackathonType || "Hackathon Type"}
+                        subLabel="Select hackathon format"
+                      />
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {[
+                      "Coding Hackathon",
+                      "Idea Hackathon",
+                      "Open Hackathon",
+                    ].map((t) => (
+                      <DropdownMenuItem
+                        key={t}
+                        onClick={() =>
+                          setFormData({ ...formData, hackathonType: t })
+                        }
+                      >
+                        {t}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className="h-full">
+                      <InputBlock
+                        icon={<Users className="w-6 h-6" />}
+                        label={
+                          formData.participantType || "Participant Type"
+                        }
+                        subLabel="Who can attend?"
+                      />
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {[
+                      "Individual",
+                      "Team of 2",
+                      "Team of 3",
+                      "Team of 4",
+                      "Team of 5",
+                      "Team of 6",
+                      "More than 6",
+                      "Team of 2-3",
+                      "Team of 2-4",
+                      "Team of 3-4",
+                      "Team of 3-5",
+                      "Team of 4-5",
+                      "Team of 4-6",
+                      "Team of 5-6",
+                    ].map((t) => (
+                      <DropdownMenuItem
+                        key={t}
+                        onClick={() =>
+                          setFormData({ ...formData, participantType: t })
+                        }
+                      >
+                        {t}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Registration Form */}
+              <div onClick={() => setShowRegistrationModal(true)}>
+                <InputBlock
+                  icon={<FileEdit className="w-6 h-6" />}
+                  label="Registration Form"
+                  subLabel="Customize registration questions"
+                />
+              </div>
+            </div>
+
+            <RegistrationQuestionsModal
+              open={showRegistrationModal}
+              onOpenChange={setShowRegistrationModal}
+              questions={formData.registrationQuestions}
+              onSave={(questions) =>
+                setFormData({ ...formData, registrationQuestions: questions })
+              }
+            />
+          </div>
         )}
 
         {activeTab === "registration-settings" && (

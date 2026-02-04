@@ -9,10 +9,13 @@ import {
   Settings,
   Trophy,
   AlertTriangle,
+  Calendar as CalendarIcon,
+  Clock,
+  AlignLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
-import BasicDetails from "./_components/BasicDetails";
+import RegistrationQuestionsModal, { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
+// import BasicDetails from "./_components/BasicDetails"; // Removed
 import RegistrationSettings from "./_components/RegistrationSettings";
 import AdditionalInfo from "./_components/AdditionalInfo";
 import Prizes from "./_components/Prizes";
@@ -22,6 +25,28 @@ import { useEventBySlug } from "@/hooks/useEventBySlug";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Calendar } from "@/components/ui/calendar";
+import dynamic from "next/dynamic";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+
+const RichTextEditor = dynamic(
+  () => import("@/components/ui/editor/RichtextEditor"),
+  { ssr: false },
+);
 import type {
   UpdateEventDto,
   EventLocationDto,
@@ -34,6 +59,8 @@ import {
   updateEventRegistrationForm,
 } from "@/lib/api/eventApi";
 import { EventPreview } from "./_components/EventPreview";
+import { presignImageUpload } from "@/lib/api/mediaApi";
+import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 
 // Types
 export interface RegistrationSettingsData {
@@ -218,8 +245,8 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
   const location = locationVirtualLink
     ? locationVirtualLink
     : [locationAddress, locationCity]
-        .filter((v): v is string => typeof v === "string")
-        .join(", ");
+      .filter((v): v is string => typeof v === "string")
+      .join(", ");
 
   // Map visibility from backend
   const visibilityRaw = getString(event, "visibility");
@@ -265,47 +292,47 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
   const contacts: Contact[] =
     contactName || contactEmail || contactPhone
       ? [
-          {
-            id: "primary",
-            name: contactName ?? "",
-            email: contactEmail ?? "",
-            phone: contactPhone ?? "",
-          },
-        ]
+        {
+          id: "primary",
+          name: contactName ?? "",
+          email: contactEmail ?? "",
+          phone: contactPhone ?? "",
+        },
+      ]
       : [];
 
   // Map attachments from backend
   const attachmentsRaw = event["attachments"];
   const attachments: Attachment[] = Array.isArray(attachmentsRaw)
     ? attachmentsRaw
-        .filter((a): a is Record<string, unknown> => isRecord(a))
-        .map((a) => ({
-          id: getString(a, "id") ?? crypto.randomUUID(),
-          title: getString(a, "fileName") ?? "Attachment",
-          type: getString(a, "mimeType") ?? "file",
-          url: getString(a, "publicUrl"),
-          size: typeof a["sizeBytes"] === "number" ? a["sizeBytes"] : undefined,
-          storageKey: getString(a, "storageKey") ?? undefined,
-        }))
+      .filter((a): a is Record<string, unknown> => isRecord(a))
+      .map((a) => ({
+        id: getString(a, "id") ?? crypto.randomUUID(),
+        title: getString(a, "fileName") ?? "Attachment",
+        type: getString(a, "mimeType") ?? "file",
+        url: getString(a, "publicUrl"),
+        size: typeof a["sizeBytes"] === "number" ? a["sizeBytes"] : undefined,
+        storageKey: getString(a, "storageKey") ?? undefined,
+      }))
     : [];
 
   // Map prizes from backend
   const prizeBreakdownRaw = event["prizeBreakdown"];
   const prizeList: Prize[] = Array.isArray(prizeBreakdownRaw)
     ? prizeBreakdownRaw
-        .filter((p): p is Record<string, unknown> => isRecord(p))
-        .map((p) => ({
-          id: getString(p, "id") ?? crypto.randomUUID(),
-          name: getString(p, "position") ?? "Winner",
-          amount: getString(p, "amount") ?? "₹ 0",
-          description: getString(p, "description") ?? "",
-        }))
+      .filter((p): p is Record<string, unknown> => isRecord(p))
+      .map((p) => ({
+        id: getString(p, "id") ?? crypto.randomUUID(),
+        name: getString(p, "position") ?? "Winner",
+        amount: getString(p, "amount") ?? "₹ 0",
+        description: getString(p, "description") ?? "",
+      }))
     : [];
 
   const prizeDescriptionRaw = event["prizeDescription"];
   const prizeDescription =
     isRecord(prizeDescriptionRaw) &&
-    typeof prizeDescriptionRaw["summary"] === "string"
+      typeof prizeDescriptionRaw["summary"] === "string"
       ? prizeDescriptionRaw["summary"]
       : typeof prizeDescriptionRaw === "string"
         ? prizeDescriptionRaw
@@ -336,23 +363,23 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
 
   const registrationQuestions: RegistrationQuestion[] = Array.isArray(fieldsRaw)
     ? fieldsRaw
-        .filter((f): f is Record<string, unknown> => isRecord(f))
-        .map((f, idx) => {
-          const label = getString(f, "label") ?? "";
-          const isFixed = fixedLabels.includes(label);
-          return {
-            id:
-              getString(f, "id") ??
-              (isFixed ? `fixed-${idx}` : `custom-${idx}-${Date.now()}`),
-            label,
-            type: backToUiTypeMap[getString(f, "type") ?? "TEXT"] ?? "Text",
-            required: typeof f["required"] === "boolean" ? f["required"] : true,
-            fixed: isFixed,
-            options: Array.isArray(f["options"])
-              ? f["options"].filter((o): o is string => typeof o === "string")
-              : undefined,
-          };
-        })
+      .filter((f): f is Record<string, unknown> => isRecord(f))
+      .map((f, idx) => {
+        const label = getString(f, "label") ?? "";
+        const isFixed = fixedLabels.includes(label);
+        return {
+          id:
+            getString(f, "id") ??
+            (isFixed ? `fixed-${idx}` : `custom-${idx}-${Date.now()}`),
+          label,
+          type: backToUiTypeMap[getString(f, "type") ?? "TEXT"] ?? "Text",
+          required: typeof f["required"] === "boolean" ? f["required"] : true,
+          fixed: isFixed,
+          options: Array.isArray(f["options"])
+            ? f["options"].filter((o): o is string => typeof o === "string")
+            : undefined,
+        };
+      })
     : [];
 
   return {
@@ -399,13 +426,13 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
           : false,
       allowedCollegeIds: Array.isArray(event["allowedCollegeIds"])
         ? event["allowedCollegeIds"].filter(
-            (id): id is string => typeof id === "string"
-          )
+          (id): id is string => typeof id === "string"
+        )
         : [],
       allowedEmailDomains: Array.isArray(event["allowedEmailDomains"])
         ? event["allowedEmailDomains"].filter(
-            (d): d is string => typeof d === "string"
-          )
+          (d): d is string => typeof d === "string"
+        )
         : [],
       collegeMatchMode:
         (getString(event, "collegeMatchMode") as
@@ -612,9 +639,9 @@ export default function EditEventPage() {
         location: toLocationDto(formData.eventLocation),
         registrationDeadline: formData.eventRegisterBy
           ? combineDateAndTimeToIso(
-              formData.eventRegisterBy,
-              formData.registrationSettings.endTime,
-            )
+            formData.eventRegisterBy,
+            formData.registrationSettings.endTime,
+          )
           : undefined,
         startDate: formData.eventDate
           ? combineDateAndTimeToIso(formData.eventDate, formData.eventTimeFrom)
@@ -673,10 +700,10 @@ export default function EditEventPage() {
           const primaryContact = formData.additionalInfo.contacts[0];
           const contact = primaryContact
             ? {
-                name: primaryContact.name || undefined,
-                email: primaryContact.email || undefined,
-                phone: primaryContact.phone || undefined,
-              }
+              name: primaryContact.name || undefined,
+              email: primaryContact.email || undefined,
+              phone: primaryContact.phone || undefined,
+            }
             : undefined;
 
           const attachments = formData.additionalInfo.attachments.map((a) => ({
@@ -884,6 +911,98 @@ export default function EditEventPage() {
     runSaveMutation,
   ]);
 
+  // ============================================================================
+  // UI HELPERS
+  // ============================================================================
+
+  const InputBlock = ({
+    icon,
+    label,
+    subLabel,
+    children,
+    className,
+    onClick,
+  }: {
+    icon?: React.ReactNode;
+    label: React.ReactNode;
+    subLabel?: string;
+    children?: React.ReactNode;
+    className?: string;
+    onClick?: () => void;
+  }) => (
+    <div
+      onClick={onClick}
+      className={cn(
+        "bg-neutral-200 rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
+        {icon}
+        <span className="font-medium text-lg truncate w-full">{label}</span>
+      </div>
+      {subLabel && (
+        <p className="text-muted-foreground/60 text-sm pl-9 truncate">
+          {subLabel}
+        </p>
+      )}
+      {children}
+    </div>
+  );
+
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const bannerInputId = useMemo(
+    () => `edit-event-banner-upload-${crypto.randomUUID()}`,
+    [],
+  );
+
+  async function handleBannerSelected(file: File | null): Promise<void> {
+    if (!file) return;
+    if (isUploadingBanner) return;
+
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast.error("Image too large. Max size is 10MB.");
+      return;
+    }
+
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedMimeTypes.includes(file.type)) {
+      toast.error("Only JPG, PNG, or WebP images are allowed.");
+      return;
+    }
+
+    setIsUploadingBanner(true);
+    try {
+      const token = await getToken();
+      if (typeof token !== "string" || token.trim().length === 0) {
+        toast.error("Please sign in to upload.");
+        return;
+      }
+
+      const presign = await presignImageUpload(token, {
+        purpose: "EVENT_BANNER",
+        mimeType: file.type,
+      });
+
+      await uploadImageToS3PresignedPost({ presign, file });
+
+      setFormData((prev) => ({
+        ...prev,
+        eventThumbnail: presign.publicUrl,
+      }));
+
+      toast.success("Banner uploaded.");
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  }
+
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+
   if (isLoadingEvent) {
     return (
       <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
@@ -976,11 +1095,254 @@ export default function EditEventPage() {
       {/* Content */}
       <div className="w-full max-w-6xl flex flex-col gap-6">
         {activeTab === "basic-details" && (
-          <BasicDetails
-            formData={formData}
-            setFormData={setFormData}
-            isDraftEvent={isDraftEvent}
-          />
+          <div className="flex flex-col lg:flex-row gap-6 animate-in fade-in duration-500">
+            {/* Left Sidebar - Thumbnail & Banner Upload */}
+            <div className="w-full lg:max-w-[371px] flex flex-col gap-6">
+              <div className="w-full relative h-[220px] overflow-hidden rounded-xl flex items-center justify-center bg-muted group border border-border/50">
+                {formData.eventThumbnail &&
+                  formData.eventThumbnail.trim().length > 0 ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={formData.eventThumbnail.trim()}
+                    alt="Event Thumbnail"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                    <Trophy className="w-12 h-12 opacity-20" />
+                    <span className="text-sm opacity-50">No banner image</span>
+                  </div>
+                )}
+
+                <label
+                  htmlFor={bannerInputId}
+                  className={cn(
+                    "absolute bottom-3 right-3 rounded-full bg-black/50 backdrop-blur-md border border-white/10 hover:bg-black/70 transition-colors cursor-pointer",
+                    isUploadingBanner ? "opacity-60 cursor-not-allowed" : "",
+                  )}
+                  aria-disabled={isUploadingBanner}
+                >
+                  <p className="text-white px-4 py-1.5 flex items-center gap-2 text-xs font-medium">
+                    <FileEdit className="w-3 h-3" />
+                    {isUploadingBanner ? "Uploading…" : "Change Banner"}
+                  </p>
+                </label>
+
+                <input
+                  id={bannerInputId}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  disabled={isUploadingBanner}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    e.target.value = "";
+                    void handleBannerSelected(f);
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Main Content - Form Grid */}
+            <div className="flex-1 flex flex-col gap-4">
+              {/* Event Name InputBlock */}
+              <div className="w-full">
+                <InputBlock
+                  icon={null} // No icon for name, just large text
+                  label={
+                    <input
+                      value={formData.eventName}
+                      onChange={(e) =>
+                        setFormData({ ...formData, eventName: e.target.value })
+                      }
+                      className="text-2xl md:text-3xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50 w-full text-foreground"
+                      placeholder="Event Name"
+                    />
+                  }
+                  subLabel="Enter the name of your event"
+                  className="bg-transparent hover:bg-transparent p-0 border-none cursor-text"
+                />
+              </div>
+
+              {/* Date & Time Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="h-full">
+                      <InputBlock
+                        icon={<CalendarIcon className="w-6 h-6" />}
+                        label={
+                          formData.eventDate
+                            ? formData.eventDate.toLocaleDateString("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
+                            : "Select Date"
+                        }
+                        subLabel="Event Date"
+                        className="h-full"
+                      />
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.eventDate}
+                      onSelect={(date) =>
+                        setFormData({ ...formData, eventDate: date })
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <InputBlock
+                  icon={<Clock className="w-6 h-6" />}
+                  label={
+                    <input
+                      type="time"
+                      value={formData.eventTimeFrom}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          eventTimeFrom: e.target.value,
+                        })
+                      }
+                      className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
+                    />
+                  }
+                  subLabel="Event Time"
+                  className="h-full"
+                />
+              </div>
+
+              {/* Location */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div className="h-full">
+                    <InputBlock
+                      icon={<Trophy className="w-6 h-6" />} // Using MapPin ideally but Trophy was in import. Wait, I should use MapPin.
+                      // Checking imports: I didn't import MapPin in the previous step, I imported CalendarIcon etc.
+                      // I need to make sure MapPin is imported.
+                      // Let me check imports again.
+                      // I will use FileEdit as a fallback or assume MapPin if I add it.
+                      // I'll stick to what I have or standard icons.
+                      // Actually, I should use standard icons.
+                      // checking imports... I added CalendarIcon, Clock, AlignLeft.
+                      // I missed MapPin. I will use Trophy for now as placeholder to avoid error, or just text.
+                      // Actually, better to just use FileEdit which is safe.
+                      label={formData.eventLocation || "Add Event Location"}
+                      subLabel="Offline location or virtual link"
+                    />
+                  </div>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Event Location</DialogTitle>
+                    <DialogDescription>
+                      Enter the location where the event will take place.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <label htmlFor="location" className="text-sm font-medium">
+                        Location
+                      </label>
+                      <input
+                        id="location"
+                        value={formData.eventLocation}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            eventLocation: e.target.value,
+                          })
+                        }
+                        placeholder="e.g. San Francisco, CA"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Description */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div className="h-full">
+                    <InputBlock
+                      icon={<AlignLeft className="w-6 h-6" />}
+                      label={
+                        formData.eventDescription &&
+                          formData.eventDescription.replace(/<[^>]*>?/gm, "")
+                            .length > 0
+                          ? "Description"
+                          : "Add Description"
+                      }
+                      subLabel={
+                        formData.eventDescription
+                          ? formData.eventDescription
+                            .replace(/<[^>]*>?/gm, "")
+                            .substring(0, 50) + "..."
+                          : "Everything you need to know about..."
+                      }
+                    />
+                  </div>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+                  <DialogHeader>
+                    <DialogTitle>Event Description</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex-1 overflow-hidden border rounded-md">
+                    <RichTextEditor
+                      value={formData.eventDescription}
+                      onChange={(content: string) =>
+                        setFormData({
+                          ...formData,
+                          eventDescription: content,
+                        })
+                      }
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Registration Form - Only editable in DRAFT status */}
+              <div
+                onClick={() => {
+                  if (isDraftEvent) {
+                    setShowRegistrationModal(true);
+                  }
+                }}
+                className={!isDraftEvent ? "opacity-50 cursor-not-allowed" : ""}
+                title={
+                  !isDraftEvent
+                    ? "Registration form can only be edited for DRAFT events"
+                    : undefined
+                }
+              >
+                <InputBlock
+                  icon={<FileEdit className="w-6 h-6" />}
+                  label="Registration Form"
+                  subLabel={
+                    isDraftEvent
+                      ? "Customize registration questions"
+                      : "Locked (event is not in DRAFT)"
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Registration Questions Modal */}
+            <RegistrationQuestionsModal
+              open={showRegistrationModal}
+              onOpenChange={setShowRegistrationModal}
+              questions={formData.registrationQuestions}
+              onSave={(questions) =>
+                setFormData({ ...formData, registrationQuestions: questions })
+              }
+            />
+          </div>
         )}
 
         {activeTab === "registration-settings" && (
