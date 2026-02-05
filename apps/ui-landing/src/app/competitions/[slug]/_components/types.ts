@@ -33,7 +33,7 @@ export interface Prize {
   title: string;
   amount: string;
   description: string;
-  icon?: "trophy" | "medal" | "star";
+  icon?: "trophy" | "coin" | "gift" | "star";
   image?: string;
   tags?: string[];
 }

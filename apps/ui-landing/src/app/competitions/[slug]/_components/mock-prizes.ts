@@ -6,7 +6,7 @@ export const MOCK_PRIZES: Prize[] = [
         title: "Winner",
         amount: "₹ 5,000",
         description: "Cash Prize",
-        image: "trophy_gold.png",
+        image: "trophy.svg",
         tags: ["Appreciation Certificate"],
         icon: "trophy"
     },
@@ -15,25 +15,25 @@ export const MOCK_PRIZES: Prize[] = [
         title: "1st Runner Up",
         amount: "₹ 5,000",
         description: "Cash Prize",
-        image: "coin_gold.png",
+        image: "coin.svg",
         tags: ["Appreciation Certificate"],
-        icon: "medal"
+        icon: "coin"
     },
     {
         id: "3",
         title: "2nd Runner Up",
         amount: "Neckband + Swags",
         description: "Goodies",
-        image: "gift_box.png",
+        image: "gift.svg",
         tags: ["Appreciation Certificate"],
-        icon: "star"
+        icon: "gift"
     },
     {
         id: "4",
         title: "Participation",
         amount: "Goodies",
         description: "For all participants",
-        image: "star_gold.png",
+        image: "star.svg",
         tags: ["Participation Certificate"],
         icon: "star"
     }

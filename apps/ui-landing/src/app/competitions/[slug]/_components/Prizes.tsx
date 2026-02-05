@@ -3,6 +3,7 @@
 import { Prize } from "./types";
 import { Trophy, Medal, Star } from "lucide-react";
 import { MOCK_PRIZES } from "./mock-prizes";
+import Image from "next/image";
 
 interface PrizesProps {
   prizes: Prize[];
@@ -21,13 +22,12 @@ export function Prizes({ prizes: _prizes }: PrizesProps) {
         {prizes.map((prize) => (
           <div
             key={prize.id}
-            className="relative overflow-hidden border border-neutral-400 rounded-3xl p-6 h-48 md:h-56 shadow-sm hover:shadow-md transition-all duration-300"
+            className="relative overflow-hidden border border-neutral-400 rounded-3xl px-6 py-4 shadow-sm hover:shadow-md transition-all duration-300"
           >
-            {/* Content Left */}
-            <div className="relative z-10 flex flex-col justify-between h-full max-w-[60%]">
-              <div>
-                <p className="text-lg font-medium text-neutral-500 mb-1">{prize.title}</p>
-                <h3 className="text-2xl md:text-3xl font-bold text-neutral-900 leading-tight">
+            <div className="relative z-10 flex flex-col gap-4 h-full ">
+              <div className="flex flex-col gap-4 flex-1 max-w-[60%]">
+                <p className="text-base font-medium text-neutral-700 mb-1">{prize.title}</p>
+                <h3 className="text-3xl font-semibold text-neutral-900 leading-tight">
                   {prize.amount}
                 </h3>
               </div>
@@ -35,16 +35,19 @@ export function Prizes({ prizes: _prizes }: PrizesProps) {
               {/* Certificate Pill */}
               {prize.tags && prize.tags.length > 0 && (
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 rounded-full w-fit">
-                  {prize.icon === "trophy" && <Trophy className="w-4 h-4 text-neutral-700" />}
-                  {prize.icon === "medal" && <Medal className="w-4 h-4 text-neutral-700" />}
-                  {prize.icon === "star" && <Star className="w-4 h-4 text-neutral-700" />}
+                  <Trophy className="w-4 h-4 text-neutral-700" />
                   <span className="text-xs font-base bg-primary-100 text-neutral-700">
                     {prize.tags[0]}
                   </span>
                 </div>
               )}
             </div>
-
+            <div className="hidden md:block">
+              <div className="w-40 h-36 rounded-[50%] bg-primary-900 absolute -right-5 -bottom-20"></div>
+              <div className="absolute right-0 bottom-0 w-37 h-37">
+                <Image src={`/illustrations/prices/${prize.image}`} alt={prize.title} width={160} height={160} className="absolute top-0" />
+              </div>
+            </div>
           </div>
         ))}
       </div>
