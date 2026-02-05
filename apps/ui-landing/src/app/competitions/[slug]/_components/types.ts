@@ -30,9 +30,13 @@ export interface Organizer {
 
 export interface Prize {
   id: string;
-  title: string;
+  // API fields
+  position?: string;
   amount: string;
-  description: string;
+  description?: string | null;
+
+  // UI fields
+  title?: string;
   icon?: "trophy" | "coin" | "gift" | "star";
   image?: string;
   tags?: string[];

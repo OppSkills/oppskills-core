@@ -1,7 +1,7 @@
 "use client";
 
 import { Prize } from "./types";
-import { Trophy, Medal, Star } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { MOCK_PRIZES } from "./mock-prizes";
 import Image from "next/image";
 
@@ -9,19 +9,36 @@ interface PrizesProps {
   prizes: Prize[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function Prizes({ prizes: _prizes }: PrizesProps) {
-  // Use mock data for now as requested
-  const prizes = MOCK_PRIZES;
+export function Prizes({ prizes }: PrizesProps) {
+  // Take top 3 prizes from API and map them to the first 3 mock configurations (Winner, 1st Runner, 2nd Runner)
+  const apiPrizesWithAssets = prizes.slice(0, 3).map((prize, index) => {
+    const mockConfig = MOCK_PRIZES[index];
+    return {
+      ...prize,
+      // Use position from API as title (e.g. "Winner", "1st Runner Up"), fallback to mock title
+      title: prize.position || mockConfig?.title,
+      // Inject visual assets from mock config
+      image: mockConfig?.image,
+      tags: mockConfig?.tags,
+      icon: mockConfig?.icon,
+    };
+  });
+
+  // The 4th card (Participation) comes from MOCK_PRIZES[3]
+  // We check if it exists to be safe
+  const participationPrize = MOCK_PRIZES[3] ? [MOCK_PRIZES[3]] : [];
+
+  // Combine API prizes with the static participation prize
+  const displayPrizes = [...apiPrizesWithAssets, ...participationPrize];
 
   return (
     <div className="space-y-8">
       <h2 className="text-3xl font-semibold text-neutral-800">Prizes</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {prizes.map((prize) => (
+        {displayPrizes.map((prize, index) => (
           <div
-            key={prize.id}
+            key={prize.id || `prize-${index}`}
             className="relative overflow-hidden border border-neutral-400 rounded-3xl px-6 py-4 shadow-sm hover:shadow-md transition-all duration-300"
           >
             <div className="relative z-10 flex flex-col gap-4 h-full ">
@@ -44,9 +61,11 @@ export function Prizes({ prizes: _prizes }: PrizesProps) {
             </div>
             <div className="hidden md:block">
               <div className="w-40 h-36 rounded-[50%] bg-primary-900 absolute -right-5 -bottom-20"></div>
-              <div className="absolute right-0 bottom-0 w-37 h-37">
-                <Image src={`/illustrations/prices/${prize.image}`} alt={prize.title} width={160} height={160} className="absolute top-0" />
-              </div>
+              {prize.image && (
+                <div className="absolute right-0 bottom-0 w-37 h-37">
+                  <Image src={`/illustrations/prices/${prize.image}`} alt={prize.title || "Prize"} width={160} height={160} className="absolute top-0" />
+                </div>
+              )}
             </div>
           </div>
         ))}
