@@ -76,9 +76,10 @@ function mapTeamSize(participantType: string): string {
   }
 }
 
-function mapPrizeIcon(position: number): "trophy" | "medal" | "star" {
+function mapPrizeIcon(position: number): "trophy" | "coin" | "gift" | "star" {
   if (position === 1) return "trophy";
-  if (position === 2) return "medal";
+  if (position === 2) return "coin";
+  if (position === 3) return "gift";
   return "star";
 }
 
