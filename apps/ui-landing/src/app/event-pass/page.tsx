@@ -129,7 +129,7 @@ const EventPassPage = () => {
               <div className="presented-by">
                 <span className="presented-text">Presented by</span>
                 <Image
-                  src="/logo.png"
+                  src="/logo.svg"
                   alt="OppSkills"
                   width={72}
                   height={18}

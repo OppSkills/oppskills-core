@@ -15,6 +15,8 @@ import {
   Building2,
   Banknote,
 } from "lucide-react";
+import InputBlock from "@/components/ui/derived/InputBlock";
+import BannerUploader from "@/components/ui/derived/BannerUploader";
 import { z } from "zod";
 import EventCard from "@/components/ui/derived/EventCard";
 import HackathonInput from "@/components/ui/hackathon/Input";
@@ -84,35 +86,7 @@ export default function Page() {
   // UI COMPONENTS
   // ============================================================================
 
-  const InputBlock = ({
-    icon,
-    label,
-    subLabel,
-    children,
-    className,
-  }: {
-    icon?: React.ReactNode;
-    label: React.ReactNode;
-    subLabel?: string;
-    children?: React.ReactNode;
-    className?: string;
-  }) => (
-    <div
-      className={cn(
-        "bg-neutral-200 break-all rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group",
-        className
-      )}
-    >
-      <div className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
-        {icon}
-        <span className="font-medium text-lg truncate w-full">{label}</span>
-      </div>
-      {subLabel && (
-        <p className="text-muted-foreground/60 text-sm pl-9 truncate">{subLabel}</p>
-      )}
-      {children}
-    </div>
-  );
+
 
   // ============================================================================
   // ZOD SCHEMA
@@ -556,46 +530,17 @@ export default function Page() {
             selector={(state) => state.values}
             children={(values) => (
               <>
-                <div className="w-full relative h-[220px] overflow-hidden rounded-xl flex items-center justify-center bg-muted">
-                  <Image
-                    width={371}
-                    height={371}
-                    src={
-                      typeof values.eventThumbnail === "string" &&
-                        values.eventThumbnail.trim().length > 0
-                        ? values.eventThumbnail.trim()
-                        : "/tmp/hackathon.jpg"
-                    }
-                    alt="Event Thumbnail"
-                    className="w-full h-full object-cover"
-                  />
-                  <label
-                    htmlFor={bannerInputId}
-                    className={cn(
-                      "absolute bottom-2 right-2 rounded-full bg-background/20 backdrop-blur-xl shadow-lg ring-1 ring-background/20 hover:bg-background/40 transition-colors cursor-pointer",
-                      isUploadingBanner ? "opacity-60 cursor-not-allowed" : ""
-                    )}
-                    aria-disabled={isUploadingBanner}
-                  >
-                    <p className="text-background px-4 py-2 flex items-center gap-2 text-xs font-medium">
-                      <Upload className="w-4 h-4" />
-                      {isUploadingBanner ? "Uploading…" : "Upload"}
-                    </p>
-                  </label>
-
-                  <input
-                    id={bannerInputId}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    disabled={isUploadingBanner}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0] ?? null;
-                      e.target.value = "";
-                      void handleBannerSelected(f);
-                    }}
-                  />
-                </div>
+                <BannerUploader
+                  imageUrl={
+                    typeof values.eventThumbnail === "string" &&
+                      values.eventThumbnail.trim().length > 0
+                      ? values.eventThumbnail.trim()
+                      : "/tmp/hackathon.jpg"
+                  }
+                  onUpload={(file) => void handleBannerSelected(file)}
+                  isUploading={isUploadingBanner}
+                  inputId={bannerInputId}
+                />
 
                 {/* Preview */}
                 <div className="flex flex-col gap-2">

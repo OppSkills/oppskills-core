@@ -64,29 +64,17 @@ export function RoundsTimeline({
           return (
             <div key={round.id} className="flex gap-4 md:gap-6 relative">
               {index !== rounds.length - 1 && (
-                <div className="absolute left-[24px] top-[48px] bottom-[-16px] md:bottom-[-24px] w-[2px] bg-[#eaccf7]" />
+                <div className="absolute left-[24px] top-[48px] bottom-[-16px] md:bottom-[-24px] w-[2px] bg-primary-200" />
               )}
 
               <div className="flex-shrink-0 flex flex-col items-center">
                 <div
                   className={cn(
-                    "w-12 h-12 rounded-lg flex items-center justify-center z-10",
-                    status === "completed"
-                      ? "bg-green-100"
-                      : status === "live"
-                        ? "bg-purple-200"
-                        : "bg-[#eaccf7]",
+                    "w-12 h-12 rounded-lg flex items-center justify-center z-10 bg-primary-200"
                   )}
                 >
                   <span
-                    className={cn(
-                      "text-lg font-bold",
-                      status === "completed"
-                        ? "text-green-700"
-                        : status === "live"
-                          ? "text-purple-700"
-                          : "text-[#3c0055]",
-                    )}
+                    className="text-primary-900"
                   >
                     R{roundNumber}
                   </span>

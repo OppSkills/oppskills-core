@@ -608,7 +608,7 @@ export class CreateEventDto {
   @ApiPropertyOptional({
     description: "Organization logo URL",
     format: "uri",
-    example: "https://cdn.oppskills.com/orgs/tech-innovation-labs-logo.png",
+    example: "https://cdn.oppskills.com/orgs/tech-innovation-labs-logo.svg",
   })
   @IsOptional()
   @IsUrl()

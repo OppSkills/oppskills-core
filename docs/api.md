@@ -221,7 +221,7 @@ Content-Type: application/json
     }
   ],
   "organizationName": "Tech Innovation Labs",
-  "organizationLogoUrl": "https://cdn.oppskills.com/orgs/tech-innovation-labs-logo.png",
+  "organizationLogoUrl": "https://cdn.oppskills.com/orgs/tech-innovation-labs-logo.svg",
   "attendeeEligibility": ["EVERYONE_CAN_APPLY"],
   "maxTeams": 50,
   "rounds": [
@@ -1325,7 +1325,7 @@ Content-Type: application/json
   "startDate": "2025-06-15T09:00:00Z",
   "endDate": "2025-06-18T18:00:00Z",
   "organizationName": "TechCorp International",
-  "organizationLogoUrl": "https://cdn.oppskills.com/orgs/techcorp-logo.png"
+  "organizationLogoUrl": "https://cdn.oppskills.com/orgs/techcorp-logo.svg"
 }
 ```
 
@@ -1396,7 +1396,7 @@ Authorization: Bearer <token>
     "city": "San Francisco"
   },
   "organizationName": "TechCorp International",
-  "organizationLogoUrl": "https://cdn.oppskills.com/orgs/techcorp-logo.png",
+  "organizationLogoUrl": "https://cdn.oppskills.com/orgs/techcorp-logo.svg",
   "hackathons": [
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",

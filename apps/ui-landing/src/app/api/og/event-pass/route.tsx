@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     // Preload images for better performance in edge runtime
     const [participantImage, logoImage] = await Promise.all([
       loadImageAsData(participantImageUrl),
-      loadImageAsData(`${baseUrl}/logo.png`),
+      loadImageAsData(`${baseUrl}/logo.svg`),
     ]);
 
     // OG images are typically 1200x630, but we'll match the ticket aspect ratio

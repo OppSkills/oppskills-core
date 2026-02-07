@@ -13,6 +13,8 @@ import {
   Clock,
   AlignLeft,
 } from "lucide-react";
+import InputBlock from "@/components/ui/derived/InputBlock";
+import BannerUploader from "@/components/ui/derived/BannerUploader";
 import { cn } from "@/lib/utils";
 import RegistrationQuestionsModal, { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
 // import BasicDetails from "./_components/BasicDetails"; // Removed
@@ -915,40 +917,7 @@ export default function EditEventPage() {
   // UI HELPERS
   // ============================================================================
 
-  const InputBlock = ({
-    icon,
-    label,
-    subLabel,
-    children,
-    className,
-    onClick,
-  }: {
-    icon?: React.ReactNode;
-    label: React.ReactNode;
-    subLabel?: string;
-    children?: React.ReactNode;
-    className?: string;
-    onClick?: () => void;
-  }) => (
-    <div
-      onClick={onClick}
-      className={cn(
-        "bg-neutral-200 rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group",
-        className,
-      )}
-    >
-      <div className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
-        {icon}
-        <span className="font-medium text-lg truncate w-full">{label}</span>
-      </div>
-      {subLabel && (
-        <p className="text-muted-foreground/60 text-sm pl-9 truncate">
-          {subLabel}
-        </p>
-      )}
-      {children}
-    </div>
-  );
+
 
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const bannerInputId = useMemo(
@@ -1098,49 +1067,17 @@ export default function EditEventPage() {
           <div className="flex flex-col lg:flex-row gap-6 animate-in fade-in duration-500">
             {/* Left Sidebar - Thumbnail & Banner Upload */}
             <div className="w-full lg:max-w-[371px] flex flex-col gap-6">
-              <div className="w-full relative h-[220px] overflow-hidden rounded-xl flex items-center justify-center bg-muted group border border-border/50">
-                {formData.eventThumbnail &&
-                  formData.eventThumbnail.trim().length > 0 ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={formData.eventThumbnail.trim()}
-                    alt="Event Thumbnail"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                    <Trophy className="w-12 h-12 opacity-20" />
-                    <span className="text-sm opacity-50">No banner image</span>
-                  </div>
-                )}
-
-                <label
-                  htmlFor={bannerInputId}
-                  className={cn(
-                    "absolute bottom-3 right-3 rounded-full bg-black/50 backdrop-blur-md border border-white/10 hover:bg-black/70 transition-colors cursor-pointer",
-                    isUploadingBanner ? "opacity-60 cursor-not-allowed" : "",
-                  )}
-                  aria-disabled={isUploadingBanner}
-                >
-                  <p className="text-white px-4 py-1.5 flex items-center gap-2 text-xs font-medium">
-                    <FileEdit className="w-3 h-3" />
-                    {isUploadingBanner ? "Uploading…" : "Change Banner"}
-                  </p>
-                </label>
-
-                <input
-                  id={bannerInputId}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  disabled={isUploadingBanner}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] ?? null;
-                    e.target.value = "";
-                    void handleBannerSelected(f);
-                  }}
-                />
-              </div>
+              <BannerUploader
+                imageUrl={
+                  formData.eventThumbnail &&
+                    formData.eventThumbnail.trim().length > 0
+                    ? formData.eventThumbnail.trim()
+                    : undefined
+                }
+                onUpload={(file) => void handleBannerSelected(file)}
+                isUploading={isUploadingBanner}
+                inputId={bannerInputId}
+              />
             </div>
 
             {/* Main Content - Form Grid */}
