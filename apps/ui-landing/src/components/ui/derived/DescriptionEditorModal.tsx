@@ -68,7 +68,7 @@ export default function DescriptionEditorModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-screen h-screen max-w-none flex flex-col bg-background p-0">
+      <DialogContent className="sm:max-w-4xl w-full h-[90vh] sm:h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-4 border-b">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>

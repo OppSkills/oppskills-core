@@ -99,7 +99,7 @@ export default function Page() {
   }) => (
     <div
       className={cn(
-        "bg-neutral-200 rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group",
+        "bg-neutral-200 break-all rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group",
         className
       )}
     >
@@ -708,7 +708,7 @@ export default function Page() {
           <div className="flex flex-col gap-4">
 
             {/* ROW 1: Name and Date */}
-            <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4 min-w-0">
               <div className="flex items-center min-h-[100px]">
                 <form.Field name="eventName">
                   {(field) => (
@@ -796,7 +796,7 @@ export default function Page() {
             </div>
 
             {/* ROW 2: Location and Time */}
-            <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4 min-w-0">
               {/* Location Dialog */}
               <Dialog>
                 <DialogTrigger asChild>
@@ -926,7 +926,7 @@ export default function Page() {
             />
 
             {/* ROW 4: Extra Details (Max Users, Org, Deadline, Fee) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
               {/* Max Users */}
               <Dialog>
                 <DialogTrigger asChild>

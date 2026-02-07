@@ -40,7 +40,7 @@ export default function EventCard({
               ))}
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground truncate">
             {location || (
               <span className="text-muted-foreground italic">LOCATION</span>
             )}

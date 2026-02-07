@@ -106,10 +106,10 @@ export default function Page() {
     className?: string;
   }) => (
     <div
-      className={`bg-neutral-200 rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group ${className}`}
+      className={`bg-neutral-200 break-all rounded-xl p-4 flex flex-col justify-center gap-1 hover:bg-muted/80 transition-colors cursor-pointer group ${className}`}
     >
       <div className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
-        {icon}
+        <div className="min-w-4">{icon}</div>
         <span className="font-medium text-lg">{label}</span>
       </div>
       {subLabel && (
@@ -495,7 +495,7 @@ export default function Page() {
               height={371}
               src={
                 typeof formData.eventThumbnail === "string" &&
-                formData.eventThumbnail.trim().length > 0
+                  formData.eventThumbnail.trim().length > 0
                   ? formData.eventThumbnail.trim()
                   : "/tmp/hackathon.jpg"
               }
@@ -894,7 +894,7 @@ export default function Page() {
                   subLabel={
                     formData.eventDescription
                       ? formData.eventDescription.replace(/<[^>]*>?/gm, "") +
-                        (formData.eventDescription.length > 50 ? "..." : "")
+                      (formData.eventDescription.length > 50 ? "..." : "")
                       : undefined
                   }
                   className="h-full"
