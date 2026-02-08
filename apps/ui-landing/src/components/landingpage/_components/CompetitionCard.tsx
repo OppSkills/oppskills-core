@@ -39,7 +39,7 @@ export function CompetitionCard({ hackathon }: CompetitionCardProps) {
         ? format(new Date(hackathon.registrationDeadline), "dd MMM yyyy")
         : "N/A";
 
-    const prizeAmount = formatCurrency(hackathon.prizeTotalWorthAmount, hackathon.currency);
+    const entryFee = formatCurrency(hackathon.entryFeeAmount, hackathon.currency);
 
     const footerContent = (
         <div className="flex items-center justify-between mt-auto pt-2 w-full">
@@ -50,8 +50,8 @@ export function CompetitionCard({ hackathon }: CompetitionCardProps) {
             </div>
 
             <div className="flex flex-col gap-1 text-right">
-                <span className="text-neutral-500 text-xs">Prizes worth</span>
-                <span className="text-neutral-700 text-sm font-medium">₹ {prizeAmount}</span>
+                <span className="text-neutral-500 text-xs">Entry Fee</span>
+                <span className="text-neutral-700 text-sm font-medium">{isFree ? "Free" : `₹ ${entryFee}`}</span>
             </div>
         </div>
     );
