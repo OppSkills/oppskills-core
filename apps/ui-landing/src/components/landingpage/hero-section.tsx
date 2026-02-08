@@ -1,5 +1,5 @@
 "use client";
-
+import Typewriter from "typewriter-effect";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -62,33 +62,38 @@ export default function HeroSection() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8 w-full max-w-lg mx-auto">
-          <Button
-            onClick={() => router.push("/competitions")}
-            className="
-      inline-flex items-center justify-center gap-3
-      px-6 py-3
-      rounded-[37px]
-      bg-primary-500 text-primary-foreground hover:opacity-90
-      inter font-semibold text-[20px] leading-[150%]
-      shadow-md transition-all hover:-translate-y-1 h-auto
-    "
-          >
-            Find Opportunities
-          </Button>
+          <div>
+            <Button
+              onClick={() => router.push("/competitions")}
+              className="bg-primary-500 p-6 rounded-full text-xl"
+            >
+              Find Opportunities
+            </Button>
+          </div>
 
           {/* BUTTON 2: Join Communities (Ghost) */}
           <Button
             variant="ghost"
-            className="
-      inline-flex items-center justify-center gap-3
-      px-6 py-3
-      rounded-[37px]
-      text-primary-500 hover:bg-muted
-      inter font-semibold text-[20px] leading-[150%]
-      transition-all hover:-translate-y-1 h-auto
-    "
-          >
-            Join Communities
+            onClick={() => router.push("/organize")}
+            className="hover:bg-primary-100 rounded-full p-6 text-primary-500 text-xl min-w-[250px]"
+          >Host an
+            <Typewriter
+              options={{
+                loop: true,
+                delay: 75,
+                deleteSpeed: 50,
+              }}
+              onInit={(typewriter) => {
+                typewriter
+                  .typeString("Event")
+                  .pauseFor(2000)
+                  .deleteAll()
+                  .typeString("Opportunity")
+                  .pauseFor(2000)
+                  .deleteAll()
+                  .start();
+              }}
+            />
           </Button>
         </div>
       </div>
