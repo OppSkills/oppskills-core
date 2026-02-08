@@ -66,7 +66,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-12">
           <div className="flex items-center gap-3">
             <Image
-              src="/logo.svg"
+              src="/logo_light.svg"
               alt="OppSkills Logo"
               width={200}
               height={200}
