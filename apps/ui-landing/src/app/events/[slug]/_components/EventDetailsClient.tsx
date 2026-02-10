@@ -31,6 +31,7 @@ import { getMe, submitOnboarding } from "@/lib/api/usersApi";
 import { CreateOnboardingDto } from "@oppskills/types/frontend";
 import { useQuery } from "@tanstack/react-query";
 import { getApiErrorMessage } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 // Razorpay global type
 declare global {
@@ -580,16 +581,31 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
           onLoad={() => setRazorpayLoaded(true)}
         />
       )}
-      <div className="container mx-auto px-4 max-w-7xl">
-        {/* Mobile: Banner first, then header, then registration card */}
-        {/* Desktop: Header first, then grid with banner and registration card */}
 
-        {/* Mobile flex container for ordering */}
-        <div className="flex flex-col lg:contents">
-          {/* Banner - appears first on mobile, inside grid on desktop */}
-          {event.bannerImageUrl && (
-            <div className="lg:hidden mb-8 order-1">
-              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-sm">
+      {/* Main Container - Full width with padding, no max-w constraint */}
+      <div className="w-full px-4 sm:px-8 md:px-12 lg:px-16 xl:px-24">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+          {/* LEFT COLUMN: Banner & Contact Details */}
+          <div className="lg:col-span-4 space-y-8 order-2 lg:order-1">
+            {/* Festival Badge (Mobile Only - usually nice to have on top) */}
+            {event.festival && (
+              <div className="lg:hidden flex flex-wrap gap-2 mb-4">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-100 rounded-full text-xs text-neutral-600">
+                  <span className="font-normal text-muted-foreground">
+                    Featured in
+                  </span>
+                  <span className="font-semibold text-neutral-900">
+                    {event.festival.name}
+                  </span>
+                  <span className="text-neutral-400">&gt;</span>
+                </div>
+              </div>
+            )}
+
+            {/* Banner Image */}
+            {event.bannerImageUrl && (
+              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-sm border border-neutral-100">
                 <Image
                   src={event.bannerImageUrl}
                   alt={event.name}
@@ -598,18 +614,77 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                   priority
                 />
               </div>
-            </div>
-          )}
+            )}
 
-          {/* TOP HEADER SECTION */}
-          <div className="mb-8 order-2 lg:order-none">
+            {/* Contact Details Section */}
+            <div id="contact-details" className="scroll-mt-24">
+              <h3 className="text-xl font-semibold text-neutral-800 mb-4">Contact Details</h3>
+              <div className="space-y-4">
+                {/* Event Owner / Organizer */}
+                <div className="p-4 bg-[#FDF2FF] rounded-xl border border-purple-100 flex items-center gap-4">
+                  {event.owner.imageUrl ? (
+                    <Image
+                      src={event.owner.imageUrl}
+                      alt={`${event.owner.firstName || ""} ${event.owner.lastName || ""}`}
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
+                      {getInitials(event.owner.firstName, event.owner.lastName)}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-foreground truncate">
+                      {(() => {
+                        const orgName = event?.organization_name;
+                        const ownerName = [event?.owner?.firstName, event?.owner?.lastName]
+                          .filter(Boolean)
+                          .join(" ");
+                        return orgName || ownerName || "Organizer";
+                      })()}
+                    </h4>
+                    {event.contactPhone && (
+                      <p className="text-xs text-neutral-500 truncate">{event.contactPhone}</p>
+                    )}
+                    {event.owner.email && (
+                      <p className="text-xs text-neutral-500 truncate">{event.owner.email}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Additional Contact Person */}
+                {event.contactName && (
+                  <div className="p-4 bg-[#FDF2FF] rounded-xl border border-purple-100 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
+                      {event.contactName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-foreground truncate">{event.contactName}</h4>
+                      {event.contactPhone && (
+                        <p className="text-xs text-neutral-500 truncate">{event.contactPhone}</p>
+                      )}
+                      {event.contactEmail && (
+                        <p className="text-xs text-neutral-500 truncate">{event.contactEmail}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: Info, Action, Content */}
+          <div className="lg:col-span-8 space-y-8 order-1 lg:order-2">
+            {/* Festival Badge (Desktop) */}
             {event.festival && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-100  rounded-full text-xs text-neutral-600 ">
+              <div className="hidden lg:flex flex-wrap gap-2 mb-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-100 rounded-full text-xs text-neutral-600">
                   <span className="font-normal text-muted-foreground">
                     Featured in
                   </span>
-                  <span className="font-semibold text-neutral-900 ">
+                  <span className="font-semibold text-neutral-900">
                     {event.festival.name}
                   </span>
                   <span className="text-neutral-400">&gt;</span>
@@ -617,358 +692,163 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
               </div>
             )}
 
-            <h1 className="text-3xl md:text-5xl font-extrabold text-foreground leading-tight mb-6 poppins tracking-tight break-words">
+            {/* Title */}
+            <h1 className="text-neutral-900 text-4xl font-semibold">
               {event.name}
             </h1>
 
-            <div className="flex flex-wrap gap-6 md:gap-12">
+            {/* Date & Location Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Date */}
               <div className="flex gap-4 items-center">
-                <div className="flex-shrink-0 w-12 h-12 bg-neutral-50  rounded-xl border border-neutral-100  flex flex-col items-center justify-center">
-                  <span className="text-[10px] uppercase text-neutral-500 font-medium leading-none mb-0.5">
-                    {monthShort}
-                  </span>
-                  <span className="text-lg font-bold text-neutral-900  leading-none">
-                    {dayNum}
-                  </span>
-                </div>
                 <div>
-                  <h4 className="font-semibold text-neutral-900  text-[15px]">
+                  <div className="flex flex-col items-center justify-center shadow-sm overflow-hidden rounded-lg">
+                    <div className="bg-neutral-200 min-w-14 flex justify-center items-center py-0.5">
+                      <span className="text-neutral-700  text-xs">
+                        {monthShort}
+                      </span>
+                    </div>
+                    <span className="text-base font-medium text-neutral-900 py-0.5">
+                      {dayNum}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <p className="font-medium text-neutral-800 text-BASE">
                     {formattedDate}
-                  </h4>
-                  <p className="text-sm text-neutral-500">{formattedTime}</p>
+                  </p>
+                  <p className="text-xs text-neutral-600">{formattedTime}</p>
                 </div>
               </div>
 
-              <div className="flex gap-4 items-center">
-                <div className="flex-shrink-0 w-12 h-12 bg-neutral-50  rounded-xl border border-neutral-100  flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-neutral-700 " />
+              <div className="flex w-full gap-2 items-center">
+                <div className="border-0.5 shadow-sm border-neutral-400 rounded-lg p-3">
+                  <MapPin className="w-6 h-6 text-neutral-700" />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-neutral-900  text-[15px] break-words">
-                    {venueName}
-                  </h4>
-                  <p className="text-sm text-neutral-500 break-words">{venueAddress}</p>
+                <div className="flex flex-col gap-1">
+                  <p className="font-medium text-base text-neutral-800">
+                    {event.locationAddress}
+                  </p>
+                  <p className="text-xs text-neutral-600">{event.locationCity}</p>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Registration Card - appears after header on mobile, in grid on desktop */}
-          <div className="lg:hidden mb-8 order-3">
-            <EventRegistrationCard
-              tickets={tickets}
-              selectedTicketId={effectiveSelectedTicketId}
-              onSelectTicket={setSelectedTicketId}
-              onRegister={handleRegistration}
-              isRegistering={isRegistering || isCheckingOnboarding}
-              isRegistered={isUserRegistered}
-              isPaidButIncomplete={isPaidButIncomplete}
-              registrationDeadline={event.registrationDeadline}
-              user={
-                user
-                  ? {
-                    name: user.firstName ?? user.username ?? "User",
-                    email: user.primaryEmailAddress?.emailAddress ?? "",
-                    avatar: user.imageUrl ?? "",
-                  }
-                  : undefined
-              }
-            />
-          </div>
-
-          {/* Desktop Grid Layout */}
-          <div className="hidden lg:grid grid-cols-1 lg:grid-cols-3 gap-8 relative items-start">
-            <div className="lg:col-span-2 space-y-8">
-              {event.bannerImageUrl && (
-                <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-sm">
-                  <Image
-                    src={event.bannerImageUrl}
-                    alt={event.name}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
+            {/* Registration Card (Full width in this column) */}
+            <div className="rounded-2xl border border-neutral-400 overflow-hidden">
+              <div className="mb-4">
+                <p className="text-base text-neutral-900 py-2 px-3 bg-primary-100">Registration</p>
+                <p className="text-neutral-700 text-base py-2 px-3 mt-2">Welcome! to join event please register below.</p>
+                {/* Current User Info (if logged in) */}
+                {user && (
+                  <div className="flex items-center gap-3 mt-2 mb-4 px-3">
+                    {user.imageUrl ? (
+                      <Image
+                        src={user.imageUrl}
+                        alt="User"
+                        width={32}
+                        height={32}
+                        className="rounded-full w-8 h-8 object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs">
+                        {user.firstName?.[0]}
+                      </div>
+                    )}
+                    <div className="text-sm">
+                      <span className="font-medium text-neutral-800">
+                        {user.firstName} {user.lastName}
+                      </span>
+                      <span className="text-neutral-700 ml-2">
+                        {user.primaryEmailAddress?.emailAddress}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <div className="px-3 mt-4">
+                  <Button
+                    className="rounded-full w-full text-neutral-100 font-medium py-4"
+                    onClick={handleRegistration}
+                    disabled={isRegistering || isCheckingOnboarding || isUserRegistered}>
+                    {isRegistering || isCheckingOnboarding ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Processing...
+                      </>
+                    ) : isUserRegistered ? (
+                      "You are Registered"
+                    ) : (
+                      "One click RSVP"
+                    )}
+                  </Button>
                 </div>
-              )}
+              </div>
 
+            </div>
+
+            {/* Tabs & Content */}
+            <div className="space-y-6">
               <EventTabs
                 tabs={TABS}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
               />
 
-              <div className="space-y-16">
-                <section id="about-event" className="scroll-mt-48">
+              <div className="min-h-[200px] space-y-8">
+                <section id="about-event" className="scroll-mt-24">
                   <h2 className="text-2xl font-bold mb-4 text-foreground poppins">
                     About Event
                   </h2>
-                  <div className="ProseMirror  max-w-none text-neutral-600  inter">
+                  <div className="ProseMirror max-w-none text-neutral-600 inter">
                     {event.description ? (
                       <div
-                        className="html-content whitespace-pre-line break-words"
+                        className="html-content whitespace-pre-line break-words leading-relaxed"
                         dangerouslySetInnerHTML={{ __html: event.description }}
                       />
                     ) : (
                       <p>No description available.</p>
                     )}
                   </div>
-                </section>
 
-                <section id="contact-details" className="scroll-mt-48">
-                  <h2 className="text-2xl font-bold mb-6 text-foreground poppins">
-                    Contact Details
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-[#FDF2FF]  rounded-xl border border-purple-100  flex items-center gap-4">
-                      {event.owner.imageUrl ? (
-                        <Image
-                          src={event.owner.imageUrl}
-                          alt={`${event.owner.firstName || ""} ${event.owner.lastName || ""
-                            }`}
-                          width={48}
-                          height={48}
-                          className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
-                          {getInitials(
-                            event.owner.firstName,
-                            event.owner.lastName,
-                          )}
-                        </div>
-                      )}
-                      <div>
-                        <h4 className="font-bold text-foreground break-words">
-                          {(() => {
-                            const orgName = event?.organization_name;
-
-                            const ownerName = [event?.owner?.firstName, event?.owner?.lastName]
-                              .filter(Boolean)
-                              .join(" ");
-
-                            return orgName || ownerName || "Organizer";
-                          })()}
-                        </h4>
-
-                        {event.owner.email && (
-                          <p className="text-xs text-neutral-500 break-all">
-                            {event.owner.email}
-                          </p>
-                        )}
-                        {event.contactPhone && (
-                          <p className="text-xs text-neutral-500">
-                            {event.contactPhone}
-                          </p>
-                        )}
-                        {event.contactEmail && (
-                          <p className="text-xs text-neutral-500">
-                            {event.contactEmail}
-                          </p>
-                        )}
-                      </div>
+                  {event.isRecruitmentEvent && (
+                    <div className="mt-4 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm">
+                      This is a recruitment event. Registrants may be contacted for opportunities.
                     </div>
-
-                    {event.contactName && (
-                      <div className="p-4 bg-[#FDF2FF]  rounded-xl border border-purple-100  flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
-                          {event.contactName.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-foreground break-words">
-                            {event.contactName}
-                          </h4>
-                          {event.contactPhone && (
-                            <p className="text-xs text-neutral-500">
-                              {event.contactPhone}
-                            </p>
-                          )}
-                          {event.contactEmail && (
-                            <p className="text-xs text-neutral-500 break-all">
-                              {event.contactEmail}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </section>
-
-                {event.prizeBreakdown && event.prizeBreakdown.length > 0 && (
-                  <section id="prizes" className="scroll-mt-48">
-                    <h2 className="text-2xl font-bold mb-6 text-foreground poppins">
-                      Prizes
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {event.prizeBreakdown.map((prize: any) => (
-                        <div
-                          key={prize.id}
-                          className="p-4 border border-neutral-200  rounded-xl"
-                        >
-                          <h4 className="font-bold text-foreground">
-                            {prize.position}
-                          </h4>
-                          <p className="text-xl font-bold text-primary">
-                            {event.currency} {prize.amount.toLocaleString()}
-                          </p>
-                          {prize.description && (
-                            <p className="text-sm text-neutral-500 mt-2 break-words">
-                              {prize.description}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-              </div>
-            </div>
-
-            <div className="lg:col-span-1 lg:sticky lg:top-24 h-fit">
-              <EventRegistrationCard
-                tickets={tickets}
-                selectedTicketId={effectiveSelectedTicketId}
-                onSelectTicket={setSelectedTicketId}
-                onRegister={handleRegistration}
-                isRegistering={isRegistering || isCheckingOnboarding}
-                isRegistered={isUserRegistered}
-                isPaidButIncomplete={isPaidButIncomplete}
-                registrationDeadline={event.registrationDeadline}
-                user={
-                  user
-                    ? {
-                      name: user.firstName ?? user.username ?? "User",
-                      email: user.primaryEmailAddress?.emailAddress ?? "",
-                      avatar: user.imageUrl ?? "",
-                    }
-                    : undefined
-                }
-              />
-            </div>
-          </div>
-
-          {/* Mobile Content Section - appears after registration card */}
-          <div className="lg:hidden order-4 space-y-8">
-            <EventTabs
-              tabs={TABS}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            />
-
-            <div className="space-y-16">
-              <section id="about-event" className="scroll-mt-48">
-                <h2 className="text-2xl font-bold mb-4 text-foreground poppins">
-                  About Event
-                </h2>
-                <div className="ProseMirror  max-w-none text-neutral-600  inter">
-                  {event.description ? (
-                    <div
-                      className="html-content whitespace-pre-line break-words"
-                      dangerouslySetInnerHTML={{ __html: event.description }}
-                    />
-                  ) : (
-                    <p>No description available.</p>
                   )}
-                </div>
-              </section>
+                </section>
 
-              <section id="contact-details" className="scroll-mt-48">
-                <h2 className="text-2xl font-bold mb-6 text-foreground poppins">
-                  Contact Details
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-[#FDF2FF]  rounded-xl border border-purple-100  flex items-center gap-4">
-                    {event.owner.imageUrl ? (
-                      <Image
-                        src={event.owner.imageUrl}
-                        alt={`${event.owner.firstName || ""} ${event.owner.lastName || ""
-                          }`}
-                        width={48}
-                        height={48}
-                        className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
-                        {getInitials(
-                          event.owner.firstName,
-                          event.owner.lastName,
-                        )}
-                      </div>
-                    )}
+                <section id="prizes" className="scroll-mt-24">
+                  {event.prizeBreakdown && event.prizeBreakdown.length > 0 && (
                     <div>
-                      <h4 className="font-bold text-foreground break-words">
-                        {event.owner.firstName || ""}{" "}
-                        {event.owner.lastName || "Organizer"}
-                      </h4>
-                      {event.owner.email && (
-                        <p className="text-xs text-neutral-500 break-all">
-                          {event.owner.email}
-                        </p>
-                      )}
-                      {event.contactPhone && (
-                        <p className="text-xs text-neutral-500">
-                          {event.contactPhone}
-                        </p>
-                      )}
-                      {event.contactEmail && (
-                        <p className="text-xs text-neutral-500">
-                          {event.contactEmail}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {event.contactName && (
-                    <div className="p-4 bg-[#FDF2FF]  rounded-xl border border-purple-100  flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
-                        {event.contactName.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-foreground break-words">
-                          {event.contactName}
-                        </h4>
-                        {event.contactPhone && (
-                          <p className="text-xs text-neutral-500">
-                            {event.contactPhone}
-                          </p>
-                        )}
-                        {event.contactEmail && (
-                          <p className="text-xs text-neutral-500 break-all">
-                            {event.contactEmail}
-                          </p>
-                        )}
+                      <h2 className="text-2xl font-bold mb-6 text-foreground poppins">
+                        Prizes
+                      </h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {event.prizeBreakdown.map((prize: any) => (
+                          <div
+                            key={prize.id}
+                            className="p-4 border border-neutral-200 rounded-xl hover:border-purple-200 transition-colors bg-white"
+                          >
+                            <h4 className="font-bold text-foreground">
+                              {prize.position}
+                            </h4>
+                            <p className="text-xl font-bold text-primary mt-1">
+                              {event.currency} {prize.amount.toLocaleString()}
+                            </p>
+                            {prize.description && (
+                              <p className="text-sm text-neutral-500 mt-2 break-words">
+                                {prize.description}
+                              </p>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
-                </div>
-              </section>
-
-              {event.prizeBreakdown && event.prizeBreakdown.length > 0 && (
-                <section id="prizes" className="scroll-mt-48">
-                  <h2 className="text-2xl font-bold mb-6 text-foreground poppins">
-                    Prizes
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {event.prizeBreakdown.map((prize: any) => (
-                      <div
-                        key={prize.id}
-                        className="p-4 border border-neutral-200  rounded-xl"
-                      >
-                        <h4 className="font-bold text-foreground">
-                          {prize.position}
-                        </h4>
-                        <p className="text-xl font-bold text-primary">
-                          {event.currency} {prize.amount.toLocaleString()}
-                        </p>
-                        {prize.description && (
-                          <p className="text-sm text-neutral-500 mt-2 break-words">
-                            {prize.description}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
                 </section>
-              )}
+
+                {/* Placeholder for Speaker Tab if we add it */}
+              </div>
             </div>
           </div>
         </div>

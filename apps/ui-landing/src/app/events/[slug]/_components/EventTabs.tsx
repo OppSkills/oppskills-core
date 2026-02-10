@@ -1,7 +1,7 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import React from "react";
 
 interface EventTabsProps {
   tabs: string[];
@@ -21,26 +21,17 @@ export function EventTabs({ tabs, activeTab, onTabChange }: EventTabsProps) {
   };
 
   return (
-    <div className="border-b border-neutral-200  mb-8 overflow-x-auto sticky top-0 bg-background z-10 pt-4">
-      <div className="flex gap-8 min-w-max">
-        {tabs.map((tab) => {
+    <div className="w-full my-8 overflow-x-auto">
+      <div className="flex items-center gap-5 min-w-max">
+        {tabs.map((tab, i) => {
           const isActive = activeTab === tab;
           return (
-            <button
-              key={tab}
-              onClick={() => handleTabClick(tab)}
-              className={cn(
-                "pb-3 text-[16px] font-semibold transition-colors relative",
-                isActive
-                  ? "text-[#9C00E5] border-b-2 border-[#9C00E5]"
-                  : "text-neutral-500 hover:text-neutral-800  "
-              )}
-            >
-              {tab}
-            </button>
+            <Badge key={i} variant="outline" onClick={() => handleTabClick(tab)} className="px-3 py-2 cursor-pointer text-base font-medium">{tab}</Badge>
           );
         })}
       </div>
     </div>
   );
+
+
 }
