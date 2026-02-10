@@ -3,6 +3,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 import type { PublicHackathonListItem } from "@/lib/api/hackathonApi";
 import { OpportunityCard } from "./OpportunityCard";
+import { formatCount } from "@/lib/tools";
 
 interface CompetitionCardProps {
     hackathon: PublicHackathonListItem;
@@ -43,7 +44,19 @@ export function CompetitionCard({ hackathon }: CompetitionCardProps) {
 
     const footerContent = (
         <div className="flex items-center justify-between mt-auto pt-2 w-full">
-            {/* Added top border for separation or just keep clean */}
+            <div className="flex flex-col gap-2 ">
+                <span className="text-xs text-neutral-600">Attendees</span>
+                <div className="flex gap-1">
+                    <div className="flex">
+                        <div className="w-4 h-4 rounded-full bg-primary-500"></div>
+                        <div className="w-4 h-4 rounded-full bg-primary-400 -ml-2"></div>
+                        <div className="w-4 h-4 rounded-full bg-primary-300 -ml-2"></div>
+                    </div>
+                    <span className="text-neutral-700">
+                        {formatCount(hackathon.registrationCount)}
+                    </span>
+                </div>
+            </div>
             <div className="flex flex-col gap-1">
                 <span className="text-neutral-500 text-xs">Register by</span>
                 <span className="text-neutral-700 text-sm font-medium">{formattedDeadline}</span>
