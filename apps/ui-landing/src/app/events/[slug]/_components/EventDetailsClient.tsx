@@ -581,7 +581,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     : undefined;
 
   return (
-    <div className="min-h-screen bg-transparent py-8 font-sans">
+    <div className="min-h-screen bg-transparent lg:pt-8 pb-8 font-sans">
       {/* Load Razorpay SDK for paid events */}
       {!event.isFree && (
         <Script
@@ -591,11 +591,11 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
       )}
 
       {/* Main Container - Full width with padding, no max-w constraint */}
-      <div className="w-full px-4 sm:px-8 md:px-12 lg:px-16 xl:px-24">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="w-full px-0 sm:px-8 md:px-12 lg:px-16 xl:px-24">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
 
           {/* LEFT COLUMN: Banner & Contact Details */}
-          <div className="lg:col-span-4 space-y-8 order-2 lg:order-1">
+          <div className="lg:col-span-4 space-y-8">
             {/* Festival Badge (Mobile Only - usually nice to have on top) */}
             {event.festival && (
               <div className="lg:hidden flex flex-wrap gap-2 mb-4">
@@ -613,7 +613,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
             {/* Banner Image */}
             {event.bannerImageUrl && (
-              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-sm border border-neutral-100">
+              <div className="relative m-0 lg:mb-4 aspect-[16/9] w-full overflow-hidden lg:rounded-2xl lg:shadow-sm border border-neutral-100">
                 <Image
                   src={event.bannerImageUrl}
                   alt={event.name}
@@ -625,7 +625,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             )}
 
             {/* Contact Details Section */}
-            <div id="contact-details" className="scroll-mt-24">
+            <div id="contact-details" className="scroll-mt-24 hidden lg:block">
               <h3 className="text-xl font-semibold text-neutral-800 mb-4">Contact Details</h3>
               <div className="space-y-4">
                 {/* Event Owner / Organizer */}
@@ -684,7 +684,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
           </div>
 
           {/* RIGHT COLUMN: Info, Action, Content */}
-          <div className="lg:col-span-8 space-y-8 order-1 lg:order-2">
+          <div className="lg:col-span-8 space-y-8 order-1 lg:order-2 px-2 sm:px-0">
             {/* Festival Badge (Desktop) */}
             {event.festival && (
               <div className="hidden lg:flex flex-wrap gap-2 mb-2">
@@ -701,7 +701,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             )}
 
             {/* Title */}
-            <h1 className="text-neutral-900 text-4xl font-semibold">
+            <h1 className="text-neutral-900 text-3xl lg:text-4xl font-semibold">
               {event.name}
             </h1>
 
@@ -711,7 +711,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
               <div className="flex gap-4 items-center">
                 <div>
                   <div className="flex flex-col items-center justify-center shadow-sm overflow-hidden rounded-lg">
-                    <div className="bg-neutral-200 min-w-14 flex justify-center items-center py-0.5">
+                    <div className="bg-neutral-200 min-w-12 flex justify-center items-center py-0.5">
                       <span className="text-neutral-700  text-xs">
                         {monthShort}
                       </span>
@@ -763,7 +763,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                 onTabChange={setActiveTab}
               />
 
-              <div className="min-h-[200px] space-y-8">
+              <div className="space-y-8">
                 <section id="about-event" className="scroll-mt-24">
                   <h2 className="text-2xl font-bold mb-4 text-foreground poppins">
                     About Event
@@ -817,6 +817,62 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                 </section>
 
                 {/* Placeholder for Speaker Tab if we add it */}
+              </div>
+            </div>
+            <div id="contact-details" className="scroll-mt-24 lg:hidden">
+              <h3 className="text-xl font-semibold text-neutral-800 mb-4">Contact Details</h3>
+              <div className="space-y-4">
+                {/* Event Owner / Organizer */}
+                <div className="p-4 bg-[#FDF2FF] rounded-xl border border-purple-100 flex items-center gap-4">
+                  {event.owner.imageUrl ? (
+                    <Image
+                      src={event.owner.imageUrl}
+                      alt={`${event.owner.firstName || ""} ${event.owner.lastName || ""}`}
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
+                      {getInitials(event.owner.firstName, event.owner.lastName)}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-foreground truncate">
+                      {(() => {
+                        const orgName = event?.organization_name;
+                        const ownerName = [event?.owner?.firstName, event?.owner?.lastName]
+                          .filter(Boolean)
+                          .join(" ");
+                        return orgName || ownerName || "Organizer";
+                      })()}
+                    </h4>
+                    {event.contactPhone && (
+                      <p className="text-xs text-neutral-500 truncate">{event.contactPhone}</p>
+                    )}
+                    {event.owner.email && (
+                      <p className="text-xs text-neutral-500 truncate">{event.owner.email}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Additional Contact Person */}
+                {event.contactName && (
+                  <div className="p-4 bg-[#FDF2FF] rounded-xl border border-purple-100 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
+                      {event.contactName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-foreground truncate">{event.contactName}</h4>
+                      {event.contactPhone && (
+                        <p className="text-xs text-neutral-500 truncate">{event.contactPhone}</p>
+                      )}
+                      {event.contactEmail && (
+                        <p className="text-xs text-neutral-500 truncate">{event.contactEmail}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

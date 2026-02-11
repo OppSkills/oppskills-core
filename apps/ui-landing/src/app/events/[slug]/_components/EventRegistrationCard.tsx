@@ -270,7 +270,7 @@ export function EventRegistrationCard({
         </div>
 
         {user && (
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex items-center gap-1 md:gap-2 lg:gap-3 pt-2">
             <div className="relative w-10 h-10 rounded-full overflow-hidden bg-neutral-200">
               {user.avatar && (
                 <Image
