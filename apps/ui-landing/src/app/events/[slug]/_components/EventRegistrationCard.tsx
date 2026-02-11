@@ -217,12 +217,12 @@ export function EventRegistrationCard({
 
   // Ticket Selection View
   return (
-    <div className="w-full bg-background  rounded-[20px] border border-neutral-200  overflow-hidden shadow-sm font-sans">
-      <div className="bg-[#FDF2FF]  px-6 py-4">
-        <h3 className="text-[#5B2E63]  font-semibold text-lg">Registration</h3>
+    <div className="w-full  rounded-lg border-[0.5px] border-neutral-400  overflow-hidden">
+      <div className="bg-primary-100  px-3 py-2">
+        <h3 className="text-neutral-700 text-base">Registration</h3>
       </div>
-      <div className="p-6 space-y-6">
-        <p className="text-neutral-600  text-[15px]">
+      <div className="p-4 space-y-6">
+        <p className="text-neutral-700 text-base">
           Welcome! Please choose your desired ticket type:
         </p>
 
@@ -234,20 +234,20 @@ export function EventRegistrationCard({
                 key={ticket.id}
                 onClick={isDeadlineExceeded ? undefined : () => handleTicketSelect(ticket.id)}
                 className={cn(
-                  "rounded-2xl border p-4 transition-all duration-200 relative",
+                  "rounded-lg border p-4 transition-all duration-200 relative",
                   isDeadlineExceeded ? "cursor-not-allowed opacity-60" : "cursor-pointer",
                   isSelected
-                    ? "border-[#9C00E5] bg-[#FDF2FF]/50  ring-1 ring-[#9C00E5]"
+                    ? "border-primary-600 bg-primary-100  ring-1 ring-primary-600"
                     : "border-neutral-200 bg-transparent",
                   !isDeadlineExceeded && "hover:border-neutral-300"
                 )}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <h4 className="font-bold text-neutral-800  text-xl">
+                    <h4 className="font-semibold text-neutral-700 text-xl">
                       {ticket.name}
                     </h4>
-                    <div className="mt-1 font-bold text-neutral-900  text-xl">
+                    <div className="mt-1 font-semibold text-neutral-800 text-xl">
                       {ticket.price === 0 ? "Free" : `₹ ${ticket.price}`}
                     </div>
                   </div>
@@ -261,7 +261,7 @@ export function EventRegistrationCard({
                     )}
                   </div>
                 </div>
-                <p className="text-sm text-neutral-500 leading-relaxed  line-clamp-2">
+                <p className="text-sm text-neutral-507000 leading-relaxed  line-clamp-2">
                   {ticket.description}
                 </p>
               </div>
@@ -291,7 +291,7 @@ export function EventRegistrationCard({
         )}
 
         <Button
-          className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-background font-semibold text-[18px]"
+          className="w-full text-neutral-100 rounded-full text-base font-medium py-6"
           onClick={onRegister}
           disabled={isRegistering || !selectedTicketId || isDeadlineExceeded}
         >
@@ -300,7 +300,7 @@ export function EventRegistrationCard({
             : isRegistering
               ? "Registering..."
               : user
-                ? "Click To Book"
+                ? "Click To Pay"
                 : "Sign In to Register"}
         </Button>
       </div>
