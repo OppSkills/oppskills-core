@@ -154,14 +154,14 @@ export function EventRegistrationCard({
 
   if (isSimpleRSVP) {
     return (
-      <div className="w-full bg-background  rounded-[20px] border border-neutral-200  overflow-hidden shadow-sm font-sans">
-        <div className="bg-[#FDF2FF]  px-6 py-4">
-          <h3 className="text-[#5B2E63]  font-semibold text-lg">
+      <div className="w-full bg-background rounded-lg overflow-hidden border-[0.5px] border-neutral-400 shadow-sm">
+        <div className="bg-primary-100 px-3 py-2">
+          <h3 className="text-neutral-700 text-lg">
             Registration
           </h3>
         </div>
-        <div className="p-6 space-y-6">
-          <p className="text-neutral-600  text-[15px]">
+        <div className="p-4 space-y-6">
+          <p className="text-neutral-700 text-base">
             {user
               ? "Welcome! To join this event, please register below."
               : "Sign in to register for this event."}
@@ -180,32 +180,35 @@ export function EventRegistrationCard({
                 )}
               </div>
               <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
-                <span className="font-semibold text-neutral-900  text-[16px]">
+                <span className="font-medium text-neutral-800  text-base">
                   {user.name}
                 </span>
-                <span className="text-neutral-500 text-sm">{user.email}</span>
+                <span className="text-neutral-700 text-base">{user.email}</span>
               </div>
             </div>
           )}
 
-          {
-            isDeadlineExceeded ? <Button
-              className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm cursor-not-allowed"
-              disabled
-            >
-              Registration Closed
-            </Button> : <Button
-              className="w-full h-[52px] rounded-full bg-[#9C00E5] hover:bg-[#8500c4] text-background font-semibold text-[18px]"
-              onClick={onRegister}
-              disabled={isRegistering}
-            >
-              {isRegistering
-                ? "Registering..."
-                : user
-                  ? "One Click RSVP"
-                  : "Sign In to Register"}
-            </Button>
-          }
+          <div>
+            {
+              isDeadlineExceeded ? <Button
+                className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm cursor-not-allowed"
+                disabled
+              >
+                Registration Closed
+              </Button> : <Button
+                size={"lg"}
+                className="w-full text-neutral-100 rounded-full text-base font-medium py-6"
+                onClick={onRegister}
+                disabled={isRegistering}
+              >
+                {isRegistering
+                  ? "Registering..."
+                  : user
+                    ? "One Click RSVP"
+                    : "Sign In to Register"}
+              </Button>
+            }
+          </div>
 
         </div>
       </div>

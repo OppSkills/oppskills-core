@@ -572,6 +572,14 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
   const effectiveSelectedTicketId = selectedTicketId ?? tickets[0]?.id ?? null;
 
+  const cardUser = user
+    ? {
+      name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+      email: user.primaryEmailAddress?.emailAddress || "",
+      avatar: user.imageUrl,
+    }
+    : undefined;
+
   return (
     <div className="min-h-screen bg-transparent py-8 font-sans">
       {/* Load Razorpay SDK for paid events */}
@@ -734,57 +742,18 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
               </div>
             </div>
 
-            {/* Registration Card (Full width in this column) */}
-            <div className="rounded-2xl border border-neutral-400 overflow-hidden">
-              <div className="mb-4">
-                <p className="text-base text-neutral-900 py-2 px-3 bg-primary-100">Registration</p>
-                <p className="text-neutral-700 text-base py-2 px-3 mt-2">Welcome! to join event please register below.</p>
-                {/* Current User Info (if logged in) */}
-                {user && (
-                  <div className="flex items-center gap-3 mt-2 mb-4 px-3">
-                    {user.imageUrl ? (
-                      <Image
-                        src={user.imageUrl}
-                        alt="User"
-                        width={32}
-                        height={32}
-                        className="rounded-full w-8 h-8 object-cover"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs">
-                        {user.firstName?.[0]}
-                      </div>
-                    )}
-                    <div className="text-sm">
-                      <span className="font-medium text-neutral-800">
-                        {user.firstName} {user.lastName}
-                      </span>
-                      <span className="text-neutral-700 ml-2">
-                        {user.primaryEmailAddress?.emailAddress}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                <div className="px-3 mt-4">
-                  <Button
-                    className="rounded-full w-full text-neutral-100 font-medium py-4"
-                    onClick={handleRegistration}
-                    disabled={isRegistering || isCheckingOnboarding || isUserRegistered}>
-                    {isRegistering || isCheckingOnboarding ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Processing...
-                      </>
-                    ) : isUserRegistered ? (
-                      "You are Registered"
-                    ) : (
-                      "One click RSVP"
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-            </div>
+            {/* Replaced Hardcoded Card with Component */}
+            <EventRegistrationCard
+              tickets={tickets}
+              user={cardUser}
+              selectedTicketId={selectedTicketId}
+              onSelectTicket={setSelectedTicketId}
+              onRegister={handleRegistration}
+              isRegistering={isRegistering || isCheckingOnboarding}
+              isRegistered={isUserRegistered}
+              isPaidButIncomplete={isPaidButIncomplete}
+              registrationDeadline={event.registrationEndDate}
+            />
 
             {/* Tabs & Content */}
             <div className="space-y-6">
