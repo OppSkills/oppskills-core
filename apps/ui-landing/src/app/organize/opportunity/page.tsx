@@ -659,7 +659,7 @@ export default function Page() {
               <div className="grid grid-cols-2 gap-4">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <div className="h-full col-span-2">
+                    <div className="h-full col-span-2 min-w-0">
                       <InputBlock
                         icon={<CalendarIcon className="w-6 h-6" />}
                         label={formatDateRange(
@@ -831,7 +831,7 @@ export default function Page() {
               onClick={() => setShowDescriptionModal(true)}
               className="cursor-pointer"
             >
-              <div className="h-full">
+              <div className="h-full min-w-0">
                 <InputBlock
                   icon={<AlignLeft className="w-6 h-6" />}
                   label={

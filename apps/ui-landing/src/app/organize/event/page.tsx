@@ -669,7 +669,7 @@ export default function Page() {
               <div className="grid grid-cols-2 gap-4">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <div className="h-full col-span-2">
+                    <div className="h-full col-span-2 min-w-0">
                       <form.Subscribe
                         selector={(state) => state.values}
                         children={(values) => (
@@ -745,7 +745,7 @@ export default function Page() {
               {/* Location Dialog */}
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="h-full">
+                  <div className="h-full min-w-0">
                     <form.Subscribe
                       selector={(state) => state.values.eventLocation}
                       children={(loc) => (
@@ -792,7 +792,7 @@ export default function Page() {
               {/* Time Dialog */}
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="h-full">
+                  <div className="h-full min-w-0">
                     <form.Subscribe
                       selector={(state) => state.values.eventTimeFrom}
                       children={(time) => (
@@ -838,7 +838,7 @@ export default function Page() {
 
             {/* ROW 3: Description Modal */}
             <div onClick={() => setShowDescriptionModal(true)} className="cursor-pointer">
-              <div className="h-full">
+              <div className="h-full min-w-0">
                 <form.Subscribe
                   selector={state => state.values.eventDescription}
                   children={(desc) => (
@@ -875,7 +875,7 @@ export default function Page() {
               {/* Max Users */}
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="h-full">
+                  <div className="h-full min-w-0">
                     <form.Subscribe
                       selector={state => state.values.maxUsers}
                       children={max => (
@@ -914,7 +914,7 @@ export default function Page() {
               {/* Organization Name */}
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="h-full">
+                  <div className="h-full min-w-0">
                     <form.Subscribe
                       selector={state => state.values.organizationName}
                       children={name => (
@@ -951,7 +951,7 @@ export default function Page() {
               {/* Registration Deadline */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <div className="h-full">
+                  <div className="h-full min-w-0">
                     <form.Subscribe
                       selector={state => state.values.eventRegisterBy}
                       children={date => (
@@ -983,7 +983,7 @@ export default function Page() {
               {/* Ticketing / Fee */}
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="h-full">
+                  <div className="h-full min-w-0">
                     <form.Subscribe
                       selector={state => state.values}
                       children={vals => (
