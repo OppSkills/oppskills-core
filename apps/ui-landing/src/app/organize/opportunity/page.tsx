@@ -494,7 +494,7 @@ export default function Page() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col gap-6">
+        <div className="flex-1 flex flex-col gap-6 min-w-0">
           {/* Header Dropdowns */}
           <div className="flex w-full justify-between items-center">
             {/* Event Context Dropdown */}
