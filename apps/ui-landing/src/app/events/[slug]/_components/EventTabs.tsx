@@ -11,11 +11,27 @@ interface EventTabsProps {
 export function EventTabs({ tabs, activeTab, onTabChange }: EventTabsProps) {
   const handleTabClick = (tab: string) => {
     onTabChange(tab);
-    const element = document.getElementById(
-      tab.toLowerCase().replace(/ /g, "-")
-    );
+
+    const baseId = tab.toLowerCase().replace(/ /g, "-");
+    let element = document.getElementById(baseId);
+
+    // If the base element is not found or is hidden, try to find a visible responsive alternative
+    if (!element || element.offsetParent === null) {
+      const desktopElement = document.getElementById(`${baseId}-desktop`);
+      const mobileElement = document.getElementById(`${baseId}-mobile`);
+
+      if (desktopElement && desktopElement.offsetParent !== null) {
+        element = desktopElement;
+      } else if (mobileElement && mobileElement.offsetParent !== null) {
+        element = mobileElement;
+      }
+    }
+
     if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Use setTimeout to allow any potential state updates or layout shifts to settle
+      setTimeout(() => {
+        element?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     }
   };
 

@@ -625,7 +625,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             )}
 
             {/* Contact Details Section */}
-            <div id="contact-details" className="scroll-mt-24 hidden lg:block">
+            <div id="contact-details-desktop" className="scroll-mt-24 hidden lg:block">
               <h3 className="text-xl font-semibold text-neutral-800 mb-4">Contact Details</h3>
               <div className="space-y-4">
                 {/* Event Owner / Organizer */}
@@ -819,7 +819,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                 {/* Placeholder for Speaker Tab if we add it */}
               </div>
             </div>
-            <div id="contact-details" className="scroll-mt-24 lg:hidden">
+            <div id="contact-details-mobile" className="scroll-mt-24 lg:hidden">
               <h3 className="text-xl font-semibold text-neutral-800 mb-4">Contact Details</h3>
               <div className="space-y-4">
                 {/* Event Owner / Organizer */}
