@@ -747,7 +747,7 @@ export default function Page() {
             <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4">
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="h-full">
+                  <div className="h-full min-w-0">
                     <InputBlock
                       icon={<MapPin className="w-6 h-6" />}
                       label={formData.eventLocation || "Add Hackathon Location"}
@@ -789,7 +789,7 @@ export default function Page() {
 
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="h-full">
+                  <div className="h-full min-w-0">
                     <InputBlock
                       icon={<Clock className="w-6 h-6" />}
                       label={formatTime(formData.eventTimeFrom)}
@@ -864,7 +864,7 @@ export default function Page() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <div className="h-full">
+                  <div className="h-full min-w-0">
                     <InputBlock
                       icon={<Wand2 className="w-5 h-5" />}
                       label="Hackathon Type"
@@ -896,7 +896,7 @@ export default function Page() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <div className="h-full">
+                  <div className="h-full min-w-0">
                     <InputBlock
                       icon={<Users className="w-5 h-5" />}
                       label="Participant Type"
@@ -937,7 +937,7 @@ export default function Page() {
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <div className="h-full">
+                  <div className="h-full min-w-0">
                     <InputBlock
                       icon={<CalendarDays className="w-5 h-5" />}
                       label={
