@@ -752,7 +752,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
               isRegistering={isRegistering || isCheckingOnboarding}
               isRegistered={isUserRegistered}
               isPaidButIncomplete={isPaidButIncomplete}
-              registrationDeadline={event.registrationEndDate}
+              registrationDeadline={event.registrationDeadline}
             />
 
             {/* Tabs & Content */}
