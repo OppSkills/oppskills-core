@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, Controller, SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Loader2, Plus, Eye, EyeOff } from "lucide-react"
 import { toast } from "sonner"
+import { createAdmin } from "@/lib/api/actions"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -19,18 +20,20 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const formSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string(),
+    immutable: z.boolean(),
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
 })
 
-type FormData = z.infer<typeof formSchema>
+type CreateAdminFormValues = z.infer<typeof formSchema>
 
 export function CreateAdminDialog() {
     const [open, setOpen] = useState(false)
@@ -44,8 +47,16 @@ export function CreateAdminDialog() {
         setValue,
         watch,
         formState: { errors },
-    } = useForm<FormData>({
+        control,
+    } = useForm<CreateAdminFormValues>({
         resolver: zodResolver(formSchema),
+        defaultValues: {
+            name: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+            immutable: false,
+        },
     })
 
     const password = watch("password")
@@ -55,19 +66,19 @@ export function CreateAdminDialog() {
         setValue("confirmPassword", password)
     }
 
-    const onSubmit = async (data: FormData) => {
+    const onSubmit: SubmitHandler<CreateAdminFormValues> = async (data) => {
         setLoading(true)
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000))
-            console.log("Create Admin Data:", data)
-            toast.success("Admin created successfully (Check console for data)")
+            const { confirmPassword, ...payload } = data
+            await createAdmin(payload)
+            toast.success("Admin created successfully")
             setOpen(false)
             reset()
             setShowPassword(false)
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast.error("Failed to create admin")
+            const message = error?.response?.data?.message || error?.message || "Failed to create admin"
+            toast.error(message)
         } finally {
             setLoading(false)
         }
@@ -81,14 +92,14 @@ export function CreateAdminDialog() {
                     Create Admin
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="max-w-[90%] sm:max-w-md max-h-[calc(100vh-10rem)] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Create New Admin</DialogTitle>
                     <DialogDescription>
                         Add a new administrator to the system. Click save when you're done.
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
+                <form onSubmit={handleSubmit(onSubmit as any)} className="grid gap-4 py-4">
                     <div className="grid gap-2">
                         <Label htmlFor="name">Name</Label>
                         <Input
@@ -159,6 +170,43 @@ export function CreateAdminDialog() {
                             )}
                         </div>
                     )}
+
+                    <div className="flex items-start space-x-2 rounded-md p-4 shadow-sm">
+                        <div className="flex items-center h-5">
+                            <Controller
+                                control={control}
+                                name="immutable"
+                                render={({ field }) => (
+                                    <Checkbox
+                                        id="immutable"
+                                        checked={field.value}
+                                        onCheckedChange={(checked) => {
+                                            field.onChange(checked)
+                                            if (checked) {
+                                                // Warning logic handled by UI below
+                                            }
+                                        }}
+                                    />
+                                )}
+                            />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                            <Label htmlFor="immutable" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                Make Immutable
+                            </Label>
+
+                            {watch("immutable") && (
+                                <p className="text-xs text-destructive font-medium mt-1">
+                                    This admin will have the power to create or delete ANY other admin along with special privileges.
+                                </p>
+                            )}
+                            {!watch("immutable") && (
+                                <p className="text-[0.8rem] text-muted-foreground">
+                                    Immutable admins cannot be deleted by others and have higher privileges.
+                                </p>
+                            )}
+                        </div>
+                    </div>
 
                     <DialogFooter>
                         <Button type="submit" disabled={loading}>

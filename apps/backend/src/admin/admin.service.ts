@@ -9,11 +9,12 @@ import type { AdminUserDTO } from './admin.types';
 export class AdminService {
     constructor(@Inject(REQUEST) private request: any) { }
 
-    async signJWT(id: string, email: string) {
+    async signJWT(id: string, email: string, immutable: boolean) {
         const signedData = await jwt.sign({
             id,
             email,
-            role: "admin"
+            role: "admin",
+            immutable
         }, process.env.JWT_SECRET, {
             expiresIn: "1d"
         })
@@ -49,18 +50,25 @@ export class AdminService {
         if (!isPasswordValid) {
             throw new UnauthorizedException('Invalid password');
         }
-        const signedData = await this.signJWT(admin.id, admin.email)
+        const signedData = await this.signJWT(admin.id, admin.email, admin.immutable)
         return {
             token: signedData,
             user: {
                 id: admin.id,
                 email: admin.email,
-                role: "admin"
+                role: "admin",
+                immutable: admin.immutable
             }
         }
     }
 
     async createAdminUser(admin: AdminUserDTO) {
+        const currentUser = this.request.user;
+        console.log("current user", currentUser)
+        if (!currentUser || !currentUser.immutable) {
+            throw new UnauthorizedException('Only immutable admins can create new admins');
+        }
+
         const existingAdmin = await prisma.adminEntity.findUnique({
             where: {
                 email: admin.email,
@@ -75,9 +83,25 @@ export class AdminService {
                 name: admin.name,
                 email: admin.email,
                 password: hashedPassword,
+                immutable: admin.immutable === true,
             },
         });
         return createdAdmin;
+    }
+
+
+
+    async listAllAdmin() {
+        return prisma.adminEntity.findMany({
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                immutable: true,
+                createdAt: true,
+                updatedAt: true,
+            }
+        });
     }
 
     async updateAdminUser() { }

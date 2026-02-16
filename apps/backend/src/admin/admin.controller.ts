@@ -15,8 +15,12 @@ export class AdminController {
         return this.adminService.handleAdminLogin(body.email, body.password);
     }
 
-    @Public()
-    @Post('create')
+    @Get("admin")
+    async listAllAdmins() {
+        return this.adminService.listAllAdmin();
+    }
+
+    @Post("admin")
     async handleCreateAdminUser(@Body() body: AdminUserDTO) {
         return this.adminService.createAdminUser(body);
     }
@@ -25,4 +29,5 @@ export class AdminController {
     async getMe() {
         return this.adminService.getMe();
     }
+
 }

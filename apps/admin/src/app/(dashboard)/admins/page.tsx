@@ -1,10 +1,17 @@
 import React from 'react'
 import { AdminList } from "@/components/admins/admin-list"
-import { CreateAdminDialog } from "@/components/admins/create-admin-dialog"
+import { AdminActions } from "@/components/admins/admin-actions"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
+import { getAdmins, getMe } from '@/lib/api/actions'
 
-export default function page() {
+
+export default async function page() {
+    const [{ data: admins }, { data: currentUser }] = await Promise.all([
+        getAdmins(),
+        getMe()
+    ]);
+
     return (
         <div className="flex flex-col gap-6 p-0 sm:p-6">
             <div className="flex flex-col gap-4">
@@ -23,10 +30,10 @@ export default function page() {
                             className="w-full pl-9 sm:w-[300px]"
                         />
                     </div>
-                    <CreateAdminDialog />
+                    <AdminActions />
                 </div>
             </div>
-            <AdminList />
+            <AdminList initialAdmins={admins.filter((admin: any) => admin.id !== currentUser.id)} currentUserImmutable={currentUser.immutable} />
         </div>
     )
 }
