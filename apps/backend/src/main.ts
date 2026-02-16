@@ -54,6 +54,7 @@ async function bootstrap() {
         'https://www.oppskills.com',
         // If the app is hosted on a subdomain (common), allow it explicitly.
         'https://app.oppskills.com',
+        "https://admin.oppskills.com"
       ]
       : [
         'http://localhost:3000',
