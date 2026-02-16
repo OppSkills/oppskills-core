@@ -7,6 +7,7 @@ import {
     CreditCard,
     LayoutDashboard,
     Music,
+    Shield,
     Users,
 } from "lucide-react"
 
@@ -34,6 +35,7 @@ const data = {
             url: "#",
             items: [
                 { name: "Dashboard", href: "/", icon: LayoutDashboard },
+                { name: "Admin", href: "/admins", icon: Shield },
                 { name: "Users", href: "/users", icon: Users },
                 { name: "Events", href: "/events", icon: Calendar },
                 { name: "Hackathons", href: "/hackathons", icon: Code },
