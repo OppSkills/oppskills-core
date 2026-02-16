@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/admin-panel/sidebar";
 import { Toaster } from "sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,13 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-gray-50 text-gray-900 antialiased`}>
-        <div className="flex min-h-screen">
+        <TooltipProvider>
           <Toaster />
-          <Sidebar />
-          <main className="flex-1 md:ml-64 p-8 transition-all duration-300">
-            {children}
-          </main>
-        </div>
+          {children}
+        </TooltipProvider>
       </body>
     </html>
   );

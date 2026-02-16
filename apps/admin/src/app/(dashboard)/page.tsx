@@ -1,5 +1,6 @@
 import { dashboardStats } from "@/lib/mock-data";
 import { StatsCard } from "@/components/admin-panel/stats-card";
+import { Card, CardContent } from "@/components/ui/card";
 import * as Icons from "lucide-react";
 import { Users, DollarSign, Calendar, UserPlus } from "lucide-react";
 
@@ -40,11 +41,15 @@ export default function DashboardPage() {
 
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Placeholder for charts or recent activity */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-96 flex items-center justify-center text-gray-400">
-          User Growth Chart Placeholder
+        <div className="h-96">
+          <Card className="h-full flex items-center justify-center text-muted-foreground">
+            <CardContent>User Growth Chart Placeholder</CardContent>
+          </Card>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-96 flex items-center justify-center text-gray-400">
-          Revenue Overview Placeholder
+        <div className="h-96">
+          <Card className="h-full flex items-center justify-center text-muted-foreground">
+            <CardContent>Revenue Overview Placeholder</CardContent>
+          </Card>
         </div>
       </div>
     </div>
