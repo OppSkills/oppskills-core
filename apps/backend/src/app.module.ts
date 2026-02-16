@@ -16,6 +16,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { EmailModule } from './email/email.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     EmailModule,
     AnalyticsModule,
     WaitlistModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],
