@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import type { AdminUserDTO } from './admin.types';
 import { AdminGuard } from './admin.guard';
@@ -15,8 +15,12 @@ export class AdminController {
         return this.adminService.handleAdminLogin(body.email, body.password);
     }
 
-    @Public()
-    @Post('create')
+    @Get("admin")
+    async listAllAdmins(@Query('search') search?: string) {
+        return this.adminService.listAllAdmin(search);
+    }
+
+    @Post("admin")
     async handleCreateAdminUser(@Body() body: AdminUserDTO) {
         return this.adminService.createAdminUser(body);
     }
@@ -25,4 +29,5 @@ export class AdminController {
     async getMe() {
         return this.adminService.getMe();
     }
+
 }
