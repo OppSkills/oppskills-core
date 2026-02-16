@@ -13,6 +13,7 @@ import {
 import {
     Sidebar,
     SidebarContent,
+    SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
     SidebarGroupLabel,
@@ -41,6 +42,8 @@ const data = {
         },
     ],
 }
+
+import { UserNav } from "@/components/admin-panel/user-nav";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname();
@@ -73,6 +76,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     </SidebarGroup>
                 ))}
             </SidebarContent>
+            <SidebarFooter>
+                <UserNav />
+            </SidebarFooter>
             <SidebarRail />
         </Sidebar>
     )

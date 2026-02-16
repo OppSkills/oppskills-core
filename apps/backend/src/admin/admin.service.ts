@@ -1,11 +1,13 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, Scope, UnauthorizedException } from '@nestjs/common';
+import { REQUEST } from '@nestjs/core';
 import { prisma, UserCategory } from '@oppskills/db';
 import * as jwt from "jsonwebtoken"
 import * as bcrypt from 'bcryptjs';
 import type { AdminUserDTO } from './admin.types';
 
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class AdminService {
+    constructor(@Inject(REQUEST) private request: any) { }
 
     async signJWT(id: string, email: string) {
         const signedData = await jwt.sign({
@@ -22,7 +24,11 @@ export class AdminService {
         return jwt.verify(token, process.env.JWT_SECRET)
     }
 
-    async getMe(email: string) {
+    async getMe() {
+        const email = this.request.user?.email;
+        if (!email) {
+            throw new UnauthorizedException('User not found in request context');
+        }
         return prisma.adminEntity.findUnique({
             where: {
                 email,

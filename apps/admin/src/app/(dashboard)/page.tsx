@@ -1,5 +1,9 @@
+"use client";
+
 import { dashboardStats } from "@/lib/mock-data";
 import { StatsCard } from "@/components/admin-panel/stats-card";
+import { getMe } from "@/lib/api/actions";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import * as Icons from "lucide-react";
 import { Users, DollarSign, Calendar, UserPlus } from "lucide-react";
@@ -17,11 +21,23 @@ const iconMap: Record<string, any> = {
 };
 
 export default function DashboardPage() {
+  const [user, setUser] = useState<{ name?: string } | null>(null);
+
+  useEffect(() => {
+    getMe()
+      .then((res) => {
+        setUser(res.data);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch user for welcome message", err);
+      });
+  }, []);
+
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-2">Welcome back, Admin. Here is what is happening today.</p>
+        <p className="text-gray-500 mt-2">Welcome back, {user?.name || 'Admin'}. Here is what is happening today.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
