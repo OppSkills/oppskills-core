@@ -91,8 +91,14 @@ export class AdminService {
 
 
 
-    async listAllAdmin() {
+    async listAllAdmin(search?: string) {
         return prisma.adminEntity.findMany({
+            where: search ? {
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { email: { contains: search, mode: 'insensitive' } },
+                ]
+            } : undefined,
             select: {
                 id: true,
                 name: true,
