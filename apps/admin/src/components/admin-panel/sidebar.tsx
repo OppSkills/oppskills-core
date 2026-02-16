@@ -22,6 +22,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarRail,
+    useSidebar,
 } from "@/components/ui/sidebar"
 import { usePathname } from "next/navigation"
 
@@ -44,15 +45,29 @@ const data = {
 }
 
 import { UserNav } from "@/components/admin-panel/user-nav";
+import Link from "next/link"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname();
+    const { state } = useSidebar();
 
     return (
-        <Sidebar {...props}>
+        <Sidebar {...props} collapsible="icon">
             <SidebarHeader>
-                <div className="flex h-16 items-center border-b px-4">
-                    <h1 className="text-xl font-bold">Admin Panel</h1>
+                <div className="flex h-16 items-center justify-center border-b px-2">
+                    {state === "expanded" ? (
+                        <img
+                            src="/logo.svg"
+                            alt="Logo"
+                            className="h-10 w-auto object-contain transition-all duration-300"
+                        />
+                    ) : (
+                        <img
+                            src="/logof.png"
+                            alt="Logo"
+                            className="h-10 w-10 object-contain transition-all duration-300"
+                        />
+                    )}
                 </div>
             </SidebarHeader>
             <SidebarContent>
@@ -63,11 +78,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             <SidebarMenu>
                                 {group.items.map((item) => (
                                     <SidebarMenuItem key={item.name}>
-                                        <SidebarMenuButton asChild isActive={pathname === item.href}>
-                                            <a href={item.href}>
+                                        <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.name}>
+                                            <Link href={item.href}>
                                                 <item.icon />
                                                 <span className="font-medium">{item.name}</span>
-                                            </a>
+                                            </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
                                 ))}

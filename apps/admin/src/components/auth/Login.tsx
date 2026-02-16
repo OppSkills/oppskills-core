@@ -55,51 +55,61 @@ export default function Login() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black px-4 py-12 sm:px-6 lg:px-8">
-            <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
-
-            <Card className="w-full max-w-md border-gray-800 bg-gray-950/50 backdrop-blur-xl shadow-2xl relative z-10">
-                <CardHeader className="space-y-1 items-center pb-8">
-                    <div className="h-12 w-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20">
-                        <ShieldCheck className="h-6 w-6 text-white" />
+        <div className="flex min-h-screen items-center justify-center bg-background px-0 py-6 sm:px-6 lg:px-8">
+            <Card className="w-full gap-0 py-0 max-w-md border-border bg-card shadow-sm relative z-10 transition-all hover:shadow-md">
+                <CardHeader className="space-y-4 items-center py-8">
+                    <div className="relative w-full flex justify-center mb-2 px-8">
+                        <img
+                            src="/logo.svg"
+                            alt="Logo"
+                            className="h-16 w-auto object-contain transition-transform hover:scale-105 duration-300"
+                        />
                     </div>
-                    <CardTitle className="text-2xl font-bold text-center text-white">Admin Access</CardTitle>
-                    <CardDescription className="text-center text-gray-400">
-                        Enter your credentials to continue
-                    </CardDescription>
+                    <div className="text-center space-y-1.5">
+                        <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
+                            Admin Access
+                        </CardTitle>
+                        <CardDescription className="text-muted-foreground text-sm">
+                            Enter your credentials to manage the platform
+                        </CardDescription>
+                    </div>
                 </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <CardContent className="px-8 pb-10">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="text-gray-300">Email</Label>
+                            <Label htmlFor="email" className="text-foreground text-xs uppercase tracking-wider font-semibold ml-1">
+                                Email Address
+                            </Label>
                             <Input
                                 id="email"
                                 type="email"
                                 placeholder="admin@example.com"
                                 {...register("email")}
                                 disabled={loading}
-                                className="bg-gray-900/50 border-gray-800 text-white placeholder:text-gray-500 focus-visible:ring-blue-600"
+                                className="h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary focus-visible:border-primary transition-all duration-300 pl-4 rounded-md"
                             />
                             {errors.email && (
-                                <p className="text-sm text-red-400">{errors.email.message}</p>
+                                <p className="text-sm text-destructive pl-1 animate-in slide-in-from-left-2 fade-in">{errors.email.message}</p>
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password" className="text-gray-300">Password</Label>
+                            <Label htmlFor="password" className="text-foreground text-xs uppercase tracking-wider font-semibold ml-1">
+                                Password
+                            </Label>
                             <Input
                                 id="password"
                                 type="password"
                                 placeholder="••••••••"
                                 {...register("password")}
                                 disabled={loading}
-                                className="bg-gray-900/50 border-gray-800 text-white placeholder:text-gray-500 focus-visible:ring-blue-600"
+                                className="h-11 bg-background border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary focus-visible:border-primary transition-all duration-300 pl-4 rounded-md"
                             />
                             {errors.password && (
-                                <p className="text-sm text-red-400">{errors.password.message}</p>
+                                <p className="text-sm text-destructive pl-1 animate-in slide-in-from-left-2 fade-in">{errors.password.message}</p>
                             )}
                         </div>
                         <Button
-                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/20 border-0"
+                            className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm border-0 rounded-md font-medium tracking-wide transition-all hover:scale-[1.01] active:scale-[0.99]"
                             type="submit"
                             disabled={loading}
                         >
@@ -108,10 +118,12 @@ export default function Login() {
                         </Button>
                     </form>
                 </CardContent>
-                <CardFooter className="flex justify-center border-t border-gray-800 pt-6">
-                    <p className="text-xs text-gray-500">
-                        Secure Connection • 256-bit Encryption
-                    </p>
+                <CardFooter className="flex justify-center border-t border-border pt-6 pb-8 bg-muted/20">
+                    <div className="flex flex-col items-center gap-2">
+                        <p className="text-xs text-muted-foreground font-medium">
+                            Secure Administrative Portal
+                        </p>
+                    </div>
                 </CardFooter>
             </Card>
         </div>
