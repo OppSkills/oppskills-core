@@ -55,9 +55,9 @@ export default function Login() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-background px-0 py-6 sm:px-6 lg:px-8">
-            <Card className="w-full gap-0 py-0 max-w-md border-border bg-card shadow-sm relative z-10 transition-all hover:shadow-md">
-                <CardHeader className="space-y-4 items-center py-8">
+        <div className="flex min-h-screen items-center justify-center bg-background p-0 sm:px-4 py-0 sm:py-6 lg:px-8">
+            <Card className="w-full gap-0 py-0 max-w-md sm:border-border bg-card shadow-none border-0 sm:border sm:shadow-sm relative z-10 transition-all hover:shadow-md">
+                <CardHeader className="space-y-4 items-center px-2 sm:px-8  py-8">
                     <div className="relative w-full flex justify-center mb-2 px-8">
                         <img
                             src="/logo.svg"
@@ -74,7 +74,7 @@ export default function Login() {
                         </CardDescription>
                     </div>
                 </CardHeader>
-                <CardContent className="px-8 pb-10">
+                <CardContent className="px-2 sm:px-8 pb-10">
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-foreground text-xs uppercase tracking-wider font-semibold ml-1">
