@@ -3,9 +3,7 @@
   "private": true,
   "pnpm": {
     "overrides": {
-      "csstype": "3.2.3",
-      "@types/react": "19.1.0",
-      "@types/react-dom": "19.1.0"
+      "csstype": "3.2.3"
     }
   },
   "scripts": {
