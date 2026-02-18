@@ -15,23 +15,31 @@ export default function page() {
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [{ data: adminsData }, { data: currentUserData }] = await Promise.all([
-                    getAdmins(),
-                    getMe()
-                ]);
-                setAdmins(adminsData)
-                setCurrentUser(currentUserData)
-            } catch (error) {
-                console.error(error)
-                toast.error("Failed to fetch admins")
-            } finally {
-                setLoading(false)
-            }
+    const fetchAdmins = async () => {
+        try {
+            const { data } = await getAdmins()
+            setAdmins(data)
+        } catch (error) {
+            console.error(error)
+            toast.error("Failed to fetch admins")
         }
-        fetchData()
+    }
+
+    const fetchCurrentUser = async () => {
+        try {
+            const { data } = await getMe()
+            setCurrentUser(data)
+        } catch (error) {
+            console.error("Failed to fetch user", error)
+        }
+    }
+
+    useEffect(() => {
+        const init = async () => {
+            await Promise.all([fetchAdmins(), fetchCurrentUser()])
+            setLoading(false)
+        }
+        init()
     }, [])
 
     const filteredAdmins = admins.filter((admin) => {
@@ -74,7 +82,7 @@ export default function page() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <AdminActions />
+                    <AdminActions onAdminCreated={fetchAdmins} />
                 </div>
             </div>
             {currentUser && (

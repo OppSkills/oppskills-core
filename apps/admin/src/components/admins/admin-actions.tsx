@@ -12,7 +12,11 @@ interface AdminUser {
     immutable: boolean
 }
 
-export function AdminActions() {
+interface AdminActionsProps {
+    onAdminCreated: () => void
+}
+
+export function AdminActions({ onAdminCreated }: AdminActionsProps) {
     const [user, setUser] = useState<AdminUser | null>(null)
     const [loading, setLoading] = useState(true)
 
@@ -38,5 +42,5 @@ export function AdminActions() {
         return null
     }
 
-    return <CreateAdminDialog />
+    return <CreateAdminDialog onAdminCreated={onAdminCreated} />
 }

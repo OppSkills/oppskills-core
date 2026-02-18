@@ -30,7 +30,11 @@ const formSchema = z.object({
 
 type CreateAdminFormValues = z.infer<typeof formSchema>
 
-export function CreateAdminDialog() {
+interface CreateAdminDialogProps {
+    onAdminCreated: () => void
+}
+
+export function CreateAdminDialog({ onAdminCreated }: CreateAdminDialogProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
 
@@ -55,6 +59,7 @@ export function CreateAdminDialog() {
         try {
             await createAdmin(data)
             toast.success("Admin created successfully")
+            onAdminCreated()
             setOpen(false)
             reset()
         } catch (error: any) {

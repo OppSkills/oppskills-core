@@ -25,8 +25,17 @@ adminClient.interceptors.request.use(async (config) => {
     return config;
 });
 
+import { logoutAdmin } from "./auth";
+
 export async function getMe() {
-    return adminClient.get("/me");
+    try {
+        return await adminClient.get("/me");
+    } catch (error: any) {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            logoutAdmin();
+        }
+        throw error;
+    }
 }
 
 export async function getAdmins() {
