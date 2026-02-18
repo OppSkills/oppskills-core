@@ -15,6 +15,12 @@ import * as React from "react";
 import { Header } from "./_components/Header";
 import { Footer } from "./_components/Footer";
 
+export interface AdminWelcomeEmailProps {
+  firstName: String;
+  email: string;
+  password: string;
+}
+
 export interface IncompleteRegistrationEmailProps {
   firstName?: string;
   email: string;
@@ -71,7 +77,7 @@ export function IncompleteRegistrationEmail({
             <Heading style={subHeading}>Your Registration is Almost Complete!</Heading>
 
             <Text style={paragraph}>
-              Great news! Your <strong>payment for {eventName}</strong> was successful. 
+              Great news! Your <strong>payment for {eventName}</strong> was successful.
               However, we noticed that your registration form wasn't fully submitted.
             </Text>
 
@@ -79,7 +85,7 @@ export function IncompleteRegistrationEmail({
             <Section style={alertBox}>
               <Text style={alertTitle}>⚠️ Action Required</Text>
               <Text style={alertText}>
-                Please complete your registration form to secure your spot. 
+                Please complete your registration form to secure your spot.
                 <strong> No additional payment is needed</strong> – just fill out the form!
               </Text>
             </Section>

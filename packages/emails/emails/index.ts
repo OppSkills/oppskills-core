@@ -6,3 +6,4 @@ export * from './ParticipantDirectMessage';
 export * from './EventNotificationEmail';
 export * from './BulkEmailSuccessEmail';
 export * from './IncompleteRegistrationEmail';
+export * from './AdminOnboarding';
