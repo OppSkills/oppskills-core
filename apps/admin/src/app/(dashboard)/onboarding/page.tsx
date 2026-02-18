@@ -44,7 +44,7 @@ export default function OnboardingPage() {
                 // but standard import should be fine here as it's a client component.
                 const { getMe } = await import("@/lib/api/actions");
                 const response = await getMe();
-                if (!response.data.isFirstTime) {
+                if (!response.data.isFirstLogin) {
                     router.replace("/");
                 }
             } catch (error) {
@@ -74,7 +74,7 @@ export default function OnboardingPage() {
             // Force logout or just redirect? 
             // The backend updates the user, invalidating the session might be good practice, 
             // but for now let's redirect to dashboard which should auto-redirect if check fails, 
-            // or just reload triggers the check where isFirstTime is now false.
+            // or just reload triggers the check where isFirstLogin is now false.
             logoutAdmin()
         } catch (error: any) {
             console.error(error)

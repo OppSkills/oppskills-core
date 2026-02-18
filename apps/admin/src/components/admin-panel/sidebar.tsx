@@ -61,7 +61,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         const checkUser = async () => {
             try {
                 const response = await getMe()
-                if (response.data.isFirstTime && pathname !== "/onboarding") {
+                if (response.data.isFirstLogin && pathname !== "/onboarding") {
                     router.push("/onboarding")
                 }
             } catch (error) {

@@ -83,7 +83,7 @@ export class AdminAccountsService {
             },
             data: {
                 password: hashedPassword,
-                isFirstTime: false,
+                isFirstLogin: false,
             },
         });
         this.logger.log(`Admin updated successfully: ${updatedAdmin.email}`);

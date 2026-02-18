@@ -43,7 +43,7 @@ export class AdminAuthService {
                 email: true,
                 name: true,
                 immutable: true,
-                isFirstTime: true,
+                isFirstLogin: true,
             }
         });
     }

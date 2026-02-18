@@ -3,7 +3,7 @@ export interface AdminUserDTO {
     name: string;
     email: string;
     immutable?: boolean;
-    isFirstTime?: boolean;
+    isFirstLogin?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 }
