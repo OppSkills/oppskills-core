@@ -1,0 +1,92 @@
+import { ConflictException, Inject, Injectable, Scope, UnauthorizedException } from '@nestjs/common';
+import { REQUEST } from '@nestjs/core';
+import { prisma } from '@oppskills/db';
+import * as bcrypt from 'bcryptjs';
+import { Logger } from '../../_utils/logger';
+import type { AdminUserDTO } from '../admin.types';
+import { randomBytes } from 'crypto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EMAIL_EVENTS } from 'src/email';
+
+@Injectable({ scope: Scope.REQUEST })
+export class AdminAccountsService {
+    private logger = new Logger('AdminAccountsService');
+
+    constructor(
+        @Inject(REQUEST) private request: any,
+        private readonly eventEmitter: EventEmitter2,
+    ) { }
+
+    async createAdminUser(admin: AdminUserDTO) {
+        this.logger.log(`Attempting to create admin user: ${admin.email}`);
+        const currentUser = this.request.user;
+        // console.log("current user", currentUser)
+        if (!currentUser || !currentUser.immutable) {
+            this.logger.warn(`Unauthorized attempt to create admin by: ${currentUser?.email}`);
+            throw new UnauthorizedException('Only immutable admins can create new admins');
+        }
+
+        const existingAdmin = await prisma.adminEntity.findUnique({
+            where: {
+                email: admin.email,
+            },
+        });
+        if (existingAdmin) {
+            this.logger.warn(`Admin already exists: ${admin.email}`);
+            throw new ConflictException('Admin already exists');
+        }
+        const randomPassword = randomBytes(12).toString('hex');
+        const hashedPassword = await bcrypt.hash(randomPassword, 10);
+        const createdAdmin = await prisma.adminEntity.create({
+            data: {
+                name: admin.name,
+                email: admin.email,
+                password: hashedPassword,
+                immutable: admin.immutable === true,
+            },
+        });
+        this.eventEmitter.emit(EMAIL_EVENTS.ADMIN_CREATED, { ...createdAdmin, password: randomPassword });
+        this.logger.log(`Admin created successfully: ${createdAdmin.email}`);
+        return { ...createdAdmin, password: randomPassword };
+    }
+
+    async listAllAdmin(search?: string) {
+        this.logger.log(`Listing all admins with search: ${search || 'none'}`);
+        return prisma.adminEntity.findMany({
+            where: search ? {
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { email: { contains: search, mode: 'insensitive' } },
+                ]
+            } : undefined,
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                immutable: true,
+                createdAt: true,
+                updatedAt: true,
+            }
+        });
+    }
+
+    async updateAdminUser(data: { password: string }) {
+        const currentUser = this.request.user;
+        if (!currentUser) {
+            this.logger.warn(`Unauthorized attempt to update`);
+            throw new UnauthorizedException('Unauthorized');
+        }
+        const hashedPassword = await bcrypt.hash(data.password, 10);
+        const updatedAdmin = await prisma.adminEntity.update({
+            where: {
+                id: currentUser.id,
+            },
+            data: {
+                password: hashedPassword,
+                isFirstTime: false,
+            },
+        });
+        this.logger.log(`Admin updated successfully: ${updatedAdmin.email}`);
+        return updatedAdmin;
+    }
+}

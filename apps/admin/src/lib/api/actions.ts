@@ -33,6 +33,9 @@ export async function getAdmins() {
     return adminClient.get("/admin");
 }
 
+export async function updateAdminPassword(data: { password: string }) {
+    return adminClient.put(`/admin`, data);
+}
 
 export async function createAdmin(data: any) {
     return adminClient.post("/admin", data);

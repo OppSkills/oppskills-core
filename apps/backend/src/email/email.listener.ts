@@ -5,6 +5,7 @@ import { render } from '@react-email/components';
 import { EmailService } from './email.service';
 import { EMAIL_EVENTS } from './email.events';
 import { EventNotificationEmail } from '@oppskills/emails';
+import type { AdminWelcomeEmailProps } from "@oppskills/emails"
 import type {
   UserCreatedEventPayload,
   UserOnboardedEventPayload,
@@ -24,7 +25,7 @@ export class EmailListener {
     private readonly emailService: EmailService,
     @Inject(forwardRef(() => EventPassService))
     private readonly eventPassService: EventPassService,
-  ) {}
+  ) { }
 
   @OnEvent(EMAIL_EVENTS.USER_CREATED)
   async handleUserCreated(payload: UserCreatedEventPayload): Promise<void> {
@@ -382,5 +383,20 @@ export class EmailListener {
     this.logger.log(
       `Finished bulk email for event ${eventId}. Sent ${sentCount} emails.`,
     );
+  }
+
+  @OnEvent(EMAIL_EVENTS.ADMIN_CREATED)
+  async handleAdminCreated(payload: AdminWelcomeEmailProps): Promise<void> {
+    this.logger.log(`Handling admin.created event for admin ${payload.email}`);
+
+    await this.emailService.send({
+      type: 'admin-welcome',
+      to: payload.email,
+      props: {
+        firstName: payload.firstName,
+        email: payload.email,
+        password: payload.password,
+      },
+    });
   }
 }

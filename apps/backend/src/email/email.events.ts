@@ -9,6 +9,7 @@ export const EMAIL_EVENTS = {
   EVENT_JOINED: 'event.joined',
   EVENT_DIRECT_MESSAGE: 'event.direct.message',
   EVENT_BULK_EMAIL: 'event.bulk.email',
+  ADMIN_CREATED: 'admin.created',
 } as const;
 
 export type EmailEventType = (typeof EMAIL_EVENTS)[keyof typeof EMAIL_EVENTS];

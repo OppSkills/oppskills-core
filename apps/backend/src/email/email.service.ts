@@ -18,6 +18,8 @@ import {
   BulkEmailSuccessEmailProps,
   IncompleteRegistrationEmail,
   IncompleteRegistrationEmailProps,
+  AdminWelcomeEmailProps,
+  AdminOnboarding,
 } from '@oppskills/emails';
 import { Logger } from 'src/_utils/logger';
 
@@ -28,26 +30,29 @@ export type EmailType =
   | 'event-pass'
   | 'participant-direct-message'
   | 'bulk-email-success'
-  | 'incomplete-registration';
+  | 'incomplete-registration'
+  | 'admin-welcome';
 
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
   to: string;
   props: T extends 'welcome'
-    ? WelcomeEmailProps
-    : T extends 'onboarding-complete'
-      ? OnboardingCompleteEmailProps
-      : T extends 'event-pass-pending'
-        ? EventPassPendingEmailProps
-        : T extends 'event-pass'
-          ? EventPassEmailProps
-          : T extends 'participant-direct-message'
-            ? ParticipantDirectMessageProps
-            : T extends 'bulk-email-success'
-              ? BulkEmailSuccessEmailProps
-              : T extends 'incomplete-registration'
-                ? IncompleteRegistrationEmailProps
-                : never;
+  ? WelcomeEmailProps
+  : T extends 'onboarding-complete'
+  ? OnboardingCompleteEmailProps
+  : T extends 'event-pass-pending'
+  ? EventPassPendingEmailProps
+  : T extends 'event-pass'
+  ? EventPassEmailProps
+  : T extends 'participant-direct-message'
+  ? ParticipantDirectMessageProps
+  : T extends 'bulk-email-success'
+  ? BulkEmailSuccessEmailProps
+  : T extends 'incomplete-registration'
+  ? IncompleteRegistrationEmailProps
+  : T extends 'admin-welcome'
+  ? AdminWelcomeEmailProps
+  : never;
 }
 
 @Injectable()
@@ -164,7 +169,8 @@ export class EmailService {
       | EventPassEmailProps
       | ParticipantDirectMessageProps
       | BulkEmailSuccessEmailProps
-      | IncompleteRegistrationEmailProps,
+      | IncompleteRegistrationEmailProps
+      | AdminWelcomeEmailProps
   ): Promise<{ subject: string; html: string }> {
     switch (type) {
       case 'welcome': {
@@ -227,6 +233,15 @@ export class EmailService {
         const html = await render(element);
         return {
           subject: `Action Required: Complete your registration for ${p.eventName}`,
+          html,
+        };
+      }
+      case 'admin-welcome': {
+        const p = props as AdminWelcomeEmailProps;
+        const element = createElement(AdminOnboarding, p);
+        const html = await render(element);
+        return {
+          subject: 'Welcome to Oppskills Admin',
           html,
         };
       }

@@ -5,13 +5,13 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { AdminService } from './admin.service';
+import { AdminAuthService } from './auth/auth.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
     constructor(
-        private adminService: AdminService,
+        private adminAuthService: AdminAuthService,
         private reflector: Reflector,
     ) { }
 
@@ -30,11 +30,12 @@ export class AdminGuard implements CanActivate {
             throw new UnauthorizedException();
         }
         try {
-            const payload = await this.adminService.verifyJWT(token);
+            const payload = await this.adminAuthService.verifyJWT(token);
             // 💡 We're assigning the payload to the request object here
             // so that we can access it in our route handlers
             request['user'] = payload;
-        } catch {
+        } catch (error) {
+            console.log(error)
             throw new UnauthorizedException();
         }
         return true;

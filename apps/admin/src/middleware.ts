@@ -5,6 +5,8 @@ export function middleware(request: NextRequest) {
     const token = request.cookies.get('admin_token')?.value
     const { pathname } = request.nextUrl
 
+    console.log(`[Middleware] Pathname: ${pathname}, Token: ${!!token}`)
+
     // Ignore static assets and API routes if needed (though API routes might need protection too, usually handled by backend)
     if (
         pathname.startsWith('/_next') ||

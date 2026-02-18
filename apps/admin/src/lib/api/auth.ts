@@ -4,6 +4,7 @@ export interface AdminUser {
     id: string;
     email: string;
     role: string;
+    isFirstTime?: boolean;
 }
 
 export interface LoginResponse {

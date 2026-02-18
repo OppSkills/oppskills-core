@@ -49,9 +49,27 @@ const data = {
 import { UserNav } from "@/components/admin-panel/user-nav";
 import Link from "next/link"
 
+import { getMe } from "@/lib/api/actions"
+import { useRouter } from "next/navigation"
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname();
     const { state } = useSidebar();
+    const router = useRouter()
+
+    React.useEffect(() => {
+        const checkUser = async () => {
+            try {
+                const response = await getMe()
+                if (response.data.isFirstTime && pathname !== "/onboarding") {
+                    router.push("/onboarding")
+                }
+            } catch (error) {
+                console.error("Failed to check user status", error)
+            }
+        }
+        checkUser()
+    }, [pathname, router])
 
     return (
         <Sidebar {...props} collapsible="icon">

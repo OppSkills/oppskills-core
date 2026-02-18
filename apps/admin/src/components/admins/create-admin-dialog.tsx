@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useForm, Controller, SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Loader2, Plus, Eye, EyeOff } from "lucide-react"
+import { Loader2, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { createAdmin } from "@/lib/api/actions"
 
@@ -25,12 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 const formSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-    confirmPassword: z.string(),
     immutable: z.boolean(),
-}).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
 })
 
 type CreateAdminFormValues = z.infer<typeof formSchema>
@@ -38,13 +33,11 @@ type CreateAdminFormValues = z.infer<typeof formSchema>
 export function CreateAdminDialog() {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [showPassword, setShowPassword] = useState(false)
 
     const {
         register,
         handleSubmit,
         reset,
-        setValue,
         watch,
         formState: { errors },
         control,
@@ -53,28 +46,17 @@ export function CreateAdminDialog() {
         defaultValues: {
             name: "",
             email: "",
-            password: "",
-            confirmPassword: "",
             immutable: false,
         },
     })
 
-    const password = watch("password")
-
-    // Effect to sync confirmPassword when showPassword is true
-    if (showPassword && password) {
-        setValue("confirmPassword", password)
-    }
-
     const onSubmit: SubmitHandler<CreateAdminFormValues> = async (data) => {
         setLoading(true)
         try {
-            const { confirmPassword, ...payload } = data
-            await createAdmin(payload)
+            await createAdmin(data)
             toast.success("Admin created successfully")
             setOpen(false)
             reset()
-            setShowPassword(false)
         } catch (error: any) {
             console.error(error)
             const message = error?.response?.data?.message || error?.message || "Failed to create admin"
@@ -125,51 +107,6 @@ export function CreateAdminDialog() {
                             <p className="text-sm text-destructive">{errors.email.message}</p>
                         )}
                     </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="password">Password</Label>
-                        <div className="relative">
-                            <Input
-                                id="password"
-                                type={showPassword ? "text" : "password"}
-                                placeholder="••••••••"
-                                {...register("password")}
-                                disabled={loading}
-                                className="pr-10"
-                            />
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                                onClick={() => setShowPassword(!showPassword)}
-                            >
-                                {showPassword ? (
-                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                                ) : (
-                                    <Eye className="h-4 w-4 text-muted-foreground" />
-                                )}
-                            </Button>
-                        </div>
-                        {errors.password && (
-                            <p className="text-sm text-destructive">{errors.password.message}</p>
-                        )}
-                    </div>
-
-                    {!showPassword && (
-                        <div className="grid gap-2">
-                            <Label htmlFor="confirmPassword">Confirm Password</Label>
-                            <Input
-                                id="confirmPassword"
-                                type="password"
-                                placeholder="••••••••"
-                                {...register("confirmPassword")}
-                                disabled={loading}
-                            />
-                            {errors.confirmPassword && (
-                                <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
-                            )}
-                        </div>
-                    )}
 
                     <div className="flex items-start space-x-2 rounded-md p-4 shadow-sm">
                         <div className="flex items-center h-5">
