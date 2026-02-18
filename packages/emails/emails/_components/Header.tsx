@@ -10,7 +10,7 @@ import * as React from 'react';
 const baseUrl = 'https://www.oppskills.com';
 const iconColor = '7C737E';
 
-const logoUrl = `${baseUrl}/logo.svg`;
+const logoUrl = `${baseUrl}/logo.png`;
 
 export function Header() {
   return (
