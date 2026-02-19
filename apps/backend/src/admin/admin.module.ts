@@ -3,7 +3,7 @@ import { AdminController } from './admin.controller';
 import { AdminAuthService } from './auth/auth.service';
 import { AdminAccountsService } from './accounts/accounts.service';
 import { AdminFeaturesService } from './features/features.service';
-import { AdminLogsService } from './logs/Logs.service';
+import { AdminLogsService } from './log/Logs.service';
 
 @Module({
   controllers: [AdminController],

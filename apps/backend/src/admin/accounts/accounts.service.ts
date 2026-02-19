@@ -7,7 +7,7 @@ import type { AdminUserDTO } from '../admin.types';
 import { randomBytes } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EMAIL_EVENTS } from 'src/email';
-import { AdminLogsService } from '../logs/Logs.service';
+import { AdminLogsService } from '../log/Logs.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AdminAccountsService {
