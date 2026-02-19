@@ -6,9 +6,11 @@ import {
     Code,
     CreditCard,
     LayoutDashboard,
+    Logs,
     Music,
     Shield,
     Users,
+    ChevronRight,
 } from "lucide-react"
 
 import {
@@ -24,8 +26,12 @@ import {
     SidebarMenuItem,
     SidebarRail,
     useSidebar,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { usePathname } from "next/navigation"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 // This is sample data.
 const data = {
@@ -35,12 +41,19 @@ const data = {
             url: "#",
             items: [
                 { name: "Dashboard", href: "/", icon: LayoutDashboard },
-                { name: "Admin", href: "/admins", icon: Shield },
+                { name: "Admins", href: "/admins", icon: Shield },
                 { name: "Users", href: "/users", icon: Users },
-                { name: "Events", href: "/events", icon: Calendar },
-                { name: "Hackathons", href: "/hackathons", icon: Code },
-                { name: "Festivals", href: "/festivals", icon: Music },
+                {
+                    name: "Events & Activities",
+                    icon: Calendar,
+                    items: [
+                        { name: "Events", href: "/events", icon: Calendar },
+                        { name: "Hackathons", href: "/hackathons", icon: Code },
+                        { name: "Festivals", href: "/festivals", icon: Music },
+                    ]
+                },
                 { name: "Payments", href: "/payments", icon: CreditCard },
+                { name: "Logs", href: "/logs", icon: Logs },
             ],
         },
     ],
@@ -98,12 +111,38 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             <SidebarMenu>
                                 {group.items.map((item) => (
                                     <SidebarMenuItem key={item.name}>
-                                        <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.name}>
-                                            <Link href={item.href}>
-                                                <item.icon />
-                                                <span className="font-medium">{item.name}</span>
-                                            </Link>
-                                        </SidebarMenuButton>
+                                        {item.items ? (
+                                            <Collapsible defaultOpen className="group/collapsible">
+                                                <CollapsibleTrigger asChild>
+                                                    <SidebarMenuButton tooltip={item.name}>
+                                                        {item.icon && <item.icon />}
+                                                        <span>{item.name}</span>
+                                                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                                    </SidebarMenuButton>
+                                                </CollapsibleTrigger>
+                                                <CollapsibleContent>
+                                                    <SidebarMenuSub>
+                                                        {item.items.map((subItem) => (
+                                                            <SidebarMenuSubItem key={subItem.name}>
+                                                                <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
+                                                                    <Link href={subItem.href}>
+                                                                        {subItem.icon && <subItem.icon />}
+                                                                        <span>{subItem.name}</span>
+                                                                    </Link>
+                                                                </SidebarMenuSubButton>
+                                                            </SidebarMenuSubItem>
+                                                        ))}
+                                                    </SidebarMenuSub>
+                                                </CollapsibleContent>
+                                            </Collapsible>
+                                        ) : (
+                                            <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.name}>
+                                                <Link href={item.href}>
+                                                    <item.icon />
+                                                    <span className="font-medium">{item.name}</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        )}
                                     </SidebarMenuItem>
                                 ))}
                             </SidebarMenu>

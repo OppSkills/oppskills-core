@@ -64,6 +64,7 @@ export class AdminAccountsService {
                 name: true,
                 email: true,
                 immutable: true,
+                isFirstLogin: true,
                 createdAt: true,
                 updatedAt: true,
             }

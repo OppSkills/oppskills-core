@@ -27,6 +27,7 @@ interface Admin {
     name: string
     email: string
     immutable: boolean
+    isFirstLogin: boolean
     createdAt: string
     updatedAt: string
 }
@@ -75,7 +76,7 @@ export function AdminList({ initialAdmins, currentUserImmutable }: AdminListProp
                                         admin.immutable && "border-yellow-200 bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
                                     )}
                                 >
-                                    Active
+                                    {admin.isFirstLogin ? "Inactive" : "Active"}
                                 </Badge>
                             </TableCell>
                             {currentUserImmutable && (
