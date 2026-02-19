@@ -4,12 +4,16 @@ import { prisma } from '@oppskills/db';
 import * as jwt from "jsonwebtoken";
 import * as bcrypt from 'bcryptjs';
 import { Logger } from '../../_utils/logger';
+import { AdminLogsService } from '../logs/Logs.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AdminAuthService {
     private logger = new Logger('AdminAuthService');
 
-    constructor(@Inject(REQUEST) private request: any) { }
+    constructor(@Inject(REQUEST)
+    private request: any,
+        private adminLogsService: AdminLogsService
+    ) { }
 
     async signJWT(id: string, email: string, immutable: boolean) {
         const signedData = await jwt.sign({
@@ -66,6 +70,8 @@ export class AdminAuthService {
         }
         const signedData = await this.signJWT(admin.id, admin.email, admin.immutable)
         this.logger.log(`Login successful for email: ${email}`);
+        this.adminLogsService.createAdminLog({ adminId: admin.id, action: `${admin.name} logged in!`, type: 'LOGIN' });
+
         return {
             token: signedData,
             user: {

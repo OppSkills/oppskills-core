@@ -7,6 +7,7 @@ import type { AdminUserDTO } from '../admin.types';
 import { randomBytes } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EMAIL_EVENTS } from 'src/email';
+import { AdminLogsService } from '../logs/Logs.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AdminAccountsService {
@@ -15,6 +16,7 @@ export class AdminAccountsService {
     constructor(
         @Inject(REQUEST) private request: any,
         private readonly eventEmitter: EventEmitter2,
+        private readonly adminLogsService: AdminLogsService,
     ) { }
 
     async createAdminUser(admin: AdminUserDTO) {
@@ -45,9 +47,11 @@ export class AdminAccountsService {
                 immutable: admin.immutable === true,
             },
         });
+        this.adminLogsService.createAdminLog({ adminId: createdAdmin.id, action: `${currentUser.email} created ${createdAdmin.name} ${createdAdmin.immutable ? "with Immutable role" : ""}`, type: 'CREATE' });
         this.eventEmitter.emit(EMAIL_EVENTS.ADMIN_CREATED, { ...createdAdmin, password: randomPassword });
         this.logger.log(`Admin created successfully: ${createdAdmin.email}`);
-        return { ...createdAdmin, password: randomPassword };
+        createdAdmin.password = "";
+        return { ...createdAdmin };
     }
 
     async listAllAdmin(search?: string) {
@@ -88,6 +92,7 @@ export class AdminAccountsService {
             },
         });
         this.logger.log(`Admin updated successfully: ${updatedAdmin.email}`);
+        this.adminLogsService.createAdminLog({ adminId: updatedAdmin.id, action: `${updatedAdmin.name} onboarded successfully!`, type: 'UPDATE' });
         return updatedAdmin;
     }
 }
