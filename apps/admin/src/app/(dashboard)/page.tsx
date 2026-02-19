@@ -2,6 +2,7 @@
 
 import { dashboardStats } from "@/lib/mock-data";
 import { StatsCard } from "@/components/admin-panel/stats-card";
+import { AdminLogsCard } from "@/components/admin-panel/admin-logs-card";
 import { getMe } from "@/lib/api/actions";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,10 +58,8 @@ export default function DashboardPage() {
 
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Placeholder for charts or recent activity */}
-        <div className="h-96">
-          <Card className="h-full flex items-center justify-center text-muted-foreground">
-            <CardContent>User Growth Chart Placeholder</CardContent>
-          </Card>
+        <div className="max-h-96">
+          <AdminLogsCard />
         </div>
         <div className="h-96">
           <Card className="h-full flex items-center justify-center text-muted-foreground">
