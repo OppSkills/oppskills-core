@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
 import type { Request } from 'express';
 import { AppModule } from './app.module';
+import cookieParser from 'cookie-parser';
 
 // Patch BigInt to serialize as Number (safe for < 2^53)
 // This is required because Prisma returns BigInt for certain numeric types (like counts)
@@ -27,6 +28,8 @@ async function bootstrap() {
       },
     }),
   );
+  app.use(cookieParser());
+
   app.use(urlencoded({ extended: true, limit: '150mb' }));
 
   // Global DTO validation

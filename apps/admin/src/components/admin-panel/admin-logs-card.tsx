@@ -97,7 +97,7 @@ export function AdminLogsCard() {
     };
 
     return (
-        <Card className="h-full flex flex-col shadow-sm border-border/40 py-0">
+        <Card className="h-full flex flex-col shadow-sm border-border/40 py-0 gap-0">
             <CardHeader className="p-3 border-border/40 bg-muted/40 block">
                 <div className="flex items-center justify-between">
                     <div className="space-y-1">

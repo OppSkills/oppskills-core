@@ -55,7 +55,7 @@ export function createApiClient(resourcePath: string): AxiosInstance {
   const root = getApiRootUrl();
   const path = normalizeResourcePath(resourcePath);
   const baseURL = `${root}${path}`;
-  const client = axios.create({ baseURL });
+  const client = axios.create({ baseURL, withCredentials: true });
 
   /**
    * IMPORTANT: Always treat request URLs as resource-relative.
