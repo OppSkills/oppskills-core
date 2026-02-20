@@ -2,6 +2,7 @@
 
 import { StatsCard } from "@/components/admin-panel/stats-card";
 import { AdminLogsCard } from "@/components/admin-panel/admin-logs-card";
+import { StatsDetailModal } from "@/components/admin-panel/stats-detail-modal";
 import { getMe } from "@/lib/api/actions";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,6 +52,11 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [selectedStat, setSelectedStat] = useState<{
+    title: string;
+    details: { label: string; value: string | number; subValue?: string; trend?: string }[];
+  } | null>(null);
+
   useEffect(() => {
     Promise.all([
       getMe().then(res => setUser(res.data)).catch(err => console.error(err)),
@@ -72,6 +78,93 @@ export default function DashboardPage() {
     }).format(amount);
   };
 
+  const handleStatClick = (type: 'users' | 'revenue' | 'hackathon' | 'event') => {
+    if (!stats) return;
+
+    let details: { label: string; value: string | number; subValue?: string; trend?: string }[] = [];
+    let title = "";
+
+    switch (type) {
+      case 'users':
+        title = "User Statistics";
+        details = [
+          {
+            label: "Total Users",
+            value: stats.userStats.total,
+            subValue: "All registered users"
+          },
+          {
+            label: "New This Month",
+            value: stats.users.thisMonth,
+            trend: calculateChange(stats.users.thisMonth, stats.users.lastMonth),
+            subValue: "vs Last Month"
+          },
+          {
+            label: "New This Year",
+            value: stats.userStats.thisyear, // Note: lowercase 'thisyear' in interface
+            subValue: `Last Year: ${stats.userStats.lastYear}`
+          }
+        ];
+        break;
+      case 'revenue':
+        title = "Revenue Overview";
+        details = [
+          {
+            label: "Total Revenue",
+            value: formatCurrency(stats.revenue.hackathon.total + stats.revenue.event.total),
+            subValue: "Combined Hackathons & Events"
+          },
+          {
+            label: "Hackathon Revenue",
+            value: formatCurrency(stats.revenue.hackathon.total),
+            trend: calculateChange(stats.revenue.hackathon.thisYear, stats.revenue.hackathon.lastYear),
+            subValue: `This Year: ${formatCurrency(stats.revenue.hackathon.thisYear)}`
+          },
+          {
+            label: "Event Revenue",
+            value: formatCurrency(stats.revenue.event.total),
+            trend: calculateChange(stats.revenue.event.thisYear, stats.revenue.event.lastYear),
+            subValue: `This Year: ${formatCurrency(stats.revenue.event.thisYear)}`
+          }
+        ];
+        break;
+      case 'hackathon':
+        title = "Hackathon Statistics";
+        details = [
+          {
+            label: "Active Hackathons",
+            value: stats.activeEntities.hackathon.total,
+            subValue: "Currently running"
+          },
+          {
+            label: "Created This Month",
+            value: stats.activeEntities.hackathon.thisMonth,
+            trend: calculateChange(stats.activeEntities.hackathon.thisMonth, stats.activeEntities.hackathon.lastMonth),
+            subValue: "vs Last Month"
+          }
+        ];
+        break;
+      case 'event':
+        title = "Event Statistics";
+        details = [
+          {
+            label: "Active Events",
+            value: stats.activeEntities.event.total,
+            subValue: "Currently running"
+          },
+          {
+            label: "Created This Month",
+            value: stats.activeEntities.event.thisMonth,
+            trend: calculateChange(stats.activeEntities.event.thisMonth, stats.activeEntities.event.lastMonth),
+            subValue: "vs Last Month"
+          }
+        ];
+        break;
+    }
+
+    setSelectedStat({ title, details });
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -86,6 +179,7 @@ export default function DashboardPage() {
       value: stats.userStats.total.toString(),
       change: calculateChange(stats.users.thisMonth, stats.users.lastMonth),
       icon: Users,
+      onClick: () => handleStatClick('users')
     },
     {
       title: "Total Revenue",
@@ -95,18 +189,21 @@ export default function DashboardPage() {
         stats.revenue.hackathon.lastYear + stats.revenue.event.lastYear
       ),
       icon: DollarSign,
+      onClick: () => handleStatClick('revenue')
     },
     {
       title: "Active Hackathons",
       value: stats.activeEntities.hackathon.total.toString(),
       change: calculateChange(stats.activeEntities.hackathon.thisMonth, stats.activeEntities.hackathon.lastMonth),
       icon: Zap,
+      onClick: () => handleStatClick('hackathon')
     },
     {
       title: "Active Events",
       value: stats.activeEntities.event.total.toString(),
       change: calculateChange(stats.activeEntities.event.thisMonth, stats.activeEntities.event.lastMonth),
       icon: Calendar,
+      onClick: () => handleStatClick('event')
     }
   ] : [];
 
@@ -125,6 +222,7 @@ export default function DashboardPage() {
             value={stat.value}
             change={stat.change}
             icon={stat.icon}
+            onClick={stat.onClick}
           />
         ))}
       </div>
@@ -140,6 +238,13 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      <StatsDetailModal
+        open={!!selectedStat}
+        onOpenChange={(open: boolean) => !open && setSelectedStat(null)}
+        title={selectedStat?.title || ""}
+        details={selectedStat?.details || []}
+      />
     </div>
   );
 }
