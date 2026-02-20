@@ -38,7 +38,7 @@ export class AdminLogsService {
         page?: number;
         search?: string;
     }) {
-        const take = 20;
+        const take = 50;
         const skip = (page - 1) * take;
 
         const where = search
