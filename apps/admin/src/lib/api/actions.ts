@@ -33,3 +33,26 @@ export async function updateAdmin(id: string, data: any) {
 export async function deleteAdmin(id: string) {
     return adminClient.delete("/admin", { data: { id } });
 }
+
+// Features
+export async function getHackathons(limit: number, cursor?: string, filterPending?: boolean) {
+    return adminClient.get("/features/hackathons", {
+        params: { limit, cursor, filterPending }
+    });
+}
+
+export async function getEvents(limit: number, cursor?: string, filterPending?: boolean) {
+    return adminClient.get("/features/events", {
+        params: { limit, cursor, filterPending }
+    });
+}
+
+export async function getFestivals(limit: number, cursor?: string, filterPending?: boolean) {
+    return adminClient.get("/features/festivals", {
+        params: { limit, cursor, filterPending }
+    });
+}
+
+export async function toggleFeatureApproval(type: 'hackathon' | 'event' | 'festival', id: string, status: 'APPROVED' | 'REJECTED' | 'PENDING') {
+    return adminClient.put(`/features/approval/${type}/${id}`, { status });
+}
