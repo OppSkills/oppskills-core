@@ -3,15 +3,13 @@ import { createApiClient } from "./apiClient";
 export const adminClient = createApiClient("/");
 
 
-import { logoutAdmin } from "./auth";
+
 
 export async function getMe() {
     try {
         return await adminClient.get("/me");
     } catch (error: any) {
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            logoutAdmin();
-        }
+        // Let the caller (AuthContext) handle 401/403 and logout
         throw error;
     }
 }

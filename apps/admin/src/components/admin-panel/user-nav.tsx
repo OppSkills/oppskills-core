@@ -11,7 +11,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getMe } from "@/lib/api/actions";
+import { useAuth } from "@/context/auth-context";
 import { logoutAdmin } from "@/lib/api/auth";
 import { ChevronsUpDown, LogOut, User } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -19,22 +19,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 
 export function UserNav() {
     const { isMobile, state } = useSidebar();
-    const [user, setUser] = useState<{
-        id: string;
-        email: string;
-        role: string;
-        name?: string;
-    } | null>(null);
-
-    useEffect(() => {
-        getMe()
-            .then((res) => {
-                setUser(res.data);
-            })
-            .catch((err) => {
-                console.error("Failed to fetch user", err);
-            });
-    }, []);
+    const { user } = useAuth();
 
     if (!user) {
         return null; // Or a skeleton

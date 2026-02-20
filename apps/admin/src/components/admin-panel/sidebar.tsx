@@ -62,7 +62,7 @@ const data = {
 import { UserNav } from "@/components/admin-panel/user-nav";
 import Link from "next/link"
 
-import { getMe } from "@/lib/api/actions"
+
 import { useRouter } from "next/navigation"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -70,19 +70,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { state } = useSidebar();
     const router = useRouter()
 
-    React.useEffect(() => {
-        const checkUser = async () => {
-            try {
-                const response = await getMe()
-                if (response.data.isFirstLogin && pathname !== "/onboarding") {
-                    router.push("/onboarding")
-                }
-            } catch (error) {
-                console.error("Failed to check user status", error)
-            }
-        }
-        checkUser()
-    }, [pathname, router])
+    // AuthContext handles the onboarding redirect now, so we can remove the local check.
+    // However, if we need user data for other things in the sidebar, we can use useAuth().
+    // For now, the global check in AuthContext is sufficient for the redirect.
 
     return (
         <Sidebar {...props} collapsible="icon">

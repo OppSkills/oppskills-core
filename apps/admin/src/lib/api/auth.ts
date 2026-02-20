@@ -35,7 +35,13 @@ export async function handleAdminLogin(email: string, password: string) {
     return data;
 }
 
-export function logoutAdmin() {
+export async function logoutAdmin() {
+    try {
+        await client.post("/logout");
+    } catch (error) {
+        console.error("Logout failed", error);
+    }
+
     if (typeof document !== 'undefined') {
         document.cookie = `admin_token=; path=/; max-age=0; SameSite=Lax; Secure`;
     }

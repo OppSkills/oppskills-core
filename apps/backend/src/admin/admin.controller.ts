@@ -32,8 +32,19 @@ export class AdminController {
             maxAge: 1000 * 60 * 60 * 24, // 1 day
         });
 
-        // 🚫 Don't send token in body
         return result.user;
+    }
+
+    @Public()
+    @Post('logout')
+    async logout(@Res({ passthrough: true }) res: express.Response) {
+        res.clearCookie('admin_token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/'
+        });
+        return { message: 'Logged out successfully' };
     }
 
     @Get("admin")
