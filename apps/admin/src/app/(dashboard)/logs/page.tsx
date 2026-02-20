@@ -21,14 +21,20 @@ export default function LogsPage() {
         if (observer.current) observer.current.disconnect();
         observer.current = new IntersectionObserver(entries => {
             if (entries[0].isIntersecting && hasMore) {
-                setPage(prevPage => prevPage + 1);
+                setIsFetchingMore(true);
+                setTimeout(() => {
+                    setPage(prevPage => prevPage + 1);
+                }, 1000);
             }
         });
         if (node) observer.current.observe(node);
     }, [loading, isFetchingMore, hasMore]);
 
     const fetchLogs = async (currentPage: number, isInitial = false) => {
-        if (!isInitial) setIsFetchingMore(true);
+        // If it's not initial, we already set isFetchingMore in the observer
+        // but it doesn't hurt to ensure it's true here if called from elsewhere
+        if (!isInitial && !isFetchingMore) setIsFetchingMore(true);
+
         try {
             const response = await getAdminLogs({ page: currentPage });
             // @ts-ignore

@@ -6,7 +6,8 @@ import {
     FileEdit,
     Trash2,
     Info,
-    Clock
+    Clock,
+    CheckCircle
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,13 @@ export function LogItem({ log }: LogItemProps) {
                     bg: "bg-red-100 dark:bg-red-900/30",
                     badge: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900"
                 };
+            case 'APPROVAL':
+                return {
+                    icon: CheckCircle,
+                    color: "text-green-600 dark:text-green-400",
+                    bg: "bg-green-100 dark:bg-green-900/30",
+                    badge: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900"
+                };
             default:
                 return {
                     icon: Info,
@@ -96,7 +104,7 @@ export function LogItem({ log }: LogItemProps) {
             {/* Content */}
             <div className="flex-1 pt-1 space-y-2 pb-1">
                 <div className="flex items-start justify-between gap-4">
-                    <p className="text-sm font-medium leading-none text-foreground/90 group-hover:text-primary transition-colors">
+                    <p className="text-sm font-medium leading-snug text-foreground/90 group-hover:text-primary transition-colors">
                         {log.action}
                     </p>
                     <span className="text-[10px] text-muted-foreground whitespace-nowrap flex items-center gap-1 bg-muted/30 px-2 py-1 rounded-full">
