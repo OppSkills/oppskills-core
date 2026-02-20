@@ -2,10 +2,10 @@ import { Module, forwardRef } from '@nestjs/common';
 
 import { AdminStatsController } from './stats.controller';
 import { AdminStatsService } from './stats.service';
-import { AdminModule } from '../admin.module';
+import { AdminAuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [forwardRef(() => AdminModule)],
+    imports: [AdminAuthModule],
     controllers: [AdminStatsController],
     providers: [AdminStatsService],
     exports: [AdminStatsService]

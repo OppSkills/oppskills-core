@@ -31,5 +31,5 @@ export async function updateAdmin(id: string, data: any) {
 }
 
 export async function deleteAdmin(id: string) {
-    return adminClient.delete(`/admin/${id}`);
+    return adminClient.delete("/admin", { data: { id } });
 }

@@ -95,4 +95,20 @@ export class AdminAccountsService {
         this.adminLogsService.createAdminLog({ adminId: updatedAdmin.id, action: `${updatedAdmin.name} onboarded successfully!`, type: 'UPDATE' });
         return updatedAdmin;
     }
+
+    async deleteAdminUser(id: string) {
+        const currentUser = this.request.user;
+        if (!currentUser || !currentUser.immutable || currentUser.id === id) {
+            this.logger.warn(`Unauthorized attempt to delete`);
+            throw new UnauthorizedException('Unauthorized');
+        }
+        const deletedAdmin = await prisma.adminEntity.delete({
+            where: {
+                id,
+            },
+        });
+        this.logger.log(`Admin deleted successfully: ${deletedAdmin.email}`);
+        this.adminLogsService.createAdminLog({ adminId: currentUser.id, action: `${currentUser.email} deleted ${deletedAdmin.name}!`, type: 'DELETE' });
+        return deletedAdmin;
+    }
 }

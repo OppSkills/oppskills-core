@@ -89,6 +89,7 @@ export default function page() {
                 <AdminList
                     initialAdmins={filteredAdmins}
                     currentUserImmutable={currentUser.immutable}
+                    onRefresh={fetchAdmins}
                 />
             )}
         </div>

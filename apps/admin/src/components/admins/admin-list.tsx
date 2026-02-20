@@ -1,5 +1,8 @@
 "use client"
 
+import { useState } from "react"
+import { deleteAdmin } from "@/lib/api/actions"
+import { toast } from "sonner"
 import {
     Table,
     TableBody,
@@ -10,7 +13,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Edit, Trash2 } from "lucide-react"
+import { MoreHorizontal, Edit, Trash2, AlertCircle } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -18,8 +21,10 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu"
-
 import { cn } from "@/lib/utils"
 
 interface Admin {
@@ -35,9 +40,26 @@ interface Admin {
 interface AdminListProps {
     initialAdmins: Admin[]
     currentUserImmutable: boolean
+    onRefresh?: () => void
 }
 
-export function AdminList({ initialAdmins, currentUserImmutable }: AdminListProps) {
+export function AdminList({ initialAdmins, currentUserImmutable, onRefresh }: AdminListProps) {
+    const [deletingId, setDeletingId] = useState<string | null>(null)
+
+    const handleDelete = async (id: string) => {
+        setDeletingId(id)
+        try {
+            await deleteAdmin(id)
+            toast.success("Admin deleted successfully")
+            onRefresh?.()
+        } catch (error) {
+            console.error(error)
+            toast.error("Failed to delete admin")
+        } finally {
+            setDeletingId(null)
+        }
+    }
+
     return (
         <div className="rounded-md border bg-card w-full overflow-hidden">
             <Table>
@@ -97,13 +119,28 @@ export function AdminList({ initialAdmins, currentUserImmutable }: AdminListProp
                                                 Edit
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem
-                                                className="text-destructive focus:text-destructive"
-                                                onClick={() => console.log(`Delete admin ${admin.id}`)}
-                                            >
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Delete
-                                            </DropdownMenuItem>
+
+                                            <DropdownMenuSub>
+                                                <DropdownMenuSubTrigger className="text-destructive focus:text-destructive">
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete
+                                                </DropdownMenuSubTrigger>
+                                                <DropdownMenuSubContent>
+                                                    <DropdownMenuLabel>Are you sure?</DropdownMenuLabel>
+                                                    <DropdownMenuItem
+                                                        className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDelete(admin.id);
+                                                        }}
+                                                        disabled={deletingId === admin.id}
+                                                    >
+                                                        <AlertCircle className="mr-2 h-4 w-4" />
+                                                        {deletingId === admin.id ? "Deleting..." : "Confirm Delete"}
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuSubContent>
+                                            </DropdownMenuSub>
+
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
