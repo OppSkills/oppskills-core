@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { getAdminLogs } from "@/lib/api/services";
 import {
@@ -28,23 +28,67 @@ export function AdminLogsCard() {
     const [logs, setLogs] = useState<AdminLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    const fetchLogs = async (currentPage: number, isInitial = false) => {
+        if (!isInitial) setIsFetchingMore(true);
+        try {
+            const response = await getAdminLogs({ page: currentPage });
+            // @ts-ignore
+            const newData = response.data.data || [];
+            // @ts-ignore
+            const further = response.data.further;
+
+            if (isInitial) {
+                setLogs(newData);
+            } else {
+                setLogs(prev => [...prev, ...newData]);
+            }
+
+            setHasMore(further);
+        } catch (err) {
+            console.error("Failed to fetch admin logs", err);
+            if (isInitial) setError("Failed to load logs");
+        } finally {
+            setLoading(false);
+            setIsFetchingMore(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchLogs = async () => {
-            try {
-                const response = await getAdminLogs({ page: 1 });
-                // @ts-ignore
-                setLogs(response.data.data || []);
-            } catch (err) {
-                console.error("Failed to fetch admin logs", err);
-                setError("Failed to load logs");
-            } finally {
-                setLoading(false);
+        fetchLogs(1, true);
+    }, []);
+
+    const handleScroll = useCallback(() => {
+        if (scrollRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+            if (scrollHeight - scrollTop <= clientHeight + 50 && hasMore && !isFetchingMore && !loading) {
+                setIsFetchingMore(true);
+                setTimeout(() => {
+                    setPage(prev => {
+                        const nextPage = prev + 1;
+                        fetchLogs(nextPage);
+                        return nextPage;
+                    });
+                }, 1000);
+            }
+        }
+    }, [hasMore, isFetchingMore, loading]);
+
+    useEffect(() => {
+        const div = scrollRef.current;
+        if (div) {
+            div.addEventListener('scroll', handleScroll);
+        }
+        return () => {
+            if (div) {
+                div.removeEventListener('scroll', handleScroll);
             }
         };
-
-        fetchLogs();
-    }, []);
+    }, [handleScroll]);
 
     const getLogConfig = (type: string) => {
         switch (type.toUpperCase()) {
@@ -124,7 +168,10 @@ export function AdminLogsCard() {
                         No recent activity found
                     </div>
                 ) : (
-                    <div className="h-full overflow-y-auto px-4 py-2 custom-scrollbar">
+                    <div
+                        ref={scrollRef}
+                        className="h-full overflow-y-auto px-4 py-2 custom-scrollbar"
+                    >
                         <div className="relative pl-2 space-y-6 py-4">
                             {/* Vertical line connecting events */}
                             <div className="absolute left-[1.65rem] top-4 bottom-4 w-px bg-border/60 -z-10" />
@@ -173,6 +220,18 @@ export function AdminLogsCard() {
                                     </div>
                                 );
                             })}
+
+                            {isFetchingMore && (
+                                <div className="flex justify-center py-4">
+                                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                </div>
+                            )}
+
+                            {!hasMore && logs.length > 0 && (
+                                <div className="text-center py-4 text-xs text-muted-foreground border-t border-border/40 mt-4">
+                                    End of logs
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
