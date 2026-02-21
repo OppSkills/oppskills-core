@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "College Hackathons, Coding Competitions & Events | OppSkills",
+  title: "Global Opportunities listing platform | OppSkills",
   description:
     "Explore the latest college hackathons, coding competitions, design challenges, and student events. Join the best tech community and showcase your skills.",
   keywords: [
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     canonical: "https://oppskills.com/competitions",
   },
   openGraph: {
-    title: "College Hackathons & Competitions | OppSkills",
+    title: "Global Opportunities listing platform | OppSkills",
     description:
       "Find and participate in the best college hackathons and competitions. Level up your skills and win prizes.",
     url: "https://oppskills.com/competitions",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "College Hackathons & Competitions | OppSkills",
+    title: "Global Opportunities listing platform | OppSkills",
     description:
       "Find and participate in the best college hackathons and competitions. Level up your skills and win prizes.",
     images: ["/og_poster.png"],
