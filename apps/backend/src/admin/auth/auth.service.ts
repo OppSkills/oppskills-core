@@ -4,7 +4,7 @@ import { prisma } from '@oppskills/db';
 import * as jwt from "jsonwebtoken";
 import * as bcrypt from 'bcryptjs';
 import { Logger } from '../../_utils/logger';
-import { AdminLogsService } from '../log/Logs.service';
+import { AdminLogsService } from '../admin-log/Logs.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AdminAuthService {

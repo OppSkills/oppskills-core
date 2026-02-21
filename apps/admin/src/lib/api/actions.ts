@@ -2,38 +2,14 @@ import { createApiClient } from "./apiClient";
 
 export const adminClient = createApiClient("/");
 
-// Add interceptor to attach token from cookie
-adminClient.interceptors.request.use(async (config) => {
-    let token;
 
-    if (typeof window === 'undefined') {
-        const { cookies } = await import("next/headers");
-        const cookieStore = await cookies();
-        token = cookieStore.get("admin_token")?.value;
-    } else {
-        // Basic client-side cookie parsing
-        const match = document.cookie.match(new RegExp('(^| )admin_token=([^;]+)'));
-        if (match) {
-            token = match[2];
-        }
-    }
 
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
-});
-
-import { logoutAdmin } from "./auth";
 
 export async function getMe() {
     try {
         return await adminClient.get("/me");
     } catch (error: any) {
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            logoutAdmin();
-        }
+        // Let the caller (AuthContext) handle 401/403 and logout
         throw error;
     }
 }
@@ -55,5 +31,28 @@ export async function updateAdmin(id: string, data: any) {
 }
 
 export async function deleteAdmin(id: string) {
-    return adminClient.delete(`/admin/${id}`);
+    return adminClient.delete("/admin", { data: { id } });
+}
+
+// Features
+export async function getHackathons(limit: number, cursor?: string, filterPending?: boolean) {
+    return adminClient.get("/features/hackathons", {
+        params: { limit, cursor, filterPending }
+    });
+}
+
+export async function getEvents(limit: number, cursor?: string, filterPending?: boolean) {
+    return adminClient.get("/features/events", {
+        params: { limit, cursor, filterPending }
+    });
+}
+
+export async function getFestivals(limit: number, cursor?: string, filterPending?: boolean) {
+    return adminClient.get("/features/festivals", {
+        params: { limit, cursor, filterPending }
+    });
+}
+
+export async function toggleFeatureApproval(type: 'hackathon' | 'event' | 'festival', id: string, status: 'APPROVED' | 'REJECTED' | 'PENDING') {
+    return adminClient.put(`/features/approval/${type}/${id}`, { status });
 }

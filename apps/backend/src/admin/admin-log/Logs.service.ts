@@ -38,7 +38,7 @@ export class AdminLogsService {
         page?: number;
         search?: string;
     }) {
-        const take = 20;
+        const take = 50;
         const skip = (page - 1) * take;
 
         const where = search
@@ -60,26 +60,18 @@ export class AdminLogsService {
             }
             : {};
 
-        const [logs, total] = await Promise.all([
-            prisma.adminLog.findMany({
-                where,
-                skip,
-                take: take + 1,
-                orderBy: {
-                    createdAt: "desc",
-                },
-            }),
-            prisma.adminLog.count({ where }),
-        ]);
+        const logs = await prisma.adminLog.findMany({
+            where,
+            skip,
+            take: take + 1,
+            orderBy: {
+                createdAt: "desc",
+            },
+        })
 
         return {
             data: logs.slice(0, 20),
             further: logs.length > 20,
-            meta: {
-                total,
-                page,
-                lastPage: Math.ceil(total / take),
-            },
         };
     }
 

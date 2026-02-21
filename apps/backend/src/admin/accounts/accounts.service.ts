@@ -7,7 +7,7 @@ import type { AdminUserDTO } from '../admin.types';
 import { randomBytes } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EMAIL_EVENTS } from 'src/email';
-import { AdminLogsService } from '../log/Logs.service';
+import { AdminLogsService } from '../admin-log/Logs.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AdminAccountsService {
@@ -94,5 +94,21 @@ export class AdminAccountsService {
         this.logger.log(`Admin updated successfully: ${updatedAdmin.email}`);
         this.adminLogsService.createAdminLog({ adminId: updatedAdmin.id, action: `${updatedAdmin.name} onboarded successfully!`, type: 'UPDATE' });
         return updatedAdmin;
+    }
+
+    async deleteAdminUser(id: string) {
+        const currentUser = this.request.user;
+        if (!currentUser || !currentUser.immutable || currentUser.id === id) {
+            this.logger.warn(`Unauthorized attempt to delete`);
+            throw new UnauthorizedException('Unauthorized');
+        }
+        const deletedAdmin = await prisma.adminEntity.delete({
+            where: {
+                id,
+            },
+        });
+        this.logger.log(`Admin deleted successfully: ${deletedAdmin.email}`);
+        this.adminLogsService.createAdminLog({ adminId: currentUser.id, action: `${currentUser.email} deleted ${deletedAdmin.name}!`, type: 'DELETE' });
+        return deletedAdmin;
     }
 }

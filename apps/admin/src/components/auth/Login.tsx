@@ -20,6 +20,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { handleAdminLogin } from "@/lib/api/auth";
+import { useAuth } from "@/context/auth-context";
 
 const formSchema = z.object({
     email: z.string().email("Invalid email address"),
@@ -30,6 +31,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function Login() {
     const router = useRouter();
+    const { refreshUser } = useAuth();
     const [loading, setLoading] = useState(false);
 
     const {
@@ -44,6 +46,7 @@ export default function Login() {
         setLoading(true);
         try {
             await handleAdminLogin(data.email, data.password);
+            await refreshUser();
             toast.success("Welcome back, Admin");
             router.push("/");
         } catch (error: any) {

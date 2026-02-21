@@ -7,13 +7,17 @@ interface StatsCardProps {
     value: string;
     change: string;
     icon: LucideIcon;
+    onClick?: () => void;
 }
 
-export function StatsCard({ title, value, change, icon: Icon }: StatsCardProps) {
+export function StatsCard({ title, value, change, icon: Icon, onClick }: StatsCardProps) {
     const isPositive = change.startsWith("+");
 
     return (
-        <Card>
+        <Card
+            className={cn("transition-all hover:shadow-md", onClick && "cursor-pointer hover:border-primary/50")}
+            onClick={onClick}
+        >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                     {title}
