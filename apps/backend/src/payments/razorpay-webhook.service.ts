@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
-import { prisma, RazorpayRouteStatus } from '@oppskills/db';
+import { prisma, PassSendingMode, RazorpayRouteStatus } from '@oppskills/db';
 
 export interface RazorpayWebhookPayload {
   event: string;
@@ -49,6 +50,8 @@ export interface RazorpayWebhookPayload {
 @Injectable()
 export class RazorpayWebhookService {
   private readonly logger = new Logger(RazorpayWebhookService.name);
+
+  constructor(private readonly eventEmitter: EventEmitter2) {}
 
   async processEvent(eventType: string, payload: RazorpayWebhookPayload) {
     switch (eventType) {
@@ -133,6 +136,9 @@ export class RazorpayWebhookService {
       return;
     }
 
+    let participantIdCreated: string | null = null;
+    let passSendingMode: PassSendingMode = PassSendingMode.IMMEDIATE;
+
     try {
       await prisma.$transaction(async (tx) => {
         // Re-check payment status inside transaction to prevent race condition
@@ -180,7 +186,8 @@ export class RazorpayWebhookService {
             select: { passSendingMode: true },
           });
 
-          const isImmediate = event?.passSendingMode === 'IMMEDIATE';
+          passSendingMode = event?.passSendingMode ?? PassSendingMode.IMMEDIATE;
+          const isImmediate = passSendingMode === PassSendingMode.IMMEDIATE;
 
           const participant = await tx.eventParticipantEntity.create({
             data: {
@@ -190,6 +197,8 @@ export class RazorpayWebhookService {
               approvedAt: isImmediate ? new Date() : null,
             },
           });
+
+          participantIdCreated = participant.id;
 
           // Link participant to payment
           await tx.eventPaymentEntity.update({
@@ -245,6 +254,18 @@ export class RazorpayWebhookService {
           );
         }
       }
+    }
+
+    // When the webhook created the participant, verifyPayment did not run (or ran after);
+    // the email listener only runs on event.participant.registered, so emit it here
+    // so the user receives the pending or immediate pass email.
+    if (participantIdCreated) {
+      this.eventEmitter.emit('event.participant.registered', {
+        eventId: paymentRecord.eventId,
+        userId: paymentRecord.payerUserId,
+        participantId: participantIdCreated,
+        passSendingMode,
+      });
     }
 
     this.logger.log(`Event payment captured for order: ${orderId}`);
