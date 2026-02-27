@@ -3,12 +3,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { InfiniteScrollTable } from "@/components/features/infinite-scroll-table"
 import { getHackathons, getEvents, getFestivals, toggleFeatureApproval } from "@/lib/api/actions"
-import { AdminHeader } from "@/components/admin-panel/admin-header"
-
 export default function FeaturesPage() {
     return (
         <div className="flex flex-col gap-6 p-6">
-            <AdminHeader title="Feature Management" breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Features", href: "/admin/features" }]} />
 
             <Tabs defaultValue="hackathons" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 max-w-[400px]">
