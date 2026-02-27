@@ -56,3 +56,18 @@ export async function getFestivals(limit: number, cursor?: string, filterPending
 export async function toggleFeatureApproval(type: 'hackathon' | 'event' | 'festival', id: string, status: 'APPROVED' | 'REJECTED' | 'PENDING') {
     return adminClient.put(`/features/approval/${type}/${id}`, { status });
 }
+
+// Users
+export const usersClient = createApiClient("/users");
+
+export async function getUsers(params: { page?: number; search?: string }) {
+    return usersClient.get("/", { params });
+}
+
+export async function deleteUserById(userId: string) {
+    return usersClient.delete("/by-id", { data: { userId } });
+}
+
+export async function deleteUserByEmail(email: string) {
+    return usersClient.delete("/by-email", { data: { email } });
+}

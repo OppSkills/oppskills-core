@@ -4,6 +4,7 @@ import { AdminAccountsModule } from './accounts/accounts.module';
 import { AdminFeaturesModule } from './features/features.module';
 import { AdminLogsModule } from './admin-log/Logs.module';
 import { StatsModule } from './stats/stats.module';
+import { UserAccountModule } from './user-account/user-account.module';
 
 @Module({
   imports: [
@@ -11,7 +12,8 @@ import { StatsModule } from './stats/stats.module';
     AdminAuthModule,
     AdminAccountsModule,
     AdminFeaturesModule,
-    AdminLogsModule
+    AdminLogsModule,
+    UserAccountModule
   ],
   controllers: [],
   providers: [],
