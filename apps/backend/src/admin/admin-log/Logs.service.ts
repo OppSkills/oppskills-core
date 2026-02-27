@@ -70,8 +70,8 @@ export class AdminLogsService {
         })
 
         return {
-            data: logs.slice(0, 20),
-            further: logs.length > 20,
+            data: logs.slice(0, take),
+            further: logs.length > take,
         };
     }
 
