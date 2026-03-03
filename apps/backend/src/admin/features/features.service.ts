@@ -154,6 +154,112 @@ export class AdminFeaturesService {
         };
     }
 
+    async getDetailBySlug(type: 'hackathon' | 'event' | 'festival', slug: string) {
+        const currentUser = this.request.user;
+        if (!currentUser) throw new NotFoundException('User not found');
+        const adminName = currentUser.name || currentUser.email;
+
+        let data: any;
+        let name: string = '';
+
+        if (type === 'hackathon') {
+            data = await prisma.hackathonEntity.findUnique({
+                where: { slug },
+                include: {
+                    owner: {
+                        select: {
+                            email: true,
+                            firstName: true,
+                            lastName: true
+                        }
+                    },
+                    rounds: true,
+                    attachments: true,
+                    prizeBreakdown: true
+                }
+            });
+            name = data?.name;
+        } else if (type === 'event') {
+            data = await prisma.eventEntity.findUnique({
+                where: { slug },
+                include: {
+                    owner: {
+                        select: {
+                            email: true,
+                            firstName: true,
+                            lastName: true
+                        }
+                    },
+                    attachments: true,
+                    prizeBreakdown: true
+                }
+            });
+            name = data?.name;
+        } else if (type === 'festival') {
+            data = await prisma.festivalEntity.findUnique({
+                where: { slug },
+                include: {
+                    organizer: {
+                        select: {
+                            email: true,
+                            firstName: true,
+                            lastName: true
+                        }
+                    }
+                }
+            });
+            name = data?.name;
+        }
+
+        if (!data) throw new NotFoundException(`${type} not found`);
+
+        await this.adminLogsService.createAdminLog({
+            adminId: currentUser.id,
+            action: `${adminName} viewed ${type} ${name || slug}`,
+            type: 'VIEW'
+        });
+
+        return data;
+    }
+
+    async updateDetail(type: 'hackathon' | 'event' | 'festival', id: string, data: any) {
+        const currentUser = this.request.user;
+        if (!currentUser) throw new NotFoundException('User not found');
+        const adminName = currentUser.name || currentUser.email;
+
+        // Ensure we don't update ID or Slug accidentally through this generic update if not intended
+        const { id: _, slug: __, ...updateData } = data;
+
+        let updatedItem: any;
+
+        if (type === 'hackathon') {
+            updatedItem = await prisma.hackathonEntity.update({
+                where: { id },
+                data: updateData
+            });
+        } else if (type === 'event') {
+            updatedItem = await prisma.eventEntity.update({
+                where: { id },
+                data: updateData
+            });
+        } else if (type === 'festival') {
+            updatedItem = await prisma.festivalEntity.update({
+                where: { id },
+                data: updateData
+            });
+        }
+
+        if (!updatedItem) throw new NotFoundException(`${type} not found`);
+
+        await this.adminLogsService.createAdminLog({
+            adminId: currentUser.id,
+            action: `${adminName} updated ${type} ${updatedItem.name}`,
+            type: 'UPDATE'
+        });
+
+        return updatedItem;
+    }
+
     async toggleApproval(type: 'hackathon' | 'event' | 'festival', id: string, status: ApprovalStatus) {
         const currentUser = this.request.user;
         if (!currentUser) throw new NotFoundException('User not found');

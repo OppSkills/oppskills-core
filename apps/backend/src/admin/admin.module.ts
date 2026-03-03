@@ -5,6 +5,7 @@ import { AdminFeaturesModule } from './features/features.module';
 import { AdminLogsModule } from './admin-log/Logs.module';
 import { StatsModule } from './stats/stats.module';
 import { UserAccountModule } from './user-account/user-account.module';
+import { AdminPaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { UserAccountModule } from './user-account/user-account.module';
     AdminAccountsModule,
     AdminFeaturesModule,
     AdminLogsModule,
-    UserAccountModule
+    UserAccountModule,
+    AdminPaymentsModule
   ],
   controllers: [],
   providers: [],

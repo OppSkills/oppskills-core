@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Delete, UseGuards, Req, Body } from '@nestjs/common';
+import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
 import { UserAccountService } from './user-account.service';
 import { AdminGuard } from '../admin.guard';
 
@@ -18,21 +18,10 @@ export class UserAccountController {
         });
     }
 
-    @Delete('by-id')
-    async deleteUserById(
-        @Req() req: any,
-        @Body() body: { userId: string },
+    @Get(':id')
+    async getUserDetail(
+        @Param('id') id: string,
     ) {
-        const admin = req.user;
-        return this.userAccountService.deleteUserById(body.userId, admin.id, admin.email);
-    }
-
-    @Delete('by-email')
-    async deleteUserByEmail(
-        @Req() req: any,
-        @Body() body: { email: string },
-    ) {
-        const admin = req.user;
-        return this.userAccountService.deleteUserByEmail(body.email, admin.id, admin.email);
+        return this.userAccountService.getUserDetail(id);
     }
 }

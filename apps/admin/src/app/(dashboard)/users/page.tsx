@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { getUsers, deleteUserById } from "@/lib/api/actions";
+import { getUsers } from "@/lib/api/actions";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import {
     Table,
     TableBody,
@@ -14,7 +15,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, Search, Trash2 } from "lucide-react";
+import { Loader2, Search, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 interface User {
@@ -27,6 +28,7 @@ interface User {
 }
 
 export default function UsersPage() {
+    const router = useRouter();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -89,24 +91,12 @@ export default function UsersPage() {
         }
     }, [page]);
 
-    const handleDelete = async (userId: string) => {
-        if (!confirm("Are you sure you want to delete this user?")) return;
-        try {
-            await deleteUserById(userId);
-            setUsers(prev => prev.filter(u => u.id !== userId));
-            toast.success("User deleted successfully");
-        } catch (err) {
-            console.error("Failed to delete user", err);
-            toast.error("Failed to delete user");
-        }
-    };
-
     return (
         <div className="px-6 space-y-6">
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900 tracking-tight">User Management</h2>
-                    <p className="text-muted-foreground mt-1 text-sm">Monitor and manage user accounts and their permissions.</p>
+                    <p className="text-muted-foreground mt-1 text-sm">Monitor and manage user accounts and view their insights.</p>
                 </div>
                 <div className="relative w-80">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -128,7 +118,7 @@ export default function UsersPage() {
                                 <TableHead className="h-12 uppercase text-[10px] font-bold tracking-wider">Email</TableHead>
                                 <TableHead className="h-12 uppercase text-[10px] font-bold tracking-wider">Role</TableHead>
                                 <TableHead className="h-12 uppercase text-[10px] font-bold tracking-wider">Joined On</TableHead>
-                                <TableHead className="text-right pr-6 h-12 uppercase text-[10px] font-bold tracking-wider">Actions</TableHead>
+                                <TableHead className="text-right pr-6 h-12 uppercase text-[10px] font-bold tracking-wider">Details</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -155,10 +145,15 @@ export default function UsersPage() {
                                     const isLast = index === users.length - 1;
                                     const fullName = user.firstName ? `${user.firstName} ${user.lastName || ""}` : "Unregistered User";
                                     return (
-                                        <TableRow key={user.id} ref={isLast ? lastUserElementRef : null} className="group hover:bg-muted/20 transition-colors">
+                                        <TableRow
+                                            key={user.id}
+                                            ref={isLast ? lastUserElementRef : null}
+                                            className="group hover:bg-muted/20 transition-colors cursor-pointer"
+                                            onClick={() => router.push(`/users/${user.id}`)}
+                                        >
                                             <TableCell className="font-medium pl-6">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                                                    <div className="w-9 h-9 rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase">
                                                         {fullName.charAt(0)}
                                                     </div>
                                                     <span className="font-semibold text-gray-700">{fullName}</span>
@@ -179,10 +174,10 @@ export default function UsersPage() {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/5 opacity-0 group-hover:opacity-100 transition-all"
-                                                    onClick={() => handleDelete(user.id)}
+                                                    className="text-muted-foreground hover:text-primary hover:bg-primary/5 opacity-0 group-hover:opacity-100 transition-all"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Eye className="h-4 w-4 mr-2" />
+                                                    View
                                                 </Button>
                                             </TableCell>
                                         </TableRow>

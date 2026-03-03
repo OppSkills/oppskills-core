@@ -37,6 +37,23 @@ export class AdminFeaturesController {
         return this.featuresService.listFestivals(limit, cursor, filterPending === 'true');
     }
 
+    @Get('detail/:type/:slug')
+    async getDetail(
+        @Param('type') type: 'hackathon' | 'event' | 'festival',
+        @Param('slug') slug: string,
+    ) {
+        return this.featuresService.getDetailBySlug(type, slug);
+    }
+
+    @Put('detail/:type/:id')
+    async updateDetail(
+        @Param('type') type: 'hackathon' | 'event' | 'festival',
+        @Param('id') id: string,
+        @Body() data: any,
+    ) {
+        return this.featuresService.updateDetail(type, id, data);
+    }
+
     @Put('approval/:type/:id')
     async toggleApproval(
         @Param('type') type: 'hackathon' | 'event' | 'festival',
