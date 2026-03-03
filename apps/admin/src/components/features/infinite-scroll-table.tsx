@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, XCircle, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { ApprovalStatus } from "@/lib/api/actions";
+
 interface FeatureItem {
     id: string;
     name: string;
@@ -37,12 +39,14 @@ interface FeatureItem {
 interface InfiniteScrollTableProps {
     type: 'hackathon' | 'event' | 'festival';
     fetchData: (limit: number, cursor?: string, filterPending?: boolean) => Promise<any>;
-    toggleApproval: (type: 'hackathon' | 'event' | 'festival', id: string, status: 'APPROVED' | 'REJECTED' | 'PENDING') => Promise<any>;
+    onRowClick?: (slug: string) => void;
+    toggleApproval?: (type: 'hackathon' | 'event' | 'festival', id: string, status: ApprovalStatus) => Promise<any>;
 }
 
-export function InfiniteScrollTable({ type, fetchData, toggleApproval }: InfiniteScrollTableProps) {
+export function InfiniteScrollTable({ type, fetchData, onRowClick, toggleApproval }: InfiniteScrollTableProps) {
     const [items, setItems] = useState<FeatureItem[]>([]);
     const [loading, setLoading] = useState(false);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
     const [cursor, setCursor] = useState<string | undefined>(undefined);
     const [filterPending, setFilterPending] = useState(false);
@@ -60,6 +64,26 @@ export function InfiniteScrollTable({ type, fetchData, toggleApproval }: Infinit
         },
         [loading, hasMore]
     );
+
+    const handleToggleApproval = async (id: string, status: ApprovalStatus) => {
+        if (!toggleApproval || actionLoading) return;
+
+        setActionLoading(id);
+        try {
+            await toggleApproval(type, id, status);
+            toast.success(`Succesfully updated status to ${status}`);
+
+            // Update local state
+            setItems(prev => prev.map(item =>
+                item.id === id ? { ...item, approvalStatus: status } : item
+            ));
+        } catch (error) {
+            console.error("Failed to update approval status", error);
+            toast.error("Failed to update approval status");
+        } finally {
+            setActionLoading(null);
+        }
+    };
 
     const loadData = async (reset = false) => {
         if (loading) return;
@@ -91,13 +115,7 @@ export function InfiniteScrollTable({ type, fetchData, toggleApproval }: Infinit
         setCursor(undefined);
         setItems([]);
         setHasMore(true);
-        // We need to call loadData with reset=true, but since we reset state above, 
-        // the closure might capture old values if not careful. 
-        // Better to just call loadData(true) which handles the reset logic inside.
-        // Waiting for state update might be tricky without extra effect or ref.
-        // Let's modify loadData to accept params directly or rely on a fresh closure from useEffect dependency.
 
-        // Actually best way:
         const fetchDataAsync = async () => {
             if (loading) return;
             setLoading(true);
@@ -118,21 +136,6 @@ export function InfiniteScrollTable({ type, fetchData, toggleApproval }: Infinit
         fetchDataAsync();
 
     }, [filterPending]);
-
-    const handleApproval = async (id: string, status: 'APPROVED' | 'REJECTED' | 'PENDING') => {
-        try {
-            await toggleApproval(type, id, status);
-            toast.success(`Status updated to ${status}`);
-            setItems((prev) =>
-                prev.map((item) =>
-                    item.id === id ? { ...item, approvalStatus: status } : item
-                )
-            );
-        } catch (error) {
-            console.error("Failed to update status", error);
-            toast.error("Failed to update approval status");
-        }
-    };
 
     return (
         <div className="flex flex-col gap-4">
@@ -156,7 +159,6 @@ export function InfiniteScrollTable({ type, fetchData, toggleApproval }: Infinit
                             <TableHead>Owner/Organizer</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Approval</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -172,6 +174,8 @@ export function InfiniteScrollTable({ type, fetchData, toggleApproval }: Infinit
                                 <TableRow
                                     key={item.id}
                                     ref={isLast ? lastElementRef : null}
+                                    className={`${onRowClick ? 'cursor-pointer' : ''} hover:bg-muted/50 transition-colors`}
+                                    onClick={() => onRowClick?.(item.slug)}
                                 >
                                     <TableCell className="font-medium">{item.name}</TableCell>
                                     <TableCell>{ownerName}</TableCell>
@@ -179,31 +183,49 @@ export function InfiniteScrollTable({ type, fetchData, toggleApproval }: Infinit
                                         <Badge variant="outline">{item.status}</Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge
-                                            variant={item.approvalStatus === 'APPROVED' ? 'default' : item.approvalStatus === 'REJECTED' ? 'destructive' : 'secondary'}
-                                        >
-                                            {item.approvalStatus}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                            {item.approvalStatus === 'PENDING' && item.status === 'PUBLISHED' && (
-                                                <>
-                                                    <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => handleApproval(item.id, 'APPROVED')}>
-                                                        <CheckCircle className="h-4 w-4" />
-                                                        <span className="sr-only">Approve</span>
-                                                    </Button>
-                                                    <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleApproval(item.id, 'REJECTED')}>
-                                                        <XCircle className="h-4 w-4" />
-                                                        <span className="sr-only">Reject</span>
-                                                    </Button>
-                                                </>
-                                            )}
-                                            {item.approvalStatus !== 'PENDING' && item.status === 'PUBLISHED' && (
-                                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => handleApproval(item.id, 'PENDING')}>
-                                                    <RotateCcw className="h-4 w-4" />
-                                                    <span className="sr-only">Revert to Pending</span>
-                                                </Button>
+                                        <div className="flex items-center gap-2">
+                                            <Badge
+                                                variant={item.approvalStatus === 'APPROVED' ? 'default' : item.approvalStatus === 'REJECTED' ? 'destructive' : 'secondary'}
+                                            >
+                                                {item.approvalStatus}
+                                            </Badge>
+
+                                            {toggleApproval && (
+                                                <div className="flex items-center gap-1 ml-2" onClick={(e) => e.stopPropagation()}>
+                                                    {item.approvalStatus !== 'APPROVED' && (
+                                                        <Button
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                                            disabled={actionLoading === item.id}
+                                                            onClick={() => handleToggleApproval(item.id, 'APPROVED')}
+                                                        >
+                                                            {actionLoading === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                                                        </Button>
+                                                    )}
+                                                    {item.approvalStatus !== 'REJECTED' && (
+                                                        <Button
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                            disabled={actionLoading === item.id}
+                                                            onClick={() => handleToggleApproval(item.id, 'REJECTED')}
+                                                        >
+                                                            {actionLoading === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                                                        </Button>
+                                                    )}
+                                                    {(item.approvalStatus === 'APPROVED' || item.approvalStatus === 'REJECTED') && (
+                                                        <Button
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                                            disabled={actionLoading === item.id}
+                                                            onClick={() => handleToggleApproval(item.id, 'PENDING')}
+                                                        >
+                                                            {actionLoading === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     </TableCell>

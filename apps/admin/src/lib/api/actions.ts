@@ -2,8 +2,8 @@ import { createApiClient } from "./apiClient";
 
 export const adminClient = createApiClient("/");
 
-
-
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type LifecycleStatus = 'DRAFT' | 'PUBLISHED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
 
 export async function getMe() {
     try {
@@ -53,8 +53,20 @@ export async function getFestivals(limit: number, cursor?: string, filterPending
     });
 }
 
-export async function toggleFeatureApproval(type: 'hackathon' | 'event' | 'festival', id: string, status: 'APPROVED' | 'REJECTED' | 'PENDING') {
+export async function toggleFeatureApproval(type: 'hackathon' | 'event' | 'festival', id: string, status: ApprovalStatus) {
     return adminClient.put(`/features/approval/${type}/${id}`, { status });
+}
+
+export async function getFeatureDetail(type: string, slug: string) {
+    return adminClient.get(`/features/detail/${type}/${slug}`);
+}
+
+export async function updateFeatureDetail(type: string, id: string, data: any) {
+    return adminClient.put(`/features/detail/${type}/${id}`, data);
+}
+
+export async function getPayments(params: { page?: number; limit?: number }) {
+    return adminClient.get("/payments", { params });
 }
 
 // Users
