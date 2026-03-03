@@ -158,7 +158,7 @@ export class UserAccountService {
                 .sort((a, b) => a.month.localeCompare(b.month));
 
             this.adminLogsService.createAdminLog({
-                action: `${this.request.user.name || this.request.user.email} viewed profile of ${user.email}[${user.firstName}]`,
+                action: `${this.request.user.name || this.request.user.email} viewed profile of ${user.firstName} ${user.lastName} [${user.email}]`,
                 adminId: this.request.user.id,
                 type: "user"
             })

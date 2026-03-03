@@ -304,7 +304,7 @@ export function FeaturePreview({ type, data: initialData }: FeaturePreviewProps)
                 {/* Right Column: Sidebar Stats */}
                 <div className="flex flex-col gap-6">
                     {(type === 'event' || type === 'hackathon') && (
-                        <Card>
+                        <Card className="py-0">
                             <CardHeader>
                                 <CardTitle className="text-xl flex items-center gap-2">
                                     <Users className="h-5 w-5 text-primary" />
@@ -336,7 +336,7 @@ export function FeaturePreview({ type, data: initialData }: FeaturePreviewProps)
                         </Card>
                     )}
 
-                    <Card className="overflow-hidden">
+                    <Card className="overflow-hidden py-0">
                         <img
                             src={data.bannerImageUrl || data.posterImageUrl || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070&auto=format&fit=crop"}
                             alt="Cover"

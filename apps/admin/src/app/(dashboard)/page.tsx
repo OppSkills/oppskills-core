@@ -5,7 +5,7 @@ import { AdminLogsCard } from "@/components/admin-panel/admin-logs-card";
 import { StatsDetailModal } from "@/components/admin-panel/stats-detail-modal";
 import { getMe } from "@/lib/api/actions";
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, DollarSign, Calendar, Activity, Zap } from "lucide-react";
 import { getDashboardOverview } from "@/lib/api/dashboard";
 import { Loader2 } from "lucide-react";
@@ -227,14 +227,36 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Placeholder for charts or recent activity */}
-        <div className="max-h-96">
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8 h-fit lg:h-[480px]">
+        {/* Recent Activity Section */}
+        <div className="flex flex-col h-[480px] lg:h-full">
           <AdminLogsCard />
         </div>
-        <div className="h-96">
-          <Card className="h-full flex items-center justify-center text-muted-foreground">
-            <CardContent>Revenue Overview Placeholder</CardContent>
+
+        {/* Revenue Overview Section */}
+        <div className="flex flex-col h-[480px] lg:h-full">
+          <Card className="h-full py-0 flex flex-col shadow-sm border-border/40 overflow-hidden">
+            <CardHeader className="p-4 bg-muted/30">
+              <div className="flex items-center gap-2">
+                <div className="space-y-1">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    Revenue Overview
+                  </CardTitle>
+                  <CardDescription className="text-[11px] font-medium uppercase tracking-tight opacity-70">
+                    Track Revenue and Expenses
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 flex items-center justify-center p-6 bg-muted/5">
+              <div className="flex flex-col items-center justify-center text-center space-y-3">
+                <div className="p-4 rounded-full bg-primary/5">
+                  <Activity className="h-8 w-8 text-primary/40 animate-pulse" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground italic">Financial analytics visualization coming soon</p>
+              </div>
+            </CardContent>
           </Card>
         </div>
       </div>

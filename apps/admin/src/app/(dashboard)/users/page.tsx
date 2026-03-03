@@ -109,7 +109,7 @@ export default function UsersPage() {
                 </div>
             </div>
 
-            <Card className="border-border/40 overflow-hidden">
+            <Card className="border-border/40 py-0 overflow-hidden">
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader className="bg-muted/30">
