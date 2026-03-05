@@ -227,8 +227,8 @@ export class AdminFeaturesService {
         if (!currentUser) throw new NotFoundException('User not found');
         const adminName = currentUser.name || currentUser.email;
 
-        // Ensure we don't update ID or Slug accidentally through this generic update if not intended
-        const { id: _, slug: __, ...updateData } = data;
+        // Also in update everything can be updated except id
+        const { id: _, ...updateData } = data;
 
         let updatedItem: any;
 
