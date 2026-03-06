@@ -20,8 +20,7 @@ import {
   SlidersHorizontal,
   Loader2,
   MailIcon,
-  QrCode,
-  Smartphone,
+  Download,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -40,6 +39,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { exportToExcel } from "@/lib/exportToExcel";
 
 // --- Types ---
 type RegistrationStatus = "Completed" | "Incomplete";
@@ -264,6 +264,7 @@ export default function ManageRegistrationPage() {
     null
   );
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
@@ -320,6 +321,122 @@ export default function ManageRegistrationPage() {
       setApprovingId(null);
     }
   }, [slug, getToken, queryClient]);
+
+  const handleExportRegistrations = useCallback(async () => {
+    if (!slug) return;
+
+    if (data.length === 0) {
+      toast.info("No registrations to export");
+      return;
+    }
+
+    setIsExporting(true);
+    const exportToastId = toast.loading("Preparing export…");
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.dismiss(exportToastId);
+        toast.error("Authentication required");
+        return;
+      }
+
+      // Fetch per-participant answers in parallel
+      const answersResults = await Promise.all(
+        data.map((p) =>
+          getParticipantRegistrationAnswers(token, slug, p.id).catch(() => null)
+        )
+      );
+
+      // Collect all unique field labels in insertion order
+      const allLabels = new Set<string>();
+      answersResults.forEach((ans) => {
+        if (ans) ans.fields.forEach((f) => allLabels.add(f.label));
+      });
+
+      const rows = data.map((p, idx) => {
+        const base: Record<string, string | number | boolean | null | undefined> = {
+          "Name": p.name,
+          "Email": p.email,
+          "University": p.university || "",
+          "Course": p.course || "",
+          "Location": p.location || "",
+          "Status": p.status,
+          "Registered On": p.registeredOn
+            ? new Date(p.registeredOn).toLocaleString("en-US", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "",
+          "Approved": p.approved ? "Yes" : "No",
+          "Pass Sent": p.passEmailSent ? "Yes" : "No",
+          "Pass Sent At": p.passEmailSentAt
+            ? new Date(p.passEmailSentAt).toLocaleString("en-US", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "",
+          "Approved At": p.approvedAt
+            ? new Date(p.approvedAt).toLocaleString("en-US", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "",
+        };
+
+        const ans = answersResults[idx];
+        if (ans) {
+          for (const label of allLabels) {
+            const field = ans.fields.find((f) => f.label === label);
+            if (field) {
+              const answer = ans.answers.find((a) => a.fieldId === field.id);
+              const val = answer?.value;
+              base[label] = Array.isArray(val)
+                ? val.join(", ")
+                : val !== null && val !== undefined
+                ? String(val)
+                : "";
+            } else {
+              base[label] = "";
+            }
+          }
+        } else {
+          for (const label of allLabels) {
+            base[label] = "";
+          }
+        }
+
+        return base;
+      });
+
+      exportToExcel({
+        rows,
+        fileName: `${slug}-registrations.xlsx`,
+        sheetName: "Registrations",
+      });
+
+      toast.dismiss(exportToastId);
+      toast.success(`Exported ${rows.length} registration${rows.length === 1 ? "" : "s"}`);
+    } catch (err) {
+      console.error("[handleExportRegistrations]", err);
+      toast.dismiss(exportToastId);
+      toast.error("Export failed. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [slug, data, getToken]);
 
   const columns = useMemo<ColumnDef<Participant>[]>(
     () => [
@@ -606,34 +723,20 @@ export default function ManageRegistrationPage() {
             />
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <QrCode className="w-4 h-4" />
-                Validate Passes
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72">
-              <div className="p-3">
-                <div className="flex items-start gap-3 mb-3">
-                  <Smartphone className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-sm">How to validate passes</h4>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Use your phone&apos;s camera or any QR scanner app to scan participant passes. You&apos;ll be taken to a validation page.
-                    </p>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
-                  <strong>Tip:</strong> On iPhone, open Camera app. On Android, use Google Lens or any QR scanner.
-                </div>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+            onClick={handleExportRegistrations}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {isExporting ? "Exporting…" : "Export"}
+          </Button>
           <button className="p-2 rounded-full border border-border hover:bg-muted text-muted-foreground transition-colors">
             <MoreVertical className="w-5 h-5" />
           </button>

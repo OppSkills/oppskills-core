@@ -15,6 +15,7 @@ import {
   EllipsisVertical,
   Check,
   X,
+  Download,
 } from "lucide-react";
 
 import {
@@ -35,6 +36,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { bulkSetTeamRoundQualification } from "@/lib/api/hackathonApi";
 import { getApiErrorMessage } from "@/lib/utils";
+import { exportToExcel } from "@/lib/exportToExcel";
 
 export type Participant = {
   id: string;
@@ -106,6 +108,37 @@ export default function Participants({
       toast.error(getApiErrorMessage(error, "Failed to update teams"));
     },
   });
+
+  const handleExportParticipants = React.useCallback(() => {
+    if (filteredData.length === 0) {
+      toast.info("No participants to export");
+      return;
+    }
+
+    try {
+      const rows = filteredData.map((p) => ({
+        "S. No.": p.serialNumber,
+        "Team Name": p.teamName,
+        "Members": p.memberCount,
+        "Email": p.email,
+        "University": p.university || "",
+        "Registration Status": p.status,
+        "Current Round": p.currentRound || "",
+        "Qualification Status": p.qualificationStatus ?? "",
+      }));
+
+      exportToExcel({
+        rows,
+        fileName: `${slug}-teams.xlsx`,
+        sheetName: "Teams",
+      });
+
+      toast.success(`Exported ${rows.length} team${rows.length === 1 ? "" : "s"}`);
+    } catch (err) {
+      console.error("[handleExportParticipants]", err);
+      toast.error("Export failed. Please try again.");
+    }
+  }, [filteredData, slug]);
 
   const columns: ColumnDef<Participant>[] = React.useMemo(
     () => [
@@ -341,6 +374,15 @@ export default function Participants({
               <Search className="text-foreground/30" />
             </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2 shrink-0"
+            onClick={handleExportParticipants}
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </Button>
           <div className="px-2">
             <div className="rounded-full w-8 h-8 border flex justify-center items-center cursor-pointer hover:bg-muted">
               <EllipsisVertical className="w-4 h-4 text-foreground/30" />
