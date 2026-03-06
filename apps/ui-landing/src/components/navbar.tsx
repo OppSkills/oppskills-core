@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Plus } from "lucide-react";
+import { Menu, X, Plus, PlusCircle, Search } from "lucide-react";
 import Link from "next/link";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import Auth from "./auth/Auth";
 import { useQueryState } from "nuqs";
 import Image from "next/image";
+import { Input } from "./ui/input";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,11 +16,9 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Home", href: "/" },
-    { name: "Events", href: "/events" },
+    { name: "Hackathons", href: "/competitions" },
     { name: "Festivals", href: "/festivals" },
-    { name: "Opportunities", href: "/competitions" },
-    { name: "About", href: "/about" },
-    { name: "Contact", href: "/contact" },
+    { name: "Events", href: "/events" },
   ];
 
   useEffect(() => {
@@ -52,7 +51,7 @@ const Navbar = () => {
             <Link
               key={link.name}
               href={link.href}
-              className="text-foreground hover:text-primary transition-colors text-sm font-medium"
+              className="text-base font-medium text-neutral-700"
             >
               {link.name}
             </Link>
@@ -61,6 +60,18 @@ const Navbar = () => {
 
         {/* --- RIGHT SIDE ACTIONS --- */}
         <div className="flex items-center gap-3">
+          <div className="hidden xl:flex items-center justify-center">
+            <div className="relative w-full max-w-[300px]">
+              <Input
+                type="text"
+                placeholder="Search"
+                className="w-full rounded-full border-neutral-400 py-2"
+              />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
+                <Search className="h-6 w-6" />
+              </div>
+            </div>
+          </div>
           {/* Desktop Buttons (Hidden on Mobile) */}
           <div className="hidden lg:flex items-center gap-3">
             {/* Logic for Authenticated Users */}
@@ -68,9 +79,9 @@ const Navbar = () => {
               <Link href="/organize">
                 <Button
                   variant="outline"
-                  className="border-primary-500 rounded-full text-primary-500 hover:bg-primary-500 hover:text-primary-foreground"
+                  className="border-primary-200 rounded-full text-primary-700 hover:bg-primary-500 hover:text-primary-foreground"
                 >
-                  <Plus className="w-4 h-4" />
+                  <PlusCircle className="w-4 h-4" />
                   Host
                 </Button>
               </Link>
@@ -126,9 +137,9 @@ const Navbar = () => {
                 <Link href="/organize" onClick={() => setIsOpen(false)}>
                   <Button
                     variant="outline"
-                    className="w-full border-primary-500 text-primary"
+                    className="w-full border-primary-200 text-primary-700"
                   >
-                    <Plus className="w-4 h-4 mr-2" /> Host
+                    <PlusCircle className="w-4 h-4 mr-2" /> Host
                   </Button>
                 </Link>
                 <Link href="/dashboard" onClick={() => setIsOpen(false)}>
