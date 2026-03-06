@@ -15,13 +15,13 @@ import { Loader2 } from 'lucide-react'
  * Maps feature titles to feature identifiers for the waitlist API.
  */
 function getFeatureIdentifier(title: string): string {
-  const mapping: Record<string, string> = {
-    'Skill-Based Learning Tracks': 'skill-based-learning-tracks',
-    'Mentor-Led Sessions': 'mentor-led-sessions',
-    'National-Level Challenges': 'national-level-challenges',
-    'Creator & Organizer Tools': 'creator-organizer-tools',
-  };
-  return mapping[title] || title.toLowerCase().replace(/\s+/g, '-');
+    const mapping: Record<string, string> = {
+        'Skill-Based Learning Tracks': 'skill-based-learning-tracks',
+        'Mentor-Led Sessions': 'mentor-led-sessions',
+        'National-Level Challenges': 'national-level-challenges',
+        'Creator & Organizer Tools': 'creator-organizer-tools',
+    };
+    return mapping[title] || title.toLowerCase().replace(/\s+/g, '-');
 }
 
 export default function UpcomingFeaturesCard({
@@ -45,7 +45,7 @@ export default function UpcomingFeaturesCard({
     useEffect(() => {
         const checkStatus = async () => {
             if (!isLoaded) return;
-            
+
             if (!isSignedIn) {
                 setIsCheckingStatus(false);
                 return;
@@ -114,10 +114,10 @@ export default function UpcomingFeaturesCard({
             <div className='flex w-full h-full'>
                 <div className='flex flex-col gap-6 w-2/3'>
                     <h2 className='font-semibold text-2xl text-foreground'>{title}</h2>
-                    <p className='text-neutral-600'>{description}</p>
+                    <p className='text-neutral-600 flex-1'>{description}</p>
                     <div>
-                        <Button 
-                            className='rounded-full'
+                        <Button
+                            className='rounded-full text-neutral-100 font-medium text-xs'
                             onClick={handleNotifyClick}
                             disabled={isLoading || isCheckingStatus}
                         >
@@ -134,7 +134,7 @@ export default function UpcomingFeaturesCard({
                             ) : (
                                 <>
                                     <BellIcon className="w-4 h-4 mr-2" />
-                                    Notify
+                                    Be First to Try
                                 </>
                             )}
                         </Button>
