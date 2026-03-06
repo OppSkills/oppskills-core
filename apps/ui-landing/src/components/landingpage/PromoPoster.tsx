@@ -13,7 +13,7 @@ export default function PromoPoster() {
     ];
 
     return (
-        <div className='bg-accent-pink-100 py-4 md:px-8 md:py-8 sm:rounded-xl md:flex w-full relative'>
+        <div className='bg-accent-green-100 py-4 md:px-8 md:py-8 sm:rounded-xl md:flex w-full relative'>
             <div className='w-[500px] h-full bg-[url("/illustrations/lines.svg")] bg-no-repeat bg-cover absolute top-0 right-0 z-10 opacity-50 lg:opacity-100'></div>
             <div className='w-full p-4 font-semibold text-foreground flex flex-col gap-12 lg:gap-16 z-20 relative'>
                 <h3 className='text-3xl lg:max-w-2/5'>List Your College Opportunities Easily on Oppskills</h3>
@@ -27,7 +27,7 @@ export default function PromoPoster() {
                                     </h2>
                                 </div>
 
-                                <ArrowRight className="text-accent-pink-500 group-hover:scale-125 transition-transform w-6 h-6" />
+                                <ArrowRight className="text-accent-green-500 group-hover:scale-125 transition-transform w-6 h-6" />
                             </Card>
                         </Link>
                     ))}
