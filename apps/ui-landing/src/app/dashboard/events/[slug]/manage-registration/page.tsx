@@ -53,6 +53,7 @@ interface Participant {
   status: RegistrationStatus;
   location: string;
   course: string;
+  gender: string | null;
   registeredOn: string;
   approved: boolean;
   passEmailSent: boolean;
@@ -290,6 +291,7 @@ export default function ManageRegistrationPage() {
       status: reg.status,
       location: reg.location,
       course: reg.course,
+      gender: reg.gender ?? null,
       registeredOn: reg.registeredOn,
       approved: reg.approved ?? false,
       passEmailSent: reg.passEmailSent ?? false,
@@ -341,11 +343,15 @@ export default function ManageRegistrationPage() {
         return;
       }
 
-      // Fetch per-participant answers in parallel
+      // Fetch per-participant answers in parallel — only for Completed registrations.
+      // Incomplete registrations have no submission, so we fall back to base profile data only.
       const answersResults = await Promise.all(
-        data.map((p) =>
-          getParticipantRegistrationAnswers(token, slug, p.id).catch(() => null)
-        )
+        data.map((p) => {
+          if (p.status !== "Completed") return Promise.resolve(null);
+          return getParticipantRegistrationAnswers(token, slug, p.id).catch(
+            () => null
+          );
+        })
       );
 
       // Collect all unique field labels in insertion order
@@ -358,6 +364,7 @@ export default function ManageRegistrationPage() {
         const base: Record<string, string | number | boolean | null | undefined> = {
           "Name": p.name,
           "Email": p.email,
+          "Gender": p.gender ?? "",
           "University": p.university || "",
           "Course": p.course || "",
           "Location": p.location || "",

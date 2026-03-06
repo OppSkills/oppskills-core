@@ -2055,6 +2055,7 @@ export class EventService {
               select: {
                 id: true,
                 userCategory: true,
+                gender: true,
                 schoolName: true,
                 schoolClass: true,
                 companyName: true,
@@ -2151,6 +2152,7 @@ export class EventService {
         university,
         location,
         course,
+        gender: profile?.gender ?? null,
         status: p.submission ? 'Completed' : 'Incomplete',
         registeredOn: p.joinedAt.toISOString(),
         approved: p.approved,

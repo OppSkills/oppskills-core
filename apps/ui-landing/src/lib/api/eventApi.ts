@@ -455,6 +455,7 @@ export interface EventRegistration {
   university: string;
   location: string;
   course: string;
+  gender: string | null;
   status: "Completed" | "Incomplete";
   registeredOn: string;
   approved: boolean;
