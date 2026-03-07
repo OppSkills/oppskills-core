@@ -75,10 +75,10 @@ export default function PastEvents() {
                         modules={[Navigation, Pagination]}
                         spaceBetween={24}
                         breakpoints={{
-                            0: { slidesPerView: 1 },
-                            768: { slidesPerView: 2 },
-                            1024: { slidesPerView: 3 },
-                            1280: { slidesPerView: 4 },
+                            0: { slidesPerView: 1, slidesPerGroup: 1 },
+                            768: { slidesPerView: 2, slidesPerGroup: 1 },
+                            1024: { slidesPerView: 3, slidesPerGroup: 1 },
+                            1280: { slidesPerView: 4, slidesPerGroup: 3 },
                         }}
                         loop={allEvents.length > 4}
                         navigation={{
