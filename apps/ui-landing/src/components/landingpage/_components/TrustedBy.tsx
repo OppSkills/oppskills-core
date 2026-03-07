@@ -8,7 +8,7 @@ export default function TrustedBy() {
             <p className='text-neutral-600 text-xl'>Top colleges already choose oppskills to conduct their events & competitions</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 mt-6">
                 {["iith.png", "iitd.png", "sharda.png", "iilm.png", "krrc.png", "rishihood.png", "gla.png"].map((e, i) => (
-                    <div key={i} className="relative w-full">
+                    <div key={i} className="flex justify-center w-full">
                         <Image
                             src={`/logos/${e}`}
                             alt={e}

@@ -6,17 +6,19 @@ import { UpcomingEvents } from "@/components/landingpage/UpcomingEvents";
 import PastEvents from "@/components/landingpage/PastEvents";
 import UpcomingFeatures from "@/components/landingpage/UpcomingFeatures";
 import TrustedBy from "@/components/landingpage/_components/TrustedBy";
+import WhyChoose from "@/components/landingpage/WhyChoose";
 
 const Home = () => {
   return (
     <>
       <div className="px-4 sm:px-8 md:px-12 xl:px-25 bg-neutral-100">
         <HeroSection />
-        <UpcomingEvents />
         <UpcomingCompetitions />
+        <UpcomingEvents />
         <PastEvents />
         {/* <ActiveCommunitypage /> */}
         <OppskillsFlow />
+        <WhyChoose />
         <TrustedBy />
         <UpcomingFeatures />
       </div>
