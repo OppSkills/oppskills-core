@@ -53,7 +53,7 @@ export default function UpcomingCompetitions() {
 
   return (
     <section
-      className="w-full pt-12 md:pt-16 lg:pt-20 bg-background"
+      className="w-full pt-12 md:pt-16 lg:pt-20"
       id="competitions"
     >
       <div className="container mx-auto">

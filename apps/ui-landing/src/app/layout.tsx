@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { Inter, Poppins, Kaushan_Script } from "next/font/google";
+import { Urbanist } from "next/font/google";
+import localFont from "next/font/local"
+
 import "./globals.css";
 import {
   JsonLd,
@@ -15,21 +17,32 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Suspense } from "react";
 import { PostHogProvider } from "@/components/posthog-provider";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const urbanist = Urbanist({
+  variable: "--font-urbanist",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
-const kaushan = Kaushan_Script({
-  variable: "--font-kaushan",
-  subsets: ["latin"],
-  weight: ["400"],
+const aeonicPro = localFont({
+  src: [
+    {
+      path: "../../public/fonts/AeonicPro-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/AeonicPro-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/AeonicPro-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-aeonicPro",
 });
 
 export const metadata: Metadata = {
@@ -144,7 +157,7 @@ export default function RootLayout({
       <html lang="en" suppressHydrationWarning>
         <head></head>
         <body
-          className={`${inter.variable} ${poppins.variable} ${kaushan.variable} font-sans antialiased`}
+          className={`${urbanist.variable} ${aeonicPro.variable} font-sans antialiased`}
         >
           <JsonLd data={[organizationSchema, websiteSchema]} />
           <Suspense>

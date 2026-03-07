@@ -58,7 +58,7 @@ export default function PastEvents() {
     }
 
     return (
-        <section className="w-full pt-12 md:pt-16 lg:pt-20 bg-background">
+        <section className="w-full pt-12 md:pt-16 lg:pt-20">
             <div className="container mx-auto">
                 <div className="mb-8 space-y-2 flex flex-col gap-2">
                     {/* 'Previous' badge removed to match UpcomingEvents style, or can be kept if desired */}
