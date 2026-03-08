@@ -8,7 +8,14 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 const FloatingInput = React.forwardRef<HTMLInputElement, InputProps>(
     ({ className, ...props }, ref) => {
-        return <Input placeholder=" " className={cn('peer', className)} ref={ref} {...props} />;
+        return <Input placeholder=" "
+            className={
+                cn(
+                    'peer ring-0 rounded-full',
+                    'focus-visible:ring-0 border-px',
+                    className
+                )}
+            ref={ref} {...props} />;
     },
 );
 FloatingInput.displayName = 'FloatingInput';

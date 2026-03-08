@@ -51,8 +51,8 @@ export default function EventsPage() {
 
   return (
     <GenericListingPage
-      title="Upcoming College Events"
-      description="Stay ahead with the latest events, workshops, and conferences."
+      title="Upcoming Events"
+      description="Don’t miss what’s next, stay updated with upcoming events and sessions."
       items={items}
       isLoading={isLoading}
       error={error}

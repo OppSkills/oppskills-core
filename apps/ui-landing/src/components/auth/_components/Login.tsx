@@ -5,7 +5,7 @@ import { useSignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { Loader2 } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { FloatingLabelInput } from "@/components/ui/derived/FloatingInput";
 import { getClerkErrorMessage } from "@/lib/utils";
@@ -75,7 +75,7 @@ export default function Login({
     <div className="flex flex-col gap-4">
       <Button
         onClick={handleGoogleLogin}
-        className="w-full rounded-full text-foreground py-6 border-neutral-200/20"
+        className="w-full rounded-full py-5 text-primary-600 border-px border-primary-200"
         variant="outline"
         type="button"
         aria-label="Sign in with Google account"
@@ -120,7 +120,7 @@ export default function Login({
           disabled={isLoading}
         >
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Sign In
+          Continue <ChevronRight />
         </Button>
       </form>
     </div>
