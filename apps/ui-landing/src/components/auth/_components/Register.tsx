@@ -11,11 +11,14 @@ import { getClerkErrorMessage } from "@/lib/utils";
 
 import RTooltip from "@/components/ui/Rtooltip";
 import { FloatingLabelInput } from "@/components/ui/derived/FloatingInput";
+import { Input } from "@/components/ui/input";
 
 export default function Register({
   setIsOpenLogin,
+  onStepChange,
 }: {
   setIsOpenLogin: (mode: boolean) => void;
+  onStepChange?: (step: number) => void;
 }) {
   const { isLoaded, signUp, setActive } = useSignUp();
   const router = useRouter();
@@ -23,6 +26,11 @@ export default function Register({
   // UI State
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+
+  const updateStep = (newStep: number) => {
+    setStep(newStep);
+    onStepChange?.(newStep);
+  };
 
   // Form States
   const [email, setEmail] = useState("");
@@ -50,11 +58,24 @@ export default function Register({
         emailAddress: email,
       });
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-      setStep(2);
+      updateStep(2);
       toast.success("Verification code sent!");
     } catch (err: unknown) {
       console.log(JSON.stringify(err, null, 2));
       toast.error(getClerkErrorMessage(err, "Something went wrong"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!isLoaded) return;
+    setIsLoading(true);
+    try {
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      toast.success("Verification code resent!");
+    } catch (err: unknown) {
+      toast.error(getClerkErrorMessage(err, "Failed to resend code"));
     } finally {
       setIsLoading(false);
     }
@@ -71,10 +92,10 @@ export default function Register({
       });
 
       if (completeSignUp.status !== "complete") {
-        setStep(3);
+        updateStep(3);
         toast.success("Email verified!");
       } else {
-        setStep(3);
+        updateStep(3);
       }
     } catch (err: unknown) {
       console.log(JSON.stringify(err, null, 2));
@@ -137,7 +158,7 @@ export default function Register({
   // Navigation Step Click Handler
   const handleStepClick = (s: number) => {
     if (s < step) {
-      setStep(s);
+      updateStep(s);
     }
   };
 
@@ -191,37 +212,7 @@ export default function Register({
   return (
     <div className="flex flex-col gap-6">
       <div id="clerk-captcha"></div>
-      {/* Steps Indicator - Clickable */}
-      <div className="relative flex justify-between mb-4">
-        {/* Progress Bar Background */}
-        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -translate-y-1/2 -z-0" />
 
-        {/* Animated Progress Bar */}
-        <motion.div
-          className="absolute top-1/2 left-0 h-0.5 bg-primary-500 -translate-y-1/2 -z-0"
-          initial={{ width: "0%" }}
-          animate={{
-            width: `${((step - 1) / 2) * 100}%`,
-          }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-        />
-
-        {[1, 2, 3].map((i) => (
-          <RTooltip content={stepName[i].name} key={i}>
-            <button
-              onClick={() => handleStepClick(i)}
-              disabled={i > step}
-              className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full text-xs font-bold transition-colors border-none outline-none focus:ring-2 ring-offset-1 focus:ring-primary-500 ${
-                step >= i
-                  ? "bg-primary-500 text-primary-foreground cursor-pointer"
-                  : "bg-muted text-muted-foreground cursor-not-allowed"
-              }`}
-            >
-              {step > i ? <Check className="w-4 h-4" /> : stepName[i].icon}
-            </button>
-          </RTooltip>
-        ))}
-      </div>
 
       {/* Step 1: Email */}
       {step === 1 && (
@@ -250,40 +241,59 @@ export default function Register({
 
       {/* Step 2: OTP */}
       {step === 2 && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-          <div className="text-center mb-4">
-            <p className="text-sm text-muted-foreground">
-              We sent a code to{" "}
-              <span className="font-medium text-foreground">{email}</span>
+        <div className="flex flex-col items-center gap-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold text-neutral-800">
+              Verify Your Identity
+            </h1>
+            <p className="text-neutral-500 max-w-[300px]">
+              We've sent an email with your code to:{" "}
+              <span className="font-medium">{email}</span>
             </p>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-neutral-500">
+            Didn't receive a code?{" "}
             <button
-              onClick={() => setStep(1)}
-              className="text-xs text-primary-500 hover:underline mt-1"
+              type="button"
+              onClick={handleResendOtp}
+              disabled={isLoading}
+              className="text-primary-600 font-semibold hover:underline"
             >
-              Change email
+              Resend
             </button>
           </div>
-          <div className="space-y-4">
-            <FloatingLabelInput
+
+          <div className="w-full space-y-4">
+            <Input
               id="otp"
-              label="Enter 6-digit Code"
+              placeholder="Enter 6 digit code"
               type="text"
               maxLength={6}
-              className="text-center text-2xl tracking-widest"
+              className="rounded-full py-6 text-center text-lg tracking-[0.5em] placeholder:tracking-normal placeholder:text-neutral-400"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
             />
+
+            <Button
+              onClick={handleVerifyOtp}
+              disabled={isLoading || otp.length !== 6}
+              className="w-full rounded-full py-6 bg-primary-600 hover:bg-primary-700 text-white"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              Verify OTP
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => updateStep(1)}
+              className="text-neutral-500 hover:text-neutral-700 text-sm font-medium mt-4 block mx-auto"
+            >
+              Go Back
+            </button>
           </div>
-          <Button
-            onClick={handleVerifyOtp}
-            disabled={isLoading || otp.length !== 6}
-            className="w-full rounded-full py-6"
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : null}
-            Verify Code
-          </Button>
         </div>
       )}
 
