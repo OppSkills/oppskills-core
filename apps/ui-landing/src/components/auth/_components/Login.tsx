@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useSignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import { Loader2 } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { FloatingLabelInput } from "@/components/ui/derived/FloatingInput";
 import { getClerkErrorMessage } from "@/lib/utils";
@@ -21,22 +20,6 @@ export default function Login({
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleLogin = async () => {
-    if (!isLoaded) return;
-    try {
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.delete("auth");
-
-      await signIn.authenticateWithRedirect({
-        strategy: "oauth_google",
-        redirectUrl: "/sso-callback",
-        redirectUrlComplete: currentUrl.toString(),
-      });
-    } catch (err: unknown) {
-      console.error("OAuth error", err);
-      toast.error(getClerkErrorMessage(err, "Failed to start Google login"));
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,27 +56,6 @@ export default function Login({
 
   return (
     <div className="flex flex-col gap-4">
-      <Button
-        onClick={handleGoogleLogin}
-        className="w-full rounded-full text-foreground py-6 border-neutral-200/20"
-        variant="outline"
-        type="button"
-        aria-label="Sign in with Google account"
-      >
-        <Image src="/google.png" alt="Google" width={20} height={20} /> Continue
-        with Google
-      </Button>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-neutral-200 " />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
-          </span>
-        </div>
-      </div>
 
       <form onSubmit={handleSubmit} className="grid gap-4">
         <div className="grid gap-2">
@@ -120,7 +82,7 @@ export default function Login({
           disabled={isLoading}
         >
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Sign In
+          Continue <ChevronRight />
         </Button>
       </form>
     </div>

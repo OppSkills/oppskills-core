@@ -207,14 +207,14 @@ export class EventController {
       this.eventService.listPublicEvents({
         festivalId,
         page,
-        appendResults,
+        appendResults: false, // Force 10 results per service
         search,
         filterMode: 'PAST',
       }),
       this.hackathonService.listPublicHackathons({
         festivalId,
         page,
-        appendResults,
+        appendResults: false, // Force 10 results per service
         search,
         filterMode: 'PAST',
       }),
@@ -244,7 +244,8 @@ export class EventController {
       return dateB - dateA;
     });
 
-    return merged;
+    // Limit to 10 results per page total
+    return merged.slice(0, 10);
   }
 
   /**

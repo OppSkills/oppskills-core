@@ -39,8 +39,8 @@ export const UpcomingEvents = () => {
   if (isLoading) {
     return (
       <EventsSectionSkeleton
-        title="Upcoming College Events"
-        subtitle="Stay ahead with the latest events, workshops, and conferences."
+        title="Upcoming Events"
+        subtitle="Don’t miss what’s next, stay updated with upcoming events and sessions."
       />
     );
   }
@@ -49,8 +49,8 @@ export const UpcomingEvents = () => {
   if (isError || displayEvents.length === 0) {
     return (
       <EventsEmptyState
-        title="Upcoming College Events"
-        subtitle="Stay ahead with the latest events, workshops, and conferences."
+        title="Upcoming Events"
+        subtitle="Don’t miss what’s next, stay updated with upcoming events and sessions."
         emptyTitle="No Events Yet"
         emptyMessage="Check back soon for upcoming events, workshops, and conferences!"
       />
@@ -59,13 +59,13 @@ export const UpcomingEvents = () => {
 
   return (
     <section
-      className="w-full pt-12 md:pt-16 lg:pt-20 bg-background"
+      className="w-full pt-12 md:pt-16 lg:pt-20"
       id="events"
     >
       <div className="container mx-auto">
         <div className="mb-8 space-y-2 flex flex-col gap-2">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
-            Upcoming College Events
+            Upcoming Events
           </h2>
           <p className="text-muted-foreground text-lg inter">
             Don’t miss what’s next, stay updated with upcoming events and

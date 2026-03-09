@@ -9,7 +9,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-urbanist);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -45,56 +45,52 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --color-primary-100: #f4eefcff;
-  --color-primary-200: #e2d4f6ff;
-  --color-primary-300: #c5a8edff;
-  --color-primary-400: #a97ee5ff;
-  --color-primary-500: #8c53dcff;
-  --color-primary-600: #7042b0ff;
-  --color-primary-700: #543284ff;
-  --color-primary-800: #382158ff;
-  --color-primary-900: #1c112cff;
-  --color-neutral-100: #fafafaff;
-  --color-neutral-200: #edededff;
-  --color-neutral-300: #e8e6e8ff;
-  --color-neutral-400: #c3bfc4ff;
-  --color-neutral-500: #a099a1ff;
-  --color-neutral-600: #7c737eff;
-  --color-neutral-700: #584d5aff;
-  --color-neutral-800: #342636ff;
-  --color-neutral-900: #100013ff;
-  --color-ui-success: #0a9952ff;
-  --color-ui-error: #e92215ff;
-  --color-ui-warning: #d8a800ff;
-  --color-ui-info: #1b4dffff;
-  --color-accent-yellow-100: #ffef99ff;
-  --color-accent-yellow-300: #f7cf04ff;
-  --color-accent-yellow-500: #8e7700ff;
-  --color-accent-green-100: #93d7d0ff;
-  --color-accent-green-300: #29b0a2ff;
-  --color-accent-green-500: #007569ff;
-  --color-accent-blue-100: #c4caffff;
-  --color-accent-blue-300: #8390ffff;
-  --color-accent-blue-500: #444fb7ff;
-  --color-accent-pink-100: #ffb9ebff;
-  --color-accent-pink-300: #f675d1ff;
-  --color-accent-pink-500: #c4048cff;
+  --color-primary-100: #F3EEFFFF;
+  --color-primary-200: #E2D3FFFF;
+  --color-primary-300: #C8AEFFFF;
+  --color-primary-400: #AC89F2FF;
+  --color-primary-500: #835BD5FF;
+  --color-primary-600: #6949AAFF;
+  --color-primary-700: #423072FF;
+  --color-primary-800: #271B40FF;
+  --color-primary-900: #0C0114FF;
+  --color-neutral-100: #FAFAFAFF;
+  --color-neutral-200: #EDEDEDFF;
+  --color-neutral-300: #E8E6E8FF;
+  --color-neutral-400: #C3BFC4FF;
+  --color-neutral-500: #A099A1FF;
+  --color-neutral-600: #7C737EFF;
+  --color-neutral-700: #584D5AFF;
+  --color-neutral-800: #342636FF;
+  --color-neutral-900: #100013FF;
+  --color-UI-Success: #0A9952FF;
+  --color-UI-Error: #E92215FF;
+  --color-UI-Warning: #D8A800FF;
+  --color-UI-Info: #1B4DFFFF;
+  --color-accent-yellow-100: #FFEF99FF;
+  --color-accent-yellow-300: #F7CF04FF;
+  --color-accent-yellow-500: #8E7700FF;
+  --color-accent-green-100: #93D7D0FF;
+  --color-accent-green-300: #29B0A2FF;
+  --color-accent-green-500: #007569FF;
+  --color-accent-blue-100: #C4CAFFFF;
+  --color-accent-blue-300: #8390FFFF;
+  --color-accent-blue-500: #444FB7FF;
+  --color-accent-pink-100: #FFB9EBFF;
+  --color-accent-pink-300: #F675D1FF;
+  --color-accent-pink-500: #C4048CFF;
 }
 
-.poppins {
-  font-family: var(--font-poppins);
+.urbanist {
+  font-family: var(--font-urbanist);
 }
 
-.kaushan-script {
-  font-family: var(--font-kaushan-script);
-}
-
-.inter {
-  font-family: var(--font-inter);
+.aeonicPro {
+  font-family: var(--font-aeonicPro);
 }
 
 :root {
-  --font-kaushan-script: "Kaushan Script", sans-serif;
+  --font-aeonicPro: "AeonicPro", sans-serif;
   --radius: 0.625rem;
 
   --background: #ffffff;
@@ -266,7 +262,7 @@ body {
 
 .line-clamp-4 {
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -280,7 +276,7 @@ body {
 p,
 span,
 div {
-  font-family: var(--font-inter);
+  font-family: var(--font-urbanist);
 }
 
 h1,
@@ -289,8 +285,8 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-poppins);
-  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-aeonicPro);
+  font-weight: var(--font-weight-medium);
 }
 
 .dark {
@@ -385,4 +381,15 @@ h6 {
   border: none;
   border-top: 2px solid rgba(#0d0d0d, 0.1);
   margin: 2rem 0;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px transparent inset;
+  box-shadow: 0 0 0px 1000px transparent inset;
+  -webkit-text-fill-color: #000;
+  transition: background-color 5000s ease-in-out 0s;
 }

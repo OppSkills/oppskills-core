@@ -1,147 +1,52 @@
-"use client";
-import Typewriter from "typewriter-effect";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import Image from 'next/image'
 
 export default function HeroSection() {
-  const router = useRouter();
-
-  const HERO_CARDS = [
-    {
-      title: "Competitions",
-      items: ["Idea Comp", "Hackathons", "Quizzes"],
-      image: "/character-competitions.png",
-      link: "/competitions",
-      styles: {
-        bg: "bg-[#C4CAFF]",
-        circle: "bg-[#8390FF]",
-      },
-      alt: "Competitions character",
-    },
-    {
-      title: "Events",
-      items: ["Workshops", "Tech events", "Innovation meets"],
-      image: "/character-events.png",
-      link: "/events",
-      styles: {
-        bg: "bg-[#FFEFA7]",
-        circle: "bg-[#F7CF04]",
-      },
-      alt: "Events character",
-    },
-    {
-      title: "Communities",
-      items: ["Tech", "Design", "Fitness"],
-      image: "/character-communities.png",
-      link: "#comingsoon",
-      styles: {
-        bg: "bg-[#FDC5F5]",
-        circle: "bg-[#F675D1]",
-      },
-      alt: "Communities character",
-    },
-  ];
-
   return (
-    <section className="relative min-h-[90vh] flex flex-col items-center justify-between bg-background overflow-hidden">
-      <div className="relative z-40 max-w-[1159px] text-center space-y-6 py-16">
-        <div className="space-y-2">
-          <h1 className="poppins font-semibold text-foreground text-[40px] sm:text-[60px] md:text-[80px] leading-tight tracking-tight">
-            Global Opportunities Powered by{" "}
-            <span className="text-primary-500 kaushan-script font-normal">
-              Skills
-            </span>
-          </h1>
+    <div className='py-8 flex flex-col gap-8'>
+      <div className='flex sm:flex-row flex-col gap-4 justify-between'>
+        <div className='flex flex-col gap-2'>
+          <h2 className='text-3xl sm:text-4xl md:text-5xl font-medium'>Discover Opportunities</h2>
+          <h2 className='text-3xl sm:text-4xl md:text-5xl italic text-primary-500 font-medium'>That Move You Forward</h2>
         </div>
-
-        <p className="w-full max-w-[993px] mx-auto text-center text-muted-foreground text-[18px] md:text-[28px] font-normal leading-normal px-2 inter">
-          Connect with events, hackathons, and communities worldwide. Build
-          skills, network with professionals, and accelerate your career
-          journey.
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8 w-full max-w-lg mx-auto">
-          <div>
-            <Button
-              onClick={() => router.push("/competitions")}
-              className="bg-primary-500 p-6 rounded-full text-xl"
-            >
-              Find Opportunities
-            </Button>
-          </div>
-
-          {/* BUTTON 2: Join Communities (Ghost) */}
-          <Button
-            variant="ghost"
-            onClick={() => router.push("/organize")}
-            className="hover:bg-primary-100 rounded-full p-6 text-primary-500 text-xl min-w-[250px]"
-          >Host an
-            <Typewriter
-              options={{
-                loop: true,
-                delay: 75,
-                deleteSpeed: 50,
-              }}
-              onInit={(typewriter) => {
-                typewriter
-                  .typeString("Event")
-                  .pauseFor(2000)
-                  .deleteAll()
-                  .typeString("Opportunity")
-                  .pauseFor(2000)
-                  .deleteAll()
-                  .start();
-              }}
-            />
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full justify-center gap-4 py-8 md:py-12 lg:py-15">
-        {HERO_CARDS.map((card, index) => (
-          <div
-            key={index}
-            onClick={() => {
-              router.push(card.link);
-            }}
-            className={`relative w-full h-[182px] rounded-3xl overflow-hidden ${card.styles.bg} flex p-6 transition-transform hover:scale-105 shadow-inner group mx-auto max-w-md md:max-w-none`}
-          >
-            <div className="relative z-10 flex flex-col gap-2">
-              <p
-                className={`poppins font-semibold text-[24px] leading-[125%] text-neutral-900`}
-              >
-                {card.title}
-              </p>
-              <ul
-                className={`inter font-normal text-[16px] leading-[150%] text-neutral-800 space-y-0.5`}
-              >
-                {card.items.map((item, i) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="absolute bottom-[-10px] right-0">
-              <div
-                className={`w-[120px] h-[120px] rounded-full ${card.styles.circle} absolute -top-3 right-3`}
-              ></div>
+        <div className=''>
+          <div className='rounded-full bg-linear-to-r from-primary-600 to-primary-200 p-px overflow-hidden'>
+            <div className='bg-primary-100 px-3 py-1 rounded-full flex gap-2 items-center'>
               <Image
-                src={card.image}
-                alt={card.alt}
-                width={171}
-                height={171}
-                className="object-contain"
-                style={{
-                  width: "170.45px",
-                  height: "170.45px",
-                  filter:
-                    "drop-shadow(0px 6.619px 6.619px rgba(0, 0, 0, 0.25))",
-                }}
+                src="/illustrations/user-3d.svg"
+                alt="Hero Card"
+                width={40}
+                height={40}
               />
+              <p className='text-sm sm:text-base text-neutral-800'>Grow your skills with 10,000 other hustlers</p>
             </div>
           </div>
-        ))}
+        </div>
       </div>
-    </section>
-  );
+      <div className='grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8'>
+        {
+          [
+            { image: "/illustrations/desk_laptop.svg", title: "Hackathons" },
+            { image: "/illustrations/rewards.svg", title: "Competitions" },
+            { image: "/illustrations/desk_coffee.svg", title: "Events" },
+            { image: "/illustrations/communities.svg", title: "Communities" },
+          ].map((item, index) => {
+            return (
+              <div className='bg-primary-200 rounded-xl p-4 relative h-40 overflow-hidden' key={index}>
+                <h4 className='text-neutral-900 text-lg font-normal'>{item.title}</h4>
+                <div className='rounded-full bg-primary-300 w-40 h-40 absolute -bottom-10 -right-10'>
+                </div>
+                <Image
+                  src={item.image}
+                  alt="Hero Card"
+                  width={120}
+                  className='absolute bottom-0 right-0'
+                  height={120}
+                />
+              </div>
+            )
+          })
+        }
+      </div>
+    </div>
+  )
 }
