@@ -294,17 +294,18 @@ export class EmailListener {
       return `${baseUrl}/api/og/event-pass?${params.toString()}`;
     })();
 
-    const attachments: Array<{ name: string; type: string; data: string }> = [];
+    const attachments: Array<{ filename: string; content: string }> = [];
+
+    // Sanitise ticketId for use in filenames (remove №, spaces, special chars)
+    const safeTicketId = eventPass.ticketId.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 
     try {
       const resp = await fetch(ogImageUrl);
       if (resp.ok) {
         const buf = await resp.arrayBuffer();
-        const b = Buffer.from(buf);
         attachments.push({
-          name: `event-pass-${eventPass.ticketId}.png`,
-          type: resp.headers.get('content-type') || 'image/png',
-          data: b.toString('base64'),
+          filename: `event-pass-${safeTicketId}.png`,
+          content: Buffer.from(buf).toString('base64'),
         });
       }
     } catch (err) {
@@ -313,11 +314,13 @@ export class EmailListener {
 
     try {
       if (eventPass.token) {
-        const qrBuf = await QRCode.toBuffer(eventPass.token, { type: 'png' });
+        // QR must encode the full validation URL — identical to what the
+        // event-pass page renders with QRCodeSVG on the ticket card.
+        const qrUrl = `https://www.oppskills.com/pass/validate/${eventPass.token}`;
+        const qrBuf = await QRCode.toBuffer(qrUrl, { type: 'png', errorCorrectionLevel: 'H' });
         attachments.push({
-          name: `pass-qr-${eventPass.ticketId}.png`,
-          type: 'image/png',
-          data: qrBuf.toString('base64'),
+          filename: `pass-qr-${safeTicketId}.png`,
+          content: qrBuf.toString('base64'),
         });
       }
     } catch (err) {

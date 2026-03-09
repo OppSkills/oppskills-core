@@ -36,7 +36,8 @@ export type EmailType =
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
   to: string;
-  attachments?: Array<{ name: string; type: string; data: string }>;
+  /** Local file attachments – content must be a Base64-encoded string. */
+  attachments?: Array<{ filename: string; content: string }>;
   props: T extends 'welcome'
   ? WelcomeEmailProps
   : T extends 'onboarding-complete'
@@ -107,10 +108,10 @@ export class EmailService {
       };
 
       if (attachments && attachments.length > 0) {
+        // Resend expects { filename, content } where content is a Base64 string
         payload.attachments = attachments.map((a: any) => ({
-          name: a.name,
-          data: a.data,
-          type: a.type,
+          filename: a.filename,
+          content: a.content,
         }));
       }
 
