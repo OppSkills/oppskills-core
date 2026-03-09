@@ -16,6 +16,7 @@ import type {
 import { Logger } from 'src/_utils/logger';
 import { prisma } from '@oppskills/db';
 import { EventPassService } from '../event/event-pass.service';
+import * as QRCode from 'qrcode';
 
 @Injectable()
 export class EmailListener {
@@ -274,6 +275,55 @@ export class EmailListener {
       participant.id,
     );
 
+    // Prepare attachments: OG pass image (rendered image) and QR code PNG
+    const ogImageUrl = (() => {
+      const baseUrl = this.emailService['fromEmail']?.includes('@oppskills.com')
+        ? 'https://oppskills.com'
+        : 'https://oppskills.com';
+      const params = new URLSearchParams({
+        name: participantName,
+        college: participantCollege,
+        email: user.email,
+        eventName: event.name,
+        eventDate,
+        eventTime,
+        ticketId: eventPass.ticketId,
+      });
+      if (eventPass.token) params.set('token', eventPass.token);
+      if (user.imageUrl) params.set('image', user.imageUrl);
+      return `${baseUrl}/api/og/event-pass?${params.toString()}`;
+    })();
+
+    const attachments: Array<{ name: string; type: string; data: string }> = [];
+
+    try {
+      const resp = await fetch(ogImageUrl);
+      if (resp.ok) {
+        const buf = await resp.arrayBuffer();
+        const b = Buffer.from(buf);
+        attachments.push({
+          name: `event-pass-${eventPass.ticketId}.png`,
+          type: resp.headers.get('content-type') || 'image/png',
+          data: b.toString('base64'),
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to fetch OG image for pass: ${err}`);
+    }
+
+    try {
+      if (eventPass.token) {
+        const qrBuf = await QRCode.toBuffer(eventPass.token, { type: 'png' });
+        attachments.push({
+          name: `pass-qr-${eventPass.ticketId}.png`,
+          type: 'image/png',
+          data: qrBuf.toString('base64'),
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to generate QR code for pass: ${err}`);
+    }
+
     const result = await this.emailService.send({
       type: 'event-pass',
       to: user.email,
@@ -291,6 +341,7 @@ export class EmailListener {
         token: eventPass.token,
         eventSlug: event.slug,
       },
+      attachments,
     });
 
     if (result.success) {

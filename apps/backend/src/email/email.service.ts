@@ -36,6 +36,7 @@ export type EmailType =
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
   to: string;
+  attachments?: Array<{ name: string; type: string; data: string }>;
   props: T extends 'welcome'
   ? WelcomeEmailProps
   : T extends 'onboarding-complete'
@@ -87,7 +88,7 @@ export class EmailService {
   async send<T extends EmailType>(
     options: SendEmailOptions<T>,
   ): Promise<{ success: boolean; id?: string; error?: string }> {
-    const { type, to, props } = options;
+    const { type, to, props, attachments } = options as any;
 
     try {
       const { subject, html } = await this.renderEmail(type, props);
@@ -98,12 +99,22 @@ export class EmailService {
         return { success: true, id: 'dry-run' };
       }
 
-      const result = await this.resend.emails.send({
+      const payload: any = {
         from: this.fromEmail,
         to,
         subject,
         html,
-      });
+      };
+
+      if (attachments && attachments.length > 0) {
+        payload.attachments = attachments.map((a: any) => ({
+          name: a.name,
+          data: a.data,
+          type: a.type,
+        }));
+      }
+
+      const result = await this.resend.emails.send(payload);
 
       if (result.error) {
         this.logger.error(
