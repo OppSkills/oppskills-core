@@ -542,9 +542,15 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
   const sameDay = isSameDay(startDate, endDate);
 
+  // Events with TBA dates
+  const TBA_EVENT_IDS = new Set(["cmm23i1ng01sgt901wd1f9z3b"]);
+  const isDateTBA = TBA_EVENT_IDS.has(event.id);
+
   // Format date display
   let formattedDate: string;
-  if (sameDay) {
+  if (isDateTBA) {
+    formattedDate = "To Be Announced";
+  } else if (sameDay) {
     formattedDate = format(startDate, "EEEE, d MMM yyyy");
   } else {
     // Check if same year
@@ -555,9 +561,9 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     }
   }
 
-  const formattedTime = format(startDate, "h:mm a") + " Onwards";
-  const monthShort = format(startDate, "MMM");
-  const dayNum = format(startDate, "dd");
+  const formattedTime = isDateTBA ? "" : format(startDate, "h:mm a") + " Onwards";
+  const monthShort = isDateTBA ? "TBA" : format(startDate, "MMM");
+  const dayNum = isDateTBA ? "—" : format(startDate, "dd");
 
   const { venueName, venueAddress } = formatLocation(event);
 
@@ -725,7 +731,9 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                   <p className="font-medium text-neutral-800 text-BASE">
                     {formattedDate}
                   </p>
-                  <p className="text-xs text-neutral-600">{formattedTime}</p>
+                  {formattedTime && (
+                    <p className="text-xs text-neutral-600">{formattedTime}</p>
+                  )}
                 </div>
               </div>
 
