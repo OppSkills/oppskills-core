@@ -924,6 +924,7 @@ export class HackathonService {
         externalRegistrationLink: dto.externalRegistrationLink,
 
         isFree: dto.isFree ?? undefined,
+        chargeMode: dto.chargeMode ?? undefined,
         entryFeeAmount: dto.entryFeeAmount,
         currency: dto.currency ?? undefined,
         prizeTotalWorthAmount: dto.prizeTotalWorthAmount,
