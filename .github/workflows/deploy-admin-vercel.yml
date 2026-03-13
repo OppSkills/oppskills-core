@@ -1,5 +1,8 @@
 name: Deploy Admin to Vercel
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches: [main]
@@ -33,10 +36,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Enable pnpm (corepack)
-        run: corepack enable
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.5.2 --activate
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
