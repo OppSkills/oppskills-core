@@ -23,7 +23,7 @@ oppskills-core/
 └── .github/workflows/
     ├── deploy-admin-vercel.yml
     ├── deploy-webapp-vercel.yml
-    ├── deploy-backend-ec2.yml
+        ├── deploy-backend-ec2.yml
     ├── run-migrations-ec2.yml
     ├── deploy-backend.yml        (legacy ECS, manual-only)
     └── deploy-vercel.yml         (deprecated, manual-only)

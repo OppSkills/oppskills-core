@@ -38,10 +38,8 @@ jobs:
         with:
           node-version: 24
 
-      - name: Enable pnpm (corepack)
-        run: |
-          corepack enable
-          corepack prepare pnpm@10.5.2 --activate
+      - name: Install pnpm globally
+        run: npm install -g pnpm@10.5.2
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
