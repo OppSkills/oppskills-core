@@ -140,7 +140,7 @@ export default function AboutPage() {
               </p>
             </div>
             <div className="flex flex-col gap-2 min-[400px]:flex-row">
-              <Link href="/competitions">
+              <Link href="/hackathons">
                 <Button size="lg" className="px-8">
                   Explore Competitions <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>

@@ -34,7 +34,7 @@ export default function UpcomingCompetitions() {
   if (isLoading) {
     return (
       <EventsSectionSkeleton
-        title="Top Competitions"
+        title="Top Hackathons"
         subtitle="Discover the most popular competitions students are joining right now."
       />
     );
@@ -43,7 +43,7 @@ export default function UpcomingCompetitions() {
   if (isError || displayHackathons.length === 0) {
     return (
       <EventsEmptyState
-        title="Top Competitions"
+        title="Top Hackathons"
         subtitle="Discover the most popular competitions students are joining right now."
         emptyTitle="No Competitions Yet"
         emptyMessage="Check back soon for exciting hackathons and coding competitions!"
@@ -59,10 +59,10 @@ export default function UpcomingCompetitions() {
       <div className="container mx-auto">
         <div className="mb-8 space-y-2 flex flex-col gap-2">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
-            Top Opportunities
+            Top Hackathons
           </h2>
           <p className="text-muted-foreground text-lg inter">
-            Discover the most popular competitions students are joining right now.
+            Discover the most popular hackathons students are joining right now.
           </p>
         </div>
 

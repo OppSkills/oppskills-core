@@ -26,7 +26,7 @@ export default function OrganizePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
           {/* Opportunity Card */}
-          <Link href="/organize/opportunity" className="group cursor-pointer">
+          <Link href="/organize/hackathon" className="group cursor-pointer">
             <Card className="h-full py-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-slate-200 hover:border-orange-200 relative overflow-hidden bg-background">
               <div className="absolute z-10 top-0 right-0 p-5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
                 <ArrowRight className="w-6 h-6 text-orange-500" />
@@ -38,7 +38,7 @@ export default function OrganizePage() {
                   <Trophy className="w-8 h-8 text-orange-600 group-hover:text-background transition-colors duration-300" />
                 </div>
                 <CardTitle className="text-2xl font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
-                  Opportunity
+                  Hackathon
                 </CardTitle>
                 <CardDescription className="text-base text-slate-500 mt-2">
                   Launch hackathons, coding competitions, hiring challenges, and

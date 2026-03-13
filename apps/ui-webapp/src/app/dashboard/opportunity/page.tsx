@@ -305,8 +305,8 @@ export default function OpportunityPage() {
         const filtered =
           typeof userId === "string"
             ? rows.filter(
-                (r) => typeof r.ownerId === "string" && r.ownerId === userId
-              )
+              (r) => typeof r.ownerId === "string" && r.ownerId === userId
+            )
             : rows;
 
         if (!cancelled) {
@@ -368,7 +368,7 @@ export default function OpportunityPage() {
             />
             <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
           </div>
-          <Link href={"/organize/opportunity"} className="w-full sm:w-auto">
+          <Link href={"/organize/hackathon"} className="w-full sm:w-auto">
             <Button className="rounded-full" size={"lg"}>
               <Plus className="h-5 w-5" />
               Host
@@ -388,9 +388,9 @@ export default function OpportunityPage() {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </div>
                   ))}
                 </React.Fragment>

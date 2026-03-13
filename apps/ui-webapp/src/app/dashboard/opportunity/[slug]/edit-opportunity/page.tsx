@@ -86,7 +86,7 @@ import RoundsAndStages from "./_components/RoundsAndStages";
 import AdditionalInfo from "./_components/AdditionalInfo";
 import Prizes from "./_components/Prizes";
 import RegistrationSettings from "./_components/RegistrationSettings";
-import { CompetitionDetailsClient } from "@/app/competitions/[slug]/CompetitionDetailsClient";
+import { CompetitionDetailsClient } from "@/app/hackathons/[slug]/CompetitionDetailsClient";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 
 /**

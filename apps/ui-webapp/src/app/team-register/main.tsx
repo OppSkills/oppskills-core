@@ -261,7 +261,7 @@ export default function RegistrationPage() {
           page and try again.
         </p>
         <div className="flex justify-center">
-          <Link href="/competitions">
+          <Link href="/hackathons">
             <Button variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Browse Competitions

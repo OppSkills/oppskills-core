@@ -25,7 +25,7 @@ interface FooterLinks {
 const Footer = () => {
   const footerLinks: FooterLinks = {
     Discover: [
-      { name: "Opportunities", href: "/competitions" },
+      { name: "Opportunities", href: "/hackathons" },
       { name: "Events", href: "/events" },
       { name: "Festivals", href: "/festivals" },
     ],
@@ -76,10 +76,10 @@ const Footer = () => {
 
           <div className="flex items-center gap-2 text-lg md:text-xl font-medium">
             <Link
-              href="/organize/event"
+              href="/organize/hackathon"
               className="text-primary-foreground hover:underline"
             >
-              <span>Wanna Organize Events or Opportunity? </span>
+              <span>Wanna Organize a Hackathon? </span>
               <span className="text-primary-400">Click here</span>
             </Link>
           </div>

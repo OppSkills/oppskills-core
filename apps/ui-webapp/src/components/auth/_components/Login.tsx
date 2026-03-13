@@ -69,6 +69,7 @@ export default function Login({
         </div>
         <div className="grid gap-2">
           <FloatingLabelInput
+            className="text-5xl"
             id="password"
             type="password"
             label="Password"

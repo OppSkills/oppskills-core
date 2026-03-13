@@ -108,7 +108,7 @@ export default function TeamDetailsPage() {
         <p className="text-muted-foreground mb-6">
           {error || "Hackathon not found"}
         </p>
-        <Link href="/competitions">
+        <Link href="/hackathons">
           <Button>Back to Competitions</Button>
         </Link>
       </div>

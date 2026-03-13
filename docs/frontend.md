@@ -194,8 +194,8 @@ apps/ui-webapp/src/
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/organize/page.tsx`
 - **Purpose**: Landing page for organizers
 
-#### `/organize/opportunity` - Create Opportunity
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/organize/opportunity/page.tsx`
+#### `/organize/hackathon` - Create Opportunity
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/organize/hackathon/page.tsx`
 - **Purpose**: Create new hackathon/opportunity
 
 #### `/organize/event` - Create Event

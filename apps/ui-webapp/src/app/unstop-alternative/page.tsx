@@ -115,7 +115,7 @@ export default function UnstopAlternativePage() {
             Host an Event
           </Link>
           <Link
-            href="/competitions"
+            href="/hackathons"
             className="px-6 py-3 border border-input bg-background hover:bg-accent text-accent-foreground rounded-full font-semibold transition"
           >
             Explore Hackathons

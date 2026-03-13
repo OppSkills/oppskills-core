@@ -15,13 +15,13 @@ export const metadata: Metadata = {
     "unstop alternative",
   ],
   alternates: {
-    canonical: "https://oppskills.com/competitions",
+    canonical: "https://oppskills.com/hackathons",
   },
   openGraph: {
     title: "Global Opportunities listing platform | OppSkills",
     description:
       "Find and participate in the best college hackathons and competitions. Level up your skills and win prizes.",
-    url: "https://oppskills.com/competitions",
+    url: "https://oppskills.com/hackathons",
     images: [
       {
         url: "/og_poster.png", // Ensure this exists or use a specific one for competitions if available
