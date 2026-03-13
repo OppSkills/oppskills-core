@@ -88,7 +88,7 @@ RESEND_FROM_EMAIL="OppSkills <noreply@oppskills.com>"
 DATABASE_URL="postgresql://oppskills:oppskills@localhost:5434/oppskills?schema=oppskills"
 ```
 
-#### Frontend (`apps/ui-landing/.env.local`)
+#### Frontend (`apps/ui-webapp/.env.local`)
 ```env
 # API URL
 NEXT_PUBLIC_API_URL="http://localhost:3001"
@@ -132,7 +132,7 @@ Or start individually:
 pnpm dev:backend
 
 # Frontend only (port 3000)
-pnpm dev:ui-landing
+pnpm dev:ui-webapp
 
 # Prisma Studio (port 3008)
 pnpm db:studio
@@ -157,7 +157,7 @@ pnpm dev
 pnpm dev:backend
 
 # Start frontend only (runs on port 3000)
-pnpm dev:ui-landing
+pnpm dev:ui-webapp
 
 # Start Prisma Studio (database GUI on port 3008)
 pnpm db:studio
@@ -193,7 +193,7 @@ pnpm build
 
 # Build specific package
 pnpm build:backend
-pnpm build:ui-landing
+pnpm build:ui-webapp
 
 # Build types package (required before other builds)
 pnpm build --filter=@oppskills/types
@@ -323,7 +323,7 @@ docker compose down -v
 
 5. **Create frontend components/pages**:
    ```typescript
-   // apps/ui-landing/src/app/dashboard/new-entity/page.tsx
+   // apps/ui-webapp/src/app/dashboard/new-entity/page.tsx
    export default function NewEntityPage() {
      // Component code
    }
@@ -331,7 +331,7 @@ docker compose down -v
 
 6. **Add API client functions**:
    ```typescript
-   // apps/ui-landing/src/lib/api/newEntityApi.ts
+   // apps/ui-webapp/src/lib/api/newEntityApi.ts
    export const createNewEntity = async (token: string, data: CreateNewEntityDto) => {
      const client = createApiClient('/new-entities');
      return client.post('/', data, { headers: buildAuthHeaders(token) });
@@ -340,7 +340,7 @@ docker compose down -v
 
 7. **Create TanStack Query hooks**:
    ```typescript
-   // apps/ui-landing/src/hooks/useNewEntities.ts
+   // apps/ui-webapp/src/hooks/useNewEntities.ts
    export const useCreateNewEntity = () => {
      return useMutation({
        mutationFn: (data: CreateNewEntityDto) => createNewEntity(token, data),
@@ -358,7 +358,7 @@ packages/types (build)
 packages/database (build + generate)
     ↓
 apps/backend (build)
-apps/ui-landing (build)
+apps/ui-webapp (build)
 ```
 
 **Important**: Always rebuild dependent packages after changes:
@@ -405,7 +405,7 @@ curl -H "x-user-id: test-user-123" \
 
 ### Frontend Testing
 
-1. Start frontend: `pnpm dev:ui-landing`
+1. Start frontend: `pnpm dev:ui-webapp`
 2. Navigate to http://localhost:3000
 3. Sign in with Clerk (requires valid Clerk credentials)
 4. Test features in the UI
@@ -556,7 +556,7 @@ pnpm build --filter=@oppskills/types
 
 ### Issue: Frontend API Calls Failing
 **Solution**:
-1. Verify `NEXT_PUBLIC_API_URL` in `apps/ui-landing/.env.local`
+1. Verify `NEXT_PUBLIC_API_URL` in `apps/ui-webapp/.env.local`
 2. Check backend is running: `curl http://localhost:3001`
 3. Check CORS settings in `apps/backend/src/main.ts`
 
@@ -689,7 +689,7 @@ pnpm test:cov           # Run tests with coverage
 pnpm test:e2e           # Run e2e tests
 ```
 
-### Frontend (`apps/ui-landing/`)
+### Frontend (`apps/ui-webapp/`)
 ```bash
 pnpm dev                # Start dev server (Turbopack)
 pnpm build              # Build for production

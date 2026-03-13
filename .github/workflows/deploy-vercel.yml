@@ -1,18 +1,16 @@
-name: Deploy apps to Vercel
+name: (Deprecated) Deploy apps to Vercel
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - ".verceldeployments"
-  workflow_dispatch: # Allows manual triggering
-  repository_dispatch:
-    types:
-      - deploy-oppskills-vercel
+  workflow_dispatch:
+    inputs:
+      note:
+        description: "Deprecated. Use deploy-admin-vercel.yml or deploy-webapp-vercel.yml."
+        required: false
+        type: string
+        default: "deprecated"
 
 jobs:
-  update-file-as-oppskills-dev:
+  deprecated:
     runs-on: ubuntu-latest
 
     env:
@@ -22,37 +20,10 @@ jobs:
       BRANCH_NAME: ${{ github.ref_name }}
 
     steps:
-      - name: Set Repository Name
+      - name: Deprecated workflow notice
         run: |
-          echo "repo-name=oppskills-core" >> $GITHUB_ENV
-
-      - name: Update Deployment Log
-        run: |
-          # Configure git with environment variables for username and email
-          git config --global user.name "${{ env.OPPSKILLS_CORE_DEV_USER }}"
-          git config --global user.email "${{ env.OPPSKILLS_CORE_DEV_EMAIL }}"
-
-          # Clone only the .deployments.txt file using sparse checkout
-          mkdir target-repo
-          cd target-repo
-          git init
-          git checkout -b ${{ env.BRANCH_NAME }}
-          git remote add origin https://${{ secrets.OPPSKILLS_CORE_DEV_PAT }}@github.com/${{ env.ORG_NAME }}/${{ env.repo-name }}.git
-          git config core.sparseCheckout true
-          echo ".verceldeployments" > .git/info/sparse-checkout
-
-          git pull origin ${{ env.BRANCH_NAME }} || git pull origin main
-
-          # Get the current timestamp
-          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-
-          # Add deployment timestamp and message to .verceldeployments
-          echo "Vercel deployment triggered at $TIMESTAMP\n" >> .verceldeployments
-
-          # Commit and push the changes with a custom commit message
-          git add .verceldeployments
-          git commit -m "Vercel Deployment triggered at $TIMESTAMP"
-          git push origin ${{ env.BRANCH_NAME }}
+          echo "This workflow is deprecated."
+          echo "Use: .github/workflows/deploy-admin-vercel.yml and .github/workflows/deploy-webapp-vercel.yml"
 
       # - name: Notify Google Chat
       #   run: |

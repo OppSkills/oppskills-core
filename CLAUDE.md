@@ -21,7 +21,7 @@ For detailed documentation, see the `docs/` folder:
 
 OppSkills is a Turborepo monorepo managing hackathons, festivals, and teams. It consists of:
 - **Backend**: NestJS API (`apps/backend`)
-- **Frontend**: Next.js landing page (`apps/ui-landing`)
+- **Frontend**: Next.js web app (`apps/ui-webapp`)
 - **Packages**: Shared database (`@oppskills/db`) and types (`@oppskills/types`)
 
 ## Essential Commands
@@ -35,7 +35,7 @@ pnpm dev
 pnpm dev:backend
 
 # Start frontend only
-pnpm dev:ui-landing
+pnpm dev:ui-webapp
 
 # Start Prisma Studio (database GUI on port 3008)
 pnpm db:dev
@@ -66,7 +66,7 @@ pnpm build
 
 # Build specific package
 pnpm build:backend
-pnpm build:ui-landing
+pnpm build:ui-webapp
 
 # Build types package (required before other builds)
 pnpm build --filter=@oppskills/types
@@ -202,7 +202,7 @@ Next.js app with:
 1. Update Prisma schema if database changes needed
 2. Add/update types in `packages/types/src/` if sharing between apps
 3. Implement backend logic in appropriate module (`apps/backend/src/`)
-4. Create frontend components/pages in `apps/ui-landing/src/`
+4. Create frontend components/pages in `apps/ui-webapp/src/`
 5. Use TanStack Query for API calls on frontend
 
 ### Turbo Build Dependencies
@@ -265,7 +265,7 @@ Hackathons can have optional `RegistrationFormEntity` with:
 2. Set up database: `pnpm db:push` (first time)
 3. Generate Prisma client: `pnpm db:generate`
 4. Start backend: `pnpm dev:backend`
-5. Start frontend: `pnpm dev:ui-landing`
+5. Start frontend: `pnpm dev:ui-webapp`
 6. (Optional) Start Svix webhook listener for Clerk events
 
 Backend runs on http://localhost:3001

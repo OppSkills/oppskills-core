@@ -1,15 +1,6 @@
 name: Deploy Backend to AWS ECS
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'apps/backend/**'
-      - 'packages/**'
-      - 'Dockerfile'
-      - 'load-secrets.mts'
-      - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
     inputs:
       skip_migrations:

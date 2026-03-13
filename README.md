@@ -1,7 +1,7 @@
 # Turborepo starter
 docker compose up -d 
 pnpm dev:backend
-pnpm dev:ui-landing
+pnpm dev:ui-webapp
 pnpm db:dev
 svix listen http://localhost:3001/user-accounts/clerk-webhook
 await window.Clerk.session.getToken();
