@@ -9,6 +9,7 @@ import Auth from "./auth/Auth";
 import { useQueryState } from "nuqs";
 import Image from "next/image";
 import { Input } from "./ui/input";
+import { UserAccountButton } from "./user-account-button";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -85,10 +86,7 @@ const Navbar = () => {
                   Host
                 </Button>
               </Link>
-              <Link href="/dashboard">
-                <Button variant="ghost">Dashboard</Button>
-              </Link>
-              <UserButton afterSignOutUrl="/" />
+              <UserAccountButton />
             </SignedIn>
 
             {/* Logic for Guests */}
@@ -148,7 +146,7 @@ const Navbar = () => {
                   </Button>
                 </Link>
                 <div className="px-2">
-                  <UserButton afterSignOutUrl="/" />
+                  <UserAccountButton />
                 </div>
               </SignedIn>
 

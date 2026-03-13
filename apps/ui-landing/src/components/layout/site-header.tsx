@@ -71,6 +71,8 @@ export function SiteHeader() {
       return slug ? slug.split("-").join(" ").toUpperCase() : "Opportunities";
     if (pathname.includes("/dashboard/festivals")) return "Festivals";
 
+    if (pathname.startsWith("/profile")) return "Profile";
+
     // Default
     return "Dashboard";
   };

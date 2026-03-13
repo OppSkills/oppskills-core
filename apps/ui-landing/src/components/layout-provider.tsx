@@ -23,12 +23,13 @@ export default function LayoutProvider({
   const pathname = usePathname();
 
   const isDashboard = pathname.startsWith("/dashboard");
+  const isProfile = pathname.startsWith("/profile");
   const isOnboarding = pathname.startsWith("/onboarding");
 
   // Onboarding page - no header, footer, or sidebar
-  if (isOnboarding) {
+  if (isOnboarding || isProfile) {
     return (
-      <main className="min-h-screen bg-background">
+      <main className="min-h-screen bg-neutral-200">
 
         {children as any}
         <Toaster position="bottom-right" duration={5000} richColors />
