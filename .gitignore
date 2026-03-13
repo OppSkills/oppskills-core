@@ -36,3 +36,14 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Ignore design assets
+*.png
+*.svg
+
+# Ignore specific markdown docs
+CHAT_HANDOFF_SUMMARY.md
+AGENT_MOBILE_HANDOFF.md
+welcome Screens.md
+UI HELP.md
+Main screens.md
