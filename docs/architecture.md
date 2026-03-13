@@ -54,7 +54,7 @@ oppskills-core/
 │   │   ├── Dockerfile.prod       # Production Docker image
 │   │   └── package.json
 │   │
-│   └── ui-landing/       # Next.js frontend
+│   └── ui-webapp/        # Next.js frontend
 │       ├── src/
 │       │   ├── app/              # App Router pages
 │       │   ├── components/       # React components
@@ -356,7 +356,7 @@ packages/database (build) ───────┼────────┐
 apps/backend (build) ────────────┘        │
    ↑ depends on: @oppskills/db, @oppskills/types
                                           │
-apps/ui-landing (build) ──────────────────┘
+apps/ui-webapp (build) ──────────────────┘
    ↑ depends on: @oppskills/types
 ```
 
@@ -469,7 +469,7 @@ Authorization: Bearer <clerk-jwt-token>
 2. **Generate Client**: Run `pnpm db:generate`
 3. **Update Types**: Add DTOs to `packages/types/src/`
 4. **Backend Logic**: Implement in appropriate module (`apps/backend/src/`)
-5. **Frontend UI**: Create components/pages in `apps/ui-landing/src/`
+5. **Frontend UI**: Create components/pages in `apps/ui-webapp/src/`
 6. **API Integration**: Add API client functions + TanStack Query hooks
 7. **Testing**: Write tests in `apps/backend/` (frontend tests TBD)
 8. **Documentation**: Update relevant docs in `docs/`
@@ -480,7 +480,7 @@ Authorization: Bearer <clerk-jwt-token>
 2. Generate Prisma client: `pnpm db:generate`
 3. Push schema changes: `pnpm db:push` (dev) or `pnpm db:migrate` (prod)
 4. Start backend: `pnpm dev:backend` (watch mode)
-5. Start frontend: `pnpm dev:ui-landing` (hot reload)
+5. Start frontend: `pnpm dev:ui-webapp` (hot reload)
 6. Optional: Prisma Studio: `pnpm db:studio`
 7. Optional: Webhook listener: `svix listen http://localhost:3001/user-accounts/clerk-webhook`
 

@@ -36,6 +36,8 @@ export type EmailType =
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
   to: string;
+  /** Local file attachments – content must be a Base64-encoded string. */
+  attachments?: Array<{ filename: string; content: string }>;
   props: T extends 'welcome'
   ? WelcomeEmailProps
   : T extends 'onboarding-complete'
@@ -87,7 +89,7 @@ export class EmailService {
   async send<T extends EmailType>(
     options: SendEmailOptions<T>,
   ): Promise<{ success: boolean; id?: string; error?: string }> {
-    const { type, to, props } = options;
+    const { type, to, props, attachments } = options as any;
 
     try {
       const { subject, html } = await this.renderEmail(type, props);
@@ -98,12 +100,22 @@ export class EmailService {
         return { success: true, id: 'dry-run' };
       }
 
-      const result = await this.resend.emails.send({
+      const payload: any = {
         from: this.fromEmail,
         to,
         subject,
         html,
-      });
+      };
+
+      if (attachments && attachments.length > 0) {
+        // Resend expects { filename, content } where content is a Base64 string
+        payload.attachments = attachments.map((a: any) => ({
+          filename: a.filename,
+          content: a.content,
+        }));
+      }
+
+      const result = await this.resend.emails.send(payload);
 
       if (result.error) {
         this.logger.error(

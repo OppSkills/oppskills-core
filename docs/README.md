@@ -35,7 +35,7 @@ New to the project? Start here:
 OppSkills is a Turborepo monorepo for managing hackathons, festivals, and teams:
 
 - **Backend**: NestJS API (`apps/backend`) running on port 3001
-- **Frontend**: Next.js 16 app (`apps/ui-landing`) running on port 3000
+- **Frontend**: Next.js 16 app (`apps/ui-webapp`) running on port 3000
 - **Packages**:
   - `@oppskills/db` - Prisma client and schema
   - `@oppskills/types` - Shared TypeScript DTOs

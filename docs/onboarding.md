@@ -245,7 +245,7 @@ Bulk import colleges from JSON data.
 Server layouts for protected routes check onboarding status:
 
 ```typescript
-// apps/ui-landing/src/app/dashboard/layout.tsx
+// apps/ui-webapp/src/app/dashboard/layout.tsx
 export default async function DashboardLayout({ children }) {
   const { getToken, userId } = await auth();
   
@@ -379,10 +379,10 @@ This ensures the user record exists before any `/me` or `/onboarding` API calls.
 - Migration: `20251220131045_add_onboarding_colleges`
 
 ### Frontend
-- `apps/ui-landing/src/app/onboarding/page.tsx` (new)
-- `apps/ui-landing/src/app/dashboard/layout.tsx` (new)
-- `apps/ui-landing/src/app/participants/layout.tsx` (new)
-- `apps/ui-landing/src/lib/api/usersApi.ts` (updated)
-- `apps/ui-landing/src/lib/api/collegesApi.ts` (new)
-- `apps/ui-landing/src/components/layout-provider.tsx` (updated)
-- `apps/ui-landing/src/components/ui/progress.tsx` (new)
+- `apps/ui-webapp/src/app/onboarding/page.tsx` (new)
+- `apps/ui-webapp/src/app/dashboard/layout.tsx` (new)
+- `apps/ui-webapp/src/app/participants/layout.tsx` (new)
+- `apps/ui-webapp/src/lib/api/usersApi.ts` (updated)
+- `apps/ui-webapp/src/lib/api/collegesApi.ts` (new)
+- `apps/ui-webapp/src/components/layout-provider.tsx` (updated)
+- `apps/ui-webapp/src/components/ui/progress.tsx` (new)
