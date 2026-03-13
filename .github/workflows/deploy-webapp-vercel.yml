@@ -30,13 +30,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Notify Google Chat (start)
-        if: ${{ secrets.GCHAT_WEBHOOK_URL != '' }}
-        run: |
-          curl -sS -X POST -H "Content-Type: application/json" \
-            -d "{\"text\":\"🚀 Webapp deploy started\\nActor: ${{ github.actor }}\\nCommit: ${{ github.sha }}\\nReason: ${{ github.event.inputs.reason || 'push' }}\"}" \
-            "${{ secrets.GCHAT_WEBHOOK_URL }}" || true
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -61,18 +54,4 @@ jobs:
           pnpm dlx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
           pnpm dlx vercel@latest build --prod --token="$VERCEL_TOKEN"
           pnpm dlx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
-
-      - name: Notify Google Chat (success)
-        if: ${{ success() && secrets.GCHAT_WEBHOOK_URL != '' }}
-        run: |
-          curl -sS -X POST -H "Content-Type: application/json" \
-            -d "{\"text\":\"✅ Webapp deploy succeeded\\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
-            "${{ secrets.GCHAT_WEBHOOK_URL }}" || true
-
-      - name: Notify Google Chat (failure)
-        if: ${{ failure() && secrets.GCHAT_WEBHOOK_URL != '' }}
-        run: |
-          curl -sS -X POST -H "Content-Type: application/json" \
-            -d "{\"text\":\"❌ Webapp deploy FAILED\\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
-            "${{ secrets.GCHAT_WEBHOOK_URL }}" || true
 

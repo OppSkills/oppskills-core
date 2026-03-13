@@ -22,13 +22,6 @@ jobs:
   migrate:
     runs-on: ubuntu-latest
     steps:
-      - name: Notify Google Chat (start)
-        if: ${{ secrets.GCHAT_WEBHOOK_URL != '' }}
-        run: |
-          curl -sS -X POST -H "Content-Type: application/json" \
-            -d "{\"text\":\"🧬 Migrations (EC2) started\\nActor: ${{ github.actor }}\\nTag: ${{ github.event.inputs.image_tag || 'latest' }}\"}" \
-            "${{ secrets.GCHAT_WEBHOOK_URL }}" || true
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -116,19 +109,5 @@ jobs:
             "${ECR_IMAGE}" \
             -lc "node scripts/load-secrets.mjs && pnpm exec prisma migrate deploy --schema packages/database/prisma/schema.prisma"
           REMOTE
-
-      - name: Notify Google Chat (success)
-        if: ${{ success() && secrets.GCHAT_WEBHOOK_URL != '' }}
-        run: |
-          curl -sS -X POST -H "Content-Type: application/json" \
-            -d "{\"text\":\"✅ Migrations (EC2) succeeded\\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
-            "${{ secrets.GCHAT_WEBHOOK_URL }}" || true
-
-      - name: Notify Google Chat (failure)
-        if: ${{ failure() && secrets.GCHAT_WEBHOOK_URL != '' }}
-        run: |
-          curl -sS -X POST -H "Content-Type: application/json" \
-            -d "{\"text\":\"❌ Migrations (EC2) FAILED\\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
-            "${{ secrets.GCHAT_WEBHOOK_URL }}" || true
 
 
