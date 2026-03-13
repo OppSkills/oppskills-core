@@ -508,7 +508,7 @@ async function canManageHackathon(userId: string, hackathonId: string): Promise<
 ### Frontend Usage
 
 ```typescript
-// apps/ui-landing/src/hooks/useHackathonRoles.ts
+// apps/ui-webapp/src/hooks/useHackathonRoles.ts
 export function useHackathonRoles(hackathonId: string) {
   const { getToken } = useAuth();
 
@@ -700,7 +700,7 @@ The Next.js frontend uses `@clerk/nextjs` for seamless authentication.
 
 ### Setup
 
-**Root Layout** (`apps/ui-landing/src/app/layout.tsx`):
+**Root Layout** (`apps/ui-webapp/src/app/layout.tsx`):
 ```typescript
 import { ClerkProvider } from '@clerk/nextjs';
 
@@ -850,7 +850,7 @@ export function Header() {
 
 ### API Integration Helper
 
-**API Client** (`apps/ui-landing/src/lib/api/apiClient.ts`):
+**API Client** (`apps/ui-webapp/src/lib/api/apiClient.ts`):
 ```typescript
 export function buildAuthHeaders(token: string): { Authorization: string } {
   const safeToken = token.trim();
@@ -1318,9 +1318,9 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 - `/apps/backend/src/user-accounts/user-accounts.controller.ts` - Webhook endpoint
 
 **Frontend**:
-- `/apps/ui-landing/src/app/layout.tsx` - ClerkProvider setup
-- `/apps/ui-landing/src/lib/api/apiClient.ts` - API authentication
-- `/apps/ui-landing/src/components/layout/site-header.tsx` - User UI
+- `/apps/ui-webapp/src/app/layout.tsx` - ClerkProvider setup
+- `/apps/ui-webapp/src/lib/api/apiClient.ts` - API authentication
+- `/apps/ui-webapp/src/components/layout/site-header.tsx` - User UI
 
 **Database**:
 - `/packages/database/prisma/schema.prisma` - User and role schemas

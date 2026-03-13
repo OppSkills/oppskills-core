@@ -296,7 +296,7 @@ AWS credentials for local presigning (pick ONE):
   - `AWS_SECRET_ACCESS_KEY=...`
   - (optional) `AWS_SESSION_TOKEN=...`
 
-### Local UI env (`apps/ui-landing/.env.local`)
+### Local UI env (`apps/ui-webapp/.env.local`)
 
 Set:
 

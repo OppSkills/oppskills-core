@@ -1,0 +1,73 @@
+name: Deploy Webapp to Vercel
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/ui-webapp/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - ".github/workflows/deploy-webapp-vercel.yml"
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual deploy (e.g. Bob the Builder)"
+        required: false
+        type: string
+        default: "manual"
+
+concurrency:
+  group: "deploy-webapp-vercel"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pnpm globally
+        run: npm install -g pnpm@10.5.2
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Vercel CLI
+        run: pnpm dlx vercel@latest --version
+
+      - name: Pull Vercel project settings (webapp)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_WEBAPP }}
+        run: |
+          pnpm dlx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build (webapp)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_WEBAPP }}
+        run: |
+          pnpm dlx vercel@latest build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy prebuilt (webapp)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_WEBAPP }}
+        run: |
+          pnpm dlx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+

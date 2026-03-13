@@ -49,7 +49,7 @@ The OppSkills frontend is a **Next.js 16** application built with the App Router
 ### Project Structure
 
 ```
-apps/ui-landing/src/
+apps/ui-webapp/src/
 ├── app/                      # Next.js App Router pages
 │   ├── competitions/         # Public competition pages
 │   ├── dashboard/            # Dashboard for organizers
@@ -74,13 +74,13 @@ apps/ui-landing/src/
 ### Public Routes
 
 #### `/` - Landing Page
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/page.tsx`
 - **Purpose**: Main landing page with hero, features, and CTAs
 - **Components**: Hero sections, event listings, testimonials
 
 #### `/competitions/[slug]` - Competition Details
 - **Files**:
-  - `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/competitions/[slug]/page.tsx`
+  - `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/competitions/[slug]/page.tsx`
   - Components in `_components/` folder
 - **Purpose**: Public view of competition/hackathon details
 - **Features**:
@@ -91,22 +91,22 @@ apps/ui-landing/src/
   - Registration sidebar
 
 #### `/festivals` - Festival Listing
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/festivals/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/festivals/page.tsx`
 - **Purpose**: Browse all festivals
 
 #### `/participants` - Participants View
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/participants/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/participants/page.tsx`
 - **Purpose**: Participant portal
 
 #### `/team-register` - Team Registration
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/team-register/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/team-register/page.tsx`
 - **Purpose**: Register team for hackathon
 - **Features**: Team creation, member invites
 
 ### Organizer Routes (Dashboard)
 
 #### `/dashboard` - Dashboard Home
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/page.tsx`
 - **Purpose**: Overview of managed events
 - **Features**:
   - Analytics cards (registrations, impressions, etc.)
@@ -117,15 +117,15 @@ apps/ui-landing/src/
   - Alerts
 
 #### `/dashboard/opportunity` - Opportunities List
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/opportunity/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/page.tsx`
 - **Purpose**: List all hackathons/opportunities managed by user
 
 #### `/dashboard/opportunity/[slug]` - Opportunity Dashboard
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/opportunity/[slug]/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/page.tsx`
 - **Purpose**: Individual opportunity management hub
 
 #### `/dashboard/opportunity/[slug]/edit-opportunity` - Edit Hackathon
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/opportunity/[slug]/edit-opportunity/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/edit-opportunity/page.tsx`
 - **Purpose**: Comprehensive hackathon editor with tabs
 - **Features**:
   - **Preview Tab**: Live preview of competition page
@@ -141,7 +141,7 @@ apps/ui-landing/src/
   - Form validation and error handling
 
 #### `/dashboard/opportunity/[slug]/manage-roles` - Manage Roles
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-roles/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/manage-roles/page.tsx`
 - **Purpose**: Assign managers and evaluators to hackathon
 - **Features**:
   - Owner display (non-editable)
@@ -152,7 +152,7 @@ apps/ui-landing/src/
   - Role cards with avatar, name, email
 
 #### `/dashboard/opportunity/[slug]/manage-registration` - Manage Registrations
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-registration/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/manage-registration/page.tsx`
 - **Purpose**: View and manage team registrations
 - **Features**:
   - Participant list with filters
@@ -160,7 +160,7 @@ apps/ui-landing/src/
   - Team approval workflow
 
 #### `/dashboard/opportunity/[slug]/manage-registration/[teamID]` - Team Details
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-registration/[teamID]/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/manage-registration/[teamID]/page.tsx`
 - **Purpose**: View individual team details
 - **Features**:
   - Team member information
@@ -169,11 +169,11 @@ apps/ui-landing/src/
   - Presentation submission
 
 #### `/dashboard/opportunity/[slug]/payments` - Payments
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/opportunity/[slug]/payments/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/payments/page.tsx`
 - **Purpose**: Manage payments and tickets for events
 
 #### `/dashboard/opportunity/[slug]/send-notifications` - Send Notifications
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/opportunity/[slug]/send-notifications/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/send-notifications/page.tsx`
 - **Purpose**: Send notifications to participants
 
 #### `/dashboard/events` - Events (Festivals)
@@ -181,35 +181,35 @@ apps/ui-landing/src/
 - **Similar structure** to opportunities with edit, roles, registration, notifications
 
 #### `/dashboard/talent-pipeline` - Talent Pipeline
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/talent-pipeline/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/talent-pipeline/page.tsx`
 - **Purpose**: Manage talent pipeline
 
 #### `/dashboard/session` - Session Management
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/session/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/session/page.tsx`
 - **Purpose**: Session-related features
 
 ### Organize Routes
 
 #### `/organize` - Organize Home
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/organize/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/organize/page.tsx`
 - **Purpose**: Landing page for organizers
 
 #### `/organize/opportunity` - Create Opportunity
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/organize/opportunity/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/organize/opportunity/page.tsx`
 - **Purpose**: Create new hackathon/opportunity
 
 #### `/organize/event` - Create Event
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/organize/event/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/organize/event/page.tsx`
 - **Purpose**: Create new festival/event
 
 ### Auth Routes
 
 #### `/sso-callback` - SSO Callback
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/sso-callback/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/sso-callback/page.tsx`
 - **Purpose**: Handle Clerk SSO callbacks
 
 #### `/complete-profile` - Complete Profile
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/complete-profile/page.tsx`
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/complete-profile/page.tsx`
 - **Purpose**: Post-signup profile completion
 
 ---
@@ -1394,7 +1394,7 @@ pnpm install
 pnpm dev
 
 # Start frontend only
-pnpm dev:ui-landing
+pnpm dev:ui-webapp
 ```
 
 Frontend runs on **http://localhost:3000**
@@ -1422,7 +1422,7 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com # Optional, defaults to US ins
 pnpm build
 
 # Build frontend only
-pnpm build:ui-landing
+pnpm build:ui-webapp
 ```
 
 ### Linting & Formatting

@@ -128,7 +128,7 @@ Code Push → GitHub → GitHub Actions → Build → Deploy
    MEDIA_CLOUDFRONT_BASE_URL=https://assets-dev.oppskills.com
    ```
 
-   Create `apps/ui-landing/.env.local`:
+   Create `apps/ui-webapp/.env.local`:
    ```env
    # Clerk Authentication
    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
@@ -179,7 +179,7 @@ Code Push → GitHub → GitHub Actions → Build → Deploy
 
    # Or individually
    pnpm dev:backend    # Backend on http://localhost:3001
-   pnpm dev:ui-landing # Frontend on http://localhost:3000
+   pnpm dev:ui-webapp  # Frontend on http://localhost:3000
    ```
 
 7. **(Optional) Start Prisma Studio**
@@ -430,7 +430,7 @@ docker run --rm -p 3001:3001 \
 
 ### Build Configuration
 
-**Next.js app location:** `apps/ui-landing`
+**Next.js app location:** `apps/ui-webapp`
 
 **Build command:** `pnpm build` (uses Turborepo)
 
@@ -645,7 +645,7 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 
 #### Local Development
 
-File: `apps/ui-landing/.env.local`
+File: `apps/ui-webapp/.env.local`
 
 ```bash
 # Clerk (test keys)
@@ -941,7 +941,7 @@ curl http://localhost:3001/health/redis
 #### Vercel Deployment Status
 
 View deployment logs in Vercel dashboard:
-- https://vercel.com/[your-team]/oppskills-ui-landing
+- https://vercel.com/[your-team]/oppskills-ui-webapp
 
 ### Database Monitoring
 
@@ -1162,7 +1162,7 @@ pnpm db:migrate:deploy
 
 **Debug:**
 - View build logs in Vercel dashboard
-- Test build locally: `pnpm build:ui-landing`
+- Test build locally: `pnpm build:ui-webapp`
 
 #### API Calls Failing from Vercel
 

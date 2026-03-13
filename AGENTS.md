@@ -3,7 +3,7 @@
 OppSkills Core is a Turborepo monorepo:
 
 - Backend API: `apps/backend` (NestJS, Jest, Prisma via `@oppskills/db`)
-- Frontend UI: `apps/ui-landing` (Next.js App Router)
+- Frontend UI: `apps/ui-webapp` (Next.js App Router)
 - Shared packages: `packages/types`, `packages/database`
 
 ## Docs / Reference
@@ -35,13 +35,13 @@ If you add any of the above later, update this file.
 
 - `pnpm dev` (all apps)
 - `pnpm dev:backend` (API on `:3001`)
-- `pnpm dev:ui-landing` (UI on `:3000`)
+- `pnpm dev:ui-webapp` (UI on `:3000`)
 
 ### Build
 
 - `pnpm build` (all)
 - `pnpm build:backend`
-- `pnpm build:ui-landing`
+- `pnpm build:ui-webapp`
 - If shared code changed, build in order:
   - `pnpm build --filter=@oppskills/types`
   - `pnpm db:generate` (after Prisma schema changes)
@@ -52,7 +52,7 @@ If you add any of the above later, update this file.
 - `pnpm lint` (turbo)
 - `pnpm format` (root Prettier: `prettier --write "**/*.{ts,tsx,md}"`)
 - Backend-only: `pnpm -C apps/backend lint`, `pnpm -C apps/backend format`
-- UI-only: `pnpm -C apps/ui-landing lint`
+- UI-only: `pnpm -C apps/ui-webapp lint`
 
 ### Typecheck
 
@@ -114,7 +114,7 @@ Notes:
 
 - Use `import type { ... }` for type-only imports.
 - Prefer absolute imports where configured:
-  - UI: `@/...` → `apps/ui-landing/src/*`
+ - UI: `@/...` → `apps/ui-webapp/src/*`
   - Backend Jest: `^src/(.*)$` → `apps/backend/src/*`
 - Import grouping (preferred):
   1. Node built-ins
@@ -151,7 +151,7 @@ Dev auth bypass:
 ### Frontend (Next.js UI)
 
 - Use Server/Client Components correctly; add `'use client'` only when needed.
-- Data fetching: prefer API helpers in `apps/ui-landing/src/lib/api/*` and TanStack Query hooks in `apps/ui-landing/src/hooks/*`.
+ - Data fetching: prefer API helpers in `apps/ui-webapp/src/lib/api/*` and TanStack Query hooks in `apps/ui-webapp/src/hooks/*`.
 - Auth: use Clerk helpers (`useAuth`, `useSignIn`) and pass tokens per request.
 - Errors: show toasts (`sonner`) for expected UX failures; throw `Error` for programmer errors (missing slug/token).
 
