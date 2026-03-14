@@ -183,7 +183,7 @@ export default function FestivalDetailsClient({
                                             {hackathons.map((hackathon: any) => (
                                                 <Link
                                                     key={hackathon.id}
-                                                    href={`/competitions/${hackathon.slug}`}
+                                                    href={`/hackathons/${hackathon.slug}`}
                                                     className="group relative flex flex-col bg-card border border-neutral-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-primary/50"
                                                 >
                                                     <div className="aspect-[16/9] w-full bg-neutral-100 relative overflow-hidden">

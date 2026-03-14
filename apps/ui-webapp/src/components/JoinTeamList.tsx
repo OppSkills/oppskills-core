@@ -353,7 +353,7 @@ export function JoinTeamList({
         toast.success("Registration successful!");
 
         setTimeout(() => {
-          router.push(`/competitions/${hackathonSlug}`);
+          router.push(`/hackathons/${hackathonSlug}`);
         }, 2000);
 
         setIsSubmittingRegistration(false);
@@ -430,7 +430,7 @@ export function JoinTeamList({
             toast.success("Payment successful! You have joined the team.");
 
             setTimeout(() => {
-              router.push(`/competitions/${hackathonSlug}`);
+              router.push(`/hackathons/${hackathonSlug}`);
             }, 2000);
           } catch (err: unknown) {
             console.error("Post-payment error:", err);
@@ -488,7 +488,7 @@ export function JoinTeamList({
         toast.success("Successfully joined the team!");
 
         setTimeout(() => {
-          router.push(`/competitions/${hackathonSlug}`);
+          router.push(`/hackathons/${hackathonSlug}`);
         }, 2000);
 
         setJoiningTeamId(null);
@@ -517,7 +517,7 @@ export function JoinTeamList({
           toast.success("Successfully joined!");
 
           setTimeout(() => {
-            router.push(`/competitions/${hackathonSlug}`);
+            router.push(`/hackathons/${hackathonSlug}`);
           }, 2000);
 
           setJoiningTeamId(null);
@@ -564,7 +564,7 @@ export function JoinTeamList({
         toast.success("Successfully joined the team!");
 
         setTimeout(() => {
-          router.push(`/competitions/${hackathonSlug}`);
+          router.push(`/hackathons/${hackathonSlug}`);
         }, 2000);
 
         setIsJoiningByCode(false);
@@ -591,7 +591,7 @@ export function JoinTeamList({
           toast.success("Successfully joined!");
 
           setTimeout(() => {
-            router.push(`/competitions/${hackathonSlug}`);
+            router.push(`/hackathons/${hackathonSlug}`);
           }, 2000);
 
           setIsJoiningByCode(false);

@@ -21,7 +21,7 @@ export function CompetitionListItem({ competition }: CompetitionListItemProps) {
 
   return (
     <Link
-      href={`/competitions/${competition.slug}`}
+      href={`/hackathons/${competition.slug}`}
       className="group relative flex flex-col gap-4 overflow-hidden rounded-lg border bg-card p-4 transition-all hover:bg-accent/50 sm:flex-row sm:items-center"
     >
       {/* Thumbnail */}

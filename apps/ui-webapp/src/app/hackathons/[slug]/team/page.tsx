@@ -122,7 +122,7 @@ export default function TeamDetailsPage() {
         <p className="text-muted-foreground">
           Please sign in to view your team details.
         </p>
-        <Link href={`/sign-in?redirect_url=/competitions/${slug}/team`}>
+        <Link href={`/sign-in?redirect_url=/hackathons/${slug}/team`}>
           <Button>Sign In</Button>
         </Link>
       </div>
@@ -138,10 +138,10 @@ export default function TeamDetailsPage() {
             You are not registered for {hackathon.name} yet.
           </p>
           <div className="flex justify-center gap-4">
-            <Link href={`/competitions/${slug}`}>
+            <Link href={`/hackathons/${slug}`}>
               <Button variant="outline">Back to Details</Button>
             </Link>
-            <Link href={`/competitions/${slug}`}>
+            <Link href={`/hackathons/${slug}`}>
               <Button>Register Now</Button>
             </Link>
           </div>
@@ -157,7 +157,7 @@ export default function TeamDetailsPage() {
       <div className="container mx-auto px-4 max-w-3xl">
         <div className="mb-6">
           <Link
-            href={`/competitions/${slug}`}
+            href={`/hackathons/${slug}`}
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />

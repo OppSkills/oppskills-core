@@ -71,7 +71,7 @@ export function CompetitionCard({ hackathon }: CompetitionCardProps) {
 
     return (
         <OpportunityCard
-            href={`/competitions/${hackathon.slug}`}
+            href={`/hackathons/${hackathon.slug}`}
             imageSrc={hackathon.bannerImageUrl}
             title={hackathon.name}
             organizationName={hackathon.locationAddress}
