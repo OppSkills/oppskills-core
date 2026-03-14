@@ -18,7 +18,7 @@ export class DiscountCodeService {
     maxPerUser?: number;
   }) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug: params.hackathonSlug },
+      where: { slug: params.hackathonSlug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
 
@@ -64,7 +64,7 @@ export class DiscountCodeService {
 
   async listDiscountCodes(hackathonSlug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug: hackathonSlug },
+      where: { slug: hackathonSlug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
 

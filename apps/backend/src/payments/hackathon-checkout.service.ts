@@ -35,7 +35,7 @@ export class HackathonCheckoutService {
     discountCode?: string;
   }) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug: params.hackathonSlug },
+      where: { slug: params.hackathonSlug, isDeleted: false },
       select: {
         id: true,
         slug: true,
@@ -710,7 +710,7 @@ export class HackathonCheckoutService {
 
   async getOrganizerEarnings(slug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       select: {
         id: true,
         ownerId: true,
@@ -817,7 +817,7 @@ export class HackathonCheckoutService {
 
   async getHackathonPayments(slug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
 
