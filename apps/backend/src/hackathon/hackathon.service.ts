@@ -261,7 +261,10 @@ export class HackathonService {
    */
   async listHackathons(input: { festivalId?: string }) {
     return prisma.hackathonEntity.findMany({
-      where: input.festivalId ? { festivalId: input.festivalId } : undefined,
+      where: {
+        isDeleted: false,
+        ...(input.festivalId ? { festivalId: input.festivalId } : {}),
+      },
       include: this.getHackathonIncludeClause(),
       orderBy: { createdAt: 'desc' },
     });
@@ -285,6 +288,7 @@ export class HackathonService {
     } = {},
   ) {
     const baseWhere: Record<string, unknown> = {
+      isDeleted: false,
       status: { in: ['PUBLISHED', 'ONGOING'] },
       approvalStatus: 'APPROVED',
     };
@@ -432,7 +436,7 @@ export class HackathonService {
    */
   async getPublicHackathonBySlug(slug: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       select: {
         id: true,
         slug: true,
@@ -554,7 +558,7 @@ export class HackathonService {
    */
   async getPublicHackathonById(id: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: {
         id: true,
         slug: true,
@@ -688,6 +692,7 @@ export class HackathonService {
 
     return prisma.hackathonEntity.findMany({
       where: {
+        isDeleted: false,
         OR: [
           { ownerId: safeUserId },
           {
@@ -737,7 +742,7 @@ export class HackathonService {
    */
   async getHackathonById(id: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       include: this.getHackathonIncludeClause(),
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
@@ -757,7 +762,7 @@ export class HackathonService {
    */
   async getHackathonBySlug(slug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       include: this.getHackathonIncludeClause(),
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
@@ -829,7 +834,7 @@ export class HackathonService {
    */
   async updateHackathon(id: string, dto: UpdateHackathonDto, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
@@ -951,7 +956,7 @@ export class HackathonService {
 
   async deleteHackathon(id: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
@@ -964,7 +969,14 @@ export class HackathonService {
       }
     }
 
-    await prisma.hackathonEntity.delete({ where: { id } });
+    await prisma.hackathonEntity.update({
+      where: { id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        ownerId: 'user_37DPlwTjdREB8MzXruzHTNMCTXA',
+      },
+    });
 
     return { message: 'Hackathon deleted successfully.' };
   }
@@ -975,7 +987,7 @@ export class HackathonService {
     userId: string,
   ) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { id: true, ownerId: true, status: true },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
@@ -1019,7 +1031,7 @@ export class HackathonService {
 
   async registerForHackathon(hackathonId: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id: hackathonId },
+      where: { id: hackathonId, isDeleted: false },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
@@ -1381,7 +1393,7 @@ export class HackathonService {
    */
   private async assertHackathonEditableByUser(id: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
@@ -1413,7 +1425,7 @@ export class HackathonService {
     userId: string,
   ) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
@@ -1468,7 +1480,7 @@ export class HackathonService {
 
   async getMyTeamSubmissions(slug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       include: {
         rounds: { orderBy: { order: 'asc' } },
       },
@@ -1560,7 +1572,7 @@ export class HackathonService {
     dto: import('@oppskills/types').UpsertRoundSubmissionDto,
   ) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       include: {
         rounds: { where: { id: roundId } },
       },
@@ -1928,7 +1940,7 @@ export class HackathonService {
    */
   async assertHackathonWritableByUser(id: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
@@ -1960,7 +1972,7 @@ export class HackathonService {
    */
   async getHackathonRoles(hackathonId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id: hackathonId },
+      where: { id: hackathonId, isDeleted: false },
       include: {
         owner: {
           select: {
@@ -2035,7 +2047,7 @@ export class HackathonService {
     currentUserId: string,
   ) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id: hackathonId },
+      where: { id: hackathonId, isDeleted: false },
       select: { id: true, ownerId: true },
     });
 
@@ -2119,7 +2131,7 @@ export class HackathonService {
     currentUserId: string,
   ) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id: hackathonId },
+      where: { id: hackathonId, isDeleted: false },
       select: { id: true, ownerId: true },
     });
 
@@ -2197,7 +2209,7 @@ export class HackathonService {
   ) {
     // Find hackathon by slug
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       select: { id: true, ownerId: true, participantType: true },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
@@ -2412,7 +2424,7 @@ export class HackathonService {
    */
   async submitForApproval(id: string, userId: string, note?: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { id: true, ownerId: true, status: true, approvalStatus: true },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
@@ -2460,7 +2472,7 @@ export class HackathonService {
     userId: string,
   ) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
@@ -2507,7 +2519,7 @@ export class HackathonService {
     userId: string,
   ) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
@@ -2559,7 +2571,7 @@ export class HackathonService {
     note?: string,
   ) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { id: true, approvalStatus: true },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
@@ -2601,7 +2613,7 @@ export class HackathonService {
     userId: string,
   ) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { id: true, ownerId: true },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
@@ -2637,7 +2649,7 @@ export class HackathonService {
     requesterUserId: string,
   ) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');

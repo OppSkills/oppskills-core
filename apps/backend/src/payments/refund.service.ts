@@ -19,7 +19,7 @@ export class RefundService {
     reason?: string;
   }) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug: params.hackathonSlug },
+      where: { slug: params.hackathonSlug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
 

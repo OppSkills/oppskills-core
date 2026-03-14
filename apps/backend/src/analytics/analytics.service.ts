@@ -69,7 +69,7 @@ export class AnalyticsService {
 
   async getEventGeneralStats(slug: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       include: {
         userRoles: {
           where: { userId, role: 'MANAGER' },
@@ -95,7 +95,7 @@ export class AnalyticsService {
 
   async getEventDetailedStats(slug: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       include: {
         userRoles: {
           where: { userId, role: 'MANAGER' },
@@ -218,7 +218,7 @@ export class AnalyticsService {
 
   async getHackathonGeneralStats(slug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       include: {
         userRoles: {
           where: { userId, role: 'MANAGER' },
@@ -244,7 +244,7 @@ export class AnalyticsService {
 
   async getHackathonDetailedStats(slug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       include: {
         userRoles: {
           where: { userId, role: 'MANAGER' },
@@ -405,7 +405,7 @@ export class AnalyticsService {
   async getOrganizerStats(userId: string) {
     // 1. Calculate Event Stats
     const events = await prisma.eventEntity.findMany({
-      where: { ownerId: userId },
+      where: { ownerId: userId, isDeleted: false },
       select: {
         id: true,
         status: true,
@@ -428,7 +428,7 @@ export class AnalyticsService {
 
     // 2. Calculate Hackathon Stats
     const hackathons = await prisma.hackathonEntity.findMany({
-      where: { ownerId: userId },
+      where: { ownerId: userId, isDeleted: false },
       select: {
         id: true,
         status: true,
@@ -455,7 +455,7 @@ export class AnalyticsService {
 
     // 3. Calculate Festival Stats
     const festivals = await prisma.festivalEntity.findMany({
-      where: { organizerId: userId },
+      where: { organizerId: userId, isDeleted: false },
       select: { status: true },
     });
 
@@ -601,7 +601,7 @@ export class AnalyticsService {
   async getTopListings(userId: string) {
     // 1. Fetch Top 3 Events
     const topEvents = await prisma.eventEntity.findMany({
-      where: { ownerId: userId },
+      where: { ownerId: userId, isDeleted: false },
       select: {
         id: true,
         name: true,
@@ -621,7 +621,7 @@ export class AnalyticsService {
 
     // 2. Fetch Top 3 Hackathons
     const topHackathons = await prisma.hackathonEntity.findMany({
-      where: { ownerId: userId },
+      where: { ownerId: userId, isDeleted: false },
       select: {
         id: true,
         name: true,
@@ -661,7 +661,7 @@ export class AnalyticsService {
   async getHighestPerformingListings(userId: string) {
     // 1. Highest Performing Event
     const topEvent = await prisma.eventEntity.findFirst({
-      where: { ownerId: userId },
+      where: { ownerId: userId, isDeleted: false },
       select: {
         id: true,
         name: true,
@@ -680,7 +680,7 @@ export class AnalyticsService {
 
     // 2. Highest Performing Hackathon
     const topHackathon = await prisma.hackathonEntity.findFirst({
-      where: { ownerId: userId },
+      where: { ownerId: userId, isDeleted: false },
       select: {
         id: true,
         name: true,

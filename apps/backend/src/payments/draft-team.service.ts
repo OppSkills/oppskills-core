@@ -65,7 +65,7 @@ export class DraftTeamService {
     const { hackathonSlug, name, maxSize, leaderId } = params;
 
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug: hackathonSlug },
+      where: { slug: hackathonSlug, isDeleted: false },
       select: {
         id: true,
         slug: true,
@@ -387,7 +387,7 @@ export class DraftTeamService {
 
   async getMyDraftTeam(params: { hackathonSlug: string; userId: string }) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug: params.hackathonSlug },
+      where: { slug: params.hackathonSlug, isDeleted: false },
       select: { id: true },
     });
 

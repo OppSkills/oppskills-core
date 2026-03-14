@@ -15,6 +15,7 @@ export class AdminPayoutsService {
 
     const hackathons = await prisma.hackathonEntity.findMany({
       where: {
+        isDeleted: false,
         isFree: false,
         registrationDeadline: { lte: now },
         ...(filters?.hackathonId && { id: filters.hackathonId }),

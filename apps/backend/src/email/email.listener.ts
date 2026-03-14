@@ -366,7 +366,7 @@ export class EmailListener {
 
     // Fetch event slug and participants
     const event = await prisma.eventEntity.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, isDeleted: false },
       select: { slug: true },
     });
 

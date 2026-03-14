@@ -121,6 +121,7 @@ export class EventService {
     } = {},
   ) {
     const baseWhere: Record<string, unknown> = {
+      isDeleted: false,
       status: { in: ['PUBLISHED', 'ONGOING'] },
       approvalStatus: 'APPROVED',
     };
@@ -251,7 +252,7 @@ export class EventService {
    */
   async getPublicEventBySlug(slug: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       select: {
         id: true,
         slug: true,
@@ -345,7 +346,7 @@ export class EventService {
    */
   async getPublicEventById(id: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: {
         id: true,
         slug: true,
@@ -434,7 +435,7 @@ export class EventService {
   async listMyEvents(userId: string) {
     // Get events where user is owner
     const ownedEvents = await prisma.eventEntity.findMany({
-      where: { ownerId: userId },
+      where: { ownerId: userId, isDeleted: false },
       select: {
         id: true,
         name: true,
@@ -507,7 +508,7 @@ export class EventService {
    */
   async getEventByIdForDashboard(id: string, requesterUserId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       include: {
         owner: {
           select: {
@@ -565,7 +566,7 @@ export class EventService {
    */
   async getEventBySlugForDashboard(slug: string, requesterUserId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       include: {
         owner: {
           select: {
@@ -624,7 +625,7 @@ export class EventService {
    */
   async getEventById(id: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       include: {
         owner: {
           select: {
@@ -670,7 +671,7 @@ export class EventService {
    */
   async getEventBySlug(slug: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       include: {
         owner: {
           select: {
@@ -717,7 +718,7 @@ export class EventService {
    */
   async updateEvent(id: string, dto: UpdateEventDto, userId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: {
         id: true,
         ownerId: true,
@@ -851,7 +852,7 @@ export class EventService {
    */
   async deleteEvent(id: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { id: true, ownerId: true },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -865,7 +866,14 @@ export class EventService {
       }
     }
 
-    await prisma.eventEntity.delete({ where: { id } });
+    await prisma.eventEntity.update({
+      where: { id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        ownerId: 'user_37DPlwTjdREB8MzXruzHTNMCTXA',
+      },
+    });
     return { message: 'Event deleted successfully.' };
   }
 
@@ -878,7 +886,7 @@ export class EventService {
     userId: string,
   ) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { id: true, ownerId: true, status: true },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -930,7 +938,7 @@ export class EventService {
     answers?: Array<{ fieldId: string; value: string | number | string[] }>,
   ) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, isDeleted: false },
       select: {
         id: true,
         name: true,
@@ -1447,7 +1455,7 @@ export class EventService {
     const result = await prisma.$transaction(async (tx) => {
       // Re-fetch within transaction to ensure consistency
       const currentEvent = await tx.eventEntity.findUnique({
-        where: { id: eventId },
+        where: { id: eventId, isDeleted: false },
         select: { maxUsers: true, registrationCount: true },
       });
       if (!currentEvent) throw new NotFoundException('Event not found');
@@ -1683,7 +1691,7 @@ export class EventService {
         select: { firstName: true, lastName: true, email: true },
       });
       const event = await prisma.eventEntity.findUnique({
-        where: { id: eventId },
+        where: { id: eventId, isDeleted: false },
         select: { name: true },
       });
 
@@ -1760,7 +1768,7 @@ export class EventService {
    */
   async leaveEvent(eventId: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, isDeleted: false },
       select: { id: true, status: true },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -1802,7 +1810,7 @@ export class EventService {
    */
   async checkUserRegistration(eventId: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, isDeleted: false },
       select: {
         id: true,
         isFree: true,
@@ -1874,7 +1882,7 @@ export class EventService {
     answers: Array<{ fieldId: string; value: string | number | string[] }>,
   ) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, isDeleted: false },
       select: {
         id: true,
         isFree: true,
@@ -2023,7 +2031,7 @@ export class EventService {
   async listEventRegistrationsBySlug(slug: string, requesterUserId: string) {
     // Find event by slug
     const event = await prisma.eventEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -2168,7 +2176,7 @@ export class EventService {
    */
   async getEventRoles(eventId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, isDeleted: false },
       select: {
         id: true,
         owner: {
@@ -2235,7 +2243,7 @@ export class EventService {
    */
   async getEventRolesWithPermission(eventId: string, requesterUserId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, isDeleted: false },
       select: {
         id: true,
         ownerId: true,
@@ -2319,7 +2327,7 @@ export class EventService {
     assignedByUserId: string,
   ) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, isDeleted: false },
       select: { id: true, ownerId: true },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -2397,7 +2405,7 @@ export class EventService {
     removedByUserId: string,
   ) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, isDeleted: false },
       select: { id: true, ownerId: true },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -2656,7 +2664,7 @@ export class EventService {
    */
   async submitForApproval(id: string, userId: string, note?: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { id: true, ownerId: true, status: true, approvalStatus: true },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -2703,7 +2711,7 @@ export class EventService {
     note?: string,
   ) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { id: true, approvalStatus: true },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -2744,7 +2752,7 @@ export class EventService {
     userId: string,
   ) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { id: true, ownerId: true },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -2778,7 +2786,7 @@ export class EventService {
    */
   private async assertEventEditableByUser(id: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: {
         id: true,
         ownerId: true,
@@ -2904,7 +2912,7 @@ export class EventService {
     requesterUserId: string,
   ) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
     if (!event) throw new NotFoundException('Event not found');
