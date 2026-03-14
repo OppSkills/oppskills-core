@@ -1,14 +1,6 @@
 import Image from 'next/image'
 
 export default function HeroSection() {
-  const startDate = new Date("2025-01-01").getTime(); // milliseconds since epoch
-  const today = Date.now(); // also milliseconds since epoch
-
-  // Calculate days difference
-  const days = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-
-  // Non-linear increment
-  const incrementWithDate = Math.floor(10000 * Math.pow(1.01, days));
 
   return (
     <div className='py-8 flex flex-col gap-8'>
@@ -26,7 +18,7 @@ export default function HeroSection() {
                 width={40}
                 height={40}
               />
-              <p className='text-sm sm:text-base text-neutral-800'>Grow your skills with {incrementWithDate} other hustlers</p>
+              <p className='text-sm sm:text-base text-neutral-800'>Grow your skills with 10,000 other hustlers</p>
             </div>
           </div>
         </div>

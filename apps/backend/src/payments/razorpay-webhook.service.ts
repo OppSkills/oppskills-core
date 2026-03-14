@@ -182,7 +182,7 @@ export class RazorpayWebhookService {
           );
 
           const event = await tx.eventEntity.findUnique({
-            where: { id: paymentRecord.eventId },
+            where: { id: paymentRecord.eventId, isDeleted: false },
             select: { passSendingMode: true },
           });
 

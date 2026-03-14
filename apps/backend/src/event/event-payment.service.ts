@@ -35,7 +35,7 @@ export class EventPaymentService {
     discountCode?: string;
   }) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug: params.eventSlug },
+      where: { slug: params.eventSlug, isDeleted: false },
       select: {
         id: true,
         slug: true,
@@ -1088,7 +1088,7 @@ export class EventPaymentService {
    */
   async getEventEarnings(slug: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       select: {
         id: true,
         ownerId: true,
@@ -1173,7 +1173,7 @@ export class EventPaymentService {
    */
   async getEventPayments(slug: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
 
@@ -1228,9 +1228,9 @@ export class EventPaymentService {
       validUntil?: Date;
       active?: boolean;
     },
-  ) {
+    ) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug: eventSlug },
+      where: { slug: eventSlug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
 
@@ -1289,7 +1289,7 @@ export class EventPaymentService {
 
   async getDiscountCodes(eventSlug: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug: eventSlug },
+      where: { slug: eventSlug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
 
@@ -1330,7 +1330,7 @@ export class EventPaymentService {
 
   async deleteDiscountCode(eventSlug: string, codeId: string, userId: string) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug: eventSlug },
+      where: { slug: eventSlug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
 
@@ -1370,7 +1370,7 @@ export class EventPaymentService {
     },
   ) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug: eventSlug },
+      where: { slug: eventSlug, isDeleted: false },
       select: { id: true, ownerId: true },
     });
 
@@ -1429,7 +1429,7 @@ export class EventPaymentService {
     },
   ) {
     const event = await prisma.eventEntity.findUnique({
-      where: { slug: eventSlug },
+      where: { slug: eventSlug, isDeleted: false },
       select: {
         id: true,
         ownerId: true,
