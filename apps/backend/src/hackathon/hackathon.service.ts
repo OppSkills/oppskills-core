@@ -19,6 +19,7 @@ import type {
 import type { UpdateHackathonPrizeBreakdownDto } from './hackathon-update-nested.dto';
 import { AnalyticsService } from 'src/analytics/analytics.service';
 import { Logger } from '../_utils/logger';
+import { DELETED_RESOURCE_OWNER_ID } from '../_utils/constants';
 
 type LifecycleStatus =
   | 'DRAFT'
@@ -974,7 +975,7 @@ export class HackathonService {
       data: {
         isDeleted: true,
         deletedAt: new Date(),
-        ownerId: 'user_37DPlwTjdREB8MzXruzHTNMCTXA',
+        ownerId: DELETED_RESOURCE_OWNER_ID,
       },
     });
 

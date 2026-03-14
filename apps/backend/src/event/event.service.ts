@@ -16,6 +16,7 @@ import type {
 } from '@oppskills/types';
 import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
 import { Logger } from '../_utils/logger';
+import { DELETED_RESOURCE_OWNER_ID } from '../_utils/constants';
 import { EMAIL_EVENTS } from '../email/email.events';
 import type { EventJoinedEventPayload } from '../email/email.events';
 import { AnalyticsService } from 'src/analytics/analytics.service';
@@ -871,7 +872,7 @@ export class EventService {
       data: {
         isDeleted: true,
         deletedAt: new Date(),
-        ownerId: 'user_37DPlwTjdREB8MzXruzHTNMCTXA',
+        ownerId: DELETED_RESOURCE_OWNER_ID,
       },
     });
     return { message: 'Event deleted successfully.' };

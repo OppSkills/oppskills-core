@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import type { CreateFestivalDto, UpdateFestivalDto } from '@oppskills/types';
+import { DELETED_RESOURCE_OWNER_ID } from '../_utils/constants';
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 type LifecycleStatus =
@@ -212,7 +213,7 @@ export class FestivalService {
       data: {
         isDeleted: true,
         deletedAt: new Date(),
-        organizerId: 'user_37DPlwTjdREB8MzXruzHTNMCTXA',
+        organizerId: DELETED_RESOURCE_OWNER_ID,
       },
     });
     return { message: 'Festival deleted successfully.' };
