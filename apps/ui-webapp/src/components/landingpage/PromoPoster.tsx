@@ -7,9 +7,9 @@ import { Autoplay } from 'swiper/modules'
 
 export default function PromoPoster() {
     const items = [
-        { text: "Competitions", link: "/hackathons" },
-        { text: "Events", link: "/events" },
-        { text: "Festivals", link: "/festivals" },
+        { text: "Competitions", link: "/organize/hackathon" },
+        { text: "Events", link: "/organize/event" },
+        { text: "Festivals", link: "#" },
     ];
 
     return (
