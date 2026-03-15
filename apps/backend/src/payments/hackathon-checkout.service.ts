@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import {
   prisma,
   HackathonChargeMode,
@@ -15,11 +16,14 @@ import { RazorpayService } from './razorpay.service';
 import { PaymentsRouteService } from './payments-route.service';
 import { DraftTeamService } from './draft-team.service';
 import { Decimal } from '@prisma/client/runtime/library';
+import { Logger } from 'src/_utils/logger';
 
 const PLATFORM_FEE_PERCENT = 2;
 
 @Injectable()
 export class HackathonCheckoutService {
+  private readonly logger = new Logger(HackathonCheckoutService.name);
+
   constructor(
     private readonly razorpayService: RazorpayService,
     private readonly paymentsRouteService: PaymentsRouteService,
@@ -567,6 +571,16 @@ export class HackathonCheckoutService {
       throw new ForbiddenException('Payment does not belong to this user');
     }
 
+    // Layer 1 — pre-check: if the webhook already captured this payment, return
+    // idempotently rather than downgrading CAPTURED → AUTHORIZED.
+    if (payment.paymentStatus === HackathonPaymentStatus.CAPTURED) {
+      this.logger.log(
+        `Hackathon payment already captured (pre-check) for order: ${params.razorpayOrderId}`,
+      );
+      return { success: true, paymentId: payment.id, teamId: payment.teamId };
+    }
+
+    // Verify signature only when not already CAPTURED.
     const isValid = this.razorpayService.verifyCheckoutSignature({
       orderId: params.razorpayOrderId,
       paymentId: params.razorpayPaymentId,
@@ -577,10 +591,12 @@ export class HackathonCheckoutService {
       throw new BadRequestException('Invalid payment signature');
     }
 
-    // For PER_TEAM mode, if teamName was provided but teamId is null, create team now
+    // For PER_TEAM mode with no existing teamId, create the team now.
+    // Team creation intentionally happens OUTSIDE the transaction so that
+    // DraftTeamService validations (capacity, duplicate-team check) run
+    // before we lock payment rows.
     let finalTeamId = payment.teamId;
     if (payment.scope === HackathonPaymentScope.TEAM && !payment.teamId) {
-      // Fetch Razorpay order to get teamName from notes
       const razorpayOrder = await this.razorpayService.fetchOrder(
         params.razorpayOrderId,
       );
@@ -590,26 +606,117 @@ export class HackathonCheckoutService {
         : undefined;
 
       if (teamName) {
-        // Create team after payment verification
-        const draftTeam = await this.draftTeamService.createDraftTeam({
-          hackathonSlug: payment.hackathon.slug,
-          name: teamName,
-          maxSize,
-          leaderId: params.userId,
-        });
-        finalTeamId = draftTeam.team.id;
+        try {
+          const draftTeam = await this.draftTeamService.createDraftTeam({
+            hackathonSlug: payment.hackathon.slug,
+            name: teamName,
+            maxSize,
+            leaderId: params.userId,
+          });
+          finalTeamId = draftTeam.team.id;
+        } catch (err: any) {
+          // If the webhook raced us and already created the team, look it up.
+          if (
+            err?.message?.includes('already in a team') ||
+            err?.status === 400
+          ) {
+            const existingTeam = await prisma.teamEntity.findFirst({
+              where: {
+                hackathonId: payment.hackathonId,
+                OR: [
+                  { leaderId: params.userId },
+                  { members: { some: { userId: params.userId } } },
+                ],
+              },
+              select: { id: true },
+            });
+            if (existingTeam) {
+              finalTeamId = existingTeam.id;
+            } else {
+              throw err;
+            }
+          } else {
+            throw err;
+          }
+        }
       }
     }
 
-    await prisma.hackathonPaymentEntity.update({
-      where: { id: payment.id },
-      data: {
-        razorpayPaymentId: params.razorpayPaymentId,
-        razorpaySignature: params.razorpaySignature,
-        paymentStatus: HackathonPaymentStatus.AUTHORIZED,
-        teamId: finalTeamId, // Update with created teamId if team was created
-      },
-    });
+    // Layer 2 — in-transaction re-check + atomic status update.
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Re-read inside the transaction: webhook may have set CAPTURED between
+        // our outer read and now.
+        const current = await tx.hackathonPaymentEntity.findUnique({
+          where: { id: payment.id },
+          select: { paymentStatus: true, teamId: true },
+        });
+
+        if (current?.paymentStatus === HackathonPaymentStatus.CAPTURED) {
+          this.logger.log(
+            `Hackathon payment already captured (in-tx re-check) for order: ${params.razorpayOrderId}`,
+          );
+          // Ensure teamId is persisted even if webhook missed it.
+          if (!current.teamId && finalTeamId) {
+            await tx.hackathonPaymentEntity.update({
+              where: { id: payment.id },
+              data: { teamId: finalTeamId },
+            });
+          }
+          return;
+        }
+
+        await tx.hackathonPaymentEntity.update({
+          where: { id: payment.id },
+          data: {
+            razorpayPaymentId: params.razorpayPaymentId,
+            razorpaySignature: params.razorpaySignature,
+            paymentStatus: HackathonPaymentStatus.CAPTURED,
+            orderStatus: HackathonPaymentOrderStatus.PAID,
+            capturedAt: new Date(),
+            teamId: finalTeamId,
+          },
+        });
+
+        // Record discount redemption atomically so it is always written even
+        // if the Razorpay webhook never fires.
+        if (payment.discountCodeId) {
+          try {
+            await tx.hackathonDiscountRedemptionEntity.create({
+              data: {
+                discountCodeId: payment.discountCodeId,
+                userId: params.userId,
+                paymentId: payment.id,
+              },
+            });
+          } catch (discountErr: any) {
+            // Ignore duplicate — webhook may have already recorded it.
+            if (discountErr?.code !== 'P2002') {
+              throw discountErr;
+            }
+          }
+        }
+      });
+    } catch (error: any) {
+      // Layer 3 — P2002 outer catch: the webhook may have concurrently written
+      // the same unique-constrained rows (e.g. discount redemption). Re-fetch
+      // the current teamId and return success.
+      if (error?.code === 'P2002') {
+        this.logger.warn(
+          `Race condition handled in hackathon verifyPayment for order: ${params.razorpayOrderId}`,
+        );
+        const refreshed = await prisma.hackathonPaymentEntity.findUnique({
+          where: { id: payment.id },
+          select: { teamId: true },
+        });
+        return {
+          success: true,
+          paymentId: payment.id,
+          teamId: refreshed?.teamId ?? finalTeamId,
+        };
+      }
+      throw error;
+    }
 
     return { success: true, paymentId: payment.id, teamId: finalTeamId };
   }
