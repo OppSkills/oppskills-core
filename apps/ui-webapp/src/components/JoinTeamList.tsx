@@ -456,10 +456,17 @@ export function JoinTeamList({
           ondismiss: () => {
             // Payment cancelled - user did NOT join team
             setIsSubmittingRegistration(false);
+            setJoiningTeamId(null);
+            setIsJoiningByCode(false);
             toast.info("Payment cancelled. You have not joined the team.");
           },
         },
       };
+
+      // Close the registration modal BEFORE opening Razorpay.
+      // Radix UI Dialog uses a focus trap and sets pointer-events:none on the
+      // body while open, which blocks all interaction with the Razorpay iframe.
+      setShowRegistrationModal(false);
 
       const rzp = new window.Razorpay(options);
       rzp.open();

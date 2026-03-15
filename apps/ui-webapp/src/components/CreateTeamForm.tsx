@@ -431,6 +431,11 @@ export function CreateTeamForm({
         );
       }
 
+      // Close the registration modal BEFORE opening Razorpay.
+      // Radix UI Dialog uses a focus trap and sets pointer-events:none on the
+      // body while open, which blocks all interaction with the Razorpay iframe.
+      setShowRegistrationModal(false);
+
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (error: unknown) {
