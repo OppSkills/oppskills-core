@@ -11,7 +11,7 @@ const ParticipateSection = () => {
           <h1 className="poppins font-semibold text-[32px] md:text-[48px] leading-[125%] text-foreground">
             Participate in
           </h1>
-          <p className="inter font-normal text-[16px] md:text-[20px] leading-normal text-muted-foreground w-full max-w-[811px]">
+          <p className="inter font-normal text-base md:text-[20px] leading-normal text-muted-foreground w-full max-w-[811px]">
             Build skills, network with professionals, and accelerate your career
             journey.
           </p>
@@ -23,7 +23,7 @@ const ParticipateSection = () => {
               <h3 className="poppins font-semibold text-[24px] leading-[125%] text-[#002B26]">
                 Competitions
               </h3>
-              <ul className="inter font-normal text-[16px] leading-[150%] text-[#342636] space-y-0.5">
+              <ul className="inter font-normal text-base leading-[150%] text-[#342636] space-y-0.5">
                 <li>Idea Comp</li>
                 <li>Hackathons</li>
                 <li>Quizzes</li>
@@ -52,7 +52,7 @@ const ParticipateSection = () => {
               <h3 className="poppins font-semibold text-[24px] leading-[125%] text-[#2B2600]">
                 Events
               </h3>
-              <ul className="inter font-normal text-[16px] leading-[150%] text-[#363426] space-y-0.5">
+              <ul className="inter font-normal text-base leading-[150%] text-[#363426] space-y-0.5">
                 <li>Workshops</li>
                 <li>Tech events</li>
                 <li>Innovation meets</li>
@@ -81,7 +81,7 @@ const ParticipateSection = () => {
               <h3 className="poppins font-semibold text-[24px] leading-[125%] text-[#2B001F]">
                 Communities
               </h3>
-              <ul className="inter font-normal text-[16px] leading-[150%] text-[#362632] space-y-0.5">
+              <ul className="inter font-normal text-base leading-[150%] text-[#362632] space-y-0.5">
                 <li>Tech</li>
                 <li>Design</li>
                 <li>Fitness</li>

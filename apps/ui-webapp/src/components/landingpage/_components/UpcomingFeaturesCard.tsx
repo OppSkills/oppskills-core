@@ -113,7 +113,7 @@ export default function UpcomingFeaturesCard({
         <Card className='p-4 md:p-6 shadow-[0_2px_8px_2px_rgba(69,69,69,0.10)]'>
             <div className='flex w-full h-full'>
                 <div className='flex flex-col gap-6 w-2/3'>
-                    <h2 className='font-semibold text-2xl text-foreground text-nowrap'>{title}</h2>
+                    <h2 className='font-semibold text-2xl text-foreground md:text-nowrap'>{title}</h2>
                     <p className='text-neutral-600 flex-1'>{description}</p>
                     <div>
                         <Button

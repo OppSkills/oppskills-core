@@ -56,7 +56,7 @@ export function CompetitionTabs({
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "pb-3 text-[16px] font-semibold transition-colors relative",
+                "pb-3 text-base font-semibold transition-colors relative",
                 isActive
                   ? "text-primary-600 border-b-2 border-primary-600"
                   : "text-neutral-500 hover:text-neutral-800"

@@ -152,7 +152,7 @@ export default async function EventDashboard(props: {
             <h1 className="font-semibold text-[24px] md:text-[28px] break-words">
               Welcome back, {user?.firstName} {user?.lastName}
             </h1>
-            <p className="text-sm md:text-[16px] text-muted-foreground pt-1 md:pt-2">
+            <p className="text-sm md:text-base text-muted-foreground pt-1 md:pt-2">
               View all the details for {name}
             </p>
           </div>

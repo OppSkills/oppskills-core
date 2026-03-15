@@ -58,7 +58,7 @@ export default function Stages({
         <div className="flex flex-col gap-2">
           <h2
             className={cn(
-              "text-[16px] text-foreground/80",
+              "text-base text-foreground/80",
               isActive && "text-primary",
             )}
           >
