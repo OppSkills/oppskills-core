@@ -132,7 +132,7 @@ export function EventRegistrationCard({
                 )}
               </div>
               <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
-                <span className="font-semibold text-neutral-900 text-[16px]">
+                <span className="font-semibold text-neutral-900 text-base">
                   {user.name}
                 </span>
                 <span className="text-neutral-500 text-sm">{user.email}</span>
@@ -191,7 +191,7 @@ export function EventRegistrationCard({
           <div>
             {
               isDeadlineExceeded ? <Button
-                className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm cursor-not-allowed"
+                className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-base shadow-sm cursor-not-allowed"
                 disabled
               >
                 Registration Closed
@@ -282,7 +282,7 @@ export function EventRegistrationCard({
               )}
             </div>
             <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
-              <span className="font-semibold text-neutral-900  text-[16px]">
+              <span className="font-semibold text-neutral-900  text-base">
                 {user.name}
               </span>
               <span className="text-neutral-500 text-sm">{user.email}</span>

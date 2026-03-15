@@ -126,7 +126,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     if (isCheckingRegistration) {
       return (
         <Button
-          className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm"
+          className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
           disabled
         >
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -139,7 +139,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     if (isAlreadyRegistered && myTeam) {
       return (
         <Button
-          className="w-full bg-green-600 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm"
+          className="w-full bg-green-600 text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
           disabled
         >
           <CheckCircle className="w-4 h-4 mr-2" />
@@ -152,7 +152,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     if (isRegistrationClosed) {
       return (
         <Button
-          className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm cursor-not-allowed"
+          className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-base shadow-sm cursor-not-allowed"
           disabled
         >
           Registration Closed
@@ -164,7 +164,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     if (isMaxTeamsReached) {
       return (
         <Button
-          className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm cursor-not-allowed"
+          className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-base shadow-sm cursor-not-allowed"
           disabled
         >
           Teams Full
@@ -176,7 +176,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     if (!isSignedIn) {
       return (
         <SignInButton mode="modal">
-          <Button className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm">
+          <Button className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm">
             {competition.isFree === false && competition.entryFeeAmount
               ? `Register for ${competition.currency || "INR"} ${competition.entryFeeAmount}`
               : "Register for free"}
@@ -188,7 +188,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     // Default: show register button
     return (
       <Button
-        className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-[16px] shadow-sm"
+        className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
         onClick={handleRegisterClick}
         disabled={isCheckingOnboarding}
       >

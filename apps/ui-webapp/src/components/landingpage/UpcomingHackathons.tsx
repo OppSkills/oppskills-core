@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { useUpcomingHackathons } from "@/hooks/usePublicHackathons";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -8,14 +8,13 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { Navigation, Pagination } from "swiper/modules";
-import { CompetitionCard } from "./_components/CompetitionCard";
 import { SwiperControls } from "./_components/SwiperControls";
 // import { EventCard } from "./_components/EventCard"; // No longer needed here
-import type { PastOpportunityItem } from "@/hooks/useEvents";
 import { EventsSectionSkeleton } from "./_components/EventsSectionSkeleton";
 import { EventsEmptyState } from "./_components/EventsEmptyState";
+import { CompetitionCard } from "./_components/CompetitionCard";
 
-export default function UpcomingCompetitions() {
+export default function UpcomingHackathons() {
   const {
     data: hackathons,
     isLoading,
