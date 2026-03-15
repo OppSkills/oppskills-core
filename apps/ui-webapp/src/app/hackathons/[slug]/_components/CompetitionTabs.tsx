@@ -47,12 +47,23 @@ export function CompetitionTabs({
   }, [activeTab]);
 
   return (
-    <div className="w-full my-8 overflow-x-auto">
-      <div className="flex items-center gap-5 min-w-max">
+    <div className="border-b border-neutral-200 mb-8 overflow-x-auto sticky top-0 bg-background z-10 pt-4">
+      <div className="flex gap-8 min-w-max">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
-            <Badge key={tab.id} variant="outline" onClick={() => setActiveTab(tab.id)} className="px-3 py-2 cursor-pointer text-base font-medium">{tab.label}</Badge>
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "pb-3 text-[16px] font-semibold transition-colors relative",
+                isActive
+                  ? "text-primary-600 border-b-2 border-primary-600"
+                  : "text-neutral-500 hover:text-neutral-800"
+              )}
+            >
+              {tab.label}
+            </button>
           );
         })}
       </div>

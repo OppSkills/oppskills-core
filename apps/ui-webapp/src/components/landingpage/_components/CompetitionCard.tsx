@@ -1,9 +1,7 @@
-import Link from "next/link";
-import Image from "next/image";
 import { format } from "date-fns";
 import type { PublicHackathonListItem } from "@/lib/api/hackathonApi";
-import { OpportunityCard } from "./OpportunityCard";
 import { formatCount } from "@/lib/tools";
+import { HackathonCard } from "./HackathonCard";
 
 interface CompetitionCardProps {
     hackathon: PublicHackathonListItem;
@@ -70,8 +68,8 @@ export function CompetitionCard({ hackathon }: CompetitionCardProps) {
     );
 
     return (
-        <OpportunityCard
-            href={`/competitions/${hackathon.slug}`}
+        <HackathonCard
+            href={`/hackathons/${hackathon.slug}`}
             imageSrc={hackathon.bannerImageUrl}
             title={hackathon.name}
             organizationName={hackathon.locationAddress}

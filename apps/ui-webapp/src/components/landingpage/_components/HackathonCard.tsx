@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-interface OpportunityCardProps {
+interface HackathonCardProps {
     href: string;
     imageSrc: string | null;
     title: string;
@@ -15,7 +15,7 @@ interface OpportunityCardProps {
     footerContent: React.ReactNode;
 }
 
-export function OpportunityCard({
+export function HackathonCard({
     href,
     imageSrc,
     title,
@@ -25,7 +25,7 @@ export function OpportunityCard({
     topRightBadge,
     overlayContent,
     footerContent,
-}: OpportunityCardProps) {
+}: HackathonCardProps) {
     return (
         <Link href={href} prefetch={false} className="h-full block">
             <Card className="group h-full flex flex-col overflow-hidden border-border/50 bg-card hover:shadow-lg transition-all duration-300 rounded-3xl">

@@ -601,7 +601,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
 
           {/* LEFT COLUMN: Banner & Contact Details */}
-          <div className="lg:col-span-4 space-y-8">
+          <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-24">
             {/* Festival Badge (Mobile Only - usually nice to have on top) */}
             {event.festival && (
               <div className="lg:hidden flex flex-wrap gap-2 mb-4">
@@ -619,7 +619,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
             {/* Banner Image */}
             {event.bannerImageUrl && (
-              <div className="relative m-0 lg:mb-4 aspect-[16/9] w-full overflow-hidden lg:rounded-2xl lg:shadow-sm border border-neutral-100">
+              <div className="relative m-0 lg:mb-4 aspect-video w-full overflow-hidden lg:rounded-2xl lg:shadow-sm border border-neutral-100">
                 <Image
                   src={event.bannerImageUrl}
                   alt={event.name}

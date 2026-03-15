@@ -1,10 +1,7 @@
-import Link from "next/link";
-import Image from "next/image";
-import { Dot } from "lucide-react";
 import { formatInTimeZone } from "date-fns-tz";
 import { formatCount } from "@/lib/tools";
 import type { EventListItem, PastOpportunityItem } from "@/hooks/useEvents";
-import { OpportunityCard } from "./OpportunityCard";
+import { HackathonCard } from "./HackathonCard";
 
 interface EventCardProps {
     event: EventListItem | PastOpportunityItem;
@@ -61,7 +58,7 @@ export function EventCard({ event, hideRegistrationInfo, organizationName }: Eve
     const mode = formatMode(event.locationType);
     const entryFee = formatEntryFee(event);
 
-    const baseUrl = 'type' in event && event.type === 'HACKATHON' ? '/competitions' : '/events';
+    const baseUrl = 'type' in event && event.type === 'HACKATHON' ? '/hackathons' : '/events';
 
     const topRightBadge = (
         'type' in event ? (
@@ -105,7 +102,7 @@ export function EventCard({ event, hideRegistrationInfo, organizationName }: Eve
     );
 
     return (
-        <OpportunityCard
+        <HackathonCard
             href={`${baseUrl}/${event.slug}`}
             imageSrc={event.bannerImageUrl}
             title={event.name}
