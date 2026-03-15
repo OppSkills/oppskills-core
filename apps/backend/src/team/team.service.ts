@@ -106,7 +106,7 @@ export class TeamService {
   async createTeam(dto: CreateTeamDto, leaderId: string) {
     // Verify hackathon exists and get settings
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { id: dto.hackathonId },
+      where: { id: dto.hackathonId, isDeleted: false },
       select: {
         id: true,
         ownerId: true,

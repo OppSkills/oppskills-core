@@ -25,7 +25,7 @@ export class RegistrationSubmitService {
     const { hackathonSlug, userId, answers = [] } = params;
 
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug: hackathonSlug },
+      where: { slug: hackathonSlug, isDeleted: false },
       select: {
         id: true,
         name: true,
@@ -450,7 +450,7 @@ export class RegistrationSubmitService {
 
   async getRegistrationStatus(hackathonSlug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug: hackathonSlug },
+      where: { slug: hackathonSlug, isDeleted: false },
       select: { id: true, isFree: true, chargeMode: true },
     });
 

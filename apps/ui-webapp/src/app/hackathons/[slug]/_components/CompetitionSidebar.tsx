@@ -93,7 +93,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
       const meData = await getMe(token);
       if (!meData.onboarded) {
-        const returnUrl = `/competitions/${competition.slug}`;
+        const returnUrl = `/hackathons/${competition.slug}`;
         router.push(`/onboarding?returnUrl=${encodeURIComponent(returnUrl)}`);
         return;
       }
@@ -343,7 +343,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
                   Your Team
                 </span>
                 <Link
-                  href={`/competitions/${competition.slug}/team`}
+                  href={`/hackathons/${competition.slug}/team`}
                   className="text-xs text-green-700 hover:text-green-900 underline"
                 >
                   View Details

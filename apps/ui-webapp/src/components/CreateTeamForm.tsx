@@ -315,7 +315,7 @@ export function CreateTeamForm({
         toast.success("Registration successful!");
 
         setTimeout(() => {
-          router.push(`/competitions/${hackathonSlug}?registered=true`);
+          router.push(`/hackathons/${hackathonSlug}?registered=true`);
         }, 2000);
 
         setIsLoading(false);
@@ -395,7 +395,7 @@ export function CreateTeamForm({
             toast.success("Payment and registration successful!");
 
             setTimeout(() => {
-              router.push(`/competitions/${hackathonSlug}?registered=true`);
+              router.push(`/hackathons/${hackathonSlug}?registered=true`);
             }, 2000);
           } catch (err: unknown) {
             console.error("Post-payment error:", err);
@@ -477,7 +477,7 @@ export function CreateTeamForm({
         );
 
         setTimeout(() => {
-          router.push(`/competitions/${hackathonSlug}?registered=true`);
+          router.push(`/hackathons/${hackathonSlug}?registered=true`);
         }, 2000);
         setIsLoading(false);
         setShowRegistrationModal(false);

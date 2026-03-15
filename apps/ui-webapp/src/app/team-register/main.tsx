@@ -281,7 +281,7 @@ export default function RegistrationPage() {
           {error || "Failed to load hackathon details."}
         </p>
         <div className="flex justify-center">
-          <Link href={`/competitions/${slug}`}>
+          <Link href={`/hackathons/${slug}`}>
             <Button variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Competition
@@ -336,7 +336,7 @@ export default function RegistrationPage() {
         </div>
 
         <div className="flex justify-center gap-4">
-          <Link href={`/competitions/${slug}`}>
+          <Link href={`/hackathons/${slug}`}>
             <Button variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Competition
@@ -363,7 +363,7 @@ export default function RegistrationPage() {
           closed.
         </p>
         <div className="flex justify-center">
-          <Link href={`/competitions/${slug}`}>
+          <Link href={`/hackathons/${slug}`}>
             <Button variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Competition
@@ -381,7 +381,7 @@ export default function RegistrationPage() {
     <div className="max-w-3xl mx-auto mt-8 p-6 space-y-6 bg-white shadow-lg rounded-lg">
       {/* Back Link */}
       <Link
-        href={`/competitions/${slug}`}
+        href={`/hackathons/${slug}`}
         className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="w-4 h-4 mr-1" />

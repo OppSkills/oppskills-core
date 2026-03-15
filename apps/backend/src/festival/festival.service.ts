@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import type { CreateFestivalDto, UpdateFestivalDto } from '@oppskills/types';
+import { DELETED_RESOURCE_OWNER_ID } from '../_utils/constants';
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 type LifecycleStatus =
@@ -58,6 +59,7 @@ export class FestivalService {
   async listPublicFestivals() {
     return prisma.festivalEntity.findMany({
       where: {
+        isDeleted: false,
         approvalStatus: 'APPROVED',
         status: { in: ['PUBLISHED', 'ONGOING', 'COMPLETED'] },
       },
@@ -81,6 +83,7 @@ export class FestivalService {
 
   async listFestivals() {
     return prisma.festivalEntity.findMany({
+      where: { isDeleted: false },
       include: {
         hackathons: {
           select: { id: true, slug: true, name: true },
@@ -95,7 +98,7 @@ export class FestivalService {
 
   async listUserFestivals(userId: string) {
     return prisma.festivalEntity.findMany({
-      where: { organizerId: userId },
+      where: { organizerId: userId, isDeleted: false },
       include: {
         hackathons: {
           select: { id: true, slug: true, name: true },
@@ -110,7 +113,7 @@ export class FestivalService {
 
   async getFestivalById(id: string) {
     const festival = await prisma.festivalEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       include: {
         hackathons: {
           include: {
@@ -126,7 +129,7 @@ export class FestivalService {
 
   async updateFestival(id: string, dto: UpdateFestivalDto, userId: string) {
     const existing = await prisma.festivalEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: {
         id: true,
         organizerId: true,
@@ -192,7 +195,7 @@ export class FestivalService {
 
   async deleteFestival(id: string, userId: string) {
     const existing = await prisma.festivalEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { id: true, organizerId: true },
     });
     if (!existing) throw new NotFoundException('Festival not found');
@@ -205,7 +208,14 @@ export class FestivalService {
       }
     }
 
-    await prisma.festivalEntity.delete({ where: { id } });
+    await prisma.festivalEntity.update({
+      where: { id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        organizerId: DELETED_RESOURCE_OWNER_ID,
+      },
+    });
     return { message: 'Festival deleted successfully.' };
   }
 
@@ -215,7 +225,7 @@ export class FestivalService {
     userId: string,
   ) {
     const existing = await prisma.festivalEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { id: true, organizerId: true, status: true },
     });
     if (!existing) throw new NotFoundException('Festival not found');
@@ -250,13 +260,13 @@ export class FestivalService {
 
   async getHackathonsUnderFestival(id: string) {
     const festival = await prisma.festivalEntity.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: { id: true },
     });
     if (!festival) throw new NotFoundException('Festival not found');
 
     return prisma.hackathonEntity.findMany({
-      where: { festivalId: id },
+      where: { festivalId: id, isDeleted: false },
       include: { rounds: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -264,7 +274,7 @@ export class FestivalService {
 
   async getFestivalBySlug(slug: string) {
     const festival = await prisma.festivalEntity.findUnique({
-      where: { slug },
+      where: { slug, isDeleted: false },
       // Optimization: Do NOT include hackathons/events here. They are fetched via separate public APIs.
     });
     if (!festival) throw new NotFoundException('Festival not found');

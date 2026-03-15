@@ -107,7 +107,7 @@ export function CompetitionCard({ competition }: CompetitionCardProps) {
   const eventType = competition.eventType || "Hackathon";
 
   return (
-    <Link href={`/competitions/${competition.slug}`}>
+    <Link href={`/hackathons/${competition.slug}`}>
       <Card className="gap-2 p-0 overflow-hidden border-border/50 hover:shadow-md transition-all duration-300 group bg-card h-full flex flex-col">
         {/* Image Section */}
         <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
