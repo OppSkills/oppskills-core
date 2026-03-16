@@ -12,6 +12,7 @@ import {
   Query,
   UseGuards,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -30,7 +31,7 @@ import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 @Controller('user-accounts')
 export class UserAccountsController {
   private readonly logger: Logger = new Logger(UserAccountsController.name);
-  constructor(private readonly userAccountsService: UserAccountsService) {}
+  constructor(private readonly userAccountsService: UserAccountsService) { }
 
   @Post('/clerk-webhook')
   create(
@@ -224,5 +225,93 @@ export class UserAccountsController {
   async searchUsers(@Query('q') query: string) {
     const safeQuery = typeof query === 'string' ? query : '';
     return this.userAccountsService.searchUsers(safeQuery);
+  }
+
+  /**
+   * Update user skills.
+   */
+  @Patch('/skills')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({ summary: 'Update user skills' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        skills: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  })
+  async updateSkills(
+    @Request() req: { user: { id: string } },
+    @Body('skills') skills: string[],
+  ) {
+    const validatedSkills = this.validateArray(skills, 'Skills');
+    return this.userAccountsService.updateSkills(req.user.id, validatedSkills);
+  }
+
+  /**
+   * Update user interests.
+   */
+  @Patch('/interests')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({ summary: 'Update user interests' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        interests: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  })
+  async updateInterests(
+    @Request() req: { user: { id: string } },
+    @Body('interests') interests: string[],
+  ) {
+    const validatedInterests = this.validateArray(interests, 'Interests');
+    return this.userAccountsService.updateInterests(
+      req.user.id,
+      validatedInterests,
+    );
+  }
+
+  /**
+   * Internal helper to validate input arrays (XSS prevention, pattern check).
+   */
+  private validateArray(arr: any, fieldName: string): string[] {
+    if (!Array.isArray(arr)) {
+      throw new BadRequestException(`${fieldName} must be an array`);
+    }
+
+    if (arr.length > 20) {
+      throw new BadRequestException(`${fieldName} cannot exceed 20 items`);
+    }
+
+    return arr
+      .map((item) => {
+        if (typeof item !== 'string') {
+          throw new BadRequestException(`All ${fieldName} items must be strings`);
+        }
+        const trimmed = item.trim();
+
+        // Max length constraint for security/sanity
+        if (trimmed.length > 50) {
+          throw new BadRequestException(
+            `${fieldName} items must be under 50 characters`,
+          );
+        }
+
+        // Pattern: Alpha-numeric, spaces, and common tech symbols (+, #, -, ., /)
+        // This prevents XSS and malicious scripts.
+        if (trimmed.length > 0 && !/^[a-zA-Z0-9\s\+\#\-\.\/]+$/.test(trimmed)) {
+          throw new BadRequestException(
+            `Invalid characters in ${fieldName}: "${trimmed}"`,
+          );
+        }
+
+        return trimmed;
+      })
+      .filter((t) => t.length > 0);
   }
 }

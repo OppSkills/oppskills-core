@@ -748,4 +748,64 @@ export class UserAccountsService {
       throw error;
     }
   }
+
+  async updateSkills(
+    userId: string,
+    skills: string[],
+  ) {
+    try {
+      const user = await prisma.userEntity.findUnique({
+        where: { id: userId },
+        include: {
+          onboardingProfile: true,
+        },
+      });
+
+      if (!user || !user.onboardingProfile) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      return await prisma.userOnboardingProfileEntity.update({
+        where: { id: user.onboardingProfile.id },
+        data: {
+          skills: skills,
+        },
+      });
+    } catch (error) {
+      throw new HttpException(
+        error?.message,
+        error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updateInterests(
+    userId: string,
+    interests: string[],
+  ) {
+    try {
+      const user = await prisma.userEntity.findUnique({
+        where: { id: userId },
+        include: {
+          onboardingProfile: true,
+        },
+      });
+
+      if (!user || !user.onboardingProfile) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      return await prisma.userOnboardingProfileEntity.update({
+        where: { id: user.onboardingProfile.id },
+        data: {
+          interests: interests,
+        },
+      });
+    } catch (error) {
+      throw new HttpException(
+        error?.message,
+        error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

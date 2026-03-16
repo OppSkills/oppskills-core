@@ -92,3 +92,50 @@ export async function getFullProfile(token: string): Promise<any> {
     throw new Error("Failed to fetch full profile. Please try again.");
   }
 }
+
+/**
+ * Update user skills.
+ */
+export async function updateSkills(
+  token: string,
+  skills: string[]
+): Promise<{ success: boolean }> {
+  try {
+    const res = await API.patch(
+      "/skills",
+      { skills },
+      {
+        headers: buildAuthHeaders(token),
+      }
+    );
+    return res.data;
+  } catch (error) {
+    console.error("Error updating skills:", error);
+    throw new Error("Failed to update skills. Please try again.");
+  }
+}
+
+/**
+ * Update user interests.
+ */
+export async function updateInterests(
+  token: string,
+  interests: string[]
+): Promise<{ success: boolean }> {
+  try {
+    const res = await API.patch(
+      "/interests",
+      { interests },
+      {
+        headers: buildAuthHeaders(token),
+      }
+    );
+    return res.data;
+  } catch (error) {
+    console.error("Error updating interests:", error);
+    throw new Error("Failed to update interests. Please try again.");
+  }
+}
+
+
+

@@ -7,6 +7,7 @@ import { ProfileStats } from './_components/profile-stats';
 import { PersonalInfo } from './_components/personal-info';
 import { EducationInfo } from './_components/education-info';
 import { SkillsInfo } from './_components/skills-info';
+import { InterestsInfo } from './_components/interests-info';
 import { Loader2 } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -53,7 +54,8 @@ export default function ProfilePage() {
       <div className='p-4 lg:p-8 bg-neutral-100 rounded-3xl flex-1 overflow-y-auto custom-scrollbar'>
         <PersonalInfo data={profileData.personalInfo} />
         <EducationInfo data={profileData.educationInfo} />
-        <SkillsInfo data={{ skills: profileData.skills, interests: profileData.interests }} />
+        <SkillsInfo data={{ skills: profileData.skills }} />
+        <InterestsInfo data={{ interests: profileData.interests }} />
       </div>
       <ProfileStats data={profileData.stats} />
     </div>

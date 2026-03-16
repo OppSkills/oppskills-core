@@ -71,6 +71,7 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
               label="Email"
               type="email"
               defaultValue={data.email || ""}
+              disabled={true}
               icon={<ShieldCheck className="w-6 h-6 text-[#6B4EAB] shrink-0" fill="#6B4EAB" stroke="white" />}
             />}
 
