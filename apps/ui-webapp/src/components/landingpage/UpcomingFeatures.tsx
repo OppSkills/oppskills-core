@@ -13,9 +13,13 @@ export default function UpcomingFeatures() {
                             description: "Student clubs, campus groups, and niche communities across India will be able to join OppSkills. Discover events, collaborate with other communities, and grow your impact on a national network.",
                             image: "track.svg"
                         },
-                        { title: "Skill Acceleration & Career Launchpads", description: "Structured programs designed to help students sharpen practical skills through challenges, mentorship, and real-world projects accelerating the journey from learning to career readiness.", image: "mentor.svg" },
+                        { title: "Skill Acceleration Tracks", description: "Structured programs designed to help students sharpen practical skills through challenges, mentorship, and real-world projects accelerating the journey from learning to career readiness.", image: "mentor.svg" },
                         { title: "College–Industry Bridge", description: "OppSkills will act as a bridge between colleges and companies, enabling students to access real opportunities while organizations discover emerging talent.", image: "challenges.svg" },
-                        { title: "Job Portal", description: "A dedicated job portal where students and early professionals can discover entry-level roles, apply easily, and connect directly with companies looking for skilled young talent.", image: "tools.svg" },
+                        { 
+                            title: "Career Launchpads", 
+                            description: "A launchpad for students to participate in immersive challenges, gain hands-on experience with real-world problems, and showcase their skills through projects and events—helping them grow their network and become career-ready in practical ways.", 
+                            image: "tools.svg" 
+                        },
                     ].map((item, index) => (
                         <UpcomingFeaturesCard key={index} title={item.title} description={item.description} image={item.image} />
                     ))

@@ -16,7 +16,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2, Users, CheckCircle, KeyRound } from "lucide-react";
+import { Loader2, Users, CheckCircle, KeyRound, Tag } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import {
   getTeamsByHackathon,
   joinTeam,
@@ -78,6 +79,9 @@ export function JoinTeamList({
   const [joiningTeamId, setJoiningTeamId] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [joinedTeamName, setJoinedTeamName] = useState("");
+
+  // Discount code state (PER_USER paid hackathons only)
+  const [discountCode, setDiscountCode] = useState("");
 
   // Invite code state
   const [inviteCode, setInviteCode] = useState("");
@@ -330,7 +334,9 @@ export function JoinTeamList({
         );
       }
 
-      const order = await createPaymentOrder(token, hackathonSlug, {});
+      const order = await createPaymentOrder(token, hackathonSlug, {
+        discountCode: discountCode.trim() || undefined,
+      });
 
       // If discount makes this a zero-amount payment, backend already marks it as CAPTURED.
       // Skip Razorpay checkout and proceed to team join and registration submission.
@@ -450,10 +456,17 @@ export function JoinTeamList({
           ondismiss: () => {
             // Payment cancelled - user did NOT join team
             setIsSubmittingRegistration(false);
+            setJoiningTeamId(null);
+            setIsJoiningByCode(false);
             toast.info("Payment cancelled. You have not joined the team.");
           },
         },
       };
+
+      // Close the registration modal BEFORE opening Razorpay.
+      // Radix UI Dialog uses a focus trap and sets pointer-events:none on the
+      // body while open, which blocks all interaction with the Razorpay iframe.
+      setShowRegistrationModal(false);
 
       const rzp = new window.Razorpay(options);
       rzp.open();
@@ -652,6 +665,31 @@ export function JoinTeamList({
     <>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <div className="space-y-6">
+        {!isFree && chargeMode === "PER_USER" && (
+          <div className="p-4 border rounded-lg bg-zinc-50 dark:bg-zinc-900 space-y-3">
+            <div className="flex items-center gap-2">
+              <Tag className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold">Discount Code (Optional)</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Have a discount code? Enter it here before joining a team — it
+              will be applied to your payment.
+            </p>
+            <div className="space-y-1">
+              <Label htmlFor="discountCodeJoin" className="sr-only">
+                Discount Code
+              </Label>
+              <Input
+                id="discountCodeJoin"
+                placeholder="Enter discount code (e.g., EARLY50)"
+                value={discountCode}
+                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                className="font-mono"
+              />
+            </div>
+          </div>
+        )}
+
         <div className="p-4 border rounded-lg bg-zinc-50 dark:bg-zinc-900 space-y-4">
           <div className="flex items-center gap-2">
             <KeyRound className="w-5 h-5 text-primary" />
