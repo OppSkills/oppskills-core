@@ -1,4 +1,9 @@
-import { FlowScreenTemplate } from '../../../../shared/ui';
+import { useState } from 'react';
+
+import { useDiscoverFeed } from '../../../discover/presentation/hooks/useDiscoverFeed';
+import { useCompetitionDetail } from '../hooks/useCompetitionDetail';
+import type { DiscoverCategoryId } from '../../../../shared/types/discover';
+import { DiscoverScaffold, DiscoverVariantList, OpportunityDetailScreen } from '../../../../shared/ui';
 
 interface DiscoverCompetitionsScreenProps {
   readonly onOpenCompetitionPage: () => void;
@@ -9,16 +14,38 @@ export function DiscoverCompetitionsScreen({
   onOpenCompetitionPage,
   onSearchResults,
 }: DiscoverCompetitionsScreenProps) {
+  const { data: discoverFeed } = useDiscoverFeed();
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
+
+  const toggleBookmark = (itemId: string) => {
+    setBookmarkedIds((current) =>
+      current.includes(itemId) ? current.filter((value) => value !== itemId) : [...current, itemId],
+    );
+  };
+
+  const handleCategorySelect = (categoryId: DiscoverCategoryId) => {
+    if (categoryId === 'competitions') {
+      return;
+    }
+
+    onSearchResults();
+  };
+
   return (
-    <FlowScreenTemplate
-      actions={[
-        { label: 'Open competition detail page', onPress: onOpenCompetitionPage },
-        { label: 'Open search results', onPress: onSearchResults, tone: 'outline' },
-      ]}
-      routeLabel="Discover / Competitions"
-      subtitle="Competition listing variant with links into detail and search result paths."
-      title="Discover Page Competitions"
-    />
+    <DiscoverScaffold
+      activeCategoryId="competitions"
+      categories={discoverFeed?.categories ?? []}
+      onSearchPress={onSearchResults}
+      onSelectCategory={handleCategorySelect}
+      title="Competitions"
+    >
+      <DiscoverVariantList
+        bookmarkedIds={bookmarkedIds}
+        items={discoverFeed?.competitionListings ?? []}
+        onOpenItem={onOpenCompetitionPage}
+        onToggleBookmark={toggleBookmark}
+      />
+    </DiscoverScaffold>
   );
 }
 
@@ -27,12 +54,11 @@ interface CompetitionPageScreenProps {
 }
 
 export function CompetitionPageScreen({ onBackToDiscover }: CompetitionPageScreenProps) {
-  return (
-    <FlowScreenTemplate
-      actions={[{ label: 'Back to discover root', onPress: onBackToDiscover, tone: 'outline' }]}
-      routeLabel="Detail / Competition"
-      subtitle="Nested competition detail route contract under tab stacks, prepared for long-form event content."
-      title="Competition Page"
-    />
-  );
+  const { data: detail } = useCompetitionDetail();
+
+  if (!detail) {
+    return null;
+  }
+
+  return <OpportunityDetailScreen detail={detail} onBack={onBackToDiscover} />;
 }

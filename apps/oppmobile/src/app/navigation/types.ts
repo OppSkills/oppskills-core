@@ -20,13 +20,13 @@ export type AuthStackParamList = {
 };
 
 export type HomeStackParamList = {
-  [appRoutes.homeTab]: undefined;
+  [appRoutes.homeStack]: undefined;
   [appRoutes.competitionPage]: undefined;
   [appRoutes.hackathonPage]: undefined;
 };
 
 export type DiscoverStackParamList = {
-  [appRoutes.discoverTab]: undefined;
+  [appRoutes.discoverStack]: undefined;
   [appRoutes.discoverHackathons]: undefined;
   [appRoutes.discoverCompetitions]: undefined;
   [appRoutes.discoverEventsPrimary]: undefined;
@@ -40,7 +40,7 @@ export type DiscoverStackParamList = {
 };
 
 export type AppliedStackParamList = {
-  [appRoutes.appliedTab]: undefined;
+  [appRoutes.appliedStack]: undefined;
   [appRoutes.competitionPage]: undefined;
   [appRoutes.hackathonPage]: undefined;
 };

@@ -1,6 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useMemo, useState } from 'react';
 
 import {
   IntroScreen,
@@ -13,6 +14,8 @@ import {
   SignInScreen,
   SignUpScreen,
   VerifyIdentityScreen,
+  type MockProfileEducationInput,
+  type MockProfilePersonalInput,
 } from '../../domains/auth-onboarding/presentation/screens/OnboardingAuthScreens';
 import { AppliedScreen } from '../../domains/applied/presentation/screens/AppliedScreen';
 import {
@@ -29,11 +32,15 @@ import {
   HackathonPageScreen,
 } from '../../domains/hackathons/presentation/screens/HackathonScreens';
 import {
+  searchRepository,
+} from '../../domains/search/data/repositories';
+import {
   SearchPagePopularScreen,
   SearchPageRecentScreen,
   SearchPageResultsScreen,
   SearchPageTypingScreen,
 } from '../../domains/search/presentation/screens/SearchScreens';
+import { transitionSearchFlowState, type SearchFlowState } from '../../domains/search/model/searchStateMachine';
 import { useMockSession } from '../../domains/user-accounts/presentation/providers/MockSessionProvider';
 import { HomePageScreen } from '../../domains/users/presentation/screens/HomePageScreen';
 import { appRoutes } from '../../shared/constants/routes';
@@ -97,6 +104,62 @@ function OnboardingNavigator() {
 
 function AuthNavigator() {
   const session = useMockSession();
+  const [email, setEmail] = useState(session.preferredEmail || '');
+  const [otpCode, setOtpCode] = useState('');
+  const [personalInfo, setPersonalInfo] = useState<MockProfilePersonalInput>({
+    fullName: session.mockProfile?.fullName ?? '',
+    password: session.mockProfile?.password ?? '',
+    phoneNumber: session.mockProfile?.phoneNumber ?? '',
+  });
+  const [educationInfo, setEducationInfo] = useState<MockProfileEducationInput>({
+    college: session.mockProfile?.college ?? '',
+    course: session.mockProfile?.course ?? '',
+    specialization: session.mockProfile?.specialization ?? '',
+    startYear: session.mockProfile?.startYear ?? '',
+    endYear: session.mockProfile?.endYear ?? '',
+    gender: session.mockProfile?.gender ?? '',
+    rollNumber: session.mockProfile?.rollNumber ?? '',
+  });
+  const [skills, setSkills] = useState<readonly string[]>(session.mockProfile?.skills ?? []);
+
+  const persistedProfile = useMemo(
+    () => ({
+      fullName: personalInfo.fullName,
+      email,
+      password: personalInfo.password,
+      phoneNumber: personalInfo.phoneNumber,
+      college: educationInfo.college,
+      course: educationInfo.course,
+      specialization: educationInfo.specialization,
+      startYear: educationInfo.startYear,
+      endYear: educationInfo.endYear,
+      gender: educationInfo.gender,
+      rollNumber: educationInfo.rollNumber,
+      skills,
+    }),
+    [educationInfo, email, personalInfo, skills],
+  );
+
+  const completeGoogleAuth = () => {
+    const googleProfile = {
+      fullName: 'Google User',
+      email: 'google.user@oppskills.app',
+      password: 'google-auth',
+      phoneNumber: '9999999999',
+      college: 'Google University',
+      course: 'B.Tech',
+      specialization: 'Computer Science',
+      startYear: '2022',
+      endYear: '2026',
+      gender: 'Prefer not to say',
+      rollNumber: 'GOOGLE-001',
+      skills: ['Organizers', 'Frontend'],
+    } as const;
+
+    session.setPreferredEmail(googleProfile.email);
+    session.saveMockProfile(googleProfile);
+    session.signIn();
+  };
 
   return (
     <AuthStack.Navigator
@@ -106,7 +169,13 @@ function AuthNavigator() {
       <AuthStack.Screen name={appRoutes.signUp}>
         {({ navigation }) => (
           <SignUpScreen
-            onContinue={() => navigation.navigate(appRoutes.verifyIdentityOtpEmpty)}
+            initialEmail={email}
+            onContinue={(capturedEmail) => {
+              setEmail(capturedEmail);
+              session.setPreferredEmail(capturedEmail);
+              navigation.navigate(appRoutes.verifyIdentityOtpEmpty);
+            }}
+            onGoogleContinue={completeGoogleAuth}
             onSignIn={() => navigation.navigate(appRoutes.signIn)}
           />
         )}
@@ -114,33 +183,59 @@ function AuthNavigator() {
       <AuthStack.Screen name={appRoutes.verifyIdentityOtpEmpty}>
         {({ navigation }) => (
           <VerifyIdentityScreen
-            onContinue={() => navigation.navigate(appRoutes.verifyIdentityOtpFilled)}
+            email={email}
+            initialOtp={otpCode}
+            onContinue={(capturedOtpCode) => {
+              setOtpCode(capturedOtpCode);
+              navigation.navigate(appRoutes.verifyIdentityOtpFilled);
+            }}
           />
         )}
       </AuthStack.Screen>
       <AuthStack.Screen name={appRoutes.verifyIdentityOtpFilled}>
         {({ navigation }) => (
-          <VerifyIdentityScreen filled onContinue={() => navigation.navigate(appRoutes.profileSetupPersonal)} />
+          <VerifyIdentityScreen
+            email={email}
+            filled
+            initialOtp={otpCode}
+            onContinue={(capturedOtpCode) => {
+              setOtpCode(capturedOtpCode);
+              navigation.navigate(appRoutes.profileSetupPersonal);
+            }}
+          />
         )}
       </AuthStack.Screen>
       <AuthStack.Screen name={appRoutes.profileSetupPersonal}>
         {({ navigation }) => (
           <ProfileSetupPersonalScreen
-            onContinue={() => navigation.navigate(appRoutes.profileSetupEducation)}
+            initialValues={personalInfo}
+            onContinue={(capturedPersonalInfo) => {
+              setPersonalInfo(capturedPersonalInfo);
+              navigation.navigate(appRoutes.profileSetupEducation);
+            }}
           />
         )}
       </AuthStack.Screen>
       <AuthStack.Screen name={appRoutes.profileSetupEducation}>
         {({ navigation }) => (
           <ProfileSetupEducationScreen
-            onContinue={() => navigation.navigate(appRoutes.profileSetupSkills)}
+            initialValues={educationInfo}
+            onContinue={(capturedEducationInfo) => {
+              setEducationInfo(capturedEducationInfo);
+              navigation.navigate(appRoutes.profileSetupSkills);
+            }}
           />
         )}
       </AuthStack.Screen>
       <AuthStack.Screen name={appRoutes.profileSetupSkills}>
         {({ navigation }) => (
           <ProfileSetupSkillsScreen
-            onContinue={() => navigation.navigate(appRoutes.signIn)}
+            initialSkills={skills}
+            onContinue={(selectedSkills) => {
+              setSkills(selectedSkills);
+              session.saveMockProfile({ ...persistedProfile, skills: selectedSkills });
+              navigation.navigate(appRoutes.signIn);
+            }}
             onSkip={() => navigation.navigate(appRoutes.signIn)}
           />
         )}
@@ -148,7 +243,16 @@ function AuthNavigator() {
       <AuthStack.Screen name={appRoutes.signIn}>
         {({ navigation }) => (
           <SignInScreen
-            onContinue={session.signIn}
+            expectedPassword={session.mockProfile?.password}
+            initialEmail={email || session.preferredEmail || session.mockProfile?.email || ''}
+            onContinue={({ email: signInEmail }) => {
+              session.setPreferredEmail(signInEmail);
+              if (!session.mockProfile) {
+                session.saveMockProfile(persistedProfile);
+              }
+              session.signIn();
+            }}
+            onGoogleContinue={completeGoogleAuth}
             onSignUp={() => navigation.navigate(appRoutes.signUp)}
           />
         )}
@@ -162,7 +266,7 @@ function HomeStackNavigator() {
 
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
-      <HomeStack.Screen name={appRoutes.homeTab}>
+      <HomeStack.Screen name={appRoutes.homeStack}>
         {({ navigation }) => (
           <HomePageScreen
             onOpenCompetition={() => navigation.navigate(appRoutes.competitionPage)}
@@ -173,12 +277,12 @@ function HomeStackNavigator() {
       </HomeStack.Screen>
       <HomeStack.Screen name={appRoutes.competitionPage}>
         {({ navigation }) => (
-          <CompetitionPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.homeTab)} />
+          <CompetitionPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.homeStack)} />
         )}
       </HomeStack.Screen>
       <HomeStack.Screen name={appRoutes.hackathonPage}>
         {({ navigation }) => (
-          <HackathonPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.homeTab)} />
+          <HackathonPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.homeStack)} />
         )}
       </HomeStack.Screen>
     </HomeStack.Navigator>
@@ -186,16 +290,27 @@ function HomeStackNavigator() {
 }
 
 function DiscoverStackNavigator() {
+  const searchCatalog = useMemo(() => searchRepository.getCatalog(), []);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFlowState, setSearchFlowState] = useState<SearchFlowState>('idle');
+  const [recentQueries, setRecentQueries] = useState<string[]>(() => searchRepository.listRecentQueries());
+
+  const searchSuggestions = useMemo(() => searchRepository.getSuggestions(searchQuery), [searchQuery]);
+  const searchResults = useMemo(() => searchRepository.getResults(searchQuery), [searchQuery]);
+
   return (
     <DiscoverStack.Navigator screenOptions={{ headerShown: false }}>
-      <DiscoverStack.Screen name={appRoutes.discoverTab}>
+      <DiscoverStack.Screen name={appRoutes.discoverStack}>
         {({ navigation }) => (
           <DiscoverPageScreen
             onCompetitions={() => navigation.navigate(appRoutes.discoverCompetitions)}
             onEventsPrimary={() => navigation.navigate(appRoutes.discoverEventsPrimary)}
             onEventsSecondary={() => navigation.navigate(appRoutes.discoverEventsSecondary)}
             onHackathons={() => navigation.navigate(appRoutes.discoverHackathons)}
-            onSearchRecent={() => navigation.navigate(appRoutes.searchRecent)}
+            onSearchRecent={() => {
+              setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_RECENT' }));
+              navigation.navigate(appRoutes.searchRecent);
+            }}
           />
         )}
       </DiscoverStack.Screen>
@@ -203,7 +318,10 @@ function DiscoverStackNavigator() {
         {({ navigation }) => (
           <DiscoverHackathonsScreen
             onOpenHackathonPage={() => navigation.navigate(appRoutes.hackathonPage)}
-            onSearchTyping={() => navigation.navigate(appRoutes.searchTyping)}
+            onSearchTyping={() => {
+              setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_TYPING' }));
+              navigation.navigate(appRoutes.searchTyping);
+            }}
           />
         )}
       </DiscoverStack.Screen>
@@ -211,7 +329,15 @@ function DiscoverStackNavigator() {
         {({ navigation }) => (
           <DiscoverCompetitionsScreen
             onOpenCompetitionPage={() => navigation.navigate(appRoutes.competitionPage)}
-            onSearchResults={() => navigation.navigate(appRoutes.searchResults)}
+            onSearchResults={() => {
+              const fallbackQuery = searchQuery.trim() || 'Hack';
+              setSearchQuery(fallbackQuery);
+              setRecentQueries(searchRepository.saveRecentQuery(fallbackQuery));
+              setSearchFlowState((current) =>
+                transitionSearchFlowState(current, { type: 'SUBMIT_QUERY', query: fallbackQuery }),
+              );
+              navigation.navigate(appRoutes.searchResults);
+            }}
           />
         )}
       </DiscoverStack.Screen>
@@ -219,7 +345,10 @@ function DiscoverStackNavigator() {
         {({ navigation }) => (
           <DiscoverEventsPrimaryScreen
             onOpenEventsSecondary={() => navigation.navigate(appRoutes.discoverEventsSecondary)}
-            onOpenSearchRecent={() => navigation.navigate(appRoutes.searchRecent)}
+            onOpenSearchRecent={() => {
+              setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_RECENT' }));
+              navigation.navigate(appRoutes.searchRecent);
+            }}
           />
         )}
       </DiscoverStack.Screen>
@@ -227,50 +356,166 @@ function DiscoverStackNavigator() {
         {({ navigation }) => (
           <DiscoverEventsSecondaryScreen
             onOpenEventsPrimary={() => navigation.navigate(appRoutes.discoverEventsPrimary)}
-            onOpenSearchPopular={() => navigation.navigate(appRoutes.searchPopular)}
+            onOpenSearchPopular={() => {
+              setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_POPULAR' }));
+              navigation.navigate(appRoutes.searchPopular);
+            }}
           />
         )}
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.searchRecent}>
         {({ navigation }) => (
           <SearchPageRecentScreen
-            onPopular={() => navigation.navigate(appRoutes.searchPopular)}
-            onTyping={() => navigation.navigate(appRoutes.searchTyping)}
+            flowState={searchFlowState}
+            query={searchQuery}
+            recentQueries={recentQueries}
+            onPopular={() => {
+              setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_POPULAR' }));
+              navigation.navigate(appRoutes.searchPopular);
+            }}
+            onQueryChange={(nextQuery) => {
+              setSearchQuery(nextQuery);
+              setSearchFlowState((current) =>
+                transitionSearchFlowState(current, { type: 'TYPE_QUERY', query: nextQuery }),
+              );
+
+              if (nextQuery.trim().length > 0) {
+                navigation.navigate(appRoutes.searchTyping);
+              }
+            }}
+            onSubmitQuery={(submittedQuery) => {
+              const normalizedQuery = submittedQuery.trim();
+
+              if (!normalizedQuery) {
+                return;
+              }
+
+              setSearchQuery(normalizedQuery);
+              setRecentQueries(searchRepository.saveRecentQuery(normalizedQuery));
+              setSearchFlowState((current) =>
+                transitionSearchFlowState(current, { type: 'SUBMIT_QUERY', query: normalizedQuery }),
+              );
+              navigation.navigate(appRoutes.searchResults);
+            }}
           />
         )}
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.searchPopular}>
         {({ navigation }) => (
           <SearchPagePopularScreen
-            onRecent={() => navigation.navigate(appRoutes.searchRecent)}
-            onTyping={() => navigation.navigate(appRoutes.searchTyping)}
+            flowState={searchFlowState}
+            popularQueries={searchCatalog.popularQueries}
+            query={searchQuery}
+            onRecent={() => {
+              setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_RECENT' }));
+              navigation.navigate(appRoutes.searchRecent);
+            }}
+            onQueryChange={(nextQuery) => {
+              setSearchQuery(nextQuery);
+              setSearchFlowState((current) =>
+                transitionSearchFlowState(current, { type: 'TYPE_QUERY', query: nextQuery }),
+              );
+
+              if (nextQuery.trim().length > 0) {
+                navigation.navigate(appRoutes.searchTyping);
+              }
+            }}
+            onSubmitQuery={(submittedQuery) => {
+              const normalizedQuery = submittedQuery.trim();
+
+              if (!normalizedQuery) {
+                return;
+              }
+
+              setSearchQuery(normalizedQuery);
+              setRecentQueries(searchRepository.saveRecentQuery(normalizedQuery));
+              setSearchFlowState((current) =>
+                transitionSearchFlowState(current, { type: 'SUBMIT_QUERY', query: normalizedQuery }),
+              );
+              navigation.navigate(appRoutes.searchResults);
+            }}
           />
         )}
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.searchTyping}>
         {({ navigation }) => (
           <SearchPageTypingScreen
-            onPopular={() => navigation.navigate(appRoutes.searchPopular)}
-            onResults={() => navigation.navigate(appRoutes.searchResults)}
+            flowState={searchFlowState}
+            query={searchQuery}
+            suggestions={searchSuggestions}
+            onPopular={() => {
+              setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_POPULAR' }));
+              navigation.navigate(appRoutes.searchPopular);
+            }}
+            onQueryChange={(nextQuery) => {
+              setSearchQuery(nextQuery);
+              setSearchFlowState((current) =>
+                transitionSearchFlowState(current, { type: 'TYPE_QUERY', query: nextQuery }),
+              );
+
+              if (nextQuery.trim().length === 0) {
+                navigation.navigate(appRoutes.searchRecent);
+              }
+            }}
+            onSubmitQuery={(submittedQuery) => {
+              const normalizedQuery = submittedQuery.trim();
+
+              if (!normalizedQuery) {
+                return;
+              }
+
+              setSearchQuery(normalizedQuery);
+              setRecentQueries(searchRepository.saveRecentQuery(normalizedQuery));
+              setSearchFlowState((current) =>
+                transitionSearchFlowState(current, { type: 'SUBMIT_QUERY', query: normalizedQuery }),
+              );
+              navigation.navigate(appRoutes.searchResults);
+            }}
           />
         )}
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.searchResults}>
         {({ navigation }) => (
           <SearchPageResultsScreen
+            flowState={searchFlowState}
+            query={searchQuery}
+            results={searchResults}
             onCompetition={() => navigation.navigate(appRoutes.competitionPage)}
             onHackathon={() => navigation.navigate(appRoutes.hackathonPage)}
+            onQueryChange={(nextQuery) => {
+              setSearchQuery(nextQuery);
+              setSearchFlowState((current) =>
+                transitionSearchFlowState(current, { type: 'TYPE_QUERY', query: nextQuery }),
+              );
+
+              if (nextQuery.trim().length > 0) {
+                navigation.navigate(appRoutes.searchTyping);
+              }
+            }}
+            onSubmitQuery={(submittedQuery) => {
+              const normalizedQuery = submittedQuery.trim();
+
+              if (!normalizedQuery) {
+                return;
+              }
+
+              setSearchQuery(normalizedQuery);
+              setRecentQueries(searchRepository.saveRecentQuery(normalizedQuery));
+              setSearchFlowState((current) =>
+                transitionSearchFlowState(current, { type: 'SUBMIT_QUERY', query: normalizedQuery }),
+              );
+            }}
           />
         )}
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.competitionPage}>
         {({ navigation }) => (
-          <CompetitionPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.discoverTab)} />
+          <CompetitionPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.discoverStack)} />
         )}
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.hackathonPage}>
         {({ navigation }) => (
-          <HackathonPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.discoverTab)} />
+          <HackathonPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.discoverStack)} />
         )}
       </DiscoverStack.Screen>
     </DiscoverStack.Navigator>
@@ -282,7 +527,7 @@ function AppliedStackNavigator() {
 
   return (
     <AppliedStack.Navigator screenOptions={{ headerShown: false }}>
-      <AppliedStack.Screen name={appRoutes.appliedTab}>
+      <AppliedStack.Screen name={appRoutes.appliedStack}>
         {({ navigation }) => (
           <AppliedScreen
             onOpenCompetition={() => navigation.navigate(appRoutes.competitionPage)}
@@ -293,12 +538,12 @@ function AppliedStackNavigator() {
       </AppliedStack.Screen>
       <AppliedStack.Screen name={appRoutes.competitionPage}>
         {({ navigation }) => (
-          <CompetitionPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.appliedTab)} />
+          <CompetitionPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)} />
         )}
       </AppliedStack.Screen>
       <AppliedStack.Screen name={appRoutes.hackathonPage}>
         {({ navigation }) => (
-          <HackathonPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.appliedTab)} />
+          <HackathonPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.appliedStack)} />
         )}
       </AppliedStack.Screen>
     </AppliedStack.Navigator>

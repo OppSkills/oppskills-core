@@ -1,4 +1,8 @@
-import { FlowScreenTemplate } from '../../../../shared/ui';
+import { useState } from 'react';
+
+import { useDiscoverFeed } from '../../../discover/presentation/hooks/useDiscoverFeed';
+import type { DiscoverCategoryId } from '../../../../shared/types/discover';
+import { DiscoverScaffold, DiscoverVariantList } from '../../../../shared/ui';
 
 interface DiscoverEventsPrimaryScreenProps {
   readonly onOpenEventsSecondary: () => void;
@@ -9,16 +13,38 @@ export function DiscoverEventsPrimaryScreen({
   onOpenEventsSecondary,
   onOpenSearchRecent,
 }: DiscoverEventsPrimaryScreenProps) {
+  const { data: discoverFeed } = useDiscoverFeed();
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
+
+  const toggleBookmark = (itemId: string) => {
+    setBookmarkedIds((current) =>
+      current.includes(itemId) ? current.filter((value) => value !== itemId) : [...current, itemId],
+    );
+  };
+
+  const handleCategorySelect = (categoryId: DiscoverCategoryId) => {
+    if (categoryId === 'events') {
+      return;
+    }
+
+    onOpenEventsSecondary();
+  };
+
   return (
-    <FlowScreenTemplate
-      actions={[
-        { label: 'Switch to events variant 2', onPress: onOpenEventsSecondary },
-        { label: 'Open search recent', onPress: onOpenSearchRecent, tone: 'outline' },
-      ]}
-      routeLabel="Discover / Events V1"
-      subtitle="First events layout variant in discover flow."
-      title="Discover Page Events"
-    />
+    <DiscoverScaffold
+      activeCategoryId="events"
+      categories={discoverFeed?.categories ?? []}
+      onSearchPress={onOpenSearchRecent}
+      onSelectCategory={handleCategorySelect}
+      title="Events"
+    >
+      <DiscoverVariantList
+        bookmarkedIds={bookmarkedIds}
+        items={discoverFeed?.eventCommunityListings ?? []}
+        onOpenItem={onOpenEventsSecondary}
+        onToggleBookmark={toggleBookmark}
+      />
+    </DiscoverScaffold>
   );
 }
 
@@ -31,15 +57,37 @@ export function DiscoverEventsSecondaryScreen({
   onOpenEventsPrimary,
   onOpenSearchPopular,
 }: DiscoverEventsSecondaryScreenProps) {
+  const { data: discoverFeed } = useDiscoverFeed();
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
+
+  const toggleBookmark = (itemId: string) => {
+    setBookmarkedIds((current) =>
+      current.includes(itemId) ? current.filter((value) => value !== itemId) : [...current, itemId],
+    );
+  };
+
+  const handleCategorySelect = (categoryId: DiscoverCategoryId) => {
+    if (categoryId === 'events') {
+      return;
+    }
+
+    onOpenEventsPrimary();
+  };
+
   return (
-    <FlowScreenTemplate
-      actions={[
-        { label: 'Switch to events variant 1', onPress: onOpenEventsPrimary },
-        { label: 'Open search popular', onPress: onOpenSearchPopular, tone: 'outline' },
-      ]}
-      routeLabel="Discover / Events V2"
-      subtitle="Second events layout variant in discover flow."
-      title="Discover Page Events (Alt)"
-    />
+    <DiscoverScaffold
+      activeCategoryId="events"
+      categories={discoverFeed?.categories ?? []}
+      onSearchPress={onOpenSearchPopular}
+      onSelectCategory={handleCategorySelect}
+      title="Events"
+    >
+      <DiscoverVariantList
+        bookmarkedIds={bookmarkedIds}
+        items={discoverFeed?.eventFeatureListings ?? []}
+        onOpenItem={onOpenEventsPrimary}
+        onToggleBookmark={toggleBookmark}
+      />
+    </DiscoverScaffold>
   );
 }

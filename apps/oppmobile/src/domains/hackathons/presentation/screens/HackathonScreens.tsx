@@ -1,4 +1,9 @@
-import { FlowScreenTemplate } from '../../../../shared/ui';
+import { useState } from 'react';
+
+import { useDiscoverFeed } from '../../../discover/presentation/hooks/useDiscoverFeed';
+import { useHackathonDetail } from '../hooks/useHackathonDetail';
+import type { DiscoverCategoryId } from '../../../../shared/types/discover';
+import { DiscoverScaffold, DiscoverVariantList, OpportunityDetailScreen } from '../../../../shared/ui';
 
 interface DiscoverHackathonsScreenProps {
   readonly onOpenHackathonPage: () => void;
@@ -9,16 +14,38 @@ export function DiscoverHackathonsScreen({
   onOpenHackathonPage,
   onSearchTyping,
 }: DiscoverHackathonsScreenProps) {
+  const { data: discoverFeed } = useDiscoverFeed();
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
+
+  const toggleBookmark = (itemId: string) => {
+    setBookmarkedIds((current) =>
+      current.includes(itemId) ? current.filter((value) => value !== itemId) : [...current, itemId],
+    );
+  };
+
+  const handleCategorySelect = (categoryId: DiscoverCategoryId) => {
+    if (categoryId === 'hackathons') {
+      return;
+    }
+
+    onSearchTyping();
+  };
+
   return (
-    <FlowScreenTemplate
-      actions={[
-        { label: 'Open hackathon detail page', onPress: onOpenHackathonPage },
-        { label: 'Go to search typing screen', onPress: onSearchTyping, tone: 'outline' },
-      ]}
-      routeLabel="Discover / Hackathons"
-      subtitle="Hackathon listing variant under discover with direct navigation to detail and search typing screens."
-      title="Discover Page Hackathons"
-    />
+    <DiscoverScaffold
+      activeCategoryId="hackathons"
+      categories={discoverFeed?.categories ?? []}
+      onSearchPress={onSearchTyping}
+      onSelectCategory={handleCategorySelect}
+      title="Hackathons"
+    >
+      <DiscoverVariantList
+        bookmarkedIds={bookmarkedIds}
+        items={discoverFeed?.hackathonListings ?? []}
+        onOpenItem={onOpenHackathonPage}
+        onToggleBookmark={toggleBookmark}
+      />
+    </DiscoverScaffold>
   );
 }
 
@@ -27,12 +54,11 @@ interface HackathonPageScreenProps {
 }
 
 export function HackathonPageScreen({ onBackToDiscover }: HackathonPageScreenProps) {
-  return (
-    <FlowScreenTemplate
-      actions={[{ label: 'Back to discover root', onPress: onBackToDiscover, tone: 'outline' }]}
-      routeLabel="Detail / Hackathon"
-      subtitle="Nested detail screen contract under tab stacks; ready for full content implementation in upcoming phases."
-      title="Hackathon Page"
-    />
-  );
+  const { data: detail } = useHackathonDetail();
+
+  if (!detail) {
+    return null;
+  }
+
+  return <OpportunityDetailScreen detail={detail} onBack={onBackToDiscover} />;
 }
