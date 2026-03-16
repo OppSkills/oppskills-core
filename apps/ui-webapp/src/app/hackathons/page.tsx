@@ -37,7 +37,7 @@ export default function CompetitionsPage() {
     registrationCount: h.registrationCount,
     eventType: h.hackathonType || "Hackathon",
     tags: [h.mode, h.status],
-    routePrefix: "competitions",
+    routePrefix: "hackathons",
   }));
 
   const handleSearch = (term: string) => {
@@ -51,7 +51,7 @@ export default function CompetitionsPage() {
       items={items}
       isLoading={isLoading}
       error={error}
-      routePrefix="competitions"
+      routePrefix="hackathons"
       onSearch={handleSearch}
       onLoadMore={fetchNextPage}
       hasMore={hasNextPage}
