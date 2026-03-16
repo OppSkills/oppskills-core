@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Wallet, ArrowDownLeft, ArrowUpRight } from 'lucide-react'
-import { ProfileStats } from '../_components/profile-stats'
+
 
 const TRANSACTIONS = [
     { desc: "Registration Fee - AI Hackathon", date: "Mar 10, 2024", amount: -499, status: "Success" },
@@ -51,7 +51,7 @@ export default function TransactionsPage() {
                     </table>
                 </div>
             </div>
-            <ProfileStats />
+
         </div>
     )
 }

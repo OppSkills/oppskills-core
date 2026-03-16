@@ -1,8 +1,6 @@
 "use client";
 
-import React from 'react'
 import { Trophy, Award, Star, Zap } from 'lucide-react'
-import { ProfileStats } from '../_components/profile-stats'
 
 const ACHIEVEMENTS = [
     { title: "First Hackathon", date: "Jan 12, 2024", icon: Award, color: "text-amber-500", bg: "bg-amber-100" },
@@ -28,7 +26,7 @@ export default function AchievementsPage() {
                         </div>
                     ))}
                 </div>
-                
+
                 <div className='mt-12'>
                     <h4 className='font-bold text-2xl mb-6 text-neutral-800'>Certificates</h4>
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
@@ -41,7 +39,7 @@ export default function AchievementsPage() {
                     </div>
                 </div>
             </div>
-            <ProfileStats />
+
         </div>
     )
 }

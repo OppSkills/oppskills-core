@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Calendar, Trophy, LogOutIcon, Wallet } from "lucide-react";
+import { User, Calendar, Trophy, LogOutIcon, Wallet, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useClerk } from "@clerk/nextjs";
@@ -33,10 +33,12 @@ const NAV_ITEMS = [
 
 export function ProfileNavContent({
   setActivePage,
-  onItemClick
+  onItemClick,
+  isCollapsed = false
 }: {
   setActivePage: (page: string) => void,
-  onItemClick?: () => void
+  onItemClick?: () => void,
+  isCollapsed?: boolean
 }) {
   const pathname = usePathname();
   const { signOut } = useClerk();
@@ -50,7 +52,7 @@ export function ProfileNavContent({
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      <p className="text-neutral-600 font-medium px-4">Menu</p>
+      {!isCollapsed && <p className="text-neutral-600 font-medium px-4 transition-all">Menu</p>}
       <nav className="space-y-3">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href;
@@ -62,14 +64,18 @@ export function ProfileNavContent({
               href={item.href}
               onClick={onItemClick}
               className={cn(
-                "flex rounded-lg w-full gap-4 text-neutral-700 hover:text-neutral-900 py-2 px-4 transition-colors",
+                "flex rounded-lg w-full gap-4 text-neutral-700 hover:text-neutral-900 py-2 transition-colors items-center",
+                isCollapsed ? "justify-center px-2" : "px-4",
                 isActive && "text-primary-600 bg-primary-100"
               )}
+              title={isCollapsed ? item.title : undefined}
             >
-              <Icon strokeWidth={1.5} />
-              <span className="text-xl font-medium tracking-tight">
-                {item.title}
-              </span>
+              <Icon strokeWidth={1.5} className="shrink-0" />
+              {!isCollapsed && (
+                <span className="text-xl font-medium tracking-tight whitespace-nowrap">
+                  {item.title}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -79,33 +85,60 @@ export function ProfileNavContent({
           signOut();
           onItemClick?.();
         }}
-        className="cursor-pointer flex mt-auto items-center rounded-lg w-full gap-4 text-destructive-foreground p-2 hover:bg-destructive-foreground/10 transition-colors px-4"
+        className={cn(
+          "cursor-pointer flex mt-auto items-center rounded-lg w-full gap-4 text-destructive-foreground py-2 hover:bg-destructive-foreground/10 transition-colors",
+          isCollapsed ? "justify-center px-2" : "px-4"
+        )}
+        title={isCollapsed ? "Logout" : undefined}
       >
-        <LogOutIcon />
-        <span className="text-xl font-medium tracking-tight">
-          Logout
-        </span>
+        <LogOutIcon className="shrink-0" />
+        {!isCollapsed && (
+          <span className="text-xl font-medium tracking-tight whitespace-nowrap">
+            Logout
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
 export function ProfileLeftSidebar({ setActivePage }: { setActivePage: (page: string) => void }) {
-  return (
-    <aside className="hidden lg:flex flex-col w-80 bg-neutral-100 border-r border-neutral-100 p-8 sticky top-0 overflow-y-auto rounded-3xl h-full">
-      <div className="mb-8 flex w-full justify-center">
-        <Link href="/">
-          <Image
-            src="/logo.svg"
-            alt="OppSkills"
-            width={200}
-            height={30}
-          />
-        </Link>
-      </div>
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-      <div className="space-y-10 h-full">
-        <ProfileNavContent setActivePage={setActivePage} />
+  return (
+    <aside className={cn(
+      "hidden lg:flex flex-col bg-neutral-100 border-r border-neutral-100 sticky top-4 rounded-3xl h-[calc(100vh-2rem)] transition-all duration-300",
+      isCollapsed ? "w-[100px]" : "w-80"
+    )}>
+      <button 
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="absolute -right-3.5 top-12 bg-white border border-neutral-200 rounded-full p-1.5 shadow-sm z-50 hover:bg-neutral-50 flex items-center justify-center transition-colors"
+      >
+        {isCollapsed ? <ChevronRight className="w-4 h-4 text-neutral-600" /> : <ChevronLeft className="w-4 h-4 text-neutral-600" />}
+      </button>
+
+      <div className={cn("flex flex-col h-full w-full overflow-y-auto overflow-x-hidden custom-scrollbar", isCollapsed ? "p-4 items-center" : "p-8")}>
+        <div className={cn("mb-8 flex w-full shrink-0", isCollapsed ? "justify-center" : "justify-start")}>
+          <Link href="/">
+            {isCollapsed ? (
+               <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm">
+                 O
+               </div>
+            ) : (
+              <Image
+                src="/logo.svg"
+                alt="OppSkills"
+                width={160}
+                height={30}
+                className="object-contain"
+              />
+            )}
+          </Link>
+        </div>
+
+        <div className="space-y-10 h-full w-full">
+          <ProfileNavContent setActivePage={setActivePage} isCollapsed={isCollapsed} />
+        </div>
       </div>
     </aside>
   );
