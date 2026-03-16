@@ -264,7 +264,10 @@ export function GenericListingPage({
                   key={item.id}
                   className={viewMode === "list" ? "w-full" : ""}
                 >
-                  <ListingCard item={item} layout={viewMode} />
+                  <ListingCard
+                    item={{ ...item, routePrefix }}
+                    layout={viewMode}
+                  />
                 </div>
               ))}
             </div>
