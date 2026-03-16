@@ -1,8 +1,17 @@
 "use client";
-import { Calendar, ChartLine, Trophy } from 'lucide-react';
+import { Award, Calendar, ChartLine, Trophy } from 'lucide-react';
 
+interface ProfileStatsProps {
+  data: {
+    events: number;
+    hackathon: number;
+    certificates: number;
+  };
+}
 
-export function ProfileStats() {
+export function ProfileStats({ data }: ProfileStatsProps) {
+  if (!data) return null;
+
   return (
     <div className='p-4 bg-neutral-100 rounded-3xl w-full lg:w-[300px] h-fit'>
       <div className='bg-linear-to-br from-primary-700 from-10% to-primary-900 to-90% p-6 text-neutral-100 flex flex-col gap-4 rounded-2xl w-full'>
@@ -12,18 +21,18 @@ export function ProfileStats() {
             [
               {
                 title: "Events",
-                value: 12,
+                value: data.events,
                 icon: Calendar
               },
               {
-                title: "Badges",
-                value: 8,
+                title: "Hackathon",
+                value: data.hackathon,
                 icon: Trophy
               },
               {
-                title: "Rank",
-                value: 8,
-                icon: ChartLine
+                title: "Certificates",
+                value: data.certificates,
+                icon: Award
               }
             ].map((e, i) =>
               <div key={i} className='flex w-full justify-between items-center'>

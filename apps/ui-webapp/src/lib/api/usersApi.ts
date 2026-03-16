@@ -77,3 +77,18 @@ export async function submitOnboarding(
     throw new Error("Failed to submit onboarding. Please try again.");
   }
 }
+
+/**
+ * Get full profile data including stats/achievements.
+ */
+export async function getFullProfile(token: string): Promise<any> {
+  try {
+    const res = await API.get("/profile", {
+      headers: buildAuthHeaders(token),
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching full profile:", error);
+    throw new Error("Failed to fetch full profile. Please try again.");
+  }
+}

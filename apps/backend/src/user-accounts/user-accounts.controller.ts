@@ -149,6 +149,40 @@ export class UserAccountsController {
   }
 
   /**
+   * Get comprehensive profile data including stats/achievements.
+   */
+  @Get('/profile')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({
+    summary: 'Get comprehensive profile data',
+    description:
+      'Returns the current user full profile including personal, education, skills, stats, and achievements.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Comprehensive User profile',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getFullProfile(
+    @Request()
+    req: {
+      user?: {
+        id?: string;
+      };
+    },
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+    return this.userAccountsService.getFullProfile(userId);
+  }
+
+  /**
    * Search users by email (for role assignment autocomplete).
    */
   @Get('/search')

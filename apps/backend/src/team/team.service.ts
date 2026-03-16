@@ -15,7 +15,7 @@ function generateInvitationCode(): string {
   return randomBytes(4).toString('hex').toUpperCase();
 }
 
-/**
+/*
  * Get max team size from participant type.
  */
 function getMaxSizeFromParticipantType(participantType: string): number {

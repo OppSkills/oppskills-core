@@ -25,7 +25,7 @@ export class UserAccountsService {
     private readonly clerkAuthConfigService: ClerkAuthConfigService,
     private readonly eventEmitter: EventEmitter2,
     private readonly collegesService: CollegesService,
-  ) {}
+  ) { }
 
   async create({
     id,
@@ -244,6 +244,80 @@ export class UserAccountsService {
       `User not found for id "${userId}"${email.length > 0 ? ` or email "${email}"` : ''}`,
       HttpStatus.NOT_FOUND,
     );
+  }
+
+  /**
+   * Get comprehensive user profile for the frontend.
+   * Derives achievements and stats dynamically.
+   */
+  async getFullProfile(userId: string) {
+    if (!userId || userId.trim().length === 0) {
+      throw new HttpException('Missing user id', HttpStatus.UNAUTHORIZED);
+    }
+
+    const user = await prisma.userEntity.findUnique({
+      where: { id: userId },
+      include: {
+        onboardingProfile: {
+          include: {
+            college: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        eventParticipations: {
+          select: { id: true },
+        },
+        hackathonRegistrationSubmissions: {
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    const profile = user.onboardingProfile;
+
+    // Build personal info
+    const personalInfo = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      imageUrl: user.imageUrl,
+      gender: profile?.gender || null,
+      userCategory: profile?.userCategory || null,
+    };
+
+    // Build education info
+    const educationInfo = {
+      collegeName: profile?.college?.name || null,
+      collegeCurrentYear: profile?.collegeCurrentYear || null,
+      collegePassoutYear: profile?.collegePassoutYear || null,
+      schoolName: profile?.schoolName || null,
+      schoolClass: profile?.schoolClass || null,
+    };
+
+    // Stats
+    const eventCount = user.eventParticipations.length;
+    const hackathonCount = user.hackathonRegistrationSubmissions.length;
+
+    const stats = {
+      events: eventCount,
+      hackathon: hackathonCount,
+      certificates: 0
+    };
+
+    return {
+      personalInfo,
+      educationInfo,
+      skills: profile?.skills || [],
+      interests: profile?.interests || [],
+      stats,
+    };
   }
 
   /**

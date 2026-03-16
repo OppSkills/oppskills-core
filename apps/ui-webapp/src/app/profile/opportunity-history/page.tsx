@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Calendar, CheckCircle2, Clock } from 'lucide-react'
-import { ProfileStats } from '../_components/profile-stats'
+
 import { Badge } from '@/components/ui/badge'
 
 const OPPORTUNITIES = [
@@ -40,7 +40,7 @@ export default function OpportunityHistoryPage() {
                     ))}
                 </div>
             </div>
-            <ProfileStats />
+
         </div>
     )
 }
