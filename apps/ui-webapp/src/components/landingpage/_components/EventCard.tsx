@@ -29,7 +29,7 @@ function formatMode(locationType: string | null): string {
 function formatEntryFee(event: EventListItem | PastOpportunityItem): string {
     if (event.isFree) return "Free";
     if (event.entryFeeAmount) {
-        return `${event.currency} ${event.entryFeeAmount.toLocaleString()}`;
+        return `${event.currency === "INR" ? "₹" : event.currency} ${event.entryFeeAmount.toLocaleString()}`;
     }
     return "Free";
 }
