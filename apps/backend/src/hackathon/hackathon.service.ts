@@ -461,6 +461,7 @@ export class HackathonService {
         entryFeeAmount: true,
         currency: true,
         chargeMode: true,
+        feeBearer: true,
         prizeTotalWorthAmount: true,
         prizeDescription: true,
         prizeCertificate: true,
@@ -935,6 +936,7 @@ export class HackathonService {
 
         isFree: dto.isFree ?? undefined,
         chargeMode: dto.chargeMode ?? undefined,
+        feeBearer: dto.feeBearer ?? undefined,
         entryFeeAmount: dto.entryFeeAmount,
         currency: dto.currency ?? undefined,
         prizeTotalWorthAmount: dto.prizeTotalWorthAmount,
@@ -1841,6 +1843,7 @@ export class HackathonService {
       isFree: boolean;
       entryFeeAmount: unknown;
       chargeMode: unknown;
+      feeBearer: unknown;
     },
     dto: UpdateHackathonDto & { chargeMode?: string },
   ): Promise<void> {
@@ -1849,7 +1852,8 @@ export class HackathonService {
       (dto.entryFeeAmount !== undefined &&
         String(dto.entryFeeAmount) !==
           String(currentHackathon.entryFeeAmount)) ||
-      ('chargeMode' in dto && dto.chargeMode !== currentHackathon.chargeMode);
+      ('chargeMode' in dto && dto.chargeMode !== currentHackathon.chargeMode) ||
+      ('feeBearer' in dto && dto.feeBearer !== currentHackathon.feeBearer);
 
     if (!isPricingFieldChanging) return;
 
@@ -1870,7 +1874,7 @@ export class HackathonService {
 
     if (team || payment || submission) {
       throw new BadRequestException(
-        'Cannot change pricing fields (isFree, entryFeeAmount, chargeMode) after registration has started.',
+        'Cannot change pricing fields (isFree, entryFeeAmount, chargeMode, feeBearer) after registration has started.',
       );
     }
   }

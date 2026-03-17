@@ -52,6 +52,7 @@ export interface JoinTeamListProps {
   entryFeeAmount?: number | null;
   currency?: string;
   chargeMode?: "PER_TEAM" | "PER_USER";
+  feeBearer?: "ORGANISER" | "PARTICIPANT";
 }
 
 declare global {
@@ -69,6 +70,7 @@ export function JoinTeamList({
   entryFeeAmount,
   currency = "INR",
   chargeMode = "PER_TEAM",
+  feeBearer = "ORGANISER",
 }: JoinTeamListProps) {
   const router = useRouter();
   const { getToken } = useAuth();
@@ -667,6 +669,22 @@ export function JoinTeamList({
       <div className="space-y-6">
         {!isFree && chargeMode === "PER_USER" && (
           <div className="p-4 border rounded-lg bg-zinc-50 dark:bg-zinc-900 space-y-3">
+            {feeBearer === "PARTICIPANT" && entryFeeAmount && entryFeeAmount > 0 && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 p-3 text-sm">
+                <div className="flex justify-between text-neutral-700 dark:text-neutral-300">
+                  <span>Entry Fee</span>
+                  <span>₹{entryFeeAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-neutral-500 mt-1">
+                  <span>Processing Fee</span>
+                  <span>₹{(Math.ceil(entryFeeAmount * 0.0236 * 100) / 100).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-semibold text-neutral-800 dark:text-neutral-200 mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">
+                  <span>Total</span>
+                  <span>₹{(entryFeeAmount + Math.ceil(entryFeeAmount * 0.0236 * 100) / 100).toFixed(2)}</span>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <Tag className="w-5 h-5 text-primary" />
               <h3 className="font-semibold">Discount Code (Optional)</h3>

@@ -97,6 +97,7 @@ export interface CompetitionDetails {
   isFree?: boolean;
   entryFeeAmount?: number | null;
   currency?: string;
+  feeBearer?: "ORGANISER" | "PARTICIPANT";
 
   contact?: {
     name: string;

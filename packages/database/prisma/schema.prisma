@@ -264,6 +264,15 @@ enum HackathonChargeMode {
   @@schema("oppskills")
 }
 
+/// Determines who bears the Razorpay processing fee (2% + 18% GST = 2.36%).
+enum FeeBearer {
+  ORGANISER
+  PARTICIPANT
+
+  @@map("FeeBearer")
+  @@schema("oppskills")
+}
+
 /// Status of organizer's Razorpay Route linked account.
 enum RazorpayRouteStatus {
   CREATED
@@ -457,6 +466,7 @@ model HackathonEntity {
   entryFeeAmount        Decimal?               @map("entry_fee_amount") @db.Decimal(12, 2)
   currency              String                 @default("INR")
   chargeMode            HackathonChargeMode    @default(PER_TEAM) @map("charge_mode")
+  feeBearer             FeeBearer              @default(ORGANISER) @map("fee_bearer")
   prizeTotalWorthAmount Decimal?               @map("prize_total_worth_amount") @db.Decimal(12, 2)
   prizeBreakdown        PrizeBreakdownEntity[]
   prizeDescription      Json?                  @map("prize_description")
@@ -607,10 +617,11 @@ model EventEntity {
   locationVirtualLink String?       @map("location_virtual_link")
 
   // Pricing (with payment integration)
-  isFree         Boolean  @default(true) @map("is_free")
-  entryFeeAmount Decimal? @map("entry_fee_amount") @db.Decimal(12, 2)
-  currency       String   @default("INR")
-  freeCollegeIds String[] @default([]) @map("free_college_ids")
+  isFree         Boolean   @default(true) @map("is_free")
+  entryFeeAmount Decimal?  @map("entry_fee_amount") @db.Decimal(12, 2)
+  currency       String    @default("INR")
+  freeCollegeIds String[]  @default([]) @map("free_college_ids")
+  feeBearer      FeeBearer @default(ORGANISER) @map("fee_bearer")
 
   // Capacity
   maxUsers          Int? @map("max_users")

@@ -761,6 +761,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
               isRegistered={isUserRegistered}
               isPaidButIncomplete={isPaidButIncomplete}
               registrationDeadline={event.registrationDeadline}
+              feeBearer={event.feeBearer ?? "ORGANISER"}
             />
 
             {/* Tabs & Content */}

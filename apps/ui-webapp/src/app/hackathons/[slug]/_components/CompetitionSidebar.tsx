@@ -172,37 +172,58 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       );
     }
 
+    const isPaid = competition.isFree === false && competition.entryFeeAmount;
+    const baseAmount = competition.entryFeeAmount ?? 0;
+    const processingFee = Math.ceil(baseAmount * 0.0236 * 100) / 100;
+    const totalAmount = competition.feeBearer === "PARTICIPANT"
+      ? baseAmount + processingFee
+      : baseAmount;
+    const currency = competition.currency || "INR";
+    const registerLabel = isPaid
+      ? `Register for ${currency} ${totalAmount.toFixed(2)}`
+      : "Register for free";
+
     // If not signed in, show sign-in button
     if (!isSignedIn) {
       return (
-        <SignInButton mode="modal">
-          <Button className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm">
-            {competition.isFree === false && competition.entryFeeAmount
-              ? `Register for ${competition.currency || "INR"} ${competition.entryFeeAmount}`
-              : "Register for free"}
-          </Button>
-        </SignInButton>
+        <div className="space-y-2">
+          <SignInButton mode="modal">
+            <Button className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm">
+              {registerLabel}
+            </Button>
+          </SignInButton>
+          {isPaid && competition.feeBearer === "PARTICIPANT" && (
+            <p className="text-xs text-center text-neutral-500">
+              ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)} Processing Fee
+            </p>
+          )}
+        </div>
       );
     }
 
     // Default: show register button
     return (
-      <Button
-        className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
-        onClick={handleRegisterClick}
-        disabled={isCheckingOnboarding}
-      >
-        {isCheckingOnboarding ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Loading...
-          </>
-        ) : competition.isFree === false && competition.entryFeeAmount ? (
-          `Register for ${competition.currency || "INR"} ${competition.entryFeeAmount}`
-        ) : (
-          "Register for free"
+      <div className="space-y-2">
+        <Button
+          className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
+          onClick={handleRegisterClick}
+          disabled={isCheckingOnboarding}
+        >
+          {isCheckingOnboarding ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Loading...
+            </>
+          ) : (
+            registerLabel
+          )}
+        </Button>
+        {isPaid && competition.feeBearer === "PARTICIPANT" && !isCheckingOnboarding && (
+          <p className="text-xs text-center text-neutral-500">
+            ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)} Processing Fee
+          </p>
         )}
-      </Button>
+      </div>
     );
   };
 
