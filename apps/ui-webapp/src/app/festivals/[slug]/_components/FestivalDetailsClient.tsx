@@ -68,7 +68,7 @@ export default function FestivalDetailsClient({
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
 
                     {/* LEFT COLUMN: Banner & Contact Details (Mobile Only) & Info Card */}
-                    <div className="lg:col-span-4 space-y-8">
+                    <div className="lg:col-span-4 lg:sticky lg:top-24 self-start space-y-8">
 
                         {/* Banner Image */}
                         {festival.posterImageUrl && (
