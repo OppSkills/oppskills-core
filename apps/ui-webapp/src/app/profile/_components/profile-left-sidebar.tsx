@@ -3,10 +3,15 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Calendar, Trophy, LogOutIcon, Wallet, ChevronLeft, ChevronRight } from "lucide-react";
+import { User, Calendar, Trophy, LogOutIcon, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useClerk } from "@clerk/nextjs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const NAV_ITEMS = [
   {
@@ -34,11 +39,13 @@ const NAV_ITEMS = [
 export function ProfileNavContent({
   setActivePage,
   onItemClick,
-  isCollapsed = false
+  isCollapsed = false,
+  setIsCollapsed
 }: {
   setActivePage: (page: string) => void,
   onItemClick?: () => void,
-  isCollapsed?: boolean
+  isCollapsed?: boolean,
+  setIsCollapsed?: (collapsed: boolean) => void
 }) {
   const pathname = usePathname();
   const { signOut } = useClerk();
@@ -58,7 +65,7 @@ export function ProfileNavContent({
           const isActive = pathname === item.href;
           const Icon = item.icon;
 
-          return (
+          const content = (
             <Link
               key={item.href}
               href={item.href}
@@ -68,55 +75,74 @@ export function ProfileNavContent({
                 isCollapsed ? "justify-center px-2" : "px-4",
                 isActive && "text-primary-600 bg-primary-100"
               )}
-              title={isCollapsed ? item.title : undefined}
             >
               <Icon strokeWidth={1.5} className="shrink-0" />
               {!isCollapsed && (
-                <span className="text-xl font-medium tracking-tight whitespace-nowrap">
+                <span className="text-base font-medium tracking-tight whitespace-nowrap">
                   {item.title}
                 </span>
               )}
             </Link>
           );
+
+          if (isCollapsed) {
+            return (
+              <Tooltip key={item.href}>
+                <TooltipTrigger asChild>{content}</TooltipTrigger>
+                <TooltipContent side="right" sideOffset={10}>
+                  {item.title}
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return content;
         })}
       </nav>
-      <div
-        onClick={() => {
-          signOut();
-          onItemClick?.();
-        }}
-        className={cn(
-          "cursor-pointer flex mt-auto items-center rounded-lg w-full gap-4 text-destructive-foreground py-2 hover:bg-destructive-foreground/10 transition-colors",
-          isCollapsed ? "justify-center px-2" : "px-4"
-        )}
-        title={isCollapsed ? "Logout" : undefined}
-      >
-        <LogOutIcon className="shrink-0" />
-        {!isCollapsed && (
-          <span className="text-xl font-medium tracking-tight whitespace-nowrap">
-            Logout
-          </span>
-        )}
-      </div>
+      {(() => {
+        const logoutContent = (
+          <div
+            onClick={() => {
+              signOut();
+              onItemClick?.();
+            }}
+            className={cn(
+              "cursor-pointer flex mt-auto items-center rounded-lg w-full gap-4 text-destructive-foreground py-2 hover:bg-destructive-foreground/10 transition-colors",
+              isCollapsed ? "justify-center px-2" : "px-4"
+            )}
+          >
+            <LogOutIcon className="shrink-0" />
+            {!isCollapsed && (
+              <span className="text-xl font-medium tracking-tight whitespace-nowrap">
+                Logout
+              </span>
+            )}
+          </div>
+        );
+
+        if (isCollapsed) {
+          return (
+            <Tooltip>
+              <TooltipTrigger asChild>{logoutContent}</TooltipTrigger>
+              <TooltipContent side="right" sideOffset={10}>
+                Logout
+              </TooltipContent>
+            </Tooltip>
+          );
+        }
+
+        return logoutContent;
+      })()}
     </div>
   );
 }
 
-export function ProfileLeftSidebar({ setActivePage }: { setActivePage: (page: string) => void }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
+export function ProfileLeftSidebar({ setActivePage, isCollapsed, setIsCollapsed }: { setActivePage: (page: string) => void, isCollapsed: boolean, setIsCollapsed: (collapsed: boolean) => void }) {
   return (
     <aside className={cn(
       "hidden lg:flex flex-col bg-neutral-100 border-r border-neutral-100 sticky top-4 rounded-3xl h-[calc(100vh-2rem)] transition-all duration-300",
       isCollapsed ? "w-[100px]" : "w-80"
     )}>
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3.5 top-12 bg-white border border-neutral-200 rounded-full p-1.5 shadow-sm z-50 hover:bg-neutral-50 flex items-center justify-center transition-colors"
-      >
-        {isCollapsed ? <ChevronRight className="w-4 h-4 text-neutral-600" /> : <ChevronLeft className="w-4 h-4 text-neutral-600" />}
-      </button>
-
       <div className={cn("flex flex-col h-full w-full overflow-y-auto overflow-x-hidden custom-scrollbar", isCollapsed ? "p-4 items-center" : "p-8")}>
         <div className={cn("mb-8 flex w-full shrink-0", isCollapsed ? "justify-center" : "justify-start")}>
           <Link href="/">

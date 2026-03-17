@@ -2,11 +2,12 @@
 
 import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pencil, ShieldCheck, ChevronDown, Check, Loader2 } from "lucide-react";
+import { Pencil, ShieldCheck, ChevronDown, Check, Loader2, Camera } from "lucide-react";
 import { ProfileInput } from "./profile-input";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { updateProfile } from "@/lib/api/usersApi";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,8 +43,11 @@ const CATEGORY_OPTIONS = [
 
 export function PersonalInfo({ data }: PersonalInfoProps) {
   const { getToken } = useAuth();
+  const { user, isLoaded: isUserLoaded } = useUser();
   const [isEditing, setIsEditing] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = React.useState({
     firstName: data?.firstName || "",
@@ -78,6 +82,38 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Basic validation
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB");
+      return;
+    }
+
+    setIsUploading(true);
+    const loadingToast = toast.loading("Updating profile picture...");
+
+    try {
+      if (!user) throw new Error("User not found");
+      await user.setProfileImage({ file });
+      toast.success("Profile picture updated successfully", { id: loadingToast });
+    } catch (error) {
+      console.error("Failed to update profile picture", error);
+      toast.error("Failed to update profile picture", { id: loadingToast });
+    } finally {
+      setIsUploading(false);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const getLabel = (options: { label: string; value: string }[], value: string) => {
     return options.find((opt) => opt.value === value)?.label || "Select";
   };
@@ -104,13 +140,41 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
 
       <div className="flex flex-col lg:flex-row gap-10 items-start">
         {/* Avatar Section */}
-        <div className="relative self-center lg:self-start shrink-0">
-          <Avatar className="h-40 w-40 shadow-sm rounded-full border-[6px] border-white">
-            <AvatarImage src={data.imageUrl || undefined} className="object-cover" />
+        <div className="relative self-center lg:self-start shrink-0 group">
+          <Avatar className="h-40 w-40 shadow-sm rounded-full border-[6px] border-white relative overflow-hidden">
+            <AvatarImage src={user?.imageUrl || data.imageUrl || undefined} className="object-cover" />
             <AvatarFallback className="text-4xl font-bold bg-primary-100 text-primary-600 uppercase">
               {initials}
             </AvatarFallback>
+
+            {/* Upload Overlay */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading || !isUserLoaded}
+              className={cn(
+                "absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white transition-opacity duration-300",
+                isUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              )}
+            >
+              {isUploading ? (
+                <Loader2 className="w-8 h-8 animate-spin" />
+              ) : (
+                <>
+                  <Camera className="w-8 h-8 mb-1" />
+                  <span className="text-[10px] font-semibold uppercase tracking-wider">Change Photo</span>
+                </>
+              )}
+            </button>
           </Avatar>
+
+          {/* Hidden Input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageUpload}
+            accept="image/*"
+            className="hidden"
+          />
         </div>
 
         {/* Form Section */}

@@ -52,7 +52,7 @@ export function RegistrationTabs({
       </div>
 
       {/* Search */}
-      <div className="relative w-full md:w-[320px]">
+      <div className="relative w-full md:w-60">
         <input
           type="text"
           placeholder="Search"
