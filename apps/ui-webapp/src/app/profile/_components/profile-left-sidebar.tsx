@@ -110,7 +110,7 @@ export function ProfileLeftSidebar({ setActivePage }: { setActivePage: (page: st
       "hidden lg:flex flex-col bg-neutral-100 border-r border-neutral-100 sticky top-4 rounded-3xl h-[calc(100vh-2rem)] transition-all duration-300",
       isCollapsed ? "w-[100px]" : "w-80"
     )}>
-      <button 
+      <button
         onClick={() => setIsCollapsed(!isCollapsed)}
         className="absolute -right-3.5 top-12 bg-white border border-neutral-200 rounded-full p-1.5 shadow-sm z-50 hover:bg-neutral-50 flex items-center justify-center transition-colors"
       >
@@ -121,9 +121,13 @@ export function ProfileLeftSidebar({ setActivePage }: { setActivePage: (page: st
         <div className={cn("mb-8 flex w-full shrink-0", isCollapsed ? "justify-center" : "justify-start")}>
           <Link href="/">
             {isCollapsed ? (
-               <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm">
-                 O
-               </div>
+              <Image
+                src="/logof.png"
+                alt="OppSkills"
+                width={30}
+                height={30}
+                className="object-contain"
+              />
             ) : (
               <Image
                 src="/logo.svg"

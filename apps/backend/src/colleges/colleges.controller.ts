@@ -36,14 +36,12 @@ import type {
 export class CollegesController {
   private readonly logger: Logger = new Logger(CollegesController.name);
 
-  constructor(private readonly collegesService: CollegesService) {}
+  constructor(private readonly collegesService: CollegesService) { }
 
   /**
    * Search colleges by name for combobox autocomplete.
    */
   @Get('/search')
-  @UseGuards(ClerkAuthGuard)
-  @ApiBearerAuth('clerk-auth')
   @ApiOperation({
     summary: 'Search colleges by name',
     description:

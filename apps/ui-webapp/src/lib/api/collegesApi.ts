@@ -18,7 +18,6 @@ export async function searchColleges(
 
   try {
     const res = await API.get("/search", {
-      headers: buildAuthHeaders(token),
       params: { q: safeQuery },
     });
 

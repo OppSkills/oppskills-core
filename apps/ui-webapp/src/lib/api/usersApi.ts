@@ -137,5 +137,50 @@ export async function updateInterests(
   }
 }
 
-
+/**
+ * Update comprehensive user profile.
+ */
+export async function updateProfile(
+  token: string,
+  data: {
+    firstName?: string;
+    lastName?: string;
+    gender?: string;
+    userCategory?: string;
+  }
+): Promise<{ success: boolean }> {
+  try {
+    const res = await API.patch("/profile", data, {
+      headers: buildAuthHeaders(token),
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    throw new Error("Failed to update profile. Please try again.");
+  }
+}/**
+ * Update user education info.
+ */
+export async function updateEducation(
+  token: string,
+  data: {
+    collegeId?: string;
+    course?: string;
+    courseSpecialization?: string;
+    startYear?: string;
+    endYear?: number;
+    rollNumber?: string;
+    cgpa?: string;
+  }
+): Promise<{ success: boolean }> {
+  try {
+    const res = await API.patch("/education", data, {
+      headers: buildAuthHeaders(token),
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error updating education:", error);
+    throw new Error("Failed to update education. Please try again.");
+  }
+}
 

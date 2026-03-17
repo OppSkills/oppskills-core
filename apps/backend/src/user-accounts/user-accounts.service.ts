@@ -3,6 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Logger } from 'src/_utils/logger';
 import { ClerkAuthConfigService } from 'src/common/config.service';
 import { prisma, UserCategory } from '@oppskills/db';
+import { createClerkClient } from '@clerk/backend';
 import * as crypto from 'crypto';
 import {
   ClerkWebhookRequestDto,
@@ -294,9 +295,14 @@ export class UserAccountsService {
 
     // Build education info
     const educationInfo = {
+      collegeId: profile?.collegeId || null,
       collegeName: profile?.college?.name || null,
-      collegeCurrentYear: profile?.collegeCurrentYear || null,
-      collegePassoutYear: profile?.collegePassoutYear || null,
+      course: profile?.course || null,
+      courseSpecialization: profile?.courseSpecialization || null,
+      startYear: profile?.collegeCurrentYear || null,
+      endYear: profile?.collegePassoutYear || null,
+      rollNumber: profile?.rollNumber || null,
+      cgpa: profile?.cgpa || null,
       schoolName: profile?.schoolName || null,
       schoolClass: profile?.schoolClass || null,
     };
@@ -804,6 +810,163 @@ export class UserAccountsService {
     } catch (error) {
       throw new HttpException(
         error?.message,
+        error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updateProfile(
+    userId: string,
+    profile: {
+      firstName?: string;
+      lastName?: string;
+      gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+      userCategory?:
+      | 'SCHOOL_STUDENT'
+      | 'COLLEGE_STUDENT'
+      | 'WORKING_PROFESSIONAL'
+      | 'FRESHER'
+      | 'PROFESSIONAL_SCHOOL_STUDENT';
+    },
+  ) {
+    try {
+      const user = await prisma.userEntity.findUnique({
+        where: { id: userId },
+        include: {
+          onboardingProfile: true,
+        },
+      });
+
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      // 1. Update Clerk if name changed
+      if (profile.firstName !== undefined || profile.lastName !== undefined) {
+        const clerkClient = createClerkClient({
+          secretKey: this.clerkAuthConfigService.clerkSecretKey,
+        });
+
+        await clerkClient.users.updateUser(userId, {
+          firstName: profile.firstName ?? user.firstName ?? undefined,
+          lastName: profile.lastName ?? user.lastName ?? undefined,
+        });
+      }
+
+      // 2. Update local DB
+      return await prisma.userEntity.update({
+        where: { id: userId },
+        data: {
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          onboardingProfile: {
+            upsert: {
+              create: {
+                gender: profile.gender ?? 'MALE',
+                userCategory: profile.userCategory ?? UserCategory.COLLEGE_STUDENT,
+              },
+              update: {
+                gender: profile.gender,
+                userCategory: profile.userCategory,
+              },
+            },
+          },
+        },
+        include: {
+          onboardingProfile: true,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`Error updating profile for user ${userId}:`, error);
+      throw new HttpException(
+        error?.message || 'Failed to update profile',
+        error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updateEducation(
+    userId: string,
+    education: {
+      collegeId?: string | null;
+      collegeName?: string;
+      course?: string;
+      courseSpecialization?: string;
+      startYear?: string;
+      endYear?: number;
+      rollNumber?: string;
+      cgpa?: string;
+    },
+  ) {
+    try {
+      const user = await prisma.userEntity.findUnique({
+        where: { id: userId },
+        include: {
+          onboardingProfile: {
+            include: {
+              college: true,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      if (!user.onboardingProfile) {
+        throw new HttpException(
+          'User onboarding profile not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      let finalCollegeId = education.collegeId;
+
+      // Resolve college if passing name instead of ID (similar to onboarding)
+      if (
+        !finalCollegeId &&
+        education.collegeName &&
+        education.collegeName.trim().length > 0
+      ) {
+        const profile = user.onboardingProfile;
+        if (
+          profile.locationCity &&
+          profile.locationState &&
+          profile.locationCountry
+        ) {
+          try {
+            const college = await this.collegesService.findOrCreateCollege(
+              education.collegeName,
+              {
+                city: profile.locationCity,
+                state: profile.locationState,
+                country: profile.locationCountry,
+              },
+            );
+            finalCollegeId = college.id;
+          } catch (error) {
+            this.logger.warn(`Failed to resolve college in updateEducation`, error);
+          }
+        }
+      }
+
+      return await prisma.userOnboardingProfileEntity.update({
+        where: { id: user.onboardingProfile.id },
+        data: {
+          collegeId: finalCollegeId || null,
+          course: education.course,
+          courseSpecialization: education.courseSpecialization,
+          collegeCurrentYear: education.startYear,
+          collegePassoutYear: education.endYear,
+          cgpa: education.cgpa,
+          rollNumber: education.rollNumber,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`Error updating education for user ${userId}:`, error);
+      throw new HttpException(
+        error?.message || 'Failed to update education',
         error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

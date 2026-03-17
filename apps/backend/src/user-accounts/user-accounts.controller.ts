@@ -15,6 +15,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsInt,
+  Max,
+  Min,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import {
   ApiTags,
   ApiOperation,
   ApiResponse,
@@ -26,6 +35,72 @@ import { UserAccountsService } from './user-accounts.service';
 import { CreateOnboardingDto } from '@oppskills/types';
 import type { ClerkWebhookRequestDto } from '@oppskills/types';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
+
+class UpdateProfileDto {
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @IsOptional()
+  @IsEnum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'])
+  gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+
+  @IsOptional()
+  @IsEnum([
+    'SCHOOL_STUDENT',
+    'COLLEGE_STUDENT',
+    'WORKING_PROFESSIONAL',
+    'FRESHER',
+    'PROFESSIONAL_SCHOOL_STUDENT',
+  ])
+  userCategory?:
+    | 'SCHOOL_STUDENT'
+    | 'COLLEGE_STUDENT'
+    | 'WORKING_PROFESSIONAL'
+    | 'FRESHER'
+    | 'PROFESSIONAL_SCHOOL_STUDENT';
+}
+
+class UpdateEducationDto {
+  @IsOptional()
+  @IsString()
+  collegeId?: string | null;
+
+  @IsOptional()
+  @IsString()
+  collegeName?: string;
+
+  @IsOptional()
+  @IsString()
+  course?: string;
+
+  @IsOptional()
+  @IsString()
+  courseSpecialization?: string;
+
+  @IsOptional()
+  @IsString()
+  startYear?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1900)
+  @Max(2100)
+  @Type(() => Number)
+  endYear?: number;
+
+  @IsOptional()
+  @IsString()
+  rollNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  cgpa?: string;
+}
 
 @ApiTags('User Accounts')
 @Controller('user-accounts')
@@ -274,6 +349,36 @@ export class UserAccountsController {
       req.user.id,
       validatedInterests,
     );
+  }
+
+  /**
+   * Update comprehensive user profile.
+   */
+  @Patch('/profile')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({ summary: 'Update user profile' })
+  @ApiBody({ type: UpdateProfileDto })
+  async updateProfile(
+    @Request() req: { user: { id: string } },
+    @Body() profileData: UpdateProfileDto,
+  ) {
+    return this.userAccountsService.updateProfile(req.user.id, profileData);
+  }
+
+  /**
+   * Update education info.
+   */
+  @Patch('/education')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({ summary: 'Update user education' })
+  @ApiBody({ type: UpdateEducationDto })
+  async updateEducation(
+    @Request() req: { user: { id: string } },
+    @Body() educationData: UpdateEducationDto,
+  ) {
+    return this.userAccountsService.updateEducation(req.user.id, educationData);
   }
 
   /**
