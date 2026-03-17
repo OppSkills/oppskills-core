@@ -1250,6 +1250,12 @@ model UserOnboardingProfileEntity {
   collegePassoutYear Int?           @map("college_passout_year")
   collegeSkipped     Boolean        @default(false) @map("college_skipped")
 
+  // Additional education details
+  course               String?
+  courseSpecialization String? @map("course_specialization")
+  cgpa                 String?
+  rollNumber           String? @map("roll_number")
+
   // Working professional fields
   companyName String? @map("company_name")
   jobTitle    String? @map("job_title")

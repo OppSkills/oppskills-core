@@ -43,4 +43,4 @@ import { AdminModule } from './admin/admin.module';
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],
 })
-export class AppModule {}
+export class AppModule { }

@@ -3,6 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Logger } from 'src/_utils/logger';
 import { ClerkAuthConfigService } from 'src/common/config.service';
 import { prisma, UserCategory } from '@oppskills/db';
+import { createClerkClient } from '@clerk/backend';
 import * as crypto from 'crypto';
 import {
   ClerkWebhookRequestDto,
@@ -294,9 +295,14 @@ export class UserAccountsService {
 
     // Build education info
     const educationInfo = {
+      collegeId: profile?.collegeId || null,
       collegeName: profile?.college?.name || null,
-      collegeCurrentYear: profile?.collegeCurrentYear || null,
-      collegePassoutYear: profile?.collegePassoutYear || null,
+      course: profile?.course || null,
+      courseSpecialization: profile?.courseSpecialization || null,
+      startYear: profile?.collegeCurrentYear || null,
+      endYear: profile?.collegePassoutYear || null,
+      rollNumber: profile?.rollNumber || null,
+      cgpa: profile?.cgpa || null,
       schoolName: profile?.schoolName || null,
       schoolClass: profile?.schoolClass || null,
     };
@@ -807,5 +813,289 @@ export class UserAccountsService {
         error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async updateProfile(
+    userId: string,
+    profile: {
+      firstName?: string;
+      lastName?: string;
+      gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+      userCategory?:
+      | 'SCHOOL_STUDENT'
+      | 'COLLEGE_STUDENT'
+      | 'WORKING_PROFESSIONAL'
+      | 'FRESHER'
+      | 'PROFESSIONAL_SCHOOL_STUDENT';
+    },
+  ) {
+    try {
+      const user = await prisma.userEntity.findUnique({
+        where: { id: userId },
+        include: {
+          onboardingProfile: true,
+        },
+      });
+
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      // 1. Update Clerk if name changed
+      if (profile.firstName !== undefined || profile.lastName !== undefined) {
+        const clerkClient = createClerkClient({
+          secretKey: this.clerkAuthConfigService.clerkSecretKey,
+        });
+
+        await clerkClient.users.updateUser(userId, {
+          firstName: profile.firstName ?? user.firstName ?? undefined,
+          lastName: profile.lastName ?? user.lastName ?? undefined,
+        });
+      }
+
+      // 2. Update local DB
+      return await prisma.userEntity.update({
+        where: { id: userId },
+        data: {
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          onboardingProfile: {
+            upsert: {
+              create: {
+                gender: profile.gender ?? 'MALE',
+                userCategory: profile.userCategory ?? UserCategory.COLLEGE_STUDENT,
+              },
+              update: {
+                gender: profile.gender,
+                userCategory: profile.userCategory,
+              },
+            },
+          },
+        },
+        include: {
+          onboardingProfile: true,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`Error updating profile for user ${userId}:`, error);
+      throw new HttpException(
+        error?.message || 'Failed to update profile',
+        error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updateEducation(
+    userId: string,
+    education: {
+      collegeId?: string | null;
+      collegeName?: string;
+      course?: string;
+      courseSpecialization?: string;
+      startYear?: string;
+      endYear?: number;
+      rollNumber?: string;
+      cgpa?: string;
+    },
+  ) {
+    try {
+      const user = await prisma.userEntity.findUnique({
+        where: { id: userId },
+        include: {
+          onboardingProfile: {
+            include: {
+              college: true,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      if (!user.onboardingProfile) {
+        throw new HttpException(
+          'User onboarding profile not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      let finalCollegeId = education.collegeId;
+
+      // Resolve college if passing name instead of ID (similar to onboarding)
+      if (
+        !finalCollegeId &&
+        education.collegeName &&
+        education.collegeName.trim().length > 0
+      ) {
+        const profile = user.onboardingProfile;
+        if (
+          profile.locationCity &&
+          profile.locationState &&
+          profile.locationCountry
+        ) {
+          try {
+            const college = await this.collegesService.findOrCreateCollege(
+              education.collegeName,
+              {
+                city: profile.locationCity,
+                state: profile.locationState,
+                country: profile.locationCountry,
+              },
+            );
+            finalCollegeId = college.id;
+          } catch (error) {
+            this.logger.warn(`Failed to resolve college in updateEducation`, error);
+          }
+        }
+      }
+
+      return await prisma.userOnboardingProfileEntity.update({
+        where: { id: user.onboardingProfile.id },
+        data: {
+          collegeId: finalCollegeId || null,
+          course: education.course,
+          courseSpecialization: education.courseSpecialization,
+          collegeCurrentYear: education.startYear,
+          collegePassoutYear: education.endYear,
+          cgpa: education.cgpa,
+          rollNumber: education.rollNumber,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`Error updating education for user ${userId}:`, error);
+      throw new HttpException(
+        error?.message || 'Failed to update education',
+        error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getUserRegistrations(userId: string) {
+    try {
+      const [eventParticipations, hackathonParticipations] = await Promise.all([
+        this.getEventParticipations(userId),
+        this.getHackathonParticipations(userId),
+      ]);
+
+      const allRegistrations = [...eventParticipations, ...hackathonParticipations];
+
+      // Sort by registration date descending
+      return allRegistrations.sort((a, b) => {
+        const dateA = new Date(a.registeredOn).getTime();
+        const dateB = new Date(b.registeredOn).getTime();
+        return dateB - dateA;
+      });
+    } catch (error) {
+      this.logger.error(`Failed to fetch registrations for user ${userId}:`, error);
+      throw new HttpException(
+        'Failed to fetch registrations',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  private async getEventParticipations(userId: string) {
+    const participations = await prisma.eventParticipantEntity.findMany({
+      where: { userId },
+      include: {
+        event: true,
+        payment: true,
+      },
+    });
+
+    return participations.map((p) => {
+      const isPaid = p.event.isFree ? true : !!p.payment;
+
+      return {
+        id: p.id,
+        title: p.event.name,
+        type: 'Event',
+        opportunityType: 'event',
+        registeredOn: p.joinedAt.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        }),
+        registeredBy: 'You',
+        teamName: 'Individual',
+        deadline:
+          p.event.registrationDeadline?.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          }) || 'N/A',
+        bannerUrl:
+          p.event.bannerImageUrl ||
+          'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=800&auto=format&fit=crop',
+        isComplete: p.approved,
+        stages: [
+          { label: 'Registration', status: 'completed' },
+          { label: 'Team', status: 'completed' },
+          { label: 'Payment', status: isPaid ? 'completed' : 'current' },
+          { label: 'Entry Pass', status: p.approved ? 'completed' : 'pending' },
+        ],
+      };
+    });
+  }
+
+  private async getHackathonParticipations(userId: string) {
+    const teamMemberships = await prisma.teamMemberEntity.findMany({
+      where: { userId },
+      include: {
+        team: {
+          include: {
+            hackathon: true,
+            payments: true,
+          },
+        },
+      },
+    });
+
+    const submissions =
+      await prisma.hackathonRegistrationSubmissionEntity.findMany({
+        where: { userId },
+      });
+
+    return teamMemberships.map((tm) => {
+      const h = tm.team.hackathon;
+      const isPaid = h.isFree ? true : tm.team.payments.length > 0;
+      const hasSubmitted = submissions.some((s) => s.hackathonId === h.id);
+      const isLeader = tm.team.leaderId === userId;
+
+      return {
+        id: tm.id,
+        title: h.name,
+        type: 'Competition',
+        opportunityType: 'hackathon',
+        registeredOn: tm.joinedAt.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        }),
+        registeredBy: isLeader ? 'You' : 'Team Leader',
+        teamName: tm.team.name,
+        deadline:
+          h.registrationDeadline?.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          }) || 'N/A',
+        bannerUrl:
+          h.bannerImageUrl ||
+          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=800&auto=format&fit=crop',
+        isComplete: hasSubmitted && isPaid,
+        stages: [
+          { label: 'Registration', status: 'completed' },
+          { label: 'Team', status: 'completed' },
+          { label: 'Payment', status: isPaid ? 'completed' : 'current' },
+          {
+            label: 'Extended Form',
+            status: hasSubmitted ? 'completed' : isPaid ? 'current' : 'pending',
+          },
+        ],
+      };
+    });
   }
 }
