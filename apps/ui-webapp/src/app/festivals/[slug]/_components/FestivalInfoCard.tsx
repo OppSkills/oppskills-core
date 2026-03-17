@@ -3,26 +3,24 @@ import { format } from "date-fns";
 import { MapPin, Users, Sparkles, IconNode, LucideIcon, Link } from "lucide-react";
 
 interface FestivalInfoCardProps {
-    festival: {
-        startDate: string;
-        endDate: string;
-        locationAddress?: string | null;
-        locationCity: string | null;
-        locationVirtualLink: string | null;
-        websiteUrl: string | null;
-        organizationName: string | null;
-        organizationLogoUrl: string | null;
-        organizer?: {
-            firstName: string | null;
-            lastName: string | null;
-            email?: string | null;
-        };
-        totalImpressions?: number;
-        totalRegistrations?: number;
+    startDate: string;
+    endDate: string;
+    locationAddress?: string | null;
+    locationCity: string | null;
+    locationVirtualLink: string | null;
+    websiteUrl: string | null;
+    organizationName: string | null;
+    organizationLogoUrl: string | null;
+    organizer?: {
+        firstName: string | null;
+        lastName: string | null;
+        email?: string | null;
     };
+    totalImpressions?: number;
+    totalRegistrations?: number;
 }
 
-export function FestivalInfoCard({ festival }: FestivalInfoCardProps) {
+export function FestivalInfoCard({ festival, type }: { festival: FestivalInfoCardProps, type?: "sidebar" }) {
     const organizerName =
         festival.organizationName ||
         `${festival.organizer?.firstName || ''} ${festival.organizer?.lastName || ''}`.trim() ||
@@ -77,40 +75,27 @@ export function FestivalInfoCard({ festival }: FestivalInfoCardProps) {
             }
 
             {/* Contact Details Section */}
-            <div className="pt-4 space-y-4">
-                <h3 className="text-2xl font-semibold text-neutral-900">Contact Details</h3>
+            {type != "sidebar" &&
+                <div className="pt-4 space-y-4">
+                    <h3 className="text-2xl font-semibold text-neutral-900">Contact Details</h3>
 
-                {/* Contact Card 1 */}
-                <div className="bg-primary-100 rounded-3xl border-[0.5px] border-primary-500 p-4 flex items-center gap-4 shadow-sm">
-                    <div className="h-[60px] w-[60px] shrink-0 rounded-full bg-[#1F1D2B] flex items-center justify-center text-white text-xl font-bold">
-                        {organizerName.substring(0, 2).toUpperCase()}
+                    {/* Contact Card 1 */}
+                    <div className="bg-primary-100 rounded-3xl border-[0.5px] border-primary-500 p-4 flex items-center gap-4 shadow-sm">
+                        <div className="h-[60px] w-[60px] shrink-0 rounded-full bg-[#1F1D2B] flex items-center justify-center text-white text-xl font-bold">
+                            {organizerName.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                            <h4 className="font-bold text-lg text-neutral-900 truncate">
+                                {organizerName}
+                            </h4>
+                            {festival.organizer?.email && (
+                                <p className="text-neutral-700 text-xs truncate font-medium">
+                                    {festival.organizer.email}
+                                </p>
+                            )}
+                        </div>
                     </div>
-                    <div className="flex flex-col min-w-0">
-                        <h4 className="font-bold text-lg text-neutral-900 truncate">
-                            {organizerName}
-                        </h4>
-                        {festival.organizer?.email && (
-                            <p className="text-neutral-700 text-xs truncate font-medium">
-                                {festival.organizer.email}
-                            </p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Optional: Second Contact Card if more data is available, for now just follow the image's "format" */}
-                {/* 
-                <div className="bg-[#F5F3FF] rounded-[24px] border border-[#DDD6FE] p-6 flex items-center gap-4 shadow-sm">
-                    <div className="h-[60px] w-[60px] shrink-0 rounded-full bg-[#1F1D2B] flex items-center justify-center text-white text-xl font-bold">
-                        TM
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                        <h4 className="font-bold text-xl text-neutral-900 truncate">Owner Name</h4>
-                        <p className="text-neutral-500 text-sm mt-1 font-medium">+91 99999 99999</p>
-                        <p className="text-neutral-400 text-sm truncate font-medium">Emailoftheperson@gmail.com</p>
-                    </div>
-                </div>
-                */}
-            </div>
+                </div>}
         </div>
     );
 }

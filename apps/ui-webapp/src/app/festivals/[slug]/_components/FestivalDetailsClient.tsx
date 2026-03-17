@@ -68,7 +68,7 @@ export default function FestivalDetailsClient({
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
 
                     {/* LEFT COLUMN: Banner & Contact Details (Mobile Only) & Info Card */}
-                    <div className="lg:col-span-4 lg:sticky lg:top-24 self-start space-y-8">
+                    <div className="lg:col-span-4 space-y-8">
 
                         {/* Banner Image */}
                         {festival.posterImageUrl && (
@@ -88,17 +88,7 @@ export default function FestivalDetailsClient({
                 Events page has contact details on left.
             */}
                         <div className="hidden lg:block">
-                            <FestivalInfoCard festival={festival} />
-                        </div>
-
-                        {/* Contact Details Section for Desktop (scrolled to) */}
-                        <div id="contact-details-desktop" className="scroll-mt-24 hidden lg:block">
-                            {/* This section might be redundant if we have the info card, 
-                   but strictly following the event page pattern, it might be separate.
-                   For Festival, the info card essentially IS the contact details + more.
-                   Let's render it again or just point here. 
-                   Actually, let's keep it simple and just use the card as the target or put additional info here.
-               */}
+                            <FestivalInfoCard type="sidebar" festival={festival} />
                         </div>
 
                     </div>
@@ -109,11 +99,6 @@ export default function FestivalDetailsClient({
                             <h1 className="text-neutral-900 text-3xl font-semibold">
                                 {festival.name}
                             </h1>
-                        </div>
-
-                        {/* Mobile Info Card */}
-                        <div className="lg:hidden px-4 sm:px-0">
-                            <FestivalInfoCard festival={festival} />
                         </div>
 
                         {/* Tabs & Content */}
@@ -180,6 +165,47 @@ export default function FestivalDetailsClient({
                                         </div>
                                     )}
                                 </section>
+
+                                {/* Contact Details */}
+                                <section id="contact-details" className="scroll-mt-24 space-y-6">
+                                    <h2 className="text-2xl font-bold text-foreground poppins">
+                                        Contact Details
+                                    </h2>
+                                    <div className="lg:hidden">
+                                        <FestivalInfoCard festival={festival} />
+                                    </div>
+                                    <div className="hidden lg:block p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+                                        <p className="text-neutral-600 mb-6">
+                                            For any queries regarding the festival, please reach out to the organizers.
+                                        </p>
+                                        <div className="flex items-center gap-4">
+                                            {festival.organizationLogoUrl ? (
+                                                <Image
+                                                    src={festival.organizationLogoUrl}
+                                                    alt={festival.organizationName || "Organizer"}
+                                                    width={64}
+                                                    height={64}
+                                                    className="rounded-full w-16 h-16 object-cover border-2 border-white shadow-sm"
+                                                />
+                                            ) : (
+                                                <div className="h-16 w-16 rounded-full bg-neutral-900 flex items-center justify-center text-white text-xl font-bold border-2 border-white shadow-sm">
+                                                    {(festival.organizationName || festival.organizer?.firstName || "O").charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                            <div>
+                                                <p className="font-bold text-lg text-neutral-900">
+                                                    {festival.organizationName || `${festival.organizer?.firstName || ''} ${festival.organizer?.lastName || ''}`.trim() || "OppSkills Organizer"}
+                                                </p>
+                                                {festival.organizer?.email && (
+                                                    <p className="text-neutral-500 font-medium">
+                                                        {festival.organizer.email}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
                             </div>
                         </div>
                     </div>
