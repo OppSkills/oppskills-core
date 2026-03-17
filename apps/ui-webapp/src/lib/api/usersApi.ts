@@ -158,7 +158,9 @@ export async function updateProfile(
     console.error("Error updating profile:", error);
     throw new Error("Failed to update profile. Please try again.");
   }
-}/**
+}
+
+/**
  * Update user education info.
  */
 export async function updateEducation(
@@ -189,7 +191,7 @@ export async function updateEducation(
  */
 export async function getRegistrations(token: string): Promise<any[]> {
   try {
-    const res = await API.get("/user-accounts/registrations", {
+    const res = await API.get("/registrations", {
       headers: buildAuthHeaders(token),
     });
     return res.data;

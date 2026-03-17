@@ -259,6 +259,33 @@ export class UserAccountsController {
   }
 
   /**
+   * Get current user's registrations (events + hackathons).
+   */
+  @Get('/registrations')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({
+    summary: 'Get current user registrations',
+    description:
+      'Returns the authenticated user registrations across events and hackathons, sorted by registration date (desc).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User registrations retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getRegistrations(@Request() req: { user?: { id?: string } }) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+    return this.userAccountsService.getUserRegistrations(userId);
+  }
+
+  /**
    * Search users by email (for role assignment autocomplete).
    */
   @Get('/search')
