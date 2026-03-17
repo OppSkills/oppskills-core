@@ -30,7 +30,7 @@ export default function PastEvents() {
     const [paginationEl, setPaginationEl] = useState<HTMLDivElement | null>(null);
 
     // Helper to extract all events from infinite query pages
-    const allEvents = data?.pages.flatMap((page) => page) || [];
+    const allEvents = data?.pages.flatMap((page) => page.items) || [];
 
     if (isLoading) {
         return (

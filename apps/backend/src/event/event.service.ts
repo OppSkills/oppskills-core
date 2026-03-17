@@ -117,6 +117,7 @@ export class EventService {
       festivalId?: string;
       page?: number;
       appendResults?: boolean;
+      take?: number;
       search?: string;
       filterMode?: 'UPCOMING' | 'PAST';
     } = {},
@@ -172,10 +173,13 @@ export class EventService {
 
     // Pagination logic
     // Default 10 results. If appendResults=true, then 20 results.
+    // Callers can pass `take` directly to override the default (e.g. for merged pagination).
     const take =
-      String(input.appendResults) === 'true' || input.appendResults === true
-        ? 20
-        : 10;
+      input.take != null
+        ? input.take
+        : String(input.appendResults) === 'true' || input.appendResults === true
+          ? 20
+          : 10;
     const page = input.page ? Math.max(1, Number(input.page)) : 1;
     const skip = (page - 1) * take;
 

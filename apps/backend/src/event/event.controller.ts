@@ -203,18 +203,24 @@ export class EventController {
     @Query('appendResults') appendResults?: boolean,
     @Query('q') search?: string,
   ) {
+    const PAGE_SIZE = 12;
+    const pageNum = page ? Math.max(1, Number(page)) : 1;
+
+    // Fetch ALL past items from both sources in one shot (no per-source pagination).
+    // Each source may have up to 500 items; we sort the full merged set and paginate
+    // globally so items are never silently dropped due to cross-source sort order.
     const [events, hackathons] = await Promise.all([
       this.eventService.listPublicEvents({
         festivalId,
-        page,
-        appendResults: false, // Force 10 results per service
+        page: 1,
+        take: 500,
         search,
         filterMode: 'PAST',
       }),
       this.hackathonService.listPublicHackathons({
         festivalId,
-        page,
-        appendResults: false, // Force 10 results per service
+        page: 1,
+        take: 500,
         search,
         filterMode: 'PAST',
       }),
@@ -244,8 +250,12 @@ export class EventController {
       return dateB - dateA;
     });
 
-    // Limit to 10 results per page total
-    return merged.slice(0, 10);
+    // Paginate the globally-sorted merged result
+    const start = (pageNum - 1) * PAGE_SIZE;
+    const items = merged.slice(start, start + PAGE_SIZE);
+    const hasMore = start + PAGE_SIZE < merged.length;
+
+    return { items, hasMore, total: merged.length, page: pageNum };
   }
 
   /**

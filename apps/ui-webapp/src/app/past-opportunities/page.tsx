@@ -68,7 +68,7 @@ export default function PastEventsPage() {
     isFetchingNextPage,
   } = usePastEvents(undefined, searchTerm);
 
-  const items = (data?.pages.flat() ?? []).map(toListingItem);
+  const items = (data?.pages.flatMap((p) => p.items) ?? []).map(toListingItem);
 
   return (
     <GenericListingPage

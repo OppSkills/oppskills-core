@@ -128,14 +128,24 @@ export type PastOpportunityItem =
   | (PublicHackathonListItem & { type: "HACKATHON" });
 
 /**
- * Fetches past public events (now merged with hackathons).
+ * Shape returned by the backend's merged past-opportunities endpoint.
+ */
+export interface PastOpportunitiesPage {
+  items: PastOpportunityItem[];
+  hasMore: boolean;
+  total: number;
+  page: number;
+}
+
+/**
+ * Fetches past public events + hackathons (merged, globally sorted, paginated).
  */
 export function usePastEvents(
   festivalId?: string,
   search?: string,
   options?: { enabled?: boolean }
 ) {
-  return useInfiniteQuery<PastOpportunityItem[], Error>({
+  return useInfiniteQuery<PastOpportunitiesPage, Error>({
     queryKey: ["events", "past", festivalId, search] as const,
     queryFn: async ({ pageParam = 1 }) => {
       const data = await getPublicPastEvents({
@@ -143,12 +153,11 @@ export function usePastEvents(
         page: pageParam as number,
         q: search,
       });
-      return data as PastOpportunityItem[];
+      return data as PastOpportunitiesPage;
     },
     initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
-      if (!lastPage || lastPage.length === 0) return undefined;
-      return allPages.length + 1;
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasMore ? lastPage.page + 1 : undefined;
     },
     enabled: options?.enabled,
   });
