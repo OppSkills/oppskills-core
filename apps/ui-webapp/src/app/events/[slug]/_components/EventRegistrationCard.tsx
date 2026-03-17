@@ -268,8 +268,9 @@ export function EventRegistrationCard({
                         <div className="font-semibold text-neutral-800 text-xl">
                           ₹ {totalWithFee.toFixed(2)}
                         </div>
-                        <div className="text-sm text-neutral-500 mt-0.5">
-                          ₹ {basePrice.toFixed(2)} + ₹ {processingFee.toFixed(2)} Processing Fee
+                        <div className="text-sm text-neutral-500 mt-0.5 space-y-0.5">
+                          <span>₹ {basePrice.toFixed(2)} + ₹ {processingFee.toFixed(2)} Transaction Charges</span>
+                          <p className="text-xs text-neutral-400">Charged by payment partners to process your transaction.</p>
                         </div>
                       </div>
                     ) : (

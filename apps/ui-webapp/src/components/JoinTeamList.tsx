@@ -682,9 +682,12 @@ export function JoinTeamList({
                     <span>Entry Fee</span>
                     <span>₹{base.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-neutral-500 mt-1">
-                    <span>Processing Fee</span>
-                    <span>₹{fee.toFixed(2)}</span>
+                  <div className="flex justify-between items-start text-neutral-500 mt-1 gap-2">
+                    <div className="min-w-0">
+                      <span>Transaction Charges</span>
+                      <p className="text-xs text-neutral-400 mt-0.5">Charged by payment partners to process your transaction.</p>
+                    </div>
+                    <span className="shrink-0">₹{fee.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-semibold text-neutral-800 dark:text-neutral-200 mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">
                     <span>Total</span>

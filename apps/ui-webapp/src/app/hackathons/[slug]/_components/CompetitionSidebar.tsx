@@ -197,9 +197,14 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
             </Button>
           </SignInButton>
           {isPaid && competition.feeBearer === "PARTICIPANT" && (
-            <p className="text-xs text-center text-neutral-500">
-              ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)} Processing Fee
-            </p>
+            <div className="text-center space-y-0.5">
+              <p className="text-xs text-neutral-500">
+                ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)} Transaction Charges
+              </p>
+              <p className="text-[10px] text-neutral-400 px-2">
+                Charged by payment partners to process your transaction.
+              </p>
+            </div>
           )}
         </div>
       );
@@ -223,9 +228,14 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           )}
         </Button>
         {isPaid && competition.feeBearer === "PARTICIPANT" && !isCheckingOnboarding && (
-          <p className="text-xs text-center text-neutral-500">
-            ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)} Processing Fee
-          </p>
+          <div className="text-center space-y-0.5">
+            <p className="text-xs text-neutral-500">
+              ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)} Transaction Charges
+            </p>
+            <p className="text-[10px] text-neutral-400 px-2">
+              Charged by payment partners to process your transaction.
+            </p>
+          </div>
         )}
       </div>
     );
