@@ -12,6 +12,7 @@ import { EventsSectionSkeleton } from "./_components/EventsSectionSkeleton";
 import { EventsEmptyState } from "./_components/EventsEmptyState";
 import { EventCard } from "./_components/EventCard";
 import { SwiperControls } from "./_components/SwiperControls";
+import Link from "next/link";
 
 export default function PastEvents() {
     const {
@@ -60,14 +61,23 @@ export default function PastEvents() {
     return (
         <section className="w-full pt-12 md:pt-16 lg:pt-20">
             <div className="container mx-auto">
-                <div className="mb-8 space-y-2 flex flex-col gap-2">
-                    {/* 'Previous' badge removed to match UpcomingEvents style, or can be kept if desired */}
-                    <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
-                        Past Events & Hackathons
-                    </h2>
-                    <p className="text-muted-foreground text-lg inter">
-                        Explore our history of successful listings of events and hackathons.
-                    </p>
+                <div className="mb-8 flex flex-col gap-2">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-2">
+                            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
+                                Past Opportunities
+                            </h2>
+                            <p className="text-muted-foreground text-lg inter">
+                                Explore our history of successful listings of opportunities.
+                            </p>
+                        </div>
+                        <Link
+                            href="/past-opportunities"
+                            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors shrink-0 mt-2"
+                        >
+                            View all →
+                        </Link>
+                    </div>
                 </div>
 
                 <div className="relative pb-10">
@@ -103,7 +113,7 @@ export default function PastEvents() {
                     >
                         {allEvents.map((event) => {
                             return (
-                                <SwiperSlide key={event.id} className="!h-auto">
+                                <SwiperSlide key={event.id} className="h-auto!">
                                     <EventCard event={event} hideRegistrationInfo={true} organizationName={event.locationAddress} />
                                 </SwiperSlide>
                             );

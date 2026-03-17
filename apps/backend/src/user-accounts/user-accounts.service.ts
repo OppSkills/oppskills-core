@@ -1078,6 +1078,7 @@ export class UserAccountsService {
 
       return {
         id: p.id,
+        slug: p.event.slug,
         title: p.event.name,
         type: 'Event',
         opportunityType: 'event',
@@ -1134,6 +1135,7 @@ export class UserAccountsService {
 
       return {
         id: tm.id,
+        slug: h.slug,
         title: h.name,
         type: 'Competition',
         opportunityType: 'hackathon',

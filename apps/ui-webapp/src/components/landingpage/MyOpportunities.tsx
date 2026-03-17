@@ -16,6 +16,7 @@ import Link from "next/link";
 
 interface Registration {
   id: string;
+  slug: string;
   title: string;
   type: string;
   opportunityType: "event" | "hackathon";
@@ -141,7 +142,7 @@ export default function MyOpportunities() {
             </div>
             <Link
               href="/profile/registrations"
-              className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors shrink-0"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors shrink-0"
             >
               View all →
             </Link>
@@ -171,12 +172,8 @@ export default function MyOpportunities() {
             {registrations.map((reg) => {
               const isHackathon = reg.opportunityType === "hackathon";
               const href = isHackathon
-                ? `/hackathons/${reg.title
-                    .toLowerCase()
-                    .replace(/\s+/g, "-")}`
-                : `/events/${reg.title
-                    .toLowerCase()
-                    .replace(/\s+/g, "-")}`;
+                ? `/hackathons/${reg.slug}`
+                : `/events/${reg.slug}`;
 
               const topRightBadge = (
                 <div className="bg-background/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground shadow-sm flex items-center gap-1">
@@ -192,7 +189,7 @@ export default function MyOpportunities() {
               return (
                 <SwiperSlide key={reg.id} className="h-auto!">
                   <HackathonCard
-                    href="/profile/registrations"
+                    href={href}
                     imageSrc={reg.bannerUrl}
                     title={reg.title}
                     isFree={false}
