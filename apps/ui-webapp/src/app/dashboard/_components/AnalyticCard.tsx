@@ -31,7 +31,6 @@ export default function AnalyticCard({
       <div className="flex flex-col gap-2 md:gap-4 justify-between">
         <p
           className={cn(
-            " ext-lg",
             type === "highlight" ? "text-neutral-100" : "text-primary-900"
           )}
         >

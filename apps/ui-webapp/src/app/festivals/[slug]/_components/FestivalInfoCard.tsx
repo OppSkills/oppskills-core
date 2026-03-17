@@ -35,10 +35,10 @@ export function FestivalInfoCard({ festival }: FestivalInfoCardProps) {
             <Icon className="h-6 w-6" />
         </div>
         <div className="flex flex-col">
-            <span className="text-xl font-semibold text-neutral-800 leading-tight">
+            <span className="text-base font-semibold text-neutral-800 leading-tight">
                 {type === "link" ? <a href={value as string} target="_blank" rel="noopener noreferrer" className="text-primary-600 text-sm font-medium">{value}</a> : value}
             </span>
-            <span className="text-sm text-neutral-600">{label}</span>
+            <span className="text-xs text-neutral-600">{label}</span>
         </div>
     </div>
     return (
