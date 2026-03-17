@@ -29,6 +29,7 @@ interface HackathonData {
   entryFeeAmount: number | null;
   currency: string;
   chargeMode: "PER_TEAM" | "PER_USER";
+  feeBearer: "ORGANISER" | "PARTICIPANT";
   registrationForm: {
     id: string;
     externalFormLink: string | null;
@@ -434,6 +435,7 @@ export default function RegistrationPage() {
           entryFeeAmount={hackathon.entryFeeAmount}
           currency={hackathon.currency}
           chargeMode={hackathon.chargeMode}
+          feeBearer={hackathon.feeBearer}
         />
       ) : (
         <JoinTeamList
@@ -445,6 +447,7 @@ export default function RegistrationPage() {
           entryFeeAmount={hackathon.entryFeeAmount}
           currency={hackathon.currency}
           chargeMode={hackathon.chargeMode}
+          feeBearer={hackathon.feeBearer}
         />
       )}
     </div>

@@ -2,6 +2,7 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsEnum,
   IsIn,
   IsInt,
   IsNumber,
@@ -13,6 +14,7 @@ import {
 } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { FeeBearer } from "../../../enums/index";
 
 // =============================================================================
 // DISCOUNT CODE TYPES
@@ -56,7 +58,19 @@ export class UpdateEventPricingDto {
   @IsArray()
   @IsString({ each: true })
   freeCollegeIds?: string[];
+
+  @ApiPropertyOptional({
+    description:
+      "Who bears the Razorpay processing fee (2% + 18% GST = 2.36%). ORGANISER = deducted from payout (default). PARTICIPANT = added on top of entry fee at checkout.",
+    enum: FeeBearer,
+    example: FeeBearer.ORGANISER,
+  })
+  @IsOptional()
+  @IsEnum(FeeBearer)
+  feeBearer?: FeeBearer;
 }
+
+export { FeeBearer };
 
 // =============================================================================
 // CREATE PAYMENT ORDER DTO
@@ -252,6 +266,10 @@ export interface EventPaymentOrderResponse {
   discountAmount?: number;
   /** Whether user is from a free college */
   isCollegeFree?: boolean;
+  /** Processing fee added when feeBearer === PARTICIPANT (in INR) */
+  processingFeeAmount?: number;
+  /** Who bears the processing fee */
+  feeBearer?: FeeBearer;
 }
 
 /**

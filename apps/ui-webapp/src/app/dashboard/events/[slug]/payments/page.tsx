@@ -40,6 +40,7 @@ import { getEventBySlug } from "@/lib/api/eventApi";
 import { searchColleges, getCollegesByIds } from "@/lib/api/collegesApi";
 import { format } from "date-fns";
 
+type FeeBearer = "ORGANISER" | "PARTICIPANT";
 type AutoSaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
 interface SelectedCollege {
@@ -53,6 +54,7 @@ interface EventData {
   status: string;
   isFree: boolean;
   entryFeeAmount: number | null;
+  feeBearer: FeeBearer;
   freeCollegeIds?: string[];
   registrationCount: number;
   ownerId: string;
@@ -60,6 +62,7 @@ interface EventData {
 
 interface PricingState {
   isFree: boolean;
+  feeBearer: FeeBearer;
   entryFeeAmount: string;
   freeCollegeIds: string[];
 }
@@ -78,6 +81,7 @@ export default function Page() {
 
   const [isPayoutFormOpen, setIsPayoutFormOpen] = useState(false);
   const [isPaid, setIsPaid] = useState<boolean>(false);
+  const [feeBearer, setFeeBearer] = useState<FeeBearer>("ORGANISER");
   const [entryFeeAmount, setEntryFeeAmount] = useState<string>("");
   const [eventId, setEventId] = useState<string | null>(null);
   const [hasHydrated, setHasHydrated] = useState(false);
@@ -122,10 +126,11 @@ export default function Page() {
   const currentPricing = useMemo(
     (): PricingState => ({
       isFree: !isPaid,
+      feeBearer,
       entryFeeAmount,
       freeCollegeIds: selectedColleges.map((c) => c.id),
     }),
-    [isPaid, entryFeeAmount, selectedColleges],
+    [isPaid, feeBearer, entryFeeAmount, selectedColleges],
   );
 
   const latestPricingRef = useRef<PricingState>(currentPricing);
@@ -137,6 +142,7 @@ export default function Page() {
     if (eventData && !hasHydrated) {
       setEventId(eventData.id);
       setIsPaid(!eventData.isFree);
+      setFeeBearer((eventData.feeBearer as FeeBearer) || "ORGANISER");
       setEntryFeeAmount(eventData.entryFeeAmount?.toString() || "");
 
       // Hydrate freeCollegeIds - fetch actual college names
@@ -169,6 +175,7 @@ export default function Page() {
 
       const initialState: PricingState = {
         isFree: eventData.isFree,
+        feeBearer: (eventData.feeBearer as FeeBearer) || "ORGANISER",
         entryFeeAmount: eventData.entryFeeAmount?.toString() || "",
         freeCollegeIds: eventData.freeCollegeIds || [],
       };
@@ -262,6 +269,7 @@ export default function Page() {
     updatePricing.mutate(
       {
         isFree: pricing.isFree,
+        feeBearer: pricing.isFree ? undefined : pricing.feeBearer,
         entryFeeAmount: pricing.isFree
           ? undefined
           : parsedFee !== null && !isNaN(parsedFee)
@@ -516,6 +524,56 @@ export default function Page() {
             </div>
           )}
 
+          {/* FEE BEARER */}
+          <div className="flex flex-col items-start gap-4 p-6 self-stretch rounded-2xl border border-border bg-transparent">
+            <div className="flex flex-col items-start gap-3">
+              <h6 className="font-poppins text-foreground text-xl font-semibold leading-tight capitalize">
+                Who Pays the Processing Fee?
+              </h6>
+              <p className="font-sans text-muted-foreground text-base font-normal leading-normal">
+                The processing fee is 2% + 18% GST (= 2.36%). Choose who bears
+                it.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={() => canEditPricing && setFeeBearer("ORGANISER")}
+                disabled={!canEditPricing}
+                variant="ghost"
+                className={cn(
+                  "flex min-w-[180px] px-4 py-2 justify-center items-center gap-2.5 rounded-full h-auto font-sans text-base font-normal leading-relaxed transition-all duration-200",
+                  feeBearer === "ORGANISER"
+                    ? "bg-primary-500 text-primary-foreground hover:bg-primary/90"
+                    : "bg-input border border-dashed border-primary/30 text-foreground hover:bg-input/80",
+                )}
+              >
+                Organiser (default)
+              </Button>
+
+              <Button
+                onClick={() => canEditPricing && setFeeBearer("PARTICIPANT")}
+                disabled={!canEditPricing}
+                variant="ghost"
+                className={cn(
+                  "flex min-w-[180px] px-4 py-2 justify-center items-center gap-2.5 rounded-full h-auto font-sans text-base font-normal leading-relaxed transition-all duration-200",
+                  feeBearer === "PARTICIPANT"
+                    ? "bg-primary-500 text-primary-foreground hover:bg-primary/90"
+                    : "bg-input border border-dashed border-primary/30 text-foreground hover:bg-input/80",
+                )}
+              >
+                Participant
+              </Button>
+            </div>
+
+            {feeBearer === "PARTICIPANT" && (
+              <p className="text-sm text-blue-600 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 px-3 py-2 rounded-lg">
+                Participants will be charged the entry fee + 2.36% processing
+                fee at checkout.
+              </p>
+            )}
+          </div>
+
           {/* ENTRY FEE */}
           <div className="flex flex-col items-start gap-4 p-6 self-stretch rounded-2xl border border-border bg-transparent">
             <div className="flex flex-col items-start gap-3">
@@ -644,32 +702,58 @@ export default function Page() {
                 Fee Breakdown
               </h6>
               <p className="font-sans text-muted-foreground text-base font-normal leading-normal">
-                Deductions include platform fee (2%) and GST on platform fee
-                (18%)
+                {feeBearer === "PARTICIPANT"
+                  ? "Participant pays entry fee + processing fee. You receive the full entry fee."
+                  : "Deductions include platform fee (2%) and GST on platform fee (18%)"}
               </p>
             </div>
 
             <div className="flex items-start gap-[15px] w-full flex-wrap">
-              <CalculationCard
-                title="Fee Structure"
-                isSelected={true}
-                onClick={() => { }}
-                values={(() => {
-                  const entryFee = parseFloat(entryFeeAmount || "0");
-                  const platformFee = entryFee * 0.02;
-                  const gst = platformFee * 0.18;
-                  const totalDeduction = platformFee + gst;
-                  const youGet = entryFee - totalDeduction;
+              {feeBearer === "PARTICIPANT" ? (
+                <CalculationCard
+                  title="Participant View"
+                  isSelected={true}
+                  onClick={() => { }}
+                  values={(() => {
+                    const entryFee = parseFloat(entryFeeAmount || "0");
+                    const processingFee = Math.ceil(entryFee * 0.0236 * 100) / 100;
+                    const participantPays = entryFee + processingFee;
+                    const platformFee = participantPays * 0.02;
+                    const gst = platformFee * 0.18;
+                    const totalDeduction = platformFee + gst;
+                    const youGet = participantPays - totalDeduction;
 
-                  return {
-                    reg: `₹ ${entryFee.toFixed(2)}`,
-                    platformFee: `₹ ${platformFee.toFixed(2)} (2%)`,
-                    gst: `₹ ${gst.toFixed(2)} (18% of fee)`,
-                    totalDeduction: `₹ ${totalDeduction.toFixed(2)}`,
-                    youGet: `₹ ${youGet.toFixed(2)}`,
-                  };
-                })()}
-              />
+                    return {
+                      reg: `₹ ${entryFee.toFixed(2)}`,
+                      platformFee: `₹ ${processingFee.toFixed(2)} (Processing Fee)`,
+                      gst: `₹ ${participantPays.toFixed(2)} total`,
+                      totalDeduction: `₹ ${totalDeduction.toFixed(2)} (platform cut)`,
+                      youGet: `₹ ${youGet.toFixed(2)}`,
+                    };
+                  })()}
+                />
+              ) : (
+                <CalculationCard
+                  title="Fee Structure"
+                  isSelected={true}
+                  onClick={() => { }}
+                  values={(() => {
+                    const entryFee = parseFloat(entryFeeAmount || "0");
+                    const platformFee = entryFee * 0.02;
+                    const gst = platformFee * 0.18;
+                    const totalDeduction = platformFee + gst;
+                    const youGet = entryFee - totalDeduction;
+
+                    return {
+                      reg: `₹ ${entryFee.toFixed(2)}`,
+                      platformFee: `₹ ${platformFee.toFixed(2)} (2%)`,
+                      gst: `₹ ${gst.toFixed(2)} (18% of fee)`,
+                      totalDeduction: `₹ ${totalDeduction.toFixed(2)}`,
+                      youGet: `₹ ${youGet.toFixed(2)}`,
+                    };
+                  })()}
+                />
+              )}
             </div>
           </div>
 

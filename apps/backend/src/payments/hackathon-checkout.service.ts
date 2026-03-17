@@ -49,6 +49,7 @@ export class HackathonCheckoutService {
         entryFeeAmount: true,
         currency: true,
         chargeMode: true,
+        feeBearer: true,
         registrationDeadline: true,
         status: true,
         approvalStatus: true,
@@ -342,6 +343,16 @@ export class HackathonCheckoutService {
       }
     }
 
+    // When participant bears the fee, add the processing fee (2% + 18% GST = 2.36%) on top.
+    const baseAmountBeforeProcessingFee = grossAmount;
+    let processingFeeAmount = new Decimal(0);
+    if (hackathon.feeBearer === 'PARTICIPANT' && grossAmount.greaterThan(0)) {
+      processingFeeAmount = grossAmount
+        .times('0.0236')
+        .toDecimalPlaces(2, Decimal.ROUND_UP);
+      grossAmount = grossAmount.plus(processingFeeAmount);
+    }
+
     const platformFeeAmount = grossAmount
       .times(PLATFORM_FEE_PERCENT)
       .dividedBy(100)
@@ -545,6 +556,12 @@ export class HackathonCheckoutService {
       amountPaise: grossAmountPaise,
       currency: hackathon.currency || 'INR',
       hackathonName: hackathon.name,
+      baseAmount: Number(baseAmountBeforeProcessingFee),
+      processingFeeAmount:
+        processingFeeAmount.greaterThan(0)
+          ? Number(processingFeeAmount)
+          : undefined,
+      feeBearer: hackathon.feeBearer,
     };
   }
 

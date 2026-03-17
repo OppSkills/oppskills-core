@@ -159,6 +159,7 @@ export class EventPaymentController {
       isFree: dto.isFree,
       entryFeeAmount: dto.entryFeeAmount,
       freeCollegeIds: dto.freeCollegeIds,
+      feeBearer: dto.feeBearer as 'ORGANISER' | 'PARTICIPANT' | undefined,
     });
   }
 

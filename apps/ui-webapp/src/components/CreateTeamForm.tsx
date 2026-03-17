@@ -40,6 +40,7 @@ export interface CreateTeamFormProps {
   entryFeeAmount?: number | null;
   currency?: string;
   chargeMode?: "PER_TEAM" | "PER_USER";
+  feeBearer?: "ORGANISER" | "PARTICIPANT";
 }
 
 declare global {
@@ -59,6 +60,7 @@ export function CreateTeamForm({
   entryFeeAmount,
   currency = "INR",
   chargeMode = "PER_TEAM",
+  feeBearer = "ORGANISER",
 }: CreateTeamFormProps) {
   const router = useRouter();
   const { getToken } = useAuth();
@@ -589,15 +591,41 @@ export function CreateTeamForm({
         )}
 
         {!isFree && (
-          <div className="space-y-2">
-            <Label htmlFor="discountCode">Discount Code (Optional)</Label>
-            <Input
-              id="discountCode"
-              placeholder="Enter discount code"
-              value={discountCode}
-              onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-              disabled={isLoading}
-            />
+          <div className="space-y-3">
+            {(() => {
+              const raw = entryFeeAmount as number | string | null | undefined;
+              const base =
+                typeof raw === "number" ? raw : Number(raw ?? 0) || 0;
+              if (!(feeBearer === "PARTICIPANT" && base > 0)) return null;
+              const fee = Math.ceil(base * 0.0236 * 100) / 100;
+              const total = base + fee;
+              return (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 p-3 text-sm">
+                  <div className="flex justify-between text-neutral-700 dark:text-neutral-300">
+                    <span>Entry Fee</span>
+                    <span>₹{base.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-neutral-500 mt-1">
+                    <span>Processing Fee</span>
+                    <span>₹{fee.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold text-neutral-800 dark:text-neutral-200 mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">
+                    <span>Total</span>
+                    <span>₹{total.toFixed(2)}</span>
+                  </div>
+                </div>
+              );
+            })()}
+            <div className="space-y-2">
+              <Label htmlFor="discountCode">Discount Code (Optional)</Label>
+              <Input
+                id="discountCode"
+                placeholder="Enter discount code"
+                value={discountCode}
+                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                disabled={isLoading}
+              />
+            </div>
           </div>
         )}
 

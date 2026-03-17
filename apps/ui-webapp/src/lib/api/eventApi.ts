@@ -681,6 +681,7 @@ export interface EventPricingData {
   entryFeeAmount: string | null;
   currency: string;
   freeCollegeIds: string[];
+  feeBearer: "ORGANISER" | "PARTICIPANT";
 }
 
 /**
@@ -743,6 +744,7 @@ export async function updateEventPricing(
     isFree?: boolean;
     entryFeeAmount?: string;
     freeCollegeIds?: string[];
+    feeBearer?: "ORGANISER" | "PARTICIPANT";
   },
 ): Promise<EventPricingData> {
   const res = await API.patch(

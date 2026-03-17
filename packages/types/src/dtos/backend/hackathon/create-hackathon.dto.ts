@@ -950,6 +950,11 @@ export class UpdateHackathonDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(["ORGANISER", "PARTICIPANT"] as const)
+  feeBearer?: "ORGANISER" | "PARTICIPANT";
+
+  @IsOptional()
+  @IsString()
   @MaxLength(40)
   entryFeeAmount?: string;
 

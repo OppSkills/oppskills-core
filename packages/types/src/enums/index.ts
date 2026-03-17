@@ -4,6 +4,11 @@ export enum AccessLevel {
   VIEWER = 'VIEWER',
 }
 
+export enum FeeBearer {
+  ORGANISER = 'ORGANISER',
+  PARTICIPANT = 'PARTICIPANT',
+}
+
 export enum GenderValue {
   MALE = 'MALE',
   FEMALE = 'FEMALE',

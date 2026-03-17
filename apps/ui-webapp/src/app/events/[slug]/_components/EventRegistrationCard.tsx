@@ -28,7 +28,8 @@ interface EventRegistrationCardProps {
   isRegistering?: boolean;
   isRegistered?: boolean; // If true, shows "Registered" state
   isPaidButIncomplete?: boolean; // If true, shows "Complete Registration" state
-  registrationDeadline?: string | Date; // New prop
+  registrationDeadline?: string | Date;
+  feeBearer?: "ORGANISER" | "PARTICIPANT";
 }
 
 export function EventRegistrationCard({
@@ -41,6 +42,7 @@ export function EventRegistrationCard({
   isRegistered = false,
   isPaidButIncomplete = false,
   registrationDeadline,
+  feeBearer = "ORGANISER",
 }: EventRegistrationCardProps) {
   // Use controlled state if provided, otherwise fall back to internal state
   const [internalSelectedTicketId, setInternalSelectedTicketId] = useState<
@@ -229,6 +231,16 @@ export function EventRegistrationCard({
         <div className="space-y-4">
           {tickets.map((ticket) => {
             const isSelected = selectedTicketId === ticket.id;
+            const basePrice =
+              typeof ticket.price === "number"
+                ? ticket.price
+                : Number(ticket.price ?? 0) || 0;
+            const processingFee =
+              basePrice > 0
+                ? Math.ceil(basePrice * 0.0236 * 100) / 100
+                : 0;
+            const totalWithFee = basePrice + processingFee;
+
             return (
               <div
                 key={ticket.id}
@@ -247,9 +259,24 @@ export function EventRegistrationCard({
                     <h4 className="font-semibold text-neutral-700 text-xl">
                       {ticket.name}
                     </h4>
-                    <div className="mt-1 font-semibold text-neutral-800 text-xl">
-                      {ticket.price === 0 ? "Free" : `₹ ${ticket.price}`}
-                    </div>
+                    {basePrice === 0 ? (
+                      <div className="mt-1 font-semibold text-neutral-800 text-xl">
+                        Free
+                      </div>
+                    ) : feeBearer === "PARTICIPANT" ? (
+                      <div className="mt-1">
+                        <div className="font-semibold text-neutral-800 text-xl">
+                          ₹ {totalWithFee.toFixed(2)}
+                        </div>
+                        <div className="text-sm text-neutral-500 mt-0.5">
+                          ₹ {basePrice.toFixed(2)} + ₹ {processingFee.toFixed(2)} Processing Fee
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-1 font-semibold text-neutral-800 text-xl">
+                        ₹ {basePrice.toFixed(2)}
+                      </div>
+                    )}
                   </div>
                   <div className="mt-1">
                     {isSelected ? (

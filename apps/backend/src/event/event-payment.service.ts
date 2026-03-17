@@ -44,6 +44,7 @@ export class EventPaymentService {
         freeCollegeIds: true,
         entryFeeAmount: true,
         currency: true,
+        feeBearer: true,
         registrationDeadline: true,
         status: true,
         approvalStatus: true,
@@ -206,6 +207,16 @@ export class EventPaymentService {
       }
     }
 
+    // When participant bears the fee, add the processing fee (2% + 18% GST = 2.36%) on top.
+    const baseAmountBeforeProcessingFee = grossAmount;
+    let processingFeeAmount = new Decimal(0);
+    if (event.feeBearer === 'PARTICIPANT' && grossAmount.greaterThan(0)) {
+      processingFeeAmount = grossAmount
+        .times('0.0236')
+        .toDecimalPlaces(2, Decimal.ROUND_UP);
+      grossAmount = grossAmount.plus(processingFeeAmount);
+    }
+
     // Calculate fees
     const platformFeeAmount = grossAmount
       .times(PLATFORM_FEE_PERCENT)
@@ -350,10 +361,14 @@ export class EventPaymentService {
       eventName: event.name,
       eventSlug: event.slug,
       originalAmount: Number(event.entryFeeAmount),
-      finalAmount: Number(grossAmount),
+      finalAmount: Number(baseAmountBeforeProcessingFee),
       discountAmount: discountAmount.greaterThan(0)
         ? Number(discountAmount)
         : undefined,
+      processingFeeAmount: processingFeeAmount.greaterThan(0)
+        ? Number(processingFeeAmount)
+        : undefined,
+      feeBearer: event.feeBearer,
     };
   }
 
@@ -1426,6 +1441,7 @@ export class EventPaymentService {
       isFree?: boolean;
       entryFeeAmount?: string;
       freeCollegeIds?: string[];
+      feeBearer?: 'ORGANISER' | 'PARTICIPANT';
     },
   ) {
     const event = await prisma.eventEntity.findUnique({
@@ -1469,6 +1485,10 @@ export class EventPaymentService {
       updateData.freeCollegeIds = params.freeCollegeIds;
     }
 
+    if (params.feeBearer !== undefined) {
+      updateData.feeBearer = params.feeBearer;
+    }
+
     const updated = await prisma.eventEntity.update({
       where: { id: event.id },
       data: updateData,
@@ -1477,6 +1497,7 @@ export class EventPaymentService {
         entryFeeAmount: true,
         currency: true,
         freeCollegeIds: true,
+        feeBearer: true,
       },
     });
 
@@ -1485,6 +1506,7 @@ export class EventPaymentService {
       entryFeeAmount: updated.entryFeeAmount?.toString() ?? null,
       currency: updated.currency,
       freeCollegeIds: updated.freeCollegeIds,
+      feeBearer: updated.feeBearer,
     };
   }
 }

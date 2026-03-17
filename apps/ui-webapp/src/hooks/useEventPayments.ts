@@ -149,6 +149,7 @@ export function useUpdateEventPricing(slug: string) {
       isFree?: boolean;
       entryFeeAmount?: string;
       freeCollegeIds?: string[];
+      feeBearer?: "ORGANISER" | "PARTICIPANT";
     }): Promise<EventPricingData> => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
