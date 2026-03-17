@@ -57,7 +57,7 @@ function OpportunityFooter({ reg }: { reg: Registration }) {
             "inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full",
             reg.isComplete
               ? "bg-emerald-50 text-emerald-700"
-              : "bg-amber-50 text-amber-600"
+              : "bg-amber-50 text-amber-600",
           )}
         >
           {reg.isComplete ? (
@@ -133,19 +133,22 @@ export default function MyOpportunities() {
         <div className="mb-8 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
-                My Opportunities
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
+                  My Opportunities
+                </h2>
+                <Link
+                  href="/profile/registrations"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors shrink-0"
+                >
+                  View all →
+                </Link>
+              </div>
+
               <p className="text-muted-foreground text-lg inter">
                 Events and competitions you have registered for.
               </p>
             </div>
-            <Link
-              href="/profile/registrations"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors shrink-0"
-            >
-              View all →
-            </Link>
           </div>
         </div>
 
