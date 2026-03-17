@@ -106,24 +106,12 @@ export default function TransactionsPage() {
     { id: "date", desc: true },
   ]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    razorpayPaymentId: false,
+    razorpayPaymentId: true,
     date: true,
   });
 
-  // Handle responsiveness via visibility
-  useEffect(() => {
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 640;
-      const isTablet = window.innerWidth < 1024;
-      setColumnVisibility({
-        date: !isMobile,
-        razorpayPaymentId: !isTablet,
-      });
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  // Table is now scrollable horizontally on mobile, so we don't need to hide columns.
+
 
   useEffect(() => {
     const load = async () => {
@@ -186,9 +174,6 @@ export default function TransactionsPage() {
                       ? "Competition"
                       : "Event"}
                   </Badge>
-                  <span className="text-[10px] text-neutral-400 font-mono sm:hidden">
-                    {formatDate(tx.capturedAt ?? tx.createdAt)}
-                  </span>
                 </div>
               </div>
             </div>
@@ -400,7 +385,7 @@ export default function TransactionsPage() {
       )}
 
       {/* Table Section */}
-      <div className="w-full bg-white rounded-3xl border border-[#E0E0E6] overflow-hidden shadow-sm">
+      <div className="w-full bg-white rounded-3xl border border-[#E0E0E6] shadow-sm">
         {/* Toolbar */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 px-6 py-5 border-b border-neutral-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center gap-6 overflow-x-auto no-scrollbar pb-1 md:pb-0">
@@ -441,8 +426,8 @@ export default function TransactionsPage() {
         </div>
 
         {/* Table Content */}
-        <div className="relative">
-          <Table>
+        <div className="relative overflow-x-auto no-scrollbar">
+          <Table className="min-w-[700px]">
             <TableHeader className="bg-neutral-50/50">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow
