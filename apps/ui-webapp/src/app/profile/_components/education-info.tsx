@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Pencil, ChevronDown, Save, Loader2, Check, Search } from "lucide-react";
+import { Pencil, ChevronDown, Loader2, Check, Search } from "lucide-react";
 import { ProfileInput } from "./profile-input";
 import { useAuth } from "@clerk/nextjs";
 import { updateEducation } from "@/lib/api/usersApi";
