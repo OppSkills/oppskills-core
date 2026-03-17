@@ -1,6 +1,6 @@
 "use client";
 import { format } from "date-fns";
-import { MapPin, Users, Sparkles, IconNode, LucideIcon } from "lucide-react";
+import { MapPin, Users, Sparkles, IconNode, LucideIcon, Link } from "lucide-react";
 
 interface FestivalInfoCardProps {
     festival: {
@@ -30,13 +30,13 @@ export function FestivalInfoCard({ festival }: FestivalInfoCardProps) {
 
     const formattedLongDate = format(new Date(festival.startDate), "EEEE, d MMMM yyyy");
     const timeRange = `${format(new Date(festival.startDate), "H:mm")} - ${format(new Date(festival.endDate), "H:mm")} GMT+5:30`;
-    const StatsCompo = ({ Icon, value, label }: { Icon: LucideIcon, value: string | number, label: string }) => <div className="flex items-center gap-4">
+    const StatsCompo = ({ Icon, value, label, type }: { Icon: LucideIcon, value: string | number, label: string, type?: "link" }) => <div className="flex items-center gap-4">
         <div className="h-12 w-12 shrink-0 rounded-xl border border-neutral-200 shadow-sm flex items-center justify-center text-neutral-800">
             <Icon className="h-6 w-6" />
         </div>
         <div className="flex flex-col">
             <span className="text-xl font-semibold text-neutral-800 leading-tight">
-                {value}
+                {type === "link" ? <a href={value as string} target="_blank" rel="noopener noreferrer" className="text-primary-600 text-sm font-medium">{value}</a> : value}
             </span>
             <span className="text-sm text-neutral-600">{label}</span>
         </div>
@@ -69,16 +69,11 @@ export function FestivalInfoCard({ festival }: FestivalInfoCardProps) {
 
             {/* Location */}
             {festival.locationAddress &&
-                <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 shrink-0 rounded-xl bg-white border border-neutral-200 shadow-sm flex items-center justify-center text-neutral-600">
-                        <MapPin className="h-6 w-6" />
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-lg font-semibold text-neutral-900 leading-tight truncate max-w-[200px]">
-                            {festival.locationAddress || "College/University Name"}
-                        </span>
-                    </div>
-                </div>
+                <StatsCompo Icon={MapPin} value={festival.locationAddress} label="Location" />
+            }
+
+            {festival.websiteUrl &&
+                <StatsCompo type="link" Icon={Link} value={festival.websiteUrl} label="Website" />
             }
 
             {/* Contact Details Section */}
