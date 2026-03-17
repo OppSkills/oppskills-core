@@ -971,4 +971,131 @@ export class UserAccountsService {
       );
     }
   }
+
+  async getUserRegistrations(userId: string) {
+    try {
+      const [eventParticipations, hackathonParticipations] = await Promise.all([
+        this.getEventParticipations(userId),
+        this.getHackathonParticipations(userId),
+      ]);
+
+      const allRegistrations = [...eventParticipations, ...hackathonParticipations];
+
+      // Sort by registration date descending
+      return allRegistrations.sort((a, b) => {
+        const dateA = new Date(a.registeredOn).getTime();
+        const dateB = new Date(b.registeredOn).getTime();
+        return dateB - dateA;
+      });
+    } catch (error) {
+      this.logger.error(`Failed to fetch registrations for user ${userId}:`, error);
+      throw new HttpException(
+        'Failed to fetch registrations',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  private async getEventParticipations(userId: string) {
+    const participations = await prisma.eventParticipantEntity.findMany({
+      where: { userId },
+      include: {
+        event: true,
+        payment: true,
+      },
+    });
+
+    return participations.map((p) => {
+      const isPaid = p.event.isFree ? true : !!p.payment;
+
+      return {
+        id: p.id,
+        title: p.event.name,
+        type: 'Event',
+        opportunityType: 'event',
+        registeredOn: p.joinedAt.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        }),
+        registeredBy: 'You',
+        teamName: 'Individual',
+        deadline:
+          p.event.registrationDeadline?.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          }) || 'N/A',
+        bannerUrl:
+          p.event.bannerImageUrl ||
+          'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=800&auto=format&fit=crop',
+        isComplete: p.approved,
+        stages: [
+          { label: 'Registration', status: 'completed' },
+          { label: 'Team', status: 'completed' },
+          { label: 'Payment', status: isPaid ? 'completed' : 'current' },
+          { label: 'Entry Pass', status: p.approved ? 'completed' : 'pending' },
+        ],
+      };
+    });
+  }
+
+  private async getHackathonParticipations(userId: string) {
+    const teamMemberships = await prisma.teamMemberEntity.findMany({
+      where: { userId },
+      include: {
+        team: {
+          include: {
+            hackathon: true,
+            payments: true,
+          },
+        },
+      },
+    });
+
+    const submissions =
+      await prisma.hackathonRegistrationSubmissionEntity.findMany({
+        where: { userId },
+      });
+
+    return teamMemberships.map((tm) => {
+      const h = tm.team.hackathon;
+      const isPaid = h.isFree ? true : tm.team.payments.length > 0;
+      const hasSubmitted = submissions.some((s) => s.hackathonId === h.id);
+      const isLeader = tm.team.leaderId === userId;
+
+      return {
+        id: tm.id,
+        title: h.name,
+        type: 'Competition',
+        opportunityType: 'hackathon',
+        registeredOn: tm.joinedAt.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        }),
+        registeredBy: isLeader ? 'You' : 'Team Leader',
+        teamName: tm.team.name,
+        deadline:
+          h.registrationDeadline?.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          }) || 'N/A',
+        bannerUrl:
+          h.bannerImageUrl ||
+          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=800&auto=format&fit=crop',
+        isComplete: hasSubmitted && isPaid,
+        stages: [
+          { label: 'Registration', status: 'completed' },
+          { label: 'Team', status: 'completed' },
+          { label: 'Payment', status: isPaid ? 'completed' : 'current' },
+          {
+            label: 'Extended Form',
+            status: hasSubmitted ? 'completed' : isPaid ? 'current' : 'pending',
+          },
+        ],
+      };
+    });
+  }
 }

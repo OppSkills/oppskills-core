@@ -184,3 +184,18 @@ export async function updateEducation(
   }
 }
 
+/**
+ * Fetch all user registrations (events and hackathons).
+ */
+export async function getRegistrations(token: string): Promise<any[]> {
+  try {
+    const res = await API.get("/user-accounts/registrations", {
+      headers: buildAuthHeaders(token),
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching registrations:", error);
+    throw new Error("Failed to fetch registrations.");
+  }
+}
+

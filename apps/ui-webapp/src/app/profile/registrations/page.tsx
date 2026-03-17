@@ -1,28 +1,58 @@
-"use client";
-
-import React, { useState, useMemo } from "react";
+"use client"
+import React, { useState, useMemo, useEffect } from "react";
 import { RegistrationTabs } from "./_components/RegistrationTabs";
 import { RegistrationCard } from "./_components/RegistrationCard";
-import { MOCK_REGISTRATIONS } from "./_components/registration-types";
+import { Registration } from "./_components/registration-types";
+import { getRegistrations } from "@/lib/api/usersApi";
+import { useAuth } from "@clerk/nextjs";
+import { Loader2, Search } from "lucide-react";
+import Image from "next/image";
 
 export default function RegistrationsPage() {
+  const { getToken } = useAuth();
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  useEffect(() => {
+    const fetchRegistrations = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const data = await getRegistrations(token);
+        setRegistrations(data);
+      } catch (error) {
+        console.error("Failed to fetch registrations", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchRegistrations();
+  }, [getToken]);
+
   const counts = useMemo(() => ({
-    all: MOCK_REGISTRATIONS.length,
-    events: MOCK_REGISTRATIONS.filter((r) => r.type === "Event").length,
-    competitions: MOCK_REGISTRATIONS.filter((r) => r.type === "Competition").length,
-  }), []);
+    all: registrations.length,
+    events: registrations.filter((r) => r.opportunityType === "event").length,
+    competitions: registrations.filter((r) => r.opportunityType === "hackathon").length,
+  }), [registrations]);
 
   const filteredRegistrations = useMemo(() => {
-    return MOCK_REGISTRATIONS.filter((reg) => {
-      const matchesTab = activeTab === "all" || reg.type === activeTab;
+    return registrations.filter((reg) => {
+      const matchesTab = activeTab === "all" || reg.opportunityType === activeTab;
       const matchesSearch = reg.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         reg.teamName.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesTab && matchesSearch;
     });
-  }, [activeTab, searchQuery]);
+  }, [registrations, activeTab, searchQuery]);
+
+  if (isLoading) {
+    return (
+      <div className="w-full bg-white rounded-3xl p-8 flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-white rounded-3xl p-8">
@@ -34,18 +64,19 @@ export default function RegistrationsPage() {
         counts={counts}
       />
 
-      <div className="mt-6">
+      <div className="mt-6 space-y-4">
         {filteredRegistrations.length > 0 ? (
           filteredRegistrations.map((reg) => (
             <RegistrationCard key={reg.id} registration={reg} />
           ))
         ) : (
           <div className="bg-white border border-[#E0E0E6] rounded-[32px] p-20 flex flex-col items-center justify-center text-center">
-            <div className="w-20 h-20 bg-[#F2F2F5] rounded-full flex items-center justify-center mb-6">
-              <svg className="w-10 h-10 text-[#9E9EAE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
+            <Image
+              src="/illustrations/working-on-desk.svg"
+              alt="No registrations"
+              width={300}
+              height={300}
+            />
             <h3 className="text-xl font-semibold text-[#1A1A1E] mb-2">No registrations found</h3>
             <p className="text-[#9E9EAE]">Try adjusting your search or filters to find what you're looking for.</p>
           </div>

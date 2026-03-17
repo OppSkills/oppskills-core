@@ -25,8 +25,8 @@ export function RegistrationTabs({
 }: RegistrationTabsProps) {
   const tabs = [
     { id: "all", label: `All(${counts.all})` },
-    { id: "Event", label: `Events(${counts.events})` },
-    { id: "Competition", label: `Competitions(${counts.competitions})` },
+    { id: "event", label: `Events(${counts.events})` },
+    { id: "hackathon", label: `Competitions(${counts.competitions})` },
   ];
 
   return (

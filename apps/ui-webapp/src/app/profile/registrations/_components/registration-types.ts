@@ -9,6 +9,7 @@ export interface Registration {
   id: string;
   title: string;
   type: RegistrationType;
+  opportunityType: "event" | "hackathon";
   registeredOn: string;
   registeredBy: string;
   teamName: string;
@@ -23,6 +24,7 @@ export const MOCK_REGISTRATIONS: Registration[] = [
     id: "1",
     title: "All About Ai(A++)",
     type: "Event",
+    opportunityType: "event",
     registeredOn: "01 March 2026",
     registeredBy: "You (rohanvats12@gmail.com)",
     teamName: "Team Titanic",
@@ -40,6 +42,7 @@ export const MOCK_REGISTRATIONS: Registration[] = [
     id: "2",
     title: "Film Fiesta 2026",
     type: "Event",
+    opportunityType: "event",
     registeredOn: "10 February 2026",
     registeredBy: "Sejal (sejalmishra@gmail.com)",
     teamName: "Team Orange Fires",
@@ -57,6 +60,7 @@ export const MOCK_REGISTRATIONS: Registration[] = [
     id: "3",
     title: "Hackathon Name",
     type: "Competition",
+    opportunityType: "hackathon",
     registeredOn: "20 December 2025",
     registeredBy: "You (ownemail@gmail.com)",
     teamName: "TheTeamName",
@@ -74,6 +78,7 @@ export const MOCK_REGISTRATIONS: Registration[] = [
     id: "4",
     title: "Hackathon Name",
     type: "Competition",
+    opportunityType: "hackathon",
     registeredOn: "20 December 2025",
     registeredBy: "You (ownemail@gmail.com)",
     teamName: "TheTeamName",

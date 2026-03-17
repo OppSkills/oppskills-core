@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, Edit3, Users, Wallet, FileText } from "lucide-react";
+import { Check, Edit3, Users, Wallet, FileText, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RegistrationStage } from "./registration-types";
 
@@ -20,6 +20,8 @@ export function RegistrationStepper({ stages }: RegistrationStepperProps) {
         return <Wallet className="w-5 h-5" />;
       case "extended form":
         return <Edit3 className="w-5 h-5" />;
+      case "entry pass":
+        return <CheckCircle2 className="w-5 h-5" />;
       default:
         return <FileText className="w-5 h-5" />;
     }
