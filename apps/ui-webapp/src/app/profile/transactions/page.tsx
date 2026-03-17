@@ -108,67 +108,66 @@ function TypeBadge({ type }: { type: "Event" | "Competition" }) {
 }
 
 function TransactionRow({ tx }: { tx: Transaction }) {
-  const effectiveAmount =
-    tx.paymentStatus === "REFUNDED"
-      ? tx.grossAmount - tx.refundedAmount
-      : tx.grossAmount;
+  const isRefunded = tx.paymentStatus === "REFUNDED";
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 px-5 py-4 hover:bg-neutral-50 transition-colors group">
+    <div className="flex items-center gap-3 px-4 py-4 hover:bg-neutral-50 transition-colors">
       {/* Icon */}
       <div
         className={cn(
-          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-          tx.paymentStatus === "REFUNDED"
-            ? "bg-amber-50"
-            : "bg-primary-50"
+          "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+          isRefunded ? "bg-amber-50" : "bg-primary-50"
         )}
       >
         <ArrowDownLeft
           className={cn(
-            "w-5 h-5",
-            tx.paymentStatus === "REFUNDED"
-              ? "text-amber-500"
-              : "text-primary-600"
+            "w-4 h-4",
+            isRefunded ? "text-amber-500" : "text-primary-600"
           )}
         />
       </div>
 
       {/* Title + meta */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-neutral-900 truncate">
+        <p className="font-semibold text-sm text-neutral-900 truncate leading-snug">
           {tx.title}
         </p>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
           <TypeBadge type={tx.type} />
-          {tx.discountAmount && tx.discountAmount > 0 && (
-            <span className="text-xs text-emerald-600 font-medium">
-              −{formatCurrency(tx.discountAmount, tx.currency)} discount
-            </span>
-          )}
           <span className="text-xs text-neutral-400">
             {formatDate(tx.capturedAt ?? tx.createdAt)}
           </span>
+          {tx.discountAmount && tx.discountAmount > 0 && (
+            <span className="text-xs text-emerald-600 font-medium hidden sm:inline">
+              −{formatCurrency(tx.discountAmount, tx.currency)} off
+            </span>
+          )}
           {tx.razorpayPaymentId && (
-            <span className="text-xs text-neutral-400 font-mono hidden sm:inline truncate max-w-[160px]">
+            <span className="text-xs text-neutral-400 font-mono hidden lg:inline truncate max-w-[140px]">
               {tx.razorpayPaymentId}
             </span>
           )}
         </div>
       </div>
 
-      {/* Amount + status */}
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        <span
-          className={cn(
-            "text-base font-bold tabular-nums",
-            tx.paymentStatus === "REFUNDED"
-              ? "text-amber-600"
-              : "text-neutral-900"
-          )}
-        >
-          {formatCurrency(effectiveAmount, tx.currency)}
-        </span>
+      {/* Amount + status — always right-aligned */}
+      <div className="flex flex-col items-end gap-1 shrink-0 min-w-[80px]">
+        {isRefunded ? (
+          <>
+            {/* Original amount struck through */}
+            <span className="text-xs text-neutral-400 tabular-nums line-through">
+              {formatCurrency(tx.grossAmount, tx.currency)}
+            </span>
+            {/* Actual refunded amount */}
+            <span className="text-sm font-bold tabular-nums text-amber-600">
+              +{formatCurrency(tx.refundedAmount, tx.currency)}
+            </span>
+          </>
+        ) : (
+          <span className="text-sm font-bold tabular-nums text-neutral-900">
+            {formatCurrency(tx.grossAmount, tx.currency)}
+          </span>
+        )}
         <StatusBadge status={tx.paymentStatus} />
       </div>
     </div>
@@ -240,12 +239,12 @@ export default function TransactionsPage() {
     <div className="w-full flex flex-col gap-4">
       {/* Summary cards */}
       {transactions.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {[
             {
               label: "Total paid",
               value: formatCurrency(totals.paid, currency),
-              sub: `${transactions.filter((t) => t.paymentStatus === "CAPTURED").length} transactions`,
+              sub: `${transactions.filter((t) => t.paymentStatus === "CAPTURED").length} txns`,
               color: "text-neutral-900",
               bg: "bg-white",
             },
@@ -267,17 +266,17 @@ export default function TransactionsPage() {
             <div
               key={card.label}
               className={cn(
-                "rounded-2xl px-5 py-4 border border-[#E0E0E6]",
+                "rounded-2xl px-3 sm:px-5 py-3 sm:py-4 border border-[#E0E0E6]",
                 card.bg
               )}
             >
-              <p className="text-xs text-neutral-500 font-medium uppercase tracking-wide">
+              <p className="text-[10px] sm:text-xs text-neutral-500 font-medium uppercase tracking-wide">
                 {card.label}
               </p>
-              <p className={cn("text-2xl font-bold mt-1 tabular-nums", card.color)}>
+              <p className={cn("text-lg sm:text-2xl font-bold mt-1 tabular-nums truncate", card.color)}>
                 {card.value}
               </p>
-              <p className="text-xs text-neutral-400 mt-0.5">{card.sub}</p>
+              <p className="text-[10px] sm:text-xs text-neutral-400 mt-0.5">{card.sub}</p>
             </div>
           ))}
         </div>
