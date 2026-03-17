@@ -172,8 +172,12 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       );
     }
 
-    const isPaid = competition.isFree === false && competition.entryFeeAmount;
-    const baseAmount = competition.entryFeeAmount ?? 0;
+    const rawEntryFee = competition.entryFeeAmount as number | string | null | undefined;
+    const baseAmount =
+      typeof rawEntryFee === "number"
+        ? rawEntryFee
+        : Number(rawEntryFee ?? 0) || 0;
+    const isPaid = competition.isFree === false && baseAmount > 0;
     const processingFee = Math.ceil(baseAmount * 0.0236 * 100) / 100;
     const totalAmount = competition.feeBearer === "PARTICIPANT"
       ? baseAmount + processingFee

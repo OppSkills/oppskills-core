@@ -231,6 +231,16 @@ export function EventRegistrationCard({
         <div className="space-y-4">
           {tickets.map((ticket) => {
             const isSelected = selectedTicketId === ticket.id;
+            const basePrice =
+              typeof ticket.price === "number"
+                ? ticket.price
+                : Number(ticket.price ?? 0) || 0;
+            const processingFee =
+              basePrice > 0
+                ? Math.ceil(basePrice * 0.0236 * 100) / 100
+                : 0;
+            const totalWithFee = basePrice + processingFee;
+
             return (
               <div
                 key={ticket.id}
@@ -249,22 +259,22 @@ export function EventRegistrationCard({
                     <h4 className="font-semibold text-neutral-700 text-xl">
                       {ticket.name}
                     </h4>
-                    {ticket.price === 0 ? (
+                    {basePrice === 0 ? (
                       <div className="mt-1 font-semibold text-neutral-800 text-xl">
                         Free
                       </div>
                     ) : feeBearer === "PARTICIPANT" ? (
                       <div className="mt-1">
                         <div className="font-semibold text-neutral-800 text-xl">
-                          ₹ {(ticket.price + Math.ceil(ticket.price * 0.0236 * 100) / 100).toFixed(2)}
+                          ₹ {totalWithFee.toFixed(2)}
                         </div>
                         <div className="text-sm text-neutral-500 mt-0.5">
-                          ₹ {ticket.price} + ₹ {(Math.ceil(ticket.price * 0.0236 * 100) / 100).toFixed(2)} Processing Fee
+                          ₹ {basePrice.toFixed(2)} + ₹ {processingFee.toFixed(2)} Processing Fee
                         </div>
                       </div>
                     ) : (
                       <div className="mt-1 font-semibold text-neutral-800 text-xl">
-                        ₹ {ticket.price}
+                        ₹ {basePrice.toFixed(2)}
                       </div>
                     )}
                   </div>

@@ -571,7 +571,12 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     {
       id: "standard",
       name: event.isFree ? "Free Entry" : "Standard Ticket",
-      price: event.isFree ? 0 : (event.entryFeeAmount ?? 0),
+      // Coerce entry fee to number to avoid runtime issues in calculations
+      price: event.isFree
+        ? 0
+        : typeof event.entryFeeAmount === "number"
+          ? event.entryFeeAmount
+          : Number(event.entryFeeAmount ?? 0) || 0,
       description: "Don’t miss out, FOMO is real! 🚀",
     },
   ];
