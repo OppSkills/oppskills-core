@@ -4,10 +4,10 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { format, isSameDay, isSameYear } from "date-fns";
-import { MapPin, Calendar, ExternalLink, Trophy, Ticket, Building2, Globe } from "lucide-react";
+import { CompetitionCard } from "@/components/landingpage/_components/CompetitionCard";
+import { EventCard } from "@/components/landingpage/_components/EventCard";
 import { EventTabs } from "@/app/events/[slug]/_components/EventTabs";
 import { FestivalInfoCard } from "./FestivalInfoCard";
-import { Badge } from "@/components/ui/badge";
 
 interface FestivalDetailsClientProps {
     festival: any;
@@ -22,7 +22,22 @@ export default function FestivalDetailsClient({
 }: FestivalDetailsClientProps) {
     const [activeTab, setActiveTab] = useState("About Festival");
 
-    const TABS = ["About Festival", "Competitions", "Events", "Contact Details"];
+    const TABS = React.useMemo(() => {
+        const tabs = ["About Festival"];
+        if (hackathons && hackathons.length > 0) tabs.push("Competitions");
+        if (events && events.length > 0) tabs.push("Events");
+        tabs.push("Contact Details");
+        return tabs;
+    }, [hackathons, events]);
+
+    const handleTabChange = (tab: string) => {
+        setActiveTab(tab);
+        const sectionId = tab.toLowerCase().replace(/\s+/g, '-');
+        const element = document.getElementById(sectionId);
+        if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    };
 
     // Helper for date formatting (reused for main header)
     const formatDateRange = (start: string | Date, end: string | Date) => {
@@ -57,7 +72,7 @@ export default function FestivalDetailsClient({
 
                         {/* Banner Image */}
                         {festival.posterImageUrl && (
-                            <div className="relative m-0 lg:mb-4 aspect-[16/9] w-full overflow-hidden lg:rounded-2xl lg:shadow-sm border border-neutral-100">
+                            <div className="relative m-0 lg:mb-4 aspect-video w-full overflow-hidden lg:rounded-3xl shadow-sm">
                                 <Image
                                     src={festival.posterImageUrl}
                                     alt={festival.name}
@@ -90,55 +105,14 @@ export default function FestivalDetailsClient({
 
                     {/* RIGHT COLUMN: Info, Content */}
                     <div className="lg:col-span-8 space-y-8 order-1 lg:order-2 px-4 sm:px-0">
-
-                        {/* Title & Header Info */}
-                        <div>
-                            <h1 className="text-neutral-900 text-3xl lg:text-4xl font-semibold mb-4">
+                        <div className="mb-6 mt-3">
+                            <h1 className="text-neutral-900 text-3xl font-semibold">
                                 {festival.name}
                             </h1>
-
-                            {/* Date & Location Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Date */}
-                                <div className="flex gap-4 items-center">
-                                    <div>
-                                        <div className="flex flex-col items-center justify-center shadow-sm overflow-hidden rounded-lg">
-                                            <div className="bg-neutral-200 min-w-12 flex justify-center items-center py-0.5">
-                                                <span className="text-neutral-700 text-xs">
-                                                    {monthShort}
-                                                </span>
-                                            </div>
-                                            <span className="text-base font-medium text-neutral-900 py-0.5 px-2">
-                                                {dayNum}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <p className="font-medium text-neutral-800 text-base">
-                                            {formattedDate}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Location */}
-                                <div className="flex w-full gap-2 items-center">
-                                    <div className="border border-neutral-200 shadow-sm rounded-lg p-3">
-                                        <MapPin className="w-6 h-6 text-neutral-700" />
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <p className="font-medium text-base text-neutral-800">
-                                            {locationText}
-                                        </p>
-                                        <p className="text-xs text-neutral-600">
-                                            {festival.locationAddress}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         {/* Mobile Info Card */}
-                        <div className="lg:hidden">
+                        <div className="lg:hidden px-4 sm:px-0">
                             <FestivalInfoCard festival={festival} />
                         </div>
 
@@ -147,7 +121,7 @@ export default function FestivalDetailsClient({
                             <EventTabs
                                 tabs={TABS}
                                 activeTab={activeTab}
-                                onTabChange={setActiveTab}
+                                onTabChange={handleTabChange}
                             />
 
                             <div className="space-y-12">
@@ -160,7 +134,7 @@ export default function FestivalDetailsClient({
                                     <div className="prose max-w-none text-neutral-600 inter">
                                         {festival.description ? (
                                             <div
-                                                className="html-content whitespace-pre-line break-words leading-relaxed"
+                                                className="html-content whitespace-pre-line wrap-break-word leading-relaxed"
                                                 dangerouslySetInnerHTML={{ __html: festival.description }}
                                             />
                                         ) : (
@@ -170,55 +144,21 @@ export default function FestivalDetailsClient({
                                 </section>
 
                                 {/* Competitions */}
-                                <section id="competitions" className="scroll-mt-24">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <h2 className="text-2xl font-bold flex items-center gap-2 text-foreground poppins">
-                                            Competitions
-                                        </h2>
-                                        <Badge variant="secondary" className="rounded-full px-3">{hackathons.length}</Badge>
-                                    </div>
+                                {hackathons.length > 0 && (
+                                    <section id="competitions" className="scroll-mt-24">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h2 className="text-2xl font-bold flex items-center gap-2 text-foreground poppins">
+                                                Competitions
+                                            </h2>
+                                        </div>
 
-                                    {hackathons.length > 0 ? (
-                                        <div className="grid gap-5 sm:grid-cols-2">
+                                        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
                                             {hackathons.map((hackathon: any) => (
-                                                <Link
-                                                    key={hackathon.id}
-                                                    href={`/hackathons/${hackathon.slug}`}
-                                                    className="group relative flex flex-col bg-card border border-neutral-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-primary/50"
-                                                >
-                                                    <div className="aspect-[16/9] w-full bg-neutral-100 relative overflow-hidden">
-                                                        {hackathon.bannerImageUrl ? (
-                                                            <Image
-                                                                src={hackathon.bannerImageUrl}
-                                                                alt={hackathon.name}
-                                                                fill
-                                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                                            />
-                                                        ) : (
-                                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                                <Trophy className="h-12 w-12 text-neutral-300" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="p-4 flex flex-col flex-1">
-                                                        <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors line-clamp-1">
-                                                            {hackathon.name}
-                                                        </h3>
-                                                        <div className="mt-auto pt-3 flex items-center text-sm text-neutral-500 gap-4 border-t border-neutral-100">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Calendar className="h-3.5 w-3.5" />
-                                                                {format(new Date(hackathon.startDate), "MMM d")}
-                                                            </div>
-                                                            <div className="ml-auto text-primary text-xs font-medium">View Details &rarr;</div>
-                                                        </div>
-                                                    </div>
-                                                </Link>
+                                                <CompetitionCard key={hackathon.id} hackathon={hackathon} />
                                             ))}
                                         </div>
-                                    ) : (
-                                        <div className="text-neutral-500 italic">No competitions listed yet.</div>
-                                    )}
-                                </section>
+                                    </section>
+                                )}
 
                                 {/* Events */}
                                 <section id="events" className="scroll-mt-24">
@@ -226,93 +166,60 @@ export default function FestivalDetailsClient({
                                         <h2 className="text-2xl font-bold flex items-center gap-2 text-foreground poppins">
                                             Events
                                         </h2>
-                                        <Badge variant="secondary" className="rounded-full px-3">{events.length}</Badge>
                                     </div>
 
                                     {events.length > 0 ? (
-                                        <div className="grid gap-5 sm:grid-cols-2">
+                                        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
                                             {events.map((event: any) => (
-                                                <Link
-                                                    key={event.id}
-                                                    href={`/events/${event.slug}`}
-                                                    className="group relative flex flex-col bg-card border border-neutral-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-primary/50"
-                                                >
-                                                    <div className="aspect-[16/9] w-full bg-neutral-100 relative overflow-hidden">
-                                                        {event.thumbnailUrl || event.bannerImageUrl ? (
-                                                            <Image
-                                                                src={event.thumbnailUrl || event.bannerImageUrl}
-                                                                alt={event.name}
-                                                                fill
-                                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                                            />
-                                                        ) : (
-                                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                                <Ticket className="h-12 w-12 text-neutral-300" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="p-4 flex flex-col flex-1">
-                                                        <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors line-clamp-1">
-                                                            {event.name}
-                                                        </h3>
-                                                        <div className="mt-auto pt-3 flex items-center text-sm text-neutral-500 gap-4 border-t border-neutral-100">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Calendar className="h-3.5 w-3.5" />
-                                                                {format(new Date(event.startDate), "MMM d")}
-                                                            </div>
-                                                            <div className="ml-auto text-primary text-xs font-medium">View Details &rarr;</div>
-                                                        </div>
-                                                    </div>
-                                                </Link>
+                                                <EventCard key={event.id} event={event} />
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="text-neutral-500 italic">No events listed yet.</div>
+                                        <div className="text-neutral-500 italic p-8 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 text-center">
+                                            No events listed yet.
+                                        </div>
                                     )}
                                 </section>
 
-                                {/* Contact Details (Mobile Target) */}
-                                <div id="contact-details-mobile" className="scroll-mt-24 lg:hidden">
-                                    {/* This is targeted by the tab on mobile. 
-                       The content is actually the FestivalInfoCard shown above in mobile view.
-                       We can scroll to that, or just leave this as an anchor.
-                       Since the tabs sticky header might cover the top of the section, 
-                       we need this anchor to be positioned correctly relative to the mobile card.
-                       However, the mobile card is at the top (under banner). 
-                       If user clicks Contact Details on mobile, they might expect to jump to top?
-                       Or maybe we should duplicate the contact info here?
-                       Let's duplicate the organizer info here for clarity if they scroll down.
-                   */}
-                                    <h3 className="text-xl font-semibold text-neutral-800 mb-4 mt-8">Contact Details</h3>
-                                    <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
-                                        <p className="text-sm text-neutral-600 mb-2">
-                                            For questions, please contact the organizer.
+                                {/* Contact Details */}
+                                <section id="contact-details" className="scroll-mt-24 space-y-6">
+                                    <h2 className="text-2xl font-bold text-foreground poppins">
+                                        Contact Details
+                                    </h2>
+                                    <div className="lg:hidden">
+                                        <FestivalInfoCard festival={festival} />
+                                    </div>
+                                    <div className="hidden lg:block p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+                                        <p className="text-neutral-600 mb-6">
+                                            For any queries regarding the festival, please reach out to the organizers.
                                         </p>
-                                        <div className="flex items-center gap-3 mt-4">
+                                        <div className="flex items-center gap-4">
                                             {festival.organizationLogoUrl ? (
                                                 <Image
                                                     src={festival.organizationLogoUrl}
                                                     alt={festival.organizationName || "Organizer"}
-                                                    width={40}
-                                                    height={40}
-                                                    className="rounded-full w-10 h-10 object-cover"
+                                                    width={64}
+                                                    height={64}
+                                                    className="rounded-full w-16 h-16 object-cover border-2 border-white shadow-sm"
                                                 />
                                             ) : (
-                                                <div className="h-10 w-10 rounded-full bg-neutral-200 flex items-center justify-center font-bold text-neutral-500">
-                                                    {festival.organizationName?.charAt(0) || "?"}
+                                                <div className="h-16 w-16 rounded-full bg-neutral-900 flex items-center justify-center text-white text-xl font-bold border-2 border-white shadow-sm">
+                                                    {(festival.organizationName || festival.organizer?.firstName || "O").charAt(0).toUpperCase()}
                                                 </div>
                                             )}
                                             <div>
-                                                <p className="font-bold text-sm text-neutral-900">{festival.organizationName || "OppSkills"}</p>
-                                                {festival.websiteUrl && (
-                                                    <Link href={festival.websiteUrl} target="_blank" className="text-xs text-primary hover:underline">
-                                                        Visit Website
-                                                    </Link>
+                                                <p className="font-bold text-lg text-neutral-900">
+                                                    {festival.organizationName || `${festival.organizer?.firstName || ''} ${festival.organizer?.lastName || ''}`.trim() || "OppSkills Organizer"}
+                                                </p>
+                                                {festival.organizer?.email && (
+                                                    <p className="text-neutral-500 font-medium">
+                                                        {festival.organizer.email}
+                                                    </p>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </section>
 
                             </div>
                         </div>

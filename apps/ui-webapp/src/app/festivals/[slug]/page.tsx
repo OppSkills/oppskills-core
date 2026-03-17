@@ -4,6 +4,8 @@ import { getFestivalBySlug } from "@/lib/api/festivalApi";
 import { getPublicHackathons } from "@/lib/api/hackathonApi";
 import { getPublicEvents } from "@/lib/api/eventApi";
 import { JsonLd } from "@/components/seo/JsonLd";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 type Props = {
     params: Promise<{ slug: string }>;
@@ -70,40 +72,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
 }
 
+import FestivalPageClient from "./_components/FestivalPageClient";
+
 export default async function FestivalPage({ params }: Props) {
     const { slug } = await params;
     const festival = await getFestivalData(slug);
 
     if (!festival) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-                <h1 className="text-2xl font-bold text-foreground">Festival Not Found</h1>
-                <p className="text-muted-foreground">
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-center p-6">
+                <h1 className="text-3xl font-bold text-foreground">Festival Not Found</h1>
+                <p className="text-muted-foreground max-w-md">
                     The festival you&apos;re looking for doesn&apos;t exist or has been removed.
                 </p>
+                <Link href="/festivals">
+                    <Button variant="outline" className="rounded-full px-8">
+                        Browse All Festivals
+                    </Button>
+                </Link>
             </div>
         );
     }
-
-    // Fetch Hackathons and Events for this festival
-    // Note: getPublicHackathons/getPublicEvents returns an array or paginated result depending on implementation.
-    // Checking api implementation: returns PublicHackathonListItem[] directly.
-    const hackathons = await getPublicHackathons({ festival_id: festival.id });
-    const events = await getPublicEvents({ festival_id: festival.id });
-
-    // Handle potential different response structures (if paginated vs array)
-    // Based on api file 'getPublicHackathons' returns 'PublicHackathonListItem[]'
-    // 'getPublicEvents' returns 'unknown' casted, but typically it might be paginated or array.
-    // Let's assume it returns array or { data: [] } or similar, strict typing would help.
-    // For now, we'll cast safely in the client component or here.
-
-    // Safe cast helper
-    const safeList = (data: any) => {
-        if (Array.isArray(data)) return data;
-        if (data && Array.isArray(data.data)) return data.data;
-        if (data && Array.isArray(data.items)) return data.items;
-        return [];
-    };
 
     const festivalSchema = {
         "@context": "https://schema.org",
@@ -147,11 +136,7 @@ export default async function FestivalPage({ params }: Props) {
     return (
         <>
             <JsonLd data={festivalSchema} />
-            <FestivalDetailsClient
-                festival={festival}
-                hackathons={safeList(hackathons)}
-                events={safeList(events)}
-            />
+            <FestivalPageClient slug={slug} />
         </>
     );
 }

@@ -124,7 +124,31 @@ export class FestivalService {
       },
     });
     if (!festival) throw new NotFoundException('Festival not found');
-    return festival;
+
+    // Aggregate stats from hackathons and events
+    const [hackathonStats, eventStats] = await Promise.all([
+      prisma.hackathonEntity.aggregate({
+        where: { festivalId: festival.id, isDeleted: false },
+        _sum: { impressions: true, registrationCount: true },
+      }),
+      prisma.eventEntity.aggregate({
+        where: { festivalId: festival.id, isDeleted: false },
+        _sum: { impressions: true, registrationCount: true },
+      }),
+    ]);
+
+    const totalImpressions =
+      BigInt(hackathonStats._sum.impressions || 0) +
+      BigInt(eventStats._sum.impressions || 0);
+    const totalRegistrations =
+      (hackathonStats._sum.registrationCount || 0) +
+      (eventStats._sum.registrationCount || 0);
+
+    return {
+      ...festival,
+      totalImpressions: Number(totalImpressions),
+      totalRegistrations,
+    };
   }
 
   async updateFestival(id: string, dto: UpdateFestivalDto, userId: string) {
@@ -275,10 +299,42 @@ export class FestivalService {
   async getFestivalBySlug(slug: string) {
     const festival = await prisma.festivalEntity.findUnique({
       where: { slug, isDeleted: false },
-      // Optimization: Do NOT include hackathons/events here. They are fetched via separate public APIs.
+      include: {
+        organizer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
     });
     if (!festival) throw new NotFoundException('Festival not found');
-    return festival;
+
+    // Aggregate stats from hackathons and events
+    const [hackathonStats, eventStats] = await Promise.all([
+      prisma.hackathonEntity.aggregate({
+        where: { festivalId: festival.id, isDeleted: false },
+        _sum: { impressions: true, registrationCount: true },
+      }),
+      prisma.eventEntity.aggregate({
+        where: { festivalId: festival.id, isDeleted: false },
+        _sum: { impressions: true, registrationCount: true },
+      }),
+    ]);
+
+    const totalImpressions =
+      BigInt(hackathonStats._sum.impressions || 0) +
+      BigInt(eventStats._sum.impressions || 0);
+    const totalRegistrations =
+      (hackathonStats._sum.registrationCount || 0) +
+      (eventStats._sum.registrationCount || 0);
+
+    return {
+      ...festival,
+      totalImpressions: Number(totalImpressions),
+      totalRegistrations,
+    };
   }
 
   private parseDate(value: string, fieldName: string): Date {

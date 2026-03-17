@@ -90,7 +90,7 @@ export default function UpcomingHackathons() {
         >
           {displayHackathons.map((hackathon) => {
             return (
-              <SwiperSlide key={hackathon.id} className="!h-auto pb-1">
+              <SwiperSlide key={hackathon.id} className="h-auto! pb-1">
                 <div className="h-full">
                   <CompetitionCard hackathon={hackathon} />
                 </div>

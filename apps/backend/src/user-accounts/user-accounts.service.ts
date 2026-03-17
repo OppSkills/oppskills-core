@@ -1102,7 +1102,9 @@ export class UserAccountsService {
         stages: [
           { label: 'Registration', status: 'completed' },
           { label: 'Team', status: 'completed' },
-          { label: 'Payment', status: isPaid ? 'completed' : 'current' },
+          ...(p.event.isFree
+            ? []
+            : [{ label: 'Payment', status: !!p.payment ? 'completed' : 'current' }]),
           { label: 'Entry Pass', status: p.approved ? 'completed' : 'pending' },
         ],
       };
@@ -1159,10 +1161,21 @@ export class UserAccountsService {
         stages: [
           { label: 'Registration', status: 'completed' },
           { label: 'Team', status: 'completed' },
-          { label: 'Payment', status: isPaid ? 'completed' : 'current' },
+          ...(h.isFree
+            ? []
+            : [
+              {
+                label: 'Payment',
+                status: tm.team.payments.length > 0 ? 'completed' : 'current',
+              },
+            ]),
           {
             label: 'Extended Form',
-            status: hasSubmitted ? 'completed' : isPaid ? 'current' : 'pending',
+            status: hasSubmitted
+              ? 'completed'
+              : h.isFree || tm.team.payments.length > 0
+                ? 'current'
+                : 'pending',
           },
         ],
       };

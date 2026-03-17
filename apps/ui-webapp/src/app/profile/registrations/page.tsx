@@ -70,15 +70,14 @@ export default function RegistrationsPage() {
             <RegistrationCard key={reg.id} registration={reg} />
           ))
         ) : (
-          <div className="bg-white border border-[#E0E0E6] rounded-[32px] p-20 flex flex-col items-center justify-center text-center">
+          <div className="p-10 md:p-15 lg:p-20 flex flex-col items-center justify-center text-center">
             <Image
               src="/illustrations/working-on-desk.svg"
               alt="No registrations"
               width={300}
               height={300}
             />
-            <h3 className="text-xl font-semibold text-[#1A1A1E] mb-2">No registrations found</h3>
-            <p className="text-[#9E9EAE]">Try adjusting your search or filters to find what you're looking for.</p>
+            <p className="text-neutral-800">You haven’t registered in any {activeTab === "all" ? "Competition, Event or Festival" : activeTab === "event" ? "Event" : "Competition"} till now.</p>
           </div>
         )}
       </div>
