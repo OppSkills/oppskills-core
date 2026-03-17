@@ -259,6 +259,33 @@ export class UserAccountsController {
   }
 
   /**
+   * Get current user's past payment transactions (events + hackathons).
+   */
+  @Get('/my-transactions')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
+  @ApiOperation({
+    summary: 'Get current user payment transactions',
+    description:
+      'Returns all captured/refunded payments made by the authenticated user, sorted by date (desc).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User transactions retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getMyTransactions(@Request() req: { user?: { id?: string } }) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+    return this.userAccountsService.getUserTransactions(userId);
+  }
+
+  /**
    * Get current user's registrations (events + hackathons).
    */
   @Get('/registrations')

@@ -972,6 +972,74 @@ export class UserAccountsService {
     }
   }
 
+  async getUserTransactions(userId: string) {
+    if (!userId || userId.trim().length === 0) {
+      throw new HttpException('Missing user id', HttpStatus.UNAUTHORIZED);
+    }
+
+    const [hackathonPayments, eventPayments] = await Promise.all([
+      prisma.hackathonPaymentEntity.findMany({
+        where: {
+          payerUserId: userId,
+          paymentStatus: { in: ['CAPTURED', 'REFUNDED'] },
+        },
+        include: {
+          hackathon: { select: { name: true, slug: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.eventPaymentEntity.findMany({
+        where: {
+          payerUserId: userId,
+          paymentStatus: { in: ['CAPTURED', 'REFUNDED'] },
+        },
+        include: {
+          event: { select: { name: true, slug: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const hackathonTx = hackathonPayments.map((p) => ({
+      id: p.id,
+      title: p.hackathon.name,
+      type: 'Competition' as const,
+      opportunityType: 'hackathon' as const,
+      slug: p.hackathon.slug,
+      grossAmount: Number(p.grossAmount),
+      currency: p.currency,
+      paymentStatus: p.paymentStatus,
+      refundStatus: p.refundStatus ?? null,
+      refundedAmount: Number(p.refundedAmount),
+      discountAmount: p.discountAmount ? Number(p.discountAmount) : null,
+      capturedAt: p.capturedAt?.toISOString() ?? null,
+      createdAt: p.createdAt.toISOString(),
+      razorpayPaymentId: p.razorpayPaymentId ?? null,
+    }));
+
+    const eventTx = eventPayments.map((p) => ({
+      id: p.id,
+      title: p.event.name,
+      type: 'Event' as const,
+      opportunityType: 'event' as const,
+      slug: p.event.slug,
+      grossAmount: Number(p.grossAmount),
+      currency: p.currency,
+      paymentStatus: p.paymentStatus,
+      refundStatus: p.refundStatus ?? null,
+      refundedAmount: Number(p.refundedAmount),
+      discountAmount: p.discountAmount ? Number(p.discountAmount) : null,
+      capturedAt: p.capturedAt?.toISOString() ?? null,
+      createdAt: p.createdAt.toISOString(),
+      razorpayPaymentId: p.razorpayPaymentId ?? null,
+    }));
+
+    return [...hackathonTx, ...eventTx].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }
+
   async getUserRegistrations(userId: string) {
     try {
       const [eventParticipations, hackathonParticipations] = await Promise.all([

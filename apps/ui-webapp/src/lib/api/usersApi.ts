@@ -187,6 +187,21 @@ export async function updateEducation(
 }
 
 /**
+ * Fetch all user payment transactions (events and hackathons).
+ */
+export async function getMyTransactions(token: string): Promise<any[]> {
+  try {
+    const res = await API.get("/my-transactions", {
+      headers: buildAuthHeaders(token),
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching transactions:", error);
+    throw new Error("Failed to fetch transactions.");
+  }
+}
+
+/**
  * Fetch all user registrations (events and hackathons).
  */
 export async function getRegistrations(token: string): Promise<any[]> {
