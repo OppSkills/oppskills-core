@@ -62,7 +62,7 @@ export function CompetitionCard({ hackathon }: CompetitionCardProps) {
 
             <div className="flex flex-col gap-1 text-right">
                 <span className="text-neutral-500 text-xs">Entry Fee</span>
-                <span className="text-neutral-700 text-sm font-medium">{isFree ? "Free" : `₹ ${entryFee}`}</span>
+                <span className="text-neutral-700 text-sm font-medium">{isFree ? "Free" : `${entryFee}`}</span>
             </div>
         </div>
     );
