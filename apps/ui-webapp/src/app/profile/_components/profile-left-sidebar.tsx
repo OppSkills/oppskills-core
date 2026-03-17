@@ -15,8 +15,8 @@ const NAV_ITEMS = [
     icon: User,
   },
   {
-    title: "My Opportunities",
-    href: "/profile/opportunity-history",
+    title: "Registrations",
+    href: "/profile/registrations",
     icon: Calendar,
   },
   {

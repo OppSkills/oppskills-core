@@ -42,6 +42,8 @@ export class CollegesController {
    * Search colleges by name for combobox autocomplete.
    */
   @Get('/search')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @ApiOperation({
     summary: 'Search colleges by name',
     description:
@@ -84,6 +86,8 @@ export class CollegesController {
   }
 
   @Get('/by-ids')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @ApiOperation({
     summary: 'Get colleges by IDs',
     description:
