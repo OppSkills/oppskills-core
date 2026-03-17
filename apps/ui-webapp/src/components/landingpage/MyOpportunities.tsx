@@ -133,7 +133,7 @@ export default function MyOpportunities() {
         <div className="mb-8 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between gap-2">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
                   My Opportunities
                 </h2>
