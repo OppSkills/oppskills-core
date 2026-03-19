@@ -26,10 +26,10 @@ export default function HeroSection() {
       <div className='grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8'>
         {
           [
-            { image: "/illustrations/desk_laptop.svg", title: "Hackathons" },
-            { image: "/illustrations/rewards.svg", title: "Competitions" },
-            { image: "/illustrations/desk_coffee.svg", title: "Events" },
-            { image: "/illustrations/communities.svg", title: "Communities" },
+            { image: "/illustrations/desk_laptop.svg", title: "Hackathons", link: "/hackathons" },
+            { image: "/illustrations/rewards.svg", title: "Competitions", link: "/profile/registrations" },
+            { image: "/illustrations/desk_coffee.svg", title: "Events", link: "/events" },
+            { image: "/illustrations/communities.svg", title: "Communities", link: "/communities" },
           ].map((item, index) => {
             return (
               <div className='bg-primary-200 rounded-xl p-4 relative h-40 overflow-hidden' key={index}>

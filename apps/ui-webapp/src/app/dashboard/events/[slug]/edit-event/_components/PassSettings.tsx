@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { AlertTriangle } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { searchColleges, getCollegesByIds } from "@/lib/api/collegesApi";
@@ -218,6 +219,60 @@ export default function PassSettings({
 
           {formData.passSettings.collegeRestrictionEnabled && (
             <>
+              {(() => {
+                const {
+                  allowedCollegeIds,
+                  allowedEmailDomains,
+                  collegeMatchMode,
+                } = formData.passSettings;
+                const hasColleges = allowedCollegeIds.length > 0;
+                const hasDomains = allowedEmailDomains.length > 0;
+                let isMissingCriteria = false;
+                let message = "";
+
+                if (
+                  collegeMatchMode === "PROFILE_ONLY" ||
+                  collegeMatchMode === "BOTH_REQUIRED"
+                ) {
+                  if (!hasColleges) {
+                    isMissingCriteria = true;
+                    message = "Please select at least one college.";
+                  }
+                }
+
+                if (
+                  !isMissingCriteria &&
+                  (collegeMatchMode === "EMAIL_ONLY" ||
+                    collegeMatchMode === "BOTH_REQUIRED")
+                ) {
+                  if (!hasDomains) {
+                    isMissingCriteria = true;
+                    message = "Please add at least one email domain.";
+                  }
+                }
+
+                if (
+                  !isMissingCriteria &&
+                  collegeMatchMode === "EITHER_OR"
+                ) {
+                  if (!hasColleges && !hasDomains) {
+                    isMissingCriteria = true;
+                    message =
+                      "Please add at least one college or email domain.";
+                  }
+                }
+
+                if (isMissingCriteria) {
+                  return (
+                    <div className="flex items-center gap-2 p-3 text-sm rounded-lg bg-destructive/10 text-destructive border border-destructive/20 animate-in fade-in zoom-in duration-300">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span>{message}</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               {/* Match Mode */}
               <div className="space-y-2">
                 <Label>Verification Method</Label>

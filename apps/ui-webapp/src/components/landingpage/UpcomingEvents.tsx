@@ -11,6 +11,7 @@ import { EventsSectionSkeleton } from "./_components/EventsSectionSkeleton";
 import { EventsEmptyState } from "./_components/EventsEmptyState";
 import { EventCard } from "./_components/EventCard";
 import { SwiperControls } from "./_components/SwiperControls";
+import Link from "next/link";
 
 export const UpcomingEvents = () => {
   const {
@@ -64,9 +65,17 @@ export const UpcomingEvents = () => {
     >
       <div className="container mx-auto">
         <div className="mb-8 space-y-2 flex flex-col gap-2">
-          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
-            Upcoming Events
-          </h2>
+          <div className="flex items-center justify-between gap-2 w-full">
+            <h2 className="text-3xl flex-1 font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
+              Upcoming Events
+            </h2>
+            <Link
+              href="/events"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors shrink-0"
+            >
+              View all →
+            </Link>
+          </div>
           <p className="text-muted-foreground text-lg inter">
             Don’t miss what’s next, stay updated with upcoming events and
             sessions.

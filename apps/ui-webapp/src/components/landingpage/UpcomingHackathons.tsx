@@ -13,6 +13,7 @@ import { SwiperControls } from "./_components/SwiperControls";
 import { EventsSectionSkeleton } from "./_components/EventsSectionSkeleton";
 import { EventsEmptyState } from "./_components/EventsEmptyState";
 import { CompetitionCard } from "./_components/CompetitionCard";
+import Link from "next/link";
 
 export default function UpcomingHackathons() {
   const {
@@ -57,9 +58,17 @@ export default function UpcomingHackathons() {
     >
       <div className="container mx-auto">
         <div className="mb-8 space-y-2 flex flex-col gap-2">
-          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
-            Top Hackathons
-          </h2>
+          <div className="flex items-center justify-between gap-2 w-full">
+            <h2 className="text-3xl flex-1 font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
+              Top Hackathons
+            </h2>
+            <Link
+              href="/hackathons"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors shrink-0"
+            >
+              View all →
+            </Link>
+          </div>
           <p className="text-muted-foreground text-lg inter">
             Discover the most popular hackathons students are joining right now.
           </p>
