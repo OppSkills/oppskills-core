@@ -10,6 +10,7 @@ import {
   Users,
   Sparkles,
   Clock,
+  IndianRupee,
   Loader2,
   CheckCircle,
 } from "lucide-react";
@@ -77,6 +78,13 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     competition.maxTeams !== undefined &&
     competition.registrationCount !== undefined &&
     competition.registrationCount >= competition.maxTeams;
+
+  const paidPricingModeLabel =
+    competition.chargeMode === "PER_TEAM"
+      ? "Per Team"
+      : competition.chargeMode === "PER_USER"
+        ? "Per User"
+        : null;
 
   const handleRegisterClick = async () => {
     if (!isSignedIn) {
@@ -503,6 +511,21 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
                 </div>
               </div>
             </div>
+
+            {/* Pricing Mode (only for paid hackathons) */}
+            {!competition.isFree && paidPricingModeLabel && (
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
+                  <IndianRupee className="w-5 h-5 text-neutral-800 " />
+                </div>
+                <div>
+                  <div className="font-semibold text-neutral-900  text-sm">
+                    {paidPricingModeLabel}
+                  </div>
+                  <div className="text-xs text-neutral-500">Pricing Mode</div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

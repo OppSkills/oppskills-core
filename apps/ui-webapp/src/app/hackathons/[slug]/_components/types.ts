@@ -96,6 +96,7 @@ export interface CompetitionDetails {
   registrationCount?: number;
   isFree?: boolean;
   entryFeeAmount?: number | null;
+  chargeMode?: "PER_TEAM" | "PER_USER";
   currency?: string;
   feeBearer?: "ORGANISER" | "PARTICIPANT";
 

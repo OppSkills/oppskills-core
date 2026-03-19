@@ -108,6 +108,7 @@ export interface HackathonApiData {
   currency: string;
   isFree: boolean;
   entryFeeAmount: number | null;
+  chargeMode?: "PER_TEAM" | "PER_USER";
   feeBearer?: "ORGANISER" | "PARTICIPANT";
   organizationName: string | null;
   maxTeams?: number | null;
@@ -306,6 +307,7 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
     registrationCount: data.registrationCount ?? 0,
     isFree: data.isFree,
     entryFeeAmount: data.entryFeeAmount,
+    chargeMode: data.chargeMode,
     currency: data.currency,
     feeBearer: data.feeBearer,
     contact:
