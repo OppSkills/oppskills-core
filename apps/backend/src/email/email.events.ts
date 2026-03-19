@@ -10,6 +10,8 @@ export const EMAIL_EVENTS = {
   EVENT_DIRECT_MESSAGE: 'event.direct.message',
   EVENT_BULK_EMAIL: 'event.bulk.email',
   ADMIN_CREATED: 'admin.created',
+  HACKATHON_JOIN_CONFIRMATION: 'hackathon.join.confirmation',
+  HACKATHON_NEW_MEMBER_JOINED: 'hackathon.new.member.joined',
 } as const;
 
 export type EmailEventType = (typeof EMAIL_EVENTS)[keyof typeof EMAIL_EVENTS];
@@ -68,4 +70,19 @@ export interface EventBulkEmailPayload {
   organizerName: string;
   htmlBody: string;
   eventName: string;
+}
+
+export interface HackathonJoinConfirmationPayload {
+  email: string;
+  userName: string;
+  hackathonName: string;
+  teamName: string;
+}
+
+export interface HackathonNewMemberJoinedPayload {
+  leaderEmail: string;
+  teamLeaderName: string;
+  newMemberName: string;
+  teamName: string;
+  hackathonName: string;
 }

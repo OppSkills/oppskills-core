@@ -5,13 +5,15 @@ import { render } from '@react-email/components';
 import { EmailService } from './email.service';
 import { EMAIL_EVENTS } from './email.events';
 import { EventNotificationEmail } from '@oppskills/emails';
-import type { AdminWelcomeEmailProps } from "@oppskills/emails"
+import type { AdminWelcomeEmailProps } from '@oppskills/emails';
 import type {
   UserCreatedEventPayload,
   UserOnboardedEventPayload,
   EventJoinedEventPayload,
   EventDirectMessageEventPayload,
   EventBulkEmailPayload,
+  HackathonJoinConfirmationPayload,
+  HackathonNewMemberJoinedPayload,
 } from './email.events';
 import { Logger } from 'src/_utils/logger';
 import { prisma } from '@oppskills/db';
@@ -26,7 +28,7 @@ export class EmailListener {
     private readonly emailService: EmailService,
     @Inject(forwardRef(() => EventPassService))
     private readonly eventPassService: EventPassService,
-  ) { }
+  ) {}
 
   @OnEvent(EMAIL_EVENTS.USER_CREATED)
   async handleUserCreated(payload: UserCreatedEventPayload): Promise<void> {
@@ -297,7 +299,10 @@ export class EmailListener {
     const attachments: Array<{ filename: string; content: string }> = [];
 
     // Sanitise ticketId for use in filenames (remove №, spaces, special chars)
-    const safeTicketId = eventPass.ticketId.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const safeTicketId = eventPass.ticketId
+      .replace(/[^a-zA-Z0-9-_]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
 
     try {
       const resp = await fetch(ogImageUrl);
@@ -317,7 +322,10 @@ export class EmailListener {
         // QR must encode the full validation URL — identical to what the
         // event-pass page renders with QRCodeSVG on the ticket card.
         const qrUrl = `https://www.oppskills.com/pass/validate/${eventPass.token}`;
-        const qrBuf = await QRCode.toBuffer(qrUrl, { type: 'png', errorCorrectionLevel: 'H' });
+        const qrBuf = await QRCode.toBuffer(qrUrl, {
+          type: 'png',
+          errorCorrectionLevel: 'H',
+        });
         attachments.push({
           filename: `pass-qr-${safeTicketId}.png`,
           content: qrBuf.toString('base64'),
@@ -450,6 +458,45 @@ export class EmailListener {
         firstName: payload.firstName,
         email: payload.email,
         password: payload.password,
+      },
+    });
+  }
+
+  @OnEvent(EMAIL_EVENTS.HACKATHON_JOIN_CONFIRMATION)
+  async handleHackathonJoinConfirmation(
+    payload: HackathonJoinConfirmationPayload,
+  ): Promise<void> {
+    this.logger.log(
+      `Sending hackathon join confirmation to ${payload.email} for ${payload.hackathonName}`,
+    );
+
+    await this.emailService.send({
+      type: 'hackathon-join-confirmation',
+      to: payload.email,
+      props: {
+        userName: payload.userName,
+        hackathonName: payload.hackathonName,
+        teamName: payload.teamName,
+      },
+    });
+  }
+
+  @OnEvent(EMAIL_EVENTS.HACKATHON_NEW_MEMBER_JOINED)
+  async handleHackathonNewMemberJoined(
+    payload: HackathonNewMemberJoinedPayload,
+  ): Promise<void> {
+    this.logger.log(
+      `Sending new member notification to leader ${payload.leaderEmail} for team ${payload.teamName}`,
+    );
+
+    await this.emailService.send({
+      type: 'hackathon-new-member-joined',
+      to: payload.leaderEmail,
+      props: {
+        teamLeaderName: payload.teamLeaderName,
+        newMemberName: payload.newMemberName,
+        teamName: payload.teamName,
+        hackathonName: payload.hackathonName,
       },
     });
   }

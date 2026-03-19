@@ -20,6 +20,10 @@ import {
   IncompleteRegistrationEmailProps,
   AdminWelcomeEmailProps,
   AdminOnboarding,
+  HackathonJoinConfirmationEmail,
+  HackathonJoinConfirmationEmailProps,
+  HackathonNewMemberJoinedEmail,
+  HackathonNewMemberJoinedEmailProps,
 } from '@oppskills/emails';
 import { Logger } from 'src/_utils/logger';
 
@@ -31,7 +35,9 @@ export type EmailType =
   | 'participant-direct-message'
   | 'bulk-email-success'
   | 'incomplete-registration'
-  | 'admin-welcome';
+  | 'admin-welcome'
+  | 'hackathon-join-confirmation'
+  | 'hackathon-new-member-joined';
 
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
@@ -39,22 +45,26 @@ export interface SendEmailOptions<T extends EmailType> {
   /** Local file attachments – content must be a Base64-encoded string. */
   attachments?: Array<{ filename: string; content: string }>;
   props: T extends 'welcome'
-  ? WelcomeEmailProps
-  : T extends 'onboarding-complete'
-  ? OnboardingCompleteEmailProps
-  : T extends 'event-pass-pending'
-  ? EventPassPendingEmailProps
-  : T extends 'event-pass'
-  ? EventPassEmailProps
-  : T extends 'participant-direct-message'
-  ? ParticipantDirectMessageProps
-  : T extends 'bulk-email-success'
-  ? BulkEmailSuccessEmailProps
-  : T extends 'incomplete-registration'
-  ? IncompleteRegistrationEmailProps
-  : T extends 'admin-welcome'
-  ? AdminWelcomeEmailProps
-  : never;
+    ? WelcomeEmailProps
+    : T extends 'onboarding-complete'
+      ? OnboardingCompleteEmailProps
+      : T extends 'event-pass-pending'
+        ? EventPassPendingEmailProps
+        : T extends 'event-pass'
+          ? EventPassEmailProps
+          : T extends 'participant-direct-message'
+            ? ParticipantDirectMessageProps
+            : T extends 'bulk-email-success'
+              ? BulkEmailSuccessEmailProps
+              : T extends 'incomplete-registration'
+                ? IncompleteRegistrationEmailProps
+                : T extends 'admin-welcome'
+                  ? AdminWelcomeEmailProps
+                  : T extends 'hackathon-join-confirmation'
+                    ? HackathonJoinConfirmationEmailProps
+                    : T extends 'hackathon-new-member-joined'
+                      ? HackathonNewMemberJoinedEmailProps
+                      : never;
 }
 
 @Injectable()
@@ -183,6 +193,8 @@ export class EmailService {
       | BulkEmailSuccessEmailProps
       | IncompleteRegistrationEmailProps
       | AdminWelcomeEmailProps
+      | HackathonJoinConfirmationEmailProps
+      | HackathonNewMemberJoinedEmailProps,
   ): Promise<{ subject: string; html: string }> {
     switch (type) {
       case 'welcome': {
@@ -254,6 +266,24 @@ export class EmailService {
         const html = await render(element);
         return {
           subject: 'Welcome to Oppskills Admin',
+          html,
+        };
+      }
+      case 'hackathon-join-confirmation': {
+        const p = props as HackathonJoinConfirmationEmailProps;
+        const element = createElement(HackathonJoinConfirmationEmail, p);
+        const html = await render(element);
+        return {
+          subject: `You joined ${p.hackathonName}`,
+          html,
+        };
+      }
+      case 'hackathon-new-member-joined': {
+        const p = props as HackathonNewMemberJoinedEmailProps;
+        const element = createElement(HackathonNewMemberJoinedEmail, p);
+        const html = await render(element);
+        return {
+          subject: `${p.newMemberName} joined your team`,
           html,
         };
       }

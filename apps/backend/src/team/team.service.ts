@@ -4,9 +4,12 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { prisma } from '@oppskills/db';
 import type { CreateTeamDto, JoinTeamDto } from '@oppskills/types';
 import { randomBytes } from 'crypto';
+import { EMAIL_EVENTS } from 'src/email/email.events';
+import { Logger } from 'src/_utils/logger';
 
 /**
  * Generate a unique invitation code.
@@ -95,6 +98,9 @@ function getMinSizeFromParticipantType(participantType: string): number {
 
 @Injectable()
 export class TeamService {
+  private readonly logger = new Logger(TeamService.name);
+  constructor(private readonly eventEmitter: EventEmitter2) {}
+
   /**
    * Create a team for a hackathon.
    * - Verifies hackathon exists and is open for registration.
@@ -262,6 +268,14 @@ export class TeamService {
       return team;
     });
 
+    // Emit only hackathon-join confirmation on create team (leader joined).
+    this.emitHackathonJoinConfirmation({
+      email: result.leader.email,
+      userName: this.buildUserDisplayName(result.leader),
+      hackathonName: result.hackathon.name,
+      teamName: result.name,
+    });
+
     return result;
   }
 
@@ -392,9 +406,18 @@ export class TeamService {
         where: { id: dto.teamId },
         include: {
           members: true,
+          leader: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
           hackathon: {
             select: {
               id: true,
+              name: true,
               ownerId: true,
               isFree: true,
               status: true,
@@ -415,9 +438,18 @@ export class TeamService {
         where: { invitationCode: dto.invitationCode },
         include: {
           members: true,
+          leader: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
           hackathon: {
             select: {
               id: true,
+              name: true,
               ownerId: true,
               isFree: true,
               status: true,
@@ -501,6 +533,14 @@ export class TeamService {
       userId,
       answers: dto.answers,
     });
+    const user = await prisma.userEntity.findUnique({
+      where: { id: userId },
+      select: {
+        email: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
 
     // Create member and registration in transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -540,6 +580,27 @@ export class TeamService {
       });
 
       return newMember;
+    });
+
+    const joiningUser = user ?? {
+      email: null,
+      firstName: null,
+      lastName: null,
+    };
+
+    this.emitHackathonJoinConfirmation({
+      email: joiningUser.email,
+      userName: this.buildUserDisplayName(joiningUser),
+      hackathonName: team.hackathon.name,
+      teamName: team.name,
+    });
+
+    this.emitHackathonNewMemberJoined({
+      leaderEmail: team.leader.email,
+      teamLeaderName: this.buildUserDisplayName(team.leader),
+      newMemberName: this.buildUserDisplayName(joiningUser),
+      teamName: team.name,
+      hackathonName: team.hackathon.name,
     });
 
     return result;
@@ -1183,6 +1244,60 @@ export class TeamService {
         case 'ATTACHMENTS':
           throw new BadRequestException('Attachments are not supported yet.');
       }
+    }
+  }
+
+  private buildUserDisplayName(user: {
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+  }): string {
+    const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    return name || user.email || 'Participant';
+  }
+
+  private emitHackathonJoinConfirmation(payload: {
+    email: string | null | undefined;
+    userName: string;
+    hackathonName: string;
+    teamName: string;
+  }): void {
+    if (!payload.email) {
+      this.logger.warn(
+        `Skipping hackathon join confirmation: missing email for ${payload.userName}`,
+      );
+      return;
+    }
+
+    try {
+      this.eventEmitter.emit(EMAIL_EVENTS.HACKATHON_JOIN_CONFIRMATION, payload);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to emit hackathon join confirmation event: ${message}`,
+      );
+    }
+  }
+
+  private emitHackathonNewMemberJoined(payload: {
+    leaderEmail: string | null | undefined;
+    teamLeaderName: string;
+    newMemberName: string;
+    teamName: string;
+    hackathonName: string;
+  }): void {
+    if (!payload.leaderEmail) {
+      this.logger.warn(
+        `Skipping leader notification: missing leader email for team ${payload.teamName}`,
+      );
+      return;
+    }
+
+    try {
+      this.eventEmitter.emit(EMAIL_EVENTS.HACKATHON_NEW_MEMBER_JOINED, payload);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to emit new member joined event: ${message}`);
     }
   }
 }
