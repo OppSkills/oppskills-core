@@ -21,7 +21,7 @@ export function usePublicHackathons(
   search?: string,
   options?: { enabled?: boolean }
 ) {
-  return useInfiniteQuery<PublicHackathonListItem[], Error>({
+  return useInfiniteQuery<{ items: PublicHackathonListItem[]; further: boolean }, Error>({
     queryKey: ["public-hackathons", festivalId, search] as const,
     queryFn: async ({ pageParam = 1 }) => {
       return getPublicHackathons({
@@ -33,8 +33,7 @@ export function usePublicHackathons(
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
-      if (!lastPage || lastPage.length === 0) return undefined;
-      return allPages.length + 1;
+      return lastPage.further ? allPages.length + 1 : undefined;
     },
     enabled: options?.enabled,
   });
@@ -48,7 +47,7 @@ export function useUpcomingHackathons(
   search?: string,
   options?: { enabled?: boolean }
 ) {
-  return useInfiniteQuery<PublicHackathonListItem[], Error>({
+  return useInfiniteQuery<{ items: PublicHackathonListItem[]; further: boolean }, Error>({
     queryKey: ["public-hackathons", "upcoming", festivalId, search] as const,
     queryFn: async ({ pageParam = 1 }) => {
       // Import dynamically to avoid circular dependencies if any, or just ensure import is at top
@@ -62,8 +61,7 @@ export function useUpcomingHackathons(
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
-      if (!lastPage || lastPage.length === 0) return undefined;
-      return allPages.length + 1;
+      return lastPage.further ? allPages.length + 1 : undefined;
     },
     enabled: options?.enabled,
   });

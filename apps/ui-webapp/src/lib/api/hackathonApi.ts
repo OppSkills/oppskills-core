@@ -72,7 +72,7 @@ export async function getPublicHackathons(
     appendResults?: boolean;
     q?: string;
   } = {},
-): Promise<PublicHackathonListItem[]> {
+): Promise<{ items: PublicHackathonListItem[]; further: boolean }> {
   const res = await API.get("/public", {
     params: {
       festival_id: params.festival_id,
@@ -81,7 +81,7 @@ export async function getPublicHackathons(
       q: params.q,
     },
   });
-  return res.data as PublicHackathonListItem[];
+  return res.data as { items: PublicHackathonListItem[]; further: boolean };
 }
 
 /**
@@ -94,7 +94,7 @@ export async function getPublicUpcomingHackathons(
     appendResults?: boolean;
     q?: string;
   } = {},
-): Promise<PublicHackathonListItem[]> {
+): Promise<{ items: PublicHackathonListItem[]; further: boolean }> {
   const res = await API.get("/public/upcoming", {
     params: {
       festival_id: params.festival_id,
@@ -103,7 +103,7 @@ export async function getPublicUpcomingHackathons(
       q: params.q,
     },
   });
-  return res.data as PublicHackathonListItem[];
+  return res.data as { items: PublicHackathonListItem[]; further: boolean };
 }
 
 /**

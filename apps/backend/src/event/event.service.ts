@@ -184,10 +184,11 @@ export class EventService {
     const skip = (page - 1) * take;
 
     // Query events with sanitized fields - no participants or registrant PII
+    // We fetch take + 1 to determine if there are more results
     const events = await prisma.eventEntity.findMany({
       where: baseWhere,
       skip,
-      take,
+      take: take + 1,
       select: {
         id: true,
         slug: true,
@@ -240,16 +241,20 @@ export class EventService {
       orderBy: { startDate: 'asc' },
     });
 
+    // Determine if there's further results
+    const further = events.length > take;
+    const items = further ? events.slice(0, take) : events;
+
     // Track impressions for all returned events
     Promise.all(
-      events.map((event) =>
+      items.map((event) =>
         this.analyticsService.trackPostImpression('event', event.slug),
       ),
     ).catch((err) => {
       this.logger.error('Failed to track impressions', err);
     });
 
-    return events;
+    return { items, further };
   }
 
   /**

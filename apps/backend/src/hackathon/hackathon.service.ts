@@ -346,10 +346,11 @@ export class HackathonService {
     const page = input.page ? Math.max(1, Number(input.page)) : 1;
     const skip = (page - 1) * take;
 
+    // We fetch take + 1 to determine if there are more results
     const hackathons = await prisma.hackathonEntity.findMany({
       where: baseWhere,
       skip,
-      take,
+      take: take + 1,
       select: {
         id: true,
         slug: true,
@@ -420,9 +421,13 @@ export class HackathonService {
       orderBy: { startDate: 'asc' },
     });
 
+    // Determine if there's further results
+    const further = hackathons.length > take;
+    const items = further ? hackathons.slice(0, take) : hackathons;
+
     // Track impressions for all returned hackathons (type 'opportunity')
     Promise.all(
-      hackathons.map((hackathon) =>
+      items.map((hackathon) =>
         this.analyticsService.trackPostImpression(
           'opportunity',
           hackathon.slug,
@@ -432,7 +437,7 @@ export class HackathonService {
       this.logger.error('Failed to track impressions', err);
     });
 
-    return hackathons;
+    return { items, further };
   }
 
   /**

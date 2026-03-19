@@ -28,9 +28,9 @@ export async function getPublicEvents(
     q?: string;
     festival_id?: string;
   } = {},
-): Promise<unknown> {
+): Promise<{ items: any[]; further: boolean }> {
   const res = await API.get("/public", { params });
-  return res.data as unknown;
+  return res.data as { items: any[]; further: boolean };
 }
 
 /**
@@ -70,9 +70,9 @@ export async function getPublicUpcomingEvents(
     q?: string;
     festival_id?: string;
   } = {},
-): Promise<unknown> {
+): Promise<{ items: any[]; further: boolean }> {
   const res = await API.get("/public/upcoming", { params });
-  return res.data as unknown;
+  return res.data as { items: any[]; further: boolean };
 }
 
 /**

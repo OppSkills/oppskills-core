@@ -17,7 +17,7 @@ export default function CompetitionsPage() {
     isFetchingNextPage,
   } = usePublicHackathons(undefined, searchTerm);
 
-  const hackathons = data?.pages.flat() ?? [];
+  const hackathons = data?.pages.flatMap((page: any) => page.items || []) ?? [];
 
   const items: ListingItem[] = hackathons.map((h) => ({
     id: h.id,

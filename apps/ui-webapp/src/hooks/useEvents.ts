@@ -71,21 +71,18 @@ export function useEvents(
   search?: string,
   options?: { enabled?: boolean }
 ) {
-  return useInfiniteQuery<EventListItem[], Error>({
+  return useInfiniteQuery<{ items: EventListItem[]; further: boolean }, Error>({
     queryKey: ["events", festivalId, search] as const,
     queryFn: async ({ pageParam = 1 }) => {
-      const data = await getPublicEvents({
+      return await getPublicEvents({
         festival_id: festivalId,
         page: pageParam as number,
         q: search,
       });
-      return data as EventListItem[];
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
-      // Backend returns a list. If list is empty or < 10 (or < 20 if appendResults), no more pages.
-      if (!lastPage || lastPage.length === 0) return undefined;
-      return allPages.length + 1;
+      return lastPage.further ? allPages.length + 1 : undefined;
     },
     enabled: options?.enabled,
   });
@@ -99,20 +96,18 @@ export function useUpcomingEvents(
   search?: string,
   options?: { enabled?: boolean }
 ) {
-  return useInfiniteQuery<EventListItem[], Error>({
+  return useInfiniteQuery<{ items: EventListItem[]; further: boolean }, Error>({
     queryKey: ["events", "upcoming", festivalId, search] as const,
     queryFn: async ({ pageParam = 1 }) => {
-      const data = await getPublicUpcomingEvents({
+      return await getPublicUpcomingEvents({
         festival_id: festivalId,
         page: pageParam as number,
         q: search,
       });
-      return data as EventListItem[];
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
-      if (!lastPage || lastPage.length === 0) return undefined;
-      return allPages.length + 1;
+      return lastPage.further ? allPages.length + 1 : undefined;
     },
     enabled: options?.enabled,
   });

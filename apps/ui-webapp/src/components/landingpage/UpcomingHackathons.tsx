@@ -27,8 +27,8 @@ export default function UpcomingHackathons() {
   const [paginationEl, setPaginationEl] = useState<HTMLDivElement | null>(null);
 
   // Flatten pages if infinite query, or use data directly if simple query
-  // useUpcomingHackathons returns InfiniteData<PublicHackathonListItem[]>
-  const displayHackathons = (hackathons?.pages.flat() ?? []).slice(0, 6);
+  // useUpcomingHackathons returns InfiniteData<{ items: PublicHackathonListItem[], further: boolean }>
+  const displayHackathons = (hackathons?.pages.flatMap((page: any) => page.items || []) ?? []).slice(0, 6);
 
   if (isLoading) {
     return (

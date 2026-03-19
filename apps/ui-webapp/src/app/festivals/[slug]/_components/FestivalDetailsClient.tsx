@@ -4,21 +4,35 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { format, isSameDay, isSameYear } from "date-fns";
+import { Loader2 } from "lucide-react";
 import { CompetitionCard } from "@/components/landingpage/_components/CompetitionCard";
 import { EventCard } from "@/components/landingpage/_components/EventCard";
 import { EventTabs } from "@/app/events/[slug]/_components/EventTabs";
 import { FestivalInfoCard } from "./FestivalInfoCard";
+import { Button } from "@/components/ui/button";
 
 interface FestivalDetailsClientProps {
     festival: any;
     hackathons: any[];
     events: any[];
+    hasNextPageHackathons?: boolean;
+    fetchNextPageHackathons?: () => void;
+    isFetchingNextPageHackathons?: boolean;
+    hasNextPageEvents?: boolean;
+    fetchNextPageEvents?: () => void;
+    isFetchingNextPageEvents?: boolean;
 }
 
 export default function FestivalDetailsClient({
     festival,
     hackathons,
     events,
+    hasNextPageHackathons,
+    fetchNextPageHackathons,
+    isFetchingNextPageHackathons,
+    hasNextPageEvents,
+    fetchNextPageEvents,
+    isFetchingNextPageEvents,
 }: FestivalDetailsClientProps) {
     const [activeTab, setActiveTab] = useState("About Festival");
 
@@ -142,6 +156,26 @@ export default function FestivalDetailsClient({
                                                 <CompetitionCard key={hackathon.id} hackathon={hackathon} />
                                             ))}
                                         </div>
+
+                                        {hasNextPageHackathons && (
+                                            <div className="mt-8 flex justify-center">
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => fetchNextPageHackathons?.()}
+                                                    disabled={isFetchingNextPageHackathons}
+                                                    className="rounded-full px-8"
+                                                >
+                                                    {isFetchingNextPageHackathons ? (
+                                                        <>
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                            Loading...
+                                                        </>
+                                                    ) : (
+                                                        "Show More"
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        )}
                                     </section>
                                 )}
 
@@ -162,6 +196,26 @@ export default function FestivalDetailsClient({
                                     ) : (
                                         <div className="text-neutral-500 italic p-8 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 text-center">
                                             No events listed yet.
+                                        </div>
+                                    )}
+
+                                    {hasNextPageEvents && (
+                                        <div className="mt-8 flex justify-center">
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => fetchNextPageEvents?.()}
+                                                disabled={isFetchingNextPageEvents}
+                                                className="rounded-full px-8"
+                                            >
+                                                {isFetchingNextPageEvents ? (
+                                                    <>
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        Loading...
+                                                    </>
+                                                ) : (
+                                                    "Show More"
+                                                )}
+                                            </Button>
                                         </div>
                                     )}
                                 </section>

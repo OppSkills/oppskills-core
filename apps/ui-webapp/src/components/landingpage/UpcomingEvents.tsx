@@ -25,7 +25,7 @@ export const UpcomingEvents = () => {
   );
 
   // Flatten the pages to get all events
-  const allEvents = events?.pages.flat() ?? [];
+  const allEvents = events?.pages.flatMap((page: any) => page.items || []) ?? [];
 
   // Filter to only show published events
   const publishedEvents = allEvents.filter(

@@ -18,7 +18,7 @@ export default function EventsPage() {
   } = useEvents(searchTerm);
 
   // Flatten duplicate pages into a single array
-  const events = data?.pages.flat() ?? [];
+  const events = data?.pages.flatMap((page: any) => page.items || []) ?? [];
 
   // Filter to only show published events (Client-side fail-safe, generally backend handles this)
   const publishedEvents = events.filter(

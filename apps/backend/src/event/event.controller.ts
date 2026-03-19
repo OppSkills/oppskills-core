@@ -209,7 +209,7 @@ export class EventController {
     // Fetch ALL past items from both sources in one shot (no per-source pagination).
     // Each source may have up to 500 items; we sort the full merged set and paginate
     // globally so items are never silently dropped due to cross-source sort order.
-    const [events, hackathons] = await Promise.all([
+    const [eventsRes, hackathonsRes] = await Promise.all([
       this.eventService.listPublicEvents({
         festivalId,
         page: 1,
@@ -227,12 +227,12 @@ export class EventController {
     ]);
 
     // Normalize and merge
-    const normalizedEvents = (events as any[]).map((e) => ({
+    const normalizedEvents = (eventsRes.items as any[]).map((e) => ({
       ...e,
       type: 'EVENT',
     }));
 
-    const normalizedHackathons = (hackathons as any[]).map((h) => ({
+    const normalizedHackathons = (hackathonsRes.items as any[]).map((h) => ({
       ...h,
       type: 'HACKATHON',
     }));

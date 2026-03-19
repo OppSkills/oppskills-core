@@ -19,7 +19,7 @@ export default function HackathonList() {
       <p className="p-6 text-center text-red-500">Failed to load hackathons.</p>
     );
 
-  const hackathons = data?.pages.flat() ?? [];
+  const hackathons = data?.pages.flatMap((page: any) => page.items || []) ?? [];
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-IN", {

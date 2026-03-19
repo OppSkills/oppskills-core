@@ -25,21 +25,27 @@ export default function FestivalPageClient({ slug }: FestivalPageClientProps) {
 
   const { 
     data: hackathonsData, 
-    isLoading: isLoadingHackathons 
+    isLoading: isLoadingHackathons,
+    hasNextPage: hasNextPageHackathons,
+    fetchNextPage: fetchNextPageHackathons,
+    isFetchingNextPage: isFetchingNextPageHackathons
   } = usePublicHackathons(festivalId, undefined, { enabled: !!festivalId });
 
   const { 
     data: eventsData, 
-    isLoading: isLoadingEvents 
+    isLoading: isLoadingEvents,
+    hasNextPage: hasNextPageEvents,
+    fetchNextPage: fetchNextPageEvents,
+    isFetchingNextPage: isFetchingNextPageEvents
   } = useEvents(festivalId, undefined, { enabled: !!festivalId });
 
   // Flatten infinite query results
   const hackathons = useMemo(() => {
-    return hackathonsData?.pages.flatMap(page => page) || [];
+    return hackathonsData?.pages.flatMap(page => (page as any).items || []) || [];
   }, [hackathonsData]);
 
   const events = useMemo(() => {
-    return eventsData?.pages.flatMap(page => page) || [];
+    return eventsData?.pages.flatMap(page => (page as any).items || []) || [];
   }, [eventsData]);
 
   if (isLoadingFestival) {
@@ -89,6 +95,12 @@ export default function FestivalPageClient({ slug }: FestivalPageClientProps) {
       festival={festival}
       hackathons={hackathons}
       events={events}
+      hasNextPageHackathons={hasNextPageHackathons}
+      fetchNextPageHackathons={fetchNextPageHackathons}
+      isFetchingNextPageHackathons={isFetchingNextPageHackathons}
+      hasNextPageEvents={hasNextPageEvents}
+      fetchNextPageEvents={fetchNextPageEvents}
+      isFetchingNextPageEvents={isFetchingNextPageEvents}
     />
   );
 }
