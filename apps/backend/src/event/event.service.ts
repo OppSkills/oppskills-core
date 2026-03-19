@@ -788,6 +788,7 @@ export class EventService {
     }
 
     this.assertLocationValid(dto.location);
+    this.assertPassSettingsValid(dto);
 
     const name = dto.name ?? event.name;
     const slug = dto.slug
@@ -2903,6 +2904,47 @@ export class EventService {
       if (!location.virtualLink || location.virtualLink.trim().length === 0) {
         throw new BadRequestException(
           'location.virtualLink is required for VIRTUAL events.',
+        );
+      }
+    }
+  }
+
+  private assertPassSettingsValid(dto: UpdateEventDto): void {
+    if (!dto.collegeRestrictionEnabled) return;
+
+    const { allowedCollegeIds, allowedEmailDomains, collegeMatchMode } = dto;
+
+    const hasColleges =
+      allowedCollegeIds &&
+      Array.isArray(allowedCollegeIds) &&
+      allowedCollegeIds.length > 0;
+    const hasDomains =
+      allowedEmailDomains &&
+      Array.isArray(allowedEmailDomains) &&
+      allowedEmailDomains.length > 0;
+
+    const mode = collegeMatchMode || 'EITHER_OR';
+
+    if (mode === 'PROFILE_ONLY' || mode === 'BOTH_REQUIRED') {
+      if (!hasColleges) {
+        throw new BadRequestException(
+          'At least one college must be selected when profile matching is required.',
+        );
+      }
+    }
+
+    if (mode === 'EMAIL_ONLY' || mode === 'BOTH_REQUIRED') {
+      if (!hasDomains) {
+        throw new BadRequestException(
+          'At least one email domain must be added when email matching is required.',
+        );
+      }
+    }
+
+    if (mode === 'EITHER_OR') {
+      if (!hasColleges && !hasDomains) {
+        throw new BadRequestException(
+          'At least one college or email domain must be provided when college restriction is enabled.',
         );
       }
     }
