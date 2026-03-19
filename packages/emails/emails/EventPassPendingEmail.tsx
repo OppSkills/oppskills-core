@@ -59,6 +59,38 @@ export function EventPassPendingEmail({
     }
   };
 
+  const formatIST = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+      
+      return new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }).format(date);
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatDateIST = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+
+      return new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }).format(date);
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <Html>
       <Head />
@@ -98,12 +130,12 @@ export function EventPassPendingEmail({
                 <Row style={passDetailRow}>
                   <Column style={passDetailCol}>
                     <Text style={passDetailLabel}>DATE</Text>
-                    <Text style={passDetailValue}>{eventDate}</Text>
+                    <Text style={passDetailValue}>{formatDateIST(eventDate)}</Text>
                   </Column>
                   {eventTime && (
                     <Column style={passDetailCol}>
                       <Text style={passDetailLabel}>TIME</Text>
-                      <Text style={passDetailValue}>{eventTime}</Text>
+                      <Text style={passDetailValue}>{formatIST(eventTime)}</Text>
                     </Column>
                   )}
                 </Row>
