@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useAuth, useUser, useReverification } from "@clerk/nextjs";
+import { isClerkRuntimeError, isReverificationCancelledError } from "@clerk/nextjs/errors";
 import { getFullProfile } from '@/lib/api/usersApi';
 import { ProfileStats } from './_components/profile-stats';
 import { PersonalInfo } from './_components/personal-info';
@@ -23,6 +24,14 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSavingPassword, setIsSavingPassword] = useState(false);
+
+  // Wrap updatePassword with reverification so Clerk can prompt the user to
+  // verify their identity (e.g. via email code) before performing this
+  // sensitive operation.
+  const updatePasswordWithReverification = useReverification(
+    (params: Parameters<NonNullable<typeof user>['updatePassword']>[0]) =>
+      user!.updatePassword(params),
+  );
 
   useEffect(() => {
     async function loadProfile() {
@@ -81,7 +90,7 @@ export default function ProfilePage() {
 
     setIsSavingPassword(true);
     try {
-      await user.updatePassword({
+      await updatePasswordWithReverification({
         currentPassword: hasPassword ? currentPassword : undefined,
         newPassword,
       });
@@ -91,6 +100,10 @@ export default function ProfilePage() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: unknown) {
+      // User dismissed the reverification modal — silently abort
+      if (isClerkRuntimeError(error) && isReverificationCancelledError(error)) {
+        return;
+      }
       toast.error(
         getClerkErrorMessage(
           error,
