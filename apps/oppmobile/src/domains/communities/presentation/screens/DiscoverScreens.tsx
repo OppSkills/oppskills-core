@@ -21,7 +21,7 @@ export function DiscoverPageScreen({
   onEventsSecondary,
   onSearchRecent,
 }: DiscoverPageScreenProps) {
-  const { data: discoverFeed } = useDiscoverFeed();
+  const { data: discoverFeed, isError, isLoading, refetch } = useDiscoverFeed();
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
 
   const toggleBookmark = (itemId: string) => {
@@ -58,8 +58,13 @@ export function DiscoverPageScreen({
     >
       <DiscoverVariantList
         bookmarkedIds={bookmarkedIds}
+        errorLabel={isError ? 'Unable to load discover listings right now.' : undefined}
         items={discoverFeed?.defaultTopListings ?? []}
+        loading={isLoading}
         onOpenItem={onHackathons}
+        onRetry={() => {
+          void refetch();
+        }}
         onToggleBookmark={toggleBookmark}
       />
 
@@ -76,8 +81,13 @@ export function DiscoverPageScreen({
 
       <DiscoverVariantList
         bookmarkedIds={bookmarkedIds}
+        errorLabel={isError ? 'Unable to load recent listings right now.' : undefined}
         items={discoverFeed?.defaultRecentListings ?? []}
+        loading={isLoading}
         onOpenItem={onCompetitions}
+        onRetry={() => {
+          void refetch();
+        }}
         onToggleBookmark={toggleBookmark}
       />
     </DiscoverScaffold>

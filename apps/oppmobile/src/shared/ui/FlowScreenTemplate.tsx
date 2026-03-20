@@ -12,6 +12,8 @@ type FlowAction = {
   readonly label: string;
   readonly onPress: () => void;
   readonly tone?: 'primary' | 'secondary' | 'outline';
+  readonly loading?: boolean;
+  readonly disabled?: boolean;
 };
 
 interface FlowScreenTemplateProps extends PropsWithChildren {
@@ -58,6 +60,8 @@ export function FlowScreenTemplate({
             onPress={action.onPress}
             style={styles.actionButton}
             tone={action.tone ?? 'primary'}
+            {...(typeof action.disabled === 'boolean' ? { disabled: action.disabled } : {})}
+            {...(typeof action.loading === 'boolean' ? { loading: action.loading } : {})}
           />
         ))}
       </View>

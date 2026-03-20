@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type {
@@ -27,6 +27,7 @@ const detailTabs: readonly { id: OpportunityDetailTabId; label: string }[] = [
 
 export function OpportunityDetailScreen({ detail, onBack }: OpportunityDetailScreenProps) {
   const [activeTabId, setActiveTabId] = useState<OpportunityDetailTabId>('rounds');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const visibleTab = useMemo(
     () => detailTabs.find((tab) => tab.id === activeTabId) ?? detailTabs[0],
@@ -92,10 +93,23 @@ export function OpportunityDetailScreen({ detail, onBack }: OpportunityDetailScr
           ))}
         </View>
 
-        <Pressable style={styles.ctaButton}>
-          <AppText colorToken="textInverse" style={styles.ctaLabel} variant="bodyStrong">
-            {detail.ctaLabel}
-          </AppText>
+        <Pressable
+          disabled={isSubmitting}
+          onPress={() => {
+            setIsSubmitting(true);
+            setTimeout(() => {
+              setIsSubmitting(false);
+            }, 460);
+          }}
+          style={styles.ctaButton}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color={lightTheme.colors.textInverse} size="small" />
+          ) : (
+            <AppText colorToken="textInverse" style={styles.ctaLabel} variant="bodyStrong">
+              {detail.ctaLabel}
+            </AppText>
+          )}
         </Pressable>
 
         <ScrollView

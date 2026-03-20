@@ -32,7 +32,7 @@ export function SearchPageRecentScreen({
       onQueryChange={onQueryChange}
       onSubmitQuery={onSubmitQuery}
     >
-      <QueryList items={recentQueries} onSelect={onSubmitQuery} />
+      <QueryList emptyLabel="No search history yet. Start typing to discover opportunities." items={recentQueries} onSelect={onSubmitQuery} />
       <FooterCopy />
       <Pressable onPress={onPopular} style={styles.secondaryRouteLink}>
         <AppText colorToken="brandPrimaryStrong" variant="caption">

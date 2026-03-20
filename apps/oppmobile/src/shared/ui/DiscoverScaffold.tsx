@@ -24,6 +24,9 @@ interface DiscoverVariantListProps {
   readonly onToggleBookmark: (itemId: string) => void;
   readonly onOpenItem?: (itemId: string) => void;
   readonly emptyLabel?: string;
+  readonly loading?: boolean;
+  readonly errorLabel?: string | undefined;
+  readonly onRetry?: () => void;
 }
 
 export function DiscoverScaffold({
@@ -99,7 +102,36 @@ export function DiscoverVariantList({
   onToggleBookmark,
   onOpenItem,
   emptyLabel = 'No discover records available for this category yet.',
+  loading = false,
+  errorLabel,
+  onRetry,
 }: DiscoverVariantListProps) {
+  if (loading) {
+    return (
+      <View style={styles.listStack}>
+        <DiscoverListSkeletonCard />
+        <DiscoverListSkeletonCard />
+      </View>
+    );
+  }
+
+  if (errorLabel) {
+    return (
+      <View style={styles.emptyState}>
+        <AppText colorToken="textSecondary" variant="caption">
+          {errorLabel}
+        </AppText>
+        {onRetry ? (
+          <Pressable onPress={onRetry} style={styles.retryButton}>
+            <AppText colorToken="brandPrimaryStrong" variant="caption">
+              Retry
+            </AppText>
+          </Pressable>
+        ) : null}
+      </View>
+    );
+  }
+
   if (items.length === 0) {
     return (
       <View style={styles.emptyState}>
@@ -298,6 +330,19 @@ function heroTone(tone: DiscoverCardTone) {
     default:
       return styles.heroViolet;
   }
+}
+
+function DiscoverListSkeletonCard() {
+  return (
+    <View style={styles.skeletonCard}>
+      <View style={styles.skeletonHero} />
+      <View style={styles.skeletonBody}>
+        <View style={[styles.skeletonBar, styles.skeletonWide]} />
+        <View style={[styles.skeletonBar, styles.skeletonMedium]} />
+        <View style={[styles.skeletonBar, styles.skeletonShort]} />
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -524,6 +569,47 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     width: 44,
+  },
+  retryButton: {
+    alignItems: 'center',
+    borderColor: lightTheme.colors.focusRing,
+    borderRadius: lightTheme.radius.pill,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginTop: lightTheme.spacing[12],
+    minHeight: 40,
+    paddingHorizontal: lightTheme.spacing[16],
+  },
+  skeletonBar: {
+    backgroundColor: lightTheme.colors.backgroundSecondary,
+    borderRadius: lightTheme.radius.xs,
+    height: 10,
+    marginTop: lightTheme.spacing[8],
+  },
+  skeletonBody: {
+    padding: lightTheme.spacing[12],
+  },
+  skeletonCard: {
+    backgroundColor: lightTheme.colors.surfacePrimary,
+    borderColor: lightTheme.colors.divider,
+    borderRadius: lightTheme.radius.md,
+    borderWidth: 1,
+    marginBottom: lightTheme.spacing[16],
+    overflow: 'hidden',
+  },
+  skeletonHero: {
+    backgroundColor: lightTheme.colors.surfaceMuted,
+    height: 132,
+    width: '100%',
+  },
+  skeletonMedium: {
+    width: '70%',
+  },
+  skeletonShort: {
+    width: '44%',
+  },
+  skeletonWide: {
+    width: '88%',
   },
   screen: {
     backgroundColor: lightTheme.colors.backgroundPrimary,

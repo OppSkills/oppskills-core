@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -18,8 +18,9 @@ interface AppliedScreenProps {
 }
 
 export function AppliedScreen({ onOpenCompetition, onOpenHackathon, onSignOut }: AppliedScreenProps) {
-  const { data: appliedFeed } = useAppliedFeed();
+  const { data: appliedFeed, isError, isLoading, refetch } = useAppliedFeed();
   const [activeFilterId, setActiveFilterId] = useState<AppliedFilterIdEntity>('all');
+  const [submittingCardId, setSubmittingCardId] = useState<string | undefined>();
   const appliedFilters = appliedFeed?.filters ?? [];
   const appliedTimelineStages = appliedFeed?.timelineStages ?? [];
   const appliedCardItems = useMemo(() => appliedFeed?.cards ?? [], [appliedFeed]);
@@ -31,6 +32,20 @@ export function AppliedScreen({ onOpenCompetition, onOpenHackathon, onSignOut }:
         : appliedCardItems.filter((item) => item.category === activeFilterId),
     [activeFilterId, appliedCardItems],
   );
+
+  const handleCompleteNow = (item: AppliedCardItemEntity) => {
+    setSubmittingCardId(item.id);
+
+    setTimeout(() => {
+      setSubmittingCardId(undefined);
+      if (item.category === 'hackathons') {
+        onOpenHackathon();
+        return;
+      }
+
+      onOpenCompetition();
+    }, 420);
+  };
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
@@ -89,18 +104,32 @@ export function AppliedScreen({ onOpenCompetition, onOpenHackathon, onSignOut }:
           Applied
         </AppText>
 
-        <View style={styles.cardsStack}>
-          {filteredItems.map((item, index) => (
-            <AppliedCard
-              key={item.id}
-              item={item}
-              onOpenCompetition={onOpenCompetition}
-              onOpenHackathon={onOpenHackathon}
-              timelineStages={appliedTimelineStages}
-              showBottomDivider={index < filteredItems.length - 1}
-            />
-          ))}
-        </View>
+        {isLoading ? (
+          <AppliedLoadingState />
+        ) : isError ? (
+          <AppliedErrorState
+            onRetry={() => {
+              void refetch();
+            }}
+          />
+        ) : filteredItems.length === 0 ? (
+          <AppliedEmptyState />
+        ) : (
+          <View style={styles.cardsStack}>
+            {filteredItems.map((item, index) => (
+              <AppliedCard
+                key={item.id}
+                isSubmitting={submittingCardId === item.id}
+                item={item}
+                onCompleteNow={handleCompleteNow}
+                onOpenCompetition={onOpenCompetition}
+                onOpenHackathon={onOpenHackathon}
+                timelineStages={appliedTimelineStages}
+                showBottomDivider={index < filteredItems.length - 1}
+              />
+            ))}
+          </View>
+        )}
 
         <FooterSignatureBlock compact />
       </ScrollView>
@@ -114,6 +143,8 @@ interface AppliedCardProps {
   readonly onOpenHackathon: () => void;
   readonly timelineStages: readonly AppliedTimelineStageEntity[];
   readonly showBottomDivider: boolean;
+  readonly isSubmitting: boolean;
+  readonly onCompleteNow: (item: AppliedCardItemEntity) => void;
 }
 
 function AppliedCard({
@@ -122,6 +153,8 @@ function AppliedCard({
   onOpenHackathon,
   timelineStages,
   showBottomDivider,
+  isSubmitting,
+  onCompleteNow,
 }: AppliedCardProps) {
   const completionStageIndex = timelineStages.findIndex(
     (stage) => stage.id === item.timelineCompleteThroughStageId,
@@ -208,10 +241,14 @@ function AppliedCard({
         </View>
 
         {item.actionState.type === 'complete-now' ? (
-          <Pressable onPress={openPrimaryDetail} style={styles.ctaPill}>
-            <AppText colorToken="brandPrimaryStrong" variant="bodyStrong">
-              {item.actionState.label} {'>'}
-            </AppText>
+          <Pressable disabled={isSubmitting} onPress={() => onCompleteNow(item)} style={styles.ctaPill}>
+            {isSubmitting ? (
+              <ActivityIndicator color={lightTheme.colors.brandPrimaryStrong} size="small" />
+            ) : (
+              <AppText colorToken="brandPrimaryStrong" variant="bodyStrong">
+                {item.actionState.label} {'>'}
+              </AppText>
+            )}
           </Pressable>
         ) : (
           <View style={styles.registrationCompleteWrap}>
@@ -222,6 +259,57 @@ function AppliedCard({
           </View>
         )}
       </View>
+    </View>
+  );
+}
+
+function AppliedLoadingState() {
+  return (
+    <View style={styles.cardsStack}>
+      <AppliedSkeletonCard />
+      <AppliedSkeletonCard />
+    </View>
+  );
+}
+
+function AppliedSkeletonCard() {
+  return (
+    <View style={styles.skeletonCard}>
+      <View style={styles.skeletonHeader}>
+        <View style={styles.skeletonThumb} />
+        <View style={styles.skeletonMeta}>
+          <View style={[styles.skeletonBar, styles.skeletonWide]} />
+          <View style={[styles.skeletonBar, styles.skeletonMedium]} />
+          <View style={[styles.skeletonBar, styles.skeletonShort]} />
+        </View>
+      </View>
+      <View style={[styles.skeletonBar, styles.skeletonWide]} />
+      <View style={[styles.skeletonBar, styles.skeletonMedium]} />
+    </View>
+  );
+}
+
+function AppliedEmptyState() {
+  return (
+    <View style={styles.stateCard}>
+      <AppText colorToken="textSecondary" variant="caption">
+        No applied records found for this filter.
+      </AppText>
+    </View>
+  );
+}
+
+function AppliedErrorState({ onRetry }: { readonly onRetry: () => void }) {
+  return (
+    <View style={styles.stateCard}>
+      <AppText colorToken="textSecondary" variant="caption">
+        Unable to load your applied records right now.
+      </AppText>
+      <Pressable onPress={onRetry} style={styles.stateRetryButton}>
+        <AppText colorToken="brandPrimaryStrong" variant="caption">
+          Retry
+        </AppText>
+      </Pressable>
     </View>
   );
 }
@@ -406,6 +494,41 @@ const styles = StyleSheet.create({
     backgroundColor: lightTheme.colors.backgroundPrimary,
     flex: 1,
   },
+  skeletonBar: {
+    backgroundColor: lightTheme.colors.backgroundSecondary,
+    borderRadius: lightTheme.radius.xs,
+    height: 10,
+    marginTop: lightTheme.spacing[8],
+  },
+  skeletonCard: {
+    backgroundColor: lightTheme.colors.surfacePrimary,
+    borderColor: lightTheme.colors.divider,
+    borderRadius: lightTheme.radius.md,
+    borderWidth: 1,
+    padding: lightTheme.spacing[12],
+  },
+  skeletonHeader: {
+    flexDirection: 'row',
+  },
+  skeletonMedium: {
+    width: '62%',
+  },
+  skeletonMeta: {
+    flex: 1,
+  },
+  skeletonShort: {
+    width: '40%',
+  },
+  skeletonThumb: {
+    backgroundColor: lightTheme.colors.surfaceMuted,
+    borderRadius: lightTheme.radius.sm,
+    height: 72,
+    marginRight: lightTheme.spacing[10],
+    width: 126,
+  },
+  skeletonWide: {
+    width: '86%',
+  },
   screenTitle: {
     marginBottom: lightTheme.spacing[10],
   },
@@ -420,6 +543,23 @@ const styles = StyleSheet.create({
     minHeight: 34,
     justifyContent: 'center',
     paddingHorizontal: lightTheme.spacing[12],
+  },
+  stateCard: {
+    alignItems: 'center',
+    borderColor: lightTheme.colors.divider,
+    borderRadius: lightTheme.radius.md,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    padding: lightTheme.spacing[20],
+  },
+  stateRetryButton: {
+    borderColor: lightTheme.colors.focusRing,
+    borderRadius: lightTheme.radius.pill,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginTop: lightTheme.spacing[12],
+    minHeight: 40,
+    paddingHorizontal: lightTheme.spacing[16],
   },
   timelineConnector: {
     backgroundColor: lightTheme.colors.divider,

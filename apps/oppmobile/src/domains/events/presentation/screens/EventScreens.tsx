@@ -13,7 +13,7 @@ export function DiscoverEventsPrimaryScreen({
   onOpenEventsSecondary,
   onOpenSearchRecent,
 }: DiscoverEventsPrimaryScreenProps) {
-  const { data: discoverFeed } = useDiscoverFeed();
+  const { data: discoverFeed, isError, isLoading, refetch } = useDiscoverFeed();
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
 
   const toggleBookmark = (itemId: string) => {
@@ -40,8 +40,13 @@ export function DiscoverEventsPrimaryScreen({
     >
       <DiscoverVariantList
         bookmarkedIds={bookmarkedIds}
+        errorLabel={isError ? 'Unable to load event listings right now.' : undefined}
         items={discoverFeed?.eventCommunityListings ?? []}
+        loading={isLoading}
         onOpenItem={onOpenEventsSecondary}
+        onRetry={() => {
+          void refetch();
+        }}
         onToggleBookmark={toggleBookmark}
       />
     </DiscoverScaffold>
@@ -57,7 +62,7 @@ export function DiscoverEventsSecondaryScreen({
   onOpenEventsPrimary,
   onOpenSearchPopular,
 }: DiscoverEventsSecondaryScreenProps) {
-  const { data: discoverFeed } = useDiscoverFeed();
+  const { data: discoverFeed, isError, isLoading, refetch } = useDiscoverFeed();
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
 
   const toggleBookmark = (itemId: string) => {
@@ -84,8 +89,13 @@ export function DiscoverEventsSecondaryScreen({
     >
       <DiscoverVariantList
         bookmarkedIds={bookmarkedIds}
+        errorLabel={isError ? 'Unable to load featured events right now.' : undefined}
         items={discoverFeed?.eventFeatureListings ?? []}
+        loading={isLoading}
         onOpenItem={onOpenEventsPrimary}
+        onRetry={() => {
+          void refetch();
+        }}
         onToggleBookmark={toggleBookmark}
       />
     </DiscoverScaffold>

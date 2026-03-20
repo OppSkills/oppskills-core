@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import type { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native';
 
 import { lightTheme } from '../theme';
@@ -12,6 +12,7 @@ interface PrimaryButtonProps {
   readonly tone?: ButtonTone;
   readonly fullWidth?: boolean;
   readonly disabled?: boolean;
+  readonly loading?: boolean;
   readonly style?: StyleProp<ViewStyle>;
 }
 
@@ -33,19 +34,22 @@ export function PrimaryButton({
   tone = 'primary',
   fullWidth = true,
   disabled = false,
+  loading = false,
   style,
 }: PrimaryButtonProps) {
+  const computedDisabled = disabled || loading;
+
   return (
     <Pressable
       accessibilityRole="button"
-      disabled={disabled}
+      disabled={computedDisabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
         {
           backgroundColor: backgroundToneMap[tone],
           borderColor: tone === 'outline' ? lightTheme.colors.focusRing : backgroundToneMap[tone],
-          opacity: disabled ? 0.45 : pressed ? 0.9 : 1,
+          opacity: computedDisabled ? 0.45 : pressed ? 0.9 : 1,
           width: fullWidth ? '100%' : undefined,
         },
         style,
@@ -55,9 +59,16 @@ export function PrimaryButton({
         <AppText colorToken={tone === 'outline' ? 'brandPrimaryStrong' : 'textInverse'} style={styles.symbol} variant="label">
           {'<'}
         </AppText>
-        <AppText style={{ color: textToneMap[tone] }} variant="bodyStrong">
-          {label}
-        </AppText>
+        {loading ? (
+          <ActivityIndicator
+            color={tone === 'outline' ? lightTheme.colors.brandPrimaryStrong : lightTheme.colors.textInverse}
+            size="small"
+          />
+        ) : (
+          <AppText style={{ color: textToneMap[tone] }} variant="bodyStrong">
+            {label}
+          </AppText>
+        )}
         <AppText colorToken={tone === 'outline' ? 'brandPrimaryStrong' : 'textInverse'} style={styles.symbol} variant="label">
           {'>'}
         </AppText>
