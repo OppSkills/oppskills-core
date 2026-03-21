@@ -149,11 +149,6 @@ export function JoinTeamList({
     }
 
     const meData = await getMe(token);
-    if (!meData.onboarded) {
-      const returnUrl = encodeURIComponent(window.location.href);
-      router.push(`/onboarding?returnUrl=${returnUrl}`);
-      return;
-    }
 
     if (registrationForm?.externalFormLink) {
       window.open(

@@ -22,7 +22,6 @@ import {
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
 import { getApiErrorMessage } from "@/lib/utils";
-import { getMe } from "@/lib/api/usersApi";
 import { format } from "date-fns";
 import type { CompetitionDetails } from "./types";
 
@@ -35,7 +34,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   const searchParams = useSearchParams();
   const { isSignedIn, getToken } = useAuth();
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
-  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
+  const [isStartingRegistration, setIsStartingRegistration] = useState(false);
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
   const [myTeam, setMyTeam] = useState<TeamDetailResponse | null>(null);
 
@@ -91,18 +90,11 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       return;
     }
 
-    setIsCheckingOnboarding(true);
+    setIsStartingRegistration(true);
     try {
       const token = await getToken();
       if (!token) {
         toast.error("Please sign in to register.");
-        return;
-      }
-
-      const meData = await getMe(token);
-      if (!meData.onboarded) {
-        const returnUrl = `/hackathons/${competition.slug}`;
-        router.push(`/onboarding?returnUrl=${encodeURIComponent(returnUrl)}`);
         return;
       }
 
@@ -120,12 +112,12 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`
       );
     } catch (error) {
-      console.error("Error checking onboarding status:", error);
+      console.error("Error starting registration:", error);
       toast.error(
         getApiErrorMessage(error, "Something went wrong. Please try again.")
       );
     } finally {
-      setIsCheckingOnboarding(false);
+      setIsStartingRegistration(false);
     }
   };
 
@@ -224,9 +216,9 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         <Button
           className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
           onClick={handleRegisterClick}
-          disabled={isCheckingOnboarding}
+          disabled={isStartingRegistration}
         >
-          {isCheckingOnboarding ? (
+          {isStartingRegistration ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Loading...
@@ -235,7 +227,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
             registerLabel
           )}
         </Button>
-        {isPaid && competition.feeBearer === "PARTICIPANT" && !isCheckingOnboarding && (
+        {isPaid && competition.feeBearer === "PARTICIPANT" && !isStartingRegistration && (
           <div className="text-center space-y-0.5">
             <p className="text-xs text-neutral-500">
               ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)} Transaction Charges
@@ -480,6 +472,21 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
               </div>
             </div>
 
+            {/* Pricing Mode (only for paid hackathons) */}
+            {!competition.isFree && paidPricingModeLabel && (
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
+                  <IndianRupee className="w-5 h-5 text-neutral-800 " />
+                </div>
+                <div>
+                  <div className="font-semibold text-neutral-900  text-sm">
+                    {paidPricingModeLabel}
+                  </div>
+                  <div className="text-xs text-neutral-500">Pricing Mode</div>
+                </div>
+              </div>
+            )}
+
             {/* Impressions */}
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
@@ -512,20 +519,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
               </div>
             </div>
 
-            {/* Pricing Mode (only for paid hackathons) */}
-            {!competition.isFree && paidPricingModeLabel && (
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
-                  <IndianRupee className="w-5 h-5 text-neutral-800 " />
-                </div>
-                <div>
-                  <div className="font-semibold text-neutral-900  text-sm">
-                    {paidPricingModeLabel}
-                  </div>
-                  <div className="text-xs text-neutral-500">Pricing Mode</div>
-                </div>
-              </div>
-            )}
+            
           </div>
         </div>
       </div>
