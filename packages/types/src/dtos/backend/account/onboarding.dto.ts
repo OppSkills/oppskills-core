@@ -111,18 +111,18 @@ export class CreateOnboardingDto {
   @IsOptional()
   jobTitle?: string;
 
-  // Step 3: Location (required)
+  // Step 3: Location (optional — e.g. event registration flow without location step)
   @IsString()
-  @IsNotEmpty()
-  locationCity: string;
+  @IsOptional()
+  locationCity?: string;
 
   @IsString()
-  @IsNotEmpty()
-  locationState: string;
+  @IsOptional()
+  locationState?: string;
 
   @IsString()
-  @IsNotEmpty()
-  locationCountry: string;
+  @IsOptional()
+  locationCountry?: string;
 
   // Step 4: Interests and Skills
   @IsArray()

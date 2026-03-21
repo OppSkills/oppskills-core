@@ -381,9 +381,9 @@ export class UserAccountsService {
                 collegeSkipped: data.collegeSkipped || false,
                 companyName: data.companyName || null,
                 jobTitle: data.jobTitle || null,
-                locationCity: data.locationCity,
-                locationState: data.locationState,
-                locationCountry: data.locationCountry,
+                locationCity: data.locationCity?.trim() || null,
+                locationState: data.locationState?.trim() || null,
+                locationCountry: data.locationCountry?.trim() || null,
                 interests: data.interests || [],
                 skills: data.skills || [],
                 experienceLevel: data.experienceLevel || null,
@@ -401,9 +401,9 @@ export class UserAccountsService {
                 collegeSkipped: data.collegeSkipped || false,
                 companyName: data.companyName || null,
                 jobTitle: data.jobTitle || null,
-                locationCity: data.locationCity,
-                locationState: data.locationState,
-                locationCountry: data.locationCountry,
+                locationCity: data.locationCity?.trim() || null,
+                locationState: data.locationState?.trim() || null,
+                locationCountry: data.locationCountry?.trim() || null,
                 interests: data.interests || [],
                 skills: data.skills || [],
                 experienceLevel: data.experienceLevel || null,
@@ -423,7 +423,7 @@ export class UserAccountsService {
         email: result.email,
         firstName: result.firstName || undefined,
         userCategory: data.userCategory,
-        locationCity: data.locationCity,
+        locationCity: data.locationCity?.trim() || undefined,
       };
       this.eventEmitter.emit(EMAIL_EVENTS.USER_ONBOARDED, eventPayload);
 
@@ -451,16 +451,8 @@ export class UserAccountsService {
    * Validates onboarding data based on user category and common required fields.
    */
   private validateOnboardingData(data: CreateOnboardingDto) {
-    // 1. Common required fields for everyone
-    if (!data.locationCity || data.locationCity.trim().length === 0) {
-      throw new HttpException('City is required', HttpStatus.BAD_REQUEST);
-    }
-    if (!data.locationState || data.locationState.trim().length === 0) {
-      throw new HttpException('State is required', HttpStatus.BAD_REQUEST);
-    }
-    if (!data.locationCountry || data.locationCountry.trim().length === 0) {
-      throw new HttpException('Country is required', HttpStatus.BAD_REQUEST);
-    }
+    // 1. Location is optional; if any part is sent, prefer a consistent set for college resolution
+    // (findOrCreateCollege already gates on all three in submitOnboarding)
 
     // 2. Interests and Skills (optional - sanitize if provided)
     // If interests are provided, ensure they are valid strings and sanitize
