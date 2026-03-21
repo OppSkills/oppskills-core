@@ -11,6 +11,7 @@ import { getPublicHackathonBySlug } from "@/lib/api/hackathonApi";
 import {
   checkMyHackathonTeam,
   removeMember,
+  leaveTeam,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
 import Image from "next/image";
@@ -94,6 +95,31 @@ export default function TeamDetailsPage() {
   const handleRemoveMember = (memberUserId: string) => {
     if (confirm("Are you sure you want to remove this member?")) {
       removeMemberMutation.mutate(memberUserId);
+    }
+  };
+
+  const leaveTeamMutation = useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      if (!token || !myTeam) throw new Error("Unauthorized");
+      return leaveTeam(token, myTeam.id);
+    },
+    onSuccess: () => {
+      toast.success("You left the team");
+      router.push(`/hackathons/${slug}`);
+    },
+    onError: () => {
+      toast.error("Failed to leave team");
+    },
+  });
+
+  const handleLeaveTeam = () => {
+    if (
+      confirm(
+        "Leave this team? You can join another team for this competition. If you already paid a per-user entry fee, you won’t be charged again.",
+      )
+    ) {
+      leaveTeamMutation.mutate();
     }
   };
 
@@ -267,6 +293,36 @@ export default function TeamDetailsPage() {
 
             <Separator />
 
+            {isLeader ? (
+              <p className="text-sm text-muted-foreground rounded-lg border bg-muted/20 px-4 py-3">
+                As team leader, you can remove members using{" "}
+                <span className="font-medium text-foreground">Remove</span> next
+                to their name. You cannot remove yourself—transfer leadership
+                first if you need to leave.
+              </p>
+            ) : (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border bg-muted/20 px-4 py-3">
+                <p className="text-sm text-muted-foreground">
+                  Need to switch teams? Leave this one first, then join another
+                  from the competition page. If you already paid a per-user
+                  entry fee, you won&apos;t pay again.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={handleLeaveTeam}
+                  disabled={leaveTeamMutation.isPending}
+                >
+                  {leaveTeamMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Leave team"
+                  )}
+                </Button>
+              </div>
+            )}
+
             <div>
               <h3 className="text-lg font-bold text-foreground mb-5 flex items-center justify-between">
                 <span>Team Members</span>
@@ -308,45 +364,57 @@ export default function TeamDetailsPage() {
                   </div>
                 )}
 
-                {myTeam.members?.map((member: any) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center gap-4 p-4 rounded-2xl border bg-card hover:border-muted-foreground/20 hover:shadow-sm transition-all"
-                  >
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-lg overflow-hidden border-2 border-background shadow-sm">
-                      {member.user.imageUrl ? (
-                        <Image
-                          src={member.user.imageUrl}
-                          alt="Member"
-                          width={48}
-                          height={48}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        (member.user.firstName?.[0] || "M").toUpperCase()
-                      )}
+                {myTeam.members?.map((member: any) => {
+                  const memberUid = member.userId ?? member.user?.id;
+                  const isRowCurrentUser = Boolean(
+                    userId && memberUid && userId === memberUid,
+                  );
+                  return (
+                    <div
+                      key={member.id}
+                      className="flex flex-wrap items-center gap-4 p-4 rounded-2xl border bg-card hover:border-muted-foreground/20 hover:shadow-sm transition-all"
+                    >
+                      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-lg overflow-hidden border-2 border-background shadow-sm shrink-0">
+                        {member.user.imageUrl ? (
+                          <Image
+                            src={member.user.imageUrl}
+                            alt="Member"
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          (member.user.firstName?.[0] || "M").toUpperCase()
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground">
+                          {member.user.firstName} {member.user.lastName}
+                          {isRowCurrentUser ? (
+                            <span className="ml-2 text-xs font-normal text-muted-foreground">
+                              (you)
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {member.user.email}
+                        </p>
+                      </div>
+                      {isLeader && !isRowCurrentUser ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive border-destructive/40 hover:bg-destructive/10 shrink-0"
+                          onClick={() => handleRemoveMember(member.userId)}
+                          disabled={removeMemberMutation.isPending}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Remove
+                        </Button>
+                      ) : null}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-foreground">
-                        {member.user.firstName} {member.user.lastName}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {member.user.email}
-                      </p>
-                    </div>
-                    {isLeader && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleRemoveMember(member.userId)}
-                        disabled={removeMemberMutation.isPending}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

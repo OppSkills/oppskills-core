@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Delete,
+  Get,
   Body,
   Param,
   UseGuards,
@@ -40,6 +41,22 @@ export class DraftTeamController {
       teamId: body.teamId,
       invitationCode: body.invitationCode,
     });
+  }
+
+  /**
+   * Whether the current user already paid PER_USER entry fee for this hackathon
+   * (can join another team without paying again).
+   */
+  @Get(':slug/teams/draft/per-user-fee-status')
+  async getPerUserFeeStatus(
+    @Param('slug') slug: string,
+    @Req() req: { user: { id: string } },
+  ) {
+    const hasPaid = await this.draftTeamService.userHasPerUserEntryFeePaid(
+      slug,
+      req.user.id,
+    );
+    return { hasPaid };
   }
 
   @Delete(':slug/teams/draft/leave')

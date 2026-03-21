@@ -297,6 +297,40 @@ export class DraftTeamService {
     };
   }
 
+  /**
+   * True if this user already has a successful PER_USER entry payment for the hackathon.
+   * Used to skip charging again when joining a different team after leaving the first.
+   */
+  async userHasPerUserEntryFeePaid(
+    hackathonSlug: string,
+    userId: string,
+  ): Promise<boolean> {
+    const hackathon = await prisma.hackathonEntity.findFirst({
+      where: { slug: hackathonSlug, isDeleted: false },
+      select: { id: true, isFree: true, chargeMode: true },
+    });
+    if (!hackathon || hackathon.isFree) {
+      return false;
+    }
+    if (hackathon.chargeMode !== HackathonChargeMode.PER_USER) {
+      return false;
+    }
+    const userPayment = await prisma.hackathonPaymentEntity.findFirst({
+      where: {
+        hackathonId: hackathon.id,
+        payerUserId: userId,
+        scope: HackathonPaymentScope.USER,
+        paymentStatus: {
+          in: [
+            HackathonPaymentStatus.AUTHORIZED,
+            HackathonPaymentStatus.CAPTURED,
+          ],
+        },
+      },
+    });
+    return !!userPayment;
+  }
+
   async leaveDraftTeam(params: { teamId: string; userId: string }) {
     const { teamId, userId } = params;
 

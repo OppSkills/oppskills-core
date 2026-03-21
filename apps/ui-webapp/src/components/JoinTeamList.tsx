@@ -23,6 +23,7 @@ import {
   joinTeam,
   joinTeamByCode,
   joinDraftTeam,
+  getPerUserFeePaidStatus,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
 import {
@@ -340,6 +341,38 @@ export function JoinTeamList({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot; openRegistrationModal is not stable
   }, [autoOpenInviteFlow, initialInviteCode]);
 
+  /** PER_USER paid: join draft team + submit registration (payment already satisfied). */
+  const finalizePerUserMemberJoin = async (
+    token: string,
+    answers: Array<{ fieldId: string; value: string | number | string[] }>,
+    opts: { teamId?: string; invitationCode?: string; teamNameLabel?: string },
+  ) => {
+    if (opts.teamId) {
+      await joinDraftTeam(token, hackathonSlug, { teamId: opts.teamId });
+    } else if (opts.invitationCode) {
+      await joinDraftTeam(token, hackathonSlug, {
+        invitationCode: opts.invitationCode,
+      });
+    } else {
+      throw new Error("Missing team join target");
+    }
+    const formattedAnswers = answers.map((a) => ({
+      fieldId: a.fieldId,
+      value: String(a.value),
+    }));
+    await submitRegistration(token, hackathonSlug, formattedAnswers);
+    setJoinedTeamName(opts.teamNameLabel ?? "the team");
+    setIsSuccess(true);
+    toast.success("Successfully joined the team!");
+    setTimeout(() => {
+      router.push(`/hackathons/${hackathonSlug}`);
+    }, 2000);
+    setJoiningTeamId(null);
+    setIsJoiningByCode(false);
+    setShowRegistrationModal(false);
+    setIsSubmittingRegistration(false);
+  };
+
   const processPaymentAndRegistration = async (
     token: string,
     answers: Array<{ fieldId: string; value: string | number | string[] }>,
@@ -363,29 +396,11 @@ export function JoinTeamList({
       // If discount makes this a zero-amount payment, backend already marks it as CAPTURED.
       // Skip Razorpay checkout and proceed to team join and registration submission.
       if (order.zeroAmountPayment || order.amountPaise === 0) {
-        // Join team after payment is confirmed (zero amount = free entry)
-        if (teamId) {
-          await joinDraftTeam(token, hackathonSlug, { teamId });
-        } else if (invitationCode) {
-          await joinDraftTeam(token, hackathonSlug, { invitationCode });
-        }
-
-        // Submit registration (for PER_USER mode)
-          const formattedAnswers = answers.map((a) => ({
-            fieldId: a.fieldId,
-            value: String(a.value),
-          }));
-          await submitRegistration(token, hackathonSlug, formattedAnswers);
-
-        setIsSuccess(true);
-        toast.success("Registration successful!");
-
-        setTimeout(() => {
-          router.push(`/hackathons/${hackathonSlug}`);
-        }, 2000);
-
-        setIsSubmittingRegistration(false);
-        setShowRegistrationModal(false);
+        await finalizePerUserMemberJoin(token, answers, {
+          teamId,
+          invitationCode,
+          teamNameLabel: "the team",
+        });
         return;
       }
 
@@ -531,7 +546,27 @@ export function JoinTeamList({
       } else {
         // Paid hackathons: Payment first, then join team after successful payment
         if (chargeMode === "PER_USER") {
-          // PER_USER: Create payment order → Pay → Join team → Submit registration
+          const { hasPaid } = await getPerUserFeePaidStatus(
+            token,
+            hackathonSlug,
+          );
+          if (hasPaid) {
+            try {
+              const team = teams.find((t) => t.id === teamId);
+              await finalizePerUserMemberJoin(token, answers, {
+                teamId,
+                teamNameLabel: team?.name ?? "the team",
+              });
+            } catch (err: unknown) {
+              const message =
+                err instanceof Error ? err.message : "Failed to join team";
+              toast.error(message);
+              setJoiningTeamId(null);
+              setIsSubmittingRegistration(false);
+              setShowRegistrationModal(false);
+            }
+            return;
+          }
           await processPaymentAndRegistration(token, answers, teamId);
         } else {
           // PER_TEAM: For members, check if leader has paid, then join and submit registration
@@ -576,6 +611,7 @@ export function JoinTeamList({
       toast.error(message);
       setJoiningTeamId(null);
       setShowRegistrationModal(false);
+      setIsSubmittingRegistration(false);
     }
   };
 
@@ -607,7 +643,26 @@ export function JoinTeamList({
       } else {
         // Paid hackathons: Payment first, then join team after successful payment
         if (chargeMode === "PER_USER") {
-          // PER_USER: Create payment order → Pay → Join team → Submit registration
+          const { hasPaid } = await getPerUserFeePaidStatus(
+            token,
+            hackathonSlug,
+          );
+          if (hasPaid) {
+            try {
+              await finalizePerUserMemberJoin(token, answers, {
+                invitationCode: code,
+                teamNameLabel: "the team",
+              });
+            } catch (err: unknown) {
+              const message =
+                err instanceof Error ? err.message : "Failed to join team";
+              toast.error(message);
+              setIsJoiningByCode(false);
+              setIsSubmittingRegistration(false);
+              setShowRegistrationModal(false);
+            }
+            return;
+          }
           await processPaymentAndRegistration(token, answers, undefined, code);
         } else {
           // PER_TEAM: For members, check if leader has paid, then join and submit registration
@@ -650,6 +705,7 @@ export function JoinTeamList({
       toast.error(message);
       setIsJoiningByCode(false);
       setShowRegistrationModal(false);
+      setIsSubmittingRegistration(false);
     }
   };
 

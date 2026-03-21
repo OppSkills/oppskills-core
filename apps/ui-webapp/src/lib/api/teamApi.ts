@@ -254,3 +254,20 @@ export async function joinDraftTeam(
   });
   return res.data;
 }
+
+/**
+ * PER_USER paid hackathons: true if user already completed entry fee for this hackathon
+ * (join another team without paying again).
+ */
+export async function getPerUserFeePaidStatus(
+  token: string,
+  hackathonSlug: string,
+): Promise<{ hasPaid: boolean }> {
+  const res = await API.get(
+    `/${hackathonSlug}/teams/draft/per-user-fee-status`,
+    {
+      headers: buildAuthHeaders(token),
+    },
+  );
+  return res.data as { hasPaid: boolean };
+}
