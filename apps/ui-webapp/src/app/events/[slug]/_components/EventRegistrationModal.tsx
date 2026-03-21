@@ -91,18 +91,11 @@ export interface OnboardingValues {
   collegeId?: string;
   collegeName?: string;
   collegeSkipped?: boolean;
-  collegeCurrentYear?: string;
-  collegePassoutYear?: number;
 
   companyName?: string;
   jobTitle?: string;
 
   // Step 3
-  locationCity?: string;
-  locationState?: string;
-  locationCountry?: string;
-
-  // Step 4
   interests?: string[];
   skills?: string[];
 
@@ -139,6 +132,7 @@ export interface UserDataForPrefill {
   collegeId?: string;
   collegeName?: string;
   collegeSkipped?: boolean;
+  /** Profile data only — not shown in onboarding; can prefill registration custom fields */
   collegeCurrentYear?: string;
   collegePassoutYear?: number;
 
@@ -236,6 +230,32 @@ function getPrefilledValue(
     return userData.schoolName;
   }
 
+  // Location / year — for custom registration fields only (not onboarding block)
+  if (label.includes("city") && !label.includes("university")) {
+    return userData.locationCity;
+  }
+  if (label.includes("state") || label.includes("province")) {
+    return userData.locationState;
+  }
+  if (label.includes("country")) {
+    return userData.locationCountry;
+  }
+  if (
+    label.includes("passout") ||
+    (label.includes("year") && label.includes("graduation"))
+  ) {
+    return userData.collegePassoutYear !== undefined
+      ? String(userData.collegePassoutYear)
+      : undefined;
+  }
+  if (
+    label.includes("current year") ||
+    (label.includes("year") &&
+      (label.includes("college") || label.includes("studying")))
+  ) {
+    return userData.collegeCurrentYear;
+  }
+
   return undefined;
 }
 
@@ -307,24 +327,11 @@ export function EventRegistrationModal({
           startingOnboardingValues.collegeId = userData.collegeId;
         if (userData.collegeSkipped)
           startingOnboardingValues.collegeSkipped = userData.collegeSkipped;
-        if (userData.collegeCurrentYear)
-          startingOnboardingValues.collegeCurrentYear =
-            userData.collegeCurrentYear;
-        if (userData.collegePassoutYear)
-          startingOnboardingValues.collegePassoutYear =
-            userData.collegePassoutYear;
 
         if (userData.companyName)
           startingOnboardingValues.companyName = userData.companyName;
         if (userData.jobTitle)
           startingOnboardingValues.jobTitle = userData.jobTitle;
-
-        if (userData.locationCity)
-          startingOnboardingValues.locationCity = userData.locationCity;
-        if (userData.locationState)
-          startingOnboardingValues.locationState = userData.locationState;
-        if (userData.locationCountry)
-          startingOnboardingValues.locationCountry = userData.locationCountry;
 
         if (userData.interests)
           startingOnboardingValues.interests = userData.interests;
@@ -437,7 +444,6 @@ export function EventRegistrationModal({
           checkRequired("collegeName", "College Name", "collegeName");
         }
       }
-      checkRequired("collegeCurrentYear", "Current Year", "collegeCurrentYear");
     }
 
     if (onboardingValues.userCategory === UserCategory.WORKING_PROFESSIONAL) {
@@ -446,10 +452,6 @@ export function EventRegistrationModal({
       }
       checkRequired("jobTitle", "Job Title", "jobTitle");
     }
-
-    checkRequired("locationCity", "City", "locationCity");
-    checkRequired("locationState", "State", "locationState");
-    checkRequired("locationCountry", "Country", "locationCountry");
 
     return { isValid, newErrors };
   };
@@ -628,9 +630,6 @@ export function EventRegistrationModal({
         // Common fields
         gender: onboardingValues.gender,
         userCategory: onboardingValues.userCategory,
-        locationCity: onboardingValues.locationCity,
-        locationState: onboardingValues.locationState,
-        locationCountry: onboardingValues.locationCountry,
         interests: onboardingValues.interests,
         skills: onboardingValues.skills,
         experienceLevel: onboardingValues.experienceLevel,
@@ -650,10 +649,6 @@ export function EventRegistrationModal({
         filteredOnboardingData.collegeId = onboardingValues.collegeId;
         filteredOnboardingData.collegeName = onboardingValues.collegeName;
         filteredOnboardingData.collegeSkipped = onboardingValues.collegeSkipped;
-        filteredOnboardingData.collegeCurrentYear =
-          onboardingValues.collegeCurrentYear;
-        filteredOnboardingData.collegePassoutYear =
-          onboardingValues.collegePassoutYear;
       } else if (
         onboardingValues.userCategory === UserCategory.WORKING_PROFESSIONAL
       ) {
@@ -994,60 +989,6 @@ export function EventRegistrationModal({
                 "Search for your college..."
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>
-                  Current Year <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={onboardingValues.collegeCurrentYear}
-                  onValueChange={(v) =>
-                    updateOnboardingValue("collegeCurrentYear", v)
-                  }
-                >
-                  <SelectTrigger
-                    className={cn(
-                      errors.collegeCurrentYear && "border-red-500"
-                    )}
-                  >
-                    <SelectValue placeholder="Select Year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[
-                      "1st Year",
-                      "2nd Year",
-                      "3rd Year",
-                      "4th Year",
-                      "5th Year",
-                      "Graduated",
-                    ].map((y) => (
-                      <SelectItem key={y} value={y}>
-                        {y}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.collegeCurrentYear && (
-                  <p className="text-xs text-red-500">
-                    {errors.collegeCurrentYear}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Passout Year</Label>
-                <Input
-                  type="number"
-                  placeholder="e.g. 2026"
-                  value={onboardingValues.collegePassoutYear || ""}
-                  onChange={(e) =>
-                    updateOnboardingValue(
-                      "collegePassoutYear",
-                      parseInt(e.target.value) || undefined
-                    )
-                  }
-                />
-              </div>
-            </div>
           </div>
         )}
 
@@ -1090,57 +1031,6 @@ export function EventRegistrationModal({
             </div>
           </div>
         )}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label>
-              City <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              placeholder="Enter City"
-              value={onboardingValues.locationCity || ""}
-              onChange={(e) =>
-                updateOnboardingValue("locationCity", e.target.value)
-              }
-              className={cn(errors.locationCity && "border-red-500")}
-            />
-            {errors.locationCity && (
-              <p className="text-xs text-red-500">{errors.locationCity}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label>
-              State <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              placeholder="Enter State"
-              value={onboardingValues.locationState || ""}
-              onChange={(e) =>
-                updateOnboardingValue("locationState", e.target.value)
-              }
-              className={cn(errors.locationState && "border-red-500")}
-            />
-            {errors.locationState && (
-              <p className="text-xs text-red-500">{errors.locationState}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label>
-              Country <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              placeholder="Enter Country"
-              value={onboardingValues.locationCountry || ""}
-              onChange={(e) =>
-                updateOnboardingValue("locationCountry", e.target.value)
-              }
-              className={cn(errors.locationCountry && "border-red-500")}
-            />
-            {errors.locationCountry && (
-              <p className="text-xs text-red-500">{errors.locationCountry}</p>
-            )}
-          </div>
-        </div>
       </div>
     );
   };
