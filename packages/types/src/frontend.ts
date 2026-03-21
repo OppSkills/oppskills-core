@@ -86,6 +86,11 @@ export type {
   CreateTeamDto,
 } from './dtos/backend/team/team.dto';
 
+export type {
+  TeamInvitePreviewResponse,
+  TeamInvitePreviewClosedReason,
+} from './dtos/backend/team/team-invite-preview.dto';
+
 // =====================
 // Event DTOs (type-only)
 // =====================

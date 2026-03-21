@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useAuth, useUser } from "@clerk/nextjs";
@@ -53,6 +53,10 @@ export interface JoinTeamListProps {
   currency?: string;
   chargeMode?: "PER_TEAM" | "PER_USER";
   feeBearer?: "ORGANISER" | "PARTICIPANT";
+  /** Prefill invite code (e.g. deep link from /hackathons/[slug]/join?code=) */
+  initialInviteCode?: string;
+  /** One-shot: open registration modal for the invite code on mount */
+  autoOpenInviteFlow?: boolean;
 }
 
 declare global {
@@ -71,10 +75,13 @@ export function JoinTeamList({
   currency = "INR",
   chargeMode = "PER_TEAM",
   feeBearer = "ORGANISER",
+  initialInviteCode = "",
+  autoOpenInviteFlow = false,
 }: JoinTeamListProps) {
   const router = useRouter();
   const { getToken } = useAuth();
   const { user } = useUser();
+  const autoOpenInviteOnceRef = useRef(false);
 
   const [teams, setTeams] = useState<TeamDetailResponse[]>([]);
   const [isLoadingTeams, setIsLoadingTeams] = useState(true);
@@ -86,7 +93,9 @@ export function JoinTeamList({
   const [discountCode, setDiscountCode] = useState("");
 
   // Invite code state
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(() =>
+    initialInviteCode.trim() ? initialInviteCode.trim().toUpperCase() : "",
+  );
   const [isJoiningByCode, setIsJoiningByCode] = useState(false);
 
   // Registration modal state
@@ -314,6 +323,22 @@ export function JoinTeamList({
 
     await openRegistrationModal({ inviteCode: inviteCode.trim() });
   };
+
+  // Deep link from invite URL: open registration modal once for the code
+  useEffect(() => {
+    if (
+      !autoOpenInviteFlow ||
+      !initialInviteCode?.trim() ||
+      autoOpenInviteOnceRef.current
+    ) {
+      return;
+    }
+    autoOpenInviteOnceRef.current = true;
+    const code = initialInviteCode.trim().toUpperCase();
+    setInviteCode(code);
+    void openRegistrationModal({ inviteCode: code });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot; openRegistrationModal is not stable
+  }, [autoOpenInviteFlow, initialInviteCode]);
 
   const processPaymentAndRegistration = async (
     token: string,

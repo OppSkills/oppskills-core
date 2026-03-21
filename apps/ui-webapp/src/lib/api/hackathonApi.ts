@@ -8,6 +8,7 @@ import type {
   AddHackathonRoleDto,
   RemoveHackathonRoleDto,
   HackathonRolesResponse,
+  TeamInvitePreviewResponse,
 } from "@oppskills/types/frontend";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
@@ -113,6 +114,22 @@ export async function getPublicUpcomingHackathons(
 export async function getPublicHackathonBySlug(slug: string): Promise<unknown> {
   const res = await API.get(`/public/by-slug/${encodeURIComponent(slug)}`);
   return res.data as unknown;
+}
+
+/**
+ * Public preview for a team invite link (no auth). Validates code + hackathon slug.
+ */
+export async function getTeamInvitePreview(
+  code: string,
+  slug: string,
+): Promise<TeamInvitePreviewResponse> {
+  const res = await API.get("/public/team-invite/preview", {
+    params: {
+      code: code.trim().toUpperCase(),
+      slug: slug.trim(),
+    },
+  });
+  return res.data as TeamInvitePreviewResponse;
 }
 
 // =====================

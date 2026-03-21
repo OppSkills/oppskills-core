@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { prisma } from '@oppskills/db';
-import type { CreateTeamDto, JoinTeamDto } from '@oppskills/types';
+import type {
+  CreateTeamDto,
+  JoinTeamDto,
+  TeamInvitePreviewResponse,
+} from '@oppskills/types';
 import { randomBytes } from 'crypto';
 import { EMAIL_EVENTS } from 'src/email/email.events';
 import { Logger } from 'src/_utils/logger';
@@ -1245,6 +1249,93 @@ export class TeamService {
           throw new BadRequestException('Attachments are not supported yet.');
       }
     }
+  }
+
+  /**
+   * Public preview for hackathon team invite links (no auth).
+   * Confirms invitation code belongs to the given hackathon slug; returns no PII.
+   */
+  async previewTeamInvite(
+    codeRaw: string,
+    slugRaw: string,
+  ): Promise<TeamInvitePreviewResponse> {
+    const code = codeRaw?.trim().toUpperCase();
+    const slug = slugRaw?.trim();
+    if (!code) {
+      throw new BadRequestException('code is required');
+    }
+    if (!slug) {
+      throw new BadRequestException('slug is required');
+    }
+
+    const team = await prisma.teamEntity.findUnique({
+      where: { invitationCode: code },
+      select: {
+        name: true,
+        maxSize: true,
+        members: { select: { id: true } },
+        hackathon: {
+          select: {
+            slug: true,
+            name: true,
+            status: true,
+            approvalStatus: true,
+            isRegistrationPaused: true,
+            registrationDeadline: true,
+            isFree: true,
+          },
+        },
+      },
+    });
+
+    if (!team) {
+      throw new NotFoundException('Invite not found');
+    }
+
+    if (team.hackathon.slug !== slug) {
+      throw new NotFoundException('Invite not found');
+    }
+
+    const h = team.hackathon;
+    const isPublic =
+      (h.status === 'PUBLISHED' || h.status === 'ONGOING') &&
+      h.approvalStatus === 'APPROVED';
+
+    let registrationOpen = isPublic && !h.isRegistrationPaused;
+    let registrationClosedReason:
+      | 'HACKATHON_NOT_PUBLIC'
+      | 'REGISTRATION_PAUSED'
+      | 'DEADLINE_PASSED'
+      | undefined;
+
+    if (!isPublic) {
+      registrationOpen = false;
+      registrationClosedReason = 'HACKATHON_NOT_PUBLIC';
+    } else if (h.isRegistrationPaused) {
+      registrationOpen = false;
+      registrationClosedReason = 'REGISTRATION_PAUSED';
+    } else if (
+      h.registrationDeadline &&
+      new Date() > new Date(h.registrationDeadline)
+    ) {
+      registrationOpen = false;
+      registrationClosedReason = 'DEADLINE_PASSED';
+    }
+
+    const currentSize = team.members.length + 1;
+    const teamFull = currentSize >= team.maxSize;
+    const spotsLeft = Math.max(0, team.maxSize - currentSize);
+
+    return {
+      teamName: team.name,
+      hackathonName: h.name,
+      hackathonSlug: h.slug,
+      registrationOpen,
+      registrationClosedReason,
+      teamFull,
+      spotsLeft,
+      requiresPayment: !h.isFree,
+    };
   }
 
   private buildUserDisplayName(user: {

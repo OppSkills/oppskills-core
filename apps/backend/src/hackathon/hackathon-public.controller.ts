@@ -13,6 +13,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { HackathonService } from './hackathon.service';
+import { TeamService } from '../team/team.service';
 
 function assertNonEmptyId(id: string, fieldName: string): string {
   const trimmed = id.trim();
@@ -29,7 +30,10 @@ function assertNonEmptyId(id: string, fieldName: string): string {
 @ApiTags('Hackathons (Public)')
 @Controller('hackathons/public')
 export class HackathonPublicController {
-  constructor(private readonly hackathonService: HackathonService) {}
+  constructor(
+    private readonly hackathonService: HackathonService,
+    private readonly teamService: TeamService,
+  ) {}
 
   /**
    * GET /hackathons/public - List public hackathons (PUBLISHED/ONGOING + APPROVED only).
@@ -148,6 +152,29 @@ export class HackathonPublicController {
   async getPublicHackathonBySlug(@Param('slug') slug: string) {
     const validSlug = assertNonEmptyId(slug, 'slug');
     return this.hackathonService.getPublicHackathonBySlug(validSlug);
+  }
+
+  /**
+   * GET /hackathons/public/team-invite/preview - Preview team invite (no auth, no PII).
+   * Query: code (invitation code), slug (hackathon slug — must match the team’s hackathon).
+   */
+  @Get('team-invite/preview')
+  @ApiOperation({
+    summary: 'Preview team invite link (sanitized, no PII)',
+  })
+  @ApiQuery({ name: 'code', required: true, description: 'Team invitation code' })
+  @ApiQuery({
+    name: 'slug',
+    required: true,
+    description: 'Hackathon slug (must match invite)',
+  })
+  @ApiResponse({ status: 200, description: 'Invite preview' })
+  @ApiResponse({ status: 404, description: 'Invite not found or slug mismatch' })
+  async previewTeamInvite(
+    @Query('code') code: string,
+    @Query('slug') slug: string,
+  ) {
+    return this.teamService.previewTeamInvite(code ?? '', slug ?? '');
   }
 
   /**

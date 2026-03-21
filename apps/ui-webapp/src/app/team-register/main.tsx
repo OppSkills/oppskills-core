@@ -2,18 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { useAuth, SignInButton } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { CreateTeamForm } from "@/components/CreateTeamForm";
 import { JoinTeamList } from "@/components/JoinTeamList";
-import { Loader2, ArrowLeft, CheckCircle } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, Link2 } from "lucide-react";
 import { getPublicHackathonBySlug } from "@/lib/api/hackathonApi";
 import {
   checkMyHackathonTeam,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
 import Link from "next/link";
+import { toast } from "sonner";
 
 type RegistrationMode = "CREATE" | "JOIN";
 
@@ -119,12 +120,17 @@ function getMinSizeFromParticipantType(participantType: string): number {
 
 export default function RegistrationPage() {
   const params = useSearchParams();
-  const { isSignedIn, isLoaded, getToken } = useAuth();
+  const { isSignedIn, isLoaded, getToken, userId } = useAuth();
+  const { openSignIn, openSignUp } = useClerk();
 
   const hackathonId = params.get("hackathonId");
   const slug = params.get("slug");
+  const modeQuery = params.get("mode");
+  const inviteFromUrl = params.get("invite")?.trim().toUpperCase() ?? "";
 
-  const [mode, setMode] = useState<RegistrationMode>("CREATE");
+  const [mode, setMode] = useState<RegistrationMode>(() =>
+    modeQuery === "JOIN" ? "JOIN" : "CREATE",
+  );
   const [hackathon, setHackathon] = useState<HackathonData | null>(null);
   const [isLoadingHackathon, setIsLoadingHackathon] = useState(true);
   const [myTeam, setMyTeam] = useState<TeamDetailResponse | null>(null);
@@ -150,6 +156,12 @@ export default function RegistrationPage() {
 
     fetchHackathon();
   }, [slug]);
+
+  useEffect(() => {
+    if (modeQuery === "JOIN") {
+      setMode("JOIN");
+    }
+  }, [modeQuery]);
 
   // Check if user is already in a team
   useEffect(() => {
@@ -192,18 +204,40 @@ export default function RegistrationPage() {
 
   // Not signed in
   if (!isSignedIn) {
+    const returnUrl =
+      typeof window !== "undefined" ? window.location.href : "/team-register";
     return (
       <div className="max-w-3xl mx-auto mt-8 p-6 space-y-6 bg-white shadow-lg rounded-lg">
         <h1 className="text-3xl font-bold text-center">Sign In Required</h1>
         <p className="text-center text-gray-600">
           Please sign in to register for this hackathon.
+          {inviteFromUrl
+            ? " After signing in you’ll continue with your team invite."
+            : null}
         </p>
-        <div className="flex justify-center">
-          <SignInButton mode="modal">
-            <Button className="bg-[#9333ea] hover:bg-[#7e22ce] text-white">
-              Sign In to Continue
-            </Button>
-          </SignInButton>
+        <div className="flex flex-col sm:flex-row justify-center gap-3">
+          <Button
+            className="bg-[#9333ea] hover:bg-[#7e22ce] text-white"
+            onClick={() =>
+              openSignIn({
+                fallbackRedirectUrl: returnUrl,
+                signUpFallbackRedirectUrl: returnUrl,
+              })
+            }
+          >
+            Sign in to continue
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              openSignUp({
+                fallbackRedirectUrl: returnUrl,
+                signInFallbackRedirectUrl: returnUrl,
+              })
+            }
+          >
+            Create account
+          </Button>
         </div>
       </div>
     );
@@ -255,6 +289,11 @@ export default function RegistrationPage() {
   // Already registered
   if (myTeam) {
     const memberCount = (myTeam.members?.length || 0) + 1; // +1 for leader
+    const isLeader = userId === myTeam.leaderId;
+    const inviteShareUrl =
+      typeof window !== "undefined" && myTeam.invitationCode
+        ? `${window.location.origin}/hackathons/${encodeURIComponent(slug)}/join?code=${encodeURIComponent(myTeam.invitationCode)}`
+        : "";
     return (
       <div className="max-w-3xl mx-auto mt-8 p-6 space-y-6 bg-white shadow-lg rounded-lg">
         <div className="text-center space-y-4">
@@ -279,11 +318,26 @@ export default function RegistrationPage() {
               </p>
             </div>
             {myTeam.invitationCode && (
-              <div>
+              <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Invite Code</p>
                 <p className="font-mono font-semibold">
                   {myTeam.invitationCode}
                 </p>
+                {isLeader && inviteShareUrl ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(inviteShareUrl);
+                      toast.success("Invite link copied");
+                    }}
+                  >
+                    <Link2 className="h-4 w-4" />
+                    Copy invite link
+                  </Button>
+                ) : null}
               </div>
             )}
           </div>
@@ -407,6 +461,8 @@ export default function RegistrationPage() {
           currency={hackathon.currency}
           chargeMode={hackathon.chargeMode}
           feeBearer={hackathon.feeBearer}
+          initialInviteCode={inviteFromUrl}
+          autoOpenInviteFlow={Boolean(inviteFromUrl)}
         />
       )}
     </div>

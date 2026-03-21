@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
-import { Loader2, ArrowLeft, CheckCircle, Copy, X } from "lucide-react";
+import { useAuth, useClerk } from "@clerk/nextjs";
+import { Loader2, ArrowLeft, CheckCircle, Copy, Link2, X } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -28,6 +28,7 @@ export default function TeamDetailsPage() {
   const slug = params.slug as string;
   const router = useRouter();
   const { isSignedIn, isLoaded, getToken, userId } = useAuth();
+  const { openSignIn, openSignUp } = useClerk();
 
   const [isLoading, setIsLoading] = useState(true);
   const [hackathon, setHackathon] = useState<HackathonData | null>(null);
@@ -66,6 +67,13 @@ export default function TeamDetailsPage() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Invitation code copied to clipboard");
+  };
+
+  const copyInviteLink = () => {
+    if (!myTeam?.invitationCode) return;
+    const url = `${typeof window !== "undefined" ? window.location.origin : ""}/hackathons/${encodeURIComponent(slug)}/join?code=${encodeURIComponent(myTeam.invitationCode)}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Invite link copied to clipboard");
   };
 
   const removeMemberMutation = useMutation({
@@ -116,15 +124,39 @@ export default function TeamDetailsPage() {
   }
 
   if (!isSignedIn) {
+    const returnUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/hackathons/${encodeURIComponent(slug)}/team`
+        : "/";
     return (
       <div className="container mx-auto py-12 px-4 max-w-2xl text-center space-y-6">
         <h1 className="text-3xl font-bold">Sign In Required</h1>
         <p className="text-muted-foreground">
           Please sign in to view your team details.
         </p>
-        <Link href={`/sign-in?redirect_url=/hackathons/${slug}/team`}>
-          <Button>Sign In</Button>
-        </Link>
+        <div className="flex flex-col sm:flex-row justify-center gap-3">
+          <Button
+            onClick={() =>
+              openSignIn({
+                fallbackRedirectUrl: returnUrl,
+                signUpFallbackRedirectUrl: returnUrl,
+              })
+            }
+          >
+            Sign in
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              openSignUp({
+                fallbackRedirectUrl: returnUrl,
+                signInFallbackRedirectUrl: returnUrl,
+              })
+            }
+          >
+            Create account
+          </Button>
+        </div>
       </div>
     );
   }
@@ -196,20 +228,34 @@ export default function TeamDetailsPage() {
                   Invitation Code
                 </p>
                 {myTeam.invitationCode ? (
-                  <div className="flex items-center gap-2">
-                    <p className="text-lg font-mono font-bold text-foreground tracking-wider">
-                      {myTeam.invitationCode}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() =>
-                        copyToClipboard(myTeam.invitationCode || "")
-                      }
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <p className="text-lg font-mono font-bold text-foreground tracking-wider">
+                        {myTeam.invitationCode}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() =>
+                          copyToClipboard(myTeam.invitationCode || "")
+                        }
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {isLeader ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={copyInviteLink}
+                      >
+                        <Link2 className="w-4 h-4" />
+                        Copy invite link
+                      </Button>
+                    ) : null}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">
