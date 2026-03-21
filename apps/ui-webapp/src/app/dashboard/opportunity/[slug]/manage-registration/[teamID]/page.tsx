@@ -207,7 +207,7 @@ export default function TeamManagementPage() {
   const teamInitials = team.name.slice(0, 2).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] p-2 sm:p-4 md:p-6 lg:p-10 space-y-6 font-inter">
+    <div className="min-h-screen bg-[#F8F9FA] p-2 sm:p-4 md:p-6 lg:p-10 w-full space-y-6 font-inter">
       {/* Header Section */}
       <div className="flex items-center gap-4 bg-background p-4 rounded-xl shadow-sm border border-gray-100">
         <Button
