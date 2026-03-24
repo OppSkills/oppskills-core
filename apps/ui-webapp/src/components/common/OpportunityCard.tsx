@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { formatCount } from "@/lib/tools";
 
 export interface OpportunityCardProps {
@@ -20,6 +21,7 @@ export interface OpportunityCardProps {
   currency?: string;
   eventType?: string;
   topRightBadge?: React.ReactNode;
+  layout?: "grid" | "list";
 }
 
 export function OpportunityCard({
@@ -37,6 +39,7 @@ export function OpportunityCard({
   currency = "INR",
   eventType,
   topRightBadge,
+  layout = "grid",
 }: OpportunityCardProps) {
   const formattedDeadline = registrationDeadline
     ? format(new Date(registrationDeadline), "dd MMM yyyy")
@@ -50,9 +53,15 @@ export function OpportunityCard({
 
   return (
     <Link href={href} prefetch={false} className="h-full block">
-      <Card className="group h-full flex flex-col overflow-hidden border-border/50 bg-card hover:shadow-lg transition-all duration-300 rounded-3xl">
+      <Card className={cn(
+        "group h-full flex overflow-hidden border-border/50 bg-card hover:shadow-lg transition-all duration-300 rounded-3xl",
+        layout === "list" ? "flex-col lg:flex-row lg:min-h-[220px]" : "flex-col"
+      )}>
         {/* Image Section */}
-        <div className="relative w-full h-48 sm:h-52 overflow-hidden bg-muted shrink-0">
+        <div className={cn(
+          "relative overflow-hidden bg-muted shrink-0",
+          layout === "list" ? "w-full h-48 lg:w-72 lg:h-auto" : "w-full h-48 sm:h-52"
+        )}>
           {imageSrc ? (
             <Image
               src={imageSrc}
@@ -82,7 +91,7 @@ export function OpportunityCard({
 
           {/* Bottom Left Badge (Common Style) */}
           <div className="absolute -bottom-0.5 left-0 flex items-center">
-            <div className="py-1 pr-3 pl-5 bg-background text-primary-500 text-xs rounded-tr-lg flex gap-2 items-center">
+            <div className="py-1 pr-3 pl-5 bg-card text-primary-500 text-xs rounded-tr-lg flex gap-2 items-center shadow-sm">
               <span>{isFree ? "Free" : "Paid"}</span>
               <span className="text-[6px]"> ● </span>
               <span>{mode}</span>
@@ -99,9 +108,15 @@ export function OpportunityCard({
         </div>
 
         {/* Content Section */}
-        <div className="relative bg-card pt-4 px-5 pb-5 flex flex-col flex-1 min-h-[140px]">
-          <div className="flex-1 flex flex-col">
-            <h3 className="text-xl text-neutral-900 font-semibold line-clamp-2 leading-tight tracking-tight min-h-13">
+        <div className={cn(
+          "relative bg-card pt-4 px-5 pb-5 flex flex-col flex-1",
+          layout === "list" ? "justify-center" : "min-h-[140px]"
+        )}>
+          <div className="flex-1 flex flex-col justify-center">
+            <h3 className={cn(
+              "text-xl text-neutral-900 font-semibold line-clamp-2 leading-tight tracking-tight",
+              layout === "grid" && "min-h-13"
+            )}>
               {title}
             </h3>
 

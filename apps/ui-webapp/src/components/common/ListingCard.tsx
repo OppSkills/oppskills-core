@@ -65,7 +65,7 @@ function formatEntryFee(item: ListingItem): string {
   return "Free";
 }
 
-export function ListingCard({ item }: ListingCardProps) {
+export function ListingCard({ item, layout = "grid" }: ListingCardProps) {
   const mode = formatMode(item.mode, item.locationType);
   const entryFee = formatEntryFee(item);
 
@@ -83,6 +83,7 @@ export function ListingCard({ item }: ListingCardProps) {
       startDate={item.startDate}
       entryFee={entryFee}
       eventType={item.eventType}
+      layout={layout}
     />
   );
 }
