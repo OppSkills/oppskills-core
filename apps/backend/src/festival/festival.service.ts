@@ -57,7 +57,7 @@ export class FestivalService {
   }
 
   async listPublicFestivals() {
-    return prisma.festivalEntity.findMany({
+    const festivals = await prisma.festivalEntity.findMany({
       where: {
         isDeleted: false,
         approvalStatus: 'APPROVED',
@@ -76,8 +76,31 @@ export class FestivalService {
         locationCity: true,
         organizationName: true,
         organizationLogoUrl: true,
+        hackathons: {
+          where: { isDeleted: false },
+          select: { registrationCount: true },
+        },
+        events: {
+          where: { isDeleted: false },
+          select: { registrationCount: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
+    });
+
+    return festivals.map((f) => {
+      const opportunityCount = f.hackathons.length + f.events.length;
+      const totalRegistrations =
+        f.hackathons.reduce((sum, h) => sum + h.registrationCount, 0) +
+        f.events.reduce((sum, e) => sum + e.registrationCount, 0);
+
+      // Remove the raw arrays to keep the response lean
+      const { hackathons, events, ...rest } = f;
+      return {
+        ...rest,
+        opportunityCount,
+        totalRegistrations,
+      };
     });
   }
 
