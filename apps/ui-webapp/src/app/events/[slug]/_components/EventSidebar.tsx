@@ -2,58 +2,58 @@
 
 import React from "react";
 import Image from "next/image";
-import { MapPin, Calendar, Clock } from "lucide-react";
+import Link from "next/link";
+import { MapPin, Sparkles, Users, ChevronRight, Clock } from "lucide-react";
+import { format } from "date-fns";
 import { EventDetails } from "./types";
-import { EventRegistrationCard } from "./EventRegistrationCard";
+import InfoCard from "./InfoCard";
 
 interface EventSidebarProps {
   event: EventDetails;
 }
 
 export function EventSidebar({ event }: EventSidebarProps) {
+  const startDate = event.startDate ? new Date(event.startDate) : (event.date ? new Date(event.date) : null);
+
   return (
-    <div className="space-y-6 font-sans">
-      {/* Thumbnail */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl shadow-sm">
-        <Image
-          src={event.thumbnail}
-          alt={event.title}
-          fill
-          className="object-cover"
-          priority
-        />
+    <div className="m-0 lg:m-auto lg:space-y-5">
+      <div className="flex flex-col lg:relative">
+        {/* Thumbnail */}
+        <div className="relative aspect-16/10 w-full overflow-hidden lg:rounded-2xl shadow-sm border border-neutral-100">
+          <Image
+            src={event.thumbnail || "/competition_placeholder.png"}
+            alt={event.title}
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
+        {/* Featured In Pill */}
+        {event.festival?.name && (
+          <div className="pl-2 lg:pl-0">
+            <Link
+              href={`/festivals/${event.festival.slug}`}
+              className=" mt-4 flex gap-1 items-center bg-neutral-100 hover:bg-neutral-200 shadow-sm p-2 rounded-lg w-fit"
+            >
+              <span className="font-normal text-neutral-600">Featured in</span>
+              <span className="font-semibold text-neutral-800 ">
+                {event.festival.name}
+              </span>
+              <ChevronRight className="w-4 h-4 text-neutral-800 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+        )}
       </div>
 
-      {/* Registration Card */}
-      <EventRegistrationCard tickets={event.tickets} />
-
-      {/* Quick Info Card */}
-      <div className="bg-background  rounded-2xl border border-neutral-200  p-6 shadow-sm space-y-5">
-        {/* Date Row */}
-        <div className="flex gap-4 items-center">
-          <div className="flex-shrink-0 w-12 h-12 bg-neutral-50  rounded-xl border border-neutral-100  flex items-center justify-center">
-            <Calendar className="w-5 h-5 text-neutral-700 " />
-          </div>
-          <div>
-            <h4 className="font-semibold text-neutral-900  text-[15px]">
-              {event.date}
-            </h4>
-            <p className="text-sm text-neutral-500">{event.time}</p>
-          </div>
-        </div>
-
-        {/* Location Row */}
-        <div className="flex gap-4 items-center">
-          <div className="flex-shrink-0 w-12 h-12 bg-neutral-50  rounded-xl border border-neutral-100  flex items-center justify-center">
-            <MapPin className="w-5 h-5 text-neutral-700 " />
-          </div>
-          <div>
-            <h4 className="font-semibold text-neutral-900  text-[15px]">
-              {event.venueName}
-            </h4>
-            <p className="text-sm text-neutral-500">{event.venueAddress}</p>
-          </div>
-        </div>
+      {/* Desktop Sidebar (Thumbnail + Stats) */}
+      <div className="hidden lg:block bg-background rounded-2xl border border-neutral-200 p-6 shadow-sm space-y-5">
+        <InfoCard
+          teamSize={event.teamSize || ""}
+          impressions={event.impressions || 0}
+          registrationDeadline={event.registrationDeadline || ""}
+          noBorder
+          noPadding
+        />
       </div>
     </div>
   );
