@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import InputBlock from "@/components/ui/derived/InputBlock";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
-import EventCard from "@/components/ui/derived/EventCard";
+import OpportunityPreviewCard from "@/components/ui/derived/OpportunityPreviewCard";
 import HackathonInput from "@/components/ui/hackathon/Input";
 import RegistrationQuestionsModal, {
   RegistrationQuestion,
@@ -484,11 +484,20 @@ export default function Page() {
               How your card will look
             </p>
             <div className="pointer-events-none opacity-80 hover:opacity-100 transition-opacity">
-              <EventCard
-                thumbnail={formData.eventThumbnail}
-                title={formData.eventName}
-                location={formData.eventLocation}
-              />
+            <OpportunityPreviewCard
+              imageSrc={formData.eventThumbnail}
+              title={formData.eventName}
+              isFree={true}
+              mode={
+                formData.eventLocation
+                  ? isValidUrl(formData.eventLocation)
+                    ? "Online"
+                    : "Offline"
+                  : "Online"
+              }
+              registrationDeadline={formData.eventRegisterBy}
+              type="HACKATHON"
+            />
             </div>
           </div>
         </div>

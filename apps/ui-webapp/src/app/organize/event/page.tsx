@@ -18,7 +18,7 @@ import {
 import InputBlock from "@/components/ui/derived/InputBlock";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
 import { z } from "zod";
-import EventCard from "@/components/ui/derived/EventCard";
+import OpportunityPreviewCard from "@/components/ui/derived/OpportunityPreviewCard";
 import HackathonInput from "@/components/ui/hackathon/Input";
 import {
   DropdownMenu,
@@ -548,10 +548,22 @@ export default function Page() {
                     How your card will look
                   </p>
                   <div className="pointer-events-none opacity-80 hover:opacity-100 transition-opacity">
-                    <EventCard
-                      thumbnail={values.eventThumbnail}
+                    <OpportunityPreviewCard
+                      imageSrc={values.eventThumbnail}
                       title={values.eventName}
-                      location={values.eventLocation}
+                      organizationName={values.organizationName}
+                      isFree={values.isFree}
+                      mode={
+                        values.eventLocation
+                          ? isValidUrl(values.eventLocation)
+                            ? "Online"
+                            : "Offline"
+                          : "Online"
+                      }
+                      entryFeeAmount={values.entryFeeAmount}
+                      currency={values.currency}
+                      registrationDeadline={values.eventRegisterBy}
+                      type="EVENT"
                     />
                   </div>
                 </div>
