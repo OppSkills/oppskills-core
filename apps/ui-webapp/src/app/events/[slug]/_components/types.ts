@@ -31,9 +31,23 @@ export interface EventDetails {
   time: string;
   venueName: string;
   venueAddress: string;
+  startDate?: string | Date;
+  endDate?: string | Date;
 
   // Registration
   tickets: Ticket[];
+
+  // Stats & Additional Info
+  registrationCount?: number;
+  createdAt?: string | Date;
+  festival?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  registrationDeadline?: string;
+  teamSize?: string;
+  impressions?: number;
 
   // Tab Content
   about: string; // HTML string

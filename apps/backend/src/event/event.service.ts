@@ -40,7 +40,7 @@ export class EventService {
     private readonly googleSheetsService: GoogleSheetsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
-  ) {}
+  ) { }
 
   /**
    * Create an event as a user.
@@ -283,6 +283,7 @@ export class EventService {
         currency: true,
         feeBearer: true,
         visibility: true,
+        impressions: true,
         eventType: true,
         registrationCount: true,
         maxUsers: true,
@@ -1420,7 +1421,7 @@ export class EventService {
             // Use field options, or default gender options for Gender field
             const effectiveOptions =
               field.label.toLowerCase() === 'gender' &&
-              (!field.options || field.options.length === 0)
+                (!field.options || field.options.length === 0)
                 ? DEFAULT_GENDER_OPTIONS
                 : field.options;
 
