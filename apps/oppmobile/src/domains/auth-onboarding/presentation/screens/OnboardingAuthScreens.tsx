@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, FlowScreenTemplate, InputField, SearchInput } from '../../../../shared/ui';
 import onboardingCampusImage from '../../../../../assets/college campus-amico 1.png';
+import onboardingExperienceImage from '../../../../../assets/Learning-amico 1.png';
 import onboardingUpdatesImage from '../../../../../assets/Status update-amico 1.png';
 import introLogoImage from '../../../../../assets/OppSkill_Logo_UP_6 1.png';
 import { styles } from './OnboardingAuthScreens.styles';
@@ -112,7 +113,7 @@ function OnboardingScreenLayout({
   onSkip,
   onSecondary,
 }: OnboardingScreenLayoutProps) {
-  const isHeroLayout = variant === 'campus' || variant === 'updates';
+  const isHeroLayout = variant === 'campus' || variant === 'updates' || variant === 'experience';
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={styles.onboardingSafeArea}>
@@ -149,6 +150,8 @@ function OnboardingScreenLayout({
                 ? onboardingCampusImage
                 : variant === 'updates'
                   ? onboardingUpdatesImage
+                  : variant === 'experience'
+                    ? onboardingExperienceImage
                   : undefined
             }
             style={isHeroLayout ? styles.artBoardCampus : undefined}
