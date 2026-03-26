@@ -90,9 +90,14 @@ export class HackathonService {
     this.logger.log(
       `Creating hackathon for user ${userId} with payload: ${JSON.stringify(dto)}`,
     );
-    if (dto.festivalId) {
+    const normalizedFestivalId =
+      typeof dto.festivalId === 'string' && dto.festivalId.trim().length > 0
+        ? dto.festivalId.trim()
+        : undefined;
+
+    if (normalizedFestivalId) {
       const festival = await prisma.festivalEntity.findUnique({
-        where: { id: dto.festivalId },
+        where: { id: normalizedFestivalId },
         select: { id: true },
       });
       if (!festival) {
@@ -146,7 +151,7 @@ export class HackathonService {
 
           // Extended fields
           slug,
-          festivalId: dto.festivalId,
+          festivalId: normalizedFestivalId ?? null,
           bannerImageUrl: dto.bannerImageUrl,
           visibility: dto.visibility ?? 'PUBLIC',
           hackathonType: dto.hackathonType ?? 'CODING_HACKATHON',
@@ -881,9 +886,14 @@ export class HackathonService {
       );
     }
 
-    if (dto.festivalId) {
+    const normalizedFestivalId =
+      typeof dto.festivalId === 'string' && dto.festivalId.trim().length > 0
+        ? dto.festivalId.trim()
+        : undefined;
+
+    if (normalizedFestivalId) {
       const festival = await prisma.festivalEntity.findUnique({
-        where: { id: dto.festivalId },
+        where: { id: normalizedFestivalId },
         select: { id: true },
       });
       if (!festival) {
@@ -923,7 +933,7 @@ export class HackathonService {
         mode: dto.mode,
 
         slug,
-        festivalId: dto.festivalId ?? null,
+        festivalId: normalizedFestivalId ?? null,
         bannerImageUrl: dto.bannerImageUrl,
         visibility: dto.visibility ?? undefined,
         hackathonType: dto.hackathonType ?? undefined,
