@@ -34,6 +34,16 @@ export const styles = StyleSheet.create({
     marginTop: lightTheme.spacing[12],
     width: '100%',
   },
+  artBoardCampus: {
+    height: 300,
+    left: '50%',
+    marginTop: 0,
+    opacity: 1,
+    position: 'absolute',
+    top: 180,
+    transform: [{ translateX: -150 }],
+    width: 300,
+  },
   campusBuildingMain: {
     backgroundColor: lightTheme.colors.surfacePrimary,
     borderColor: '#D0C6E8',
@@ -222,13 +232,33 @@ export const styles = StyleSheet.create({
     gap: lightTheme.spacing[10],
     marginTop: lightTheme.spacing[12],
   },
+  onboardingActionsCampus: {
+    marginTop: 0,
+    paddingHorizontal: 0,
+  },
   onboardingBody: {
     marginTop: lightTheme.spacing[16],
     textAlign: 'center',
   },
+  onboardingBodyCampus: {
+    height: 72,
+    left: '51%',
+    marginTop: 0,
+    opacity: 1,
+    position: 'absolute',
+    textAlign: 'center',
+    top: 494,
+    transform: [{ translateX: -176.5 }],
+    width: 350,
+  },
   onboardingMainContent: {
     flex: 1,
     marginTop: lightTheme.spacing[20],
+  },
+  onboardingMainContentCampus: {
+    flex: 1,
+    marginTop: 0,
+    position: 'relative',
   },
   onboardingRoot: {
     backgroundColor: lightTheme.colors.backgroundPrimary,
@@ -236,6 +266,10 @@ export const styles = StyleSheet.create({
     paddingHorizontal: lightTheme.spacing[20],
     paddingTop: lightTheme.spacing[4],
     paddingBottom: lightTheme.spacing[24],
+  },
+  onboardingRootCampus: {
+    paddingHorizontal: 0,
+    paddingTop: lightTheme.spacing[4],
   },
   onboardingSafeArea: {
     backgroundColor: lightTheme.colors.backgroundPrimary,
@@ -245,10 +279,27 @@ export const styles = StyleSheet.create({
     marginTop: lightTheme.spacing[20],
     textAlign: 'center',
   },
+  onboardingTitleCampus: {
+    height: 80,
+    fontFamily: 'Urbanist',
+    fontWeight: '700',
+    left: '52%',
+    marginTop: 0,
+    opacity: 1,
+    position: 'absolute',
+    textAlign: 'center',
+    top: 60,
+    transform: [{ translateX: -176.5 }],
+    width: 340,
+  },
   onboardingTopRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  onboardingTopRowCampus: {
+    justifyContent: 'flex-end',
+    paddingHorizontal: 25,
   },
   paginationDot: {
     backgroundColor: '#D8CCF8',
@@ -288,6 +339,13 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: lightTheme.spacing[24],
     width: '100%',
+  },
+  primaryCtaButtonCampus: {
+    alignSelf: 'center',
+    height: 44,
+    marginTop: -8 ,
+    minHeight: 34,
+    width: 300,
   },
   secondaryTextAction: {
     textAlign: 'center',
