@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, FlowScreenTemplate, InputField, SearchInput } from '../../../../shared/ui';
 import onboardingCampusImage from '../../../../../assets/college campus-amico 1.png';
+import onboardingUpdatesImage from '../../../../../assets/Status update-amico 1.png';
 import introLogoImage from '../../../../../assets/OppSkill_Logo_UP_6 1.png';
 import { styles } from './OnboardingAuthScreens.styles';
 
@@ -111,12 +112,12 @@ function OnboardingScreenLayout({
   onSkip,
   onSecondary,
 }: OnboardingScreenLayoutProps) {
-  const isCampusLayout = variant === 'campus';
+  const isHeroLayout = variant === 'campus' || variant === 'updates';
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={styles.onboardingSafeArea}>
-      <View style={[styles.onboardingRoot, isCampusLayout ? styles.onboardingRootCampus : null]}>
-        {isCampusLayout ? (
+      <View style={[styles.onboardingRoot, isHeroLayout ? styles.onboardingRootCampus : null]}>
+        {isHeroLayout ? (
           <View style={[styles.onboardingTopRow, styles.onboardingTopRowCampus]}>
             <Pressable hitSlop={10} onPress={onSkip}>
               <AppText colorToken="textMuted" variant="caption">
@@ -137,26 +138,32 @@ function OnboardingScreenLayout({
           </View>
         )}
 
-        <View style={[styles.onboardingMainContent, isCampusLayout ? styles.onboardingMainContentCampus : null]}>
-          <AppText style={[styles.onboardingTitle, isCampusLayout ? styles.onboardingTitleCampus : null]} variant="displayH2">
+        <View style={[styles.onboardingMainContent, isHeroLayout ? styles.onboardingMainContentCampus : null]}>
+          <AppText style={[styles.onboardingTitle, isHeroLayout ? styles.onboardingTitleCampus : null]} variant="displayH2">
             {title}
           </AppText>
 
           <OnboardingIllustration
-            imageSource={isCampusLayout ? onboardingCampusImage : undefined}
-            style={isCampusLayout ? styles.artBoardCampus : undefined}
+            imageSource={
+              variant === 'campus'
+                ? onboardingCampusImage
+                : variant === 'updates'
+                  ? onboardingUpdatesImage
+                  : undefined
+            }
+            style={isHeroLayout ? styles.artBoardCampus : undefined}
             variant={variant}
           />
 
           <AppText
             colorToken="textSecondary"
-            style={[styles.onboardingBody, isCampusLayout ? styles.onboardingBodyCampus : null]}
+            style={[styles.onboardingBody, isHeroLayout ? styles.onboardingBodyCampus : null]}
             variant="body"
           >
             {body}
           </AppText>
 
-          {isCampusLayout ? null : (
+          {isHeroLayout ? null : (
             <View style={styles.paginationRow}>
               {[1, 2, 3].map((dotStep) => (
                 <View
@@ -168,15 +175,15 @@ function OnboardingScreenLayout({
           )}
         </View>
 
-        <View style={[styles.onboardingActions, isCampusLayout ? styles.onboardingActionsCampus : null]}>
-          {isCampusLayout ? null : (
+        <View style={[styles.onboardingActions, isHeroLayout ? styles.onboardingActionsCampus : null]}>
+          {isHeroLayout ? null : (
             <Pressable hitSlop={10} onPress={onSkip}>
               <AppText colorToken="brandPrimaryStrong" style={styles.skipToSignInText} variant="label">
                 Skip to sign in
               </AppText>
             </Pressable>
           )}
-          <Pressable onPress={onNext} style={[styles.primaryCtaButton, isCampusLayout ? styles.primaryCtaButtonCampus : null]}>
+          <Pressable onPress={onNext} style={[styles.primaryCtaButton, isHeroLayout ? styles.primaryCtaButtonCampus : null]}>
             <AppText colorToken="textInverse" variant="bodyStrong">
               {ctaLabel}
             </AppText>
