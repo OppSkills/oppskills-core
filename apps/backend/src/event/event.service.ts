@@ -178,8 +178,8 @@ export class EventService {
       input.take != null
         ? input.take
         : String(input.appendResults) === 'true' || input.appendResults === true
-          ? 20
-          : 10;
+          ? 40
+          : 20;
     const page = input.page ? Math.max(1, Number(input.page)) : 1;
     const skip = (page - 1) * take;
 
@@ -238,7 +238,7 @@ export class EventService {
           orderBy: { amount: 'desc' },
         },
       },
-      orderBy: { startDate: 'asc' },
+      orderBy: { startDate: 'desc' },
     });
 
     // Determine if there's further results

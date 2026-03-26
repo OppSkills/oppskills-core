@@ -57,7 +57,7 @@ export class HackathonPublicController {
   @ApiQuery({
     name: 'appendResults',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
+    description: 'If true, returns 40 results instead of 20',
     type: Boolean,
   })
   @ApiQuery({
@@ -106,7 +106,7 @@ export class HackathonPublicController {
   @ApiQuery({
     name: 'appendResults',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
+    description: 'If true, returns 40 results instead of 20',
     type: Boolean,
   })
   @ApiQuery({

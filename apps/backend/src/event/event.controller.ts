@@ -88,7 +88,7 @@ export class EventController {
   @ApiQuery({
     name: 'appendResults',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
+    description: 'If true, returns 40 results instead of 20',
     type: Boolean,
   })
   @ApiQuery({
@@ -137,7 +137,7 @@ export class EventController {
   @ApiQuery({
     name: 'appendResults',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
+    description: 'If true, returns 40 results instead of 20',
     type: Boolean,
   })
   @ApiQuery({
@@ -184,7 +184,7 @@ export class EventController {
   @ApiQuery({
     name: 'appendResults',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
+    description: 'If true, returns 40 results instead of 20',
     type: Boolean,
   })
   @ApiQuery({
@@ -203,7 +203,7 @@ export class EventController {
     @Query('appendResults') appendResults?: boolean,
     @Query('q') search?: string,
   ) {
-    const PAGE_SIZE = 12;
+    const PAGE_SIZE = 20;
     const pageNum = page ? Math.max(1, Number(page)) : 1;
 
     // Fetch ALL past items from both sources in one shot (no per-source pagination).
@@ -241,12 +241,8 @@ export class EventController {
 
     // Sort by registrationDeadline descending (most recent first)
     merged.sort((a, b) => {
-      const dateA = a.registrationDeadline
-        ? new Date(a.registrationDeadline).getTime()
-        : 0;
-      const dateB = b.registrationDeadline
-        ? new Date(b.registrationDeadline).getTime()
-        : 0;
+      const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+      const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
       return dateB - dateA;
     });
 
