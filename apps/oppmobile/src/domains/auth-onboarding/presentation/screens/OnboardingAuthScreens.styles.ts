@@ -35,14 +35,11 @@ export const styles = StyleSheet.create({
     width: '100%',
   },
   artBoardCampus: {
+    alignSelf: 'center',
     height: 300,
-    left: '50%',
-    marginTop: 0,
-    opacity: 1,
-    position: 'absolute',
-    top: 180,
-    transform: [{ translateX: -150 }],
-    width: 300,
+    marginTop: lightTheme.spacing[16],
+    width: '88%',
+    maxWidth: 320,
   },
   campusBuildingMain: {
     backgroundColor: lightTheme.colors.surfacePrimary,
@@ -233,23 +230,19 @@ export const styles = StyleSheet.create({
     marginTop: lightTheme.spacing[12],
   },
   onboardingActionsCampus: {
-    marginTop: 0,
-    paddingHorizontal: 0,
+    marginTop: lightTheme.spacing[12],
+    paddingHorizontal: lightTheme.spacing[20],
   },
   onboardingBody: {
     marginTop: lightTheme.spacing[16],
     textAlign: 'center',
   },
   onboardingBodyCampus: {
-    height: 72,
-    left: '51%',
-    marginTop: 0,
-    opacity: 1,
-    position: 'absolute',
+    alignSelf: 'center',
+    marginTop: lightTheme.spacing[12],
+    maxWidth: 360,
     textAlign: 'center',
-    top: 494,
-    transform: [{ translateX: -176.5 }],
-    width: 350,
+    width: '92%',
   },
   onboardingMainContent: {
     flex: 1,
@@ -258,7 +251,7 @@ export const styles = StyleSheet.create({
   onboardingMainContentCampus: {
     flex: 1,
     marginTop: 0,
-    position: 'relative',
+    alignItems: 'center',
   },
   onboardingRoot: {
     backgroundColor: lightTheme.colors.backgroundPrimary,
@@ -268,7 +261,7 @@ export const styles = StyleSheet.create({
     paddingBottom: lightTheme.spacing[24],
   },
   onboardingRootCampus: {
-    paddingHorizontal: 0,
+    paddingHorizontal: lightTheme.spacing[20],
     paddingTop: lightTheme.spacing[4],
   },
   onboardingSafeArea: {
@@ -280,17 +273,11 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   onboardingTitleCampus: {
-    height: 80,
-    fontFamily: 'Urbanist',
-    fontWeight: '700',
-    left: '52%',
-    marginTop: 0,
-    opacity: 1,
-    position: 'absolute',
+    alignSelf: 'center',
+    marginTop: lightTheme.spacing[16],
+    maxWidth: 360,
     textAlign: 'center',
-    top: 60,
-    transform: [{ translateX: -176.5 }],
-    width: 340,
+    width: '92%',
   },
   onboardingTopRow: {
     alignItems: 'center',
@@ -299,7 +286,7 @@ export const styles = StyleSheet.create({
   },
   onboardingTopRowCampus: {
     justifyContent: 'flex-end',
-    paddingHorizontal: 25,
+    paddingHorizontal: 0,
   },
   paginationDot: {
     backgroundColor: '#D8CCF8',
@@ -342,10 +329,9 @@ export const styles = StyleSheet.create({
   },
   primaryCtaButtonCampus: {
     alignSelf: 'center',
-    height: 44,
-    marginTop: -8 ,
-    minHeight: 34,
-    width: 300,
+    minHeight: 48,
+    width: '100%',
+    maxWidth: 340,
   },
   secondaryTextAction: {
     textAlign: 'center',
