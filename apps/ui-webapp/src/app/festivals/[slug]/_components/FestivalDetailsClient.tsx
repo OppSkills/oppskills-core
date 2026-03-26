@@ -115,6 +115,10 @@ export default function FestivalDetailsClient({
                             </h1>
                         </div>
 
+                        <div className="lg:hidden">
+                            <FestivalInfoCard festival={festival} type="sidebar" />
+                        </div>
+
                         {/* Tabs & Content */}
                         <div className="space-y-6">
                             <EventTabs
@@ -225,10 +229,7 @@ export default function FestivalDetailsClient({
                                     <h2 className="text-2xl font-bold text-foreground poppins">
                                         Contact Details
                                     </h2>
-                                    <div className="lg:hidden">
-                                        <FestivalInfoCard festival={festival} />
-                                    </div>
-                                    <div className="hidden lg:block p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+                                    <div className="p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
                                         <p className="text-neutral-600 mb-6">
                                             For any queries regarding the festival, please reach out to the organizers.
                                         </p>

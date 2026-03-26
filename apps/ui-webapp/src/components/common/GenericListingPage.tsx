@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Grid, LayoutList, SlidersHorizontal, Loader2, Search } from "lucide-react";
+import { useQueryState, parseAsStringEnum } from "nuqs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -40,7 +41,10 @@ export function GenericListingPage({
   hasMore,
   isFetchingNextPage,
 }: GenericListingPageProps) {
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useQueryState(
+    "view",
+    parseAsStringEnum<"grid" | "list">(["grid", "list"]).withDefault("grid")
+  );
   const [searchValue, setSearchValue] = useState("");
   const [filters, setFilters] = useState<FilterState>({
     search: "",
@@ -187,23 +191,21 @@ export function GenericListingPage({
             </SheetContent>
           </Sheet>
 
-          <div className="flex items-center rounded-md border bg-muted/50 p-1">
+          <div className="flex items-center rounded-lg border bg-muted/50 p-1 shadow-xs">
             <Button
               variant={viewMode === "grid" ? "secondary" : "ghost"}
               size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => setViewMode("grid")}
+              className="h-8 w-8 p-0 transition-all"
+              onClick={() => void setViewMode("grid")}
             >
               <Grid className="h-4 w-4" />
               <span className="sr-only">Grid View</span>
             </Button>
-            {/* List view currently just maps to same card in grid or simplified list item */}
-            {/* For this refactor, let's keep it simple: List view might use a different layout style */}
             <Button
               variant={viewMode === "list" ? "secondary" : "ghost"}
               size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => setViewMode("list")}
+              className="h-8 w-8 p-0 transition-all"
+              onClick={() => void setViewMode("list")}
             >
               <LayoutList className="h-4 w-4" />
               <span className="sr-only">List View</span>
@@ -255,14 +257,14 @@ export function GenericListingPage({
             <div
               className={
                 viewMode === "grid"
-                  ? "grid gap-6 sm:grid-cols-2 xl:grid-cols-3"
-                  : "flex flex-col gap-4"
+                  ? "grid gap-8 sm:grid-cols-2 xl:grid-cols-3"
+                  : "flex flex-col gap-6 max-w-5xl mx-auto lg:mx-0"
               }
             >
               {filteredItems.map((item) => (
                 <div
                   key={item.id}
-                  className={viewMode === "list" ? "w-full" : ""}
+                  className="w-full"
                 >
                   <ListingCard
                     item={{ ...item, routePrefix }}

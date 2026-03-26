@@ -34,15 +34,15 @@ export default function FestivalsPage() {
         const transformed: ListingItem[] = rawList.map((f: any) => ({
           id: f.id,
           title: f.name,
-          slug: f.slug || f.id, // Fallback if slug missing
-          bannerUrl: f.thumbnailUrl || f.posterImageUrl || f.bannerImageUrl || undefined,
+          slug: f.slug || f.id,
+          bannerUrl: f.posterImageUrl || f.thumbnailUrl || undefined,
           startDate: f.startDate,
           endDate: f.endDate,
           status: f.status,
           routePrefix: "festivals",
           eventType: "Festival",
-          // Mapping other fields if available in festival object
-          // Festivals often have events inside them, but this is the festival listing itself
+          registrationCount: f.totalRegistrations || 0,
+          opportunityCount: f.opportunityCount || 0,
         }));
 
         setItems(transformed);
