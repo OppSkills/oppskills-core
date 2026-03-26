@@ -3,7 +3,7 @@ import { Image, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, FlowScreenTemplate, InputField, SearchInput } from '../../../../shared/ui';
-import introLogoImage from '../../../../../assets/splash-icon.png';
+import introLogoImage from '../../../../../assets/OppSkill_Logo_UP_6 1.png';
 import { styles } from './OnboardingAuthScreens.styles';
 
 type OnboardingArtVariant = 'campus' | 'updates' | 'experience';

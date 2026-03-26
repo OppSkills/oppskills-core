@@ -197,9 +197,13 @@ export const styles = StyleSheet.create({
     position: 'relative',
   },
   introLogo: {
-    alignSelf: 'center',
-    height: 210,
-    width: 280,
+    height: 126.75170135498047,
+    left: 70,
+    opacity: 1,
+    position: 'absolute',
+    top: 280,
+    width: 230,
+    bottom: 363,
   },
   introSafeArea: {
     backgroundColor: lightTheme.colors.brandPrimary,
