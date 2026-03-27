@@ -51,13 +51,23 @@ function toListingItem(item: PastOpportunityItem): ListingItem {
     registrationDeadline: item.registrationDeadline ?? null,
     registrationCount: item.registrationCount,
     eventType: item.type === "HACKATHON" ? "Competition" : "Event",
+    attendeeEligibility: (item as any).attendeeEligibility,
     tags: [item.type === "HACKATHON" ? "Competition" : "Event", item.status],
     routePrefix,
   };
 }
 
+import { FilterState } from "@/components/common/GenericFilterSidebar";
+
 export default function PastEventsPage() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<FilterState>({
+    search: "",
+    modes: [],
+    status: [],
+    eventDate: [],
+    eligibility: [],
+    sort: "recently_added", // Default for past opportunities
+  });
 
   const {
     data,
@@ -66,22 +76,23 @@ export default function PastEventsPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = usePastEvents(undefined, searchTerm);
+  } = usePastEvents(undefined, filters);
 
   const items = (data?.pages.flatMap((p) => p.items) ?? []).map(toListingItem);
 
   return (
     <GenericListingPage
-      title="Past Opportunities"
-      description="Browse the full history of events and competitions that have already taken place."
       items={items}
       isLoading={isLoading}
       error={error}
       routePrefix="past-opportunities"
-      onSearch={setSearchTerm}
       onLoadMore={fetchNextPage}
       hasMore={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
+      filters={filters}
+      setFilters={setFilters}
+      title="Past Opportunities"
+      description="Relive incredible hackathons and events from our community."
     />
   );
 }

@@ -21,7 +21,6 @@ export interface OpportunityCardProps {
   currency?: string;
   eventType?: string;
   topRightBadge?: React.ReactNode;
-  layout?: "grid" | "list";
 }
 
 export function OpportunityCard({
@@ -39,7 +38,6 @@ export function OpportunityCard({
   currency = "INR",
   eventType,
   topRightBadge,
-  layout = "grid",
 }: OpportunityCardProps) {
   const formattedDeadline = registrationDeadline
     ? format(new Date(registrationDeadline), "dd MMM yyyy")
@@ -54,13 +52,11 @@ export function OpportunityCard({
   return (
     <Link href={href} prefetch={false} className="h-full block">
       <Card className={cn(
-        "group h-full flex overflow-hidden border-border/50 bg-card hover:shadow-lg transition-all duration-300 rounded-3xl",
-        layout === "list" ? "flex-col lg:flex-row lg:min-h-[220px]" : "flex-col"
+        "group h-full flex flex-col overflow-hidden border-border/50 bg-card hover:shadow-lg transition-all duration-300 rounded-3xl"
       )}>
         {/* Image Section */}
         <div className={cn(
-          "relative overflow-hidden bg-muted shrink-0",
-          layout === "list" ? "w-full h-48 lg:w-72 lg:h-auto" : "w-full h-48 sm:h-52"
+          "relative overflow-hidden bg-muted shrink-0 w-full h-48 sm:h-52"
         )}>
           {imageSrc ? (
             <Image
@@ -109,13 +105,11 @@ export function OpportunityCard({
 
         {/* Content Section */}
         <div className={cn(
-          "relative bg-card pt-4 px-5 pb-5 flex flex-col flex-1",
-          layout === "list" ? "justify-center" : "min-h-[140px]"
+          "relative bg-card pt-4 px-5 pb-5 flex flex-col flex-1 min-h-[140px]"
         )}>
           <div className="flex-1 flex flex-col justify-center">
             <h3 className={cn(
-              "text-xl text-neutral-900 font-semibold line-clamp-2 leading-tight tracking-tight",
-              layout === "grid" && "min-h-13"
+              "text-xl text-neutral-900 font-semibold line-clamp-2 leading-tight tracking-tight min-h-13"
             )}>
               {title}
             </h3>

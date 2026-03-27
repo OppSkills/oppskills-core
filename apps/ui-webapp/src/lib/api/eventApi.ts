@@ -27,6 +27,11 @@ export async function getPublicEvents(
     appendResults?: boolean;
     q?: string;
     festival_id?: string;
+    modes?: string[];
+    status?: string[];
+    eventDates?: string[];
+    eligibility?: string[];
+    sort?: string;
   } = {},
 ): Promise<{ items: any[]; further: boolean }> {
   const res = await API.get("/public", { params });
@@ -69,6 +74,11 @@ export async function getPublicUpcomingEvents(
     appendResults?: boolean;
     q?: string;
     festival_id?: string;
+    modes?: string[];
+    status?: string[];
+    eventDates?: string[];
+    eligibility?: string[];
+    sort?: string;
   } = {},
 ): Promise<{ items: any[]; further: boolean }> {
   const res = await API.get("/public/upcoming", { params });
@@ -84,6 +94,11 @@ export async function getPublicPastEvents(
     appendResults?: boolean;
     q?: string;
     festival_id?: string;
+    modes?: string[];
+    status?: string[];
+    eventDates?: string[];
+    eligibility?: string[];
+    sort?: string;
   } = {},
 ): Promise<unknown> {
   const res = await API.get("/public/past", { params });

@@ -24,6 +24,7 @@ export interface ListingItem {
   opportunityCount?: number;
 
   eventType?: string; // "Hackathon", "Event", "Workshop", "Festival"
+  attendeeEligibility?: string[];
 
   tags?: string[];
 
@@ -33,7 +34,6 @@ export interface ListingItem {
 
 export interface ListingCardProps {
   item: ListingItem;
-  layout?: "grid" | "list";
 }
 
 function formatMode(
@@ -65,10 +65,9 @@ function formatEntryFee(item: ListingItem): string {
   return "Free";
 }
 
-export function ListingCard({ item, layout = "grid" }: ListingCardProps) {
+export function ListingCard({ item }: ListingCardProps) {
   const mode = formatMode(item.mode, item.locationType);
   const entryFee = formatEntryFee(item);
-
   return (
     <OpportunityCard
       href={`/${item.routePrefix}/${item.slug}`}
@@ -83,7 +82,6 @@ export function ListingCard({ item, layout = "grid" }: ListingCardProps) {
       startDate={item.startDate}
       entryFee={entryFee}
       eventType={item.eventType}
-      layout={layout}
     />
   );
 }

@@ -62,22 +62,29 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 
 // ...
 
+import { FilterState } from "@/components/common/GenericFilterSidebar";
+
 /**
  * Fetches all public events (no auth required).
  * Used for the /events listing page.
  */
 export function useEvents(
   festivalId?: string,
-  search?: string,
+  filters?: FilterState,
   options?: { enabled?: boolean }
 ) {
   return useInfiniteQuery<{ items: EventListItem[]; further: boolean }, Error>({
-    queryKey: ["events", festivalId, search] as const,
+    queryKey: ["events", festivalId, filters] as const,
     queryFn: async ({ pageParam = 1 }) => {
       return await getPublicEvents({
         festival_id: festivalId,
         page: pageParam as number,
-        q: search,
+        q: filters?.search,
+        modes: filters?.modes,
+        status: filters?.status,
+        eventDates: filters?.eventDate,
+        eligibility: filters?.eligibility,
+        sort: filters?.sort,
       });
     },
     initialPageParam: 1,
@@ -93,16 +100,21 @@ export function useEvents(
  */
 export function useUpcomingEvents(
   festivalId?: string,
-  search?: string,
+  filters?: FilterState,
   options?: { enabled?: boolean }
 ) {
   return useInfiniteQuery<{ items: EventListItem[]; further: boolean }, Error>({
-    queryKey: ["events", "upcoming", festivalId, search] as const,
+    queryKey: ["events", "upcoming", festivalId, filters] as const,
     queryFn: async ({ pageParam = 1 }) => {
       return await getPublicUpcomingEvents({
         festival_id: festivalId,
         page: pageParam as number,
-        q: search,
+        q: filters?.search,
+        modes: filters?.modes,
+        status: filters?.status,
+        eventDates: filters?.eventDate,
+        eligibility: filters?.eligibility,
+        sort: filters?.sort,
       });
     },
     initialPageParam: 1,
@@ -137,16 +149,21 @@ export interface PastOpportunitiesPage {
  */
 export function usePastEvents(
   festivalId?: string,
-  search?: string,
+  filters?: FilterState,
   options?: { enabled?: boolean }
 ) {
   return useInfiniteQuery<PastOpportunitiesPage, Error>({
-    queryKey: ["events", "past", festivalId, search] as const,
+    queryKey: ["events", "past", festivalId, filters] as const,
     queryFn: async ({ pageParam = 1 }) => {
       const data = await getPublicPastEvents({
         festival_id: festivalId,
         page: pageParam as number,
-        q: search,
+        q: filters?.search,
+        modes: filters?.modes,
+        status: filters?.status,
+        eventDates: filters?.eventDate,
+        eligibility: filters?.eligibility,
+        sort: filters?.sort,
       });
       return data as PastOpportunitiesPage;
     },

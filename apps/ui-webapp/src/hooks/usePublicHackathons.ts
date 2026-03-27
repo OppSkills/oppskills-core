@@ -12,22 +12,29 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 
 // ...
 
+import { FilterState } from "@/components/common/GenericFilterSidebar";
+
 /**
  * Fetches public hackathons (no auth required).
  * Returns hackathons that are PUBLISHED/ONGOING and APPROVED.
  */
 export function usePublicHackathons(
   festivalId?: string,
-  search?: string,
+  filters?: FilterState,
   options?: { enabled?: boolean }
 ) {
   return useInfiniteQuery<{ items: PublicHackathonListItem[]; further: boolean }, Error>({
-    queryKey: ["public-hackathons", festivalId, search] as const,
+    queryKey: ["public-hackathons", festivalId, filters] as const,
     queryFn: async ({ pageParam = 1 }) => {
       return getPublicHackathons({
         festival_id: festivalId,
         page: pageParam as number,
-        q: search,
+        q: filters?.search,
+        modes: filters?.modes,
+        status: filters?.status,
+        eventDates: filters?.eventDate,
+        eligibility: filters?.eligibility,
+        sort: filters?.sort,
         appendResults: true,
       });
     },
@@ -44,18 +51,23 @@ export function usePublicHackathons(
  */
 export function useUpcomingHackathons(
   festivalId?: string,
-  search?: string,
+  filters?: FilterState,
   options?: { enabled?: boolean }
 ) {
   return useInfiniteQuery<{ items: PublicHackathonListItem[]; further: boolean }, Error>({
-    queryKey: ["public-hackathons", "upcoming", festivalId, search] as const,
+    queryKey: ["public-hackathons", "upcoming", festivalId, filters] as const,
     queryFn: async ({ pageParam = 1 }) => {
       // Import dynamically to avoid circular dependencies if any, or just ensure import is at top
       const { getPublicUpcomingHackathons } = await import("@/lib/api/hackathonApi");
       return getPublicUpcomingHackathons({
         festival_id: festivalId,
         page: pageParam as number,
-        q: search,
+        q: filters?.search,
+        modes: filters?.modes,
+        status: filters?.status,
+        eventDates: filters?.eventDate,
+        eligibility: filters?.eligibility,
+        sort: filters?.sort,
         appendResults: true,
       });
     },

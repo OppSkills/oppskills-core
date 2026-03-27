@@ -72,6 +72,11 @@ export async function getPublicHackathons(
     page?: number;
     appendResults?: boolean;
     q?: string;
+    modes?: string[];
+    status?: string[];
+    eventDates?: string[];
+    eligibility?: string[];
+    sort?: string;
   } = {},
 ): Promise<{ items: PublicHackathonListItem[]; further: boolean }> {
   const res = await API.get("/public", {
@@ -80,6 +85,11 @@ export async function getPublicHackathons(
       page: params.page,
       appendResults: params.appendResults,
       q: params.q,
+      modes: params.modes,
+      status: params.status,
+      eventDates: params.eventDates,
+      eligibility: params.eligibility,
+      sort: params.sort,
     },
   });
   return res.data as { items: PublicHackathonListItem[]; further: boolean };
@@ -94,6 +104,11 @@ export async function getPublicUpcomingHackathons(
     page?: number;
     appendResults?: boolean;
     q?: string;
+    modes?: string[];
+    status?: string[];
+    eventDates?: string[];
+    eligibility?: string[];
+    sort?: string;
   } = {},
 ): Promise<{ items: PublicHackathonListItem[]; further: boolean }> {
   const res = await API.get("/public/upcoming", {
@@ -102,6 +117,11 @@ export async function getPublicUpcomingHackathons(
       page: params.page,
       appendResults: params.appendResults,
       q: params.q,
+      modes: params.modes,
+      status: params.status,
+      eventDates: params.eventDates,
+      eligibility: params.eligibility,
+      sort: params.sort,
     },
   });
   return res.data as { items: PublicHackathonListItem[]; further: boolean };
