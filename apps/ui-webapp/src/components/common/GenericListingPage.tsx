@@ -45,7 +45,7 @@ export function GenericListingPage({
   title,
   description,
 }: GenericListingPageProps) {
-  const [curSort, setCurSort] = useState(filters?.sort || "most_relevant");
+  const [curSort, setCurSort] = useState(filters?.sort || "recently_added");
 
   // Sync curSort from filters.sort (e.g. from Clear Filters)
   useEffect(() => {
