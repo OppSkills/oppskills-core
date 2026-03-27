@@ -382,6 +382,7 @@ export class HackathonService {
     if (input.eventDates && input.eventDates.length > 0) {
       const getDateBoundaries = (offset = 0, unit: 'week' | 'month') => {
         const start = new Date(now);
+        const end = new Date(now);
         if (unit === 'week') {
           start.setDate(now.getDate() - now.getDay() + offset * 7);
           start.setHours(0, 0, 0, 0);
