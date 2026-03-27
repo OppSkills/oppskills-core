@@ -16,7 +16,7 @@ export class AdminFeaturesService {
 
     async listHackathons(limit: number, cursor?: string, filterPending?: boolean) {
         const take = limit + 1;
-        const where: any = {};
+        const where: any = { isDeleted: false };
 
         if (filterPending) {
             where.status = LifecycleStatus.PUBLISHED;
@@ -63,7 +63,7 @@ export class AdminFeaturesService {
 
     async listEvents(limit: number, cursor?: string, filterPending?: boolean) {
         const take = limit + 1;
-        const where: any = {};
+        const where: any = { isDeleted: false };
 
         if (filterPending) {
             where.status = LifecycleStatus.PUBLISHED;
