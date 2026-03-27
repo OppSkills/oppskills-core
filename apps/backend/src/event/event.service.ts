@@ -276,7 +276,7 @@ export class EventService {
           break;
         case 'most_relevant':
         default:
-          orderBy = { startDate: 'asc' };
+          orderBy = { startDate: 'desc' };
           break;
       }
     }
@@ -349,7 +349,6 @@ export class EventService {
           orderBy: { amount: 'desc' },
         },
       },
-      orderBy: { startDate: 'desc' },
     });
 
     // Determine if there's further results
