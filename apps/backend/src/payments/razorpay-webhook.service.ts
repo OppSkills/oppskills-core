@@ -542,6 +542,18 @@ export class RazorpayWebhookService {
       }
 
       if (paymentRecord) {
+        if (paymentRecord.paymentStatus === 'CAPTURED') {
+          this.logger.log(
+            `Skipping payment.failed for order ${orderId}: payment already captured`,
+          );
+          return;
+        }
+        if (paymentRecord.razorpayOrderId !== orderId) {
+          this.logger.log(
+            `Skipping stale payment.failed for order ${orderId}: DB record has newer order ${paymentRecord.razorpayOrderId}`,
+          );
+          return;
+        }
         await prisma.eventPaymentEntity.update({
           where: { id: paymentRecord.id },
           data: {
@@ -581,6 +593,18 @@ export class RazorpayWebhookService {
       }
 
       if (paymentRecord) {
+        if (paymentRecord.paymentStatus === 'CAPTURED') {
+          this.logger.log(
+            `Skipping payment.failed for order ${orderId}: hackathon payment already captured`,
+          );
+          return;
+        }
+        if (paymentRecord.razorpayOrderId !== orderId) {
+          this.logger.log(
+            `Skipping stale payment.failed for order ${orderId}: DB record has newer order ${paymentRecord.razorpayOrderId}`,
+          );
+          return;
+        }
         await prisma.hackathonPaymentEntity.update({
           where: { id: paymentRecord.id },
           data: {
