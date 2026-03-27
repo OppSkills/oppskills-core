@@ -82,7 +82,7 @@ export function useEvents(
         q: filters?.search,
         modes: filters?.modes,
         status: filters?.status,
-        eventDates: filters?.eventDate,
+        eventDates: filters?.eventDates,
         eligibility: filters?.eligibility,
         sort: filters?.sort,
       });
@@ -112,7 +112,7 @@ export function useUpcomingEvents(
         q: filters?.search,
         modes: filters?.modes,
         status: filters?.status,
-        eventDates: filters?.eventDate,
+        eventDates: filters?.eventDates,
         eligibility: filters?.eligibility,
         sort: filters?.sort,
       });
@@ -161,7 +161,7 @@ export function usePastEvents(
         q: filters?.search,
         modes: filters?.modes,
         status: filters?.status,
-        eventDates: filters?.eventDate,
+        eventDates: filters?.eventDates,
         eligibility: filters?.eligibility,
         sort: filters?.sort,
       });

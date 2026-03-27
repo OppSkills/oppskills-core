@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseArrayPipe,
   Query,
 } from '@nestjs/common';
 import {
@@ -82,10 +83,14 @@ export class HackathonPublicController {
     @Query('page') page?: number,
     @Query('appendResults') appendResults?: boolean,
     @Query('q') search?: string,
-    @Query('modes') modes?: string[],
-    @Query('status') status?: string[],
-    @Query('eventDates') eventDates?: string[],
-    @Query('eligibility') eligibility?: string[],
+    @Query('modes', new ParseArrayPipe({ items: String, optional: true }))
+    modes?: string[],
+    @Query('status', new ParseArrayPipe({ items: String, optional: true }))
+    status?: string[],
+    @Query('eventDates', new ParseArrayPipe({ items: String, optional: true }))
+    eventDates?: string[],
+    @Query('eligibility', new ParseArrayPipe({ items: String, optional: true }))
+    eligibility?: string[],
     @Query('sort') sort?: string,
   ) {
     return this.hackathonService.listPublicHackathons({

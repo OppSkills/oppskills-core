@@ -8,7 +8,7 @@ export interface FilterState {
   search: string;
   modes: string[]; // Online, In Person
   status: string[]; // Upcoming, Recent
-  eventDate: string[]; // This week, Next week, This month, Next month
+  eventDates: string[]; // This week, Next week, This month, Next month
   eligibility: string[]; // School, UG, PG, Open
   sort?: string;
 }
@@ -53,7 +53,7 @@ export function GenericFilterSidebar({
       search: "",
       modes: [],
       status: [],
-      eventDate: [],
+      eventDates: [],
       eligibility: [],
       sort: filters.sort, // Keep current sort
     });
@@ -105,7 +105,7 @@ export function GenericFilterSidebar({
 
       {renderCheckboxGroup("Status", "status", ["Upcoming", "Recent"])}
 
-      {renderCheckboxGroup("Event Date", "eventDate", [
+      {renderCheckboxGroup("Event Date", "eventDates", [
         "This week",
         "Next week",
         "This month",

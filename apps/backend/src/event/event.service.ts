@@ -272,11 +272,17 @@ export class EventService {
           orderBy = { registrationDeadline: 'asc' };
           break;
         case 'price_amount':
-          orderBy = { entryFeeAmount: 'asc' };
+          orderBy = [{ isFree: 'desc' }, { entryFeeAmount: 'asc' }];
           break;
         case 'most_relevant':
         default:
-          orderBy = { startDate: 'desc' };
+          // If only 'Recent' is selected, default to latest first. 
+          // Otherwise (Upcoming or Both), soonest first.
+          if (input.status?.length === 1 && input.status[0] === 'Recent') {
+            orderBy = { startDate: 'desc' };
+          } else {
+            orderBy = { startDate: 'asc' };
+          }
           break;
       }
     }

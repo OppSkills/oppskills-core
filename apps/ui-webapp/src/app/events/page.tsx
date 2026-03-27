@@ -13,7 +13,7 @@ export default function EventsPage() {
     search: "",
     modes: [],
     status: [],
-    eventDate: [],
+    eventDates: [],
     eligibility: [],
     sort: "most_relevant",
   });

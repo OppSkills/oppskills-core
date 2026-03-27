@@ -64,7 +64,7 @@ export default function PastEventsPage() {
     search: "",
     modes: [],
     status: [],
-    eventDate: [],
+    eventDates: [],
     eligibility: [],
     sort: "recently_added", // Default for past opportunities
   });

@@ -12,7 +12,7 @@ export default function CompetitionsPage() {
     search: "",
     modes: [],
     status: [],
-    eventDate: [],
+    eventDates: [],
     eligibility: [],
     sort: "most_relevant",
   });
