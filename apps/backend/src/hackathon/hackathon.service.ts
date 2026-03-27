@@ -84,7 +84,7 @@ export class HackathonService {
    * - If `rounds` is not provided, no default rounds are created (organizers add them later).
    */
 
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(private readonly analyticsService: AnalyticsService) { }
 
   async createHackathon(dto: CreateHackathonDto, userId: string) {
     this.logger.log(
@@ -121,16 +121,16 @@ export class HackathonService {
     // Build rounds data - either from DTO or empty (no default rounds)
     const roundsData = dto.rounds
       ? dto.rounds.map((round) => ({
-          name: round.name,
-          description: round.description,
-          startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
-          endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
-          order: round.order,
-          roundType: round.roundType,
-          submissionConfig: round.submissionConfig
-            ? (round.submissionConfig as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-        }))
+        name: round.name,
+        description: round.description,
+        startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
+        endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
+        order: round.order,
+        roundType: round.roundType,
+        submissionConfig: round.submissionConfig
+          ? (round.submissionConfig as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
+      }))
       : []; // Don't create default rounds - organizers can add them later
 
     // Determine attendee eligibility
@@ -191,22 +191,22 @@ export class HackathonService {
 
           registrationForm: dto.registrationForm
             ? {
-                create: {
-                  externalFormLink: dto.registrationForm.externalFormLink,
-                  fields: {
-                    create: (dto.registrationForm.fields ?? []).map(
-                      (field) => ({
-                        label: field.label,
-                        type: field.type,
-                        required: field.required,
-                        order: field.order,
-                        options: field.options ?? [],
-                        placeholder: field.placeholder,
-                      }),
-                    ),
-                  },
+              create: {
+                externalFormLink: dto.registrationForm.externalFormLink,
+                fields: {
+                  create: (dto.registrationForm.fields ?? []).map(
+                    (field) => ({
+                      label: field.label,
+                      type: field.type,
+                      required: field.required,
+                      order: field.order,
+                      options: field.options ?? [],
+                      placeholder: field.placeholder,
+                    }),
+                  ),
                 },
-              }
+              },
+            }
             : undefined,
 
           rounds: {
@@ -215,25 +215,25 @@ export class HackathonService {
 
           prizeBreakdown: dto.prizeBreakdown
             ? {
-                create: dto.prizeBreakdown.map((prize) => ({
-                  position: prize.position,
-                  amount: prize.amount,
-                  description: prize.description,
-                })),
-              }
+              create: dto.prizeBreakdown.map((prize) => ({
+                position: prize.position,
+                amount: prize.amount,
+                description: prize.description,
+              })),
+            }
             : undefined,
 
           // New attachments relation
           attachments: dto.additionalInfo?.attachments
             ? {
-                create: dto.additionalInfo.attachments.map((att) => ({
-                  storageKey: att.storageKey,
-                  publicUrl: att.publicUrl,
-                  fileName: att.fileName,
-                  mimeType: att.mimeType,
-                  sizeBytes: att.sizeBytes,
-                })),
-              }
+              create: dto.additionalInfo.attachments.map((att) => ({
+                storageKey: att.storageKey,
+                publicUrl: att.publicUrl,
+                fileName: att.fileName,
+                mimeType: att.mimeType,
+                sizeBytes: att.sizeBytes,
+              })),
+            }
             : undefined,
         },
         include: this.getHackathonIncludeClause(),
@@ -292,51 +292,170 @@ export class HackathonService {
       take?: number;
       search?: string;
       filterMode?: 'UPCOMING' | 'PAST';
+      modes?: string[];
+      status?: string[];
+      eventDates?: string[];
+      eligibility?: string[];
+      sort?: string;
     } = {},
   ) {
-    const baseWhere: Record<string, unknown> = {
+    const now = new Date();
+    const baseWhere: Record<string, any> = {
       isDeleted: false,
       status: { in: ['PUBLISHED', 'ONGOING'] },
       approvalStatus: 'APPROVED',
     };
+
     if (input.festivalId) {
       baseWhere.festivalId = input.festivalId;
     }
 
+    const conditions: any[] = [];
+
+    // 1. Search Query
     if (input.search) {
-      baseWhere.OR = [
-        { name: { contains: input.search, mode: 'insensitive' } },
-        { description: { contains: input.search, mode: 'insensitive' } },
-      ];
+      conditions.push({
+        OR: [
+          { name: { contains: input.search, mode: 'insensitive' } },
+          { description: { contains: input.search, mode: 'insensitive' } },
+          { locationCity: { contains: input.search, mode: 'insensitive' } },
+        ],
+      });
     }
 
-    // Filter by registration deadline if filterMode is provided
+    // 2. Filter Mode (UPCOMING / PAST) - Existing logic
     if (input.filterMode === 'UPCOMING') {
-      // Upcoming: Deadline is in the future OR is null (no deadline = always open)
-      const dateFilter = {
+      conditions.push({
         OR: [
-          { registrationDeadline: { gt: new Date() } },
+          { registrationDeadline: { gt: now } },
           { registrationDeadline: null },
         ],
-      };
-
-      if (baseWhere.OR) {
-        // If we already have an OR for search, we need to AND it with the date filter
-        baseWhere.AND = [dateFilter];
-      } else {
-        // Otherwise just merge the OR directly
-        Object.assign(baseWhere, dateFilter);
-      }
+      });
     } else if (input.filterMode === 'PAST') {
-      // Past: Deadline is in the past
-      const dateFilter = {
-        registrationDeadline: { lt: new Date() },
+      conditions.push({
+        registrationDeadline: { lt: now },
+      });
+    }
+
+    // 3. Status Filters (Frontend: Upcoming, Recent)
+    if (input.status && input.status.length > 0) {
+      const statusConditions: any[] = [];
+      if (input.status.includes('Upcoming')) {
+        statusConditions.push({ startDate: { gt: now } });
+      }
+      if (input.status.includes('Recent')) {
+        // Recent = created within the last 30 days
+        const thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+        statusConditions.push({ createdAt: { gte: thirtyDaysAgo } });
+      }
+      if (statusConditions.length > 0) {
+        conditions.push({ OR: statusConditions });
+      }
+    }
+
+    // 4. Location (Modes) Filters (Frontend: Online, In Person)
+    if (input.modes && input.modes.length > 0) {
+      const modeConditions: any[] = [];
+      if (input.modes.includes('Online')) {
+        modeConditions.push({
+          OR: [
+            { mode: { equals: 'online', mode: 'insensitive' } },
+            { locationType: { in: ['VIRTUAL'] } },
+          ],
+        });
+      }
+      if (input.modes.includes('In Person')) {
+        modeConditions.push({
+          OR: [
+            { mode: { in: ['offline', 'hybrid'], mode: 'insensitive' } },
+            { locationType: { in: ['PHYSICAL'] } },
+          ],
+        });
+      }
+      if (modeConditions.length > 0) {
+        conditions.push({ OR: modeConditions });
+      }
+    }
+
+    // 5. Event Date Filters
+    if (input.eventDates && input.eventDates.length > 0) {
+      const getDateBoundaries = (offset = 0, unit: 'week' | 'month') => {
+        const start = new Date(now);
+        if (unit === 'week') {
+          start.setDate(now.getDate() - now.getDay() + offset * 7);
+          start.setHours(0, 0, 0, 0);
+          end.setDate(start.getDate() + 6);
+          end.setHours(23, 59, 59, 999);
+          return { start, end };
+        } else {
+          const s = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+          const e = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0, 23, 59, 59, 999);
+          return { start: s, end: e };
+        }
       };
 
-      if (baseWhere.OR) {
-        baseWhere.AND = [dateFilter];
-      } else {
-        Object.assign(baseWhere, dateFilter);
+      const dateConditions: any[] = [];
+      input.eventDates.forEach((d) => {
+        let bounds;
+        if (d === 'This week') bounds = getDateBoundaries(0, 'week');
+        if (d === 'Next week') bounds = getDateBoundaries(1, 'week');
+        if (d === 'This month') bounds = getDateBoundaries(0, 'month');
+        if (d === 'Next month') bounds = getDateBoundaries(1, 'month');
+
+        if (bounds) {
+          dateConditions.push({
+            startDate: { gte: bounds.start, lt: bounds.end },
+          });
+        }
+      });
+
+      if (dateConditions.length > 0) {
+        conditions.push({ OR: dateConditions });
+      }
+    }
+
+    // 6. Eligibility Filters
+    if (input.eligibility && input.eligibility.length > 0) {
+      const eligibilityValues: any[] = [];
+      if (input.eligibility.includes('School')) eligibilityValues.push('SCHOOL_STUDENTS');
+      if (input.eligibility.includes('UG') || input.eligibility.includes('PG')) {
+        eligibilityValues.push('COLLEGE_STUDENTS');
+      }
+      if (input.eligibility.includes('Open')) eligibilityValues.push('EVERYONE_CAN_APPLY');
+
+      if (eligibilityValues.length > 0) {
+        conditions.push({
+          attendeeEligibility: { hasSome: eligibilityValues },
+        });
+      }
+    }
+
+    if (conditions.length > 0) {
+      baseWhere.AND = conditions;
+    }
+
+    // 7. Sorting Logic
+    let orderBy: any = { createdAt: 'desc' }; // Default
+    if (input.sort) {
+      switch (input.sort) {
+        case 'recently_added':
+          orderBy = { createdAt: 'desc' };
+          break;
+        case 'submission_date':
+          orderBy = { registrationDeadline: 'asc' };
+          break;
+        case 'price_amount':
+          orderBy = [{ isFree: 'desc' }, { entryFeeAmount: 'asc' }];
+          break;
+        case 'most_relevant':
+        default:
+          if (input.status?.length === 1 && input.status[0] === 'Recent') {
+            orderBy = { createdAt: 'desc' };
+          } else {
+            orderBy = { startDate: 'asc' };
+          }
+          break;
       }
     }
 
@@ -346,8 +465,8 @@ export class HackathonService {
       input.take != null
         ? input.take
         : String(input.appendResults) === 'true' || input.appendResults === true
-          ? 20
-          : 10;
+          ? 40
+          : 20;
     const page = input.page ? Math.max(1, Number(input.page)) : 1;
     const skip = (page - 1) * take;
 
@@ -356,6 +475,7 @@ export class HackathonService {
       where: baseWhere,
       skip,
       take: take + 1,
+      orderBy,
       select: {
         id: true,
         slug: true,
@@ -423,7 +543,6 @@ export class HackathonService {
           orderBy: { amount: 'desc' },
         },
       },
-      orderBy: { startDate: 'asc' },
     });
 
     // Determine if there's further results
@@ -1281,7 +1400,7 @@ export class HackathonService {
 
     const externalFormLink =
       typeof dto.externalFormLink === 'string' &&
-      dto.externalFormLink.trim().length > 0
+        dto.externalFormLink.trim().length > 0
         ? dto.externalFormLink.trim()
         : undefined;
 
@@ -1758,14 +1877,14 @@ export class HackathonService {
     const existing = await prisma.hackathonEntity.findFirst({
       where: excludeId
         ? {
-            slug: base,
-            NOT: {
-              id: excludeId,
-            },
-          }
-        : {
-            slug: base,
+          slug: base,
+          NOT: {
+            id: excludeId,
           },
+        }
+        : {
+          slug: base,
+        },
       select: { id: true },
     });
 
@@ -1866,7 +1985,7 @@ export class HackathonService {
       (dto.isFree !== undefined && dto.isFree !== currentHackathon.isFree) ||
       (dto.entryFeeAmount !== undefined &&
         String(dto.entryFeeAmount) !==
-          String(currentHackathon.entryFeeAmount)) ||
+        String(currentHackathon.entryFeeAmount)) ||
       ('chargeMode' in dto && dto.chargeMode !== currentHackathon.chargeMode) ||
       ('feeBearer' in dto && dto.feeBearer !== currentHackathon.feeBearer);
 
@@ -2795,12 +2914,12 @@ export class HackathonService {
   private formatAnswersForUser(
     submission:
       | {
-          answers: Array<{
-            fieldId: string;
-            valueText: string | null;
-            valueJson: unknown;
-          }>;
-        }
+        answers: Array<{
+          fieldId: string;
+          valueText: string | null;
+          valueJson: unknown;
+        }>;
+      }
       | undefined,
     fields: Array<{ id: string }>,
   ): Array<{ fieldId: string; value: string | null }> {
