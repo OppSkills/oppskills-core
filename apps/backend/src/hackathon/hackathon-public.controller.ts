@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseArrayPipe,
   Query,
 } from '@nestjs/common';
 import {
@@ -44,26 +45,33 @@ export class HackathonPublicController {
     summary: 'List public hackathons (PUBLISHED/ONGOING + APPROVED only)',
   })
   @ApiQuery({
-    name: 'festival_id',
+    name: 'modes',
     required: false,
-    description: 'Filter hackathons by festival ID',
+    description: 'Filter by modes (Online, In Person)',
+    type: [String],
   })
   @ApiQuery({
-    name: 'page',
+    name: 'status',
     required: false,
-    description: 'Page number (default 1)',
-    type: Number,
+    description: 'Filter by status (Upcoming, Recent)',
+    type: [String],
   })
   @ApiQuery({
-    name: 'appendResults',
+    name: 'eventDates',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
-    type: Boolean,
+    description: 'Filter by event dates (This week, Next week, etc.)',
+    type: [String],
   })
   @ApiQuery({
-    name: 'q',
+    name: 'eligibility',
     required: false,
-    description: 'Search query (searches name and description)',
+    description: 'Filter by eligibility (School, UG, PG, Open)',
+    type: [String],
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    description: 'Sort by (most_relevant, recently_added, etc.)',
     type: String,
   })
   @ApiResponse({
@@ -75,12 +83,26 @@ export class HackathonPublicController {
     @Query('page') page?: number,
     @Query('appendResults') appendResults?: boolean,
     @Query('q') search?: string,
+    @Query('modes', new ParseArrayPipe({ items: String, optional: true }))
+    modes?: string[],
+    @Query('status', new ParseArrayPipe({ items: String, optional: true }))
+    status?: string[],
+    @Query('eventDates', new ParseArrayPipe({ items: String, optional: true }))
+    eventDates?: string[],
+    @Query('eligibility', new ParseArrayPipe({ items: String, optional: true }))
+    eligibility?: string[],
+    @Query('sort') sort?: string,
   ) {
     return this.hackathonService.listPublicHackathons({
       festivalId,
       page,
       appendResults,
       search,
+      modes,
+      status,
+      eventDates,
+      eligibility,
+      sort,
     });
   }
 
@@ -106,7 +128,7 @@ export class HackathonPublicController {
   @ApiQuery({
     name: 'appendResults',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
+    description: 'If true, returns 40 results instead of 20',
     type: Boolean,
   })
   @ApiQuery({

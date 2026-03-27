@@ -1,17 +1,17 @@
 "use client";
 
 import React from "react";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export interface FilterState {
   search: string;
-  modes: string[];
-  status: string[];
-  types: string[];
+  modes: string[]; // Online, In Person
+  status: string[]; // Upcoming, Recent
+  eventDates: string[]; // This week, Next week, This month, Next month
+  eligibility: string[]; // School, UG, PG, Open
+  sort?: string;
 }
 
 export interface FilterOptions {
@@ -22,23 +22,18 @@ export interface FilterOptions {
 
 interface GenericFilterSidebarProps {
   filters: FilterState;
-  setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
-  options: FilterOptions;
+  setFilters: (filters: FilterState | ((prev: FilterState) => FilterState)) => void;
+  options?: FilterOptions; // Now optional as we use fixed filters mainly
   className?: string;
 }
 
 export function GenericFilterSidebar({
   filters,
   setFilters,
-  options,
   className,
 }: GenericFilterSidebarProps) {
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters((prev) => ({ ...prev, search: e.target.value }));
-  };
-
   const handleCheckboxChange = (
-    category: keyof Omit<FilterState, "search">,
+    category: keyof Omit<FilterState, "search" | "sort">,
     value: string,
     checked: boolean | string
   ) => {
@@ -53,23 +48,43 @@ export function GenericFilterSidebar({
       return { ...prev, [category]: updated };
     });
   };
+  
+  const handleRadioChange = (
+    category: keyof Omit<FilterState, "search" | "sort">,
+    value: string
+  ) => {
+    setFilters((prev) => ({
+      ...prev,
+      [category]: [value],
+    }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      search: "",
+      modes: [],
+      status: [],
+      eventDates: [],
+      eligibility: [],
+      sort: filters.sort, // Keep current sort
+    });
+  };
 
   // Helper to render a checkbox group
   const renderCheckboxGroup = (
     title: string,
-    category: keyof Omit<FilterState, "search">,
+    category: keyof Omit<FilterState, "search" | "sort">,
     items: string[]
   ) => {
-    if (items.length === 0) return null;
-
     return (
-      <div>
-        <h3 className="mb-4 text-lg font-semibold capitalize">{title}</h3>
-        <div className="space-y-3">
+      <div className="space-y-2">
+        <h3 className="font-bold text-neutral-900">{title}</h3>
+        <div className="space-y-2">
           {items.map((item) => (
-            <div key={item} className="flex items-center space-x-2">
+            <div key={item} className="flex items-center space-x-3">
               <Checkbox
                 id={`${category}-${item}`}
+                className="h-6 w-6 rounded-md border-2 border-neutral-400 data-[state=checked]:bg-primary-600 data-[state=checked]:border-primary-600"
                 checked={(filters[category] as string[]).includes(item)}
                 onCheckedChange={(checked) =>
                   handleCheckboxChange(category, item, checked)
@@ -77,9 +92,9 @@ export function GenericFilterSidebar({
               />
               <Label
                 htmlFor={`${category}-${item}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize"
+                className="font-medium text-neutral-600 cursor-pointer select-none leading-none"
               >
-                {item.toLowerCase().replace(/_/g, " ")}
+                {item}
               </Label>
             </div>
           ))}
@@ -88,35 +103,65 @@ export function GenericFilterSidebar({
     );
   };
 
-  return (
-    <div className={`space-y-6 ${className}`}>
-      <div>
-        <h3 className="mb-4 text-lg font-semibold">Search</h3>
-        <div className="relative">
-          <div className="p-2 h-full flex items-center absolute left-1">
-            <Search className="h-4 w-4 text-muted-foreground" />
+  // Helper to render a radio group
+  const renderRadioGroup = (
+    title: string,
+    category: keyof Omit<FilterState, "search" | "sort">,
+    items: string[]
+  ) => {
+    const value = (filters[category] as string[])[0] || "";
+    return (
+      <div className="space-y-4">
+        <h3 className="font-bold text-neutral-900">{title}</h3>
+        <RadioGroup value={value} onValueChange={(val) => handleRadioChange(category, val)}>
+          <div className="space-y-3">
+            {items.map((item) => (
+              <div key={item} className="flex items-center space-x-3">
+                <RadioGroupItem
+                  value={item}
+                  id={`${category}-${item}`}
+                  className="h-6 w-6 border-2 border-neutral-400 text-primary-600 focus:ring-primary-600"
+                />
+                <Label
+                  htmlFor={`${category}-${item}`}
+                  className="font-medium text-neutral-600 cursor-pointer select-none leading-none"
+                >
+                  {item}
+                </Label>
+              </div>
+            ))}
           </div>
-          <Input
-            type="search"
-            placeholder="Search..."
-            className="pl-8"
-            value={filters.search}
-            onChange={handleSearchChange}
-          />
-        </div>
+        </RadioGroup>
       </div>
+    );
+  };
 
-      <Separator />
+  return (
+    <div className={`space-y-4 py-2 ${className}`}>
+      <button
+        onClick={clearFilters}
+        className="text-2xl font-medium text-neutral-900 hover:text-primary-600 transition-colors"
+      >
+        Clear filters
+      </button>
 
-      {renderCheckboxGroup("Status", "status", options.status)}
+      {renderRadioGroup("Location", "modes", ["Online", "In Person"])}
 
-      {options.status.length > 0 && options.modes.length > 0 && <Separator />}
+      {renderCheckboxGroup("Status", "status", ["Upcoming", "Recent"])}
 
-      {renderCheckboxGroup("Mode", "modes", options.modes)}
+      {renderCheckboxGroup("Event Date", "eventDates", [
+        "This week",
+        "Next week",
+        "This month",
+        "Next month",
+      ])}
 
-      {options.modes.length > 0 && options.types.length > 0 && <Separator />}
-
-      {renderCheckboxGroup("Type", "types", options.types)}
+      {renderCheckboxGroup("Eligibility", "eligibility", [
+        "School",
+        "UG",
+        "PG",
+        "Open",
+      ])}
     </div>
   );
 }

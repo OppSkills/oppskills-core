@@ -120,54 +120,169 @@ export class EventService {
       take?: number;
       search?: string;
       filterMode?: 'UPCOMING' | 'PAST';
+      modes?: string[];
+      status?: string[];
+      eventDates?: string[];
+      eligibility?: string[];
+      sort?: string;
     } = {},
   ) {
-    const baseWhere: Record<string, unknown> = {
+    const now = new Date();
+    const baseWhere: Record<string, any> = {
       isDeleted: false,
       status: { in: ['PUBLISHED', 'ONGOING'] },
       approvalStatus: 'APPROVED',
     };
+
     if (input.festivalId) {
       baseWhere.festivalId = input.festivalId;
     }
 
-    // Filter by Deadline
-    const now = new Date();
-    if (input.filterMode === 'UPCOMING') {
-      baseWhere.OR = [
-        { registrationDeadline: { gt: now } },
-        { registrationDeadline: null },
-      ];
-    } else if (input.filterMode === 'PAST') {
-      baseWhere.registrationDeadline = { lt: now };
+    const conditions: any[] = [];
+
+    // 1. Search Query
+    if (input.search) {
+      conditions.push({
+        OR: [
+          { name: { contains: input.search, mode: 'insensitive' } },
+          { description: { contains: input.search, mode: 'insensitive' } },
+          { locationCity: { contains: input.search, mode: 'insensitive' } },
+        ],
+      });
     }
 
-    if (input.search) {
-      const searchCondition = [
-        { name: { contains: input.search, mode: 'insensitive' } },
-        { description: { contains: input.search, mode: 'insensitive' } },
-      ];
+    // 2. Filter Mode (UPCOMING / PAST)
+    if (input.filterMode === 'UPCOMING') {
+      conditions.push({
+        OR: [
+          { registrationDeadline: { gt: now } },
+          { registrationDeadline: null },
+        ],
+      });
+    } else if (input.filterMode === 'PAST') {
+      conditions.push({
+        registrationDeadline: { lt: now },
+      });
+    }
 
-      // If we already have an OR for date (UPCOMING), we need to maintain strict AND logic
-      // (Deadline is future) AND (Name matches OR Desc matches)
-      // Prisma's top-level AND/OR structure can be tricky.
-      // If UPCOMING: (Deadline > now OR null) AND (Name OR Desc)
-      if (input.filterMode === 'UPCOMING') {
-        baseWhere.AND = [
-          {
-            OR: [
-              { registrationDeadline: { gt: now } },
-              { registrationDeadline: null },
-            ],
-          },
-          {
-            OR: searchCondition,
-          },
-        ];
-        delete baseWhere.OR; // Remove the previous OR set by filterMode
-      } else {
-        // Normal OR for search if no complex date logic or strict PAST logic
-        baseWhere.OR = searchCondition;
+    // 3. Status Filters (Frontend: Upcoming, Recent)
+    if (input.status && input.status.length > 0) {
+      const statusConditions: any[] = [];
+      if (input.status.includes('Upcoming')) {
+        statusConditions.push({ startDate: { gt: now } });
+      }
+      if (input.status.includes('Recent')) {
+        // Recent = created within the last 30 days
+        const thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+        statusConditions.push({ createdAt: { gte: thirtyDaysAgo } });
+      }
+      if (statusConditions.length > 0) {
+        conditions.push({ OR: statusConditions });
+      }
+    }
+
+    // 4. Location (Modes) Filters (Frontend: Online, In Person)
+    if (input.modes && input.modes.length > 0) {
+      const modeConditions: any[] = [];
+      if (input.modes.includes('Online')) {
+        modeConditions.push({
+          OR: [
+            { locationType: { in: ['VIRTUAL'] } },
+            { locationVirtualLink: { not: null } },
+          ],
+        });
+      }
+      if (input.modes.includes('In Person')) {
+        modeConditions.push({
+          locationType: { in: ['PHYSICAL'] },
+        });
+      }
+      if (modeConditions.length > 0) {
+        conditions.push({ OR: modeConditions });
+      }
+    }
+
+    // 5. Event Date Filters
+    if (input.eventDates && input.eventDates.length > 0) {
+      const getDateBoundaries = (offset = 0, unit: 'week' | 'month') => {
+        const start = new Date(now);
+        if (unit === 'week') {
+          start.setDate(now.getDate() - now.getDay() + offset * 7);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(start);
+          end.setDate(start.getDate() + 7);
+          return { start, end };
+        } else {
+          const s = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+          const e = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0, 23, 59, 59, 999);
+          return { start: s, end: e };
+        }
+      };
+
+      const dateConditions: any[] = [];
+      input.eventDates.forEach((d) => {
+        let bounds;
+        if (d === 'This week') bounds = getDateBoundaries(0, 'week');
+        if (d === 'Next week') bounds = getDateBoundaries(1, 'week');
+        if (d === 'This month') bounds = getDateBoundaries(0, 'month');
+        if (d === 'Next month') bounds = getDateBoundaries(1, 'month');
+
+        if (bounds) {
+          dateConditions.push({
+            startDate: { gte: bounds.start, lt: bounds.end },
+          });
+        }
+      });
+
+      if (dateConditions.length > 0) {
+        conditions.push({ OR: dateConditions });
+      }
+    }
+
+    // 6. Eligibility Filters
+    if (input.eligibility && input.eligibility.length > 0) {
+      const eligibilityValues: any[] = [];
+      if (input.eligibility.includes('School')) eligibilityValues.push('SCHOOL_STUDENTS');
+      if (input.eligibility.includes('UG') || input.eligibility.includes('PG')) {
+        eligibilityValues.push('COLLEGE_STUDENTS');
+      }
+      if (input.eligibility.includes('Open')) eligibilityValues.push('EVERYONE_CAN_APPLY');
+
+      if (eligibilityValues.length > 0) {
+        conditions.push({
+          attendeeEligibility: { hasSome: eligibilityValues },
+        });
+      }
+    }
+
+    if (conditions.length > 0) {
+      baseWhere.AND = conditions;
+    }
+
+    // 7. Sorting Logic
+    let orderBy: any = { createdAt: 'desc' }; // Default
+    if (input.sort) {
+      switch (input.sort) {
+        case 'recently_added':
+          orderBy = { createdAt: 'desc' };
+          break;
+        case 'submission_date':
+          orderBy = { registrationDeadline: 'asc' };
+          break;
+        case 'price_amount':
+          orderBy = [{ isFree: 'desc' }, { entryFeeAmount: 'asc' }];
+          break;
+        case 'most_relevant':
+        default:
+          // If only 'Recent' is selected, default to latest created first.
+          // Otherwise, soonest starting first.
+          if (input.status?.length === 1 && input.status[0] === 'Recent') {
+            orderBy = { createdAt: 'desc' };
+          } else {
+            orderBy = { startDate: 'asc' };
+          }
+          break;
       }
     }
 
@@ -178,8 +293,8 @@ export class EventService {
       input.take != null
         ? input.take
         : String(input.appendResults) === 'true' || input.appendResults === true
-          ? 20
-          : 10;
+          ? 40
+          : 20;
     const page = input.page ? Math.max(1, Number(input.page)) : 1;
     const skip = (page - 1) * take;
 
@@ -189,6 +304,7 @@ export class EventService {
       where: baseWhere,
       skip,
       take: take + 1,
+      orderBy,
       select: {
         id: true,
         slug: true,
@@ -238,7 +354,6 @@ export class EventService {
           orderBy: { amount: 'desc' },
         },
       },
-      orderBy: { startDate: 'asc' },
     });
 
     // Determine if there's further results

@@ -4,10 +4,19 @@ import { useState } from "react";
 
 import { usePublicHackathons } from "@/hooks/usePublicHackathons";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
+import { FilterState } from "@/components/common/GenericFilterSidebar";
 import { ListingItem } from "@/components/common/ListingCard";
 
 export default function CompetitionsPage() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<FilterState>({
+    search: "",
+    modes: [],
+    status: [],
+    eventDates: [],
+    eligibility: [],
+    sort: "recently_added",
+  });
+
   const {
     data,
     isLoading,
@@ -15,7 +24,7 @@ export default function CompetitionsPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = usePublicHackathons(undefined, searchTerm);
+  } = usePublicHackathons(undefined, filters);
 
   const hackathons = data?.pages.flatMap((page: any) => page.items || []) ?? [];
 
@@ -36,26 +45,25 @@ export default function CompetitionsPage() {
     registrationDeadline: h.registrationDeadline,
     registrationCount: h.registrationCount,
     eventType: h.hackathonType || "Hackathon",
+    attendeeEligibility: h.attendeeEligibility,
     tags: [h.mode, h.status],
     routePrefix: "hackathons",
   }));
 
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-  };
 
   return (
     <GenericListingPage
-      title="College Hackathons & Competitions"
-      description="Explore active hackathons, design challenges, and coding contests."
       items={items}
       isLoading={isLoading}
       error={error}
       routePrefix="hackathons"
-      onSearch={handleSearch}
       onLoadMore={fetchNextPage}
       hasMore={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
+      filters={filters}
+      setFilters={setFilters}
+      title="Hackathons"
+      description="Browse and participate in the world's best hackathons."
     />
   );
 }

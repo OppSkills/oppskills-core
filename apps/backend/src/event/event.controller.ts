@@ -11,6 +11,7 @@ import {
   Put,
   Param,
   Delete,
+  ParseArrayPipe,
   Logger,
 } from '@nestjs/common';
 import {
@@ -75,26 +76,33 @@ export class EventController {
     summary: 'List public events (PUBLISHED/ONGOING + APPROVED only)',
   })
   @ApiQuery({
-    name: 'festival_id',
+    name: 'modes',
     required: false,
-    description: 'Filter events by festival ID',
+    description: 'Filter by modes (Online, In Person)',
+    type: [String],
   })
   @ApiQuery({
-    name: 'page',
+    name: 'status',
     required: false,
-    description: 'Page number (default 1)',
-    type: Number,
+    description: 'Filter by status (Upcoming, Recent)',
+    type: [String],
   })
   @ApiQuery({
-    name: 'appendResults',
+    name: 'eventDates',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
-    type: Boolean,
+    description: 'Filter by event dates (This week, Next week, etc.)',
+    type: [String],
   })
   @ApiQuery({
-    name: 'q',
+    name: 'eligibility',
     required: false,
-    description: 'Search query (searches name and description)',
+    description: 'Filter by eligibility (School, UG, PG, Open)',
+    type: [String],
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    description: 'Sort by (most_relevant, recently_added, etc.)',
     type: String,
   })
   @ApiResponse({
@@ -106,12 +114,26 @@ export class EventController {
     @Query('page') page?: number,
     @Query('appendResults') appendResults?: boolean,
     @Query('q') search?: string,
+    @Query('modes', new ParseArrayPipe({ items: String, optional: true }))
+    modes?: string[],
+    @Query('status', new ParseArrayPipe({ items: String, optional: true }))
+    status?: string[],
+    @Query('eventDates', new ParseArrayPipe({ items: String, optional: true }))
+    eventDates?: string[],
+    @Query('eligibility', new ParseArrayPipe({ items: String, optional: true }))
+    eligibility?: string[],
+    @Query('sort') sort?: string,
   ) {
     return this.eventService.listPublicEvents({
       festivalId,
       page,
       appendResults,
       search,
+      modes,
+      status,
+      eventDates,
+      eligibility,
+      sort,
     });
   }
 
@@ -137,7 +159,7 @@ export class EventController {
   @ApiQuery({
     name: 'appendResults',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
+    description: 'If true, returns 40 results instead of 20',
     type: Boolean,
   })
   @ApiQuery({
@@ -184,7 +206,7 @@ export class EventController {
   @ApiQuery({
     name: 'appendResults',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
+    description: 'If true, returns 40 results instead of 20',
     type: Boolean,
   })
   @ApiQuery({
@@ -203,7 +225,7 @@ export class EventController {
     @Query('appendResults') appendResults?: boolean,
     @Query('q') search?: string,
   ) {
-    const PAGE_SIZE = 12;
+    const PAGE_SIZE = 20;
     const pageNum = page ? Math.max(1, Number(page)) : 1;
 
     // Fetch ALL past items from both sources in one shot (no per-source pagination).
@@ -241,12 +263,8 @@ export class EventController {
 
     // Sort by registrationDeadline descending (most recent first)
     merged.sort((a, b) => {
-      const dateA = a.registrationDeadline
-        ? new Date(a.registrationDeadline).getTime()
-        : 0;
-      const dateB = b.registrationDeadline
-        ? new Date(b.registrationDeadline).getTime()
-        : 0;
+      const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+      const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
       return dateB - dateA;
     });
 
