@@ -182,11 +182,6 @@ const Navbar = () => {
                     </Link>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Link href="/dashboard" onClick={() => setIsOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start px-2">
-                    Dashboard
-                  </Button>
-                </Link>
               </SignedIn>
 
               <SignedOut>
