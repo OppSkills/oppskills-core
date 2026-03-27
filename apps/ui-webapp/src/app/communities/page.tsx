@@ -40,7 +40,7 @@ export default function CommunitiesPage() {
 
         {/* Heading and Content */}
         <div className="max-w-3xl space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-foreground via-foreground/90 to-foreground/40 pb-2 font-poppins">
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-br from-foreground via-foreground/90 to-foreground/40 pb-2 font-poppins">
             Communities <br />
             <span className="text-primary-500">Coming Soon</span>
           </h1>

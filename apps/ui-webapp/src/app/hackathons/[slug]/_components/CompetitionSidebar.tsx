@@ -291,13 +291,21 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
       {/* Banner Component */}
       <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl shadow-sm">
-        <Image
-          src={competition.thumbnail || "/competition_placeholder.png"}
-          alt={competition.title}
-          fill
-          className="object-cover"
-          priority
-        />
+        {competition.thumbnail ? (
+          <Image
+            src={competition.thumbnail}
+            alt={competition.title}
+            fill
+            className="object-cover"
+            priority
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-slate-900 to-slate-800">
+            <span className="text-white font-bold opacity-20 text-4xl">
+              {competition.title.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Info Card */}
@@ -519,7 +527,6 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
               </div>
             </div>
 
-            
           </div>
         </div>
       </div>

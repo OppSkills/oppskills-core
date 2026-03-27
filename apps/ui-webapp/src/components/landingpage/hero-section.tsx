@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 
 export default function HeroSection() {
 
@@ -27,12 +28,12 @@ export default function HeroSection() {
         {
           [
             { image: "/illustrations/desk_laptop.svg", title: "Hackathons", link: "/hackathons" },
-            { image: "/illustrations/rewards.svg", title: "Competitions", link: "/profile/registrations" },
             { image: "/illustrations/desk_coffee.svg", title: "Events", link: "/events" },
+            { image: "/illustrations/rewards.svg", title: "Competitions", link: "/profile/registrations" },
             { image: "/illustrations/communities.svg", title: "Communities", link: "/communities" },
           ].map((item, index) => {
             return (
-              <div className='bg-primary-200 rounded-xl p-4 relative h-40 overflow-hidden' key={index}>
+              <Link href={item.link} className='bg-primary-200 rounded-xl p-4 relative h-40 overflow-hidden' key={index}>
                 <h4 className='text-neutral-900 text-lg font-normal'>{item.title}</h4>
                 <div className='rounded-full bg-primary-300 w-40 h-40 absolute -bottom-10 -right-10'>
                 </div>
@@ -43,7 +44,7 @@ export default function HeroSection() {
                   className='absolute bottom-0 right-0'
                   height={120}
                 />
-              </div>
+              </Link>
             )
           })
         }
