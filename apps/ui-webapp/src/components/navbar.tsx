@@ -79,45 +79,49 @@ const Navbar = () => {
               </div>
             </div>
           </div>
-          {/* Desktop Buttons (Hidden on Mobile) */}
-          <div className="hidden lg:flex items-center gap-3">
-            {/* Logic for Authenticated Users */}
+
+          {/* User actions / auth */}
+          <div className="flex items-center gap-3">
             <SignedIn>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="border-primary-200 rounded-full text-primary-700 hover:bg-primary-500 hover:text-primary-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
-                  >
-                    <PlusCircle className="w-4 h-4 mr-1.5" />
-                    Host
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 rounded-xl border-neutral-200 mt-1">
-                  <Link href="/organize/hackathon">
-                    <DropdownMenuItem className="cursor-pointer py-3 focus:bg-primary-50 focus:text-primary-700">
-                      <Trophy className="mr-2.5 h-4 w-4 text-neutral-500" />
-                      <span className="font-medium">Hackathon</span>
-                    </DropdownMenuItem>
-                  </Link>
-                  <Link href="/organize/event">
-                    <DropdownMenuItem className="cursor-pointer py-3 focus:bg-primary-50 focus:text-primary-700">
-                      <Calendar className="mr-2.5 h-4 w-4 text-neutral-500" />
-                      <span className="font-medium">Event</span>
-                    </DropdownMenuItem>
-                  </Link>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Desktop Host button */}
+              <div className="hidden lg:block">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="border-primary-200 rounded-full text-primary-700 hover:bg-primary-500 hover:text-primary-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+                    >
+                      <PlusCircle className="w-4 h-4 mr-1.5" />
+                      Host
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 rounded-xl border-neutral-200 mt-1">
+                    <Link href="/organize/hackathon">
+                      <DropdownMenuItem className="cursor-pointer py-3 focus:bg-primary-50 focus:text-primary-700">
+                        <Trophy className="mr-2.5 h-4 w-4 text-neutral-500" />
+                        <span className="font-medium">Hackathon</span>
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link href="/organize/event">
+                      <DropdownMenuItem className="cursor-pointer py-3 focus:bg-primary-50 focus:text-primary-700">
+                        <Calendar className="mr-2.5 h-4 w-4 text-neutral-500" />
+                        <span className="font-medium">Event</span>
+                      </DropdownMenuItem>
+                    </Link>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Profile Icon (Desktop & Mobile) */}
               <UserAccountButton />
             </SignedIn>
 
-            {/* Logic for Guests */}
             <SignedOut>
               <Button
                 onClick={() => {
                   setAuthMode("login");
                 }}
-                className="bg-primary-500 text-primary-foreground hover:bg-primary/90"
+                className="hidden lg:block bg-primary-500 text-primary-foreground hover:bg-primary/90"
               >
                 Sign In / Sign Up
               </Button>
@@ -183,9 +187,6 @@ const Navbar = () => {
                     Dashboard
                   </Button>
                 </Link>
-                <div className="px-2">
-                  <UserAccountButton />
-                </div>
               </SignedIn>
 
               <SignedOut>
