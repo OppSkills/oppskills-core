@@ -92,6 +92,7 @@ import { useRouter } from "next/navigation";
  */
 export default function Page() {
   const timeInputRef = useRef<HTMLInputElement>(null);
+  const selectedFestivalIdRef = useRef<string | undefined>(undefined);
   const [formCompleted, setFormCompleted] = useState(false);
 
 
@@ -220,6 +221,12 @@ export default function Page() {
     } catch {
       return false;
     }
+  }
+
+  function normalizeFestivalId(value: string | undefined): string | undefined {
+    if (typeof value !== "string") return undefined;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
   }
 
   /**
@@ -365,6 +372,10 @@ export default function Page() {
     toast.success("Redirecting to Dashboard....");
     router.push("/dashboard");
   }, [formCompleted]);
+
+  useEffect(() => {
+    selectedFestivalIdRef.current = normalizeFestivalId(formData.festivalId);
+  }, [formData.festivalId]);
 
   /**
    * Maps UI hackathon type labels to backend enum values.
@@ -522,11 +533,11 @@ export default function Page() {
                 <DropdownMenuItem
                   className="flex flex-col items-start gap-1 p-3 cursor-pointer"
                   onClick={() =>
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       eventFestName: "Individual Hackathon",
                       festivalId: undefined,
-                    })
+                    }))
                   }
                 >
                   <span className="font-medium text-base">
@@ -559,11 +570,11 @@ export default function Page() {
                       key={festival.id}
                       className="flex flex-col items-start gap-1 p-3 cursor-pointer"
                       onClick={() =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           eventFestName: festival.name,
                           festivalId: festival.id,
-                        })
+                        }))
                       }
                     >
                       <span className="font-medium text-base">
@@ -1026,13 +1037,17 @@ export default function Page() {
                     return;
                   }
 
+                  const selectedFestivalId = normalizeFestivalId(
+                    selectedFestivalIdRef.current ?? formData.festivalId,
+                  );
+
                   const payload: CreateHackathonDto = {
                     name: formData.eventName,
                     description:
                       formData.eventDescription.trim().length > 0
                         ? formData.eventDescription
                         : undefined,
-                    festivalId: formData.festivalId,
+                    festivalId: selectedFestivalId,
                     bannerImageUrl: isValidUrl(formData.eventThumbnail)
                       ? formData.eventThumbnail.trim()
                       : undefined,
