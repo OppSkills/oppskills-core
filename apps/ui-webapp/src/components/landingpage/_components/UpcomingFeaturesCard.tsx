@@ -15,6 +15,7 @@ import { Loader2 } from 'lucide-react'
  * Maps feature titles to feature identifiers for the waitlist API.
  */
 function getFeatureIdentifier(title: string): string {
+    if (!title) return "";
     const mapping: Record<string, string> = {
         'Skill-Based Learning Tracks': 'skill-based-learning-tracks',
         'Mentor-Led Sessions': 'mentor-led-sessions',
