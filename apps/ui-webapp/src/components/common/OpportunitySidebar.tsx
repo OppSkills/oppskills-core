@@ -29,7 +29,7 @@ export interface OpportunitySidebarData {
   venueAddress?: string;
   featuredIn?: string;
   websiteUrl?: string | null;
-  
+
   // Registration Related
   isFree?: boolean;
   entryFeeAmount?: number | null;
@@ -38,7 +38,7 @@ export interface OpportunitySidebarData {
   registrationDeadline?: string;
   registrationDeadlineDate?: Date | null;
   isRegistrationPaused?: boolean;
-  
+
   // Stats
   registrationCount?: number;
   maxParticipants?: number | null; // maxTeams or maxUsers
@@ -67,7 +67,7 @@ export function OpportunitySidebar({
   onActionClick,
   myTeam,
 }: OpportunitySidebarProps) {
-  
+
   // Check if registration is closed
   const isRegistrationClosed =
     data.isRegistrationPaused ||
@@ -225,13 +225,14 @@ export function OpportunitySidebar({
 
       {/* Banner */}
       <div className="relative aspect-16/10 w-full overflow-hidden rounded-2xl shadow-sm border border-neutral-100">
-        <Image
-          src={data.thumbnail || (data.type === "HACKATHON" ? "/competition_placeholder.png" : data.type === "FESTIVAL" ? "/festival_placeholder.png" : "/event_placeholder.png")}
-          alt={data.title}
-          fill
-          className="object-cover"
-          priority
-        />
+        {!data.thumbnail ?
+          <Image
+            src={data.thumbnail}
+            alt={data.title}
+            fill
+            className="object-cover"
+            priority
+          /> : "vijay"}
       </div>
 
       {/* Info Card */}
@@ -266,8 +267,8 @@ export function OpportunitySidebar({
                 })()}
               </h4>
               <p className="text-sm text-neutral-500">
-                {data.startDate && data.endDate ? 
-                  `${format(data.startDate, "h:mm a")} - ${format(data.endDate, "h:mm a")}` 
+                {data.startDate && data.endDate ?
+                  `${format(data.startDate, "h:mm a")} - ${format(data.endDate, "h:mm a")}`
                   : "Time TBD"}
               </p>
             </div>
@@ -363,10 +364,10 @@ export function OpportunitySidebar({
                   <Clock className="w-5 h-5 text-neutral-800" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <a 
-                    href={data.websiteUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                  <a
+                    href={data.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="font-semibold text-primary-600 text-sm truncate hover:underline"
                   >
                     {data.websiteUrl.replace(/^https?:\/\//, "")}

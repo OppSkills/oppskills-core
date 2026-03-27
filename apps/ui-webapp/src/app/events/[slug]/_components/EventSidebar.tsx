@@ -20,13 +20,21 @@ export function EventSidebar({ event }: EventSidebarProps) {
       <div className="flex flex-col lg:relative">
         {/* Thumbnail */}
         <div className="relative aspect-16/10 w-full overflow-hidden lg:rounded-2xl shadow-sm border border-neutral-100">
-          <Image
-            src={event.thumbnail || "/competition_placeholder.png"}
-            alt={event.title}
-            fill
-            className="object-cover"
-            priority
-          />
+          {event.thumbnail ? (
+            <Image
+              src={event.thumbnail}
+              alt={event.title}
+              fill
+              className="object-cover"
+              priority
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-slate-900 to-slate-800">
+              <span className="text-white font-bold opacity-20 text-4xl">
+                {event.title.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
         </div>
         {/* Featured In Pill */}
         {event.festival?.name && (
