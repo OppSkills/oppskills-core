@@ -4,7 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 
 export default function page() {
   return (
-    <div className="py-8 lg:py-16 px-16 md:px-24 lg:px-12 xl:px-24 flex flex-col gap-16">
+    <div className="py-8 lg:py-16 px-4 sm:px-8 md:px-24 lg:px-12 xl:px-24 flex flex-col gap-16">
       <div className="flex flex-col-reverse lg:flex-row gap-16 lg:gap-8">
         <div className="flex flex-col gap-6 w-full lg:w-1/2">
           <div>
