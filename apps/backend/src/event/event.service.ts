@@ -169,14 +169,13 @@ export class EventService {
     if (input.status && input.status.length > 0) {
       const statusConditions: any[] = [];
       if (input.status.includes('Upcoming')) {
-        statusConditions.push({
-          OR: [{ startDate: { gt: now } }, { status: 'PUBLISHED' }],
-        });
+        statusConditions.push({ startDate: { gt: now } });
       }
       if (input.status.includes('Recent')) {
-        statusConditions.push({
-          OR: [{ endDate: { lt: now } }, { status: 'COMPLETED' }],
-        });
+        // Recent = created within the last 30 days
+        const thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+        statusConditions.push({ createdAt: { gte: thirtyDaysAgo } });
       }
       if (statusConditions.length > 0) {
         conditions.push({ OR: statusConditions });
@@ -189,14 +188,14 @@ export class EventService {
       if (input.modes.includes('Online')) {
         modeConditions.push({
           OR: [
-            { locationType: { in: ['VIRTUAL', 'ONLINE'] } },
+            { locationType: { in: ['VIRTUAL'] } },
             { locationVirtualLink: { not: null } },
           ],
         });
       }
       if (input.modes.includes('In Person')) {
         modeConditions.push({
-          locationType: { in: ['PHYSICAL', 'OFFLINE', 'IN_PERSON', 'HYBRID'] },
+          locationType: { in: ['PHYSICAL'] },
         });
       }
       if (modeConditions.length > 0) {
@@ -276,10 +275,10 @@ export class EventService {
           break;
         case 'most_relevant':
         default:
-          // If only 'Recent' is selected, default to latest first. 
-          // Otherwise (Upcoming or Both), soonest first.
+          // If only 'Recent' is selected, default to latest created first.
+          // Otherwise, soonest starting first.
           if (input.status?.length === 1 && input.status[0] === 'Recent') {
-            orderBy = { startDate: 'desc' };
+            orderBy = { createdAt: 'desc' };
           } else {
             orderBy = { startDate: 'asc' };
           }

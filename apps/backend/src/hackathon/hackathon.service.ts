@@ -341,14 +341,13 @@ export class HackathonService {
     if (input.status && input.status.length > 0) {
       const statusConditions: any[] = [];
       if (input.status.includes('Upcoming')) {
-        statusConditions.push({
-          OR: [{ startDate: { gt: now } }, { status: 'PUBLISHED' }],
-        });
+        statusConditions.push({ startDate: { gt: now } });
       }
       if (input.status.includes('Recent')) {
-        statusConditions.push({
-          OR: [{ endDate: { lt: now } }, { status: 'COMPLETED' }],
-        });
+        // Recent = created within the last 30 days
+        const thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+        statusConditions.push({ createdAt: { gte: thirtyDaysAgo } });
       }
       if (statusConditions.length > 0) {
         conditions.push({ OR: statusConditions });
@@ -362,7 +361,7 @@ export class HackathonService {
         modeConditions.push({
           OR: [
             { mode: { equals: 'online', mode: 'insensitive' } },
-            { locationType: { in: ['VIRTUAL', 'ONLINE'] } },
+            { locationType: { in: ['VIRTUAL'] } },
           ],
         });
       }
@@ -370,7 +369,7 @@ export class HackathonService {
         modeConditions.push({
           OR: [
             { mode: { in: ['offline', 'hybrid'], mode: 'insensitive' } },
-            { locationType: { in: ['PHYSICAL', 'OFFLINE', 'IN_PERSON', 'HYBRID'] } },
+            { locationType: { in: ['PHYSICAL'] } },
           ],
         });
       }
@@ -451,10 +450,8 @@ export class HackathonService {
           break;
         case 'most_relevant':
         default:
-          // If only 'Recent' is selected, default to latest first. 
-          // Otherwise (Upcoming or Both), soonest first.
           if (input.status?.length === 1 && input.status[0] === 'Recent') {
-            orderBy = { startDate: 'desc' };
+            orderBy = { createdAt: 'desc' };
           } else {
             orderBy = { startDate: 'asc' };
           }

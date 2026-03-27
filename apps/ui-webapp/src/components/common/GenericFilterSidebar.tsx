@@ -3,6 +3,7 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export interface FilterState {
   search: string;
@@ -46,6 +47,16 @@ export function GenericFilterSidebar({
       }
       return { ...prev, [category]: updated };
     });
+  };
+  
+  const handleRadioChange = (
+    category: keyof Omit<FilterState, "search" | "sort">,
+    value: string
+  ) => {
+    setFilters((prev) => ({
+      ...prev,
+      [category]: [value],
+    }));
   };
 
   const clearFilters = () => {
@@ -92,6 +103,39 @@ export function GenericFilterSidebar({
     );
   };
 
+  // Helper to render a radio group
+  const renderRadioGroup = (
+    title: string,
+    category: keyof Omit<FilterState, "search" | "sort">,
+    items: string[]
+  ) => {
+    const value = (filters[category] as string[])[0] || "";
+    return (
+      <div className="space-y-4">
+        <h3 className="font-bold text-neutral-900">{title}</h3>
+        <RadioGroup value={value} onValueChange={(val) => handleRadioChange(category, val)}>
+          <div className="space-y-3">
+            {items.map((item) => (
+              <div key={item} className="flex items-center space-x-3">
+                <RadioGroupItem
+                  value={item}
+                  id={`${category}-${item}`}
+                  className="h-6 w-6 border-2 border-neutral-400 text-primary-600 focus:ring-primary-600"
+                />
+                <Label
+                  htmlFor={`${category}-${item}`}
+                  className="font-medium text-neutral-600 cursor-pointer select-none leading-none"
+                >
+                  {item}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </RadioGroup>
+      </div>
+    );
+  };
+
   return (
     <div className={`space-y-4 py-2 ${className}`}>
       <button
@@ -101,7 +145,7 @@ export function GenericFilterSidebar({
         Clear filters
       </button>
 
-      {renderCheckboxGroup("Location", "modes", ["Online", "In Person"])}
+      {renderRadioGroup("Location", "modes", ["Online", "In Person"])}
 
       {renderCheckboxGroup("Status", "status", ["Upcoming", "Recent"])}
 
