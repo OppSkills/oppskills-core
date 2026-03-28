@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Image, type ImageSourcePropType, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppText, FlowScreenTemplate, InputField } from '../../../../shared/ui';
+import { AppText } from '../../../../shared/ui';
 import onboardingCampusImage from '../../../../../assets/college campus-amico 1.png';
 import onboardingExperienceImage from '../../../../../assets/Learning-amico 1.png';
 import onboardingUpdatesImage from '../../../../../assets/Status update-amico 1.png';
@@ -254,63 +254,6 @@ function OnboardingIllustration({ variant, style, imageSource }: OnboardingIllus
         </>
       ) : null}
     </View>
-  );
-}
-
-interface AuthStepScreenProps {
-  readonly title: string;
-  readonly subtitle: string;
-  readonly routeLabel: string;
-  readonly ctaLabel: string;
-  readonly onContinue: () => void;
-  readonly beforeActions?: React.ReactNode;
-  readonly errorMessage?: string | undefined;
-  readonly secondaryLabel?: string;
-  readonly onSecondary?: () => void;
-  readonly isSubmitting?: boolean;
-  readonly children?: React.ReactNode;
-}
-
-function AuthStepScreen({
-  title,
-  subtitle,
-  routeLabel,
-  ctaLabel,
-  onContinue,
-  beforeActions,
-  errorMessage,
-  secondaryLabel,
-  onSecondary,
-  isSubmitting = false,
-  children,
-}: AuthStepScreenProps) {
-  const actions = [{ label: ctaLabel, onPress: onContinue, loading: isSubmitting, disabled: isSubmitting }] as Array<{
-    readonly label: string;
-    readonly onPress: () => void;
-    readonly tone?: 'primary' | 'secondary' | 'outline';
-    readonly loading?: boolean;
-    readonly disabled?: boolean;
-  }>;
-
-  if (secondaryLabel && onSecondary) {
-    actions.push({
-      label: secondaryLabel,
-      onPress: onSecondary,
-      tone: 'outline',
-      disabled: isSubmitting,
-    });
-  }
-
-  return (
-    <FlowScreenTemplate actions={actions} routeLabel={routeLabel} showFooter={false} subtitle={subtitle} title={title}>
-      <View style={styles.formBlock}>{children}</View>
-      {errorMessage ? (
-        <AppText colorToken="danger" style={styles.errorText} variant="caption">
-          {errorMessage}
-        </AppText>
-      ) : null}
-      {beforeActions}
-    </FlowScreenTemplate>
   );
 }
 
@@ -1170,6 +1113,7 @@ export function SignInScreen({
 }: SignInScreenProps) {
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -1200,47 +1144,100 @@ export function SignInScreen({
   };
 
   return (
-    <AuthStepScreen
-      ctaLabel="Sign in"
-      errorMessage={errorMessage}
-      isSubmitting={isSubmitting}
-      onContinue={submit}
-      onSecondary={onSignUp}
-      routeLabel="Auth / Sign In"
-      secondaryLabel="Need an account? Sign up"
-      subtitle="Sign in to continue your OppSkills journey."
-      title="Sign In"
-      beforeActions={
-        <View style={styles.socialAuthBlock}>
-          <AppText colorToken="textMuted" style={styles.orText} variant="caption">
-            Or
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.signInSafeArea}>
+      <View style={styles.signInRoot}>
+        <View style={styles.signInContent}>
+          <View style={styles.signInMetaRow}>
+            <View />
+            <Pressable hitSlop={10} onPress={onSignUp}>
+              <AppText colorToken="textMuted" style={styles.signInSkipText} variant="bodyStrong">
+                Skip
+              </AppText>
+            </Pressable>
+          </View>
+
+          <AppText style={styles.signInHeading} variant="displayH1">
+            Sign In
           </AppText>
-          <Pressable onPress={onGoogleContinue} style={styles.googleButton}>
-            <AppText colorToken="brandPrimaryStrong" variant="bodyStrong">
+          <AppText colorToken="textMuted" style={styles.signInSubHeading} variant="body">
+            Register now to take part in all the events
+          </AppText>
+
+          <Pressable onPress={onGoogleContinue} style={styles.signInGoogleButton}>
+            <View style={styles.googleGlyph}>
+              <View style={styles.googleGlyphRing} />
+              <View style={styles.googleGlyphCutout} />
+              <View style={styles.googleGlyphBar} />
+            </View>
+            <AppText colorToken="brandSecondary" style={styles.signInGoogleText} variant="bodyStrong">
               Continue with Google
             </AppText>
           </Pressable>
+
+          <View style={styles.signInDividerRow}>
+            <View style={styles.signInDividerLine} />
+            <View style={styles.signInOrChip}>
+              <AppText style={styles.signInOrText} variant="body">
+                Or
+              </AppText>
+            </View>
+          </View>
+
+          <View style={styles.signInFieldWrap}>
+            <View style={styles.signInFieldContainer}>
+              <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                onChangeText={setEmail}
+                placeholder="Email address *"
+                placeholderTextColor="#7C737E"
+                style={styles.signInFieldInput}
+                value={email}
+              />
+            </View>
+
+            <View style={[styles.signInFieldContainer, styles.signInFieldSpacing]}>
+              <TextInput
+                onChangeText={setPassword}
+                placeholder="Password *"
+                placeholderTextColor="#7C737E"
+                secureTextEntry={!showPassword}
+                style={[styles.signInFieldInput, styles.signInFieldInputWithIcon]}
+                value={password}
+              />
+              <Pressable hitSlop={8} onPress={() => setShowPassword((current) => !current)} style={styles.signInEyeButton}>
+                <View style={styles.signInEyeOuter}>
+                  <View style={styles.signInEyeInner} />
+                </View>
+              </Pressable>
+            </View>
+          </View>
+
+          {errorMessage ? (
+            <AppText colorToken="danger" style={styles.signInErrorText} variant="caption">
+              {errorMessage}
+            </AppText>
+          ) : null}
         </View>
-      }
-    >
-      <InputField
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="email-address"
-        label="Email"
-        onChangeText={setEmail}
-        placeholder="Email address"
-        value={email}
-      />
-      <InputField
-        containerStyle={styles.inputSpacing}
-        label="Password"
-        onChangeText={setPassword}
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-      />
-    </AuthStepScreen>
+
+        <View style={styles.signInBottomActions}>
+          <Pressable disabled={isSubmitting} onPress={submit} style={styles.signInNextButton}>
+            <ArrowIcon color="#FFFFFF" direction="left" />
+            <AppText colorToken="textInverse" style={styles.signInNextText} variant="bodyStrong">
+              {isSubmitting ? 'Loading...' : 'Next'}
+            </AppText>
+            <ArrowIcon color="#FFFFFF" direction="right" />
+          </Pressable>
+
+          <Pressable hitSlop={10} onPress={onSignUp} style={styles.signInSignUpButton}>
+            <AppText colorToken="brandSecondary" style={styles.signInSignUpText} variant="bodyStrong">
+              Don’t have an account? Sign Up
+            </AppText>
+          </Pressable>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
