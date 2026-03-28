@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Image, type ImageSourcePropType, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppText, FlowScreenTemplate, InputField, SearchInput } from '../../../../shared/ui';
+import { AppText, FlowScreenTemplate, InputField } from '../../../../shared/ui';
 import onboardingCampusImage from '../../../../../assets/college campus-amico 1.png';
 import onboardingExperienceImage from '../../../../../assets/Learning-amico 1.png';
 import onboardingUpdatesImage from '../../../../../assets/Status update-amico 1.png';
@@ -1069,37 +1069,87 @@ export function ProfileSetupSkillsScreen({ initialSkills, onContinue, onSkip }: 
   };
 
   return (
-    <AuthStepScreen
-      ctaLabel="Continue"
-      isSubmitting={isSubmitting}
-      onContinue={() => {
-        setIsSubmitting(true);
-        setTimeout(() => {
-          setIsSubmitting(false);
-          onContinue(selectedSkills);
-        }, 360);
-      }}
-      onSecondary={onSkip}
-      routeLabel="Auth / Profile Skills"
-      secondaryLabel="Skip"
-      subtitle="Skills are captured as mock tags and can later map to backend profiles."
-      title="Skills Info"
-    >
-      <SearchInput onChangeText={setQuery} value={query} />
-      <View style={styles.chipsRow}>
-        {filteredSkills.map((chip) => (
-          <Pressable
-            key={chip}
-            onPress={() => toggleSkill(chip)}
-            style={[styles.chip, selectedSkills.includes(chip) ? styles.chipSelected : null]}
-          >
-            <AppText colorToken={selectedSkills.includes(chip) ? 'textInverse' : 'brandPrimaryStrong'} variant="caption">
-              {chip}
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.skillsSafeArea}>
+      <View style={styles.skillsRoot}>
+        <ScrollView contentContainerStyle={styles.skillsScrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.skillsMetaRow}>
+            <AppText style={styles.skillsStepText} variant="bodyStrong">
+              Step 4 of 4
             </AppText>
+            <Pressable hitSlop={10} onPress={onSkip}>
+              <AppText colorToken="textMuted" style={styles.skillsSkipText} variant="bodyStrong">
+                Skip
+              </AppText>
+            </Pressable>
+          </View>
+
+          <AppText style={styles.skillsHeading} variant="displayH1">
+            Skills Info
+          </AppText>
+          <AppText colorToken="textMuted" style={styles.skillsSubHeading} variant="body">
+            Pick relevant skills so we can personalize your opportunities
+          </AppText>
+
+          <View style={styles.skillsSearchWrap}>
+            <View style={[styles.skillsSearchField, styles.skillsSearchFieldActive]}>
+              <TextInput
+                onChangeText={setQuery}
+                placeholder="Search skills"
+                placeholderTextColor="#7C737E"
+                style={styles.skillsSearchInput}
+                value={query}
+              />
+              <View style={styles.skillsFloatingChip}>
+                <AppText style={styles.skillsFloatingChipText} variant="micro">
+                  Skills
+                </AppText>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.skillsChipsGrid}>
+            {filteredSkills.map((chip) => {
+              const selected = selectedSkills.includes(chip);
+              return (
+                <Pressable
+                  key={chip}
+                  onPress={() => toggleSkill(chip)}
+                  style={[styles.skillsChip, selected ? styles.skillsChipSelected : null]}
+                >
+                  <AppText style={[styles.skillsChipText, selected ? styles.skillsChipTextSelected : null]} variant="label">
+                    {chip}
+                  </AppText>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <AppText colorToken="textMuted" style={styles.skillsCountText} variant="caption">
+            {selectedSkills.length} selected
+          </AppText>
+        </ScrollView>
+
+        <View style={styles.skillsBottomActions}>
+          <Pressable
+            disabled={isSubmitting}
+            onPress={() => {
+              setIsSubmitting(true);
+              setTimeout(() => {
+                setIsSubmitting(false);
+                onContinue(selectedSkills);
+              }, 360);
+            }}
+            style={styles.skillsNextButton}
+          >
+            <ArrowIcon color="#FFFFFF" direction="left" />
+            <AppText colorToken="textInverse" style={styles.skillsNextText} variant="bodyStrong">
+              {isSubmitting ? 'Loading...' : 'Next'}
+            </AppText>
+            <ArrowIcon color="#FFFFFF" direction="right" />
           </Pressable>
-        ))}
+        </View>
       </View>
-    </AuthStepScreen>
+    </SafeAreaView>
   );
 }
 
