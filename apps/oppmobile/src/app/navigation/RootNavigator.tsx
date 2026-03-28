@@ -189,6 +189,7 @@ function AuthNavigator() {
               setOtpCode(capturedOtpCode);
               navigation.navigate(appRoutes.verifyIdentityOtpFilled);
             }}
+            onSkip={() => navigation.navigate(appRoutes.signIn)}
           />
         )}
       </AuthStack.Screen>
@@ -202,6 +203,7 @@ function AuthNavigator() {
               setOtpCode(capturedOtpCode);
               navigation.navigate(appRoutes.profileSetupPersonal);
             }}
+            onSkip={() => navigation.navigate(appRoutes.signIn)}
           />
         )}
       </AuthStack.Screen>

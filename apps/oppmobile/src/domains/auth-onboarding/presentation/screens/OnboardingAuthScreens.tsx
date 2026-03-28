@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Image, type ImageSourcePropType, Pressable, View } from 'react-native';
+import { Image, type ImageSourcePropType, Pressable, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, FlowScreenTemplate, InputField, SearchInput } from '../../../../shared/ui';
@@ -348,39 +348,104 @@ export function SignUpScreen({ initialEmail = '', onContinue, onGoogleContinue, 
   };
 
   return (
-    <AuthStepScreen
-      ctaLabel="Continue"
-      errorMessage={errorMessage}
-      isSubmitting={isSubmitting}
-      onContinue={submit}
-      onSecondary={onSignIn}
-      routeLabel="Auth / Sign Up"
-      secondaryLabel="Already have an account? Sign in"
-      subtitle="Register now to take part in all the events."
-      title="Sign Up"
-      beforeActions={
-        <View style={styles.socialAuthBlock}>
-          <AppText colorToken="textMuted" style={styles.orText} variant="caption">
-            Or
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.signUpSafeArea}>
+      <View style={styles.signUpRoot}>
+        <View style={styles.signUpContent}>
+          <View style={styles.signUpMetaRow}>
+            <AppText style={styles.signUpStepText} variant="bodyStrong">
+              Step 1 of 4
+            </AppText>
+            <Pressable hitSlop={10} onPress={onSignIn}>
+              <AppText colorToken="textMuted" style={styles.signUpSkipText} variant="bodyStrong">
+                Skip
+              </AppText>
+            </Pressable>
+          </View>
+
+          <AppText style={styles.signUpHeading} variant="displayH1">
+            Sign Up
           </AppText>
-          <Pressable onPress={onGoogleContinue} style={styles.googleButton}>
-            <AppText colorToken="brandPrimaryStrong" variant="bodyStrong">
+          <AppText colorToken="textMuted" style={styles.signUpSubHeading} variant="body">
+            Register now to take part in all the events
+          </AppText>
+
+          <Pressable onPress={onGoogleContinue} style={styles.signUpGoogleButton}>
+            <View style={styles.googleGlyph}>
+              <View style={styles.googleGlyphRing} />
+              <View style={styles.googleGlyphCutout} />
+              <View style={styles.googleGlyphBar} />
+            </View>
+            <AppText colorToken="brandSecondary" style={styles.signUpGoogleText} variant="bodyStrong">
               Continue with Google
             </AppText>
           </Pressable>
+
+          <View style={styles.signUpDividerRow}>
+            <View style={styles.signUpDividerLine} />
+            <View style={styles.signUpOrChip}>
+              <AppText style={styles.signUpOrText} variant="body">
+                Or
+              </AppText>
+            </View>
+          </View>
+
+          <View style={styles.signUpInputWrap}>
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder="Email address *"
+              placeholderTextColor="#7C737E"
+              style={styles.signUpInput}
+              value={email}
+            />
+          </View>
+
+          {errorMessage ? (
+            <AppText colorToken="danger" style={styles.signUpErrorText} variant="caption">
+              {errorMessage}
+            </AppText>
+          ) : null}
         </View>
-      }
-    >
-      <InputField
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="email-address"
-        label="Email"
-        onChangeText={setEmail}
-        placeholder="Email address"
-        value={email}
-      />
-    </AuthStepScreen>
+
+        <View style={styles.signUpBottomActions}>
+          <Pressable disabled={isSubmitting} onPress={submit} style={styles.signUpNextButton}>
+            <ArrowIcon color="#FFFFFF" direction="left" />
+            <AppText colorToken="textInverse" style={styles.signUpNextText} variant="bodyStrong">
+              {isSubmitting ? 'Loading...' : 'Next'}
+            </AppText>
+            <ArrowIcon color="#FFFFFF" direction="right" />
+          </Pressable>
+
+          <Pressable hitSlop={10} onPress={onSignIn} style={styles.signUpSignInButton}>
+            <AppText colorToken="brandSecondary" style={styles.signUpSignInText} variant="bodyStrong">
+              Already have an account? Sign in
+            </AppText>
+          </Pressable>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+interface ArrowIconProps {
+  readonly color: string;
+  readonly direction: 'left' | 'right';
+}
+
+function ArrowIcon({ color, direction }: ArrowIconProps) {
+  return (
+    <View
+      style={[
+        styles.arrowIcon,
+        {
+          borderBottomColor: color,
+          borderLeftColor: color,
+          transform: [{ rotate: direction === 'right' ? '-135deg' : '45deg' }],
+        },
+      ]}
+    />
   );
 }
 
@@ -388,6 +453,7 @@ interface VerifyIdentityScreenProps {
   readonly email: string;
   readonly initialOtp?: string;
   readonly onContinue: (otp: string) => void;
+  readonly onSkip?: () => void;
   readonly filled?: boolean;
 }
 
@@ -395,7 +461,8 @@ export function VerifyIdentityScreen({
   email,
   initialOtp = '',
   onContinue,
-  filled = false,
+  onSkip,
+  filled: _filled = false,
 }: VerifyIdentityScreenProps) {
   const [otp, setOtp] = useState(initialOtp);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
@@ -418,26 +485,81 @@ export function VerifyIdentityScreen({
   };
 
   return (
-    <AuthStepScreen
-      ctaLabel={filled ? 'Continue to profile setup' : 'Verify code'}
-      errorMessage={errorMessage}
-      isSubmitting={isSubmitting}
-      onContinue={submit}
-      routeLabel={filled ? 'Auth / Verify OTP Filled' : 'Auth / Verify OTP Empty'}
-      subtitle="We have sent an email with your code."
-      title="Verify your identity"
-    >
-      <InputField editable={false} label="Email" value={email} />
-      <InputField
-        autoCapitalize="none"
-        keyboardType="number-pad"
-        containerStyle={styles.inputSpacing}
-        label="OTP"
-        onChangeText={setOtp}
-        placeholder="Enter OTP"
-        value={otp}
-      />
-    </AuthStepScreen>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.verifySafeArea}>
+      <View style={styles.verifyRoot}>
+        <View style={styles.verifyContent}>
+          <View style={styles.verifyMetaRow}>
+            <AppText style={styles.verifyStepText} variant="bodyStrong">
+              Step 1 of 4
+            </AppText>
+            {onSkip ? (
+              <Pressable hitSlop={10} onPress={onSkip}>
+                <AppText colorToken="textMuted" style={styles.verifySkipText} variant="bodyStrong">
+                  Skip
+                </AppText>
+              </Pressable>
+            ) : null}
+          </View>
+
+          <AppText style={styles.verifyHeading} variant="displayH1">
+            Verify your identity
+          </AppText>
+
+          <AppText colorToken="textMuted" style={styles.verifySubHeading} variant="body">
+            We've sent an email with your code to: {email}
+          </AppText>
+
+          <View style={styles.verifyFieldWrap}>
+            <View style={[styles.verifyFieldContainer, styles.verifyFieldEmailContainer]}>
+              <TextInput
+                editable={false}
+                placeholderTextColor="#342636"
+                style={[styles.verifyFieldInput, styles.verifyFieldEmailInput]}
+                value={email}
+              />
+              <View style={[styles.verifyFloatingChip, styles.verifyFloatingChipWide]}>
+                <AppText style={styles.verifyFloatingChipText} variant="micro">
+                  Email address *
+                </AppText>
+              </View>
+            </View>
+
+            <View style={[styles.verifyFieldContainer, styles.verifyFieldOtpContainer]}>
+              <TextInput
+                autoCapitalize="none"
+                keyboardType="number-pad"
+                onChangeText={setOtp}
+                placeholder=""
+                placeholderTextColor="#342636"
+                style={styles.verifyFieldInput}
+                value={otp}
+              />
+              <View style={[styles.verifyFloatingChip, styles.verifyFloatingChipNarrow]}>
+                <AppText style={styles.verifyFloatingChipText} variant="micro">
+                  OTP
+                </AppText>
+              </View>
+            </View>
+          </View>
+
+          {errorMessage ? (
+            <AppText colorToken="danger" style={styles.verifyErrorText} variant="caption">
+              {errorMessage}
+            </AppText>
+          ) : null}
+        </View>
+
+        <View style={styles.verifyBottomActions}>
+          <Pressable disabled={isSubmitting} onPress={submit} style={styles.verifyNextButton}>
+            <ArrowIcon color="#FFFFFF" direction="left" />
+            <AppText colorToken="textInverse" style={styles.verifyNextText} variant="bodyStrong">
+              {isSubmitting ? 'Loading...' : 'Next'}
+            </AppText>
+            <ArrowIcon color="#FFFFFF" direction="right" />
+          </Pressable>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
