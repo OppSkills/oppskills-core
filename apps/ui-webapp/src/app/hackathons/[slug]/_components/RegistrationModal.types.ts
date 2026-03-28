@@ -28,7 +28,7 @@ export interface CreateTeamFormContentProps {
   setTeamName: (name: string) => void;
   onFileSelect: (fieldId: string, e: React.ChangeEvent<HTMLInputElement>) => void;
   isUploading: boolean;
-  uploadedFiles: Record<string, { name: string }>;
+  uploadedFiles: Record<string, { name: string; url: string }>;
   isIndividual?: boolean;
   isFree?: boolean;
   entryFeeAmount?: number | null;
