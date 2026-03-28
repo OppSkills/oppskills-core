@@ -227,6 +227,7 @@ function AuthNavigator() {
               setEducationInfo(capturedEducationInfo);
               navigation.navigate(appRoutes.profileSetupSkills);
             }}
+            onSkip={() => navigation.navigate(appRoutes.signIn)}
           />
         )}
       </AuthStack.Screen>

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Image, type ImageSourcePropType, Pressable, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Image, type ImageSourcePropType, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, FlowScreenTemplate, InputField, SearchInput } from '../../../../shared/ui';
@@ -724,9 +724,10 @@ export interface MockProfileEducationInput {
 interface ProfileSetupEducationScreenProps {
   readonly initialValues: MockProfileEducationInput;
   readonly onContinue: (values: MockProfileEducationInput) => void;
+  readonly onSkip?: () => void;
 }
 
-export function ProfileSetupEducationScreen({ initialValues, onContinue }: ProfileSetupEducationScreenProps) {
+export function ProfileSetupEducationScreen({ initialValues, onContinue, onSkip }: ProfileSetupEducationScreenProps) {
   const [college, setCollege] = useState(initialValues.college);
   const [course, setCourse] = useState(initialValues.course);
   const [specialization, setSpecialization] = useState(initialValues.specialization);
@@ -734,8 +735,47 @@ export function ProfileSetupEducationScreen({ initialValues, onContinue }: Profi
   const [endYear, setEndYear] = useState(initialValues.endYear);
   const [gender, setGender] = useState(initialValues.gender);
   const [rollNumber, setRollNumber] = useState(initialValues.rollNumber);
+  const [activePicker, setActivePicker] = useState<null | 'startYear' | 'endYear' | 'gender'>(null);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const yearOptions = useMemo(() => {
+    const latestYear = new Date().getFullYear() + 6;
+    const earliestYear = latestYear - 60;
+    return Array.from({ length: latestYear - earliestYear + 1 }, (_, index) => String(latestYear - index));
+  }, []);
+
+  const pickerTitle =
+    activePicker === 'startYear'
+      ? 'Select start year'
+      : activePicker === 'endYear'
+        ? 'Select end year'
+        : activePicker === 'gender'
+          ? 'Select gender'
+          : '';
+
+  const pickerOptions = activePicker === 'gender' ? ['Male', 'Female', 'Rather not to say'] : yearOptions;
+
+  const pickerValue =
+    activePicker === 'startYear'
+      ? startYear
+      : activePicker === 'endYear'
+        ? endYear
+        : activePicker === 'gender'
+          ? gender
+          : '';
+
+  const selectPickerValue = (value: string) => {
+    if (activePicker === 'startYear') {
+      setStartYear(value);
+    } else if (activePicker === 'endYear') {
+      setEndYear(value);
+    } else if (activePicker === 'gender') {
+      setGender(value);
+    }
+
+    setActivePicker(null);
+  };
 
   const submit = () => {
     if (!college.trim() || !course.trim() || !specialization.trim()) {
@@ -771,64 +811,229 @@ export function ProfileSetupEducationScreen({ initialValues, onContinue }: Profi
   };
 
   return (
-    <AuthStepScreen
-      ctaLabel="Continue"
-      errorMessage={errorMessage}
-      isSubmitting={isSubmitting}
-      onContinue={submit}
-      routeLabel="Auth / Profile Education"
-      subtitle="Just a quick introduction and we are good to go."
-      title="Education Info"
-    >
-      <InputField
-        label="College"
-        onChangeText={setCollege}
-        placeholder="College/University name"
-        value={college}
-      />
-      <InputField containerStyle={styles.inputSpacing} label="Course" onChangeText={setCourse} placeholder="B.Tech" value={course} />
-      <InputField
-        containerStyle={styles.inputSpacing}
-        label="Specialization"
-        onChangeText={setSpecialization}
-        placeholder="CSE"
-        value={specialization}
-      />
-      <View style={styles.inlineFieldsRow}>
-        <InputField
-          containerStyle={styles.inlineField}
-          keyboardType="number-pad"
-          label="Start year"
-          onChangeText={setStartYear}
-          placeholder="2022"
-          value={startYear}
+    <>
+      <SafeAreaView edges={["top", "left", "right"]} style={styles.educationSafeArea}>
+        <View style={styles.educationRoot}>
+          <View style={styles.educationContent}>
+          <View style={styles.educationMetaRow}>
+            <AppText style={styles.educationStepText} variant="bodyStrong">
+              Step 3 of 4
+            </AppText>
+            {onSkip ? (
+              <Pressable hitSlop={10} onPress={onSkip}>
+                <AppText colorToken="textMuted" style={styles.educationSkipText} variant="bodyStrong">
+                  Skip
+                </AppText>
+              </Pressable>
+            ) : null}
+          </View>
+
+          <AppText style={styles.educationHeading} variant="displayH1">
+            Education Info
+          </AppText>
+          <AppText colorToken="textMuted" style={styles.educationSubHeading} variant="body">
+            Just a quick introduction and we are good to go
+          </AppText>
+
+            <View style={styles.educationFieldWrap}>
+              <FloatingField
+                label="College/University name"
+                onChangeText={setCollege}
+                placeholder="College/University name"
+                style={styles.educationFieldActive}
+                value={college}
+              />
+              <FloatingField
+                containerStyle={styles.educationFieldSpacing}
+                label="Course"
+                onChangeText={setCourse}
+                placeholder="B.Tech"
+                style={styles.educationFieldActive}
+                value={course}
+              />
+              <FloatingField
+                containerStyle={styles.educationFieldSpacing}
+                label="Specialization"
+                onChangeText={setSpecialization}
+                placeholder="CSE"
+                style={styles.educationFieldActive}
+                value={specialization}
+              />
+
+              <View style={styles.educationDualRow}>
+                <SelectField
+                  containerStyle={styles.educationHalfField}
+                  label="Start year"
+                  onPress={() => setActivePicker('startYear')}
+                  placeholder="2022"
+                  value={startYear}
+                />
+                <SelectField
+                  containerStyle={styles.educationHalfField}
+                  label="End year"
+                  onPress={() => setActivePicker('endYear')}
+                  placeholder="2026"
+                  value={endYear}
+                />
+              </View>
+
+              <View style={styles.educationDualRowBottom}>
+                <SelectField
+                  containerStyle={styles.educationHalfField}
+                  label="Gender"
+                  onPress={() => setActivePicker('gender')}
+                  placeholder="Male"
+                  value={gender}
+                />
+                <FloatingField
+                  containerStyle={styles.educationHalfField}
+                  label="Roll number"
+                  onChangeText={setRollNumber}
+                  placeholder="2026"
+                  style={styles.educationFieldActiveCompact}
+                  value={rollNumber}
+                />
+              </View>
+            </View>
+
+          {errorMessage ? (
+            <AppText colorToken="danger" style={styles.educationErrorText} variant="caption">
+              {errorMessage}
+            </AppText>
+          ) : null}
+          </View>
+
+          <View style={styles.educationBottomActions}>
+            <Pressable disabled={isSubmitting} onPress={submit} style={styles.educationNextButton}>
+              <ArrowIcon color="#FFFFFF" direction="left" />
+              <AppText colorToken="textInverse" style={styles.educationNextText} variant="bodyStrong">
+                {isSubmitting ? 'Loading...' : 'Next'}
+              </AppText>
+              <ArrowIcon color="#FFFFFF" direction="right" />
+            </Pressable>
+          </View>
+        </View>
+      </SafeAreaView>
+
+      <Modal animationType="slide" onRequestClose={() => setActivePicker(null)} transparent visible={Boolean(activePicker)}>
+        <Pressable onPress={() => setActivePicker(null)} style={styles.educationSelectionBackdrop}>
+          <Pressable onPress={() => {}} style={styles.educationSelectionSheet}>
+            <View style={styles.educationSelectionHeader}>
+              <AppText style={styles.educationSelectionTitle} variant="bodyStrong">
+                {pickerTitle}
+              </AppText>
+              <Pressable hitSlop={8} onPress={() => setActivePicker(null)}>
+                <AppText colorToken="brandSecondary" variant="label">
+                  Done
+                </AppText>
+              </Pressable>
+            </View>
+
+            <ScrollView style={styles.educationSelectionList}>
+              {pickerOptions.map((option) => {
+                const isSelected = option === pickerValue;
+                return (
+                  <Pressable
+                    key={option}
+                    onPress={() => selectPickerValue(option)}
+                    style={[styles.educationSelectionOption, isSelected ? styles.educationSelectionOptionActive : null]}
+                  >
+                    <AppText
+                      style={[
+                        styles.educationSelectionOptionText,
+                        isSelected ? styles.educationSelectionOptionTextActive : null,
+                      ]}
+                      variant="body"
+                    >
+                      {option}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
+interface FloatingFieldProps {
+  readonly label: string;
+  readonly value: string;
+  readonly onChangeText: (value: string) => void;
+  readonly placeholder: string;
+  readonly keyboardType?: 'default' | 'number-pad';
+  readonly containerStyle?: object | undefined;
+  readonly style?: object | undefined;
+  readonly icon?: 'chevron';
+}
+
+function FloatingField({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType = 'default',
+  containerStyle,
+  style,
+  icon,
+}: FloatingFieldProps) {
+  return (
+    <View style={containerStyle}>
+      <View style={[styles.educationFieldContainer, style]}>
+        <TextInput
+          keyboardType={keyboardType}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#7C737E"
+          style={[styles.educationFieldInput, icon ? styles.educationFieldInputWithIcon : null]}
+          value={value}
         />
-        <InputField
-          containerStyle={styles.inlineField}
-          keyboardType="number-pad"
-          label="End year"
-          onChangeText={setEndYear}
-          placeholder="2026"
-          value={endYear}
-        />
+        {icon === 'chevron' ? (
+          <View style={styles.educationChevronWrap}>
+            <View style={styles.educationChevron} />
+          </View>
+        ) : null}
+        <View style={styles.educationFloatingChip}>
+          <AppText style={styles.educationFloatingChipText} variant="micro">
+            {label}
+          </AppText>
+        </View>
       </View>
-      <View style={styles.inlineFieldsRow}>
-        <InputField
-          containerStyle={styles.inlineField}
-          label="Gender"
-          onChangeText={setGender}
-          placeholder="Male"
-          value={gender}
-        />
-        <InputField
-          containerStyle={styles.inlineField}
-          label="Roll number"
-          onChangeText={setRollNumber}
-          placeholder="2026"
-          value={rollNumber}
-        />
-      </View>
-    </AuthStepScreen>
+    </View>
+  );
+}
+
+interface SelectFieldProps {
+  readonly label: string;
+  readonly value: string;
+  readonly placeholder: string;
+  readonly onPress: () => void;
+  readonly containerStyle?: object | undefined;
+}
+
+function SelectField({ label, value, placeholder, onPress, containerStyle }: SelectFieldProps) {
+  return (
+    <View style={containerStyle}>
+      <Pressable onPress={onPress} style={[styles.educationFieldContainer, styles.educationFieldActive]}>
+        <AppText
+          colorToken={value ? 'textPrimary' : 'textMuted'}
+          style={[styles.educationFieldValueText, value ? null : styles.educationFieldValuePlaceholder]}
+          variant="body"
+        >
+          {value || placeholder}
+        </AppText>
+        <View style={styles.educationChevronWrap}>
+          <View style={styles.educationChevron} />
+        </View>
+        <View style={styles.educationFloatingChip}>
+          <AppText style={styles.educationFloatingChipText} variant="micro">
+            {label}
+          </AppText>
+        </View>
+      </Pressable>
+    </View>
   );
 }
 
