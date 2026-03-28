@@ -257,7 +257,7 @@ export class HackathonService {
                     create: [
                       ...BASE_DEFAULT_FIELDS.map((f) => ({
                         ...f,
-                        type: f.type as any,
+                        type: f.type as RegistrationFieldType,
                       })),
                       ...(dto.registrationForm?.fields ?? []).map((field) => ({
                         label: field.label,
