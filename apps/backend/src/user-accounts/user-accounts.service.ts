@@ -26,7 +26,7 @@ export class UserAccountsService {
     private readonly clerkAuthConfigService: ClerkAuthConfigService,
     private readonly eventEmitter: EventEmitter2,
     private readonly collegesService: CollegesService,
-  ) { }
+  ) {}
 
   async create({
     id,
@@ -314,7 +314,7 @@ export class UserAccountsService {
     const stats = {
       events: eventCount,
       hackathon: hackathonCount,
-      certificates: 0
+      certificates: 0,
     };
 
     return {
@@ -747,10 +747,7 @@ export class UserAccountsService {
     }
   }
 
-  async updateSkills(
-    userId: string,
-    skills: string[],
-  ) {
+  async updateSkills(userId: string, skills: string[]) {
     try {
       const user = await prisma.userEntity.findUnique({
         where: { id: userId },
@@ -777,10 +774,7 @@ export class UserAccountsService {
     }
   }
 
-  async updateInterests(
-    userId: string,
-    interests: string[],
-  ) {
+  async updateInterests(userId: string, interests: string[]) {
     try {
       const user = await prisma.userEntity.findUnique({
         where: { id: userId },
@@ -814,11 +808,11 @@ export class UserAccountsService {
       lastName?: string;
       gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
       userCategory?:
-      | 'SCHOOL_STUDENT'
-      | 'COLLEGE_STUDENT'
-      | 'WORKING_PROFESSIONAL'
-      | 'FRESHER'
-      | 'PROFESSIONAL_SCHOOL_STUDENT';
+        | 'SCHOOL_STUDENT'
+        | 'COLLEGE_STUDENT'
+        | 'WORKING_PROFESSIONAL'
+        | 'FRESHER'
+        | 'PROFESSIONAL_SCHOOL_STUDENT';
     },
   ) {
     try {
@@ -855,7 +849,8 @@ export class UserAccountsService {
             upsert: {
               create: {
                 gender: profile.gender ?? 'MALE',
-                userCategory: profile.userCategory ?? UserCategory.COLLEGE_STUDENT,
+                userCategory:
+                  profile.userCategory ?? UserCategory.COLLEGE_STUDENT,
               },
               update: {
                 gender: profile.gender,
@@ -938,7 +933,10 @@ export class UserAccountsService {
             );
             finalCollegeId = college.id;
           } catch (error) {
-            this.logger.warn(`Failed to resolve college in updateEducation`, error);
+            this.logger.warn(
+              `Failed to resolve college in updateEducation`,
+              error,
+            );
           }
         }
       }
@@ -1039,7 +1037,10 @@ export class UserAccountsService {
         this.getHackathonParticipations(userId),
       ]);
 
-      const allRegistrations = [...eventParticipations, ...hackathonParticipations];
+      const allRegistrations = [
+        ...eventParticipations,
+        ...hackathonParticipations,
+      ];
 
       // Sort by registration date descending
       return allRegistrations.sort((a, b) => {
@@ -1048,7 +1049,10 @@ export class UserAccountsService {
         return dateB - dateA;
       });
     } catch (error) {
-      this.logger.error(`Failed to fetch registrations for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to fetch registrations for user ${userId}:`,
+        error,
+      );
       throw new HttpException(
         'Failed to fetch registrations',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -1096,7 +1100,12 @@ export class UserAccountsService {
           { label: 'Team', status: 'completed' },
           ...(p.event.isFree
             ? []
-            : [{ label: 'Payment', status: !!p.payment ? 'completed' : 'current' }]),
+            : [
+                {
+                  label: 'Payment',
+                  status: p.payment ? 'completed' : 'current',
+                },
+              ]),
           { label: 'Entry Pass', status: p.approved ? 'completed' : 'pending' },
         ],
       };
@@ -1156,11 +1165,11 @@ export class UserAccountsService {
           ...(h.isFree
             ? []
             : [
-              {
-                label: 'Payment',
-                status: tm.team.payments.length > 0 ? 'completed' : 'current',
-              },
-            ]),
+                {
+                  label: 'Payment',
+                  status: tm.team.payments.length > 0 ? 'completed' : 'current',
+                },
+              ]),
           {
             label: 'Extended Form',
             status: hasSubmitted

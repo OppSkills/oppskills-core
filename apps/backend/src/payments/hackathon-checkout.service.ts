@@ -557,10 +557,9 @@ export class HackathonCheckoutService {
       currency: hackathon.currency || 'INR',
       hackathonName: hackathon.name,
       baseAmount: Number(baseAmountBeforeProcessingFee),
-      processingFeeAmount:
-        processingFeeAmount.greaterThan(0)
-          ? Number(processingFeeAmount)
-          : undefined,
+      processingFeeAmount: processingFeeAmount.greaterThan(0)
+        ? Number(processingFeeAmount)
+        : undefined,
       feeBearer: hackathon.feeBearer,
     };
   }

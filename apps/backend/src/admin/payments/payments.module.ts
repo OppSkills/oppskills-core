@@ -4,9 +4,9 @@ import { AdminPaymentsService } from './payments.service';
 import { AdminAuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [AdminAuthModule],
-    controllers: [AdminPaymentsController],
-    providers: [AdminPaymentsService],
-    exports: [AdminPaymentsService]
+  imports: [AdminAuthModule],
+  controllers: [AdminPaymentsController],
+  providers: [AdminPaymentsService],
+  exports: [AdminPaymentsService]
 })
 export class AdminPaymentsModule { }

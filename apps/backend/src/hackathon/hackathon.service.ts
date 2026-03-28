@@ -21,6 +21,65 @@ import { AnalyticsService } from 'src/analytics/analytics.service';
 import { Logger } from '../_utils/logger';
 import { DELETED_RESOURCE_OWNER_ID } from '../_utils/constants';
 
+const BASE_DEFAULT_FIELDS = [
+  {
+    label: 'Name',
+    type: 'TEXT' as const,
+    order: -50,
+    required: true,
+    options: [] as string[],
+    placeholder: 'Enter your full name',
+  },
+  {
+    label: 'Email',
+    type: 'EMAIL' as const,
+    order: -40,
+    required: true,
+    options: [] as string[],
+    placeholder: 'Enter your email address',
+  },
+  {
+    label: 'Phone No.',
+    type: 'PHONE_NO' as const,
+    order: -30,
+    required: true,
+    options: [] as string[],
+    placeholder: 'Enter your phone number',
+  },
+  {
+    label: 'Gender',
+    type: 'OPTIONS' as const,
+    order: -20,
+    required: true,
+    options: ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'],
+    placeholder: 'Select your gender',
+  },
+  {
+    label: 'School Name',
+    type: 'TEXT' as const,
+    order: -10,
+    required: false,
+    options: [] as string[],
+    placeholder: 'Enter your school name',
+  },
+  {
+    label: 'College Name',
+    type: 'TEXT' as const,
+    order: -9,
+    required: false,
+    options: [] as string[],
+    placeholder: 'Enter your college name',
+  },
+  {
+    label: 'Company Name',
+    type: 'TEXT' as const,
+    order: -8,
+    required: false,
+    options: [] as string[],
+    placeholder: 'Enter your company name',
+  },
+];
+
 type LifecycleStatus =
   | 'DRAFT'
   | 'PUBLISHED'
@@ -84,7 +143,7 @@ export class HackathonService {
    * - If `rounds` is not provided, no default rounds are created (organizers add them later).
    */
 
-  constructor(private readonly analyticsService: AnalyticsService) { }
+  constructor(private readonly analyticsService: AnalyticsService) {}
 
   async createHackathon(dto: CreateHackathonDto, userId: string) {
     this.logger.log(
@@ -121,16 +180,16 @@ export class HackathonService {
     // Build rounds data - either from DTO or empty (no default rounds)
     const roundsData = dto.rounds
       ? dto.rounds.map((round) => ({
-        name: round.name,
-        description: round.description,
-        startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
-        endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
-        order: round.order,
-        roundType: round.roundType,
-        submissionConfig: round.submissionConfig
-          ? (round.submissionConfig as Prisma.InputJsonValue)
-          : Prisma.JsonNull,
-      }))
+          name: round.name,
+          description: round.description,
+          startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
+          endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
+          order: round.order,
+          roundType: round.roundType,
+          submissionConfig: round.submissionConfig
+            ? (round.submissionConfig as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+        }))
       : []; // Don't create default rounds - organizers can add them later
 
     // Determine attendee eligibility
@@ -189,25 +248,29 @@ export class HackathonService {
           contactEmail: dto.additionalInfo?.contact?.email,
           contactPhone: dto.additionalInfo?.contact?.phone,
 
-          registrationForm: dto.registrationForm
-            ? {
-              create: {
-                externalFormLink: dto.registrationForm.externalFormLink,
-                fields: {
-                  create: (dto.registrationForm.fields ?? []).map(
-                    (field) => ({
-                      label: field.label,
-                      type: field.type,
-                      required: field.required,
-                      order: field.order,
-                      options: field.options ?? [],
-                      placeholder: field.placeholder,
-                    }),
-                  ),
-                },
-              },
-            }
-            : undefined,
+          registrationForm: {
+            create: {
+              externalFormLink: dto.registrationForm?.externalFormLink ?? null,
+              fields: dto.registrationForm?.externalFormLink
+                ? undefined
+                : {
+                    create: [
+                      ...BASE_DEFAULT_FIELDS.map((f) => ({
+                        ...f,
+                        type: f.type as RegistrationFieldType,
+                      })),
+                      ...(dto.registrationForm?.fields ?? []).map((field) => ({
+                        label: field.label,
+                        type: field.type,
+                        required: field.required,
+                        order: field.order,
+                        options: field.options ?? [],
+                        placeholder: field.placeholder,
+                      })),
+                    ],
+                  },
+            },
+          },
 
           rounds: {
             create: roundsData,
@@ -215,25 +278,25 @@ export class HackathonService {
 
           prizeBreakdown: dto.prizeBreakdown
             ? {
-              create: dto.prizeBreakdown.map((prize) => ({
-                position: prize.position,
-                amount: prize.amount,
-                description: prize.description,
-              })),
-            }
+                create: dto.prizeBreakdown.map((prize) => ({
+                  position: prize.position,
+                  amount: prize.amount,
+                  description: prize.description,
+                })),
+              }
             : undefined,
 
           // New attachments relation
           attachments: dto.additionalInfo?.attachments
             ? {
-              create: dto.additionalInfo.attachments.map((att) => ({
-                storageKey: att.storageKey,
-                publicUrl: att.publicUrl,
-                fileName: att.fileName,
-                mimeType: att.mimeType,
-                sizeBytes: att.sizeBytes,
-              })),
-            }
+                create: dto.additionalInfo.attachments.map((att) => ({
+                  storageKey: att.storageKey,
+                  publicUrl: att.publicUrl,
+                  fileName: att.fileName,
+                  mimeType: att.mimeType,
+                  sizeBytes: att.sizeBytes,
+                })),
+              }
             : undefined,
         },
         include: this.getHackathonIncludeClause(),
@@ -359,10 +422,7 @@ export class HackathonService {
       const modeConditions: any[] = [];
       if (input.modes.includes('Online')) {
         modeConditions.push({
-          OR: [
-            { mode: 'ONLINE' },
-            { locationType: { in: ['VIRTUAL'] } },
-          ],
+          OR: [{ mode: 'ONLINE' }, { locationType: { in: ['VIRTUAL'] } }],
         });
       }
       if (input.modes.includes('In Person')) {
@@ -391,7 +451,15 @@ export class HackathonService {
           return { start, end };
         } else {
           const s = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-          const e = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0, 23, 59, 59, 999);
+          const e = new Date(
+            now.getFullYear(),
+            now.getMonth() + offset + 1,
+            0,
+            23,
+            59,
+            59,
+            999,
+          );
           return { start: s, end: e };
         }
       };
@@ -419,11 +487,16 @@ export class HackathonService {
     // 6. Eligibility Filters
     if (input.eligibility && input.eligibility.length > 0) {
       const eligibilityValues: any[] = [];
-      if (input.eligibility.includes('School')) eligibilityValues.push('SCHOOL_STUDENTS');
-      if (input.eligibility.includes('UG') || input.eligibility.includes('PG')) {
+      if (input.eligibility.includes('School'))
+        eligibilityValues.push('SCHOOL_STUDENTS');
+      if (
+        input.eligibility.includes('UG') ||
+        input.eligibility.includes('PG')
+      ) {
         eligibilityValues.push('COLLEGE_STUDENTS');
       }
-      if (input.eligibility.includes('Open')) eligibilityValues.push('EVERYONE_CAN_APPLY');
+      if (input.eligibility.includes('Open'))
+        eligibilityValues.push('EVERYONE_CAN_APPLY');
 
       if (eligibilityValues.length > 0) {
         conditions.push({
@@ -1401,7 +1474,7 @@ export class HackathonService {
 
     const externalFormLink =
       typeof dto.externalFormLink === 'string' &&
-        dto.externalFormLink.trim().length > 0
+      dto.externalFormLink.trim().length > 0
         ? dto.externalFormLink.trim()
         : undefined;
 
@@ -1439,10 +1512,14 @@ export class HackathonService {
 
       // If external form link is used, no internal fields are stored.
       if (externalFormLink) return;
-      if (fields.length === 0) return;
+
+      const mergedFields = [
+        ...BASE_DEFAULT_FIELDS.map((f) => ({ ...f, type: f.type as any })),
+        ...fields,
+      ];
 
       await tx.registrationFieldEntity.createMany({
-        data: fields.map((f) => ({
+        data: mergedFields.map((f) => ({
           registrationFormId: form.id,
           label: f.label,
           type: f.type,
@@ -1878,14 +1955,14 @@ export class HackathonService {
     const existing = await prisma.hackathonEntity.findFirst({
       where: excludeId
         ? {
-          slug: base,
-          NOT: {
-            id: excludeId,
-          },
-        }
+            slug: base,
+            NOT: {
+              id: excludeId,
+            },
+          }
         : {
-          slug: base,
-        },
+            slug: base,
+          },
       select: { id: true },
     });
 
@@ -1986,7 +2063,7 @@ export class HackathonService {
       (dto.isFree !== undefined && dto.isFree !== currentHackathon.isFree) ||
       (dto.entryFeeAmount !== undefined &&
         String(dto.entryFeeAmount) !==
-        String(currentHackathon.entryFeeAmount)) ||
+          String(currentHackathon.entryFeeAmount)) ||
       ('chargeMode' in dto && dto.chargeMode !== currentHackathon.chargeMode) ||
       ('feeBearer' in dto && dto.feeBearer !== currentHackathon.feeBearer);
 
@@ -2915,12 +2992,12 @@ export class HackathonService {
   private formatAnswersForUser(
     submission:
       | {
-        answers: Array<{
-          fieldId: string;
-          valueText: string | null;
-          valueJson: unknown;
-        }>;
-      }
+          answers: Array<{
+            fieldId: string;
+            valueText: string | null;
+            valueJson: unknown;
+          }>;
+        }
       | undefined,
     fields: Array<{ id: string }>,
   ): Array<{ fieldId: string; value: string | null }> {

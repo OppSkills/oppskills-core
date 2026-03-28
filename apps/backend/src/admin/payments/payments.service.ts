@@ -229,45 +229,45 @@ export class AdminPaymentsService {
         const hackathonPayments =
             hackathonIds.length > 0
                 ? await prisma.hackathonPaymentEntity.findMany({
-                      where: { id: { in: hackathonIds } },
-                      include: {
-                          payerUser: {
-                              select: {
-                                  email: true,
-                                  firstName: true,
-                                  lastName: true,
-                              },
-                          },
-                          hackathon: {
-                              select: {
-                                  name: true,
-                                  slug: true,
-                              },
-                          },
-                      },
-                  })
+                    where: { id: { in: hackathonIds } },
+                    include: {
+                        payerUser: {
+                            select: {
+                                email: true,
+                                firstName: true,
+                                lastName: true,
+                            },
+                        },
+                        hackathon: {
+                            select: {
+                                name: true,
+                                slug: true,
+                            },
+                        },
+                    },
+                })
                 : [];
 
         const eventPayments =
             eventIds.length > 0
                 ? await prisma.eventPaymentEntity.findMany({
-                      where: { id: { in: eventIds } },
-                      include: {
-                          payerUser: {
-                              select: {
-                                  email: true,
-                                  firstName: true,
-                                  lastName: true,
-                              },
-                          },
-                          event: {
-                              select: {
-                                  name: true,
-                                  slug: true,
-                              },
-                          },
-                      },
-                  })
+                    where: { id: { in: eventIds } },
+                    include: {
+                        payerUser: {
+                            select: {
+                                email: true,
+                                firstName: true,
+                                lastName: true,
+                            },
+                        },
+                        event: {
+                            select: {
+                                name: true,
+                                slug: true,
+                            },
+                        },
+                    },
+                })
                 : [];
 
         const hMap = new Map(hackathonPayments.map((p) => [p.id, p]));

@@ -66,7 +66,6 @@ import type {
   CreateHackathonDto,
   RegistrationFieldDto,
   RegistrationFieldTypeValue,
-  RegistrationFormDto,
   HackathonLocationDto,
   FestivalLocationDto,
   HackathonModeValue,
@@ -76,7 +75,6 @@ import type {
 } from "@oppskills/types/frontend";
 import {
   createHackathon,
-  updateHackathonRegistrationForm,
 } from "@/lib/api/hackathonApi";
 import { getMyFestivals } from "@/lib/api/festivalApi";
 import CreateFestivalModal from "@/components/ui/derived/CreateFestivalModal";
@@ -1041,6 +1039,22 @@ export default function Page() {
                     selectedFestivalIdRef.current ?? formData.festivalId,
                   );
 
+                  // Pre-validate registration questions (so we don't create a hackathon and then fail saving fields).
+                  const registrationFields =
+                    mapRegistrationQuestionsToRegistrationFields(
+                      formData.registrationQuestions,
+                    );
+                  const invalidOptions = registrationFields.some((f) => {
+                    if (f.type !== "OPTIONS") return false;
+                    return !Array.isArray(f.options) || f.options.length === 0;
+                  });
+                  if (invalidOptions) {
+                    toast.error(
+                      "Please add at least one option for every Options question.",
+                    );
+                    return;
+                  }
+
                   const payload: CreateHackathonDto = {
                     name: formData.eventName,
                     description:
@@ -1065,23 +1079,10 @@ export default function Page() {
                     registrationDeadline: toIsoDateOnly(
                       formData.eventRegisterBy,
                     ),
+                    registrationForm: {
+                      fields: registrationFields,
+                    },
                   };
-
-                  // Pre-validate registration questions (so we don't create a hackathon and then fail saving fields).
-                  const registrationFields =
-                    mapRegistrationQuestionsToRegistrationFields(
-                      formData.registrationQuestions,
-                    );
-                  const invalidOptions = registrationFields.some((f) => {
-                    if (f.type !== "OPTIONS") return false;
-                    return !Array.isArray(f.options) || f.options.length === 0;
-                  });
-                  if (invalidOptions) {
-                    toast.error(
-                      "Please add at least one option for every Options question.",
-                    );
-                    return;
-                  }
 
                   const created = await createHackathon(token, payload);
                   const hackathonId = extractHackathonId(created);
@@ -1090,19 +1091,6 @@ export default function Page() {
                       "Event was created but we couldn't read its id from the server response.",
                     );
                     return;
-                  }
-
-                  // Persist custom registration questions as internal registration form fields.
-                  // Note: fixed questions are intentionally NOT stored to avoid redundancy.
-                  // If organizer configured any questions, save them right away.
-                  if (registrationFields.length > 0) {
-                    const registrationForm: RegistrationFormDto = {
-                      fields: [...registrationFields],
-                    };
-
-                    await updateHackathonRegistrationForm(token, hackathonId, {
-                      registrationForm,
-                    });
                   }
 
                   toast.success("Event listed successfully!");

@@ -470,7 +470,10 @@ export class RazorpayWebhookService {
       // Layer 3 — P2002 outer catch: concurrent webhook retries or a race with
       // verifyPayment hitting a unique constraint. Log and continue — the
       // payment was already captured by the winning writer.
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
         this.logger.warn(
           `Race condition in hackathon webhook (P2002) for order: ${orderId} — payment already processed`,
         );

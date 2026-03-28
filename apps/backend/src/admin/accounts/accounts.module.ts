@@ -5,9 +5,9 @@ import { AdminLogsModule } from '../admin-log/Logs.module';
 import { AdminAuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [AdminLogsModule, AdminAuthModule],
-    controllers: [AdminAccountsController],
-    providers: [AdminAccountsService],
-    exports: [AdminAccountsService]
+  imports: [AdminLogsModule, AdminAuthModule],
+  controllers: [AdminAccountsController],
+  providers: [AdminAccountsService],
+  exports: [AdminAccountsService],
 })
-export class AdminAccountsModule { }
+export class AdminAccountsModule {}

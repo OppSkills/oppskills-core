@@ -8,6 +8,6 @@ import { AdminAuthModule } from '../auth/auth.module';
   imports: [AdminLogsModule, AdminAuthModule],
   controllers: [UserAccountController],
   providers: [UserAccountService],
-  exports: [UserAccountService]
+  exports: [UserAccountService],
 })
-export class UserAccountModule { }
+export class UserAccountModule {}
