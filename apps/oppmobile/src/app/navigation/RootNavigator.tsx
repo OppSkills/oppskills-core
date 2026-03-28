@@ -187,7 +187,7 @@ function AuthNavigator() {
             initialOtp={otpCode}
             onContinue={(capturedOtpCode) => {
               setOtpCode(capturedOtpCode);
-              navigation.navigate(appRoutes.verifyIdentityOtpFilled);
+              navigation.navigate(appRoutes.profileSetupPersonal);
             }}
             onSkip={() => navigation.navigate(appRoutes.signIn)}
           />
