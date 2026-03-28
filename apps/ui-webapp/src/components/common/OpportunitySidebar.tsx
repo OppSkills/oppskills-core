@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { SignInButton } from "@clerk/nextjs";
 import { format } from "date-fns";
 import { getDeterministicPseudoImpressions } from "@/lib/opportunity-utils";
+import { useQueryState } from "nuqs";
 
 export interface OpportunitySidebarData {
   id: string;
@@ -144,13 +145,15 @@ export function OpportunitySidebar({
 
     // If not signed in, show sign-in button
     if (!isSignedIn) {
+      const [, setAuthMode] = useQueryState("auth");
       return (
         <div className="space-y-2">
-          <SignInButton mode="modal">
-            <Button className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm">
-              {registerLabel}
-            </Button>
-          </SignInButton>
+          <Button
+            className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
+            onClick={() => setAuthMode("login")}
+          >
+            {registerLabel}
+          </Button>
           {isPaid && data.feeBearer === "PARTICIPANT" && (
             <div className="text-center space-y-0.5">
               <p className="text-xs text-neutral-500">

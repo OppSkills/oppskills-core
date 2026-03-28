@@ -15,7 +15,8 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth, SignInButton } from "@clerk/nextjs";
+import { useQueryState } from "nuqs";
+import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import {
   checkMyHackathonTeam,
@@ -24,6 +25,7 @@ import {
 import { getApiErrorMessage } from "@/lib/utils";
 import { format } from "date-fns";
 import type { CompetitionDetails } from "./types";
+import { RegistrationModal } from "./RegistrationModal";
 
 interface CompetitionSidebarProps {
   competition: CompetitionDetails;
@@ -33,10 +35,12 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isSignedIn, getToken } = useAuth();
+  const [, setAuthMode] = useQueryState("auth");
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
   const [isStartingRegistration, setIsStartingRegistration] = useState(false);
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
   const [myTeam, setMyTeam] = useState<TeamDetailResponse | null>(null);
+  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
 
   // Force re-check when redirected back from registration with ?registered=true
   const justRegistered = searchParams.get("registered") === "true";
@@ -108,9 +112,8 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         return;
       }
 
-      router.push(
-        `/team-register?hackathonId=${competition.id}&slug=${competition.slug}`
-      );
+
+      setIsRegistrationModalOpen(true);
     } catch (error) {
       console.error("Error starting registration:", error);
       toast.error(
@@ -191,11 +194,12 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     if (!isSignedIn) {
       return (
         <div className="space-y-2">
-          <SignInButton mode="modal">
-            <Button className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm">
-              {registerLabel}
-            </Button>
-          </SignInButton>
+          <Button
+            className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
+            onClick={() => setAuthMode("login")}
+          >
+            {registerLabel}
+          </Button>
           {isPaid && competition.feeBearer === "PARTICIPANT" && (
             <div className="text-center space-y-0.5">
               <p className="text-xs text-neutral-500">
@@ -214,7 +218,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     return (
       <div className="space-y-2">
         <Button
-          className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
+          className="w-full py-6 rounded-full shadow-sm"
           onClick={handleRegisterClick}
           disabled={isStartingRegistration}
         >
@@ -530,6 +534,17 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           </div>
         </div>
       </div>
+
+      <RegistrationModal
+        isOpen={isRegistrationModalOpen}
+        onClose={() => setIsRegistrationModalOpen(false)}
+        competition={competition}
+        onSuccess={(team) => {
+          setMyTeam(team);
+          setIsAlreadyRegistered(true);
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

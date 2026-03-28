@@ -406,16 +406,6 @@ export default function RegistrationPage() {
         Register for {hackathon.name}
       </h1>
 
-      {isIndividual ? (
-        <p className="text-center text-gray-600">
-          This is an individual competition. Create your registration below.
-        </p>
-      ) : (
-        <p className="text-center text-gray-600">
-          Choose to create a new team or join an existing one for this
-          hackathon.
-        </p>
-      )}
 
       {!isIndividual && (
         <div className="flex justify-center gap-4 my-6">
