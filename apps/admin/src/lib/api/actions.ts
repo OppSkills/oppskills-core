@@ -65,7 +65,12 @@ export async function updateFeatureDetail(type: string, id: string, data: any) {
     return adminClient.put(`/features/detail/${type}/${id}`, data);
 }
 
-export async function getPayments(params: { page?: number; limit?: number }) {
+export async function getPayments(params: {
+    page?: number;
+    limit?: number;
+    eventId?: string;
+    hackathonId?: string;
+}) {
     return adminClient.get("/payments", { params });
 }
 

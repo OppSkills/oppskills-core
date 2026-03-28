@@ -10,17 +10,13 @@ export class AdminFeaturesService {
   constructor(
     private readonly adminLogsService: AdminLogsService,
     @Inject(REQUEST) private request: any,
-  ) {}
+  ) { }
 
   private logger = new Logger('AdminFeaturesService');
 
-  async listHackathons(
-    limit: number,
-    cursor?: string,
-    filterPending?: boolean,
-  ) {
+  async listHackathons(limit: number, cursor?: string, filterPending?: boolean) {
     const take = limit + 1;
-    const where: any = {};
+    const where: any = { isDeleted: false };
 
     if (filterPending) {
       where.status = LifecycleStatus.PUBLISHED;
@@ -67,7 +63,7 @@ export class AdminFeaturesService {
 
   async listEvents(limit: number, cursor?: string, filterPending?: boolean) {
     const take = limit + 1;
-    const where: any = {};
+    const where: any = { isDeleted: false };
 
     if (filterPending) {
       where.status = LifecycleStatus.PUBLISHED;
