@@ -240,10 +240,16 @@ export function RegistrationModal({
       if (order.zeroAmountPayment || order.amountPaise === 0) {
         let teamId = order.teamId;
         if (!teamId && competition.chargeMode === "PER_USER") {
-           const draft = opts.teamId 
-            ? { team: { id: opts.teamId } }
-            : await createDraftTeam(token, competition.slug, { name: finalTeamName, maxSize });
-           teamId = draft.team.id;
+           if (opts.invitationCode) {
+             const draft = await joinDraftTeam(token, competition.slug, { invitationCode: opts.invitationCode });
+             teamId = (draft as any).team?.id;
+           } else if (opts.teamId) {
+             const draft = { team: { id: opts.teamId } };
+             teamId = draft.team.id;
+           } else {
+             const draft = await createDraftTeam(token, competition.slug, { name: finalTeamName, maxSize });
+             teamId = draft.team.id;
+           }
         }
         
         await submitRegistration(token, competition.slug, formattedAnswers);
@@ -270,6 +276,14 @@ export function RegistrationModal({
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
             });
+
+            if (competition.chargeMode === "PER_USER") {
+              if (opts.invitationCode) {
+                await joinDraftTeam(verifyToken, competition.slug, { invitationCode: opts.invitationCode });
+              } else if (!opts.teamId) {
+                await createDraftTeam(verifyToken, competition.slug, { name: finalTeamName, maxSize });
+              }
+            }
 
             await submitRegistration(verifyToken, competition.slug, formattedAnswers);
             toast.success("Payment successful!");
@@ -356,7 +370,23 @@ export function RegistrationModal({
           toast.success("Joined team successfully!");
           onClose();
         } else {
-          await processPayment(token, finalTeamName, formattedAnswers, { invitationCode: invitationCode.toUpperCase() });
+          if (competition.chargeMode === "PER_TEAM") {
+            try {
+              // PER_TEAM members do not pay themselves. The team leader already paid.
+              await joinDraftTeam(token, competition.slug, { invitationCode: invitationCode.toUpperCase() });
+              await submitRegistration(token, competition.slug, formattedAnswers);
+              toast.success("Joined team successfully!");
+              onClose();
+              router.push(`/hackathons/${competition.slug}?registered=true`);
+            } catch (err) {
+              toast.error(getApiErrorMessage(err, "Failed to join team"));
+              setIsSubmitting(false);
+              return;
+            }
+          } else {
+            // PER_USER members must pay their entry fee to join.
+            await processPayment(token, finalTeamName, formattedAnswers, { invitationCode: invitationCode.toUpperCase() });
+          }
         }
       }
     } catch (error) {
