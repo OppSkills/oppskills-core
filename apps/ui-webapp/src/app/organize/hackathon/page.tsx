@@ -307,7 +307,7 @@ export default function Page() {
    */
   function mapRegistrationQuestionsToRegistrationFields(
     questions: ReadonlyArray<RegistrationQuestion>,
-  ): ReadonlyArray<RegistrationFieldDto> {
+  ): RegistrationFieldDto[] {
     const fields: RegistrationFieldDto[] = [];
 
     questions.forEach((q, index) => {
@@ -493,20 +493,20 @@ export default function Page() {
               How your card will look
             </p>
             <div className="pointer-events-none opacity-80 hover:opacity-100 transition-opacity">
-            <OpportunityPreviewCard
-              imageSrc={formData.eventThumbnail}
-              title={formData.eventName}
-              isFree={true}
-              mode={
-                formData.eventLocation
-                  ? isValidUrl(formData.eventLocation)
-                    ? "Online"
-                    : "Offline"
-                  : "Online"
-              }
-              registrationDeadline={formData.eventRegisterBy}
-              type="HACKATHON"
-            />
+              <OpportunityPreviewCard
+                imageSrc={formData.eventThumbnail}
+                title={formData.eventName}
+                isFree={true}
+                mode={
+                  formData.eventLocation
+                    ? isValidUrl(formData.eventLocation)
+                      ? "Online"
+                      : "Offline"
+                    : "Online"
+                }
+                registrationDeadline={formData.eventRegisterBy}
+                type="HACKATHON"
+              />
             </div>
           </div>
         </div>
