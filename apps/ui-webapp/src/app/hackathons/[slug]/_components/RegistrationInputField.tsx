@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 interface RegistrationInputFieldProps {
   label: string;
   placeholder?: string;
-  value: string;
+  value: string | number;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
   type?: string;
