@@ -215,6 +215,7 @@ function AuthNavigator() {
               setPersonalInfo(capturedPersonalInfo);
               navigation.navigate(appRoutes.profileSetupEducation);
             }}
+            onSkip={() => navigation.navigate(appRoutes.signIn)}
           />
         )}
       </AuthStack.Screen>

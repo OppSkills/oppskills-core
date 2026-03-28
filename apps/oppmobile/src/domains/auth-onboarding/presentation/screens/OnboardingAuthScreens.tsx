@@ -572,12 +572,14 @@ export interface MockProfilePersonalInput {
 interface ProfileSetupPersonalScreenProps {
   readonly initialValues: MockProfilePersonalInput;
   readonly onContinue: (values: MockProfilePersonalInput) => void;
+  readonly onSkip?: () => void;
 }
 
-export function ProfileSetupPersonalScreen({ initialValues, onContinue }: ProfileSetupPersonalScreenProps) {
+export function ProfileSetupPersonalScreen({ initialValues, onContinue, onSkip }: ProfileSetupPersonalScreenProps) {
   const [fullName, setFullName] = useState(initialValues.fullName);
   const [password, setPassword] = useState(initialValues.password);
   const [phoneNumber, setPhoneNumber] = useState(initialValues.phoneNumber);
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -611,33 +613,101 @@ export function ProfileSetupPersonalScreen({ initialValues, onContinue }: Profil
   };
 
   return (
-    <AuthStepScreen
-      ctaLabel="Continue"
-      errorMessage={errorMessage}
-      isSubmitting={isSubmitting}
-      onContinue={submit}
-      routeLabel="Auth / Profile Personal"
-      subtitle="Just a quick introduction and we are good to go."
-      title="You are new here"
-    >
-      <InputField label="Full name" onChangeText={setFullName} placeholder="Enter full name" value={fullName} />
-      <InputField
-        containerStyle={styles.inputSpacing}
-        label="Password"
-        onChangeText={setPassword}
-        placeholder="Create password"
-        secureTextEntry
-        value={password}
-      />
-      <InputField
-        containerStyle={styles.inputSpacing}
-        keyboardType="phone-pad"
-        label="Phone number"
-        onChangeText={setPhoneNumber}
-        placeholder="Enter phone"
-        value={phoneNumber}
-      />
-    </AuthStepScreen>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.detailsSafeArea}>
+      <View style={styles.detailsRoot}>
+        <View style={styles.detailsContent}>
+          <View style={styles.detailsMetaRow}>
+            <AppText style={styles.detailsStepText} variant="bodyStrong">
+              Step 2 of 4
+            </AppText>
+            {onSkip ? (
+              <Pressable hitSlop={10} onPress={onSkip}>
+                <AppText colorToken="textMuted" style={styles.detailsSkipText} variant="bodyStrong">
+                  Skip
+                </AppText>
+              </Pressable>
+            ) : null}
+          </View>
+
+          <AppText style={styles.detailsHeading} variant="displayH1">
+            You are new here
+          </AppText>
+          <AppText colorToken="textMuted" style={styles.detailsSubHeading} variant="body">
+            Just a quick introduction and we are good to go
+          </AppText>
+
+          <View style={styles.detailsFieldWrap}>
+            <View style={[styles.detailsFieldContainer, styles.detailsFieldActive]}>
+              <TextInput
+                onChangeText={setFullName}
+                placeholder="Enter full name"
+                placeholderTextColor="#7C737E"
+                style={styles.detailsFieldInput}
+                value={fullName}
+              />
+              <View style={[styles.detailsFloatingChip, styles.detailsFloatingChipWide]}>
+                <AppText style={styles.detailsFloatingChipText} variant="micro">
+                  Full name
+                </AppText>
+              </View>
+            </View>
+
+            <View style={[styles.detailsFieldContainer, styles.detailsFieldActive, styles.detailsFieldSpacing]}>
+              <TextInput
+                onChangeText={setPassword}
+                placeholder="Create password"
+                placeholderTextColor="#7C737E"
+                secureTextEntry={!showPassword}
+                style={[styles.detailsFieldInput, styles.detailsFieldInputWithIcon]}
+                value={password}
+              />
+              <Pressable hitSlop={8} onPress={() => setShowPassword((current) => !current)} style={styles.detailsEyeButton}>
+                <View style={styles.detailsEyeOuter}>
+                  <View style={styles.detailsEyeInner} />
+                </View>
+              </Pressable>
+              <View style={[styles.detailsFloatingChip, styles.detailsFloatingChipWide]}>
+                <AppText style={styles.detailsFloatingChipText} variant="micro">
+                  Password
+                </AppText>
+              </View>
+            </View>
+
+            <View style={[styles.detailsFieldContainer, styles.detailsFieldActive, styles.detailsFieldSpacing]}>
+              <TextInput
+                keyboardType="phone-pad"
+                onChangeText={setPhoneNumber}
+                placeholder="Enter phone"
+                placeholderTextColor="#7C737E"
+                style={styles.detailsFieldInput}
+                value={phoneNumber}
+              />
+              <View style={[styles.detailsFloatingChip, styles.detailsFloatingChipWide]}>
+                <AppText style={styles.detailsFloatingChipText} variant="micro">
+                  Phone number
+                </AppText>
+              </View>
+            </View>
+          </View>
+
+          {errorMessage ? (
+            <AppText colorToken="danger" style={styles.detailsErrorText} variant="caption">
+              {errorMessage}
+            </AppText>
+          ) : null}
+        </View>
+
+        <View style={styles.detailsBottomActions}>
+          <Pressable disabled={isSubmitting} onPress={submit} style={styles.detailsNextButton}>
+            <ArrowIcon color="#FFFFFF" direction="left" />
+            <AppText colorToken="textInverse" style={styles.detailsNextText} variant="bodyStrong">
+              {isSubmitting ? 'Loading...' : 'Next'}
+            </AppText>
+            <ArrowIcon color="#FFFFFF" direction="right" />
+          </Pressable>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
