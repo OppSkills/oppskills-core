@@ -4,11 +4,13 @@ import { ApprovalStatus, LifecycleStatus } from '@prisma/client';
 import { Logger } from '../../_utils/logger';
 import { AdminLogsService } from '../admin-log/Logs.service';
 import { REQUEST } from '@nestjs/core';
+import { HackathonService } from '../../hackathon/hackathon.service';
 
 @Injectable()
 export class AdminFeaturesService {
   constructor(
     private readonly adminLogsService: AdminLogsService,
+    private readonly hackathonService: HackathonService,
     @Inject(REQUEST) private request: any,
   ) { }
 
@@ -354,5 +356,9 @@ export class AdminFeaturesService {
       return { success: true };
     }
     throw new NotFoundException('Invalid type');
+  }
+
+  async backfillDefaultRegistrationFields(): Promise<{ affected: number }> {
+    return this.hackathonService.backfillDefaultRegistrationFields();
   }
 }

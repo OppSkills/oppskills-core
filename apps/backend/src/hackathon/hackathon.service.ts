@@ -1538,6 +1538,45 @@ export class HackathonService {
   }
 
   /**
+   * Maintenance: backfill `BASE_DEFAULT_FIELDS` for registration forms that have
+   * no stored fields and no external form URL (e.g. legacy bug where an update
+   * cleared fields without recreating defaults).
+   */
+  async backfillDefaultRegistrationFields(): Promise<{ affected: number }> {
+    const forms = await prisma.registrationFormEntity.findMany({
+      where: {
+        hackathonId: { not: null },
+        externalFormLink: null,
+        fields: { none: {} },
+      },
+      select: { id: true },
+    });
+
+    if (forms.length === 0) {
+      return { affected: 0 };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      for (const form of forms) {
+        await tx.registrationFieldEntity.createMany({
+          data: BASE_DEFAULT_FIELDS.map((f) => ({
+            registrationFormId: form.id,
+            label: f.label,
+            type: f.type as RegistrationFieldType,
+            required: f.required,
+            order: f.order,
+            options: f.options ?? [],
+            placeholder: f.placeholder ?? null,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    });
+
+    return { affected: forms.length };
+  }
+
+  /**
    * Replace the prize breakdown list for a hackathon.
    */
   async updateHackathonPrizeBreakdown(

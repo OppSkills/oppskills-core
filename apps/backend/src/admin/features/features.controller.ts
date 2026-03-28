@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Put,
   Query,
   Param,
@@ -80,5 +81,14 @@ export class AdminFeaturesController {
     @Body('status') status: ApprovalStatus,
   ) {
     return this.featuresService.toggleApproval(type, id, status);
+  }
+
+  /**
+   * POST /admin/features/hackathons/backfill-default-fields
+   * Backfills default registration questions for hackathon forms missing fields.
+   */
+  @Post('hackathons/backfill-default-fields')
+  async backfillDefaultRegistrationFields() {
+    return this.featuresService.backfillDefaultRegistrationFields();
   }
 }
