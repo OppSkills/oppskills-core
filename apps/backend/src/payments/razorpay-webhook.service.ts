@@ -148,19 +148,9 @@ export class RazorpayWebhookService {
   private async handleEventPaymentCaptured(payload: RazorpayWebhookPayload) {
     const payment = payload.payload?.payment?.entity!;
     const orderId = payment.order_id;
-    const notes = payment.notes || {};
-    const eventId = notes.eventId;
-    const userId = notes.payerUserId;
-
-    let paymentRecord = await prisma.eventPaymentEntity.findUnique({
+    const paymentRecord = await prisma.eventPaymentEntity.findUnique({
       where: { razorpayOrderId: orderId },
     });
-
-    if (!paymentRecord && eventId && userId) {
-      paymentRecord = await prisma.eventPaymentEntity.findUnique({
-        where: { eventId_payerUserId: { eventId, payerUserId: userId } },
-      });
-    }
 
     if (!paymentRecord) {
       this.logger.warn(`Event payment record not found for order: ${orderId}`);
@@ -313,33 +303,10 @@ export class RazorpayWebhookService {
     const payment = payload.payload?.payment?.entity!;
     const orderId = payment.order_id;
     const notes = payment.notes || {};
-    const hackathonId = notes.hackathonId;
-    const userId = notes.payerUserId;
-    const teamId = notes.teamId;
 
-    let paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
+    const paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
       where: { razorpayOrderId: orderId },
     });
-
-    if (!paymentRecord && hackathonId) {
-      if (teamId) {
-        paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
-          where: {
-            unique_team_payment: { scope: 'TEAM', hackathonId, teamId },
-          },
-        });
-      } else if (userId) {
-        paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
-          where: {
-            unique_user_payment: {
-              scope: (notes.scope as any) || 'USER',
-              hackathonId,
-              payerUserId: userId,
-            },
-          },
-        });
-      }
-    }
 
     if (!paymentRecord) {
       this.logger.warn(
@@ -531,29 +498,14 @@ export class RazorpayWebhookService {
     const type = notes.type;
 
     if (type === 'event_registration') {
-      const eventId = notes.eventId;
-      const userId = notes.payerUserId;
-
-      let paymentRecord = await prisma.eventPaymentEntity.findUnique({
+      const paymentRecord = await prisma.eventPaymentEntity.findUnique({
         where: { razorpayOrderId: orderId },
       });
-
-      if (!paymentRecord && eventId && userId) {
-        paymentRecord = await prisma.eventPaymentEntity.findUnique({
-          where: { eventId_payerUserId: { eventId, payerUserId: userId } },
-        });
-      }
 
       if (paymentRecord) {
         if (paymentRecord.paymentStatus === 'CAPTURED') {
           this.logger.log(
             `Skipping payment.failed for order ${orderId}: payment already captured`,
-          );
-          return;
-        }
-        if (paymentRecord.razorpayOrderId !== orderId) {
-          this.logger.log(
-            `Skipping stale payment.failed for order ${orderId}: DB record has newer order ${paymentRecord.razorpayOrderId}`,
           );
           return;
         }
@@ -567,44 +519,14 @@ export class RazorpayWebhookService {
         });
       }
     } else {
-      const hackathonId = notes.hackathonId;
-      const userId = notes.payerUserId;
-      const teamId = notes.teamId;
-
-      let paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
+      const paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
         where: { razorpayOrderId: orderId },
       });
-
-      if (!paymentRecord && hackathonId) {
-        if (teamId) {
-          paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
-            where: {
-              unique_team_payment: { scope: 'TEAM', hackathonId, teamId },
-            },
-          });
-        } else if (userId) {
-          paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
-            where: {
-              unique_user_payment: {
-                scope: (notes.scope as any) || 'USER',
-                hackathonId,
-                payerUserId: userId,
-              },
-            },
-          });
-        }
-      }
 
       if (paymentRecord) {
         if (paymentRecord.paymentStatus === 'CAPTURED') {
           this.logger.log(
             `Skipping payment.failed for order ${orderId}: hackathon payment already captured`,
-          );
-          return;
-        }
-        if (paymentRecord.razorpayOrderId !== orderId) {
-          this.logger.log(
-            `Skipping stale payment.failed for order ${orderId}: DB record has newer order ${paymentRecord.razorpayOrderId}`,
           );
           return;
         }

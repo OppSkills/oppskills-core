@@ -103,22 +103,18 @@ export class EventPaymentService {
       );
     }
 
-    // Check for existing payment - allow retry if previous payment was cancelled/failed
-    const existingPayment = await prisma.eventPaymentEntity.findFirst({
+    const successfulPayment = await prisma.eventPaymentEntity.findFirst({
       where: {
         eventId: event.id,
         payerUserId: params.userId,
+        paymentStatus: {
+          in: [EventPaymentStatus.CAPTURED, EventPaymentStatus.AUTHORIZED],
+        },
       },
     });
 
-    if (existingPayment) {
-      if (
-        existingPayment.paymentStatus === EventPaymentStatus.CAPTURED ||
-        existingPayment.paymentStatus === EventPaymentStatus.AUTHORIZED
-      ) {
-        throw new BadRequestException('Payment already completed');
-      }
-      // If payment exists with CREATED/FAILED status, we'll update it instead of creating new one
+    if (successfulPayment) {
+      throw new BadRequestException('Payment already completed');
     }
 
     // Check if user is eligible for free entry (college-based)
@@ -128,48 +124,25 @@ export class EventPaymentService {
     );
 
     if (isEligibleForFreeEntry) {
-      // Create or update payment record for free college entry
-      let payment;
-      if (existingPayment) {
-        payment = await prisma.eventPaymentEntity.update({
-          where: { id: existingPayment.id },
-          data: {
-            razorpayOrderId: `free_college_event_${event.id}_${Date.now()}`,
-            grossAmount: new Decimal(0),
-            platformFeeAmount: new Decimal(0),
-            organizerShareAmount: new Decimal(0),
-            transferOnHold: false,
-            transferOnHoldUntil: null,
-            orderStatus: EventPaymentOrderStatus.PAID,
-            paymentStatus: EventPaymentStatus.CAPTURED,
-            discountCodeId: null,
-            discountAmount: null,
-            razorpayPaymentId: null,
-            razorpaySignature: null,
-            capturedAt: new Date(),
-          },
-        });
-      } else {
-        payment = await prisma.eventPaymentEntity.create({
-          data: {
-            eventId: event.id,
-            organizerId: event.ownerId,
-            payerUserId: params.userId,
-            currency: event.currency || 'INR',
-            grossAmount: new Decimal(0),
-            platformFeeAmount: new Decimal(0),
-            organizerShareAmount: new Decimal(0),
-            razorpayOrderId: `free_college_event_${event.id}_${Date.now()}`,
-            transferOnHold: false,
-            transferOnHoldUntil: null,
-            orderStatus: EventPaymentOrderStatus.PAID,
-            paymentStatus: EventPaymentStatus.CAPTURED,
-            discountCodeId: null,
-            discountAmount: null,
-            capturedAt: new Date(),
-          },
-        });
-      }
+      const payment = await prisma.eventPaymentEntity.create({
+        data: {
+          eventId: event.id,
+          organizerId: event.ownerId,
+          payerUserId: params.userId,
+          currency: event.currency || 'INR',
+          grossAmount: new Decimal(0),
+          platformFeeAmount: new Decimal(0),
+          organizerShareAmount: new Decimal(0),
+          razorpayOrderId: `free_college_event_${event.id}_${Date.now()}`,
+          transferOnHold: false,
+          transferOnHoldUntil: null,
+          orderStatus: EventPaymentOrderStatus.PAID,
+          paymentStatus: EventPaymentStatus.CAPTURED,
+          discountCodeId: null,
+          discountAmount: null,
+          capturedAt: new Date(),
+        },
+      });
 
       return {
         paymentId: payment.id,
@@ -235,51 +208,27 @@ export class EventPaymentService {
 
     // Handle zero amount after discount
     if (grossAmountPaise === 0) {
-      let payment;
-      if (existingPayment) {
-        payment = await prisma.eventPaymentEntity.update({
-          where: { id: existingPayment.id },
-          data: {
-            razorpayOrderId: `free_event_${event.id}_${Date.now()}`,
-            grossAmount: new Decimal(0),
-            platformFeeAmount: new Decimal(0),
-            organizerShareAmount: new Decimal(0),
-            transferOnHold: false,
-            transferOnHoldUntil: null,
-            orderStatus: EventPaymentOrderStatus.PAID,
-            paymentStatus: EventPaymentStatus.CAPTURED,
-            discountCodeId,
-            discountAmount: discountAmount.greaterThan(0)
-              ? discountAmount
-              : null,
-            razorpayPaymentId: null,
-            razorpaySignature: null,
-            capturedAt: new Date(),
-          },
-        });
-      } else {
-        payment = await prisma.eventPaymentEntity.create({
-          data: {
-            eventId: event.id,
-            organizerId: event.ownerId,
-            payerUserId: params.userId,
-            currency: event.currency || 'INR',
-            grossAmount: new Decimal(0),
-            platformFeeAmount: new Decimal(0),
-            organizerShareAmount: new Decimal(0),
-            razorpayOrderId: `free_event_${event.id}_${Date.now()}`,
-            transferOnHold: false,
-            transferOnHoldUntil: null,
-            orderStatus: EventPaymentOrderStatus.PAID,
-            paymentStatus: EventPaymentStatus.CAPTURED,
-            discountCodeId,
-            discountAmount: discountAmount.greaterThan(0)
-              ? discountAmount
-              : null,
-            capturedAt: new Date(),
-          },
-        });
-      }
+      const payment = await prisma.eventPaymentEntity.create({
+        data: {
+          eventId: event.id,
+          organizerId: event.ownerId,
+          payerUserId: params.userId,
+          currency: event.currency || 'INR',
+          grossAmount: new Decimal(0),
+          platformFeeAmount: new Decimal(0),
+          organizerShareAmount: new Decimal(0),
+          razorpayOrderId: `free_event_${event.id}_${Date.now()}`,
+          transferOnHold: false,
+          transferOnHoldUntil: null,
+          orderStatus: EventPaymentOrderStatus.PAID,
+          paymentStatus: EventPaymentStatus.CAPTURED,
+          discountCodeId,
+          discountAmount: discountAmount.greaterThan(0)
+            ? discountAmount
+            : null,
+          capturedAt: new Date(),
+        },
+      });
 
       return {
         paymentId: payment.id,
@@ -312,45 +261,24 @@ export class EventPaymentService {
       notes: orderNotes,
     });
 
-    // Create or update payment record
-    let payment;
-    if (existingPayment) {
-      payment = await prisma.eventPaymentEntity.update({
-        where: { id: existingPayment.id },
-        data: {
-          razorpayOrderId: razorpayOrder.id,
-          grossAmount,
-          platformFeeAmount: totalDeduction,
-          organizerShareAmount,
-          orderStatus: EventPaymentOrderStatus.CREATED,
-          paymentStatus: EventPaymentStatus.CREATED,
-          discountCodeId,
-          discountAmount: discountAmount.greaterThan(0) ? discountAmount : null,
-          razorpayPaymentId: null,
-          razorpaySignature: null,
-          failedAt: null,
-        },
-      });
-    } else {
-      payment = await prisma.eventPaymentEntity.create({
-        data: {
-          eventId: event.id,
-          organizerId: event.ownerId,
-          payerUserId: params.userId,
-          currency: event.currency || 'INR',
-          grossAmount,
-          platformFeeAmount: totalDeduction,
-          organizerShareAmount,
-          razorpayOrderId: razorpayOrder.id,
-          transferOnHold: false,
-          transferOnHoldUntil: null,
-          orderStatus: EventPaymentOrderStatus.CREATED,
-          paymentStatus: EventPaymentStatus.CREATED,
-          discountCodeId,
-          discountAmount: discountAmount.greaterThan(0) ? discountAmount : null,
-        },
-      });
-    }
+    const payment = await prisma.eventPaymentEntity.create({
+      data: {
+        eventId: event.id,
+        organizerId: event.ownerId,
+        payerUserId: params.userId,
+        currency: event.currency || 'INR',
+        grossAmount,
+        platformFeeAmount: totalDeduction,
+        organizerShareAmount,
+        razorpayOrderId: razorpayOrder.id,
+        transferOnHold: false,
+        transferOnHoldUntil: null,
+        orderStatus: EventPaymentOrderStatus.CREATED,
+        paymentStatus: EventPaymentStatus.CREATED,
+        discountCodeId,
+        discountAmount: discountAmount.greaterThan(0) ? discountAmount : null,
+      },
+    });
 
     return {
       paymentId: payment.id,

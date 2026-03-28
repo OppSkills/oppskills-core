@@ -1372,8 +1372,6 @@ model HackathonPaymentEntity {
   // Payout items (which payouts include this payment)
   payoutItems HackathonPayoutItemEntity[]
 
-  @@unique([scope, hackathonId, teamId], name: "unique_team_payment")
-  @@unique([scope, hackathonId, payerUserId], name: "unique_user_payment")
   @@index([hackathonId])
   @@index([organizerId])
   @@index([payerUserId])
@@ -1593,7 +1591,6 @@ model EventPaymentEntity {
   // Payout items (which payouts include this payment)
   payoutItems EventPayoutItemEntity[]
 
-  @@unique([eventId, payerUserId])
   @@index([eventId])
   @@index([organizerId])
   @@index([payerUserId])

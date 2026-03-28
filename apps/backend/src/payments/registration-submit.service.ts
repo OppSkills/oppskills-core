@@ -509,6 +509,7 @@ export class RegistrationSubmitService {
             teamId: leaderTeam.id,
             scope: HackathonPaymentScope.TEAM,
           },
+          orderBy: { createdAt: 'desc' },
           select: { paymentStatus: true },
         });
         paymentStatus = payment?.paymentStatus || 'NOT_PAID';
@@ -519,6 +520,7 @@ export class RegistrationSubmitService {
             payerUserId: userId,
             scope: HackathonPaymentScope.USER,
           },
+          orderBy: { createdAt: 'desc' },
           select: { paymentStatus: true },
         });
         paymentStatus = payment?.paymentStatus || 'NOT_PAID';
