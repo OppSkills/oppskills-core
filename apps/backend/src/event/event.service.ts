@@ -40,7 +40,7 @@ export class EventService {
     private readonly googleSheetsService: GoogleSheetsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
-  ) { }
+  ) {}
 
   /**
    * Create an event as a user.
@@ -215,7 +215,15 @@ export class EventService {
           return { start, end };
         } else {
           const s = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-          const e = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0, 23, 59, 59, 999);
+          const e = new Date(
+            now.getFullYear(),
+            now.getMonth() + offset + 1,
+            0,
+            23,
+            59,
+            59,
+            999,
+          );
           return { start: s, end: e };
         }
       };
@@ -243,11 +251,16 @@ export class EventService {
     // 6. Eligibility Filters
     if (input.eligibility && input.eligibility.length > 0) {
       const eligibilityValues: any[] = [];
-      if (input.eligibility.includes('School')) eligibilityValues.push('SCHOOL_STUDENTS');
-      if (input.eligibility.includes('UG') || input.eligibility.includes('PG')) {
+      if (input.eligibility.includes('School'))
+        eligibilityValues.push('SCHOOL_STUDENTS');
+      if (
+        input.eligibility.includes('UG') ||
+        input.eligibility.includes('PG')
+      ) {
         eligibilityValues.push('COLLEGE_STUDENTS');
       }
-      if (input.eligibility.includes('Open')) eligibilityValues.push('EVERYONE_CAN_APPLY');
+      if (input.eligibility.includes('Open'))
+        eligibilityValues.push('EVERYONE_CAN_APPLY');
 
       if (eligibilityValues.length > 0) {
         conditions.push({
@@ -1536,7 +1549,7 @@ export class EventService {
             // Use field options, or default gender options for Gender field
             const effectiveOptions =
               field.label.toLowerCase() === 'gender' &&
-                (!field.options || field.options.length === 0)
+              (!field.options || field.options.length === 0)
                 ? DEFAULT_GENDER_OPTIONS
                 : field.options;
 

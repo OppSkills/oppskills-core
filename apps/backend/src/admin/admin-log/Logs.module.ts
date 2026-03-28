@@ -4,9 +4,9 @@ import { AdminLogsService } from './Logs.service';
 import { AdminAuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [forwardRef(() => AdminAuthModule)],
-    controllers: [AdminLogsController],
-    providers: [AdminLogsService],
-    exports: [AdminLogsService]
+  imports: [forwardRef(() => AdminAuthModule)],
+  controllers: [AdminLogsController],
+  providers: [AdminLogsService],
+  exports: [AdminLogsService],
 })
-export class AdminLogsModule { }
+export class AdminLogsModule {}

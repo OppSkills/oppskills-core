@@ -698,7 +698,8 @@ export class EventController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request (not registered, already submitted, or payment missing)',
+    description:
+      'Bad request (not registered, already submitted, or payment missing)',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Event not found' })

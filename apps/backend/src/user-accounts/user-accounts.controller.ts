@@ -14,14 +14,7 @@ import {
   Request,
   BadRequestException,
 } from '@nestjs/common';
-import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsInt,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsInt, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
   ApiTags,
@@ -106,7 +99,7 @@ class UpdateEducationDto {
 @Controller('user-accounts')
 export class UserAccountsController {
   private readonly logger: Logger = new Logger(UserAccountsController.name);
-  constructor(private readonly userAccountsService: UserAccountsService) { }
+  constructor(private readonly userAccountsService: UserAccountsService) {}
 
   @Post('/clerk-webhook')
   create(
@@ -450,7 +443,9 @@ export class UserAccountsController {
     return arr
       .map((item) => {
         if (typeof item !== 'string') {
-          throw new BadRequestException(`All ${fieldName} items must be strings`);
+          throw new BadRequestException(
+            `All ${fieldName} items must be strings`,
+          );
         }
         const trimmed = item.trim();
 

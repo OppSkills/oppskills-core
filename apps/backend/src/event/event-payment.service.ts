@@ -1243,7 +1243,7 @@ export class EventPaymentService {
       validUntil?: Date;
       active?: boolean;
     },
-    ) {
+  ) {
     const event = await prisma.eventEntity.findUnique({
       where: { slug: eventSlug, isDeleted: false },
       select: { id: true, ownerId: true },

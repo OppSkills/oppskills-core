@@ -184,14 +184,21 @@ export class HackathonPublicController {
   @ApiOperation({
     summary: 'Preview team invite link (sanitized, no PII)',
   })
-  @ApiQuery({ name: 'code', required: true, description: 'Team invitation code' })
+  @ApiQuery({
+    name: 'code',
+    required: true,
+    description: 'Team invitation code',
+  })
   @ApiQuery({
     name: 'slug',
     required: true,
     description: 'Hackathon slug (must match invite)',
   })
   @ApiResponse({ status: 200, description: 'Invite preview' })
-  @ApiResponse({ status: 404, description: 'Invite not found or slug mismatch' })
+  @ApiResponse({
+    status: 404,
+    description: 'Invite not found or slug mismatch',
+  })
   async previewTeamInvite(
     @Query('code') code: string,
     @Query('slug') slug: string,

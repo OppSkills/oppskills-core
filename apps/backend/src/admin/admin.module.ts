@@ -15,10 +15,10 @@ import { AdminPaymentsModule } from './payments/payments.module';
     AdminFeaturesModule,
     AdminLogsModule,
     UserAccountModule,
-    AdminPaymentsModule
+    AdminPaymentsModule,
   ],
   controllers: [],
   providers: [],
-  exports: [AdminAuthModule]
+  exports: [AdminAuthModule],
 })
-export class AdminModule { }
+export class AdminModule {}
