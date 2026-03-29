@@ -195,7 +195,6 @@ export const trustedByPartners: readonly string[] = [
   'IIT Hyderabad',
   'IIITD',
   'Sharda University',
-  'Rishihood University',
   'IILM University',
 ];
 

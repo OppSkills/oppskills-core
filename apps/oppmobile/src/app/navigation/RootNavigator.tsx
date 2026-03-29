@@ -2,6 +2,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import {
   IntroScreen,
@@ -45,6 +46,7 @@ import { useMockSession } from '../../domains/user-accounts/presentation/provide
 import { HomePageScreen } from '../../domains/users/presentation/screens/HomePageScreen';
 import { appRoutes } from '../../shared/constants/routes';
 import { lightTheme } from '../../shared/theme';
+import { AppText } from '../../shared/ui';
 import type {
   AppliedStackParamList,
   AuthStackParamList,
@@ -60,6 +62,14 @@ const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const DiscoverStack = createNativeStackNavigator<DiscoverStackParamList>();
 const AppliedStack = createNativeStackNavigator<AppliedStackParamList>();
 const MainTabs = createBottomTabNavigator<MainTabParamList>();
+
+const TAB_ITEM_WIDTH = 100;
+const TAB_ITEM_HEIGHT = 54;
+const TAB_BAR_LEFT_PADDING = 10;
+const TAB_BAR_RIGHT_PADDING = 4;
+const TAB_BAR_WIDTH = TAB_ITEM_WIDTH * 3 + TAB_BAR_LEFT_PADDING + TAB_BAR_RIGHT_PADDING;
+const TAB_BAR_LEFT_NUDGE = -8;
+const TAB_BAR_BOTTOM_OFFSET = 48;
 
 function OnboardingNavigator() {
   const session = useMockSession();
@@ -266,8 +276,6 @@ function AuthNavigator() {
 }
 
 function HomeStackNavigator() {
-  const session = useMockSession();
-
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name={appRoutes.homeStack}>
@@ -275,7 +283,6 @@ function HomeStackNavigator() {
           <HomePageScreen
             onOpenCompetition={() => navigation.navigate(appRoutes.competitionPage)}
             onOpenHackathon={() => navigation.navigate(appRoutes.hackathonPage)}
-            onRestartOnboarding={session.restartOnboarding}
           />
         )}
       </HomeStack.Screen>
@@ -554,19 +561,56 @@ function AppliedStackNavigator() {
   );
 }
 
+function MainTabIcon({ focused, routeName }: { readonly focused: boolean; readonly routeName: string }) {
+  const label =
+    routeName === appRoutes.homeTab ? 'Home' : routeName === appRoutes.discoverTab ? 'Discover' : 'Applied';
+
+  return (
+    <View style={[tabStyles.tabItem, focused ? tabStyles.tabItemActive : null]}>
+      <View style={tabStyles.iconWrap}>
+        {routeName === appRoutes.homeTab ? (
+          <View style={tabStyles.homeGlyph}>
+            <View style={tabStyles.homeGlyphBody} />
+            <View style={tabStyles.homeGlyphDoor} />
+          </View>
+        ) : null}
+
+        {routeName === appRoutes.discoverTab ? (
+          <View style={tabStyles.discoverGlyph}>
+            <View style={tabStyles.discoverGlyphBody} />
+            <View style={tabStyles.discoverGlyphCore} />
+          </View>
+        ) : null}
+
+        {routeName === appRoutes.appliedTab ? (
+          <View style={tabStyles.appliedGlyph}>
+            <View style={tabStyles.appliedGlyphBody} />
+            <View style={tabStyles.appliedGlyphCore} />
+          </View>
+        ) : null}
+      </View>
+
+      <AppText colorToken="textSecondary" style={tabStyles.tabLabel} variant="caption">
+        {label}
+      </AppText>
+    </View>
+  );
+}
+
 function MainTabNavigator() {
+  const { width: screenWidth } = useWindowDimensions();
+  const leftOffset = (screenWidth - TAB_BAR_WIDTH) / 2 + TAB_BAR_LEFT_NUDGE;
+
   return (
     <MainTabs.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: lightTheme.colors.brandPrimaryStrong,
-        tabBarInactiveTintColor: lightTheme.colors.textMuted,
-        tabBarLabelStyle: {
-          fontFamily: lightTheme.typography.caption.fontFamily,
-          fontSize: lightTheme.typography.caption.fontSize,
-          fontWeight: lightTheme.typography.caption.fontWeight,
-        },
-      }}
+        tabBarHideOnKeyboard: true,
+        tabBarIcon: ({ focused }) => <MainTabIcon focused={focused} routeName={route.name} />,
+        tabBarItemStyle: tabStyles.tabBarItem,
+        tabBarShowLabel: false,
+        tabBarStyle: [tabStyles.tabBar, { left: leftOffset, width: TAB_BAR_WIDTH }],
+      })}
     >
       <MainTabs.Screen component={HomeStackNavigator} name={appRoutes.homeTab} options={{ title: 'Home' }} />
       <MainTabs.Screen
@@ -590,3 +634,128 @@ export function RootNavigator() {
     </NavigationContainer>
   );
 }
+
+const tabStyles = StyleSheet.create({
+  appliedGlyph: {
+    alignItems: 'center',
+    height: 32,
+    justifyContent: 'center',
+    position: 'relative',
+    width: 32,
+  },
+  appliedGlyphBody: {
+    borderBottomColor: '#271B40',
+    borderBottomWidth: 20,
+    borderLeftColor: 'transparent',
+    borderLeftWidth: 7,
+    borderRightColor: 'transparent',
+    borderRightWidth: 7,
+    height: 0,
+    transform: [{ rotate: '-20deg' }],
+    width: 0,
+  },
+  appliedGlyphCore: {
+    backgroundColor: '#AC89F2',
+    borderRadius: lightTheme.radius.xs,
+    height: 9,
+    position: 'absolute',
+    right: 8,
+    top: 17,
+    transform: [{ rotate: '-20deg' }],
+    width: 9,
+  },
+  discoverGlyph: {
+    alignItems: 'center',
+    height: 32,
+    justifyContent: 'center',
+    position: 'relative',
+    width: 32,
+  },
+  discoverGlyphBody: {
+    backgroundColor: '#271B40',
+    borderRadius: 8,
+    height: 20,
+    transform: [{ rotate: '30deg' }],
+    width: 20,
+  },
+  discoverGlyphCore: {
+    backgroundColor: '#AC89F2',
+    borderRadius: lightTheme.radius.pill,
+    height: 8,
+    position: 'absolute',
+    width: 8,
+  },
+  homeGlyph: {
+    alignItems: 'center',
+    height: 32,
+    justifyContent: 'center',
+    position: 'relative',
+    width: 32,
+  },
+  homeGlyphBody: {
+    backgroundColor: '#271B40',
+    borderRadius: 5,
+    height: 20,
+    width: 20,
+  },
+  homeGlyphDoor: {
+    backgroundColor: '#AC89F2',
+    borderRadius: 2,
+    bottom: 7,
+    height: 4,
+    position: 'absolute',
+    width: 8,
+  },
+  iconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 32,
+    width: 32,
+  },
+  tabBar: {
+    backgroundColor: lightTheme.colors.backgroundPrimary,
+    borderColor: lightTheme.colors.surfaceBorder,
+    borderRadius: lightTheme.radius.pill,
+    borderTopWidth: 0,
+    borderWidth: 0.5,
+    bottom: TAB_BAR_BOTTOM_OFFSET,
+    elevation: 6,
+    height: 82,
+    paddingLeft: TAB_BAR_LEFT_PADDING,
+    paddingRight: TAB_BAR_RIGHT_PADDING,
+    paddingBottom: 4,
+    paddingTop: 4,
+    position: 'absolute',
+    shadowColor: '#6F6F6F',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  tabBarItem: {
+    flex: 0,
+    height: TAB_ITEM_HEIGHT,
+    margin: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    width: TAB_ITEM_WIDTH,
+  },
+  tabItem: {
+    alignItems: 'center',
+    borderRadius: lightTheme.radius.pill,
+    gap: 8,
+    height: TAB_ITEM_HEIGHT,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    width: TAB_ITEM_WIDTH,
+  },
+  tabItemActive: {
+    backgroundColor: lightTheme.colors.brandPrimarySoft,
+  },
+  tabLabel: {
+    color: '#584D5A',
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 18,
+  },
+});
