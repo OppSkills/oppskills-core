@@ -165,7 +165,8 @@ export class HackathonPublicController {
   async listPublicUpcomingHackathons(
     @Query('festival_id') festivalId?: string,
     @Query('page') page?: number,
-    @Query('appendResults') appendResults?: boolean,
+    @Query('appendResults', new ParseBoolPipe({ optional: true }))
+    appendResults: boolean = false,
     @Query('q') search?: string,
   ) {
     return this.hackathonService.listPublicHackathons({
