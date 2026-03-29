@@ -280,6 +280,7 @@ export function RegistrationModal({
         amount: order.amountPaise,
         currency: order.currency,
         name: competition.title,
+        description: "Hackathon registration",
         order_id: order.razorpayOrderId || order.orderId,
         handler: async (response: any) => {
           try {
@@ -318,11 +319,32 @@ export function RegistrationModal({
             setIsSubmitting(false);
           }
         },
+        prefill: {
+          name: user?.fullName || "",
+          email: user?.primaryEmailAddress?.emailAddress || "",
+          contact: user?.primaryPhoneNumber?.phoneNumber || "",
+        },
+        theme: {
+          color: "#5B2E63",
+        },
+        modal: {
+          ondismiss: () => {
+            setIsSubmitting(false);
+            toast.info("Payment cancelled");
+          },
+        },
       };
 
       if (!window.Razorpay) throw new Error("Razorpay not loaded");
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+
+      // Close the registration dialog BEFORE opening Razorpay (same as event registration flow).
+      // Radix Dialog focus trap + overlay can block taps on the Razorpay iframe on mobile.
+      onClose();
+
+      requestAnimationFrame(() => {
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      });
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Payment failed"));
     }
