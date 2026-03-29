@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { SquareShareLine } from '@solar-icons/react'
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronRight,
@@ -13,19 +13,17 @@ import {
   IndianRupee,
   Loader2,
   CheckCircle,
+  ShareIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryState } from "nuqs";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import {
   checkMyHackathonTeam,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
-import {
-  getHackathonRegistrationStatus,
-  type HackathonRegistrationStatus,
-} from "@/lib/api/paymentsApi";
+import { TeamDetailsCard } from "./TeamDetailsCard";
 import { getApiErrorMessage } from "@/lib/utils";
 import { format } from "date-fns";
 import type { CompetitionDetails } from "./types";
@@ -38,53 +36,69 @@ interface CompetitionSidebarProps {
 export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isSignedIn, getToken } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { user } = useUser();
   const [, setAuthMode] = useQueryState("auth");
-  const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
+  const [isCheckingRegistration, setIsCheckingRegistration] = useState(!!isSignedIn);
   const [isStartingRegistration, setIsStartingRegistration] = useState(false);
-  const [registrationStatus, setRegistrationStatus] =
-    useState<HackathonRegistrationStatus | null>(null);
+  const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
   const [myTeam, setMyTeam] = useState<TeamDetailResponse | null>(null);
-  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
 
-  const isFullyRegistered = registrationStatus?.hasSubmitted === true;
-  const showCompleteRegistration =
-    !!registrationStatus &&
-    !registrationStatus.hasSubmitted &&
-    (registrationStatus.isPaidButIncomplete || registrationStatus.hasTeam);
+  const [registration, setRegistration] = useQueryState("registration");
+  const [invitation, setInvitation] = useQueryState("invitation");
+
+  const isRegistrationModalOpen = !!registration && !isCheckingRegistration && !isAlreadyRegistered;
+
+  const initialMode = registration === "join" ? "JOIN" : "CREATE";
 
   // Force re-check when redirected back from registration with ?registered=true
   const justRegistered = searchParams.get("registered") === "true";
 
-  // Team + registration form submission status
+  // Check if user is already registered when signed in
   useEffect(() => {
     async function checkRegistration() {
-      if (!isSignedIn || !competition.id) return;
+      // Don't act until auth is loaded
+      if (!isLoaded) return;
+
+      // If user is not signed in but has registration params, redirect to login
+      if (!isSignedIn) {
+        if (registration) {
+          setRegistration(null);
+          setInvitation(null);
+          setAuthMode("login");
+        }
+        setIsCheckingRegistration(false);
+        return;
+      }
+
+      if (!competition.id) return;
 
       setIsCheckingRegistration(true);
       try {
         const token = await getToken();
         if (!token) return;
 
-        const [team, status] = await Promise.all([
-          checkMyHackathonTeam(token, competition.id),
-          getHackathonRegistrationStatus(token, competition.slug).catch(
-            () => null,
-          ),
-        ]);
+        const team = await checkMyHackathonTeam(token, competition.id);
+        const isRegistered = !!team;
+        setIsAlreadyRegistered(isRegistered);
         setMyTeam(team);
-        setRegistrationStatus(status);
+
+        // If user is already registered, clear registration query params to prevent modal popping up
+        if (isRegistered && registration) {
+          setRegistration(null);
+          setInvitation(null);
+        }
       } catch (error) {
         console.error("Error checking registration:", error);
+        setIsAlreadyRegistered(false);
         setMyTeam(null);
-        setRegistrationStatus(null);
       } finally {
         setIsCheckingRegistration(false);
       }
     }
 
     checkRegistration();
-  }, [isSignedIn, competition.id, competition.slug, getToken, justRegistered]);
+  }, [isLoaded, isSignedIn, competition.id, getToken, justRegistered, registration, setRegistration, setInvitation, setAuthMode]);
 
   // Check if registration is closed
   const isRegistrationClosed =
@@ -123,12 +137,12 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         return;
       }
 
-      if (isFullyRegistered) {
+      if (isAlreadyRegistered) {
         toast.info("You are already registered for this competition!");
         return;
       }
 
-      setIsRegistrationModalOpen(true);
+      setRegistration("create");
     } catch (error) {
       console.error("Error starting registration:", error);
       toast.error(
@@ -153,8 +167,8 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       );
     }
 
-    // Fully registered (form submitted)
-    if (isFullyRegistered) {
+    // If already registered
+    if (isAlreadyRegistered && myTeam) {
       return (
         <Button
           className="w-full bg-green-600 text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
@@ -163,33 +177,6 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           <CheckCircle className="w-4 h-4 mr-2" />
           Registered
         </Button>
-      );
-    }
-
-    // Paid (or team created) but registration form not submitted — same idea as event flow
-    if (showCompleteRegistration) {
-      return (
-        <div className="space-y-2">
-          <Button
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
-            onClick={handleRegisterClick}
-            disabled={isStartingRegistration}
-          >
-            {isStartingRegistration ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Loading...
-              </>
-            ) : (
-              "Complete registration"
-            )}
-          </Button>
-          {registrationStatus?.isPaidButIncomplete && (
-            <p className="text-xs text-center text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              Payment complete. Finish the registration form — no extra charge.
-            </p>
-          )}
-        </div>
       );
     }
 
@@ -424,109 +411,25 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           {/* Register Button */}
           {renderRegisterButton()}
 
-          {/* Team Status Card - when user has a team */}
-          {myTeam && (
-            <div
-              className={`mt-3 p-4 rounded-xl border ${
-                isFullyRegistered
-                  ? "bg-green-50 border-green-200"
-                  : "bg-amber-50 border-amber-200"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                  <span
-                    className={`text-sm font-medium ${
-                      isFullyRegistered ? "text-green-800" : "text-amber-900"
-                    }`}
-                  >
-                    Your Team
-                  </span>
-                  {!isFullyRegistered && (
-                    <span className="text-xs font-medium text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full shrink-0">
-                      Registration pending
-                    </span>
-                  )}
-                </div>
-                <Link
-                  href={`/hackathons/${competition.slug}/team`}
-                  className={`text-xs underline shrink-0 ${
-                    isFullyRegistered
-                      ? "text-green-700 hover:text-green-900"
-                      : "text-amber-800 hover:text-amber-950"
-                  }`}
-                >
-                  View Details
-                </Link>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  {myTeam.leader && (
-                    <div
-                      className="w-8 h-8 rounded-full border-2 border-white bg-green-600 flex items-center justify-center text-white text-xs font-medium overflow-hidden"
-                      title={`${myTeam.leader.firstName || ""} ${myTeam.leader.lastName || ""} (Leader)`}
-                    >
-                      {myTeam.leader.imageUrl ? (
-                        <Image
-                          src={myTeam.leader.imageUrl}
-                          alt="Leader"
-                          width={32}
-                          height={32}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        (
-                          myTeam.leader.firstName?.[0] ||
-                          myTeam.leader.email?.[0] ||
-                          "L"
-                        ).toUpperCase()
-                      )}
-                    </div>
-                  )}
-                  {Array.isArray(myTeam.members) &&
-                    myTeam.members.slice(0, 3).map((member) => (
-                      <div
-                        key={member.id}
-                        className="w-8 h-8 rounded-full border-2 border-white bg-neutral-400 flex items-center justify-center text-white text-xs font-medium overflow-hidden"
-                        title={`${member.user.firstName || ""} ${member.user.lastName || ""}`}
-                      >
-                        {member.user.imageUrl ? (
-                          <Image
-                            src={member.user.imageUrl}
-                            alt="Member"
-                            width={32}
-                            height={32}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          (
-                            member.user.firstName?.[0] ||
-                            member.user.email?.[0] ||
-                            "M"
-                          ).toUpperCase()
-                        )}
-                      </div>
-                    ))}
-                  {Array.isArray(myTeam.members) &&
-                    myTeam.members.length > 3 && (
-                      <div className="w-8 h-8 rounded-full border-2 border-white bg-neutral-300 flex items-center justify-center text-neutral-600 text-xs font-medium">
-                        +{myTeam.members.length - 3}
-                      </div>
-                    )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-neutral-900 truncate">
-                    {myTeam.name}
-                  </p>
-                  <p className="text-xs text-neutral-500 truncate">
-                    Led by{" "}
-                    {myTeam.leader?.firstName ||
-                      myTeam.leader?.email?.split("@")[0] ||
-                      "Unknown"}
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* Team Status Card - shown when registered */}
+          {isAlreadyRegistered && myTeam && user && (
+            <TeamDetailsCard
+              team={myTeam}
+              currentUserId={user.id}
+              hackathonSlug={competition.slug}
+              onUpdate={() => {
+                // Force a re-fetch of registration status if needed
+                const checkReg = async () => {
+                  const token = await getToken();
+                  if (token) {
+                    const team = await checkMyHackathonTeam(token, competition.id);
+                    setMyTeam(team);
+                    setIsAlreadyRegistered(!!team);
+                  }
+                };
+                checkReg();
+              }}
+            />
           )}
 
           {/* Divider */}
@@ -600,23 +503,18 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
       <RegistrationModal
         isOpen={isRegistrationModalOpen}
-        onClose={() => setIsRegistrationModalOpen(false)}
+        onClose={() => {
+          setRegistration(null);
+          setInvitation(null);
+        }}
         competition={competition}
-        onSuccess={async (team) => {
-          setMyTeam(team);
-          router.refresh();
-          try {
-            const token = await getToken();
-            if (token) {
-              const status = await getHackathonRegistrationStatus(
-                token,
-                competition.slug,
-              );
-              setRegistrationStatus(status);
-            }
-          } catch {
-            /* ignore */
-          }
+        initialMode={initialMode as any}
+        initialInvitationCode={invitation || undefined}
+        onSuccess={(updatedTeam) => {
+          setIsAlreadyRegistered(true);
+          setMyTeam(updatedTeam);
+          setRegistration(null);
+          setInvitation(null);
         }}
       />
     </div>
