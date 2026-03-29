@@ -143,7 +143,11 @@ export function mergeDefaultAndCustomFields(
   userCategory?: string | null,
 ): RegistrationField[] {
   const defaults = buildDefaultFields(userCategory);
-  const customs = customFields ?? [];
+  const customs = (customFields ?? []).map((f) => ({
+    ...f,
+    options: Array.isArray(f.options) ? f.options : [],
+    placeholder: f.placeholder ?? null,
+  }));
 
   const defaultLabels = new Set(defaults.map((f) => f.label.toLowerCase()));
 

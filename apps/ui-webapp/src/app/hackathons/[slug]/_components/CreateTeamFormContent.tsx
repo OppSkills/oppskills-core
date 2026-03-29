@@ -110,7 +110,11 @@ export function CreateTeamFormContent({
       {fields.map((field) => {
         const lowerLabel = field.label.toLowerCase();
         const isUploadField = lowerLabel.includes("upload") || lowerLabel.includes("doc") || lowerLabel.includes("proof");
-        const value = answers[field.id] || "";
+        const raw = answers[field.id];
+        const value =
+          typeof raw === "string" || typeof raw === "number"
+            ? String(raw)
+            : "";
 
         if (isUploadField) {
           const uploadedFile = uploadedFiles[field.id];
@@ -149,6 +153,9 @@ export function CreateTeamFormContent({
         }
 
         if (field.type === "OPTIONS") {
+          const optionList = Array.isArray(field.options) ? field.options : [];
+          const selectValue =
+            value.length > 0 && optionList.includes(value) ? value : undefined;
           return (
             <div key={field.id} className="space-y-2">
               <Label className="text-neutral-500 font-medium ml-1">
@@ -156,7 +163,7 @@ export function CreateTeamFormContent({
                 {field.required && <span className="text-red-500 ml-1 font-bold">*</span>}
               </Label>
               <Select
-                value={value}
+                value={selectValue}
                 onValueChange={(val) => onUpdateAnswer(field.id, val)}
                 required={field.required}
               >
@@ -164,7 +171,7 @@ export function CreateTeamFormContent({
                   <SelectValue placeholder={field.placeholder || `Select ${field.label.toLowerCase()}`} />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border-neutral-200">
-                  {field.options?.map((opt) => (
+                  {optionList.map((opt) => (
                     <SelectItem key={opt} value={opt} className="rounded-xl px-4 py-2 cursor-pointer hover:bg-neutral-100 focus:bg-neutral-100">
                       {opt.replace(/_/g, " ")}
                     </SelectItem>

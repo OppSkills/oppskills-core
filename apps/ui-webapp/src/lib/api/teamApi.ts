@@ -63,7 +63,8 @@ export interface TeamDetailResponse {
   createdAt: string;
   updatedAt: string;
   leader: TeamLeader;
-  members: TeamMember[];
+  /** May be omitted on some create/join responses; treat as [] when missing */
+  members?: TeamMember[];
   hackathon?: {
     id: string;
     name: string;

@@ -40,6 +40,9 @@ export function TeamDetailsCard({
   const router = useRouter();
   const [isActionLoading, setIsActionLoading] = useState(false);
 
+  /** Create/join API responses may omit `members`; avoid crashing on .length / .map */
+  const members = team.members ?? [];
+
   const isLeader = team.leaderId === currentUserId;
 
   const handleLeaveTeam = async () => {
@@ -158,7 +161,7 @@ export function TeamDetailsCard({
           <p className="text-base">
             <span className="text-neutral-700">Team Name: </span>
             <span className="font-semibold text-purple-700">
-              {team.name} ({team.members.length + 1}/{team.maxSize})
+              {team.name} ({members.length + 1}/{team.maxSize})
             </span>
           </p>
           <button
@@ -193,10 +196,10 @@ export function TeamDetailsCard({
         {renderMemberCard(team.leader, "Leader")}
 
         {/* Render Members */}
-        {team.members.map(member => renderMemberCard(member, "Member"))}
+        {members.map((member) => renderMemberCard(member, "Member"))}
 
         {/* Empty slots indicator if team is not full */}
-        {team.members.length + 1 < team.maxSize && (
+        {members.length + 1 < team.maxSize && (
           <div className="flex items-center gap-4 p-4 mb-3 border-2 border-dashed border-neutral-200 rounded-4xl opacity-50">
             <div className="shrink-0 w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400">
               <UserMinus className="w-6 h-6" />

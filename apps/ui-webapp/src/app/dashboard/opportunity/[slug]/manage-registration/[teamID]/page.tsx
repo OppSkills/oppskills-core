@@ -134,7 +134,7 @@ export default function TeamManagementPage() {
     });
 
     // Add members
-    for (const member of team.members) {
+    for (const member of team.members ?? []) {
       result.push({
         id: member.user.id,
         name:
