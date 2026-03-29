@@ -19,6 +19,7 @@ export interface ParticipantDirectMessageProps {
   eventSlug: string;
   body: string;
   email: string;
+  baseUrl?: string;
 }
 
 export function ParticipantDirectMessage({
@@ -26,9 +27,10 @@ export function ParticipantDirectMessage({
   eventName,
   eventSlug,
   body,
+  baseUrl = "https://www.oppskills.com",
 }: ParticipantDirectMessageProps) {
   const previewText = `Message from ${eventName} Organizer`;
-  const eventLink = `https://www.oppskills.com/event/${eventSlug}`;
+  const eventLink = `${baseUrl}/event/${eventSlug}`;
 
   return (
     <Html>
@@ -36,7 +38,7 @@ export function ParticipantDirectMessage({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Header />
+          <Header baseUrl={baseUrl} />
           <Section style={contentSection}>
             <Heading style={heading}>Hi {firstName || "Participant"},</Heading>
 

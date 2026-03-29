@@ -40,6 +40,7 @@ export class EmailListener {
       props: {
         firstName: payload.firstName,
         email: payload.email,
+        baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
       },
     });
   }
@@ -56,6 +57,7 @@ export class EmailListener {
         email: payload.email,
         userCategory: payload.userCategory,
         locationCity: payload.locationCity,
+        baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
       },
     });
   }
@@ -79,6 +81,7 @@ export class EmailListener {
         eventType: payload.eventType,
         registrationId: payload.registrationId,
         eventSlug: payload.eventSlug,
+        baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
       },
     });
   }
@@ -100,6 +103,7 @@ export class EmailListener {
         eventName: payload.eventName,
         eventSlug: payload.eventSlug,
         body: payload.body,
+        baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
       },
     });
   }
@@ -179,6 +183,7 @@ export class EmailListener {
           eventType: event.eventType || undefined,
           registrationId: participant.id,
           eventSlug: event.slug,
+          baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
         },
       });
     }
@@ -279,9 +284,8 @@ export class EmailListener {
 
     // Prepare attachments: OG pass image (rendered image) and QR code PNG
     const ogImageUrl = (() => {
-      const baseUrl = this.emailService['fromEmail']?.includes('@oppskills.com')
-        ? 'https://oppskills.com'
-        : 'https://oppskills.com';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://oppskills.com';
+      const baseUrl = frontendUrl;
       const params = new URLSearchParams({
         name: participantName,
         college: participantCollege,
@@ -321,7 +325,8 @@ export class EmailListener {
       if (eventPass.token) {
         // QR must encode the full validation URL — identical to what the
         // event-pass page renders with QRCodeSVG on the ticket card.
-        const qrUrl = `https://www.oppskills.com/pass/validate/${eventPass.token}`;
+        const frontendUrl = process.env.FRONTEND_URL || 'https://oppskills.com';
+        const qrUrl = `${frontendUrl}/pass/validate/${eventPass.token}`;
         const qrBuf = await QRCode.toBuffer(qrUrl, {
           type: 'png',
           errorCorrectionLevel: 'H',
@@ -351,6 +356,7 @@ export class EmailListener {
         passId: eventPass.id,
         token: eventPass.token,
         eventSlug: event.slug,
+        baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
       },
       attachments,
     });
@@ -412,6 +418,7 @@ export class EmailListener {
             eventName,
             eventSlug: event.slug,
             htmlBody,
+            baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
           }),
         );
 
@@ -458,6 +465,7 @@ export class EmailListener {
         firstName: payload.firstName,
         email: payload.email,
         password: payload.password,
+        baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
       },
     });
   }
@@ -477,6 +485,7 @@ export class EmailListener {
         userName: payload.userName,
         hackathonName: payload.hackathonName,
         teamName: payload.teamName,
+        baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
       },
     });
   }
@@ -497,6 +506,7 @@ export class EmailListener {
         newMemberName: payload.newMemberName,
         teamName: payload.teamName,
         hackathonName: payload.hackathonName,
+        baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
       },
     });
   }

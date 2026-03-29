@@ -305,7 +305,7 @@ export class EventService {
     const take =
       input.take != null
         ? input.take
-        : String(input.appendResults) === 'true' || input.appendResults === true
+        : String(input.appendResults) === 'true'
           ? 20
           : 10;
     const page = input.page ? Math.max(1, Number(input.page)) : 1;

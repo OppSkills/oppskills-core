@@ -16,9 +16,10 @@ import { Footer } from './_components/Footer';
 export interface WelcomeEmailProps {
   firstName?: string;
   email: string;
+  baseUrl?: string;
 }
 
-export function WelcomeEmail({ firstName, email }: WelcomeEmailProps) {
+export function WelcomeEmail({ firstName, email, baseUrl = 'https://www.oppskills.com' }: WelcomeEmailProps) {
   const previewText = `Welcome to OppSkills - Your journey to opportunities starts here!`;
 
   return (
@@ -27,7 +28,7 @@ export function WelcomeEmail({ firstName, email }: WelcomeEmailProps) {
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Header />
+          <Header baseUrl={baseUrl} />
 
           {/* Content */}
           <Section style={contentSection}>
@@ -47,7 +48,7 @@ export function WelcomeEmail({ firstName, email }: WelcomeEmailProps) {
           </Text>
 
           <Section style={ctaSection}>
-              <Link href="https://oppskills.com/dashboard" style={ctaButton}>
+              <Link href={`${baseUrl}/dashboard`} style={ctaButton}>
                 Explore OppSkills ↗
             </Link>
             </Section>

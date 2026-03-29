@@ -10,7 +10,8 @@ export class ImageController {
   @ApiOperation({ summary: 'Serve resized and compressed image for OG tags' })
   @ApiResponse({ status: 200, description: 'Image served successfully' })
   async serve(@Query('url') url: string, @Res() res: Response) {
-    const fallbackUrl = 'https://oppskills.com/og_poster.png';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://oppskills.com';
+    const fallbackUrl = `${frontendUrl}/og_poster.png`;
 
     if (!url) {
       return res.redirect(fallbackUrl);

@@ -17,6 +17,7 @@ export interface HackathonNewMemberJoinedEmailProps {
   newMemberName: string;
   teamName: string;
   hackathonName: string;
+  baseUrl?: string;
 }
 
 export function HackathonNewMemberJoinedEmail({
@@ -24,6 +25,7 @@ export function HackathonNewMemberJoinedEmail({
   newMemberName,
   teamName,
   hackathonName,
+  baseUrl = "https://www.oppskills.com",
 }: HackathonNewMemberJoinedEmailProps) {
   const previewText = `${newMemberName} joined ${teamName}`;
 
@@ -33,7 +35,7 @@ export function HackathonNewMemberJoinedEmail({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Header />
+          <Header baseUrl={baseUrl} />
           <Section style={contentSection}>
             <Heading style={heading}>Hi {teamLeaderName},</Heading>
             <Text style={paragraph}>

@@ -50,25 +50,33 @@ async function bootstrap() {
    * Production frontend: https://oppskills.com
    * Keep localhost enabled for development.
    */
+  const frontendUrl = process.env.FRONTEND_URL;
+  const devOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3002',
+    'http://127.0.0.1:3002',
+  ];
+
+  const prodOrigins = [
+    'https://oppskills.com',
+    'https://www.oppskills.com',
+    'https://app.oppskills.com',
+    'https://admin.oppskills.com',
+  ];
+
+  if (frontendUrl) {
+    if (process.env.NODE_ENV === 'production') {
+      prodOrigins.push(frontendUrl);
+    } else {
+      devOrigins.push(frontendUrl);
+    }
+  }
+
   const allowedOrigins: string[] =
     process.env.NODE_ENV === 'production'
-      ? [
-          'https://oppskills.com',
-          'https://www.oppskills.com',
-          // If the app is hosted on a subdomain (common), allow it explicitly.
-          'https://app.oppskills.com',
-          'https://admin.oppskills.com',
-        ]
-      : [
-          'http://localhost:3000',
-          'http://127.0.0.1:3000',
-          'http://localhost:3002',
-          'http://127.0.0.1:3002',
-          'https://oppskills.com',
-          'https://www.oppskills.com',
-          'https://app.oppskills.com',
-          'https://admin.oppskills.com',
-        ];
+      ? prodOrigins
+      : [...devOrigins, ...prodOrigins];
 
   app.enableCors({
     origin: (

@@ -25,6 +25,7 @@ export interface EventPassPendingEmailProps {
   eventType?: string;
   registrationId: string;
   eventSlug: string;
+  baseUrl?: string;
 }
 
 export function EventPassPendingEmail({
@@ -37,6 +38,7 @@ export function EventPassPendingEmail({
   eventType,
   registrationId,
   eventSlug,
+  baseUrl = "https://oppskills.com",
 }: EventPassPendingEmailProps) {
   const previewText = `Your registration for ${eventName} is pending review`;
 
@@ -97,7 +99,7 @@ export function EventPassPendingEmail({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Header />
+          <Header baseUrl={baseUrl} />
 
           {/* Content */}
           <Section style={contentSection}>
@@ -179,7 +181,7 @@ export function EventPassPendingEmail({
 
             <Section style={ctaSection}>
               <Link
-                href={`https://oppskills.com/events/${eventSlug}`}
+                href={`${baseUrl}/events/${eventSlug}`}
                 style={ctaButton}
               >
                 View Event Details ↗

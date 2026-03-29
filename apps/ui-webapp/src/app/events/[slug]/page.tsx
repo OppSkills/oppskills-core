@@ -1,3 +1,4 @@
+import { SITE_URL, API_URL } from "@/lib/constants";
 import type { Metadata } from "next";
 import EventDetailsClient from "./_components/EventDetailsClient";
 import { getPublicEventBySlug } from "@/lib/api/eventApi";
@@ -40,12 +41,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      url: `https://oppskills.com/events/${event.slug}`,
+      url: `${SITE_URL}/events/${event.slug}`,
       siteName: "OppSkills",
       images: event.bannerImageUrl
         ? [
             {
-              url: `https://api.oppskills.com/image/serve?url=${event.bannerImageUrl}`,
+              url: `${API_URL}/image/serve?url=${event.bannerImageUrl}`,
               width: 1200,
               height: 630,
               alt: event.name,
@@ -59,11 +60,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       images: event.bannerImageUrl
-        ? [`https://api.oppskills.com/image/serve?url=${event.bannerImageUrl}`]
+        ? [`${API_URL}/image/serve?url=${event.bannerImageUrl}`]
         : undefined,
     },
     alternates: {
-      canonical: `https://oppskills.com/events/${event.slug}`,
+      canonical: `${SITE_URL}/events/${event.slug}`,
     },
   };
 }
@@ -101,7 +102,7 @@ export default async function EventPage({ params }: Props) {
       event.locationType === "ONLINE" || event.locationType === "VIRTUAL"
         ? {
             "@type": "VirtualLocation",
-            url: event.locationVirtualLink || "https://oppskills.com",
+            url: event.locationVirtualLink || SITE_URL,
           }
         : {
             "@type": "Place",
@@ -113,7 +114,7 @@ export default async function EventPage({ params }: Props) {
             },
           },
     image: event.bannerImageUrl
-      ? [`https://api.oppskills.com/image/serve?url=${event.bannerImageUrl}`]
+      ? [`${API_URL}/image/serve?url=${event.bannerImageUrl}`]
       : undefined,
     organizer: {
       "@type": "Person",
@@ -121,7 +122,7 @@ export default async function EventPage({ params }: Props) {
     },
     offers: {
       "@type": "Offer",
-      url: `https://oppskills.com/events/${event.slug}`,
+      url: `${SITE_URL}/events/${event.slug}`,
       price: event.isFree ? "0" : event.entryFeeAmount,
       priceCurrency: event.currency || "INR",
       availability: "https://schema.org/InStock",

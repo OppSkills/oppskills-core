@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { QRCodeSVG } from 'qrcode.react';
 import { getEventPass } from '@/lib/api/eventApi';
 import { format } from 'date-fns';
+import { SITE_URL } from '@/lib/constants';
 import '../event-pass.css';
 import { Loader2 } from 'lucide-react';
 
@@ -143,7 +144,7 @@ const EventPassPage = () => {
               <div className="ticket-right-content">
                 <div className="qr-code-vertical">
                   <QRCodeSVG
-                    value={`${typeof window !== 'undefined' ? window.location.origin : 'https://oppskills.com'}/pass/validate/${passData.token}`}
+                    value={`${typeof window !== 'undefined' ? window.location.origin : SITE_URL}/pass/validate/${passData.token}`}
                     size={250}
                     level="H"
                     className="qr-code-svg"

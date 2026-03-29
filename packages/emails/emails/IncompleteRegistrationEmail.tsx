@@ -30,6 +30,7 @@ export interface IncompleteRegistrationEmailProps {
   eventLocation?: string;
   eventType?: string;
   eventSlug: string;
+  baseUrl?: string;
 }
 
 export function IncompleteRegistrationEmail({
@@ -41,6 +42,7 @@ export function IncompleteRegistrationEmail({
   eventLocation,
   eventType,
   eventSlug,
+  baseUrl = "https://oppskills.com",
 }: IncompleteRegistrationEmailProps) {
   const previewText = `Action Required: Complete your registration for ${eventName}`;
 
@@ -69,7 +71,7 @@ export function IncompleteRegistrationEmail({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Header />
+          <Header baseUrl={baseUrl} />
 
           {/* Content */}
           <Section style={contentSection}>
@@ -151,7 +153,7 @@ export function IncompleteRegistrationEmail({
 
             <Section style={ctaSection}>
               <Link
-                href={`https://oppskills.com/events/${eventSlug}`}
+                href={`${baseUrl}/events/${eventSlug}`}
                 style={ctaButton}
               >
                 Complete Registration Now →

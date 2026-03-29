@@ -19,6 +19,7 @@ export interface AdminOnboardingProps {
     loginUrl?: string;
     email: string;
     password?: string;
+    baseUrl?: string;
 }
 
 export function AdminOnboarding({
@@ -27,6 +28,7 @@ export function AdminOnboarding({
     loginUrl = "https://admin.oppskills.com",
     email,
     password,
+    baseUrl = "https://www.oppskills.com",
 }: AdminOnboardingProps) {
     const previewText = `${superAdminName || 'An admin'} invited you to join Oppskills Admin`;
 
@@ -36,7 +38,7 @@ export function AdminOnboarding({
             <Preview>{previewText}</Preview>
             <Body style={main}>
                 <Container style={container}>
-                    <Header />
+                    <Header baseUrl={baseUrl} />
 
                     {/* Content */}
                     <Section style={contentSection}>

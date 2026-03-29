@@ -84,9 +84,7 @@ export function TeamDetailsCard({
 
   const handleShareTeam = () => {
     if (team.invitationCode) {
-      const baseUrl = window.location.origin.includes("localhost")
-        ? window.location.origin
-        : "https://oppskills.com";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://oppskills.com";
       const link = `${baseUrl}/hackathons/${hackathonSlug}?registration=join&invitation=${team.invitationCode}`;
       navigator.clipboard.writeText(link);
       toast.success("Team registration link copied!");
