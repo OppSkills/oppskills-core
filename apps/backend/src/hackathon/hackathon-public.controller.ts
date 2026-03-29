@@ -5,6 +5,8 @@ import {
   Param,
   ParseArrayPipe,
   Query,
+  ParseBoolPipe,
+  ParseIntPipe
 } from '@nestjs/common';
 import {
   ApiTags,
