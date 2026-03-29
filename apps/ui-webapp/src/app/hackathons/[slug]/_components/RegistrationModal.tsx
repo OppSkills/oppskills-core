@@ -561,6 +561,7 @@ export function RegistrationModal({
                 onFileSelect={handleFileSelect}
                 isUploading={isUploading}
                 uploadedFiles={uploadedFiles}
+                slug={competition.slug}
               />
             )}
           </div>

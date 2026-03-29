@@ -53,4 +53,6 @@ export interface JoinTeamFormContentProps {
   onFileSelect: (fieldId: string, e: React.ChangeEvent<HTMLInputElement>) => void;
   isUploading: boolean;
   uploadedFiles: Record<string, { name: string; url: string }>;
+  /** Hackathon slug for shareable join links */
+  slug: string;
 }

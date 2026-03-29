@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import { Link as SolarLink } from "@solar-icons/react";
 import { toast } from "sonner";
 
 export function JoinTeamFormContent({
@@ -88,7 +87,7 @@ export function JoinTeamFormContent({
                     onClick={(e) => matchingTeam.invitationCode && handleCopyLink(e, matchingTeam.invitationCode)}
                     title="Copy registration link"
                   >
-                    <SolarLink size={18} />
+                    <LinkIcon className="h-[18px] w-[18px]" />
                   </Button>
                   <Button
                     type="button"
@@ -241,7 +240,7 @@ export function JoinTeamFormContent({
                               onClick={(e) => team.invitationCode && handleCopyLink(e, team.invitationCode)}
                               title="Copy registration link"
                             >
-                              <SolarLink size={16} />
+                              <LinkIcon className="h-4 w-4" />
                             </Button>
                             <div className="h-8 w-8 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center sm:opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
                               <ArrowRight className="h-4 w-4" />
