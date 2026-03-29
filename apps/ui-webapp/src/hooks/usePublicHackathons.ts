@@ -68,7 +68,6 @@ export function useUpcomingHackathons(
         eventDates: filters?.eventDates,
         eligibility: filters?.eligibility,
         sort: filters?.sort,
-        appendResults: true,
       });
     },
     initialPageParam: 1,

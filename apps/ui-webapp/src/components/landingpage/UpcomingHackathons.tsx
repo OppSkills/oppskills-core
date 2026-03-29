@@ -29,7 +29,7 @@ export default function UpcomingHackathons() {
 
   // Flatten pages if infinite query, or use data directly if simple query
   // useUpcomingHackathons returns InfiniteData<{ items: PublicHackathonListItem[], further: boolean }>
-  const displayHackathons = (hackathons?.pages.flatMap((page: any) => page.items || []) ?? []).slice(0, 6);
+  const displayHackathons = (hackathons?.pages.flatMap((page: any) => page.items || []) ?? []);
 
   if (isLoading) {
     return (
