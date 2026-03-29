@@ -104,11 +104,8 @@ export class RegistrationSubmitService {
     }
 
     // Map frontend field IDs (like "default-name") to database field IDs
-    const mappedAnswers = await this.mapFieldIdsToDatabaseIds(
-      hackathon.id,
-      userId,
-      answers,
-    );
+    const { mappedAnswers, userCategory } =
+      await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
 
     // Refetch registration form fields after mapping (in case new fields were created)
     const updatedRegForm = await prisma.registrationFormEntity.findUnique({
@@ -126,7 +123,11 @@ export class RegistrationSubmitService {
       },
     });
 
-    this.validateAnswers(updatedRegForm?.fields || [], mappedAnswers);
+    this.validateAnswers(
+      updatedRegForm?.fields || [],
+      mappedAnswers,
+      userCategory,
+    );
 
     const result = await prisma.$transaction(async (tx) => {
       const submission = await tx.hackathonRegistrationSubmissionEntity.create({
@@ -256,7 +257,10 @@ export class RegistrationSubmitService {
     hackathonId: string,
     userId: string,
     answers: Array<{ fieldId: string; value: string }>,
-  ): Promise<Array<{ fieldId: string; value: string }>> {
+  ): Promise<{
+    mappedAnswers: Array<{ fieldId: string; value: string }>;
+    userCategory: string | null;
+  }> {
     const regForm = await prisma.registrationFormEntity.findUnique({
       where: { hackathonId },
       include: {
@@ -267,8 +271,14 @@ export class RegistrationSubmitService {
     });
 
     if (regForm?.externalFormLink) {
-      // External forms don't use internal field mapping
-      return answers;
+      const p = await prisma.userOnboardingProfileEntity.findUnique({
+        where: { userId },
+        select: { userCategory: true },
+      });
+      return {
+        mappedAnswers: answers,
+        userCategory: p?.userCategory ?? null,
+      };
     }
 
     const userOnboardingProfile =
@@ -337,10 +347,18 @@ export class RegistrationSubmitService {
         options: [],
       },
       {
+        frontendId: 'default-school-class',
+        label: 'School Class',
+        type: 'TEXT',
+        order: -9,
+        required: false,
+        options: [],
+      },
+      {
         frontendId: 'default-college-name',
         label: 'College Name',
         type: 'TEXT',
-        order: -9,
+        order: -8,
         required: false,
         options: [],
       },
@@ -348,7 +366,7 @@ export class RegistrationSubmitService {
         frontendId: 'default-company-name',
         label: 'Company Name',
         type: 'TEXT',
-        order: -8,
+        order: -7,
         required: false,
         options: [],
       },
@@ -429,26 +447,64 @@ export class RegistrationSubmitService {
     }
 
     // Map answers from frontend IDs to database IDs
-    return answers.map((a) => ({
+    const mappedAnswers = answers.map((a) => ({
       fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
       value: a.value,
     }));
+
+    return {
+      mappedAnswers,
+      userCategory: userCategory ?? null,
+    };
   }
 
+  /**
+   * Identity fields: only those matching the user's category are enforced as required
+   * (aligned with team.service validateRegistrationAnswers).
+   */
   private validateAnswers(
     fields: Array<{ id: string; label: string; required: boolean }>,
     answers: Array<{ fieldId: string; value: string }>,
+    userCategory: string | null | undefined,
   ) {
     const answerMap = new Map(answers.map((a) => [a.fieldId, a.value]));
 
+    const identityFieldLabels = new Set([
+      'school name',
+      'school class',
+      'college name',
+      'company name',
+    ]);
+
+    const effectiveCategory = userCategory ?? 'COLLEGE_STUDENT';
+
+    const identityLabelsForUser = ((): Set<string> => {
+      if (effectiveCategory === 'SCHOOL_STUDENT') {
+        return new Set(['school name', 'school class']);
+      }
+      if (effectiveCategory === 'WORKING_PROFESSIONAL') {
+        return new Set(['company name']);
+      }
+      return new Set(['college name']);
+    })();
+
     for (const field of fields) {
-      if (field.required) {
-        const answer = answerMap.get(field.id);
-        if (!answer || answer.trim() === '') {
-          throw new BadRequestException(
-            `Required field "${field.label}" is missing`,
-          );
-        }
+      if (!field.required) continue;
+
+      const fieldLabelLower = field.label.toLowerCase();
+
+      if (
+        identityFieldLabels.has(fieldLabelLower) &&
+        !identityLabelsForUser.has(fieldLabelLower)
+      ) {
+        continue;
+      }
+
+      const answer = answerMap.get(field.id);
+      if (!answer || answer.trim() === '') {
+        throw new BadRequestException(
+          `Required field "${field.label}" is missing`,
+        );
       }
     }
   }

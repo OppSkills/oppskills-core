@@ -36,6 +36,7 @@ import {
 import { useAuth } from "@clerk/nextjs";
 import { searchColleges } from "@/lib/api/collegesApi";
 import { Checkbox } from "@/components/ui/checkbox";
+import type { RegistrationField } from "@/lib/registration/mergeRegistrationFields";
 
 // Default gender options matching Prisma Gender enum
 const DEFAULT_GENDER_OPTIONS = ["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"];
@@ -106,15 +107,7 @@ export interface OnboardingValues {
   teamPreference?: TeamPreference;
 }
 
-export interface RegistrationField {
-  id: string;
-  label: string;
-  type: string; // TEXT, EMAIL, PHONE_NO, NUMBER, OPTIONS, ATTACHMENTS
-  required: boolean;
-  order: number;
-  options: string[];
-  placeholder: string | null;
-}
+export type { RegistrationField };
 
 export interface UserDataForPrefill {
   name?: string;

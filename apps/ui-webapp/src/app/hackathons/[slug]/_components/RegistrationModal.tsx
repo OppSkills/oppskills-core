@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useQueryState } from "nuqs";
 import {
   Users,
@@ -21,7 +21,6 @@ import {
   joinTeam,
   joinDraftTeam,
   getTeamsByHackathon,
-  getPerUserFeePaidStatus,
   checkMyHackathonTeam,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
@@ -30,13 +29,20 @@ import {
   verifyPayment,
   submitRegistration,
 } from "@/lib/api/paymentsApi";
-import { getMe } from "@/lib/api/usersApi";
+import { getMe, submitOnboarding } from "@/lib/api/usersApi";
+import type { CreateOnboardingDto, MeResponseDto } from "@oppskills/types/frontend";
+import { mergeDefaultAndCustomFields } from "@/lib/registration/mergeRegistrationFields";
+import {
+  buildCreateOnboardingDtoFromRegistration,
+  filterAnswersToMergedFieldIds,
+} from "@/lib/registration/hackathonOnboardingFromAnswers";
 import { presignDocumentUpload } from "@/lib/api/mediaApi";
 import { uploadDocumentToS3PresignedPost } from "@/lib/uploads/uploadDocumentToS3";
 import { getApiErrorMessage, cn } from "@/lib/utils";
-import type { RegistrationModalProps, RegistrationMode, UserDataForPrefill } from "./RegistrationModal.types";
+import type { RegistrationModalProps, RegistrationMode } from "./RegistrationModal.types";
 import { CreateTeamFormContent } from "./CreateTeamFormContent";
 import { JoinTeamFormContent } from "./JoinTeamFormContent";
+import type { RegistrationField } from "@/lib/registration/mergeRegistrationFields";
 
 declare global {
   interface Window {
@@ -86,6 +92,11 @@ export function RegistrationModal({
   const [isLoadingTeams, setIsLoadingTeams] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [teams, setTeams] = useState<TeamDetailResponse[]>([]);
+  const [mergedFields, setMergedFields] = useState<RegistrationField[]>([]);
+  const [fieldsReady, setFieldsReady] = useState(false);
+  const [onboardingProfile, setOnboardingProfile] = useState<
+    MeResponseDto["onboardingProfile"]
+  >(undefined);
 
   const maxSize = getMaxSizeFromParticipantType(competition.participantType);
   const isIndividual = competition.participantType === "INDIVIDUAL";
@@ -103,60 +114,102 @@ export function RegistrationModal({
       setInvitationCode("");
       setDiscountCode("");
       setSearchQuery("");
+      setMergedFields([]);
+      setFieldsReady(false);
+      setOnboardingProfile(undefined);
     } else {
-      // When opening, if we have an initial invitation code, set it
       if (initialInvitationCode) {
         setInvitationCode(initialInvitationCode);
       }
 
-      // Initialize questions/answers
-      const initialAnswers: Record<string, any> = {};
-      const fields = competition.registrationForm?.fields || [];
-
-      // Fetch user profile for pre-fill
       const fetchProfileAndInit = async () => {
+        setFieldsReady(false);
         try {
           const token = await getToken();
           if (!token) return;
           const meData = await getMe(token);
           const profile = meData.onboardingProfile;
+          setOnboardingProfile(profile ?? undefined);
 
-          const prefillMap: Record<string, any> = {
-            "name": [meData.firstName, meData.lastName].filter(Boolean).join(" "),
-            "email": meData.email,
-            "phone": user?.primaryPhoneNumber?.phoneNumber,
-            "gender": profile?.gender,
-            "college": profile?.college?.name,
-            "company": profile?.companyName,
-            "school": profile?.schoolName,
+          const merged = mergeDefaultAndCustomFields(
+            competition.registrationForm?.fields as RegistrationField[] | undefined,
+            profile?.userCategory,
+          );
+          setMergedFields(merged);
+
+          const phone = user?.primaryPhoneNumber?.phoneNumber;
+          const cat = profile?.userCategory;
+          const initialAnswers: Record<string, unknown> = {};
+
+          const setIf = (id: string, val: unknown) => {
+            if (val !== undefined && val !== null && val !== "") {
+              initialAnswers[id] = val;
+            }
           };
 
-          fields.forEach((field) => {
-            const lowerLabel = field.label.toLowerCase();
-            // Match label to prefill map
-            Object.entries(prefillMap).forEach(([key, value]) => {
-              if (lowerLabel.includes(key) && value && value !== "") {
-                initialAnswers[field.id] = value;
+          for (const field of merged) {
+            const id = field.id;
+            if (id === "default-name") {
+              setIf(
+                id,
+                [meData.firstName, meData.lastName].filter(Boolean).join(" "),
+              );
+            } else if (id === "default-email") {
+              setIf(id, meData.email);
+            } else if (id === "default-phone") {
+              setIf(id, phone);
+            } else if (id === "default-gender") {
+              setIf(id, profile?.gender);
+            } else if (id === "default-school-name") {
+              if (cat === "SCHOOL_STUDENT") setIf(id, profile?.schoolName);
+            } else if (id === "default-school-class") {
+              if (cat === "SCHOOL_STUDENT") setIf(id, profile?.schoolClass);
+            } else if (id === "default-college-name") {
+              if (
+                cat === "COLLEGE_STUDENT" ||
+                cat === "PROFESSIONAL_SCHOOL_STUDENT" ||
+                cat === "FRESHER" ||
+                !cat
+              ) {
+                setIf(id, profile?.college?.name);
               }
-            });
-          });
-
-          // Ensure default-ids are also checked even if labels don't match perfectly
-          fields.forEach((field) => {
-            if (field.id === "default-name" && !initialAnswers[field.id]) initialAnswers[field.id] = prefillMap.name;
-            if (field.id === "default-email" && !initialAnswers[field.id]) initialAnswers[field.id] = prefillMap.email;
-            if (field.id === "default-phone" && !initialAnswers[field.id]) initialAnswers[field.id] = prefillMap.phone;
-          });
+            } else if (id === "default-company-name") {
+              if (cat === "WORKING_PROFESSIONAL") {
+                setIf(id, profile?.companyName);
+              }
+            } else {
+              const lowerLabel = field.label.toLowerCase();
+              const prefillMap: Record<string, unknown> = {
+                name: [meData.firstName, meData.lastName]
+                  .filter(Boolean)
+                  .join(" "),
+                email: meData.email,
+                phone,
+                gender: profile?.gender,
+              };
+              Object.entries(prefillMap).forEach(([key, value]) => {
+                if (
+                  lowerLabel.includes(key) &&
+                  value !== undefined &&
+                  value !== null &&
+                  value !== ""
+                ) {
+                  initialAnswers[field.id] = value;
+                }
+              });
+            }
+          }
 
           setAnswers(initialAnswers);
         } catch (error) {
           console.error("Failed to fetch profile:", error);
+        } finally {
+          setFieldsReady(true);
         }
       };
 
-      fetchProfileAndInit();
+      void fetchProfileAndInit();
 
-      // Fetch teams for Join mode
       const fetchTeams = async () => {
         setIsLoadingTeams(true);
         try {
@@ -170,9 +223,16 @@ export function RegistrationModal({
           setIsLoadingTeams(false);
         }
       };
-      fetchTeams();
+      void fetchTeams();
     }
-  }, [isOpen, competition.id, getToken, user?.primaryPhoneNumber?.phoneNumber, competition.registrationForm?.fields]);
+  }, [
+    isOpen,
+    competition.id,
+    getToken,
+    user?.primaryPhoneNumber?.phoneNumber,
+    competition.registrationForm?.fields,
+    initialInvitationCode,
+  ]);
 
   const handleFileSelect = useCallback(
     async (fieldId: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -352,6 +412,10 @@ export function RegistrationModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!fieldsReady) {
+      toast.error("Loading registration form…");
+      return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -361,28 +425,55 @@ export function RegistrationModal({
         return;
       }
 
-      // Final validation of required fields
-      const missingFields = competition.registrationForm?.fields
-        .filter(f => f.required && !answers[f.id])
-        .map(f => f.label);
+      const missingFields = mergedFields
+        .filter((f) => f.required && !answers[f.id])
+        .map((f) => f.label);
 
-      if (missingFields && missingFields.length > 0) {
-        toast.error(`Please fill all required fields: ${missingFields.join(", ")}`);
-        setIsSubmitting(false);
+      if (missingFields.length > 0) {
+        toast.error(
+          `Please fill all required fields: ${missingFields.join(", ")}`,
+        );
         return;
       }
 
-      const formattedAnswers = Object.entries(answers).map(([fieldId, value]) => ({
-        fieldId,
-        value: typeof value === "string" ? value : String(value),
-      }));
+      const mergedFieldIds = new Set(mergedFields.map((f) => f.id));
+      const filteredFormatted = filterAnswersToMergedFieldIds(
+        answers,
+        mergedFieldIds,
+      );
+
+      let onboardingDto: CreateOnboardingDto;
+      try {
+        onboardingDto = buildCreateOnboardingDtoFromRegistration({
+          answers,
+          profile: onboardingProfile ?? null,
+        });
+      } catch (parseErr: unknown) {
+        toast.error(
+          parseErr instanceof Error
+            ? parseErr.message
+            : "Invalid profile or onboarding data.",
+        );
+        return;
+      }
+
+      try {
+        await submitOnboarding(token, onboardingDto);
+      } catch (onErr: unknown) {
+        toast.error(
+          getApiErrorMessage(
+            onErr,
+            "Could not save your profile. Check required fields.",
+          ),
+        );
+        return;
+      }
 
       const finalTeamName = teamName.trim();
 
       if (mode === "CREATE") {
         if (!finalTeamName) {
           toast.error("Please enter a team name");
-          setIsSubmitting(false);
           return;
         }
 
@@ -392,28 +483,26 @@ export function RegistrationModal({
             hackathonId: competition.id,
             maxSize,
             isOpen: isOpenToggle,
-            answers: formattedAnswers,
+            answers: filteredFormatted,
           });
           toast.success("Registration successful!");
           onSuccess?.(result);
           onClose();
         } else {
-          await processPayment(token, finalTeamName, formattedAnswers, {});
+          await processPayment(token, finalTeamName, filteredFormatted, {});
         }
       } else {
         if (!invitationCode.trim()) {
           toast.error("Please enter invitation code");
-          setIsSubmitting(false);
           return;
         }
 
         if (competition.isFree) {
           await joinTeam(token, {
             invitationCode: invitationCode.toUpperCase(),
-            answers: formattedAnswers,
+            answers: filteredFormatted,
           });
 
-          // Fetch the updated team to sync the UI immediately
           const myUpdatedTeam = await checkMyHackathonTeam(token, competition.id);
 
           toast.success("Joined team successfully!");
@@ -425,11 +514,19 @@ export function RegistrationModal({
         } else {
           if (competition.chargeMode === "PER_TEAM") {
             try {
-              // PER_TEAM members do not pay themselves. The team leader already paid.
-              await joinDraftTeam(token, competition.slug, { invitationCode: invitationCode.toUpperCase() });
-              await submitRegistration(token, competition.slug, formattedAnswers);
+              await joinDraftTeam(token, competition.slug, {
+                invitationCode: invitationCode.toUpperCase(),
+              });
+              await submitRegistration(
+                token,
+                competition.slug,
+                filteredFormatted,
+              );
 
-              const myUpdatedTeam = await checkMyHackathonTeam(token, competition.id);
+              const myUpdatedTeam = await checkMyHackathonTeam(
+                token,
+                competition.id,
+              );
 
               toast.success("Joined team successfully!");
               if (myUpdatedTeam) {
@@ -440,12 +537,12 @@ export function RegistrationModal({
               router.push(`/hackathons/${competition.slug}?registered=true`);
             } catch (err) {
               toast.error(getApiErrorMessage(err, "Failed to join team"));
-              setIsSubmitting(false);
               return;
             }
           } else {
-            // PER_USER members must pay their entry fee to join.
-            await processPayment(token, finalTeamName, formattedAnswers, { invitationCode: invitationCode.toUpperCase() });
+            await processPayment(token, finalTeamName, filteredFormatted, {
+              invitationCode: invitationCode.toUpperCase(),
+            });
           }
         }
       }
@@ -498,7 +595,7 @@ export function RegistrationModal({
           >
             {mode === "CREATE" ? (
               <CreateTeamFormContent
-                fields={competition.registrationForm?.fields || []}
+                fields={mergedFields}
                 answers={answers}
                 onUpdateAnswer={onUpdateAnswer}
                 teamName={teamName}
@@ -517,7 +614,7 @@ export function RegistrationModal({
               />
             ) : (
               <JoinTeamFormContent
-                fields={competition.registrationForm?.fields || []}
+                fields={mergedFields}
                 answers={answers}
                 onUpdateAnswer={onUpdateAnswer}
                 invitationCode={invitationCode}
@@ -570,7 +667,7 @@ export function RegistrationModal({
 
               <Button
                 type="submit"
-                disabled={isSubmitting || isUploading}
+                disabled={isSubmitting || isUploading || !fieldsReady}
                 className="py-6 bg-primary-600 rounded-full w-full text-neutral-100"
               >
                 {isSubmitting ? (

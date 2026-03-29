@@ -33,6 +33,7 @@ import { getMe, submitOnboarding } from "@/lib/api/usersApi";
 import { CreateOnboardingDto } from "@oppskills/types/frontend";
 import { useQuery } from "@tanstack/react-query";
 import InfoCard from "./InfoCard";
+import { mergeDefaultAndCustomFields } from "@/lib/registration/mergeRegistrationFields";
 
 // Razorpay global type
 declare global {
@@ -81,133 +82,6 @@ function formatLocation(event: {
     venueName: event.locationAddress || "TBA",
     venueAddress: event.locationCity || "",
   };
-}
-
-/**
- * User category values
- */
-type UserCategory =
-  | "SCHOOL_STUDENT"
-  | "COLLEGE_STUDENT"
-  | "WORKING_PROFESSIONAL"
-  | "FRESHER"
-  | "PROFESSIONAL_SCHOOL_STUDENT";
-
-function buildDefaultFields(userCategory?: string): RegistrationField[] {
-  const fields: RegistrationField[] = [
-    {
-      id: "default-name",
-      label: "Name",
-      type: "TEXT",
-      required: true,
-      order: -50,
-      options: [],
-      placeholder: "Your full name",
-    },
-    {
-      id: "default-email",
-      label: "Email",
-      type: "EMAIL",
-      required: true,
-      order: -40,
-      options: [],
-      placeholder: "email@example.com",
-    },
-    {
-      id: "default-phone",
-      label: "Phone No.",
-      type: "PHONE_NO",
-      required: true,
-      order: -30,
-      options: [],
-      placeholder: "+91 XXXXX XXXXX",
-    },
-    {
-      id: "default-gender",
-      label: "Gender",
-      type: "OPTIONS",
-      required: true,
-      order: -20,
-      options: [],
-      placeholder: "Select gender",
-    },
-  ];
-
-  const category = userCategory as UserCategory | undefined;
-
-  if (category === "SCHOOL_STUDENT") {
-    fields.push({
-      id: "default-school-name",
-      label: "School Name",
-      type: "TEXT",
-      required: true,
-      order: -10,
-      options: [],
-      placeholder: "Your school name",
-    });
-  } else if (
-    category === "COLLEGE_STUDENT" ||
-    category === "PROFESSIONAL_SCHOOL_STUDENT" ||
-    category === "FRESHER"
-  ) {
-    fields.push({
-      id: "default-college-name",
-      label: "College Name",
-      type: "TEXT",
-      required: true,
-      order: -10,
-      options: [],
-      placeholder: "Your college name",
-    });
-  } else if (category === "WORKING_PROFESSIONAL") {
-    fields.push({
-      id: "default-company-name",
-      label: "Company Name",
-      type: "TEXT",
-      required: true,
-      order: -10,
-      options: [],
-      placeholder: "Your company name",
-    });
-  } else {
-    fields.push({
-      id: "default-college-name",
-      label: "College Name",
-      type: "TEXT",
-      required: true,
-      order: -10,
-      options: [],
-      placeholder: "Your college/institution name",
-    });
-  }
-
-  return fields;
-}
-
-function mergeDefaultAndCustomFields(
-  customFields: RegistrationField[] | undefined,
-  userCategory?: string,
-): RegistrationField[] {
-  const defaults = buildDefaultFields(userCategory);
-  const customs = customFields ?? [];
-
-  const defaultLabels = new Set(defaults.map((f) => f.label.toLowerCase()));
-
-  // Also filter out all identity fields (school/college/company) from custom fields
-  // since we add the appropriate one based on userCategory
-  const identityFieldLabels = new Set([
-    "school name",
-    "college name",
-    "company name",
-  ]);
-
-  const filteredCustoms = customs.filter(
-    (f) =>
-      !defaultLabels.has(f.label.toLowerCase()) &&
-      !identityFieldLabels.has(f.label.toLowerCase()),
-  );
-
-  return [...defaults, ...filteredCustoms].sort((a, b) => a.order - b.order);
 }
 
 export default function EventDetailsClient({ event }: EventDetailsClientProps) {
