@@ -2,16 +2,15 @@
 
 import React from "react";
 import { RegistrationInputField } from "./RegistrationInputField";
-import { Users, Loader2, ArrowRight } from "lucide-react";
+import { Users, Loader2, ArrowRight, User, Upload, Link as LinkIcon, LogOut, CheckCircle2, ShieldCheck, UserPlus, Search, Info } from "lucide-react";
 import { TeamDetailResponse } from "@/lib/api/teamApi";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { JoinTeamFormContentProps } from "./RegistrationModal.types";
-import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User } from "lucide-react";
 
 import { Link as SolarLink } from "@solar-icons/react";
 import { toast } from "sonner";
@@ -27,11 +26,11 @@ export function JoinTeamFormContent({
   searchQuery,
   setSearchQuery,
   onJoinTeam,
-  onFileSelect, // Note: I need to add this to the interface if I use it
+  onFileSelect,
   isUploading,
   uploadedFiles,
   slug,
-}: JoinTeamFormContentProps & { onFileSelect?: any; isUploading?: boolean; uploadedFiles?: any }) {
+}: JoinTeamFormContentProps) {
   const matchingTeam = teams.find(
     (t) => t.invitationCode?.toUpperCase() === invitationCode?.toUpperCase()
   );
@@ -49,90 +48,133 @@ export function JoinTeamFormContent({
   };
 
   return (
-    <div className="flex w-full flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="flex w-full flex-col gap-6">
       {matchingTeam ? (
-        <div className="space-y-4">
-          <div className="relative overflow-hidden rounded-3xl border border-primary-600 bg-primary-100 p-6 shadow-md shadow-primary-200 animate-in fade-in zoom-in-95 duration-500">
-            {/* Background design pattern */}
-            <div className="absolute top-0 right-0 -mr-8 -mt-8 h-32 w-32 rounded-full bg-primary-600/10 blur-2xl" />
-            <div className="absolute bottom-0 left-0 -ml-4 -mb-4 h-24 w-24 rounded-full bg-primary-600/5 blur-xl" />
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="space-y-4"
+        >
+          <div className="relative overflow-hidden rounded-[2rem] border border-primary-200 bg-gradient-to-br from-white to-primary-50/30 p-6 shadow-xl shadow-primary-900/5 ring-1 ring-white/50">
+            {/* Background decorative elements */}
+            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary-100 opacity-50 blur-2xl" />
+            <div className="absolute -left-4 -bottom-4 h-32 w-32 rounded-full bg-primary-50 opacity-30 blur-3xl" />
 
-            <div className="relative flex items-start justify-between">
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-lg shadow-primary-200">
-                  <Users className="h-6 w-6" />
+            <div className="relative flex flex-col gap-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-lg shadow-primary-200 ring-4 ring-primary-50">
+                    <Users className="h-7 w-7" />
+                  </div>
+                  <div className="space-y-1 overflow-hidden">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-[10px] font-bold text-primary-700 uppercase tracking-wider">
+                        Active Team
+                      </span>
+                      <ShieldCheck className="h-3.5 w-3.5 text-primary-600" />
+                    </div>
+                    <h3 className="truncate text-2xl font-black text-neutral-900 tracking-tight leading-tight">
+                      {matchingTeam.name}
+                    </h3>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary-600">
-                    Joining Team
-                  </p>
-                  <h3 className="text-xl font-bold text-neutral-900 leading-tight">
-                    {matchingTeam.name}
-                  </h3>
-                  <div className="flex items-center gap-2 text-sm text-neutral-500 font-medium">
-                    <User className="h-3.5 w-3.5" />
-                    <span>Led by <span className="text-neutral-700">{matchingTeam.leader?.firstName} {matchingTeam.leader?.lastName}</span></span>
+
+                <div className="flex bg-neutral-100/80 backdrop-blur-sm p-1 rounded-full border border-white/50 shadow-sm shrink-0">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-9 w-9 rounded-full text-neutral-500 hover:text-primary-600 hover:bg-white transition-all duration-300"
+                    onClick={(e) => matchingTeam.invitationCode && handleCopyLink(e, matchingTeam.invitationCode)}
+                    title="Copy registration link"
+                  >
+                    <SolarLink size={18} />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-9 w-9 rounded-full text-neutral-500 hover:text-red-600 hover:bg-white transition-all duration-300"
+                    onClick={() => {
+                      setInvitationCode("");
+                      setSearchQuery(matchingTeam.name);
+                    }}
+                    title="Change team"
+                  >
+                    <LogOut size={18} />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/60 border border-white shadow-sm">
+                  <div className="h-10 w-10 shrink-0 rounded-xl overflow-hidden bg-primary-50 border border-primary-100 p-0.5">
+                    {matchingTeam.leader?.imageUrl ? (
+                      <img src={matchingTeam.leader.imageUrl} alt="leader" className="h-full w-full object-cover rounded-[10px]" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-primary-600 text-white font-bold rounded-[10px]">
+                        {matchingTeam.leader?.firstName?.[0]}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest leading-none mb-1">Team Leader</p>
+                    <p className="text-sm font-bold text-neutral-800 truncate">
+                      {matchingTeam.leader?.firstName} {matchingTeam.leader?.lastName}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col justify-center p-3 rounded-2xl bg-white/60 border border-white shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Members</p>
+                    <span className="text-xs font-black text-primary-600">
+                      {(matchingTeam.members?.length ?? 0) + 1} / {matchingTeam.maxSize}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-primary-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary-600 rounded-full transition-all duration-500"
+                      style={{ width: `${((matchingTeam.members?.length || 1) / matchingTeam.maxSize) * 100}%` }}
+                    />
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 rounded-full text-primary-600 hover:text-primary-700 hover:bg-white/50 backdrop-blur-sm transition-all"
-                  onClick={(e) => matchingTeam.invitationCode && handleCopyLink(e, matchingTeam.invitationCode)}
-                  title="Copy registration link"
-                >
-                  <SolarLink size={16} />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-8 px-3 rounded-full text-xs font-semibold text-primary-700 hover:text-primary-800 hover:bg-white/50 backdrop-blur-sm transition-all"
-                  onClick={() => {
-                    setInvitationCode("");
-                    setSearchQuery(matchingTeam.name);
-                  }}
-                >
-                  Change
-                </Button>
-              </div>
-            </div>
 
-            <div className="mt-6 flex items-center justify-between border-t border-primary-200 pt-4">
-              <div className="flex items-center gap-4">
-                <div className="flex -space-x-2">
-                  {matchingTeam.members?.slice(0, 3).map((member, i) => (
-                    <div
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex -space-x-3">
+                  {matchingTeam.members?.slice(0, 5).map((member, i) => (
+                    <motion.div
                       key={member.id}
-                      className="h-8 w-8 rounded-full border-2 border-white bg-neutral-200 overflow-hidden ring-1 ring-neutral-200"
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="h-10 w-10 rounded-full border-2 border-white bg-white shadow-md ring-2 ring-primary-50 overflow-hidden"
                     >
                       {member.user?.imageUrl ? (
                         <img src={member.user.imageUrl} alt="member" className="h-full w-full object-cover" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-primary-600 text-[10px] font-bold text-white">
+                        <div className="flex h-full w-full items-center justify-center bg-primary-500 text-xs font-black text-white">
                           {member.user?.firstName?.[0] || "?"}
                         </div>
                       )}
-                    </div>
+                    </motion.div>
                   ))}
-                  {(matchingTeam.members?.length || 0) > 3 && (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-neutral-100 text-[10px] font-bold text-neutral-500 ring-1 ring-neutral-200">
-                      +{(matchingTeam.members?.length || 0) - 3}
+                  {(matchingTeam.members?.length || 0) > 5 && (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-primary-50 text-xs font-black text-primary-600 shadow-md ring-2 ring-primary-50">
+                      +{(matchingTeam.members?.length || 0) - 5}
                     </div>
                   )}
                 </div>
-                <span className="text-sm font-semibold text-neutral-600">
-                  {matchingTeam.members?.length || 0} / {matchingTeam.maxSize} Members
-                </span>
+
+                <div className="flex items-center gap-2 rounded-full bg-primary-600 px-4 py-2 text-white shadow-lg shadow-primary-200">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-xs font-black uppercase tracking-wider">Ready to Join</span>
+                </div>
               </div>
-              <span className="inline-flex items-center rounded-full bg-primary-600 px-2.5 py-1 text-[10px] font-black text-white uppercase tracking-tighter shadow-sm">
-                Ready to Join
-              </span>
             </div>
           </div>
-        </div>
+        </motion.div>
       ) : (
         <>
           <div className="space-y-3">
@@ -142,54 +184,82 @@ export function JoinTeamFormContent({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            
-            <div className="min-h-[120px] max-h-[240px] overflow-y-auto rounded-3xl border border-neutral-200 bg-white/50 p-2 space-y-2 scrollbar">
+
+            <div className="min-h-[120px] max-h-[300px] overflow-y-auto rounded-[2rem] border border-neutral-200 bg-white shadow-inner p-3 space-y-3 scrollbar">
               {isLoadingTeams ? (
-                <div className="flex h-24 items-center justify-center gap-2 text-neutral-400">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">Fetching teams...</span>
+                <div className="flex h-32 flex-col items-center justify-center gap-3 text-neutral-400">
+                  <div className="relative">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+                    <div className="absolute inset-0 h-8 w-8 rounded-full border-4 border-primary-100 animate-pulse" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-widest">Fetching Teams</span>
                 </div>
               ) : filteredTeams.length > 0 ? (
-                filteredTeams.map((team) => (
-                  <div
-                    key={team.id}
-                    onClick={() => team.invitationCode && onJoinTeam(team.invitationCode)}
-                    className={cn(
-                      "group flex items-center justify-between p-4 rounded-2xl border border-transparent hover:border-primary-200 hover:bg-primary-50/50 cursor-pointer transition-all",
-                      invitationCode === team.invitationCode && "border-primary-600 bg-primary-100/50 shadow-sm"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-neutral-100 flex items-center justify-center text-primary-600">
-                        <Users className="h-5 w-5" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-neutral-900 group-hover:text-primary-700 transition-colors">
-                          {team.name}
-                        </span>
-                        <span className="text-[10px] uppercase tracking-wider text-neutral-400 font-bold">
-                          {team.members?.length || 0} / {team.maxSize} Members
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 rounded-full text-neutral-400 hover:text-primary-600 hover:bg-white/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all"
-                        onClick={(e) => team.invitationCode && handleCopyLink(e, team.invitationCode)}
-                        title="Copy registration link"
+                <div className="grid grid-cols-1 gap-3">
+                  <AnimatePresence mode="popLayout">
+                    {filteredTeams.map((team, index) => (
+                      <motion.div
+                        key={team.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ delay: index * 0.05 }}
+                        onClick={() => team.invitationCode && onJoinTeam(team.invitationCode)}
+                        className={cn(
+                          "group relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border bg-neutral-50/50 hover:bg-white hover:border-primary-300 hover:shadow-lg hover:shadow-primary-600/5 cursor-pointer transition-all duration-300",
+                          invitationCode === team.invitationCode && "border-primary-600 bg-primary-50 shadow-md ring-1 ring-primary-600"
+                        )}
                       >
-                        <SolarLink size={16} />
-                      </Button>
-                      <ArrowRight className="h-4 w-4 text-neutral-300 group-hover:text-primary-600 group-hover:translate-x-1 transition-all" />
-                    </div>
-                  </div>
-                ))
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 shrink-0 rounded-xl bg-primary-100 text-primary-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <Users className="h-6 w-6" />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-bold text-neutral-900 group-hover:text-primary-700 transition-colors truncate text-base">
+                              {team.name}
+                            </span>
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+                              <User className="h-3 w-3" />
+                              <span className="truncate">Led by {team.leader?.firstName} {team.leader?.lastName}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between sm:justify-end gap-3 mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-neutral-100">
+                          <div className="flex flex-col items-end sm:items-center">
+                            <span className="text-[10px] font-black text-primary-600 uppercase tracking-tighter px-2 py-0.5 bg-primary-100 rounded-full">
+                              {(team.members?.length ?? 0) + 1} / {team.maxSize}
+                            </span>
+                            <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5 sm:hidden">Members</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 rounded-full text-neutral-400 hover:text-primary-600 hover:bg-primary-50 transition-all sm:opacity-0 group-hover:opacity-100"
+                              onClick={(e) => team.invitationCode && handleCopyLink(e, team.invitationCode)}
+                              title="Copy registration link"
+                            >
+                              <SolarLink size={16} />
+                            </Button>
+                            <div className="h-8 w-8 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center sm:opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+                              <ArrowRight className="h-4 w-4" />
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
               ) : (
-                <div className="flex h-24 items-center justify-center text-sm text-neutral-400 italic">
-                  No teams found matching your search
+                <div className="flex h-32 flex-col items-center justify-center gap-3 text-neutral-400">
+                  <div className="h-12 w-12 rounded-full bg-neutral-100 flex items-center justify-center">
+                    <Search className="h-6 w-6" />
+                  </div>
+                  <p className="text-xs font-bold uppercase tracking-widest italic text-center">
+                    No teams found <br /> matching "{searchQuery}"
+                  </p>
                 </div>
               )}
             </div>

@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-  siteUrl: process.env.NEXT_PUBLIC_APP_URL || "https://oppskills.com",
+  siteUrl: "https://oppskills.com",
   generateRobotsTxt: true,
   sitemapSize: 7000,
 

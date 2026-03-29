@@ -247,7 +247,8 @@ export class EventController {
     @Query('q') search?: string,
   ) {
     const pageNum = page ? Math.max(1, Number(page)) : 1;
-    const PAGE_SIZE = String(appendResults) === 'true' ? 20 : 10;
+    const isAppended = String(appendResults) === 'true';
+    const PAGE_SIZE = isAppended ? 20 : 10;
 
     // To ensure correct global sorting by startDate across both sources,
     // we fetch enough items from each source to cover the current page.
@@ -257,14 +258,14 @@ export class EventController {
       this.eventService.listPublicEvents({
         festivalId,
         page: 1, // We fetch from the start to ensure merged sort order
-        take: takeNeeded,
+        take: takeNeeded + 1,
         search,
         filterMode: 'PAST',
       }),
       this.hackathonService.listPublicHackathons({
         festivalId,
         page: 1,
-        take: 500,
+        take: takeNeeded + 1,
         search,
         filterMode: 'PAST',
       }),
@@ -293,9 +294,9 @@ export class EventController {
     // Paginate the globally-sorted merged result
     const start = (pageNum - 1) * PAGE_SIZE;
     const items = merged.slice(start, start + PAGE_SIZE);
-    const hasMore = start + PAGE_SIZE < merged.length;
+    const further = merged.length > start + PAGE_SIZE;
 
-    return { items, hasMore, total: merged.length, page: pageNum };
+    return { items, further, total: merged.length, page: pageNum };
   }
 
   /**
