@@ -535,8 +535,7 @@ export class HackathonService {
 
     // Pagination logic
     // Callers can pass `take` directly to override the default (e.g. for merged pagination).
-    const isAppended =
-      input.appendResults === true || String(input.appendResults) === 'true';
+    const isAppended = String(input.appendResults) === 'true';
 
     const take = input.take != null ? input.take : isAppended ? 20 : 10;
     const page = input.page ? Math.max(1, Number(input.page)) : 1;

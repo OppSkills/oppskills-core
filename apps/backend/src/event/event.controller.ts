@@ -247,8 +247,7 @@ export class EventController {
     @Query('q') search?: string,
   ) {
     const pageNum = page ? Math.max(1, Number(page)) : 1;
-    const isAppended =
-      appendResults === true || String(appendResults) === 'true';
+    const isAppended = String(appendResults) === 'true';
     const PAGE_SIZE = isAppended ? 20 : 10;
 
     // To ensure correct global sorting by startDate across both sources,
