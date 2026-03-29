@@ -75,12 +75,17 @@ export class IncompleteRegistrationReminderService {
   /**
    * Sends incomplete-registration reminder emails for approved hackathons/events
    * where payment is captured/authorized but no registration submission exists.
+   * Only targets listings that are still open for registration (aligned with
+   * submit/join validation): lifecycle status, not paused, before end date, and
+   * before registration deadline when one is set.
    */
   async run(): Promise<IncompleteRegistrationReminderRunResult> {
     const cutoff = new Date(
       Date.now() -
         INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS * 60 * 60 * 1000,
     );
+
+    const now = new Date();
 
     const baseUrl = process.env.FRONTEND_URL || 'https://oppskills.com';
 
@@ -105,6 +110,10 @@ export class IncompleteRegistrationReminderService {
         WHERE hp.payment_status IN ('CAPTURED', 'AUTHORIZED')
           AND h.is_deleted = false
           AND h.approval_status = 'APPROVED'
+          AND h.status IN ('PUBLISHED', 'ONGOING')
+          AND h.is_registration_paused = false
+          AND h."endDate" >= ${now}
+          AND (h.registration_deadline IS NULL OR h.registration_deadline >= ${now})
           AND NOT EXISTS (
             SELECT 1
             FROM oppskills.hackathon_registration_submission hrs
@@ -142,6 +151,10 @@ export class IncompleteRegistrationReminderService {
         WHERE ep.payment_status IN ('CAPTURED', 'AUTHORIZED')
           AND e.is_deleted = false
           AND e.approval_status = 'APPROVED'
+          AND e.status IN ('PUBLISHED', 'ONGOING')
+          AND e.is_registration_paused = false
+          AND e.end_date >= ${now}
+          AND (e.registration_deadline IS NULL OR e.registration_deadline >= ${now})
           AND NOT EXISTS (
             SELECT 1
             FROM oppskills.event_registration_submission ers
