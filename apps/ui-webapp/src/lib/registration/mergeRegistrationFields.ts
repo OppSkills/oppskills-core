@@ -61,7 +61,7 @@ export function buildDefaultFields(
       type: "OPTIONS",
       required: true,
       order: -20,
-      options: [],
+      options: ["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"],
       placeholder: "Select gender",
     },
   ];
