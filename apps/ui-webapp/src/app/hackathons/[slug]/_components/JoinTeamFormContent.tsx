@@ -129,7 +129,7 @@ export function JoinTeamFormContent({
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Members</p>
                     <span className="text-xs font-black text-primary-600">
-                      {matchingTeam.members?.length || 1} / {matchingTeam.maxSize}
+                      {(matchingTeam.members?.length ?? 0) + 1} / {matchingTeam.maxSize}
                     </span>
                   </div>
                   <div className="h-1.5 w-full bg-primary-100 rounded-full overflow-hidden">
