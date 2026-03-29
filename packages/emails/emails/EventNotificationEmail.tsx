@@ -18,6 +18,7 @@ export interface EventNotificationEmailProps {
     eventName: string;
     eventSlug: string;
     htmlBody: string;
+    baseUrl?: string;
 }
 
 export function EventNotificationEmail({
@@ -25,9 +26,10 @@ export function EventNotificationEmail({
     eventName,
     eventSlug,
     htmlBody,
+    baseUrl = "https://www.oppskills.com",
 }: EventNotificationEmailProps) {
     const previewText = `New update from ${eventName}`;
-    const eventLink = `https://www.oppskills.com/events/${eventSlug}`;
+    const eventLink = `${baseUrl}/events/${eventSlug}`;
 
     return (
         <Html>
@@ -35,7 +37,7 @@ export function EventNotificationEmail({
             <Preview>{previewText}</Preview>
             <Body style={main}>
                 <Container style={container}>
-                    <Header />
+                    <Header baseUrl={baseUrl} />
                     <Section style={contentSection}>
                         <Heading style={heading}>Hi {firstName || "Participant"},</Heading>
 

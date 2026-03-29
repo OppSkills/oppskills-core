@@ -1,3 +1,4 @@
+import { SITE_URL } from "@/lib/constants";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -15,13 +16,13 @@ export const metadata: Metadata = {
     "unstop alternative",
   ],
   alternates: {
-    canonical: "https://oppskills.com/hackathons",
+    canonical: `${SITE_URL}/hackathons`,
   },
   openGraph: {
     title: "Global Opportunities listing platform | OppSkills",
     description:
       "Find and participate in the best college hackathons and competitions. Level up your skills and win prizes.",
-    url: "https://oppskills.com/hackathons",
+    url: `${SITE_URL}/hackathons`,
     images: [
       {
         url: "/og_poster.png", // Ensure this exists or use a specific one for competitions if available

@@ -396,19 +396,24 @@ select:-webkit-autofill {
 
 /* Custom Scrollbar for Webkit Browsers */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  display: none;
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar::-webkit-scrollbar {
+  display: block;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--color-neutral-100);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-neutral-200);
+  background: var(--color-neutral-400);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-neutral-400);
+  background: var(--color-neutral-500);
 }

@@ -16,12 +16,14 @@ export interface HackathonJoinConfirmationEmailProps {
   userName: string;
   hackathonName: string;
   teamName: string;
+  baseUrl?: string;
 }
 
 export function HackathonJoinConfirmationEmail({
   userName,
   hackathonName,
   teamName,
+  baseUrl = "https://www.oppskills.com",
 }: HackathonJoinConfirmationEmailProps) {
   const previewText = `You joined ${hackathonName}`;
 
@@ -31,7 +33,7 @@ export function HackathonJoinConfirmationEmail({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Header />
+          <Header baseUrl={baseUrl} />
           <Section style={contentSection}>
             <Heading style={heading}>Hi {userName},</Heading>
             <Text style={paragraph}>

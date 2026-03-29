@@ -69,9 +69,30 @@ export class HackathonPublicController {
     type: [String],
   })
   @ApiQuery({
+    name: 'festival_id',
+    required: false,
+    description: 'Filter hackathons by festival ID',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default 1)',
+  })
+  @ApiQuery({
+    name: 'appendResults',
+    required: false,
+    description: 'If true, returns 20 results instead of 10',
+    type: Boolean,
+  })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    description: 'Search query',
+  })
+  @ApiQuery({
     name: 'sort',
     required: false,
-    description: 'Sort by (most_relevant, recently_added, etc.)',
+    description: 'Sort by (most_relevant, recently_added, price_amount, submission_date)',
     type: String,
   })
   @ApiResponse({
@@ -128,7 +149,7 @@ export class HackathonPublicController {
   @ApiQuery({
     name: 'appendResults',
     required: false,
-    description: 'If true, returns 40 results instead of 20',
+    description: 'If true, returns 20 results instead of 10',
     type: Boolean,
   })
   @ApiQuery({

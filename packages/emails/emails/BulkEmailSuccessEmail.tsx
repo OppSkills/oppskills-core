@@ -15,12 +15,14 @@ export interface BulkEmailSuccessEmailProps {
     firstName?: string;
     eventName: string;
     count: number;
+    baseUrl?: string;
 }
 
 export function BulkEmailSuccessEmail({
     firstName,
     eventName,
     count,
+    baseUrl = "https://www.oppskills.com",
 }: BulkEmailSuccessEmailProps) {
     const previewText = `Bulk email sent for ${eventName}`;
 
@@ -30,7 +32,7 @@ export function BulkEmailSuccessEmail({
             <Preview>{previewText}</Preview>
             <Body style={main}>
                 <Container style={container}>
-                    <Header />
+                    <Header baseUrl={baseUrl} />
                     <Section style={contentSection}>
                         <Heading style={heading}>Hi {firstName || "Organizer"},</Heading>
 

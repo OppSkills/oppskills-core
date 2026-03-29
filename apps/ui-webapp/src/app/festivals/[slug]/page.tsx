@@ -1,3 +1,4 @@
+import { SITE_URL, API_URL } from "@/lib/constants";
 import type { Metadata } from "next";
 import FestivalDetailsClient from "./_components/FestivalDetailsClient";
 import { getFestivalBySlug } from "@/lib/api/festivalApi";
@@ -44,12 +45,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         openGraph: {
             title,
             description,
-            url: `https://oppskills.com/festivals/${festival.slug}`,
+            url: `${SITE_URL}/festivals/${festival.slug}`,
             siteName: "OppSkills",
             images: festival.posterImageUrl
                 ? [
                     {
-                        url: `https://api.oppskills.com/image/serve?url=${festival.posterImageUrl}`,
+                        url: `${API_URL}/image/serve?url=${festival.posterImageUrl}`,
                         width: 1200,
                         height: 630,
                         alt: festival.name,
@@ -63,11 +64,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             title,
             description,
             images: festival.posterImageUrl
-                ? [`https://api.oppskills.com/image/serve?url=${festival.posterImageUrl}`]
+                ? [`${API_URL}/image/serve?url=${festival.posterImageUrl}`]
                 : undefined,
         },
         alternates: {
-            canonical: `https://oppskills.com/festivals/${festival.slug}`,
+            canonical: `${SITE_URL}/festivals/${festival.slug}`,
         },
     };
 }
@@ -110,7 +111,7 @@ export default async function FestivalPage({ params }: Props) {
             festival.locationType === "ONLINE" || festival.locationType === "VIRTUAL"
                 ? {
                     "@type": "VirtualLocation",
-                    url: festival.locationVirtualLink || "https://oppskills.com",
+                    url: festival.locationVirtualLink || SITE_URL,
                 }
                 : {
                     "@type": "Place",
@@ -122,7 +123,7 @@ export default async function FestivalPage({ params }: Props) {
                     },
                 },
         image: festival.posterImageUrl
-            ? [`https://api.oppskills.com/image/serve?url=${festival.posterImageUrl}`]
+            ? [`${API_URL}/image/serve?url=${festival.posterImageUrl}`]
             : undefined,
         organizer: {
             "@type": "Organization",
@@ -130,7 +131,7 @@ export default async function FestivalPage({ params }: Props) {
             logo: festival.organizationLogoUrl,
             url: festival.websiteUrl,
         },
-        url: `https://oppskills.com/festivals/${festival.slug}`,
+        url: `${SITE_URL}/festivals/${festival.slug}`,
     };
 
     return (

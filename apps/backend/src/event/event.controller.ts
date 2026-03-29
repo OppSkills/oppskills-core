@@ -61,7 +61,7 @@ export class EventController {
   constructor(
     private readonly eventService: EventService,
     private readonly hackathonService: HackathonService,
-  ) {}
+  ) { }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // PUBLIC Endpoints (no auth required) - sanitized data only
@@ -100,9 +100,30 @@ export class EventController {
     type: [String],
   })
   @ApiQuery({
+    name: 'festival_id',
+    required: false,
+    description: 'Filter events by festival ID',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default 1)',
+  })
+  @ApiQuery({
+    name: 'appendResults',
+    required: false,
+    description: 'If true, returns 20 results instead of 10',
+    type: Boolean,
+  })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    description: 'Search query',
+  })
+  @ApiQuery({
     name: 'sort',
     required: false,
-    description: 'Sort by (most_relevant, recently_added, etc.)',
+    description: 'Sort by (most_relevant, recently_added, price_amount, submission_date)',
     type: String,
   })
   @ApiResponse({
@@ -159,7 +180,7 @@ export class EventController {
   @ApiQuery({
     name: 'appendResults',
     required: false,
-    description: 'If true, returns 40 results instead of 20',
+    description: 'If true, returns 20 results instead of 10',
     type: Boolean,
   })
   @ApiQuery({
@@ -206,7 +227,7 @@ export class EventController {
   @ApiQuery({
     name: 'appendResults',
     required: false,
-    description: 'If true, returns 40 results instead of 20',
+    description: 'If true, returns 20 results instead of 10',
     type: Boolean,
   })
   @ApiQuery({
@@ -225,17 +246,18 @@ export class EventController {
     @Query('appendResults') appendResults?: boolean,
     @Query('q') search?: string,
   ) {
-    const PAGE_SIZE = 20;
     const pageNum = page ? Math.max(1, Number(page)) : 1;
+    const PAGE_SIZE = String(appendResults) === 'true' ? 20 : 10;
 
-    // Fetch ALL past items from both sources in one shot (no per-source pagination).
-    // Each source may have up to 500 items; we sort the full merged set and paginate
-    // globally so items are never silently dropped due to cross-source sort order.
+    // To ensure correct global sorting by startDate across both sources,
+    // we fetch enough items from each source to cover the current page.
+    const takeNeeded = pageNum * PAGE_SIZE;
+
     const [eventsRes, hackathonsRes] = await Promise.all([
       this.eventService.listPublicEvents({
         festivalId,
-        page: 1,
-        take: 500,
+        page: 1, // We fetch from the start to ensure merged sort order
+        take: takeNeeded,
         search,
         filterMode: 'PAST',
       }),

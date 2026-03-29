@@ -28,6 +28,7 @@ export interface EventPassEmailProps {
   passUrl?: string;
   passId?: string; // Event pass ID for authenticated route
   token?: string; // Token for QR code in OG image
+  baseUrl?: string;
 }
 
 export function EventPassEmail({
@@ -44,6 +45,7 @@ export function EventPassEmail({
   passUrl,
   passId,
   token,
+  baseUrl = 'https://oppskills.com',
 }: EventPassEmailProps) {
   const previewText = `Your event pass for ${eventName} is ready!`;
 
@@ -80,7 +82,6 @@ export function EventPassEmail({
   };
 
   // Construct the OG image URL with all parameters
-  const baseUrl = 'https://oppskills.com';
   const ogImageParams = new URLSearchParams({
     name: participantName || 'Participant Name',
     college: participantCollege || 'College Name',
@@ -111,7 +112,7 @@ export function EventPassEmail({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Header />
+          <Header baseUrl={baseUrl} />
 
           {/* Content */}
           <Section style={contentSection}>

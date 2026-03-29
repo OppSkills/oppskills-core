@@ -18,6 +18,7 @@ export interface OnboardingCompleteEmailProps {
   email: string;
   userCategory?: string;
   locationCity?: string;
+  baseUrl?: string;
 }
 
 export function OnboardingCompleteEmail({
@@ -25,6 +26,7 @@ export function OnboardingCompleteEmail({
   email,
   userCategory,
   locationCity,
+  baseUrl = 'https://oppskills.com',
 }: OnboardingCompleteEmailProps) {
   const previewText = `Your OppSkills profile is complete - Start exploring opportunities!`;
 
@@ -51,7 +53,7 @@ export function OnboardingCompleteEmail({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Header />
+          <Header baseUrl={baseUrl} />
 
           {/* Content */}
           <Section style={contentSection}>
@@ -84,7 +86,7 @@ export function OnboardingCompleteEmail({
           </Section>
 
           <Section style={ctaSection}>
-            <Link href="https://oppskills.com/dashboard" style={ctaButton}>
+            <Link href={`${baseUrl}/dashboard`} style={ctaButton}>
                 Go to Dashboard ↗
             </Link>
             </Section>

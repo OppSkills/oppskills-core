@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Urbanist } from "next/font/google";
 import localFont from "next/font/local"
+import { SITE_URL } from "@/lib/constants";
 
 import "./globals.css";
 import {
@@ -46,7 +47,7 @@ const aeonicPro = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://oppskills.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default:
       "OppSkills | College Events, Hackathons, Competitions & Opportunities for students",
@@ -99,7 +100,7 @@ export const metadata: Metadata = {
     },
     description:
       "Discover and host college events, hackathons, competitions, and Opportunities for students on OppSkills.",
-    url: "https://oppskills.com",
+    url: SITE_URL,
     siteName: "OppSkills",
     locale: "en_US",
     type: "website",

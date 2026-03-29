@@ -40,7 +40,7 @@ export class EventService {
     private readonly googleSheetsService: GoogleSheetsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
-  ) {}
+  ) { }
 
   /**
    * Create an event as a user.
@@ -305,9 +305,9 @@ export class EventService {
     const take =
       input.take != null
         ? input.take
-        : String(input.appendResults) === 'true' || input.appendResults === true
-          ? 40
-          : 20;
+        : String(input.appendResults) === 'true'
+          ? 20
+          : 10;
     const page = input.page ? Math.max(1, Number(input.page)) : 1;
     const skip = (page - 1) * take;
 
@@ -1549,7 +1549,7 @@ export class EventService {
             // Use field options, or default gender options for Gender field
             const effectiveOptions =
               field.label.toLowerCase() === 'gender' &&
-              (!field.options || field.options.length === 0)
+                (!field.options || field.options.length === 0)
                 ? DEFAULT_GENDER_OPTIONS
                 : field.options;
 

@@ -1,3 +1,4 @@
+import { SITE_URL } from "@/lib/constants";
 import { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -17,13 +18,13 @@ export const metadata: Metadata = {
     "OppSkills vs Unstop",
   ],
   alternates: {
-    canonical: "https://oppskills.com/unstop-alternative",
+    canonical: `${SITE_URL}/unstop-alternative`,
   },
   openGraph: {
     title: "Better Alternative to Unstop | OppSkills",
     description:
       "Compare OppSkills vs Unstop. Why OppSkills is the best platform for students and organizers for hackathons and events.",
-    url: "https://oppskills.com/unstop-alternative",
+    url: `${SITE_URL}/unstop-alternative`,
     type: "article",
     images: [
       {
@@ -62,12 +63,12 @@ export default function UnstopAlternativePage() {
             name: "OppSkills",
             logo: {
               "@type": "ImageObject",
-              url: "https://oppskills.com/logo.svg",
+              url: `${SITE_URL}/logo.svg`,
             },
           },
           mainEntityOfPage: {
             "@type": "WebPage",
-            "@id": "https://oppskills.com/unstop-alternative",
+            "@id": `${SITE_URL}/unstop-alternative`,
           },
         }}
       />

@@ -7,12 +7,11 @@ import {
 } from '@react-email/components';
 import * as React from 'react';
 
-const baseUrl = 'https://www.oppskills.com';
+const defaultBaseUrl = 'https://www.oppskills.com';
 const iconColor = '7C737E';
 
-const logoUrl = `${baseUrl}/logo.png`;
-
-export function Header() {
+export function Header({ baseUrl = defaultBaseUrl }: { baseUrl?: string }) {
+  const logoUrl = `${baseUrl}/logo.png`;
   return (
     <Section style={header}>
       <Row>

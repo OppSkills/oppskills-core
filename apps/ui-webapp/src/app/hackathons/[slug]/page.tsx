@@ -1,5 +1,6 @@
 import type { Metadata, ResolvingMetadata } from "next";
 import { getPublicHackathonBySlug } from "@/lib/api/hackathonApi";
+import { API_URL } from "@/lib/constants";
 import {
   CompetitionDetailsClient,
   type HackathonApiData,
@@ -39,7 +40,7 @@ export async function generateMetadata(
   let imageUrl = data.bannerImageUrl;
   if (imageUrl) {
     // Use the proxy URL as requested
-    imageUrl = `https://api.oppskills.com/image/serve?url=${encodeURIComponent(imageUrl)}`;
+    imageUrl = `${API_URL}/image/serve?url=${encodeURIComponent(imageUrl)}`;
   }
 
   return {
