@@ -1,6 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, SectionList, View } from 'react-native';
+import { Image, Pressable, ScrollView, SectionList, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import frame502 from '../../../../../assets/Frame 502.png';
+import frame503 from '../../../../../assets/Frame 503.png';
+import frame504 from '../../../../../assets/Frame 504.png';
+import frame505 from '../../../../../assets/Frame 505.png';
+import trustedByIith from '../../../../../assets/WhatsApp Image 2026-02-24 at 16.23.33 1.png';
+import trustedByIiitd from '../../../../../assets/iiitd 1.png';
+import trustedBySharda from '../../../../../assets/sharda 1.png';
+import trustedByGims from '../../../../../assets/gims 1.png';
+import businessChallengeIllustration from '../../../../../assets/Business challenge-amico 1.png';
+import organizingProjectsIllustration from '../../../../../assets/Organizing projects-amico 1.png';
+import trackAndFieldIllustration from '../../../../../assets/Track and field-amico 1.png';
+import videoTutorialIllustration from '../../../../../assets/Video tutorial-amico 1.png';
 import {
   type HomeCommunityItemEntity,
   type HomeEventItemEntity,
@@ -9,22 +23,19 @@ import {
   type HomeTrackItemEntity,
 } from '../../domain/entities/HomeFeed';
 import { useHomeFeed } from '../hooks/useHomeFeed';
-import { AppText, FooterSignatureBlock, SearchInput, TopBar } from '../../../../shared/ui';
+import { AppText, FooterSignatureBlock } from '../../../../shared/ui';
 import { styles } from './HomePageScreen.styles';
 
 interface HomePageScreenProps {
   readonly onOpenCompetition: () => void;
   readonly onOpenHackathon: () => void;
-  readonly onRestartOnboarding: () => void;
 }
 
 export function HomePageScreen({
   onOpenCompetition,
   onOpenHackathon,
-  onRestartOnboarding,
 }: HomePageScreenProps) {
   const { data: homeFeed } = useHomeFeed();
-  const [query, setQuery] = useState('');
   const [activeCategoryId, setActiveCategoryId] = useState('');
   const [loadingSections, setLoadingSections] = useState(true);
 
@@ -48,8 +59,8 @@ export function HomePageScreen({
       { id: 'listed-competitions', data: ['listed-competitions'] },
       { id: 'upcoming-events', data: ['upcoming-events'] },
       { id: 'active-communities', data: ['active-communities'] },
-      { id: 'how-works', data: ['how-works'] },
-      { id: 'why-choose', data: ['why-choose'] },
+      // { id: 'how-works', data: ['how-works'] },
+      // { id: 'why-choose', data: ['why-choose'] },
       { id: 'trusted-by', data: ['trusted-by'] },
       { id: 'upcoming-tracks', data: ['upcoming-tracks'] },
       { id: 'footer', data: ['footer'] },
@@ -74,20 +85,11 @@ export function HomePageScreen({
                   Guru Jambheshwar University
                 </AppText>
               </View>
-              <Pressable onPress={onRestartOnboarding} style={styles.resetChip}>
-                <AppText colorToken="brandPrimaryStrong" variant="caption">
-                  Reset
-                </AppText>
-              </Pressable>
+              <View style={styles.headerSearchIcon}>
+                <View style={styles.headerSearchCircle} />
+                <View style={styles.headerSearchHandle} />
+              </View>
             </View>
-
-            <SearchInput
-              autoCapitalize="none"
-              onChangeText={setQuery}
-              placeholder="Search opportunities"
-              returnKeyType="search"
-              value={query}
-            />
 
             <SectionTitle
               subtitle="Tap a category to quickly jump across opportunities."
@@ -97,6 +99,25 @@ export function HomePageScreen({
             <View style={styles.categoryGrid}>
               {(homeFeed?.categoryChips ?? []).map((chip) => {
                 const selected = chip.id === activeCategoryId;
+                const categoryImageById: Record<string, ImageSourcePropType> = {
+                  hackathons: frame502,
+                  competitions: frame503,
+                  events: frame504,
+                  communities: frame505,
+                };
+                const categoryImage = categoryImageById[chip.id];
+
+                if (categoryImage) {
+                  return (
+                    <Pressable
+                      key={chip.id}
+                      onPress={() => setActiveCategoryId(chip.id)}
+                      style={[styles.hackathonCategoryCard, selected ? styles.hackathonCategoryCardActive : null]}
+                    >
+                      <Image resizeMode="cover" source={categoryImage} style={styles.hackathonCategoryImage} />
+                    </Pressable>
+                  );
+                }
 
                 return (
                   <Pressable
@@ -121,44 +142,44 @@ export function HomePageScreen({
       case 'top-opportunities':
         return (
           <SectionBlock
-            actionLabel="View all"
             loading={loadingSections}
             subtitle="Discover the most popular opportunities students are joining right now."
             title="Top Opportunities"
           >
-            <OpportunityList
+            <ListedCompetitionRail
               emptyLabel="No opportunities yet."
               items={homeFeed?.topOpportunities ?? []}
               onOpenCompetition={onOpenCompetition}
               onOpenHackathon={onOpenHackathon}
             />
+            <InlineArrowAction label="View all" />
           </SectionBlock>
         );
       case 'listed-competitions':
         return (
           <SectionBlock
-            actionLabel="View all"
             loading={loadingSections}
             subtitle="Compete in curated listings with clear deadlines and prizes."
             title="Listed Competitions"
           >
-            <OpportunityList
+            <ListedCompetitionRail
               emptyLabel="No listed competitions available."
               items={homeFeed?.listedCompetitions ?? []}
               onOpenCompetition={onOpenCompetition}
               onOpenHackathon={onOpenHackathon}
             />
+            <InlineArrowAction label="View all" />
           </SectionBlock>
         );
       case 'upcoming-events':
         return (
           <SectionBlock
-            actionLabel="View all"
             loading={loadingSections}
             subtitle="Do not miss what is next, stay updated with upcoming events and sessions."
             title="Upcoming Events"
           >
             <EventCardRow items={homeFeed?.upcomingEvents ?? []} />
+            <InlineArrowAction label="View all" />
           </SectionBlock>
         );
       case 'active-communities':
@@ -172,6 +193,7 @@ export function HomePageScreen({
             <CommunityRow items={homeFeed?.topCommunities ?? []} />
             <MiniSectionTitle title="Near You" />
             <CommunityRow items={homeFeed?.nearbyCommunities ?? []} />
+            <InlineArrowAction label="View all" />
           </SectionBlock>
         );
       case 'how-works':
@@ -195,24 +217,21 @@ export function HomePageScreen({
           </SectionBlock>
         );
       case 'trusted-by':
-        return (
-          <SectionBlock
-            loading={loadingSections}
-            subtitle="Top colleges already choose OppSkills to conduct opportunities and events."
-            title="Trusted By"
-          >
-            <TrustedByList partners={homeFeed?.trustedByPartners ?? []} />
-          </SectionBlock>
-        );
+        return <TrustedBySection loading={loadingSections} partners={homeFeed?.trustedByPartners ?? []} />;
       case 'upcoming-tracks':
         return (
-          <SectionBlock
-            loading={loadingSections}
-            subtitle="On this platform, ongoing opportunities evolve into skill tracks."
-            title="Upcoming on OppSkills"
-          >
-            <TrackCards items={homeFeed?.upcomingTracks ?? []} />
-          </SectionBlock>
+          <View style={styles.upcomingTracksSection}>
+            <View style={styles.upcomingTracksSectionHead}>
+              <AppText style={styles.upcomingTracksTitle} variant="sectionHeading">
+                Upcoming on OppSkills
+              </AppText>
+              <AppText style={styles.upcomingTracksSubtitle} variant="caption">
+                Oh, this platform is going somewhere
+              </AppText>
+            </View>
+
+            {loadingSections ? <SectionSkeleton /> : <TrackCards items={homeFeed?.upcomingTracks ?? []} />}
+          </View>
         );
       case 'footer':
         return <FooterSignatureBlock compact />;
@@ -222,8 +241,7 @@ export function HomePageScreen({
   };
 
   return (
-    <View style={styles.screen}>
-      <TopBar />
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
       <SectionList
         contentContainerStyle={styles.listContent}
         initialNumToRender={6}
@@ -236,7 +254,7 @@ export function HomePageScreen({
         stickySectionHeadersEnabled={false}
         windowSize={7}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -295,7 +313,79 @@ function MiniSectionTitle({ title }: { readonly title: string }) {
   );
 }
 
-function OpportunityList({
+function InlineArrowAction({ label }: { readonly label: string }) {
+  return (
+    <Pressable style={styles.inlineArrowAction}>
+      <AppText colorToken="brandPrimaryStrong" style={styles.inlineArrowActionLabel} variant="label">
+        {label}
+      </AppText>
+      <View style={styles.inlineArrowActionIcon}>
+        <View style={styles.inlineArrowActionStrokeUpper} />
+        <View style={styles.inlineArrowActionStrokeLower} />
+      </View>
+    </Pressable>
+  );
+}
+
+function EventCardRow({ items }: { readonly items: readonly HomeEventItemEntity[] }) {
+  if (items.length === 0) {
+    return <SectionEmptyState label="No upcoming events available." />;
+  }
+
+  return (
+    <ScrollView
+      contentContainerStyle={styles.horizontalRailContent}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.horizontalRail}
+    >
+      {items.map((item) => (
+        <View key={item.id} style={styles.eventCard}>
+          <View style={styles.eventHero}>
+            <View style={styles.eventOnlinePill}>
+              <AppText colorToken="brandPrimaryStrong" variant="micro">
+                Offline
+              </AppText>
+            </View>
+            <View style={styles.eventBookmark}>
+              <View style={styles.eventBookmarkIcon} />
+            </View>
+          </View>
+
+          <View style={styles.eventMeta}>
+            <View style={styles.eventBasicDetailsRow}>
+              <AppText colorToken="textSecondary" variant="micro">
+                {item.venue}
+              </AppText>
+              <View style={styles.eventBasicDot} />
+              <AppText colorToken="textSecondary" variant="micro">
+                Next Date
+              </AppText>
+              <View style={styles.eventBasicDot} />
+              <AppText colorToken="textSecondary" variant="micro">
+                {item.timing}
+              </AppText>
+            </View>
+            <AppText numberOfLines={2} style={styles.eventTitle} variant="title">
+              {item.title}
+            </AppText>
+            <AppText colorToken="textSecondary" style={styles.eventHost} variant="micro">
+              {item.venue}
+            </AppText>
+
+            <View style={styles.eventMetricsRow}>
+              <Metric label="Attendees" value={`${item.attendees}`} />
+              <Metric label="Register by" value={item.timing} />
+              <Metric align="right" label="Entry Fee" value="Free" />
+            </View>
+          </View>
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
+
+function ListedCompetitionRail({
   items,
   onOpenCompetition,
   onOpenHackathon,
@@ -311,72 +401,51 @@ function OpportunityList({
   }
 
   return (
-    <View style={styles.cardStack}>
+    <ScrollView
+      contentContainerStyle={styles.horizontalRailContent}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.horizontalRail}
+    >
       {items.map((item) => {
         const openAction = item.kind === 'Competition' ? onOpenCompetition : onOpenHackathon;
 
         return (
-          <Pressable key={item.id} onPress={openAction} style={styles.opportunityCard}>
-            <View style={styles.opportunityThumb} />
-            <View style={styles.opportunityMeta}>
-              <AppText numberOfLines={2} style={styles.opportunityTitle} variant="title">
-                {item.title}
-              </AppText>
-              <AppText colorToken="textMuted" style={styles.opportunityHost} variant="caption">
-                {item.host}
-              </AppText>
-              <View style={styles.kindChip}>
+          <Pressable key={item.id} onPress={openAction} style={styles.listedCompetitionCard}>
+            <View style={styles.listedCompetitionHero}>
+              <View style={styles.listedCompetitionModePill}>
                 <AppText colorToken="brandPrimaryStrong" variant="micro">
-                  {item.kind}
+                  Free
+                </AppText>
+                <View style={styles.listedCompetitionModeDot} />
+                <AppText colorToken="brandPrimaryStrong" variant="micro">
+                  Offline
                 </AppText>
               </View>
-              <View style={styles.metricRow}>
-                <Metric label="Event Date" value={item.eventDate} />
+              <View style={styles.listedCompetitionBookmark}>
+                <View style={styles.listedCompetitionBookmarkIcon} />
+              </View>
+            </View>
+
+            <View style={styles.listedCompetitionBody}>
+              <View style={styles.listedCompetitionHeaderBlock}>
+                <AppText numberOfLines={2} style={styles.listedCompetitionTitle} variant="title">
+                  {item.title}
+                </AppText>
+                <AppText colorToken="textSecondary" variant="micro">
+                  {item.host}
+                </AppText>
+              </View>
+
+              <View style={styles.listedCompetitionMetrics}>
                 <Metric label="Register by" value={item.registerBy} />
-                <Metric align="right" label="Prizes" value={item.prizeLabel} />
+                <Metric label="Prizes Worth" value={item.prizeLabel} />
               </View>
             </View>
           </Pressable>
         );
       })}
-    </View>
-  );
-}
-
-function EventCardRow({ items }: { readonly items: readonly HomeEventItemEntity[] }) {
-  if (items.length === 0) {
-    return <SectionEmptyState label="No upcoming events available." />;
-  }
-
-  return (
-    <View style={styles.cardStack}>
-      {items.map((item) => (
-        <View key={item.id} style={styles.eventCard}>
-          <View style={styles.eventHero}>
-            <View style={styles.eventVenuePill}>
-              <AppText colorToken="brandPrimaryStrong" variant="micro">
-                {item.venue}
-              </AppText>
-            </View>
-          </View>
-
-          <View style={styles.eventMeta}>
-            <AppText colorToken="textMuted" variant="caption">
-              {item.timing}
-            </AppText>
-            <AppText style={styles.eventTitle} variant="title">
-              {item.title}
-            </AppText>
-
-            <View style={styles.metricRow}>
-              <Metric label="Attendees" value={`${item.attendees}`} />
-              <Metric label="Register by" value="20 Dec 2024" />
-              <Metric align="right" label="Entry Fee" value="Free" />
-            </View>
-          </View>
-        </View>
-      ))}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -386,38 +455,65 @@ function CommunityRow({ items }: { readonly items: readonly HomeCommunityItemEnt
   }
 
   return (
-    <View style={styles.communityRow}>
+    <ScrollView
+      contentContainerStyle={styles.communityRailContent}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.communityRail}
+    >
       {items.map((item) => (
-        <View key={item.id} style={styles.communityCard}>
-          <View style={styles.communityHeader}>
-            <View style={styles.communityGlyph} />
-            <View style={styles.locationPill}>
+        <View key={item.id} style={styles.communityRailCard}>
+          <View style={styles.communityRailHeaderRow}>
+            <View style={styles.communityRailLogo} />
+            <View style={styles.communityLocationPill}>
               <AppText colorToken="brandPrimaryStrong" numberOfLines={1} variant="micro">
                 {item.location}
               </AppText>
             </View>
           </View>
 
-          <AppText colorToken="textMuted" variant="caption">
-            {item.domain}
-          </AppText>
-          <AppText numberOfLines={1} style={styles.communityName} variant="title">
-            {item.name}
-          </AppText>
-
-          <View style={styles.communityMetaRow}>
-            <Metric label="Members" value={`${item.members}`} />
-            <Metric align="right" label="Register by" value={item.registerBy} />
+          <View style={styles.communityRailTitleBlock}>
+            <AppText numberOfLines={1} style={styles.communityRailDomain} variant="caption">
+              {item.domain}
+            </AppText>
+            <AppText numberOfLines={1} style={styles.communityRailName} variant="title">
+              {item.name}
+            </AppText>
           </View>
 
-          <Pressable style={styles.communityButton}>
-            <AppText colorToken="brandPrimaryStrong" variant="caption">
+          <View style={styles.communityRailMetaRow}>
+            <View style={styles.communityRailMetricBlock}>
+              <AppText colorToken="textSecondary" variant="micro">
+                Members
+              </AppText>
+              <View style={styles.communityRailMembersRow}>
+                <View style={styles.communityRailAvatarA} />
+                <View style={styles.communityRailAvatarB} />
+                <View style={styles.communityRailAvatarC} />
+                <AppText style={styles.communityRailMemberCount} variant="label">
+                  {item.members}
+                </AppText>
+              </View>
+            </View>
+
+            <View style={styles.communityRailMetricBlock}>
+              <AppText colorToken="textSecondary" variant="micro">
+                Register by
+              </AppText>
+              <AppText numberOfLines={1} style={styles.communityRailMetricValue} variant="label">
+                {item.registerBy}
+              </AppText>
+            </View>
+          </View>
+
+          <Pressable style={styles.communityRailButton}>
+            <AppText colorToken="brandPrimaryStrong" numberOfLines={1} style={styles.communityRailButtonLabel} variant="caption">
               Explore Now
             </AppText>
           </Pressable>
         </View>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -456,16 +552,89 @@ function TrustedByList({ partners }: { readonly partners: readonly string[] }) {
   }
 
   return (
-    <View style={styles.partnerRow}>
+    <ScrollView
+      contentContainerStyle={styles.trustedByPartnerRailContent}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.trustedByPartnerRail}
+    >
       {partners.map((partner) => (
-        <View key={partner} style={styles.partnerChip}>
-          <AppText numberOfLines={1} style={styles.partnerText} variant="caption">
-            {partner}
-          </AppText>
-        </View>
+        (() => {
+          const logoSource = getTrustedByPartnerLogo(partner);
+
+          return (
+            <View key={partner} style={styles.trustedByPartnerTile}>
+              {logoSource ? (
+                <Image resizeMode="cover" source={logoSource} style={styles.trustedByPartnerImage} />
+              ) : (
+                <AppText numberOfLines={1} style={styles.trustedByPartnerMonogram} variant="micro">
+                  {getPartnerMonogram(partner)}
+                </AppText>
+              )}
+            </View>
+          );
+        })()
       ))}
+    </ScrollView>
+  );
+}
+
+function TrustedBySection({
+  partners,
+  loading,
+}: {
+  readonly partners: readonly string[];
+  readonly loading: boolean;
+}) {
+  return (
+    <View style={styles.trustedBySection}>
+      <View style={styles.trustedByTextContainer}>
+        <AppText style={styles.trustedByTitle} variant="sectionHeading">
+          Trusted by
+        </AppText>
+        <AppText style={styles.trustedBySubtitle} variant="caption">
+          Top colleges already choose oppskills to conduct their events & competitions
+        </AppText>
+      </View>
+
+      {loading ? <SectionSkeleton /> : <TrustedByList partners={partners} />}
     </View>
   );
+}
+
+function getPartnerMonogram(partner: string): string {
+  const curatedMonograms: Record<string, string> = {
+    'IIT Hyderabad': 'IITH',
+    IIITD: 'IIITD',
+    'Sharda University': 'SHARDA',
+    'Rishihood University': 'RISHI',
+    'IILM University': 'IILM',
+    'GLA University': 'GLA',
+  };
+
+  const curated = curatedMonograms[partner];
+  if (curated) {
+    return curated;
+  }
+
+  const compact = partner
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((segment) => segment[0]?.toUpperCase() ?? '')
+    .join('');
+
+  return compact.slice(0, 5);
+}
+
+function getTrustedByPartnerLogo(partner: string): ImageSourcePropType | undefined {
+  const trustedByLogoByPartner: Record<string, ImageSourcePropType> = {
+    'IIT Hyderabad': trustedByIith,
+    IIITD: trustedByIiitd,
+    'Sharda University': trustedBySharda,
+    'IILM University': trustedByGims,
+  };
+
+  return trustedByLogoByPartner[partner];
 }
 
 function TrackCards({ items }: { readonly items: readonly HomeTrackItemEntity[] }) {
@@ -474,24 +643,68 @@ function TrackCards({ items }: { readonly items: readonly HomeTrackItemEntity[] 
   }
 
   return (
-    <View style={styles.cardStack}>
-      {items.map((item) => (
-        <View key={item.id} style={styles.trackCard}>
-          <View style={styles.trackBadge}>
-            <AppText colorToken="textInverse" variant="micro">
-              New Track
-            </AppText>
+    <View style={styles.upcomingTracksList}>
+      {items.map((item, index) => (
+        <View key={item.id} style={styles.upcomingTrackCard}>
+          <View style={styles.upcomingTrackContent}>
+            <View style={styles.upcomingTrackTextWrap}>
+              <AppText numberOfLines={1} style={styles.upcomingTrackCardTitle} variant="label">
+                {item.title}
+              </AppText>
+              <AppText numberOfLines={2} style={styles.upcomingTrackCardSubtitle} variant="micro">
+                {item.subtitle}
+              </AppText>
+            </View>
+
+            <Pressable style={styles.upcomingTrackNotifyButton}>
+              <View style={styles.upcomingTrackNotifyBell}>
+                <View style={styles.upcomingTrackNotifyBellBody} />
+                <View style={styles.upcomingTrackNotifyBellTop} />
+              </View>
+              <AppText style={styles.upcomingTrackNotifyLabel} variant="micro">
+                Notify Me
+              </AppText>
+            </Pressable>
           </View>
-          <AppText style={styles.trackTitle} variant="title">
-            {item.title}
-          </AppText>
-          <AppText colorToken="textSecondary" variant="body">
-            {item.subtitle}
-          </AppText>
+
+          <Image
+            resizeMode="contain"
+            source={getTrackIllustration(item, index)}
+            style={styles.upcomingTrackImage}
+          />
         </View>
       ))}
     </View>
   );
+}
+
+function getTrackIllustration(item: HomeTrackItemEntity, index: number): ImageSourcePropType {
+  const normalizedTitle = item.title.toLowerCase();
+
+  if (normalizedTitle.includes('skill') || normalizedTitle.includes('track')) {
+    return trackAndFieldIllustration;
+  }
+
+  if (normalizedTitle.includes('mentor')) {
+    return videoTutorialIllustration;
+  }
+
+  if (normalizedTitle.includes('national') || normalizedTitle.includes('challenge')) {
+    return businessChallengeIllustration;
+  }
+
+  if (normalizedTitle.includes('creator') || normalizedTitle.includes('organizer')) {
+    return organizingProjectsIllustration;
+  }
+
+  const fallbackByOrder = [
+    trackAndFieldIllustration,
+    videoTutorialIllustration,
+    businessChallengeIllustration,
+    organizingProjectsIllustration,
+  ];
+
+  return fallbackByOrder[index] ?? trackAndFieldIllustration;
 }
 
 function Metric({

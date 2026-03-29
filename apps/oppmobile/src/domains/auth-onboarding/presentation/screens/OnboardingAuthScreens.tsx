@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { Image, type ImageSourcePropType, Pressable, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Image, type ImageSourcePropType, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppText, FlowScreenTemplate, InputField, SearchInput } from '../../../../shared/ui';
+import { AppText } from '../../../../shared/ui';
 import onboardingCampusImage from '../../../../../assets/college campus-amico 1.png';
 import onboardingExperienceImage from '../../../../../assets/Learning-amico 1.png';
 import onboardingUpdatesImage from '../../../../../assets/Status update-amico 1.png';
@@ -257,63 +257,6 @@ function OnboardingIllustration({ variant, style, imageSource }: OnboardingIllus
   );
 }
 
-interface AuthStepScreenProps {
-  readonly title: string;
-  readonly subtitle: string;
-  readonly routeLabel: string;
-  readonly ctaLabel: string;
-  readonly onContinue: () => void;
-  readonly beforeActions?: React.ReactNode;
-  readonly errorMessage?: string | undefined;
-  readonly secondaryLabel?: string;
-  readonly onSecondary?: () => void;
-  readonly isSubmitting?: boolean;
-  readonly children?: React.ReactNode;
-}
-
-function AuthStepScreen({
-  title,
-  subtitle,
-  routeLabel,
-  ctaLabel,
-  onContinue,
-  beforeActions,
-  errorMessage,
-  secondaryLabel,
-  onSecondary,
-  isSubmitting = false,
-  children,
-}: AuthStepScreenProps) {
-  const actions = [{ label: ctaLabel, onPress: onContinue, loading: isSubmitting, disabled: isSubmitting }] as Array<{
-    readonly label: string;
-    readonly onPress: () => void;
-    readonly tone?: 'primary' | 'secondary' | 'outline';
-    readonly loading?: boolean;
-    readonly disabled?: boolean;
-  }>;
-
-  if (secondaryLabel && onSecondary) {
-    actions.push({
-      label: secondaryLabel,
-      onPress: onSecondary,
-      tone: 'outline',
-      disabled: isSubmitting,
-    });
-  }
-
-  return (
-    <FlowScreenTemplate actions={actions} routeLabel={routeLabel} showFooter={false} subtitle={subtitle} title={title}>
-      <View style={styles.formBlock}>{children}</View>
-      {errorMessage ? (
-        <AppText colorToken="danger" style={styles.errorText} variant="caption">
-          {errorMessage}
-        </AppText>
-      ) : null}
-      {beforeActions}
-    </FlowScreenTemplate>
-  );
-}
-
 interface SignUpScreenProps {
   readonly initialEmail?: string;
   readonly onContinue: (email: string) => void;
@@ -348,39 +291,104 @@ export function SignUpScreen({ initialEmail = '', onContinue, onGoogleContinue, 
   };
 
   return (
-    <AuthStepScreen
-      ctaLabel="Continue"
-      errorMessage={errorMessage}
-      isSubmitting={isSubmitting}
-      onContinue={submit}
-      onSecondary={onSignIn}
-      routeLabel="Auth / Sign Up"
-      secondaryLabel="Already have an account? Sign in"
-      subtitle="Register now to take part in all the events."
-      title="Sign Up"
-      beforeActions={
-        <View style={styles.socialAuthBlock}>
-          <AppText colorToken="textMuted" style={styles.orText} variant="caption">
-            Or
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.signUpSafeArea}>
+      <View style={styles.signUpRoot}>
+        <View style={styles.signUpContent}>
+          <View style={styles.signUpMetaRow}>
+            <AppText style={styles.signUpStepText} variant="bodyStrong">
+              Step 1 of 4
+            </AppText>
+            <Pressable hitSlop={10} onPress={onSignIn}>
+              <AppText colorToken="textMuted" style={styles.signUpSkipText} variant="bodyStrong">
+                Skip
+              </AppText>
+            </Pressable>
+          </View>
+
+          <AppText style={styles.signUpHeading} variant="displayH1">
+            Sign Up
           </AppText>
-          <Pressable onPress={onGoogleContinue} style={styles.googleButton}>
-            <AppText colorToken="brandPrimaryStrong" variant="bodyStrong">
+          <AppText colorToken="textMuted" style={styles.signUpSubHeading} variant="body">
+            Register now to take part in all the events
+          </AppText>
+
+          <Pressable onPress={onGoogleContinue} style={styles.signUpGoogleButton}>
+            <View style={styles.googleGlyph}>
+              <View style={styles.googleGlyphRing} />
+              <View style={styles.googleGlyphCutout} />
+              <View style={styles.googleGlyphBar} />
+            </View>
+            <AppText colorToken="brandSecondary" style={styles.signUpGoogleText} variant="bodyStrong">
               Continue with Google
             </AppText>
           </Pressable>
+
+          <View style={styles.signUpDividerRow}>
+            <View style={styles.signUpDividerLine} />
+            <View style={styles.signUpOrChip}>
+              <AppText style={styles.signUpOrText} variant="body">
+                Or
+              </AppText>
+            </View>
+          </View>
+
+          <View style={styles.signUpInputWrap}>
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder="Email address *"
+              placeholderTextColor="#7C737E"
+              style={styles.signUpInput}
+              value={email}
+            />
+          </View>
+
+          {errorMessage ? (
+            <AppText colorToken="danger" style={styles.signUpErrorText} variant="caption">
+              {errorMessage}
+            </AppText>
+          ) : null}
         </View>
-      }
-    >
-      <InputField
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="email-address"
-        label="Email"
-        onChangeText={setEmail}
-        placeholder="Email address"
-        value={email}
-      />
-    </AuthStepScreen>
+
+        <View style={styles.signUpBottomActions}>
+          <Pressable disabled={isSubmitting} onPress={submit} style={styles.signUpNextButton}>
+            <ArrowIcon color="#FFFFFF" direction="left" />
+            <AppText colorToken="textInverse" style={styles.signUpNextText} variant="bodyStrong">
+              {isSubmitting ? 'Loading...' : 'Next'}
+            </AppText>
+            <ArrowIcon color="#FFFFFF" direction="right" />
+          </Pressable>
+
+          <Pressable hitSlop={10} onPress={onSignIn} style={styles.signUpSignInButton}>
+            <AppText colorToken="brandSecondary" style={styles.signUpSignInText} variant="bodyStrong">
+              Already have an account? Sign in
+            </AppText>
+          </Pressable>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+interface ArrowIconProps {
+  readonly color: string;
+  readonly direction: 'left' | 'right';
+}
+
+function ArrowIcon({ color, direction }: ArrowIconProps) {
+  return (
+    <View
+      style={[
+        styles.arrowIcon,
+        {
+          borderBottomColor: color,
+          borderLeftColor: color,
+          transform: [{ rotate: direction === 'right' ? '-135deg' : '45deg' }],
+        },
+      ]}
+    />
   );
 }
 
@@ -388,6 +396,7 @@ interface VerifyIdentityScreenProps {
   readonly email: string;
   readonly initialOtp?: string;
   readonly onContinue: (otp: string) => void;
+  readonly onSkip?: () => void;
   readonly filled?: boolean;
 }
 
@@ -395,7 +404,8 @@ export function VerifyIdentityScreen({
   email,
   initialOtp = '',
   onContinue,
-  filled = false,
+  onSkip,
+  filled: _filled = false,
 }: VerifyIdentityScreenProps) {
   const [otp, setOtp] = useState(initialOtp);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
@@ -418,26 +428,81 @@ export function VerifyIdentityScreen({
   };
 
   return (
-    <AuthStepScreen
-      ctaLabel={filled ? 'Continue to profile setup' : 'Verify code'}
-      errorMessage={errorMessage}
-      isSubmitting={isSubmitting}
-      onContinue={submit}
-      routeLabel={filled ? 'Auth / Verify OTP Filled' : 'Auth / Verify OTP Empty'}
-      subtitle="We have sent an email with your code."
-      title="Verify your identity"
-    >
-      <InputField editable={false} label="Email" value={email} />
-      <InputField
-        autoCapitalize="none"
-        keyboardType="number-pad"
-        containerStyle={styles.inputSpacing}
-        label="OTP"
-        onChangeText={setOtp}
-        placeholder="Enter OTP"
-        value={otp}
-      />
-    </AuthStepScreen>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.verifySafeArea}>
+      <View style={styles.verifyRoot}>
+        <View style={styles.verifyContent}>
+          <View style={styles.verifyMetaRow}>
+            <AppText style={styles.verifyStepText} variant="bodyStrong">
+              Step 1 of 4
+            </AppText>
+            {onSkip ? (
+              <Pressable hitSlop={10} onPress={onSkip}>
+                <AppText colorToken="textMuted" style={styles.verifySkipText} variant="bodyStrong">
+                  Skip
+                </AppText>
+              </Pressable>
+            ) : null}
+          </View>
+
+          <AppText style={styles.verifyHeading} variant="displayH1">
+            Verify your identity
+          </AppText>
+
+          <AppText colorToken="textMuted" style={styles.verifySubHeading} variant="body">
+            We've sent an email with your code to: {email}
+          </AppText>
+
+          <View style={styles.verifyFieldWrap}>
+            <View style={[styles.verifyFieldContainer, styles.verifyFieldEmailContainer]}>
+              <TextInput
+                editable={false}
+                placeholderTextColor="#342636"
+                style={[styles.verifyFieldInput, styles.verifyFieldEmailInput]}
+                value={email}
+              />
+              <View style={[styles.verifyFloatingChip, styles.verifyFloatingChipWide]}>
+                <AppText style={styles.verifyFloatingChipText} variant="micro">
+                  Email address *
+                </AppText>
+              </View>
+            </View>
+
+            <View style={[styles.verifyFieldContainer, styles.verifyFieldOtpContainer]}>
+              <TextInput
+                autoCapitalize="none"
+                keyboardType="number-pad"
+                onChangeText={setOtp}
+                placeholder=""
+                placeholderTextColor="#342636"
+                style={styles.verifyFieldInput}
+                value={otp}
+              />
+              <View style={[styles.verifyFloatingChip, styles.verifyFloatingChipNarrow]}>
+                <AppText style={styles.verifyFloatingChipText} variant="micro">
+                  OTP
+                </AppText>
+              </View>
+            </View>
+          </View>
+
+          {errorMessage ? (
+            <AppText colorToken="danger" style={styles.verifyErrorText} variant="caption">
+              {errorMessage}
+            </AppText>
+          ) : null}
+        </View>
+
+        <View style={styles.verifyBottomActions}>
+          <Pressable disabled={isSubmitting} onPress={submit} style={styles.verifyNextButton}>
+            <ArrowIcon color="#FFFFFF" direction="left" />
+            <AppText colorToken="textInverse" style={styles.verifyNextText} variant="bodyStrong">
+              {isSubmitting ? 'Loading...' : 'Next'}
+            </AppText>
+            <ArrowIcon color="#FFFFFF" direction="right" />
+          </Pressable>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -450,12 +515,14 @@ export interface MockProfilePersonalInput {
 interface ProfileSetupPersonalScreenProps {
   readonly initialValues: MockProfilePersonalInput;
   readonly onContinue: (values: MockProfilePersonalInput) => void;
+  readonly onSkip?: () => void;
 }
 
-export function ProfileSetupPersonalScreen({ initialValues, onContinue }: ProfileSetupPersonalScreenProps) {
+export function ProfileSetupPersonalScreen({ initialValues, onContinue, onSkip }: ProfileSetupPersonalScreenProps) {
   const [fullName, setFullName] = useState(initialValues.fullName);
   const [password, setPassword] = useState(initialValues.password);
   const [phoneNumber, setPhoneNumber] = useState(initialValues.phoneNumber);
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -489,33 +556,101 @@ export function ProfileSetupPersonalScreen({ initialValues, onContinue }: Profil
   };
 
   return (
-    <AuthStepScreen
-      ctaLabel="Continue"
-      errorMessage={errorMessage}
-      isSubmitting={isSubmitting}
-      onContinue={submit}
-      routeLabel="Auth / Profile Personal"
-      subtitle="Just a quick introduction and we are good to go."
-      title="You are new here"
-    >
-      <InputField label="Full name" onChangeText={setFullName} placeholder="Enter full name" value={fullName} />
-      <InputField
-        containerStyle={styles.inputSpacing}
-        label="Password"
-        onChangeText={setPassword}
-        placeholder="Create password"
-        secureTextEntry
-        value={password}
-      />
-      <InputField
-        containerStyle={styles.inputSpacing}
-        keyboardType="phone-pad"
-        label="Phone number"
-        onChangeText={setPhoneNumber}
-        placeholder="Enter phone"
-        value={phoneNumber}
-      />
-    </AuthStepScreen>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.detailsSafeArea}>
+      <View style={styles.detailsRoot}>
+        <View style={styles.detailsContent}>
+          <View style={styles.detailsMetaRow}>
+            <AppText style={styles.detailsStepText} variant="bodyStrong">
+              Step 2 of 4
+            </AppText>
+            {onSkip ? (
+              <Pressable hitSlop={10} onPress={onSkip}>
+                <AppText colorToken="textMuted" style={styles.detailsSkipText} variant="bodyStrong">
+                  Skip
+                </AppText>
+              </Pressable>
+            ) : null}
+          </View>
+
+          <AppText style={styles.detailsHeading} variant="displayH1">
+            You are new here
+          </AppText>
+          <AppText colorToken="textMuted" style={styles.detailsSubHeading} variant="body">
+            Just a quick introduction and we are good to go
+          </AppText>
+
+          <View style={styles.detailsFieldWrap}>
+            <View style={[styles.detailsFieldContainer, styles.detailsFieldActive]}>
+              <TextInput
+                onChangeText={setFullName}
+                placeholder="Enter full name"
+                placeholderTextColor="#7C737E"
+                style={styles.detailsFieldInput}
+                value={fullName}
+              />
+              <View style={[styles.detailsFloatingChip, styles.detailsFloatingChipWide]}>
+                <AppText style={styles.detailsFloatingChipText} variant="micro">
+                  Full name
+                </AppText>
+              </View>
+            </View>
+
+            <View style={[styles.detailsFieldContainer, styles.detailsFieldActive, styles.detailsFieldSpacing]}>
+              <TextInput
+                onChangeText={setPassword}
+                placeholder="Create password"
+                placeholderTextColor="#7C737E"
+                secureTextEntry={!showPassword}
+                style={[styles.detailsFieldInput, styles.detailsFieldInputWithIcon]}
+                value={password}
+              />
+              <Pressable hitSlop={8} onPress={() => setShowPassword((current) => !current)} style={styles.detailsEyeButton}>
+                <View style={styles.detailsEyeOuter}>
+                  <View style={styles.detailsEyeInner} />
+                </View>
+              </Pressable>
+              <View style={[styles.detailsFloatingChip, styles.detailsFloatingChipWide]}>
+                <AppText style={styles.detailsFloatingChipText} variant="micro">
+                  Password
+                </AppText>
+              </View>
+            </View>
+
+            <View style={[styles.detailsFieldContainer, styles.detailsFieldActive, styles.detailsFieldSpacing]}>
+              <TextInput
+                keyboardType="phone-pad"
+                onChangeText={setPhoneNumber}
+                placeholder="Enter phone"
+                placeholderTextColor="#7C737E"
+                style={styles.detailsFieldInput}
+                value={phoneNumber}
+              />
+              <View style={[styles.detailsFloatingChip, styles.detailsFloatingChipWide]}>
+                <AppText style={styles.detailsFloatingChipText} variant="micro">
+                  Phone number
+                </AppText>
+              </View>
+            </View>
+          </View>
+
+          {errorMessage ? (
+            <AppText colorToken="danger" style={styles.detailsErrorText} variant="caption">
+              {errorMessage}
+            </AppText>
+          ) : null}
+        </View>
+
+        <View style={styles.detailsBottomActions}>
+          <Pressable disabled={isSubmitting} onPress={submit} style={styles.detailsNextButton}>
+            <ArrowIcon color="#FFFFFF" direction="left" />
+            <AppText colorToken="textInverse" style={styles.detailsNextText} variant="bodyStrong">
+              {isSubmitting ? 'Loading...' : 'Next'}
+            </AppText>
+            <ArrowIcon color="#FFFFFF" direction="right" />
+          </Pressable>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -532,9 +667,10 @@ export interface MockProfileEducationInput {
 interface ProfileSetupEducationScreenProps {
   readonly initialValues: MockProfileEducationInput;
   readonly onContinue: (values: MockProfileEducationInput) => void;
+  readonly onSkip?: () => void;
 }
 
-export function ProfileSetupEducationScreen({ initialValues, onContinue }: ProfileSetupEducationScreenProps) {
+export function ProfileSetupEducationScreen({ initialValues, onContinue, onSkip }: ProfileSetupEducationScreenProps) {
   const [college, setCollege] = useState(initialValues.college);
   const [course, setCourse] = useState(initialValues.course);
   const [specialization, setSpecialization] = useState(initialValues.specialization);
@@ -542,8 +678,47 @@ export function ProfileSetupEducationScreen({ initialValues, onContinue }: Profi
   const [endYear, setEndYear] = useState(initialValues.endYear);
   const [gender, setGender] = useState(initialValues.gender);
   const [rollNumber, setRollNumber] = useState(initialValues.rollNumber);
+  const [activePicker, setActivePicker] = useState<null | 'startYear' | 'endYear' | 'gender'>(null);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const yearOptions = useMemo(() => {
+    const latestYear = new Date().getFullYear() + 6;
+    const earliestYear = latestYear - 60;
+    return Array.from({ length: latestYear - earliestYear + 1 }, (_, index) => String(latestYear - index));
+  }, []);
+
+  const pickerTitle =
+    activePicker === 'startYear'
+      ? 'Select start year'
+      : activePicker === 'endYear'
+        ? 'Select end year'
+        : activePicker === 'gender'
+          ? 'Select gender'
+          : '';
+
+  const pickerOptions = activePicker === 'gender' ? ['Male', 'Female', 'Rather not to say'] : yearOptions;
+
+  const pickerValue =
+    activePicker === 'startYear'
+      ? startYear
+      : activePicker === 'endYear'
+        ? endYear
+        : activePicker === 'gender'
+          ? gender
+          : '';
+
+  const selectPickerValue = (value: string) => {
+    if (activePicker === 'startYear') {
+      setStartYear(value);
+    } else if (activePicker === 'endYear') {
+      setEndYear(value);
+    } else if (activePicker === 'gender') {
+      setGender(value);
+    }
+
+    setActivePicker(null);
+  };
 
   const submit = () => {
     if (!college.trim() || !course.trim() || !specialization.trim()) {
@@ -579,64 +754,229 @@ export function ProfileSetupEducationScreen({ initialValues, onContinue }: Profi
   };
 
   return (
-    <AuthStepScreen
-      ctaLabel="Continue"
-      errorMessage={errorMessage}
-      isSubmitting={isSubmitting}
-      onContinue={submit}
-      routeLabel="Auth / Profile Education"
-      subtitle="Just a quick introduction and we are good to go."
-      title="Education Info"
-    >
-      <InputField
-        label="College"
-        onChangeText={setCollege}
-        placeholder="College/University name"
-        value={college}
-      />
-      <InputField containerStyle={styles.inputSpacing} label="Course" onChangeText={setCourse} placeholder="B.Tech" value={course} />
-      <InputField
-        containerStyle={styles.inputSpacing}
-        label="Specialization"
-        onChangeText={setSpecialization}
-        placeholder="CSE"
-        value={specialization}
-      />
-      <View style={styles.inlineFieldsRow}>
-        <InputField
-          containerStyle={styles.inlineField}
-          keyboardType="number-pad"
-          label="Start year"
-          onChangeText={setStartYear}
-          placeholder="2022"
-          value={startYear}
+    <>
+      <SafeAreaView edges={["top", "left", "right"]} style={styles.educationSafeArea}>
+        <View style={styles.educationRoot}>
+          <View style={styles.educationContent}>
+          <View style={styles.educationMetaRow}>
+            <AppText style={styles.educationStepText} variant="bodyStrong">
+              Step 3 of 4
+            </AppText>
+            {onSkip ? (
+              <Pressable hitSlop={10} onPress={onSkip}>
+                <AppText colorToken="textMuted" style={styles.educationSkipText} variant="bodyStrong">
+                  Skip
+                </AppText>
+              </Pressable>
+            ) : null}
+          </View>
+
+          <AppText style={styles.educationHeading} variant="displayH1">
+            Education Info
+          </AppText>
+          <AppText colorToken="textMuted" style={styles.educationSubHeading} variant="body">
+            Just a quick introduction and we are good to go
+          </AppText>
+
+            <View style={styles.educationFieldWrap}>
+              <FloatingField
+                label="College/University name"
+                onChangeText={setCollege}
+                placeholder="College/University name"
+                style={styles.educationFieldActive}
+                value={college}
+              />
+              <FloatingField
+                containerStyle={styles.educationFieldSpacing}
+                label="Course"
+                onChangeText={setCourse}
+                placeholder="B.Tech"
+                style={styles.educationFieldActive}
+                value={course}
+              />
+              <FloatingField
+                containerStyle={styles.educationFieldSpacing}
+                label="Specialization"
+                onChangeText={setSpecialization}
+                placeholder="CSE"
+                style={styles.educationFieldActive}
+                value={specialization}
+              />
+
+              <View style={styles.educationDualRow}>
+                <SelectField
+                  containerStyle={styles.educationHalfField}
+                  label="Start year"
+                  onPress={() => setActivePicker('startYear')}
+                  placeholder="2022"
+                  value={startYear}
+                />
+                <SelectField
+                  containerStyle={styles.educationHalfField}
+                  label="End year"
+                  onPress={() => setActivePicker('endYear')}
+                  placeholder="2026"
+                  value={endYear}
+                />
+              </View>
+
+              <View style={styles.educationDualRowBottom}>
+                <SelectField
+                  containerStyle={styles.educationHalfField}
+                  label="Gender"
+                  onPress={() => setActivePicker('gender')}
+                  placeholder="Male"
+                  value={gender}
+                />
+                <FloatingField
+                  containerStyle={styles.educationHalfField}
+                  label="Roll number"
+                  onChangeText={setRollNumber}
+                  placeholder="2026"
+                  style={styles.educationFieldActiveCompact}
+                  value={rollNumber}
+                />
+              </View>
+            </View>
+
+          {errorMessage ? (
+            <AppText colorToken="danger" style={styles.educationErrorText} variant="caption">
+              {errorMessage}
+            </AppText>
+          ) : null}
+          </View>
+
+          <View style={styles.educationBottomActions}>
+            <Pressable disabled={isSubmitting} onPress={submit} style={styles.educationNextButton}>
+              <ArrowIcon color="#FFFFFF" direction="left" />
+              <AppText colorToken="textInverse" style={styles.educationNextText} variant="bodyStrong">
+                {isSubmitting ? 'Loading...' : 'Next'}
+              </AppText>
+              <ArrowIcon color="#FFFFFF" direction="right" />
+            </Pressable>
+          </View>
+        </View>
+      </SafeAreaView>
+
+      <Modal animationType="slide" onRequestClose={() => setActivePicker(null)} transparent visible={Boolean(activePicker)}>
+        <Pressable onPress={() => setActivePicker(null)} style={styles.educationSelectionBackdrop}>
+          <Pressable onPress={() => {}} style={styles.educationSelectionSheet}>
+            <View style={styles.educationSelectionHeader}>
+              <AppText style={styles.educationSelectionTitle} variant="bodyStrong">
+                {pickerTitle}
+              </AppText>
+              <Pressable hitSlop={8} onPress={() => setActivePicker(null)}>
+                <AppText colorToken="brandSecondary" variant="label">
+                  Done
+                </AppText>
+              </Pressable>
+            </View>
+
+            <ScrollView style={styles.educationSelectionList}>
+              {pickerOptions.map((option) => {
+                const isSelected = option === pickerValue;
+                return (
+                  <Pressable
+                    key={option}
+                    onPress={() => selectPickerValue(option)}
+                    style={[styles.educationSelectionOption, isSelected ? styles.educationSelectionOptionActive : null]}
+                  >
+                    <AppText
+                      style={[
+                        styles.educationSelectionOptionText,
+                        isSelected ? styles.educationSelectionOptionTextActive : null,
+                      ]}
+                      variant="body"
+                    >
+                      {option}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
+interface FloatingFieldProps {
+  readonly label: string;
+  readonly value: string;
+  readonly onChangeText: (value: string) => void;
+  readonly placeholder: string;
+  readonly keyboardType?: 'default' | 'number-pad';
+  readonly containerStyle?: object | undefined;
+  readonly style?: object | undefined;
+  readonly icon?: 'chevron';
+}
+
+function FloatingField({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType = 'default',
+  containerStyle,
+  style,
+  icon,
+}: FloatingFieldProps) {
+  return (
+    <View style={containerStyle}>
+      <View style={[styles.educationFieldContainer, style]}>
+        <TextInput
+          keyboardType={keyboardType}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#7C737E"
+          style={[styles.educationFieldInput, icon ? styles.educationFieldInputWithIcon : null]}
+          value={value}
         />
-        <InputField
-          containerStyle={styles.inlineField}
-          keyboardType="number-pad"
-          label="End year"
-          onChangeText={setEndYear}
-          placeholder="2026"
-          value={endYear}
-        />
+        {icon === 'chevron' ? (
+          <View style={styles.educationChevronWrap}>
+            <View style={styles.educationChevron} />
+          </View>
+        ) : null}
+        <View style={styles.educationFloatingChip}>
+          <AppText style={styles.educationFloatingChipText} variant="micro">
+            {label}
+          </AppText>
+        </View>
       </View>
-      <View style={styles.inlineFieldsRow}>
-        <InputField
-          containerStyle={styles.inlineField}
-          label="Gender"
-          onChangeText={setGender}
-          placeholder="Male"
-          value={gender}
-        />
-        <InputField
-          containerStyle={styles.inlineField}
-          label="Roll number"
-          onChangeText={setRollNumber}
-          placeholder="2026"
-          value={rollNumber}
-        />
-      </View>
-    </AuthStepScreen>
+    </View>
+  );
+}
+
+interface SelectFieldProps {
+  readonly label: string;
+  readonly value: string;
+  readonly placeholder: string;
+  readonly onPress: () => void;
+  readonly containerStyle?: object | undefined;
+}
+
+function SelectField({ label, value, placeholder, onPress, containerStyle }: SelectFieldProps) {
+  return (
+    <View style={containerStyle}>
+      <Pressable onPress={onPress} style={[styles.educationFieldContainer, styles.educationFieldActive]}>
+        <AppText
+          colorToken={value ? 'textPrimary' : 'textMuted'}
+          style={[styles.educationFieldValueText, value ? null : styles.educationFieldValuePlaceholder]}
+          variant="body"
+        >
+          {value || placeholder}
+        </AppText>
+        <View style={styles.educationChevronWrap}>
+          <View style={styles.educationChevron} />
+        </View>
+        <View style={styles.educationFloatingChip}>
+          <AppText style={styles.educationFloatingChipText} variant="micro">
+            {label}
+          </AppText>
+        </View>
+      </Pressable>
+    </View>
   );
 }
 
@@ -672,37 +1012,87 @@ export function ProfileSetupSkillsScreen({ initialSkills, onContinue, onSkip }: 
   };
 
   return (
-    <AuthStepScreen
-      ctaLabel="Continue"
-      isSubmitting={isSubmitting}
-      onContinue={() => {
-        setIsSubmitting(true);
-        setTimeout(() => {
-          setIsSubmitting(false);
-          onContinue(selectedSkills);
-        }, 360);
-      }}
-      onSecondary={onSkip}
-      routeLabel="Auth / Profile Skills"
-      secondaryLabel="Skip"
-      subtitle="Skills are captured as mock tags and can later map to backend profiles."
-      title="Skills Info"
-    >
-      <SearchInput onChangeText={setQuery} value={query} />
-      <View style={styles.chipsRow}>
-        {filteredSkills.map((chip) => (
-          <Pressable
-            key={chip}
-            onPress={() => toggleSkill(chip)}
-            style={[styles.chip, selectedSkills.includes(chip) ? styles.chipSelected : null]}
-          >
-            <AppText colorToken={selectedSkills.includes(chip) ? 'textInverse' : 'brandPrimaryStrong'} variant="caption">
-              {chip}
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.skillsSafeArea}>
+      <View style={styles.skillsRoot}>
+        <ScrollView contentContainerStyle={styles.skillsScrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.skillsMetaRow}>
+            <AppText style={styles.skillsStepText} variant="bodyStrong">
+              Step 4 of 4
             </AppText>
+            <Pressable hitSlop={10} onPress={onSkip}>
+              <AppText colorToken="textMuted" style={styles.skillsSkipText} variant="bodyStrong">
+                Skip
+              </AppText>
+            </Pressable>
+          </View>
+
+          <AppText style={styles.skillsHeading} variant="displayH1">
+            Skills Info
+          </AppText>
+          <AppText colorToken="textMuted" style={styles.skillsSubHeading} variant="body">
+            Pick relevant skills so we can personalize your opportunities
+          </AppText>
+
+          <View style={styles.skillsSearchWrap}>
+            <View style={[styles.skillsSearchField, styles.skillsSearchFieldActive]}>
+              <TextInput
+                onChangeText={setQuery}
+                placeholder="Search skills"
+                placeholderTextColor="#7C737E"
+                style={styles.skillsSearchInput}
+                value={query}
+              />
+              <View style={styles.skillsFloatingChip}>
+                <AppText style={styles.skillsFloatingChipText} variant="micro">
+                  Skills
+                </AppText>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.skillsChipsGrid}>
+            {filteredSkills.map((chip) => {
+              const selected = selectedSkills.includes(chip);
+              return (
+                <Pressable
+                  key={chip}
+                  onPress={() => toggleSkill(chip)}
+                  style={[styles.skillsChip, selected ? styles.skillsChipSelected : null]}
+                >
+                  <AppText style={[styles.skillsChipText, selected ? styles.skillsChipTextSelected : null]} variant="label">
+                    {chip}
+                  </AppText>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <AppText colorToken="textMuted" style={styles.skillsCountText} variant="caption">
+            {selectedSkills.length} selected
+          </AppText>
+        </ScrollView>
+
+        <View style={styles.skillsBottomActions}>
+          <Pressable
+            disabled={isSubmitting}
+            onPress={() => {
+              setIsSubmitting(true);
+              setTimeout(() => {
+                setIsSubmitting(false);
+                onContinue(selectedSkills);
+              }, 360);
+            }}
+            style={styles.skillsNextButton}
+          >
+            <ArrowIcon color="#FFFFFF" direction="left" />
+            <AppText colorToken="textInverse" style={styles.skillsNextText} variant="bodyStrong">
+              {isSubmitting ? 'Loading...' : 'Next'}
+            </AppText>
+            <ArrowIcon color="#FFFFFF" direction="right" />
           </Pressable>
-        ))}
+        </View>
       </View>
-    </AuthStepScreen>
+    </SafeAreaView>
   );
 }
 
@@ -723,6 +1113,7 @@ export function SignInScreen({
 }: SignInScreenProps) {
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -753,47 +1144,100 @@ export function SignInScreen({
   };
 
   return (
-    <AuthStepScreen
-      ctaLabel="Sign in"
-      errorMessage={errorMessage}
-      isSubmitting={isSubmitting}
-      onContinue={submit}
-      onSecondary={onSignUp}
-      routeLabel="Auth / Sign In"
-      secondaryLabel="Need an account? Sign up"
-      subtitle="Sign in to continue your OppSkills journey."
-      title="Sign In"
-      beforeActions={
-        <View style={styles.socialAuthBlock}>
-          <AppText colorToken="textMuted" style={styles.orText} variant="caption">
-            Or
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.signInSafeArea}>
+      <View style={styles.signInRoot}>
+        <View style={styles.signInContent}>
+          <View style={styles.signInMetaRow}>
+            <View />
+            <Pressable hitSlop={10} onPress={onSignUp}>
+              <AppText colorToken="textMuted" style={styles.signInSkipText} variant="bodyStrong">
+                Skip
+              </AppText>
+            </Pressable>
+          </View>
+
+          <AppText style={styles.signInHeading} variant="displayH1">
+            Sign In
           </AppText>
-          <Pressable onPress={onGoogleContinue} style={styles.googleButton}>
-            <AppText colorToken="brandPrimaryStrong" variant="bodyStrong">
+          <AppText colorToken="textMuted" style={styles.signInSubHeading} variant="body">
+            Register now to take part in all the events
+          </AppText>
+
+          <Pressable onPress={onGoogleContinue} style={styles.signInGoogleButton}>
+            <View style={styles.googleGlyph}>
+              <View style={styles.googleGlyphRing} />
+              <View style={styles.googleGlyphCutout} />
+              <View style={styles.googleGlyphBar} />
+            </View>
+            <AppText colorToken="brandSecondary" style={styles.signInGoogleText} variant="bodyStrong">
               Continue with Google
             </AppText>
           </Pressable>
+
+          <View style={styles.signInDividerRow}>
+            <View style={styles.signInDividerLine} />
+            <View style={styles.signInOrChip}>
+              <AppText style={styles.signInOrText} variant="body">
+                Or
+              </AppText>
+            </View>
+          </View>
+
+          <View style={styles.signInFieldWrap}>
+            <View style={styles.signInFieldContainer}>
+              <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                onChangeText={setEmail}
+                placeholder="Email address *"
+                placeholderTextColor="#7C737E"
+                style={styles.signInFieldInput}
+                value={email}
+              />
+            </View>
+
+            <View style={[styles.signInFieldContainer, styles.signInFieldSpacing]}>
+              <TextInput
+                onChangeText={setPassword}
+                placeholder="Password *"
+                placeholderTextColor="#7C737E"
+                secureTextEntry={!showPassword}
+                style={[styles.signInFieldInput, styles.signInFieldInputWithIcon]}
+                value={password}
+              />
+              <Pressable hitSlop={8} onPress={() => setShowPassword((current) => !current)} style={styles.signInEyeButton}>
+                <View style={styles.signInEyeOuter}>
+                  <View style={styles.signInEyeInner} />
+                </View>
+              </Pressable>
+            </View>
+          </View>
+
+          {errorMessage ? (
+            <AppText colorToken="danger" style={styles.signInErrorText} variant="caption">
+              {errorMessage}
+            </AppText>
+          ) : null}
         </View>
-      }
-    >
-      <InputField
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="email-address"
-        label="Email"
-        onChangeText={setEmail}
-        placeholder="Email address"
-        value={email}
-      />
-      <InputField
-        containerStyle={styles.inputSpacing}
-        label="Password"
-        onChangeText={setPassword}
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-      />
-    </AuthStepScreen>
+
+        <View style={styles.signInBottomActions}>
+          <Pressable disabled={isSubmitting} onPress={submit} style={styles.signInNextButton}>
+            <ArrowIcon color="#FFFFFF" direction="left" />
+            <AppText colorToken="textInverse" style={styles.signInNextText} variant="bodyStrong">
+              {isSubmitting ? 'Loading...' : 'Next'}
+            </AppText>
+            <ArrowIcon color="#FFFFFF" direction="right" />
+          </Pressable>
+
+          <Pressable hitSlop={10} onPress={onSignUp} style={styles.signInSignUpButton}>
+            <AppText colorToken="brandSecondary" style={styles.signInSignUpText} variant="bodyStrong">
+              Don’t have an account? Sign Up
+            </AppText>
+          </Pressable>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
