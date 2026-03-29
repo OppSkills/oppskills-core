@@ -9,10 +9,10 @@ import {
   View,
 } from 'react-native';
 
-import frame502 from '../../../../../assets/Frame 502.png';
-import frame503 from '../../../../../assets/Frame 503.png';
-import frame504 from '../../../../../assets/Frame 504.png';
-import frame505 from '../../../../../assets/Frame 505.png';
+import hackathonCategoryButtonImage from '../../../../../assets/Frame 548.png';
+import competitionsCategoryButtonImage from '../../../../../assets/Frame 549.png';
+import eventsCategoryButtonImage from '../../../../../assets/Frame 550.png';
+import communitiesCategoryButtonImage from '../../../../../assets/Frame 551.png';
 import eventHeroImage from '../../../../../assets/WhatsApp Image 2026-02-24 at 16.23.33 1.png';
 import attendeeOne from '../../../../../assets/iiitd 1.png';
 import attendeeTwo from '../../../../../assets/sharda 1.png';
@@ -127,23 +127,20 @@ function DiscoverEventsTemplate({
       >
         <View style={styles.frame552}>
           <CategoryTile
-            image={frame502}
-            label="Hackathons"
+            image={hackathonCategoryButtonImage}
             onPress={() => {
               handleCategorySelect('hackathons');
             }}
           />
           <CategoryTile
-            image={frame503}
-            label="Competitions"
+            image={competitionsCategoryButtonImage}
             onPress={() => {
               handleCategorySelect('competitions');
             }}
           />
-          <CategoryTile image={frame504} label="Events" selected />
+          <CategoryTile image={eventsCategoryButtonImage} />
           <CategoryTile
-            image={frame505}
-            label="Communities"
+            image={communitiesCategoryButtonImage}
             onPress={() => {
               handleCategorySelect('communities');
             }}
@@ -210,26 +207,14 @@ function DiscoverEventsTemplate({
 
 function CategoryTile({
   image,
-  label,
   onPress,
-  selected = false,
 }: {
   readonly image: ImageSourcePropType;
-  readonly label: string;
   readonly onPress?: () => void;
-  readonly selected?: boolean;
 }) {
   return (
-    <Pressable disabled={!onPress} onPress={onPress} style={[styles.categoryTile, selected ? styles.categoryTileActive : null]}>
+    <Pressable disabled={!onPress} onPress={onPress} style={styles.categoryTile}>
       <Image resizeMode="cover" source={image} style={styles.categoryTileImage} />
-      <AppText
-        colorToken={selected ? 'textPrimary' : 'textPrimary'}
-        style={styles.categoryTileLabel}
-        variant={selected ? 'caption' : 'micro'}
-      >
-        {label}
-      </AppText>
-      {selected ? <View style={styles.categorySelectedPill} /> : null}
     </Pressable>
   );
 }
@@ -380,36 +365,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#271B40',
     borderColor: '#271B40',
   },
-  categorySelectedPill: {
-    backgroundColor: '#423072',
-    borderRadius: 32,
-    height: 3,
-    marginTop: 2,
-    width: 65,
-  },
   categoryTile: {
-    alignItems: 'center',
-    backgroundColor: '#F3EEFF',
-    borderColor: '#E2D3FF',
     borderRadius: 8,
-    borderWidth: 0.5,
     flex: 1,
-    gap: 9,
     height: 72,
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-  },
-  categoryTileActive: {
-    borderColor: '#CDB5FF',
+    minWidth: 0,
+    overflow: 'hidden',
   },
   categoryTileImage: {
-    height: 32,
+    height: '100%',
     width: '100%',
-  },
-  categoryTileLabel: {
-    color: '#100013',
-    textAlign: 'center',
   },
   descriptionBlock: {
     gap: 8,
@@ -500,8 +465,11 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   frame545Scroll: {
-    flex: 1,
-    marginTop: 112,
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 110,
   },
   frame552: {
     flexDirection: 'row',
