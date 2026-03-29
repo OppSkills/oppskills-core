@@ -539,8 +539,8 @@ export class HackathonService {
       input.take != null
         ? input.take
         : String(input.appendResults) === 'true' || input.appendResults === true
-          ? 40
-          : 20;
+          ? 20
+          : 10;
     const page = input.page ? Math.max(1, Number(input.page)) : 1;
     const skip = (page - 1) * take;
 

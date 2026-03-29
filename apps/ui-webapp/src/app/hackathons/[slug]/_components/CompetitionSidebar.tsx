@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { SquareShareLine } from '@solar-icons/react'
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronRight,
@@ -13,15 +13,17 @@ import {
   IndianRupee,
   Loader2,
   CheckCircle,
+  ShareIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryState } from "nuqs";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import {
   checkMyHackathonTeam,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
+import { TeamDetailsCard } from "./TeamDetailsCard";
 import { getApiErrorMessage } from "@/lib/utils";
 import { format } from "date-fns";
 import type { CompetitionDetails } from "./types";
@@ -34,13 +36,20 @@ interface CompetitionSidebarProps {
 export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isSignedIn, getToken } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { user } = useUser();
   const [, setAuthMode] = useQueryState("auth");
-  const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
+  const [isCheckingRegistration, setIsCheckingRegistration] = useState(!!isSignedIn);
   const [isStartingRegistration, setIsStartingRegistration] = useState(false);
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
   const [myTeam, setMyTeam] = useState<TeamDetailResponse | null>(null);
-  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
+
+  const [registration, setRegistration] = useQueryState("registration");
+  const [invitation, setInvitation] = useQueryState("invitation");
+
+  const isRegistrationModalOpen = !!registration && !isCheckingRegistration && !isAlreadyRegistered;
+
+  const initialMode = registration === "join" ? "JOIN" : "CREATE";
 
   // Force re-check when redirected back from registration with ?registered=true
   const justRegistered = searchParams.get("registered") === "true";
@@ -48,7 +57,21 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   // Check if user is already registered when signed in
   useEffect(() => {
     async function checkRegistration() {
-      if (!isSignedIn || !competition.id) return;
+      // Don't act until auth is loaded
+      if (!isLoaded) return;
+
+      // If user is not signed in but has registration params, redirect to login
+      if (!isSignedIn) {
+        if (registration) {
+          setRegistration(null);
+          setInvitation(null);
+          setAuthMode("login");
+        }
+        setIsCheckingRegistration(false);
+        return;
+      }
+
+      if (!competition.id) return;
 
       setIsCheckingRegistration(true);
       try {
@@ -56,8 +79,15 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         if (!token) return;
 
         const team = await checkMyHackathonTeam(token, competition.id);
-        setIsAlreadyRegistered(!!team);
+        const isRegistered = !!team;
+        setIsAlreadyRegistered(isRegistered);
         setMyTeam(team);
+
+        // If user is already registered, clear registration query params to prevent modal popping up
+        if (isRegistered && registration) {
+          setRegistration(null);
+          setInvitation(null);
+        }
       } catch (error) {
         console.error("Error checking registration:", error);
         setIsAlreadyRegistered(false);
@@ -68,7 +98,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     }
 
     checkRegistration();
-  }, [isSignedIn, competition.id, getToken, justRegistered]);
+  }, [isLoaded, isSignedIn, competition.id, getToken, justRegistered, registration, setRegistration, setInvitation, setAuthMode]);
 
   // Check if registration is closed
   const isRegistrationClosed =
@@ -112,8 +142,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         return;
       }
 
-
-      setIsRegistrationModalOpen(true);
+      setRegistration("create");
     } catch (error) {
       console.error("Error starting registration:", error);
       toast.error(
@@ -383,87 +412,24 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           {renderRegisterButton()}
 
           {/* Team Status Card - shown when registered */}
-          {isAlreadyRegistered && myTeam && (
-            <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-xl">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-green-800">
-                  Your Team
-                </span>
-                <Link
-                  href={`/hackathons/${competition.slug}/team`}
-                  className="text-xs text-green-700 hover:text-green-900 underline"
-                >
-                  View Details
-                </Link>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  {myTeam.leader && (
-                    <div
-                      className="w-8 h-8 rounded-full border-2 border-white bg-green-600 flex items-center justify-center text-white text-xs font-medium overflow-hidden"
-                      title={`${myTeam.leader.firstName || ""} ${myTeam.leader.lastName || ""} (Leader)`}
-                    >
-                      {myTeam.leader.imageUrl ? (
-                        <Image
-                          src={myTeam.leader.imageUrl}
-                          alt="Leader"
-                          width={32}
-                          height={32}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        (
-                          myTeam.leader.firstName?.[0] ||
-                          myTeam.leader.email?.[0] ||
-                          "L"
-                        ).toUpperCase()
-                      )}
-                    </div>
-                  )}
-                  {Array.isArray(myTeam.members) &&
-                    myTeam.members.slice(0, 3).map((member) => (
-                      <div
-                        key={member.id}
-                        className="w-8 h-8 rounded-full border-2 border-white bg-neutral-400 flex items-center justify-center text-white text-xs font-medium overflow-hidden"
-                        title={`${member.user.firstName || ""} ${member.user.lastName || ""}`}
-                      >
-                        {member.user.imageUrl ? (
-                          <Image
-                            src={member.user.imageUrl}
-                            alt="Member"
-                            width={32}
-                            height={32}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          (
-                            member.user.firstName?.[0] ||
-                            member.user.email?.[0] ||
-                            "M"
-                          ).toUpperCase()
-                        )}
-                      </div>
-                    ))}
-                  {Array.isArray(myTeam.members) &&
-                    myTeam.members.length > 3 && (
-                      <div className="w-8 h-8 rounded-full border-2 border-white bg-neutral-300 flex items-center justify-center text-neutral-600 text-xs font-medium">
-                        +{myTeam.members.length - 3}
-                      </div>
-                    )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-neutral-900 truncate">
-                    {myTeam.name}
-                  </p>
-                  <p className="text-xs text-neutral-500 truncate">
-                    Led by{" "}
-                    {myTeam.leader?.firstName ||
-                      myTeam.leader?.email?.split("@")[0] ||
-                      "Unknown"}
-                  </p>
-                </div>
-              </div>
-            </div>
+          {isAlreadyRegistered && myTeam && user && (
+            <TeamDetailsCard
+              team={myTeam}
+              currentUserId={user.id}
+              hackathonSlug={competition.slug}
+              onUpdate={() => {
+                // Force a re-fetch of registration status if needed
+                const checkReg = async () => {
+                  const token = await getToken();
+                  if (token) {
+                    const team = await checkMyHackathonTeam(token, competition.id);
+                    setMyTeam(team);
+                    setIsAlreadyRegistered(!!team);
+                  }
+                };
+                checkReg();
+              }}
+            />
           )}
 
           {/* Divider */}
@@ -537,12 +503,18 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
       <RegistrationModal
         isOpen={isRegistrationModalOpen}
-        onClose={() => setIsRegistrationModalOpen(false)}
+        onClose={() => {
+          setRegistration(null);
+          setInvitation(null);
+        }}
         competition={competition}
-        onSuccess={(team) => {
-          setMyTeam(team);
+        initialMode={initialMode as any}
+        initialInvitationCode={invitation || undefined}
+        onSuccess={(updatedTeam) => {
           setIsAlreadyRegistered(true);
-          router.refresh();
+          setMyTeam(updatedTeam);
+          setRegistration(null);
+          setInvitation(null);
         }}
       />
     </div>

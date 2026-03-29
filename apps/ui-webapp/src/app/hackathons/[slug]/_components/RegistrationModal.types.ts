@@ -6,6 +6,8 @@ export interface RegistrationModalProps {
   onClose: () => void;
   competition: CompetitionDetails;
   onSuccess?: (team: TeamDetailResponse) => void;
+  initialMode?: RegistrationMode;
+  initialInvitationCode?: string;
 }
 
 export type RegistrationMode = "CREATE" | "JOIN";
@@ -53,4 +55,5 @@ export interface JoinTeamFormContentProps {
   onFileSelect: (fieldId: string, e: React.ChangeEvent<HTMLInputElement>) => void;
   isUploading: boolean;
   uploadedFiles: Record<string, { name: string; url: string }>;
+  slug: string;
 }

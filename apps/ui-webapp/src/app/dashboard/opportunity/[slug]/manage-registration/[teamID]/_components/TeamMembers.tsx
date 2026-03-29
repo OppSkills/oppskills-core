@@ -55,15 +55,14 @@ export default function TeamMembers({ members }: TeamMembersProps) {
             {/* Info Section */}
             <div className="flex-1 space-y-3">
               <div className="flex flex-col gap-2">
-                <Badge
-                  variant="secondary"
-                  className={`w-fit px-3 py-1 text-xs font-medium rounded-full ${member.role === "Team Leader"
-                    ? "bg-blue-100 text-blue-600 hover:bg-blue-100"
-                    : "bg-pink-100 text-pink-600 hover:bg-pink-100"
-                    }`}
-                >
-                  {member.role}
-                </Badge>
+                {member.role === "Team Leader" && (
+                  <Badge
+                    variant="secondary"
+                    className={`w-fit px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-600 hover:bg-blue-100`}
+                  >
+                    {member.role}
+                  </Badge>
+                )}
                 <h3 className="text-2xl font-bold font-poppins text-foreground break-words">
                   {member.name}
                 </h3>

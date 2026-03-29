@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useQueryState } from "nuqs";
 import {
   Users,
   UserPlus,
@@ -21,6 +22,7 @@ import {
   joinDraftTeam,
   getTeamsByHackathon,
   getPerUserFeePaidStatus,
+  checkMyHackathonTeam,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
 import {
@@ -61,14 +63,17 @@ export function RegistrationModal({
   onClose,
   competition,
   onSuccess,
+  initialMode,
+  initialInvitationCode,
 }: RegistrationModalProps) {
   const router = useRouter();
   const { user } = useUser();
   const { getToken } = useAuth();
-  const [mode, setMode] = useState<RegistrationMode>("CREATE");
+  const [registrationMode, setRegistrationMode] = useQueryState("registration");
+  const mode: RegistrationMode = registrationMode === "join" ? "JOIN" : "CREATE";
+  const setMode = (newMode: RegistrationMode) => setRegistrationMode(newMode.toLowerCase());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-
   // Form states
   const [teamName, setTeamName] = useState("");
   const [answers, setAnswers] = useState<Record<string, any>>({});
@@ -78,9 +83,9 @@ export function RegistrationModal({
   const [isOpenToggle, setIsOpenToggle] = useState(true);
 
   // Team search state
-  const [teams, setTeams] = useState<TeamDetailResponse[]>([]);
   const [isLoadingTeams, setIsLoadingTeams] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [teams, setTeams] = useState<TeamDetailResponse[]>([]);
 
   const maxSize = getMaxSizeFromParticipantType(competition.participantType);
   const isIndividual = competition.participantType === "INDIVIDUAL";
@@ -97,13 +102,17 @@ export function RegistrationModal({
       setUploadedFiles({});
       setInvitationCode("");
       setDiscountCode("");
-      setMode("CREATE");
       setSearchQuery("");
     } else {
+      // When opening, if we have an initial invitation code, set it
+      if (initialInvitationCode) {
+        setInvitationCode(initialInvitationCode);
+      }
+
       // Initialize questions/answers
       const initialAnswers: Record<string, any> = {};
       const fields = competition.registrationForm?.fields || [];
-      
+
       // Fetch user profile for pre-fill
       const fetchProfileAndInit = async () => {
         try {
@@ -144,7 +153,7 @@ export function RegistrationModal({
           console.error("Failed to fetch profile:", error);
         }
       };
-      
+
       fetchProfileAndInit();
 
       // Fetch teams for Join mode
@@ -202,7 +211,7 @@ export function RegistrationModal({
 
         setUploadedFiles(prev => ({ ...prev, [fieldId]: fileData }));
         onUpdateAnswer(fieldId, presign.publicUrl);
-        
+
         toast.success("Document uploaded successfully");
       } catch (error) {
         console.error("Upload error:", error);
@@ -240,20 +249,27 @@ export function RegistrationModal({
       if (order.zeroAmountPayment || order.amountPaise === 0) {
         let teamId = order.teamId;
         if (!teamId && competition.chargeMode === "PER_USER") {
-           if (opts.invitationCode) {
-             const draft = await joinDraftTeam(token, competition.slug, { invitationCode: opts.invitationCode });
-             teamId = (draft as any).team?.id;
-           } else if (opts.teamId) {
-             const draft = { team: { id: opts.teamId } };
-             teamId = draft.team.id;
-           } else {
-             const draft = await createDraftTeam(token, competition.slug, { name: finalTeamName, maxSize });
-             teamId = draft.team.id;
-           }
+          if (opts.invitationCode) {
+            const draft = await joinDraftTeam(token, competition.slug, { invitationCode: opts.invitationCode });
+            teamId = (draft as any).team?.id;
+          } else if (opts.teamId) {
+            const draft = { team: { id: opts.teamId } };
+            teamId = draft.team.id;
+          } else {
+            const draft = await createDraftTeam(token, competition.slug, { name: finalTeamName, maxSize });
+            teamId = draft.team.id;
+          }
         }
-        
+
         await submitRegistration(token, competition.slug, formattedAnswers);
+
+        const myUpdatedTeam = await checkMyHackathonTeam(token, competition.id);
+
         toast.success("Registration successful!");
+        if (myUpdatedTeam) {
+          onSuccess?.(myUpdatedTeam);
+        }
+
         onClose();
         router.push(`/hackathons/${competition.slug}?registered=true`);
         return;
@@ -286,7 +302,14 @@ export function RegistrationModal({
             }
 
             await submitRegistration(verifyToken, competition.slug, formattedAnswers);
+
+            const myUpdatedTeam = await checkMyHackathonTeam(verifyToken, competition.id);
+
             toast.success("Payment successful!");
+            if (myUpdatedTeam) {
+              onSuccess?.(myUpdatedTeam);
+            }
+
             onClose();
             router.push(`/hackathons/${competition.slug}?registered=true`);
           } catch (err) {
@@ -367,15 +390,30 @@ export function RegistrationModal({
             invitationCode: invitationCode.toUpperCase(),
             answers: formattedAnswers,
           });
+
+          // Fetch the updated team to sync the UI immediately
+          const myUpdatedTeam = await checkMyHackathonTeam(token, competition.id);
+
           toast.success("Joined team successfully!");
+          if (myUpdatedTeam) {
+            onSuccess?.(myUpdatedTeam);
+          }
           onClose();
+          router.push(`/hackathons/${competition.slug}?registered=true`);
         } else {
           if (competition.chargeMode === "PER_TEAM") {
             try {
               // PER_TEAM members do not pay themselves. The team leader already paid.
               await joinDraftTeam(token, competition.slug, { invitationCode: invitationCode.toUpperCase() });
               await submitRegistration(token, competition.slug, formattedAnswers);
+
+              const myUpdatedTeam = await checkMyHackathonTeam(token, competition.id);
+
               toast.success("Joined team successfully!");
+              if (myUpdatedTeam) {
+                onSuccess?.(myUpdatedTeam);
+              }
+
               onClose();
               router.push(`/hackathons/${competition.slug}?registered=true`);
             } catch (err) {
@@ -428,13 +466,14 @@ export function RegistrationModal({
           )}
         </div>
 
-        {/* Form Content */}
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col flex-1 overflow-hidden"
+          className="flex flex-col flex-1 overflow-hidden relative"
         >
           {/* Scrollable Fields area */}
-          <div className="flex-1 overflow-y-auto px-6 py-2">
+          <div
+            className="flex-1 overflow-y-auto px-6 py-2 scrollbar"
+          >
             {mode === "CREATE" ? (
               <CreateTeamFormContent
                 fields={competition.registrationForm?.fields || []}
@@ -471,6 +510,7 @@ export function RegistrationModal({
                 onFileSelect={handleFileSelect}
                 isUploading={isUploading}
                 uploadedFiles={uploadedFiles}
+                slug={competition.slug}
               />
             )}
           </div>
