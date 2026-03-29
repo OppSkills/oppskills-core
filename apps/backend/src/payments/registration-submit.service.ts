@@ -13,6 +13,11 @@ import {
   ApprovalStatus,
 } from '@oppskills/db';
 
+const SUCCESSFUL_PAYMENT_STATUSES: HackathonPaymentStatus[] = [
+  HackathonPaymentStatus.CAPTURED,
+  HackathonPaymentStatus.AUTHORIZED,
+];
+
 interface SubmitRegistrationParams {
   hackathonSlug: string;
   userId: string;
@@ -448,6 +453,54 @@ export class RegistrationSubmitService {
     }
   }
 
+  /**
+   * Whether the user has a successful payment for this hackathon (leader/payer context).
+   */
+  private async hasSuccessfulHackathonPayment(
+    hackathon: {
+      id: string;
+      isFree: boolean;
+      chargeMode: HackathonChargeMode;
+    },
+    userId: string,
+    teamId: string | null,
+  ): Promise<boolean> {
+    if (hackathon.isFree) {
+      return true;
+    }
+    if (hackathon.chargeMode === HackathonChargeMode.PER_USER) {
+      const p = await prisma.hackathonPaymentEntity.findFirst({
+        where: {
+          hackathonId: hackathon.id,
+          payerUserId: userId,
+          scope: HackathonPaymentScope.USER,
+          paymentStatus: { in: SUCCESSFUL_PAYMENT_STATUSES },
+        },
+      });
+      return !!p;
+    }
+    if (teamId) {
+      const p = await prisma.hackathonPaymentEntity.findFirst({
+        where: {
+          hackathonId: hackathon.id,
+          teamId,
+          scope: HackathonPaymentScope.TEAM,
+          paymentStatus: { in: SUCCESSFUL_PAYMENT_STATUSES },
+        },
+      });
+      return !!p;
+    }
+    const p = await prisma.hackathonPaymentEntity.findFirst({
+      where: {
+        hackathonId: hackathon.id,
+        payerUserId: userId,
+        scope: HackathonPaymentScope.TEAM,
+        paymentStatus: { in: SUCCESSFUL_PAYMENT_STATUSES },
+      },
+    });
+    return !!p;
+  }
+
   async getRegistrationStatus(hackathonSlug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { slug: hackathonSlug, isDeleted: false },
@@ -477,6 +530,12 @@ export class RegistrationSubmitService {
       }));
 
     if (!leaderTeam) {
+      const paymentCompleted = await this.hasSuccessfulHackathonPayment(
+        hackathon,
+        userId,
+        null,
+      );
+      const isPaidButIncomplete = !hackathon.isFree && paymentCompleted;
       return {
         hasTeam: false,
         teamId: null,
@@ -485,6 +544,11 @@ export class RegistrationSubmitService {
         hasSubmitted: false,
         submissionId: null,
         paymentStatus: null,
+        paymentCompleted,
+        isPaidButIncomplete,
+        /** Paid but no team yet — open modal to create team + form without charging again. */
+        canCompleteRegistrationWithoutPayment: isPaidButIncomplete,
+        isRegistrationIncomplete: true,
       };
     }
 
@@ -527,14 +591,30 @@ export class RegistrationSubmitService {
       }
     }
 
+    const hasSubmitted = !!submission;
+    const paymentCompleted = await this.hasSuccessfulHackathonPayment(
+      hackathon,
+      userId,
+      leaderTeam.id,
+    );
+    const isPaidButIncomplete =
+      !hackathon.isFree && paymentCompleted && !hasSubmitted;
+    const canCompleteRegistrationWithoutPayment =
+      !hasSubmitted &&
+      (paymentCompleted || (hackathon.isFree && !!leaderTeam));
+
     return {
       hasTeam: true,
       teamId: leaderTeam.id,
       teamName: leaderTeam.name,
       isLeader: leaderTeam.leaderId === userId,
-      hasSubmitted: !!submission,
+      hasSubmitted,
       submissionId: submission?.id || null,
       paymentStatus,
+      paymentCompleted,
+      isPaidButIncomplete,
+      canCompleteRegistrationWithoutPayment,
+      isRegistrationIncomplete: !hasSubmitted,
     };
   }
 }

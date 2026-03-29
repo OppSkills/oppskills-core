@@ -535,9 +535,12 @@ export class HackathonService {
 
     // Pagination logic
     // Callers can pass `take` directly to override the default (e.g. for merged pagination).
-    const isAppended = String(input.appendResults) === 'true';
-
-    const take = input.take != null ? input.take : isAppended ? 20 : 10;
+    const take =
+      input.take != null
+        ? input.take
+        : String(input.appendResults) === 'true' || input.appendResults === true
+          ? 40
+          : 20;
     const page = input.page ? Math.max(1, Number(input.page)) : 1;
     const skip = (page - 1) * take;
 
@@ -618,7 +621,7 @@ export class HackathonService {
 
     // Determine if there's further results
     const further = hackathons.length > take;
-    const items = hackathons.slice(0, take);
+    const items = further ? hackathons.slice(0, take) : hackathons;
 
     // Track impressions for all returned hackathons (type 'opportunity')
     Promise.all(

@@ -313,6 +313,33 @@ export async function submitRegistration(
   return res.data;
 }
 
+export interface HackathonRegistrationStatus {
+  hasTeam: boolean;
+  teamId: string | null;
+  teamName: string | null;
+  isLeader: boolean;
+  hasSubmitted: boolean;
+  submissionId: string | null;
+  paymentStatus: string | null;
+  paymentCompleted: boolean;
+  isPaidButIncomplete: boolean;
+  canCompleteRegistrationWithoutPayment: boolean;
+  isRegistrationIncomplete: boolean;
+}
+
+export async function getHackathonRegistrationStatus(
+  token: string,
+  hackathonSlug: string,
+): Promise<HackathonRegistrationStatus> {
+  const res = await HackathonsAPI.get(
+    `/${hackathonSlug}/registrations/status`,
+    {
+      headers: buildAuthHeaders(token),
+    },
+  );
+  return res.data as HackathonRegistrationStatus;
+}
+
 export async function getPayoutDetails(
   token: string,
 ): Promise<PayoutDetails | null> {

@@ -1,4 +1,12 @@
-import { Controller, Post, Param, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { RegistrationSubmitService } from './registration-submit.service';
 import { SubmitRegistrationDto } from './dto';
@@ -9,6 +17,17 @@ export class RegistrationSubmitController {
   constructor(
     private readonly registrationSubmitService: RegistrationSubmitService,
   ) {}
+
+  @Get(':slug/registrations/status')
+  async getRegistrationStatus(
+    @Param('slug') slug: string,
+    @Req() req: { user: { id: string } },
+  ) {
+    return this.registrationSubmitService.getRegistrationStatus(
+      slug,
+      req.user.id,
+    );
+  }
 
   @Post(':slug/registrations/submit')
   async submitRegistration(
