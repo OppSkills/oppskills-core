@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ClerkAuthConfigService } from './common/config.service';
@@ -25,6 +26,7 @@ import { AdminModule } from './admin/admin.module';
         process.env.NODE_ENV === 'production' ? '.env' : '.env.local',
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     UserAccountsModule,
     TeamModule,

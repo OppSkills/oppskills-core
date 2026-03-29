@@ -180,21 +180,21 @@ export class EmailController {
       }>
     >`
       SELECT 
-        p.id as "participantId",
-        p."userId",
+        p.id AS "participantId",
+        p.user_id AS "userId",
         u.email,
         u."firstName",
         u."lastName"
-      FROM oppskills."EventParticipantEntity" p
-      INNER JOIN oppskills."UserAccountEntity" u ON u.id = p."userId"
-      INNER JOIN oppskills."EventPaymentEntity" pay 
-        ON pay."eventId" = p."eventId" 
-        AND pay."payerUserId" = p."userId"
-        AND pay."paymentStatus" = 'CAPTURED'
-      WHERE p."eventId" = ${eventId}
+      FROM oppskills.event_participant p
+      INNER JOIN oppskills."user" u ON u.id = p.user_id
+      INNER JOIN oppskills.event_payment pay
+        ON pay.event_id = p.event_id
+        AND pay.payer_user_id = p.user_id
+        AND pay.payment_status = 'CAPTURED'
+      WHERE p.event_id = ${eventId}
       AND NOT EXISTS (
-        SELECT 1 FROM oppskills."EventRegistrationSubmissionEntity" sub
-        WHERE sub."eventId" = p."eventId" AND sub."userId" = p."userId"
+        SELECT 1 FROM oppskills.event_registration_submission sub
+        WHERE sub.event_id = p.event_id AND sub.user_id = p.user_id
       )
     `;
 
@@ -251,6 +251,7 @@ export class EmailController {
             eventLocation,
             eventType: event.eventType,
             eventSlug: event.slug,
+            resourceType: 'event',
           },
         });
 

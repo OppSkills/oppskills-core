@@ -1,0 +1,285 @@
+import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { prisma } from '@oppskills/db';
+import { Logger } from 'src/_utils/logger';
+import { EmailService } from './email.service';
+
+export type IncompleteRegistrationReminderRunResult = {
+  hackathonEmailsAttempted: number;
+  hackathonEmailsSent: number;
+  eventEmailsAttempted: number;
+  eventEmailsSent: number;
+};
+
+type HackathonReminderRow = {
+  paymentId: string;
+  slug: string;
+  title: string;
+  startDate: Date;
+  endDate: Date;
+  locationType: string | null;
+  locationAddress: string | null;
+  locationCity: string | null;
+  locationVirtualLink: string | null;
+  payerEmail: string;
+  firstName: string | null;
+  lastName: string | null;
+};
+
+type EventReminderRow = {
+  paymentId: string;
+  slug: string;
+  name: string;
+  eventType: string;
+  startDate: Date;
+  endDate: Date;
+  locationType: string | null;
+  locationAddress: string | null;
+  locationCity: string | null;
+  locationVirtualLink: string | null;
+  payerEmail: string;
+  firstName: string | null;
+  lastName: string | null;
+};
+
+export function formatListingLocation(params: {
+  locationType: string | null;
+  locationAddress: string | null;
+  locationCity: string | null;
+  locationVirtualLink: string | null;
+}): string {
+  const t = params.locationType;
+  if (t === 'VIRTUAL') {
+    return 'Online';
+  }
+  if (params.locationCity || params.locationAddress) {
+    return [params.locationAddress, params.locationCity]
+      .filter(Boolean)
+      .join(', ');
+  }
+  if (params.locationVirtualLink) {
+    return 'Online';
+  }
+  return 'Check event details';
+}
+
+/** Minimum hours between reminder emails for the same payment row. */
+export const INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS = 12;
+
+@Injectable()
+export class IncompleteRegistrationReminderService {
+  private readonly logger = new Logger(IncompleteRegistrationReminderService.name);
+
+  constructor(private readonly emailService: EmailService) {}
+
+  /**
+   * Sends incomplete-registration reminder emails for approved hackathons/events
+   * where payment is captured/authorized but no registration submission exists.
+   */
+  async run(): Promise<IncompleteRegistrationReminderRunResult> {
+    const cutoff = new Date(
+      Date.now() -
+        INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS * 60 * 60 * 1000,
+    );
+
+    const baseUrl = process.env.FRONTEND_URL || 'https://oppskills.com';
+
+    const hackathonRows = await prisma.$queryRaw<HackathonReminderRow[]>(
+      Prisma.sql`
+        SELECT
+          hp.id AS "paymentId",
+          h.slug AS "slug",
+          h.title AS "title",
+          h."startDate" AS "startDate",
+          h."endDate" AS "endDate",
+          h.location_type::text AS "locationType",
+          h.location_address AS "locationAddress",
+          h.location_city AS "locationCity",
+          h.location_virtual_link AS "locationVirtualLink",
+          u.email AS "payerEmail",
+          u."firstName" AS "firstName",
+          u."lastName" AS "lastName"
+        FROM oppskills.hackathon_payment hp
+        INNER JOIN oppskills.hackathon h ON h.id = hp.hackathon_id
+        INNER JOIN oppskills."user" u ON u.id = hp.payer_user_id
+        WHERE hp.payment_status IN ('CAPTURED', 'AUTHORIZED')
+          AND h.is_deleted = false
+          AND h.approval_status = 'APPROVED'
+          AND NOT EXISTS (
+            SELECT 1
+            FROM oppskills.hackathon_registration_submission hrs
+            WHERE hrs.hackathon_id = hp.hackathon_id
+              AND hrs.user_id = hp.payer_user_id
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM oppskills.incomplete_registration_reminder_log l
+            WHERE l.hackathon_payment_id = hp.id
+              AND l.last_sent_at > ${cutoff}
+          )
+      `,
+    );
+
+    const eventRows = await prisma.$queryRaw<EventReminderRow[]>(
+      Prisma.sql`
+        SELECT
+          ep.id AS "paymentId",
+          e.slug AS "slug",
+          e.name AS "name",
+          e.event_type::text AS "eventType",
+          e.start_date AS "startDate",
+          e.end_date AS "endDate",
+          e.location_type::text AS "locationType",
+          e.location_address AS "locationAddress",
+          e.location_city AS "locationCity",
+          e.location_virtual_link AS "locationVirtualLink",
+          u.email AS "payerEmail",
+          u."firstName" AS "firstName",
+          u."lastName" AS "lastName"
+        FROM oppskills.event_payment ep
+        INNER JOIN oppskills.event e ON e.id = ep.event_id
+        INNER JOIN oppskills."user" u ON u.id = ep.payer_user_id
+        WHERE ep.payment_status IN ('CAPTURED', 'AUTHORIZED')
+          AND e.is_deleted = false
+          AND e.approval_status = 'APPROVED'
+          AND NOT EXISTS (
+            SELECT 1
+            FROM oppskills.event_registration_submission ers
+            WHERE ers.event_id = ep.event_id
+              AND ers.user_id = ep.payer_user_id
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM oppskills.incomplete_registration_reminder_log l
+            WHERE l.event_payment_id = ep.id
+              AND l.last_sent_at > ${cutoff}
+          )
+      `,
+    );
+
+    let hackathonEmailsSent = 0;
+    let eventEmailsSent = 0;
+
+    for (const row of hackathonRows) {
+      const eventDate = row.startDate.toLocaleDateString('en-IN', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      const eventTime = row.startDate.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const eventLocation = formatListingLocation({
+        locationType: row.locationType,
+        locationAddress: row.locationAddress,
+        locationCity: row.locationCity,
+        locationVirtualLink: row.locationVirtualLink,
+      });
+
+      const result = await this.emailService.send({
+        type: 'incomplete-registration',
+        to: row.payerEmail,
+        props: {
+          firstName: row.firstName ?? undefined,
+          email: row.payerEmail,
+          eventName: row.title,
+          eventDate,
+          eventTime,
+          eventLocation,
+          eventSlug: row.slug,
+          resourceType: 'hackathon',
+          baseUrl,
+        },
+      });
+
+      if (result.success) {
+        await prisma.incompleteRegistrationReminderLogEntity.upsert({
+          where: { hackathonPaymentId: row.paymentId },
+          create: {
+            hackathonPaymentId: row.paymentId,
+            lastSentAt: new Date(),
+            sentCount: 1,
+          },
+          update: {
+            lastSentAt: new Date(),
+            sentCount: { increment: 1 },
+          },
+        });
+        hackathonEmailsSent += 1;
+      } else {
+        this.logger.warn(
+          `Hackathon reminder email failed for payment ${row.paymentId}: ${result.error}`,
+        );
+      }
+    }
+
+    for (const row of eventRows) {
+      const eventDate = row.startDate.toLocaleDateString('en-IN', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      const eventTime = row.startDate.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const eventLocation = formatListingLocation({
+        locationType: row.locationType,
+        locationAddress: row.locationAddress,
+        locationCity: row.locationCity,
+        locationVirtualLink: row.locationVirtualLink,
+      });
+
+      const result = await this.emailService.send({
+        type: 'incomplete-registration',
+        to: row.payerEmail,
+        props: {
+          firstName: row.firstName ?? undefined,
+          email: row.payerEmail,
+          eventName: row.name,
+          eventDate,
+          eventTime,
+          eventLocation,
+          eventType: row.eventType,
+          eventSlug: row.slug,
+          resourceType: 'event',
+          baseUrl,
+        },
+      });
+
+      if (result.success) {
+        await prisma.incompleteRegistrationReminderLogEntity.upsert({
+          where: { eventPaymentId: row.paymentId },
+          create: {
+            eventPaymentId: row.paymentId,
+            lastSentAt: new Date(),
+            sentCount: 1,
+          },
+          update: {
+            lastSentAt: new Date(),
+            sentCount: { increment: 1 },
+          },
+        });
+        eventEmailsSent += 1;
+      } else {
+        this.logger.warn(
+          `Event reminder email failed for payment ${row.paymentId}: ${result.error}`,
+        );
+      }
+    }
+
+    this.logger.log(
+      `Incomplete registration reminders: hackathons ${hackathonEmailsSent}/${hackathonRows.length} sent, events ${eventEmailsSent}/${eventRows.length} sent`,
+    );
+
+    return {
+      hackathonEmailsAttempted: hackathonRows.length,
+      hackathonEmailsSent,
+      eventEmailsAttempted: eventRows.length,
+      eventEmailsSent,
+    };
+  }
+}

@@ -24,6 +24,8 @@ export interface IncompleteRegistrationEmailProps {
   eventLocation?: string;
   eventType?: string;
   eventSlug: string;
+  /** Defaults to event listing; use `hackathon` for `/hackathons/[slug]`. */
+  resourceType?: "event" | "hackathon";
   baseUrl?: string;
 }
 
@@ -36,11 +38,15 @@ export function IncompleteRegistrationEmail({
   eventLocation,
   eventType,
   eventSlug,
+  resourceType = "event",
   baseUrl = "https://oppskills.com",
 }: IncompleteRegistrationEmailProps) {
   const previewText = `Action Required: Complete your registration for ${eventName}`;
 
   const getEventTypeLabel = (type?: string) => {
+    if (resourceType === "hackathon") {
+      return "Hackathon";
+    }
     switch (type) {
       case "WORKSHOP":
         return "Workshop";
@@ -58,6 +64,14 @@ export function IncompleteRegistrationEmail({
         return "Event";
     }
   };
+
+  const detailsSectionLabel =
+    resourceType === "hackathon" ? "COMPETITION DETAILS" : "EVENT DETAILS";
+
+  const registrationHref =
+    resourceType === "hackathon"
+      ? `${baseUrl}/hackathons/${eventSlug}`
+      : `${baseUrl}/events/${eventSlug}`;
 
   return (
     <Html>
@@ -91,7 +105,7 @@ export function IncompleteRegistrationEmail({
               <Section style={eventCardHeader}>
                 <Row>
                   <Column>
-                    <Text style={eventCardLabel}>EVENT DETAILS</Text>
+                    <Text style={eventCardLabel}>{detailsSectionLabel}</Text>
                   </Column>
                   <Column align="right">
                     <Text style={eventTypeLabel}>
@@ -146,10 +160,7 @@ export function IncompleteRegistrationEmail({
             </Text>
 
             <Section style={ctaSection}>
-              <Link
-                href={`${baseUrl}/events/${eventSlug}`}
-                style={ctaButton}
-              >
+              <Link href={registrationHref} style={ctaButton}>
                 Complete Registration Now →
               </Link>
             </Section>

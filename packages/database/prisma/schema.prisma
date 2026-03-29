@@ -1372,6 +1372,8 @@ model HackathonPaymentEntity {
   // Payout items (which payouts include this payment)
   payoutItems HackathonPayoutItemEntity[]
 
+  incompleteRegistrationReminder IncompleteRegistrationReminderLogEntity?
+
   @@index([hackathonId])
   @@index([organizerId])
   @@index([payerUserId])
@@ -1591,6 +1593,8 @@ model EventPaymentEntity {
   // Payout items (which payouts include this payment)
   payoutItems EventPayoutItemEntity[]
 
+  incompleteRegistrationReminder IncompleteRegistrationReminderLogEntity?
+
   @@index([eventId])
   @@index([organizerId])
   @@index([payerUserId])
@@ -1681,6 +1685,27 @@ model EventPayoutItemEntity {
   @@index([payoutId])
   @@index([paymentId])
   @@map("event_payout_item")
+  @@schema("oppskills")
+}
+
+/// Tracks last send time for incomplete-registration reminder emails (per hackathon or event payment).
+model IncompleteRegistrationReminderLogEntity {
+  id String @id @default(cuid())
+
+  hackathonPaymentId String? @unique @map("hackathon_payment_id")
+  hackathonPayment   HackathonPaymentEntity? @relation(fields: [hackathonPaymentId], references: [id], onDelete: Cascade)
+
+  eventPaymentId String? @unique @map("event_payment_id")
+  eventPayment   EventPaymentEntity? @relation(fields: [eventPaymentId], references: [id], onDelete: Cascade)
+
+  lastSentAt DateTime @map("last_sent_at")
+  sentCount  Int      @default(1) @map("sent_count")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([lastSentAt])
+  @@map("incomplete_registration_reminder_log")
   @@schema("oppskills")
 }
 
