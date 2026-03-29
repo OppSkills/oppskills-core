@@ -15,12 +15,6 @@ import * as React from "react";
 import { Header } from "./_components/Header";
 import { Footer } from "./_components/Footer";
 
-export interface AdminWelcomeEmailProps {
-  firstName: String;
-  email: string;
-  password: string;
-}
-
 export interface IncompleteRegistrationEmailProps {
   firstName?: string;
   email: string;

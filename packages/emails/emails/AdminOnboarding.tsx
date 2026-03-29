@@ -16,20 +16,25 @@ import { Footer } from './_components/Footer';
 export interface AdminOnboardingProps {
     adminName?: string;
     superAdminName?: string;
+    firstName?: string; // unified prop name for welcome email
     loginUrl?: string;
     email: string;
     password?: string;
     baseUrl?: string;
 }
 
+export type AdminWelcomeEmailProps = AdminOnboardingProps;
+
 export function AdminOnboarding({
     adminName,
     superAdminName,
+    firstName,
     loginUrl = "https://admin.oppskills.com",
     email,
     password,
     baseUrl = "https://www.oppskills.com",
 }: AdminOnboardingProps) {
+    const displayName = firstName || adminName || 'Admin';
     const previewText = `${superAdminName || 'An admin'} invited you to join Oppskills Admin`;
 
     return (
@@ -42,7 +47,7 @@ export function AdminOnboarding({
 
                     {/* Content */}
                     <Section style={contentSection}>
-                        <Heading style={heading}>Hi {adminName || 'Admin'}</Heading>
+                        <Heading style={heading}>Hi {displayName}</Heading>
 
                         <Text style={paragraph}>
                             {superAdminName || 'A Superadmin'} invited you to join Oppskills Admin.
