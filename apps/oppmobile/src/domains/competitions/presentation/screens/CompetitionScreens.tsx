@@ -9,10 +9,10 @@ import {
 } from 'react-native';
 import { useState } from 'react';
 
-import frame502 from '../../../../../assets/Frame 502.png';
-import frame503 from '../../../../../assets/Frame 503.png';
-import frame504 from '../../../../../assets/Frame 504.png';
-import frame505 from '../../../../../assets/Frame 505.png';
+import hackathonCategoryButtonImage from '../../../../../assets/Frame 548.png';
+import competitionsCategoryButtonImage from '../../../../../assets/Frame 549.png';
+import eventsCategoryButtonImage from '../../../../../assets/Frame 550.png';
+import communitiesCategoryButtonImage from '../../../../../assets/Frame 551.png';
 import businessChallengeIllustration from '../../../../../assets/Business challenge-amico 1.png';
 import organizingProjectsIllustration from '../../../../../assets/Organizing projects-amico 1.png';
 import trackAndFieldIllustration from '../../../../../assets/Track and field-amico 1.png';
@@ -76,20 +76,20 @@ export function DiscoverCompetitionsScreen({
       >
         <View style={styles.frame552}>
           <CategoryTile
-            image={frame502}
+            image={hackathonCategoryButtonImage}
             onPress={() => {
               handleCategorySelect('hackathons');
             }}
           />
-          <CategoryTile image={frame503} selected />
+          <CategoryTile image={competitionsCategoryButtonImage} />
           <CategoryTile
-            image={frame504}
+            image={eventsCategoryButtonImage}
             onPress={() => {
               handleCategorySelect('events');
             }}
           />
           <CategoryTile
-            image={frame505}
+            image={communitiesCategoryButtonImage}
             onPress={() => {
               handleCategorySelect('communities');
             }}
@@ -157,15 +157,13 @@ export function DiscoverCompetitionsScreen({
 function CategoryTile({
   image,
   onPress,
-  selected = false,
 }: {
   readonly image: ImageSourcePropType;
   readonly onPress?: () => void;
-  readonly selected?: boolean;
 }) {
   return (
-    <Pressable disabled={!onPress} onPress={onPress} style={[styles.categoryTile, selected ? styles.categoryTileActive : null]}>
-      <Image resizeMode="contain" source={image} style={styles.categoryTileImage} />
+    <Pressable disabled={!onPress} onPress={onPress} style={styles.categoryTile}>
+      <Image resizeMode="cover" source={image} style={styles.categoryTileImage} />
     </Pressable>
   );
 }
@@ -334,22 +332,15 @@ const styles = StyleSheet.create({
     borderColor: lightTheme.colors.brandSecondary,
   },
   categoryTile: {
-    backgroundColor: lightTheme.colors.brandPrimarySoft,
-    borderColor: '#E2D3FF',
     borderRadius: 8,
-    borderWidth: 0.5,
+    flex: 1,
     height: 72,
+    minWidth: 0,
     overflow: 'hidden',
-    width: 82.25,
-  },
-  categoryTileActive: {
-    borderColor: lightTheme.colors.brandSecondary,
-    borderWidth: 1,
   },
   categoryTileImage: {
-    borderRadius: 8,
-    height: 72,
-    width: 82.25,
+    height: '100%',
+    width: '100%',
   },
   competitionCard: {
     backgroundColor: lightTheme.colors.backgroundPrimary,
@@ -438,6 +429,7 @@ const styles = StyleSheet.create({
     paddingTop: lightTheme.spacing[20],
   },
   frame545Scroll: {
+    bottom: 0,
     left: 0,
     position: 'absolute',
     right: 0,

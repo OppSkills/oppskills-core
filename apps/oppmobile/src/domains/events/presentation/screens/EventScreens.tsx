@@ -500,10 +500,8 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   frame545Scroll: {
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 110,
+    flex: 1,
+    marginTop: 112,
   },
   frame552: {
     flexDirection: 'row',
