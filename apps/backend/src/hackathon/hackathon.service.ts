@@ -538,10 +538,11 @@ export class HackathonService {
     const take =
       input.take != null
         ? input.take
-        : String(input.appendResults) === 'true' || input.appendResults === true
-          ? 40
-          : 20;
-    const page = input.page ? Math.max(1, Number(input.page)) : 1;
+        : input.appendResults
+          ? 20
+          : 10;
+    
+    const page = input.page ? Math.max(1, input.page) : 1;
     const skip = (page - 1) * take;
 
     // We fetch take + 1 to determine if there are more results
