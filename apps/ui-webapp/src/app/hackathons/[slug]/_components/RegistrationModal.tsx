@@ -64,6 +64,19 @@ function getMaxSizeFromParticipantType(participantType?: string): number {
   }
 }
 
+/**
+ * After payment, verifyPayment or the Razorpay webhook may already have created the team.
+ * A follow-up createDraftTeam/joinDraftTeam then races and throws — treat as safe to continue.
+ */
+function isBenignTeamAlreadyExistsError(err: unknown): boolean {
+  const msg = getApiErrorMessage(err, "").toLowerCase();
+  return (
+    msg.includes("already in a team") ||
+    msg.includes("already the leader of this team") ||
+    msg.includes("already a member of this team")
+  );
+}
+
 export function RegistrationModal({
   isOpen,
   onClose,
@@ -310,14 +323,27 @@ export function RegistrationModal({
         let teamId = order.teamId;
         if (!teamId && competition.chargeMode === "PER_USER") {
           if (opts.invitationCode) {
-            const draft = await joinDraftTeam(token, competition.slug, { invitationCode: opts.invitationCode });
-            teamId = (draft as any).team?.id;
+            try {
+              const draft = await joinDraftTeam(token, competition.slug, {
+                invitationCode: opts.invitationCode,
+              });
+              teamId = (draft as { team?: { id: string } }).team?.id;
+            } catch (e) {
+              if (!isBenignTeamAlreadyExistsError(e)) throw e;
+            }
           } else if (opts.teamId) {
             const draft = { team: { id: opts.teamId } };
             teamId = draft.team.id;
           } else {
-            const draft = await createDraftTeam(token, competition.slug, { name: finalTeamName, maxSize });
-            teamId = draft.team.id;
+            try {
+              const draft = await createDraftTeam(token, competition.slug, {
+                name: finalTeamName,
+                maxSize,
+              });
+              teamId = draft.team.id;
+            } catch (e) {
+              if (!isBenignTeamAlreadyExistsError(e)) throw e;
+            }
           }
         }
 
@@ -343,10 +369,12 @@ export function RegistrationModal({
         description: "Hackathon registration",
         order_id: order.razorpayOrderId || order.orderId,
         handler: async (response: any) => {
+          // Modal is already closed (onClose before rzp.open) so do not call setState here.
+          // Use a global toast so the user sees progress/errors after pay.
+          const completingId = toast.loading("Completing your registration…");
           try {
-            setIsSubmitting(true);
             const verifyToken = await getToken();
-            if (!verifyToken) throw new Error("Auth required");
+            if (!verifyToken) throw new Error("Authentication required. Please sign in and try again.");
 
             await verifyPayment(verifyToken, competition.slug, {
               razorpayOrderId: response.razorpay_order_id,
@@ -356,9 +384,22 @@ export function RegistrationModal({
 
             if (competition.chargeMode === "PER_USER") {
               if (opts.invitationCode) {
-                await joinDraftTeam(verifyToken, competition.slug, { invitationCode: opts.invitationCode });
+                try {
+                  await joinDraftTeam(verifyToken, competition.slug, {
+                    invitationCode: opts.invitationCode,
+                  });
+                } catch (e) {
+                  if (!isBenignTeamAlreadyExistsError(e)) throw e;
+                }
               } else if (!opts.teamId) {
-                await createDraftTeam(verifyToken, competition.slug, { name: finalTeamName, maxSize });
+                try {
+                  await createDraftTeam(verifyToken, competition.slug, {
+                    name: finalTeamName,
+                    maxSize,
+                  });
+                } catch (e) {
+                  if (!isBenignTeamAlreadyExistsError(e)) throw e;
+                }
               }
             }
 
@@ -366,17 +407,21 @@ export function RegistrationModal({
 
             const myUpdatedTeam = await checkMyHackathonTeam(verifyToken, competition.id);
 
-            toast.success("Payment successful!");
+            toast.dismiss(completingId);
+            toast.success("Registration successful!");
             if (myUpdatedTeam) {
               onSuccess?.(myUpdatedTeam);
             }
 
-            onClose();
             router.push(`/hackathons/${competition.slug}?registered=true`);
           } catch (err) {
-            toast.error("Registration failed after payment");
-          } finally {
-            setIsSubmitting(false);
+            toast.dismiss(completingId);
+            toast.error(
+              getApiErrorMessage(
+                err,
+                "Registration could not be completed after payment. Please open Register again — you will not be charged twice.",
+              ),
+            );
           }
         },
         prefill: {
@@ -389,7 +434,6 @@ export function RegistrationModal({
         },
         modal: {
           ondismiss: () => {
-            setIsSubmitting(false);
             toast.info("Payment cancelled");
           },
         },
