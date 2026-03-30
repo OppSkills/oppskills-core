@@ -146,9 +146,17 @@ export class HackathonCheckoutService {
             existingTeamPayment.paymentStatus ===
               HackathonPaymentStatus.AUTHORIZED
           ) {
-            throw new BadRequestException(
-              'Payment already completed for this team',
-            );
+            return {
+              paymentId: existingTeamPayment.id,
+              razorpayKeyId: null,
+              razorpayOrderId: null,
+              amountPaise: 0,
+              currency: hackathon.currency || 'INR',
+              hackathonName: hackathon.name,
+              zeroAmountPayment: true,
+              teamId: existingTeamPayment.teamId ?? params.teamId,
+              alreadyPaid: true,
+            };
           }
           // If payment exists with CREATED/FAILED status, we'll update it instead of creating new one
         }
@@ -198,7 +206,17 @@ export class HackathonCheckoutService {
         });
 
       if (successfulUserPayment) {
-        throw new BadRequestException('Payment already completed');
+        return {
+          paymentId: successfulUserPayment.id,
+          razorpayKeyId: null,
+          razorpayOrderId: null,
+          amountPaise: 0,
+          currency: hackathon.currency || 'INR',
+          hackathonName: hackathon.name,
+          zeroAmountPayment: true,
+          teamId: successfulUserPayment.teamId ?? null,
+          alreadyPaid: true,
+        };
       }
     }
 
