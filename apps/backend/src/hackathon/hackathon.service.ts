@@ -2651,6 +2651,15 @@ export class HackathonService {
           hackathon.participantType,
         );
 
+        const membersSorted = [...team.members].sort(
+          (a, b) => a.joinedAt.getTime() - b.joinedAt.getTime(),
+        );
+        const memberRows = membersSorted.map((m) => ({
+          email: m.user.email,
+          firstName: m.user.firstName,
+          lastName: m.user.lastName,
+        }));
+
         return {
           teamId: team.id,
           teamName: team.name,
@@ -2658,6 +2667,9 @@ export class HackathonService {
           maxSize: team.maxSize,
           minSize,
           createdAt: team.createdAt,
+          isOpen: team.isOpen,
+          invitationCode: team.invitationCode ?? null,
+          members: memberRows,
           leader: {
             id: leader.id,
             email: leader.email,

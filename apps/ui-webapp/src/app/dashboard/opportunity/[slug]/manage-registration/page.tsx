@@ -165,6 +165,13 @@ export default function Page() {
         status,
         currentRound,
         qualificationStatus,
+        teamCreatedAt: team.createdAt,
+        teamIsOpen: team.isOpen,
+        teamInvitationCode: team.invitationCode,
+        leaderFirstName: team.leader.firstName,
+        leaderLastName: team.leader.lastName,
+        maxSize: team.maxSize,
+        teamMembers: team.members,
       };
     });
   }, [data, selectedRoundId, nextRoundId]);

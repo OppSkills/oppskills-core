@@ -419,6 +419,12 @@ export interface HackathonTeamRoundSubmission {
   payload: unknown;
 }
 
+export interface HackathonTeamMemberExport {
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+}
+
 export interface HackathonTeamRegistration {
   teamId: string;
   teamName: string;
@@ -426,6 +432,10 @@ export interface HackathonTeamRegistration {
   maxSize: number;
   minSize?: number;
   createdAt: string;
+  isOpen: boolean;
+  invitationCode: string | null;
+  /** Non-leader members, ordered by join time (oldest first). */
+  members: HackathonTeamMemberExport[];
   leader: HackathonTeamLeader;
   roundSubmissions: Record<string, HackathonTeamRoundSubmission>;
   roundQualifications: Record<

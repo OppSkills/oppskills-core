@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import { bulkSetTeamRoundQualification } from "@/lib/api/hackathonApi";
 import { getApiErrorMessage } from "@/lib/utils";
 import { exportToExcel } from "@/lib/exportToExcel";
+import type { HackathonTeamMemberExport } from "@/lib/api/hackathonApi";
 
 export type Participant = {
   id: string;
@@ -49,6 +50,15 @@ export type Participant = {
   status: "Completed" | "Incomplete";
   currentRound: string;
   qualificationStatus?: "Qualified" | "Not Qualified" | "Awaiting" | null;
+  /** For Excel export (team roster) */
+  teamCreatedAt: string;
+  teamIsOpen: boolean;
+  teamInvitationCode: string | null;
+  leaderFirstName: string | null;
+  leaderLastName: string | null;
+  maxSize: number;
+  /** Non-leader members, join order (for member1..memberN columns). */
+  teamMembers: HackathonTeamMemberExport[];
 };
 
 /* -------------------------- COLUMNS --------------------------- */
@@ -116,16 +126,35 @@ export default function Participants({
     }
 
     try {
-      const rows = filteredData.map((p) => ({
-        "S. No.": p.serialNumber,
-        "Team Name": p.teamName,
-        "Members": p.memberCount,
-        "Email": p.email,
-        "University": p.university || "",
-        "Registration Status": p.status,
-        "Current Round": p.currentRound || "",
-        "Qualification Status": p.qualificationStatus ?? "",
-      }));
+      /** Max non-leader slots = max(team.maxSize) - 1 across exported rows (hackathon roster). */
+      const memberSlotCount = Math.max(
+        0,
+        ...filteredData.map((p) => Math.max(0, p.maxSize - 1)),
+      );
+
+      const rows = filteredData.map((p) => {
+        const row: Record<string, string | number | boolean> = {
+          team_name: p.teamName,
+          team_created_at: p.teamCreatedAt
+            ? new Date(p.teamCreatedAt).toISOString()
+            : "",
+          team_is_open: p.teamIsOpen,
+          team_invitation_code: p.teamInvitationCode ?? "",
+          leader_email: p.email,
+          leader_first_name: p.leaderFirstName ?? "",
+          leader_last_name: p.leaderLastName ?? "",
+        };
+
+        for (let i = 1; i <= memberSlotCount; i++) {
+          const m = p.teamMembers[i - 1];
+          row[`member${i}_email`] = m?.email ?? "";
+          row[`member${i}_first_name`] = m?.firstName ?? "";
+          row[`member${i}_last_name`] = m?.lastName ?? "";
+        }
+
+        row.total_team_members = p.memberCount;
+        return row;
+      });
 
       exportToExcel({
         rows,
