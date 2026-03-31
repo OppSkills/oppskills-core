@@ -30,7 +30,7 @@ export default function CompetitionDetailsClient({
   }, [curTab]);
 
   return (
-    <div className="min-h-screen bg-transparent py-8">
+    <div className="min-h-screen bg-transparent py-8 px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative items-start">
           {/* Sidebar */}

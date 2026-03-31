@@ -452,7 +452,7 @@ export function CompetitionDetailsClient() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-transparent py-8">
+      <div className="min-h-screen bg-transparent py-8 px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="flex items-center justify-center py-32">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -464,7 +464,7 @@ export function CompetitionDetailsClient() {
 
   if (error || !competition) {
     return (
-      <div className="min-h-screen bg-transparent py-8">
+      <div className="min-h-screen bg-transparent py-8 px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <h2 className="text-2xl font-bold text-foreground">
@@ -481,7 +481,7 @@ export function CompetitionDetailsClient() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent py-8">
+    <div className="min-h-screen bg-transparent py-8 px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25">
       <div className="container mx-auto px-4 max-w-7xl">
         {isDraft && (
           <div className="mb-6 flex items-center gap-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
