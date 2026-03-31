@@ -294,7 +294,7 @@ export function JoinTeamFormContent({
 
       {fields.map((field) => {
         const lowerLabel = field.label.toLowerCase();
-        const isUploadField = lowerLabel.includes("upload") || lowerLabel.includes("doc") || lowerLabel.includes("proof");
+        const isUploadField = field.type === "ATTACHMENTS" || lowerLabel.includes("upload") || lowerLabel.includes("doc") || lowerLabel.includes("proof");
         const raw = answers[field.id];
         const value =
           typeof raw === "string" || typeof raw === "number"
