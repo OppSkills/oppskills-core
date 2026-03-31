@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreateTeamFormContentProps } from "./RegistrationModal.types";
 import { cn } from "@/lib/utils";
+import { isUploadField } from "@/lib/form-utils";
 
 export function CreateTeamFormContent({
   fields,
@@ -108,15 +109,14 @@ export function CreateTeamFormContent({
 
       {/* Dynamic Registration Fields */}
       {fields.map((field) => {
-        const lowerLabel = field.label.toLowerCase();
-        const isUploadField = field.type === "ATTACHMENTS" || lowerLabel.includes("upload") || lowerLabel.includes("doc") || lowerLabel.includes("proof");
+        const isUpload = isUploadField(field.type, field.label);
         const raw = answers[field.id];
         const value =
           typeof raw === "string" || typeof raw === "number"
             ? String(raw)
             : "";
 
-        if (isUploadField) {
+        if (isUpload) {
           const uploadedFile = uploadedFiles[field.id];
           return (
             <div key={field.id} className="space-y-2">

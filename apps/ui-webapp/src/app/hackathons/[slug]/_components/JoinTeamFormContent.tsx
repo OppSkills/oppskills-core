@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { toast } from "sonner";
+import { isUploadField } from "@/lib/form-utils";
 
 export function JoinTeamFormContent({
   fields,
@@ -293,15 +294,14 @@ export function JoinTeamFormContent({
       </div>
 
       {fields.map((field) => {
-        const lowerLabel = field.label.toLowerCase();
-        const isUploadField = field.type === "ATTACHMENTS" || lowerLabel.includes("upload") || lowerLabel.includes("doc") || lowerLabel.includes("proof");
+        const isUpload = isUploadField(field.type, field.label);
         const raw = answers[field.id];
         const value =
           typeof raw === "string" || typeof raw === "number"
             ? String(raw)
             : "";
 
-        if (isUploadField) {
+        if (isUpload) {
           const uploadedFile = uploadedFiles?.[field.id];
           return (
             <div key={field.id} className="space-y-2">

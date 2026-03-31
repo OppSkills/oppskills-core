@@ -47,7 +47,9 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   const [registration, setRegistration] = useQueryState("registration");
   const [invitation, setInvitation] = useQueryState("invitation");
 
-  const isRegistrationModalOpen = !!registration && !isCheckingRegistration && !isAlreadyRegistered;
+  const isOrganizer = !!user && !!competition.organizers?.some((o) => o.id === user.id);
+
+  const isRegistrationModalOpen = !!registration && !isCheckingRegistration && !isAlreadyRegistered && !isOrganizer;
 
   const initialMode = registration === "join" ? "JOIN" : "CREATE";
 
@@ -163,6 +165,17 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         >
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           Checking...
+        </Button>
+      );
+    }
+
+    if (isOrganizer) {
+      return (
+        <Button
+          className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-base shadow-sm cursor-not-allowed"
+          disabled
+        >
+          You are the organizer
         </Button>
       );
     }

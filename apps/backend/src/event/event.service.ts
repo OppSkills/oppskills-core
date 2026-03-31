@@ -1510,11 +1510,6 @@ export class EventService {
           throw new BadRequestException(`Unknown field ID: ${answer.fieldId}`);
         }
 
-        // Reject ATTACHMENTS type for now
-        if (field.type === 'ATTACHMENTS') {
-          throw new BadRequestException(`Attachments are not supported yet.`);
-        }
-
         // Type validation
         const value = answer.value;
         switch (field.type) {
@@ -1562,6 +1557,27 @@ export class EventService {
               if (value.length > 0 && !effectiveOptions.includes(value)) {
                 throw new BadRequestException(
                   `Invalid option "${value}" for field "${field.label}".`,
+                );
+              }
+            }
+            break;
+          }
+          case 'ATTACHMENTS': {
+            if (typeof value !== 'string') {
+              throw new BadRequestException(
+                `Field "${field.label}" must be a string containing a valid URL.`,
+              );
+            }
+            if (value.length > 0) {
+              const urlToTest =
+                value.startsWith('http://') || value.startsWith('https://')
+                  ? value
+                  : `https://${value}`;
+              try {
+                new URL(urlToTest);
+              } catch (_) {
+                throw new BadRequestException(
+                  `Field "${field.label}" must be a valid URL.`,
                 );
               }
             }

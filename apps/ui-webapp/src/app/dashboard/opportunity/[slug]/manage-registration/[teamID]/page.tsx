@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { X } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import TeamMembers, { TeamMember } from "./_components/TeamMembers";
 import { useTeams } from "@/hooks/useTeams";
@@ -38,6 +40,7 @@ export default function TeamManagementPage() {
   const { data: registrationsData } = useHackathonRegistrationsBySlug(slug);
 
   const [activeTab, setActiveTab] = useState<string>("members");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const { getToken } = useAuth();
 
@@ -58,6 +61,35 @@ export default function TeamManagementPage() {
     if (value === null || value === undefined) return "—";
     if (Array.isArray(value)) return value.join(", ");
     return String(value);
+  };
+
+  const isImageFile = (url: string): boolean => {
+    if (!url) return false;
+    const lowerCaseUrl = url.toLowerCase();
+    return (
+      lowerCaseUrl.endsWith(".jpg") ||
+      lowerCaseUrl.endsWith(".jpeg") ||
+      lowerCaseUrl.endsWith(".png") ||
+      lowerCaseUrl.endsWith(".gif") ||
+      lowerCaseUrl.endsWith(".webp") ||
+      lowerCaseUrl.endsWith(".svg") ||
+      lowerCaseUrl.includes("cloudfront.net/public/opportunity-attachments") ||
+      lowerCaseUrl.includes(".png") ||
+      lowerCaseUrl.includes(".jpg") ||
+      lowerCaseUrl.includes(".jpeg")
+    );
+  };
+
+  const getFileName = (url: string): string => {
+    if (!url) return "File";
+    try {
+      const decodedUrl = decodeURIComponent(url);
+      const parts = decodedUrl.split("/");
+      const lastPart = parts[parts.length - 1];
+      return lastPart.split("?")[0] || "File";
+    } catch (e) {
+      return "File";
+    }
   };
 
   const formatLocation = (
@@ -238,11 +270,10 @@ export default function TeamManagementPage() {
         {/* Tab 1: Team Members */}
         <button
           onClick={() => setActiveTab("members")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
-            activeTab === "members"
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${activeTab === "members"
               ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
               : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
-          }`}
+            }`}
         >
           <UserCircle2 className="h-5 w-5" />
           Team Members
@@ -251,11 +282,10 @@ export default function TeamManagementPage() {
         {/* Tab 2: Registration Answers */}
         <button
           onClick={() => setActiveTab("registration-answers")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
-            activeTab === "registration-answers"
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${activeTab === "registration-answers"
               ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
               : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
-          }`}
+            }`}
         >
           <ClipboardList className="h-5 w-5" />
           Registration Answers
@@ -266,18 +296,16 @@ export default function TeamManagementPage() {
           <button
             key={round.id}
             onClick={() => setActiveTab(round.id)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
-              activeTab === round.id
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${activeTab === round.id
                 ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
                 : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
-            }`}
+              }`}
           >
             <div
-              className={`flex items-center justify-center w-6 h-6 rounded-full text-xs border ${
-                activeTab === round.id
+              className={`flex items-center justify-center w-6 h-6 rounded-full text-xs border ${activeTab === round.id
                   ? "border-primary"
                   : "border-muted-foreground"
-              }`}
+                }`}
             >
               {round.order}
             </div>
@@ -345,9 +373,48 @@ export default function TeamManagementPage() {
                                       </Badge>
                                     )}
                                   </div>
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {formatAnswerValue(answer?.value)}
-                                  </p>
+                                  <div className="text-sm text-muted-foreground mt-1">
+                                    {field.type === "ATTACHMENTS" &&
+                                      answer?.value &&
+                                      typeof answer.value === "string" ? (
+                                      isImageFile(answer.value) ? (
+                                        <div
+                                          className="relative group cursor-pointer w-fit"
+                                          onClick={() =>
+                                            setSelectedImage(
+                                              answer.value as string,
+                                            )
+                                          }
+                                        >
+                                          <div className="h-32 w-48 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center group-hover:scale-[1.02] transition-all duration-200 shadow-sm">
+                                            <img
+                                              src={answer.value}
+                                              alt={field.label}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </div>
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors rounded-lg" />
+                                        </div>
+                                      ) : (
+                                        <a
+                                          href={answer.value}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg hover:bg-secondary/50 transition-all group w-fit max-w-[280px]"
+                                        >
+                                          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10">
+                                            <FileText className="h-4 w-4 text-primary" />
+                                          </div>
+                                          <span className="font-medium text-foreground truncate text-xs">
+                                            {getFileName(answer.value)}
+                                          </span>
+                                          <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary shrink-0" />
+                                        </a>
+                                      )
+                                    ) : (
+                                      formatAnswerValue(answer?.value)
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -385,106 +452,106 @@ export default function TeamManagementPage() {
                   <span className="text-sm text-muted-foreground">
                     {selectedRoundSubmission.submittedAt
                       ? new Date(
-                          selectedRoundSubmission.submittedAt,
-                        ).toLocaleString()
+                        selectedRoundSubmission.submittedAt,
+                      ).toLocaleString()
                       : "—"}
                   </span>
                 </div>
 
                 {selectedRoundSubmission.payload
                   ? (() => {
-                      const payload = selectedRoundSubmission.payload as Record<
-                        string,
-                        unknown
-                      >;
-                      const files = payload.files as
-                        | Array<{
-                            url?: string;
-                            publicUrl?: string;
-                            fileName?: string;
-                            name?: string;
-                            mimeType?: string;
-                            size?: number;
-                          }>
-                        | undefined;
-                      const fileUrl = (payload.fileUrl || payload.url) as
-                        | string
-                        | undefined;
-                      const fileName = payload.fileName as string | undefined;
+                    const payload = selectedRoundSubmission.payload as Record<
+                      string,
+                      unknown
+                    >;
+                    const files = payload.files as
+                      | Array<{
+                        url?: string;
+                        publicUrl?: string;
+                        fileName?: string;
+                        name?: string;
+                        mimeType?: string;
+                        size?: number;
+                      }>
+                      | undefined;
+                    const fileUrl = (payload.fileUrl || payload.url) as
+                      | string
+                      | undefined;
+                    const fileName = payload.fileName as string | undefined;
 
-                      return (
-                        <div className="space-y-4">
-                          {Array.isArray(files) && files.length > 0 && (
-                            <div className="space-y-3">
-                              <h3 className="font-semibold text-foreground">
-                                Submitted Files
-                              </h3>
-                              <div className="grid gap-3">
-                                {files.map((file, index) => {
-                                  const url = file.url || file.publicUrl;
-                                  const name =
-                                    file.fileName ||
-                                    file.name ||
-                                    `File ${index + 1}`;
-                                  return (
-                                    <a
-                                      key={index}
-                                      href={url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors group"
-                                    >
-                                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                                        <FileText className="h-5 w-5 text-primary" />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-foreground truncate">
-                                          {name}
+                    return (
+                      <div className="space-y-4">
+                        {Array.isArray(files) && files.length > 0 && (
+                          <div className="space-y-3">
+                            <h3 className="font-semibold text-foreground">
+                              Submitted Files
+                            </h3>
+                            <div className="grid gap-3">
+                              {files.map((file, index) => {
+                                const url = file.url || file.publicUrl;
+                                const name =
+                                  file.fileName ||
+                                  file.name ||
+                                  `File ${index + 1}`;
+                                return (
+                                  <a
+                                    key={index}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors group"
+                                  >
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                                      <FileText className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-foreground truncate">
+                                        {name}
+                                      </p>
+                                      {file.mimeType && (
+                                        <p className="text-xs text-muted-foreground">
+                                          {file.mimeType}
                                         </p>
-                                        {file.mimeType && (
-                                          <p className="text-xs text-muted-foreground">
-                                            {file.mimeType}
-                                          </p>
-                                        )}
-                                      </div>
-                                      <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
-                                    </a>
-                                  );
-                                })}
+                                      )}
+                                    </div>
+                                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                                  </a>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {!Array.isArray(files) && fileUrl && (
+                          <div className="space-y-3">
+                            <h3 className="font-semibold text-foreground">
+                              Submitted File
+                            </h3>
+                            <a
+                              href={fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors group"
+                            >
+                              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                                <FileText className="h-5 w-5 text-primary" />
                               </div>
-                            </div>
-                          )}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-foreground">
+                                  {fileName || "Submission File"}
+                                </p>
+                              </div>
+                              <Download className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                            </a>
+                          </div>
+                        )}
 
-                          {!Array.isArray(files) && fileUrl && (
-                            <div className="space-y-3">
-                              <h3 className="font-semibold text-foreground">
-                                Submitted File
-                              </h3>
-                              <a
-                                href={fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors group"
-                              >
-                                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                                  <FileText className="h-5 w-5 text-primary" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-foreground">
-                                    {fileName || "Submission File"}
-                                  </p>
-                                </div>
-                                <Download className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
-                              </a>
-                            </div>
-                          )}
-
-                          {Object.entries(payload).filter(
-                            ([key]) =>
-                              !["files", "fileUrl", "url", "fileName"].includes(
-                                key,
-                              ),
-                          ).length > 0 && (
+                        {Object.entries(payload).filter(
+                          ([key]) =>
+                            !["files", "fileUrl", "url", "fileName"].includes(
+                              key,
+                            ),
+                        ).length > 0 && (
                             <div className="space-y-3">
                               <h3 className="font-semibold text-foreground">
                                 Additional Information
@@ -518,9 +585,9 @@ export default function TeamManagementPage() {
                               </div>
                             </div>
                           )}
-                        </div>
-                      );
-                    })()
+                      </div>
+                    );
+                  })()
                   : null}
               </div>
             ) : (
@@ -536,6 +603,28 @@ export default function TeamManagementPage() {
           </div>
         )}
       </div>
+
+      {/* Image Zoom Modal */}
+      <Dialog
+        open={!!selectedImage}
+        onOpenChange={(open) => !open && setSelectedImage(null)}
+      >
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-1 border-none bg-transparent shadow-none [&>button]:hidden">
+          <div className="relative w-full h-full flex items-center justify-center group">
+            <img
+              src={selectedImage || ""}
+              alt="Zoomed attachment"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            />
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-2 right-2 bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-all backdrop-blur-md"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -603,7 +603,7 @@ export function RegistrationModal({
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <DialogContent className="p-0 md:w-[460px] overflow-hidden sm:rounded-3xl border-none shadow-2xl max-h-full h-full sm:h-auto sm:max-h-[80vh] flex flex-col bg-neutral-100">
         {/* Header Area (Fixed) */}
-        <div className="p-6 pb-4">
+        <div className="p-6 pb-4 shadow-sm">
           <h2 className="mb-6 text-3xl font-medium tracking-tight text-neutral-900">
             Registration Form
           </h2>
@@ -631,11 +631,11 @@ export function RegistrationModal({
 
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col flex-1 overflow-hidden relative"
+          className="flex flex-col flex-1 overflow-y-auto relative scrollbar"
         >
-          {/* Scrollable Fields area */}
+          {/* Fields area */}
           <div
-            className="flex-1 overflow-y-auto px-6 py-2 scrollbar"
+            className="px-6 py-2"
           >
             {mode === "CREATE" ? (
               <CreateTeamFormContent
@@ -678,8 +678,8 @@ export function RegistrationModal({
             )}
           </div>
 
-          {/* Footer Area (Fixed) */}
-          <div className="p-6 pt-4">
+          {/* Footer Area */}
+          <div className="p-6 pt-6 mt-auto">
             <div className="flex flex-col w-full gap-2 rounded-3xl border border-primary-600 bg-primary-100 p-1">
               <div className="flex items-center justify-center gap-3 py-2">
                 <div className="h-5 w-5 overflow-hidden rounded-full border-2 border-white">

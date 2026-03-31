@@ -18,8 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, AlertCircle, X, FileText } from "lucide-react";
+import { cn, getApiErrorMessage } from "@/lib/utils";
+import { useAuth } from "@clerk/nextjs";
+import { toast } from "sonner";
+import { presignDocumentUpload } from "@/lib/api/mediaApi";
+import { uploadDocumentToS3PresignedPost } from "@/lib/uploads/uploadDocumentToS3";
 
 // Default gender options matching Prisma Gender enum
 const DEFAULT_GENDER_OPTIONS = ["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"];
@@ -146,12 +150,15 @@ export function HackathonRegistrationModal({
   title = "Complete Registration",
   description,
 }: HackathonRegistrationModalProps) {
+  const { getToken } = useAuth();
   const [values, setValues] = useState<Record<string, FieldValue>>({});
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, { name: string; url: string }>>({});
 
-  // Filter out unsupported field types (ATTACHMENTS)
-  const supportedFields = fields.filter((f) => f.type !== "ATTACHMENTS");
-  const unsupportedFields = fields.filter((f) => f.type === "ATTACHMENTS");
+  // Support all fields now that attachments are supported
+  const supportedFields = fields;
+  const unsupportedFields: RegistrationField[] = [];
 
   // Pre-fill values when modal opens
   useEffect(() => {
@@ -169,8 +176,56 @@ export function HackathonRegistrationModal({
       // Reset on close
       setValues({});
       setErrors({});
+      setUploadedFiles({});
     }
   }, [isOpen, userData, fields]);
+
+  const handleFileSelect = async (fieldId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("File size exceeds 10MB limit");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Please sign in to upload files");
+        return;
+      }
+
+      const presign = await presignDocumentUpload(token, {
+        purpose: "OPPORTUNITY_ATTACHMENT",
+        mimeType: file.type,
+        fileName: file.name,
+      });
+
+      await uploadDocumentToS3PresignedPost({
+        presign,
+        file,
+      });
+
+      const fileData = {
+        url: presign.publicUrl,
+        name: file.name,
+      };
+
+      setUploadedFiles(prev => ({ ...prev, [fieldId]: fileData }));
+      setValue(fieldId, presign.publicUrl);
+
+      toast.success("Document uploaded successfully");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(getApiErrorMessage(error, "Failed to upload document"));
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
 
   const setValue = (fieldId: string, value: FieldValue) => {
     setValues((prev) => ({ ...prev, [fieldId]: value }));
@@ -373,6 +428,65 @@ export function HackathonRegistrationModal({
           </div>
         );
 
+      case "ATTACHMENTS": {
+        const fileData = uploadedFiles[field.id];
+        
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id} className="text-sm font-medium">
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            
+            <div className="flex flex-col gap-3">
+              {fileData ? (
+                <div className="flex items-center justify-between p-3 bg-primary-50 border border-primary-200 rounded-lg">
+                  <div className="flex items-center gap-2 truncate">
+                    <FileText className="w-4 h-4 text-primary-600 flex-shrink-0" />
+                    <span className="text-sm text-primary-900 truncate">
+                      {fileData.name}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-primary-600 hover:text-primary-700 hover:bg-primary-100"
+                    onClick={() => {
+                      setUploadedFiles((prev) => {
+                        const next = { ...prev };
+                        delete next[field.id];
+                        return next;
+                      });
+                      setValue(field.id, "");
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Input
+                    id={field.id}
+                    type="file"
+                    className="cursor-pointer file:cursor-pointer file:bg-primary-50 file:text-primary-700 file:border-0 file:rounded-md file:px-3 file:py-1 file:mr-3 file:hover:bg-primary-100 transition-colors"
+                    onChange={(e) => handleFileSelect(field.id, e)}
+                    disabled={isUploading}
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  />
+                  {isUploading && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {error && <p className="text-xs text-red-500">{error}</p>}
+          </div>
+        );
+      }
+
       case "TEXT":
       default:
         return (
@@ -439,15 +553,15 @@ export function HackathonRegistrationModal({
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button type="submit" disabled={isSubmitting || isUploading}>
+              {isSubmitting || isUploading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Submitting...
+                  {isUploading ? "Uploading..." : "Submitting..."}
                 </>
               ) : (
                 "Submit"
