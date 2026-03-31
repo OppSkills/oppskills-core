@@ -174,22 +174,6 @@ export function TeamDetailsCard({
         </div>
       </div>
 
-      {/* Tabs Design - Pill shape as in screenshot */}
-      <div className="flex p-1 bg-neutral-100/80 rounded-full w-fit">
-        <div className="px-6 py-2.5 bg-white border border-purple-200 text-purple-700 rounded-full flex items-center gap-3 shadow-sm">
-          <div className="relative">
-            <Image src="/icons/members-group.svg" alt="Members" width={24} height={24} className="opacity-80" onError={(e) => {
-              // Fallback if svg doesn't exist
-              (e.target as any).style.display = 'none';
-            }} />
-            <div className="absolute inset-0 flex items-center justify-center text-purple-600">
-              <CheckCircle className="w-5 h-5 fill-purple-100" />
-            </div>
-          </div>
-          <span className="font-medium text-lg">Team Members</span>
-        </div>
-      </div>
-
       {/* Member List */}
       <div className="flex flex-col mt-2">
         {/* Render Leader First */}
