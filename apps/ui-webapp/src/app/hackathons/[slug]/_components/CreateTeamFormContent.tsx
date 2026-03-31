@@ -28,39 +28,42 @@ export function CreateTeamFormContent({
   setDiscountCode,
   isOpenToggle,
   setIsOpenToggle,
+  type,
 }: CreateTeamFormContentProps) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="space-y-4">
-        <RegistrationInputField
-          label="Team Name"
-          placeholder="e.g. The Innovators"
-          value={teamName}
-          onChange={(e) => setTeamName(e.target.value)}
-          required
-        />
+      {type !== "EVENT" && (
+        <div className="space-y-4">
+          <RegistrationInputField
+            label="Team Name"
+            placeholder="e.g. The Innovators"
+            value={teamName}
+            onChange={(e) => setTeamName(e.target.value)}
+            required
+          />
 
-        {!isIndividual && (
-          <div
-            className="flex items-center justify-between p-4 rounded-2xl bg-neutral-100 border border-neutral-300 cursor-pointer transition-all hover:border-primary-600 group"
-            onClick={() => setIsOpenToggle(!isOpenToggle)}
-          >
-            <div className="space-y-0.5">
-              <Label className="text-sm font-medium text-neutral-900 cursor-pointer">Open for others to join</Label>
-              <p className="text-[11px] text-neutral-500 leading-tight">Allow other participants to request joining your team</p>
-            </div>
-            <div className={cn(
-              "h-6 w-11 rounded-full p-1 transition-colors duration-200",
-              isOpenToggle ? "bg-primary-600" : "bg-neutral-300"
-            )}>
+          {!isIndividual && (
+            <div
+              className="flex items-center justify-between p-4 rounded-2xl bg-neutral-100 border border-neutral-300 cursor-pointer transition-all hover:border-primary-600 group"
+              onClick={() => setIsOpenToggle(!isOpenToggle)}
+            >
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium text-neutral-900 cursor-pointer">Open for others to join</Label>
+                <p className="text-[11px] text-neutral-500 leading-tight">Allow other participants to request joining your team</p>
+              </div>
               <div className={cn(
-                "h-4 w-4 rounded-full bg-white transition-transform duration-200",
-                isOpenToggle ? "translate-x-5" : "translate-x-0"
-              )} />
+                "h-6 w-11 rounded-full p-1 transition-colors duration-200",
+                isOpenToggle ? "bg-primary-600" : "bg-neutral-300"
+              )}>
+                <div className={cn(
+                  "h-4 w-4 rounded-full bg-white transition-transform duration-200",
+                  isOpenToggle ? "translate-x-5" : "translate-x-0"
+                )} />
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {!isFree && (
         <div className="space-y-4">

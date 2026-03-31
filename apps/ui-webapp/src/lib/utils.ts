@@ -145,3 +145,27 @@ function getShortRandomId(): string {
   const n = Math.floor(Math.random() * 36 ** 5);
   return n.toString(36).padStart(5, "0");
 }
+
+/**
+ * Ensures a URL is absolute by prepending https:// if it lacks a protocol
+ * and appears to be a domain-based URL (contains a dot).
+ */
+export function ensureAbsoluteUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  const trimmed = url.trim();
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("data:") ||
+    trimmed.startsWith("/")
+  ) {
+    return trimmed;
+  }
+
+  // If it looks like a domain (contains .), prepend https://
+  if (trimmed.includes(".")) {
+    return `https://${trimmed}`;
+  }
+
+  return trimmed;
+}

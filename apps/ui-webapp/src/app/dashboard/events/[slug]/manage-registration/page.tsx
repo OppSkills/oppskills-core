@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   flexRender,
   getCoreRowModel,
@@ -10,7 +10,7 @@ import {
   getPaginationRowModel,
   ColumnDef,
 } from "@tanstack/react-table";
-import { cn } from "@/lib/utils";
+import { cn, ensureAbsoluteUrl } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,10 +26,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEventRegistrationsBySlug } from "@/hooks/useEventRegistrationsBySlug";
 import type { EventRegistration } from "@/lib/api/eventApi";
-import { getParticipantRegistrationAnswers } from "@/lib/api/eventApi";
+import { getParticipantRegistrationAnswers, getEventBySlug, approveParticipant } from "@/lib/api/eventApi";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getEventBySlug, approveParticipant } from "@/lib/api/eventApi";
 import { ComposeEmailModal } from "./_components/ComposeEmailModal";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -81,171 +80,9 @@ const StatusBadge = ({ status }: { status: RegistrationStatus }) => {
   );
 };
 
-// --- User Detail Modal ---
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Building2,
-  Mail,
-  MapPin,
-  GraduationCap,
-  CalendarDays,
-  X,
-} from "lucide-react";
-
-const UserDetailModal = ({
-  participant,
-  isOpen,
-  onClose,
-  slug,
-}: {
-  participant: Participant | null;
-  isOpen: boolean;
-  onClose: () => void;
-  slug: string | null;
-}) => {
-  const { getToken } = useAuth();
-
-  const { data: answersData, isLoading: isLoadingAnswers } = useQuery({
-    queryKey: ["participant-registration-answers", slug, participant?.id],
-    queryFn: async () => {
-      if (!slug || !participant?.id) return null;
-      const token = await getToken();
-      if (!token) return null;
-      return getParticipantRegistrationAnswers(token, slug, participant.id);
-    },
-    enabled: isOpen && !!slug && !!participant?.id,
-  });
-
-  const formatAnswerValue = (
-    value: string | string[] | number | null | undefined
-  ): string => {
-    if (value === null || value === undefined) return "—";
-    if (Array.isArray(value)) return value.join(", ");
-    return String(value);
-  };
-
-  if (!participant) return null;
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[700px] p-0 overflow-hidden rounded-[20px] border-none bg-background">
-        <div className="flex flex-col p-6 sm:p-8 gap-6">
-          <div className="flex flex-col sm:flex-row gap-6 items-start">
-            {/* Avatar */}
-            <Avatar className="w-24 h-24 sm:w-28 sm:h-28 border-4 border-background shadow-lg">
-              <AvatarImage
-                src={participant.avatarUrl || undefined}
-                className="object-cover"
-              />
-              <AvatarFallback className="text-2xl">
-                {participant.name.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-
-            {/* Info */}
-            <div className="flex flex-col gap-3 flex-1">
-              <DialogTitle className="text-2xl sm:text-3xl font-bold text-foreground">{participant.name}</DialogTitle>
-
-              <div className="flex flex-col gap-2.5 mt-1">
-                <div className="flex items-center gap-2.5 text-muted-foreground">
-                  <Building2 className="w-4 h-4 translate-y-[1px]" />
-                  <span className="text-sm font-medium">
-                    {participant.university || "N/A"}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2.5 text-muted-foreground">
-                  <Mail className="w-4 h-4 translate-y-[1px]" />
-                  <span className="text-sm font-medium">
-                    {participant.email}
-                  </span>
-                </div>
-
-                {participant.location && (
-                  <div className="flex items-center gap-2.5 text-muted-foreground">
-                    <MapPin className="w-4 h-4 translate-y-[1px]" />
-                    <span className="text-sm font-medium">
-                      {participant.location}
-                    </span>
-                  </div>
-                )}
-
-                {participant.course && (
-                  <div className="flex items-start gap-2.5 text-muted-foreground">
-                    <GraduationCap className="w-4 h-4 translate-y-[3px] shrink-0" />
-                    <span className="text-sm font-medium leading-relaxed">
-                      {participant.course}
-                    </span>
-                  </div>
-                )}
-
-                {participant.registeredOn && (
-                  <div className="flex items-center gap-2.5 text-muted-foreground">
-                    <CalendarDays className="w-4 h-4 translate-y-[1px]" />
-                    <span className="text-sm font-medium">
-                      Registered on:{" "}
-                      {new Date(participant.registeredOn).toLocaleString(
-                        "en-US",
-                        {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: true,
-                        }
-                      )}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Registration Answers Section */}
-          {answersData && answersData.fields.length > 0 && (
-            <div className="border-t border-border pt-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">
-                Registration Form Answers
-              </h3>
-              <div className="flex flex-col gap-4">
-                {answersData.fields.map((field) => {
-                  const answer = answersData.answers.find(
-                    (a) => a.fieldId === field.id
-                  );
-                  return (
-                    <div key={field.id} className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-muted-foreground">
-                        {field.label}
-                      </span>
-                      <span className="text-sm text-foreground">
-                        {formatAnswerValue(answer?.value)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {isLoadingAnswers && (
-            <div className="border-t border-border pt-6 flex items-center justify-center">
-              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-            </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
 export default function ManageRegistrationPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = typeof params.slug === "string" ? params.slug : null;
 
   const {
@@ -259,8 +96,6 @@ export default function ManageRegistrationPage() {
   const [activeTab, setActiveTab] = useState<
     "All" | "Completed" | "Incomplete"
   >("All");
-  const [selectedParticipant, setSelectedParticipant] =
-    useState<Participant | null>(null);
   const [emailRecipient, setEmailRecipient] = useState<Participant | null>(
     null
   );
@@ -492,7 +327,7 @@ export default function ManageRegistrationPage() {
         cell: (info) => (
           <div className="flex items-center gap-3">
             <Avatar className="w-10 h-10">
-              <AvatarImage src={info.row.original.avatarUrl || undefined} />
+              <AvatarImage src={ensureAbsoluteUrl(info.row.original.avatarUrl) || undefined} />
               <AvatarFallback>
                 {String(info.getValue()).charAt(0)}
               </AvatarFallback>
@@ -581,7 +416,7 @@ export default function ManageRegistrationPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => setSelectedParticipant(participant)}
+                onClick={() => router.push(`/dashboard/events/${slug}/manage-registration/${participant.id}`)}
               >
                 View
               </Button>
@@ -661,13 +496,6 @@ export default function ManageRegistrationPage() {
 
   return (
     <div className="w-full bg-background min-h-screen p-8 flex flex-col items-center gap-8">
-      {/* Modal */}
-      <UserDetailModal
-        isOpen={!!selectedParticipant}
-        onClose={() => setSelectedParticipant(null)}
-        participant={selectedParticipant}
-        slug={slug}
-      />
 
       <ComposeEmailModal
         isOpen={!!emailRecipient}
@@ -802,10 +630,10 @@ export default function ManageRegistrationPage() {
                   <div className="text-muted-foreground text-sm font-medium pl-2">
                     {row.index + 1}
                   </div>
-                  <div className="flex items-center gap-4 cursor-pointer" onClick={() => setSelectedParticipant(row.original)}>
+                  <div className="flex items-center gap-4 cursor-pointer" onClick={() => router.push(`/dashboard/events/${slug}/manage-registration/${row.original.id}`)}>
                     <Avatar className="w-10 h-10 border border-border/50">
                       <AvatarImage
-                        src={row.original.avatarUrl || undefined}
+                        src={ensureAbsoluteUrl(row.original.avatarUrl) || undefined}
                         className="object-cover"
                       />
                       <AvatarFallback>
@@ -873,7 +701,7 @@ export default function ManageRegistrationPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => setSelectedParticipant(row.original)}
+                      onClick={() => router.push(`/dashboard/events/${slug}/manage-registration/${row.original.id}`)}
                     >
                       View
                     </Button>

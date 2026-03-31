@@ -7,6 +7,7 @@ import { MapPin, Sparkles, Users, ChevronRight, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { EventDetails } from "./types";
 import InfoCard from "./InfoCard";
+import { ensureAbsoluteUrl } from "@/lib/utils";
 
 interface EventSidebarProps {
   event: EventDetails;
@@ -22,7 +23,7 @@ export function EventSidebar({ event }: EventSidebarProps) {
         <div className="relative aspect-16/10 w-full overflow-hidden lg:rounded-2xl shadow-sm border border-neutral-100">
           {event.thumbnail ? (
             <Image
-              src={event.thumbnail}
+              src={ensureAbsoluteUrl(event.thumbnail)}
               alt={event.title}
               fill
               className="object-cover"

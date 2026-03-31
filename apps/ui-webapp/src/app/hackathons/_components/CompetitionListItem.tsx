@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { Calendar, MapPin, Users, Trophy, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Competition } from "./CompetitionCard";
+import { ensureAbsoluteUrl } from "@/lib/utils";
 
 interface CompetitionListItemProps {
   competition: Competition;
@@ -16,7 +17,7 @@ export function CompetitionListItem({ competition }: CompetitionListItemProps) {
 
   // Fallback image if no banner
   const bannerUrl =
-    competition.bannerUrl ||
+    ensureAbsoluteUrl(competition.bannerUrl) ||
     "https://images.unsplash.com/photo-1504384308090-c54be3852f33?q=80&w=600&auto=format&fit=crop";
 
   return (

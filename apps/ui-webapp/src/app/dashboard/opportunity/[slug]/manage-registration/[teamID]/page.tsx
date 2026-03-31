@@ -12,8 +12,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import TeamMembers, { TeamMember } from "./_components/TeamMembers";
 import { useTeams } from "@/hooks/useTeams";
@@ -24,6 +22,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getApiErrorMessage } from "@/lib/utils";
+import { RegistrationAnswersView, Respondent } from "../../../../_components/registration/RegistrationAnswersView";
 
 export default function TeamManagementPage() {
   const router = useRouter();
@@ -40,7 +39,7 @@ export default function TeamManagementPage() {
   const { data: registrationsData } = useHackathonRegistrationsBySlug(slug);
 
   const [activeTab, setActiveTab] = useState<string>("members");
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
 
   const { getToken } = useAuth();
 
@@ -55,42 +54,6 @@ export default function TeamManagementPage() {
       enabled: activeTab === "registration-answers",
     });
 
-  const formatAnswerValue = (
-    value: string | string[] | number | null | undefined,
-  ): string => {
-    if (value === null || value === undefined) return "—";
-    if (Array.isArray(value)) return value.join(", ");
-    return String(value);
-  };
-
-  const isImageFile = (url: string): boolean => {
-    if (!url) return false;
-    const lowerCaseUrl = url.toLowerCase();
-    return (
-      lowerCaseUrl.endsWith(".jpg") ||
-      lowerCaseUrl.endsWith(".jpeg") ||
-      lowerCaseUrl.endsWith(".png") ||
-      lowerCaseUrl.endsWith(".gif") ||
-      lowerCaseUrl.endsWith(".webp") ||
-      lowerCaseUrl.endsWith(".svg") ||
-      lowerCaseUrl.includes("cloudfront.net/public/opportunity-attachments") ||
-      lowerCaseUrl.includes(".png") ||
-      lowerCaseUrl.includes(".jpg") ||
-      lowerCaseUrl.includes(".jpeg")
-    );
-  };
-
-  const getFileName = (url: string): string => {
-    if (!url) return "File";
-    try {
-      const decodedUrl = decodeURIComponent(url);
-      const parts = decodedUrl.split("/");
-      const lastPart = parts[parts.length - 1];
-      return lastPart.split("?")[0] || "File";
-    } catch (e) {
-      return "File";
-    }
-  };
 
   const formatLocation = (
     profile:
@@ -329,101 +292,17 @@ export default function TeamManagementPage() {
             {!isLoadingAnswers &&
               registrationAnswersData &&
               registrationAnswersData.fields.length > 0 && (
-                <div className="space-y-8">
-                  {registrationAnswersData.fields.map((field) => (
-                    <div key={field.id} className="space-y-4">
-                      <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">
-                        {field.label}
-                      </h3>
-                      <div className="grid gap-3">
-                        {registrationAnswersData.respondents.map(
-                          (respondent) => {
-                            const answer = respondent.answers.find(
-                              (a) => a.fieldId === field.id,
-                            );
-                            const respondentName =
-                              [respondent.firstName, respondent.lastName]
-                                .filter(Boolean)
-                                .join(" ") || respondent.email;
-
-                            return (
-                              <div
-                                key={respondent.userId}
-                                className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg"
-                              >
-                                <Avatar className="h-8 w-8">
-                                  <AvatarImage
-                                    src={respondent.imageUrl || undefined}
-                                  />
-                                  <AvatarFallback className="text-xs">
-                                    {respondentName.charAt(0)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-foreground">
-                                      {respondentName}
-                                    </span>
-                                    {respondent.isLeader && (
-                                      <Badge
-                                        variant="secondary"
-                                        className="text-xs"
-                                      >
-                                        Leader
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground mt-1">
-                                    {field.type === "ATTACHMENTS" &&
-                                      answer?.value &&
-                                      typeof answer.value === "string" ? (
-                                      isImageFile(answer.value) ? (
-                                        <div
-                                          className="relative group cursor-pointer w-fit"
-                                          onClick={() =>
-                                            setSelectedImage(
-                                              answer.value as string,
-                                            )
-                                          }
-                                        >
-                                          <div className="h-32 w-48 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center group-hover:scale-[1.02] transition-all duration-200 shadow-sm">
-                                            <img
-                                              src={answer.value}
-                                              alt={field.label}
-                                              className="w-full h-full object-cover"
-                                            />
-                                          </div>
-                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors rounded-lg" />
-                                        </div>
-                                      ) : (
-                                        <a
-                                          href={answer.value}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg hover:bg-secondary/50 transition-all group w-fit max-w-[280px]"
-                                        >
-                                          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10">
-                                            <FileText className="h-4 w-4 text-primary" />
-                                          </div>
-                                          <span className="font-medium text-foreground truncate text-xs">
-                                            {getFileName(answer.value)}
-                                          </span>
-                                          <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary shrink-0" />
-                                        </a>
-                                      )
-                                    ) : (
-                                      formatAnswerValue(answer?.value)
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          },
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <RegistrationAnswersView
+                  fields={registrationAnswersData.fields}
+                  respondents={registrationAnswersData.respondents.map((r: any) => ({
+                    userId: r.userId,
+                    name: [r.firstName, r.lastName].filter(Boolean).join(" ") || r.email,
+                    email: r.email,
+                    avatarUrl: r.imageUrl || undefined,
+                    isLeader: r.isLeader,
+                    answers: r.answers,
+                  }))}
+                />
               )}
 
             {!isLoadingAnswers &&
@@ -604,27 +483,6 @@ export default function TeamManagementPage() {
         )}
       </div>
 
-      {/* Image Zoom Modal */}
-      <Dialog
-        open={!!selectedImage}
-        onOpenChange={(open) => !open && setSelectedImage(null)}
-      >
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-1 border-none bg-transparent shadow-none [&>button]:hidden">
-          <div className="relative w-full h-full flex items-center justify-center group">
-            <img
-              src={selectedImage || ""}
-              alt="Zoomed attachment"
-              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
-            />
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-2 right-2 bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-all backdrop-blur-md"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

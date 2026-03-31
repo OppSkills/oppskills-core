@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Check, CheckCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, ensureAbsoluteUrl } from "@/lib/utils";
 
 interface Ticket {
   id: string;
@@ -126,7 +126,7 @@ export function EventRegistrationCard({
               <div className="relative w-10 h-10 rounded-full overflow-hidden bg-neutral-200">
                 {user.avatar && (
                   <Image
-                    src={user.avatar}
+                    src={ensureAbsoluteUrl(user.avatar)}
                     alt={user.name}
                     fill
                     className="object-cover"
@@ -174,7 +174,7 @@ export function EventRegistrationCard({
               <div className="relative w-10 h-10 rounded-full overflow-hidden bg-neutral-200">
                 {user.avatar && (
                   <Image
-                    src={user.avatar}
+                    src={ensureAbsoluteUrl(user.avatar)}
                     alt={user.name}
                     fill
                     className="object-cover"
@@ -302,7 +302,7 @@ export function EventRegistrationCard({
             <div className="relative w-10 h-10 rounded-full overflow-hidden bg-neutral-200">
               {user.avatar && (
                 <Image
-                  src={user.avatar}
+                  src={ensureAbsoluteUrl(user.avatar)}
                   alt={user.name}
                   fill
                   className="object-cover"
