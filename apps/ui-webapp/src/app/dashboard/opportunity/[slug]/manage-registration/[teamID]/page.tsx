@@ -22,6 +22,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getApiErrorMessage } from "@/lib/utils";
+import { RegistrationAnswersView, Respondent } from "../../../../_components/registration/RegistrationAnswersView";
 
 export default function TeamManagementPage() {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function TeamManagementPage() {
 
   const [activeTab, setActiveTab] = useState<string>("members");
 
+
   const { getToken } = useAuth();
 
   const { data: registrationAnswersData, isLoading: isLoadingAnswers } =
@@ -52,13 +54,6 @@ export default function TeamManagementPage() {
       enabled: activeTab === "registration-answers",
     });
 
-  const formatAnswerValue = (
-    value: string | string[] | number | null | undefined,
-  ): string => {
-    if (value === null || value === undefined) return "—";
-    if (Array.isArray(value)) return value.join(", ");
-    return String(value);
-  };
 
   const formatLocation = (
     profile:
@@ -238,11 +233,10 @@ export default function TeamManagementPage() {
         {/* Tab 1: Team Members */}
         <button
           onClick={() => setActiveTab("members")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
-            activeTab === "members"
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${activeTab === "members"
               ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
               : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
-          }`}
+            }`}
         >
           <UserCircle2 className="h-5 w-5" />
           Team Members
@@ -251,11 +245,10 @@ export default function TeamManagementPage() {
         {/* Tab 2: Registration Answers */}
         <button
           onClick={() => setActiveTab("registration-answers")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
-            activeTab === "registration-answers"
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${activeTab === "registration-answers"
               ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
               : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
-          }`}
+            }`}
         >
           <ClipboardList className="h-5 w-5" />
           Registration Answers
@@ -266,18 +259,16 @@ export default function TeamManagementPage() {
           <button
             key={round.id}
             onClick={() => setActiveTab(round.id)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${
-              activeTab === round.id
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${activeTab === round.id
                 ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
                 : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
-            }`}
+              }`}
           >
             <div
-              className={`flex items-center justify-center w-6 h-6 rounded-full text-xs border ${
-                activeTab === round.id
+              className={`flex items-center justify-center w-6 h-6 rounded-full text-xs border ${activeTab === round.id
                   ? "border-primary"
                   : "border-muted-foreground"
-              }`}
+                }`}
             >
               {round.order}
             </div>
@@ -301,62 +292,17 @@ export default function TeamManagementPage() {
             {!isLoadingAnswers &&
               registrationAnswersData &&
               registrationAnswersData.fields.length > 0 && (
-                <div className="space-y-8">
-                  {registrationAnswersData.fields.map((field) => (
-                    <div key={field.id} className="space-y-4">
-                      <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">
-                        {field.label}
-                      </h3>
-                      <div className="grid gap-3">
-                        {registrationAnswersData.respondents.map(
-                          (respondent) => {
-                            const answer = respondent.answers.find(
-                              (a) => a.fieldId === field.id,
-                            );
-                            const respondentName =
-                              [respondent.firstName, respondent.lastName]
-                                .filter(Boolean)
-                                .join(" ") || respondent.email;
-
-                            return (
-                              <div
-                                key={respondent.userId}
-                                className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg"
-                              >
-                                <Avatar className="h-8 w-8">
-                                  <AvatarImage
-                                    src={respondent.imageUrl || undefined}
-                                  />
-                                  <AvatarFallback className="text-xs">
-                                    {respondentName.charAt(0)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-foreground">
-                                      {respondentName}
-                                    </span>
-                                    {respondent.isLeader && (
-                                      <Badge
-                                        variant="secondary"
-                                        className="text-xs"
-                                      >
-                                        Leader
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {formatAnswerValue(answer?.value)}
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          },
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <RegistrationAnswersView
+                  fields={registrationAnswersData.fields}
+                  respondents={registrationAnswersData.respondents.map((r: any) => ({
+                    userId: r.userId,
+                    name: [r.firstName, r.lastName].filter(Boolean).join(" ") || r.email,
+                    email: r.email,
+                    avatarUrl: r.imageUrl || undefined,
+                    isLeader: r.isLeader,
+                    answers: r.answers,
+                  }))}
+                />
               )}
 
             {!isLoadingAnswers &&
@@ -385,106 +331,106 @@ export default function TeamManagementPage() {
                   <span className="text-sm text-muted-foreground">
                     {selectedRoundSubmission.submittedAt
                       ? new Date(
-                          selectedRoundSubmission.submittedAt,
-                        ).toLocaleString()
+                        selectedRoundSubmission.submittedAt,
+                      ).toLocaleString()
                       : "—"}
                   </span>
                 </div>
 
                 {selectedRoundSubmission.payload
                   ? (() => {
-                      const payload = selectedRoundSubmission.payload as Record<
-                        string,
-                        unknown
-                      >;
-                      const files = payload.files as
-                        | Array<{
-                            url?: string;
-                            publicUrl?: string;
-                            fileName?: string;
-                            name?: string;
-                            mimeType?: string;
-                            size?: number;
-                          }>
-                        | undefined;
-                      const fileUrl = (payload.fileUrl || payload.url) as
-                        | string
-                        | undefined;
-                      const fileName = payload.fileName as string | undefined;
+                    const payload = selectedRoundSubmission.payload as Record<
+                      string,
+                      unknown
+                    >;
+                    const files = payload.files as
+                      | Array<{
+                        url?: string;
+                        publicUrl?: string;
+                        fileName?: string;
+                        name?: string;
+                        mimeType?: string;
+                        size?: number;
+                      }>
+                      | undefined;
+                    const fileUrl = (payload.fileUrl || payload.url) as
+                      | string
+                      | undefined;
+                    const fileName = payload.fileName as string | undefined;
 
-                      return (
-                        <div className="space-y-4">
-                          {Array.isArray(files) && files.length > 0 && (
-                            <div className="space-y-3">
-                              <h3 className="font-semibold text-foreground">
-                                Submitted Files
-                              </h3>
-                              <div className="grid gap-3">
-                                {files.map((file, index) => {
-                                  const url = file.url || file.publicUrl;
-                                  const name =
-                                    file.fileName ||
-                                    file.name ||
-                                    `File ${index + 1}`;
-                                  return (
-                                    <a
-                                      key={index}
-                                      href={url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors group"
-                                    >
-                                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                                        <FileText className="h-5 w-5 text-primary" />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-foreground truncate">
-                                          {name}
+                    return (
+                      <div className="space-y-4">
+                        {Array.isArray(files) && files.length > 0 && (
+                          <div className="space-y-3">
+                            <h3 className="font-semibold text-foreground">
+                              Submitted Files
+                            </h3>
+                            <div className="grid gap-3">
+                              {files.map((file, index) => {
+                                const url = file.url || file.publicUrl;
+                                const name =
+                                  file.fileName ||
+                                  file.name ||
+                                  `File ${index + 1}`;
+                                return (
+                                  <a
+                                    key={index}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors group"
+                                  >
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                                      <FileText className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-foreground truncate">
+                                        {name}
+                                      </p>
+                                      {file.mimeType && (
+                                        <p className="text-xs text-muted-foreground">
+                                          {file.mimeType}
                                         </p>
-                                        {file.mimeType && (
-                                          <p className="text-xs text-muted-foreground">
-                                            {file.mimeType}
-                                          </p>
-                                        )}
-                                      </div>
-                                      <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
-                                    </a>
-                                  );
-                                })}
+                                      )}
+                                    </div>
+                                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                                  </a>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {!Array.isArray(files) && fileUrl && (
+                          <div className="space-y-3">
+                            <h3 className="font-semibold text-foreground">
+                              Submitted File
+                            </h3>
+                            <a
+                              href={fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors group"
+                            >
+                              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                                <FileText className="h-5 w-5 text-primary" />
                               </div>
-                            </div>
-                          )}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-foreground">
+                                  {fileName || "Submission File"}
+                                </p>
+                              </div>
+                              <Download className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                            </a>
+                          </div>
+                        )}
 
-                          {!Array.isArray(files) && fileUrl && (
-                            <div className="space-y-3">
-                              <h3 className="font-semibold text-foreground">
-                                Submitted File
-                              </h3>
-                              <a
-                                href={fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors group"
-                              >
-                                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                                  <FileText className="h-5 w-5 text-primary" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-foreground">
-                                    {fileName || "Submission File"}
-                                  </p>
-                                </div>
-                                <Download className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
-                              </a>
-                            </div>
-                          )}
-
-                          {Object.entries(payload).filter(
-                            ([key]) =>
-                              !["files", "fileUrl", "url", "fileName"].includes(
-                                key,
-                              ),
-                          ).length > 0 && (
+                        {Object.entries(payload).filter(
+                          ([key]) =>
+                            !["files", "fileUrl", "url", "fileName"].includes(
+                              key,
+                            ),
+                        ).length > 0 && (
                             <div className="space-y-3">
                               <h3 className="font-semibold text-foreground">
                                 Additional Information
@@ -518,9 +464,9 @@ export default function TeamManagementPage() {
                               </div>
                             </div>
                           )}
-                        </div>
-                      );
-                    })()
+                      </div>
+                    );
+                  })()
                   : null}
               </div>
             ) : (
@@ -536,6 +482,7 @@ export default function TeamManagementPage() {
           </div>
         )}
       </div>
+
     </div>
   );
 }

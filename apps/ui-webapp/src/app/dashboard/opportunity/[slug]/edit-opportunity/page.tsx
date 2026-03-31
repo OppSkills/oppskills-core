@@ -664,12 +664,17 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
       const label = getString(f, "label");
       if (!label) return null;
       const required = f["required"];
+      
+      const isDefault = [
+        "name", "email", "phone no.", "gender", "school name", "college name", "company name"
+      ].includes(label.toLowerCase().trim());
+      
       return {
         id: getString(f, "id") ?? crypto.randomUUID(),
         label,
         type: fromRegistrationFieldType(getString(f, "type")),
         required: typeof required === "boolean" ? required : false,
-        fixed: false,
+        fixed: isDefault,
         options: Array.isArray(f["options"])
           ? (f["options"] as ReadonlyArray<unknown>).filter(
             (o): o is string => typeof o === "string"

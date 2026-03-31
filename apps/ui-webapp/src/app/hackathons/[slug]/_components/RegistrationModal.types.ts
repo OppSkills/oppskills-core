@@ -5,9 +5,10 @@ export interface RegistrationModalProps {
   isOpen: boolean;
   onClose: () => void;
   competition: CompetitionDetails;
-  onSuccess?: (team: TeamDetailResponse) => void;
+  onSuccess?: (response: any) => void;
   initialMode?: RegistrationMode;
   initialInvitationCode?: string;
+  type?: "HACKATHON" | "EVENT";
 }
 
 export type RegistrationMode = "CREATE" | "JOIN";
@@ -39,6 +40,7 @@ export interface CreateTeamFormContentProps {
   setDiscountCode?: (code: string) => void;
   isOpenToggle: boolean;
   setIsOpenToggle: (value: boolean) => void;
+  type?: "HACKATHON" | "EVENT";
 }
 
 export interface JoinTeamFormContentProps {

@@ -5,6 +5,7 @@ import { Badge } from "../badge";
 import { IndianRupee } from "lucide-react";
 import RTooltip from "../Rtooltip";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
+import { ensureAbsoluteUrl } from "@/lib/utils";
 
 export default function EventCard({
   thumbnail = "",
@@ -22,7 +23,7 @@ export default function EventCard({
           <Image
             width={371}
             height={371}
-            src={thumbnail || "/tmp/hackathon.jpg"}
+            src={ensureAbsoluteUrl(thumbnail) || "/images/hackathon.jpg"}
             alt="Hackathon Thumbnail"
             style={{ objectFit: "cover" }}
           />

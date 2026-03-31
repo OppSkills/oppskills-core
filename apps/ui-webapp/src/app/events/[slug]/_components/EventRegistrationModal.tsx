@@ -18,8 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, AlertCircle, Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, AlertCircle, Check, ChevronsUpDown, X, FileText } from "lucide-react";
+import { cn, getApiErrorMessage } from "@/lib/utils";
+import { toast } from "sonner";
+import { presignDocumentUpload } from "@/lib/api/mediaApi";
+import { uploadDocumentToS3PresignedPost } from "@/lib/uploads/uploadDocumentToS3";
 import {
   Command,
   CommandEmpty,
@@ -280,9 +283,12 @@ export function EventRegistrationModal({
   const [isSearchingColleges, setIsSearchingColleges] = useState(false);
   const [collegeComboboxOpen, setCollegeComboboxOpen] = useState(false);
 
-  // Filter out unsupported field types (ATTACHMENTS)
-  const supportedFields = fields.filter((f) => f.type !== "ATTACHMENTS");
-  const unsupportedFields = fields.filter((f) => f.type === "ATTACHMENTS");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, { name: string; url: string }>>({});
+
+  // Support all fields now that attachments are supported
+  const supportedFields = fields;
+  const unsupportedFields: RegistrationField[] = [];
 
   // Pre-fill values when modal opens
   useEffect(() => {
@@ -345,8 +351,56 @@ export function EventRegistrationModal({
       setValues({});
       setErrors({});
       setOnboardingValues({}); // Reset onboarding values too
+      setUploadedFiles({});
     }
   }, [isOpen, userData, fields, showOnboarding]);
+
+  const handleFileSelect = async (fieldId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("File size exceeds 10MB limit");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Please sign in to upload files");
+        return;
+      }
+
+      const presign = await presignDocumentUpload(token, {
+        purpose: "OPPORTUNITY_ATTACHMENT",
+        mimeType: file.type,
+        fileName: file.name,
+      });
+
+      await uploadDocumentToS3PresignedPost({
+        presign,
+        file,
+      });
+
+      const fileData = {
+        url: presign.publicUrl,
+        name: file.name,
+      };
+
+      setUploadedFiles(prev => ({ ...prev, [fieldId]: fileData }));
+      setValue(fieldId, presign.publicUrl);
+
+      toast.success("Document uploaded successfully");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(getApiErrorMessage(error, "Failed to upload document"));
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
 
   const setValue = (fieldId: string, value: FieldValue) => {
     setValues((prev) => ({ ...prev, [fieldId]: value }));
@@ -453,8 +507,8 @@ export function EventRegistrationModal({
     const newErrors: FieldErrors = {};
 
     // Determine current user category
-    const currentUserCategory = showOnboarding 
-      ? onboardingValues.userCategory 
+    const currentUserCategory = showOnboarding
+      ? onboardingValues.userCategory
       : userData?.userCategory;
     const isWorkingProfessional = currentUserCategory === UserCategory.WORKING_PROFESSIONAL;
 
@@ -465,10 +519,10 @@ export function EventRegistrationModal({
       if (isCollegeField && isWorkingProfessional) {
         continue;
       }
-      
+
       // Skip college field in registration fields if it's already shown in onboarding
       if (isCollegeField && showOnboarding) {
-        const isCollegeCategory = 
+        const isCollegeCategory =
           currentUserCategory === UserCategory.COLLEGE_STUDENT ||
           currentUserCategory === UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
           currentUserCategory === UserCategory.FRESHER;
@@ -636,7 +690,7 @@ export function EventRegistrationModal({
       } else if (
         onboardingValues.userCategory === UserCategory.COLLEGE_STUDENT ||
         onboardingValues.userCategory ===
-          UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
+        UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
         onboardingValues.userCategory === UserCategory.FRESHER
       ) {
         filteredOnboardingData.collegeId = onboardingValues.collegeId;
@@ -964,66 +1018,66 @@ export function EventRegistrationModal({
 
         {(onboardingValues.userCategory === UserCategory.COLLEGE_STUDENT ||
           onboardingValues.userCategory ===
-            UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
+          UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
           onboardingValues.userCategory === UserCategory.FRESHER) && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>
-                College <span className="text-red-500">*</span>
-              </Label>
-              {renderCollegeSearch(
-                onboardingValues.collegeName || "",
-                (college) => {
-                  updateOnboardingValue("collegeId", college.id);
-                  updateOnboardingValue("collegeName", college.name);
-                },
-                (val) => updateOnboardingValue("collegeName", val),
-                errors.collegeId || errors.collegeName,
-                "Search for your college..."
-              )}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>
+                  College <span className="text-red-500">*</span>
+                </Label>
+                {renderCollegeSearch(
+                  onboardingValues.collegeName || "",
+                  (college) => {
+                    updateOnboardingValue("collegeId", college.id);
+                    updateOnboardingValue("collegeName", college.name);
+                  },
+                  (val) => updateOnboardingValue("collegeName", val),
+                  errors.collegeId || errors.collegeName,
+                  "Search for your college..."
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {onboardingValues.userCategory ===
           UserCategory.WORKING_PROFESSIONAL && (
-          <div className="space-y-4">
-            {!dynamicCompanyField && (
+            <div className="space-y-4">
+              {!dynamicCompanyField && (
+                <div className="space-y-2">
+                  <Label>
+                    Company Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    placeholder="Enter Company Name"
+                    value={onboardingValues.companyName || ""}
+                    onChange={(e) =>
+                      updateOnboardingValue("companyName", e.target.value)
+                    }
+                    className={cn(errors.companyName && "border-red-500")}
+                  />
+                  {errors.companyName && (
+                    <p className="text-xs text-red-500">{errors.companyName}</p>
+                  )}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>
-                  Company Name <span className="text-red-500">*</span>
+                  Job Title <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  placeholder="Enter Company Name"
-                  value={onboardingValues.companyName || ""}
+                  placeholder="e.g. Software Engineer"
+                  value={onboardingValues.jobTitle || ""}
                   onChange={(e) =>
-                    updateOnboardingValue("companyName", e.target.value)
+                    updateOnboardingValue("jobTitle", e.target.value)
                   }
-                  className={cn(errors.companyName && "border-red-500")}
+                  className={cn(errors.jobTitle && "border-red-500")}
                 />
-                {errors.companyName && (
-                  <p className="text-xs text-red-500">{errors.companyName}</p>
+                {errors.jobTitle && (
+                  <p className="text-xs text-red-500">{errors.jobTitle}</p>
                 )}
               </div>
-            )}
-            <div className="space-y-2">
-              <Label>
-                Job Title <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                placeholder="e.g. Software Engineer"
-                value={onboardingValues.jobTitle || ""}
-                onChange={(e) =>
-                  updateOnboardingValue("jobTitle", e.target.value)
-                }
-                className={cn(errors.jobTitle && "border-red-500")}
-              />
-              {errors.jobTitle && (
-                <p className="text-xs text-red-500">{errors.jobTitle}</p>
-              )}
             </div>
-          </div>
-        )}
+          )}
       </div>
     );
   };
@@ -1137,25 +1191,84 @@ export function EventRegistrationModal({
           </div>
         );
 
+      case "ATTACHMENTS": {
+        const fileData = uploadedFiles[field.id];
+
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id} className="text-sm font-medium">
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+
+            <div className="flex flex-col gap-3">
+              {fileData ? (
+                <div className="flex items-center justify-between p-3 bg-primary-50 border border-primary-200 rounded-lg">
+                  <div className="flex items-center gap-2 truncate">
+                    <FileText className="w-4 h-4 text-primary-600 flex-shrink-0" />
+                    <span className="text-sm text-primary-900 truncate">
+                      {fileData.name}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-primary-600 hover:text-primary-700 hover:bg-primary-100"
+                    onClick={() => {
+                      setUploadedFiles((prev) => {
+                        const next = { ...prev };
+                        delete next[field.id];
+                        return next;
+                      });
+                      setValue(field.id, "");
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Input
+                    id={field.id}
+                    type="file"
+                    className="cursor-pointer file:cursor-pointer file:bg-primary-50 file:text-primary-700 file:border-0 file:rounded-md file:px-3 file:py-1 file:mr-3 file:hover:bg-primary-100 transition-colors"
+                    onChange={(e) => handleFileSelect(field.id, e)}
+                    disabled={isUploading}
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  />
+                  {isUploading && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {error && <p className="text-xs text-red-500">{error}</p>}
+          </div>
+        );
+      }
+
       case "TEXT":
       default: {
         const isCollegeField = isCollegeFieldLabel(field.label);
-        
+
         // Hide college field for working professionals
-        const currentUserCategory = showOnboarding 
-          ? onboardingValues.userCategory 
+        const currentUserCategory = showOnboarding
+          ? onboardingValues.userCategory
           : userData?.userCategory;
         const isWorkingProfessional = currentUserCategory === UserCategory.WORKING_PROFESSIONAL;
-        
+
         // Skip rendering college field for working professionals
         if (isCollegeField && isWorkingProfessional) {
           return null;
         }
-        
+
         // Hide college field in registration fields if it's already shown in onboarding
         // This ensures college field appears right after User Category, not at the end
         if (isCollegeField && showOnboarding) {
-          const isCollegeCategory = 
+          const isCollegeCategory =
             currentUserCategory === UserCategory.COLLEGE_STUDENT ||
             currentUserCategory === UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
             currentUserCategory === UserCategory.FRESHER;
@@ -1240,15 +1353,15 @@ export function EventRegistrationModal({
             type="button"
             variant="outline"
             onClick={onClose}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isUploading}
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? (
+          <Button type="submit" disabled={isSubmitting || isUploading}>
+            {isSubmitting || isUploading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Registering...
+                {isUploading ? "Uploading..." : "Registering..."}
               </>
             ) : showOnboarding ? (
               "Register & Join"

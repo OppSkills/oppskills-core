@@ -4,6 +4,7 @@ import Image from "next/image";
 import { formatInTimeZone } from "date-fns-tz";
 import { Dot } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { ensureAbsoluteUrl } from "@/lib/utils";
 
 // Expanded interface to match PublicHackathonListItem fields + UI needs
 export interface Competition {
@@ -113,7 +114,7 @@ export function CompetitionCard({ competition }: CompetitionCardProps) {
         <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-muted">
           {competition.bannerUrl ? (
             <Image
-              src={competition.bannerUrl}
+              src={ensureAbsoluteUrl(competition.bannerUrl)}
               alt={competition.title}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"

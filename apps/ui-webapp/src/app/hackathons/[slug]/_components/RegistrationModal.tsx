@@ -29,6 +29,13 @@ import {
   verifyPayment,
   submitRegistration,
 } from "@/lib/api/paymentsApi";
+import {
+  joinEvent,
+  checkMyRegistration,
+  createEventPaymentOrder,
+  verifyEventPayment,
+  submitMissingRegistrationAnswers,
+} from "@/lib/api/eventApi";
 import { getMe, submitOnboarding } from "@/lib/api/usersApi";
 import type { CreateOnboardingDto, MeResponseDto } from "@oppskills/types/frontend";
 import { mergeDefaultAndCustomFields } from "@/lib/registration/mergeRegistrationFields";
@@ -38,7 +45,7 @@ import {
 } from "@/lib/registration/hackathonOnboardingFromAnswers";
 import { presignDocumentUpload } from "@/lib/api/mediaApi";
 import { uploadDocumentToS3PresignedPost } from "@/lib/uploads/uploadDocumentToS3";
-import { getApiErrorMessage, cn } from "@/lib/utils";
+import { getApiErrorMessage, cn, ensureAbsoluteUrl } from "@/lib/utils";
 import type { RegistrationModalProps, RegistrationMode } from "./RegistrationModal.types";
 import { CreateTeamFormContent } from "./CreateTeamFormContent";
 import { JoinTeamFormContent } from "./JoinTeamFormContent";
@@ -84,6 +91,7 @@ export function RegistrationModal({
   onSuccess,
   initialMode,
   initialInvitationCode,
+  type = "HACKATHON",
 }: RegistrationModalProps) {
   const router = useRouter();
   const { user } = useUser();
@@ -112,7 +120,7 @@ export function RegistrationModal({
   >(undefined);
 
   const maxSize = getMaxSizeFromParticipantType(competition.participantType);
-  const isIndividual = competition.participantType === "INDIVIDUAL";
+  const isIndividual = type === "EVENT" || competition.participantType === "INDIVIDUAL";
 
   const onUpdateAnswer = useCallback((fieldId: string, value: any) => {
     setAnswers(prev => ({ ...prev, [fieldId]: value }));
@@ -223,20 +231,22 @@ export function RegistrationModal({
 
       void fetchProfileAndInit();
 
-      const fetchTeams = async () => {
-        setIsLoadingTeams(true);
-        try {
-          const token = await getToken();
-          if (!token) return;
-          const data = await getTeamsByHackathon(token, competition.id);
-          setTeams(data);
-        } catch (error) {
-          console.error("Failed to fetch teams:", error);
-        } finally {
-          setIsLoadingTeams(false);
-        }
-      };
-      void fetchTeams();
+      if (type === "HACKATHON") {
+        const fetchTeams = async () => {
+          setIsLoadingTeams(true);
+          try {
+            const token = await getToken();
+            if (!token) return;
+            const data = await getTeamsByHackathon(token, competition.id);
+            setTeams(data);
+          } catch (error) {
+            console.error("Failed to fetch teams:", error);
+          } finally {
+            setIsLoadingTeams(false);
+          }
+        };
+        void fetchTeams();
+      }
     }
   }, [
     isOpen,
@@ -304,6 +314,67 @@ export function RegistrationModal({
     opts: { teamId?: string; invitationCode?: string }
   ) => {
     try {
+      if (type === "EVENT") {
+        const order = await createEventPaymentOrder(token, competition.slug, {
+          discountCode: discountCode.trim() || undefined,
+        });
+
+        if (order.zeroAmountPayment || order.amountPaise === 0) {
+          await joinEvent(token, competition.id, { answers: formattedAnswers });
+
+          toast.success("Successfully registered for the event!");
+          onSuccess?.(null);
+          onClose();
+          router.push(`/events/${competition.slug}?registered=true`);
+          return;
+        }
+
+        const options = {
+          key: order.razorpayKey || (order as any).keyId,
+          amount: order.amountPaise,
+          currency: order.currency,
+          name: competition.title || (competition as any).name,
+          description: "Event registration",
+          order_id: order.razorpayOrderId || (order as any).orderId,
+          handler: async (response: any) => {
+            const completingId = toast.loading("Completing your registration…");
+            try {
+              const verifyToken = await getToken();
+              if (!verifyToken) throw new Error("Authentication required.");
+
+              await verifyEventPayment(verifyToken, competition.slug, {
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+                answers: formattedAnswers,
+              });
+
+              toast.dismiss(completingId);
+              toast.success("Registration successful!");
+              onSuccess?.(null);
+              router.push(`/events/${competition.slug}?registered=true`);
+            } catch (err) {
+              toast.dismiss(completingId);
+              toast.error(getApiErrorMessage(err, "Registration verification failed."));
+            }
+          },
+          prefill: {
+            name: user?.fullName || "",
+            email: user?.primaryEmailAddress?.emailAddress || "",
+            contact: user?.primaryPhoneNumber?.phoneNumber || "",
+          },
+          theme: { color: "#5B2E63" },
+          modal: { ondismiss: () => toast.info("Payment cancelled") },
+        };
+
+        if (!window.Razorpay) throw new Error("Razorpay not loaded");
+        onClose();
+        requestAnimationFrame(() => {
+          new window.Razorpay(options).open();
+        });
+        return;
+      }
+
       const orderParams: any = {
         discountCode: discountCode.trim() || undefined,
       };
@@ -365,7 +436,7 @@ export function RegistrationModal({
         key: order.razorpayKeyId || order.keyId,
         amount: order.amountPaise,
         currency: order.currency,
-        name: competition.title,
+        name: competition.title || (competition as any).name,
         description: "Hackathon registration",
         order_id: order.razorpayOrderId || order.orderId,
         handler: async (response: any) => {
@@ -405,15 +476,18 @@ export function RegistrationModal({
 
             await submitRegistration(verifyToken, competition.slug, formattedAnswers);
 
-            const myUpdatedTeam = await checkMyHackathonTeam(verifyToken, competition.id);
-
+            const myUpdatedTeam = type === "HACKATHON" 
+              ? await checkMyHackathonTeam(verifyToken, competition.id)
+              : null;
+            
             toast.dismiss(completingId);
             toast.success("Registration successful!");
             if (myUpdatedTeam) {
               onSuccess?.(myUpdatedTeam);
             }
-
-            router.push(`/hackathons/${competition.slug}?registered=true`);
+            
+            const redirectPath = type === "HACKATHON" ? `/hackathons/${competition.slug}` : `/events/${competition.slug}`;
+            router.push(`${redirectPath}?registered=true`);
           } catch (err) {
             toast.dismiss(completingId);
             toast.error(
@@ -515,6 +589,19 @@ export function RegistrationModal({
 
       const finalTeamName = teamName.trim();
 
+      if (type === "EVENT") {
+        if (competition.isFree) {
+          await joinEvent(token, competition.id, { answers: filteredFormatted });
+          toast.success("Registration successful!");
+          onSuccess?.(null);
+          onClose();
+          router.push(`/events/${competition.slug}?registered=true`);
+        } else {
+          await processPayment(token, "", filteredFormatted, {});
+        }
+        return;
+      }
+
       if (mode === "CREATE") {
         if (!finalTeamName) {
           toast.error("Please enter a team name");
@@ -603,7 +690,7 @@ export function RegistrationModal({
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <DialogContent className="p-0 md:w-[460px] overflow-hidden sm:rounded-3xl border-none shadow-2xl max-h-full h-full sm:h-auto sm:max-h-[80vh] flex flex-col bg-neutral-100">
         {/* Header Area (Fixed) */}
-        <div className="p-6 pb-4">
+        <div className="p-6 pb-4 shadow-sm">
           <h2 className="mb-6 text-3xl font-medium tracking-tight text-neutral-900">
             Registration Form
           </h2>
@@ -631,11 +718,11 @@ export function RegistrationModal({
 
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col flex-1 overflow-hidden relative"
+          className="flex flex-col flex-1 overflow-y-auto relative scrollbar"
         >
-          {/* Scrollable Fields area */}
+          {/* Fields area */}
           <div
-            className="flex-1 overflow-y-auto px-6 py-2 scrollbar"
+            className="px-6 py-2"
           >
             {mode === "CREATE" ? (
               <CreateTeamFormContent
@@ -655,6 +742,7 @@ export function RegistrationModal({
                 setDiscountCode={setDiscountCode}
                 isOpenToggle={isOpenToggle}
                 setIsOpenToggle={setIsOpenToggle}
+                type={type}
               />
             ) : (
               <JoinTeamFormContent
@@ -678,14 +766,14 @@ export function RegistrationModal({
             )}
           </div>
 
-          {/* Footer Area (Fixed) */}
-          <div className="p-6 pt-4">
+          {/* Footer Area */}
+          <div className="p-6 pt-6 mt-auto">
             <div className="flex flex-col w-full gap-2 rounded-3xl border border-primary-600 bg-primary-100 p-1">
               <div className="flex items-center justify-center gap-3 py-2">
                 <div className="h-5 w-5 overflow-hidden rounded-full border-2 border-white">
                   {user?.imageUrl ? (
                     <Image
-                      src={user.imageUrl}
+                      src={ensureAbsoluteUrl(user.imageUrl)}
                       alt={user.fullName || "User"}
                       width={20}
                       height={20}

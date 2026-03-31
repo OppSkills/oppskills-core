@@ -100,7 +100,18 @@ export default function RegistrationQuestionsModal({
     input: RegistrationQuestion[] | undefined
   ): RegistrationQuestion[] => {
     const list = Array.isArray(input) ? input : [];
-    return list.filter((q) => q.fixed !== true);
+    
+    // Create a set of lowercased labels from fixed questions to identify backend-populated static fields
+    const defaultLabels = new Set(defaultFixedQuestions.map((q) => q.label.toLowerCase()));
+
+    return list.filter((q) => {
+      // Ignore if explicitly marked fixed
+      if (q.fixed) return false;
+      // Also ignore if the label matches one of the default fixed questions (prevents duplication)
+      if (defaultLabels.has(q.label.toLowerCase())) return false;
+      
+      return true;
+    });
   };
 
   const buildVisibleQuestions = (

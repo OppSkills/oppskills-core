@@ -1246,7 +1246,25 @@ export class TeamService {
           }
           break;
         case 'ATTACHMENTS':
-          throw new BadRequestException('Attachments are not supported yet.');
+          if (typeof value !== 'string') {
+            throw new BadRequestException(
+              `Field "${field.label}" must be a string containing a valid URL.`,
+            );
+          }
+          if (value.length > 0) {
+            const urlToTest =
+              value.startsWith('http://') || value.startsWith('https://')
+                ? value
+                : `https://${value}`;
+            try {
+              new URL(urlToTest);
+            } catch (_) {
+              throw new BadRequestException(
+                `Field "${field.label}" must be a valid URL.`,
+              );
+            }
+          }
+          break;
       }
     }
   }
