@@ -62,8 +62,8 @@ export function GenericListingPage({
   }, [curSort, filters, setFilters]);
 
   return (
-    <div className="container mx-auto min-h-screen px-4 py-8 md:px-6">
-      <div className="mb-8">
+    <div className="container mx-auto min-h-screen px-4 py-4 md:px-6">
+      <div className="mb-2">
         <h1 className="text-3xl font-bold text-neutral-900 md:text-4xl">
           {title || "Opportunities"}
         </h1>
@@ -99,7 +99,7 @@ export function GenericListingPage({
 
       <div className="flex flex-col gap-8 lg:flex-row">
         {filters && setFilters && (
-          <aside className="hidden w-64 shrink-0 lg:block">
+          <aside className="hidden min-w-40 max-w-64 shrink-0 lg:block">
             <div className="sticky top-20">
               <GenericFilterSidebar
                 filters={filters}
