@@ -1151,7 +1151,7 @@ export class UserAccountsService {
         : (memberRecord?.joinedAt ?? t.createdAt);
 
       return {
-        id: submission?.id ?? (memberRecord?.id ?? t.id),
+        id: memberRecord?.id ?? t.id,
         slug: h.slug,
         title: h.name,
         type: 'Competition',
