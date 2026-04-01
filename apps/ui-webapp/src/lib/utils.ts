@@ -169,3 +169,20 @@ export function ensureAbsoluteUrl(url: string | null | undefined): string {
 
   return trimmed;
 }
+
+/**
+ * Strips HTML tags and decodes common entities from a string.
+ */
+export function stripHtml(html: string | null | undefined): string {
+  if (!html) return "";
+  return html
+    .replace(/<[^>]*>/g, "") // Strip HTML tags
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ") // Collapse whitespace
+    .trim();
+}
