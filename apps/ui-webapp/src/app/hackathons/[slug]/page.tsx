@@ -8,6 +8,7 @@ import {
   transformApiData,
   type HackathonApiData,
 } from "./_components/transform";
+import { stripHtml } from "@/lib/utils";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -37,8 +38,7 @@ export async function generateMetadata(
 
   const title = `${data.name} | OppSkills`;
   const description = data.description
-    ? data.description.substring(0, 160) +
-      (data.description.length > 160 ? "..." : "")
+    ? stripHtml(data.description).slice(0, 160)
     : `Join ${data.name} on OppSkills.`;
 
   let imageUrl = data.bannerImageUrl;

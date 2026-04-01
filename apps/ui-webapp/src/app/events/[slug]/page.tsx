@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import EventDetailsClient from "./_components/EventDetailsClient";
 import { getPublicEventBySlug } from "@/lib/api/eventApi";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { stripHtml } from "@/lib/utils";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = `${event.name}`;
   const description = event.description
-    ? event.description.replace(/<[^>]*>/g, "").slice(0, 160)
+    ? stripHtml(event.description).slice(0, 160)
     : `Join ${event.name} at OppSkills.`;
 
   const bannerImageUrl = event.bannerImageUrl

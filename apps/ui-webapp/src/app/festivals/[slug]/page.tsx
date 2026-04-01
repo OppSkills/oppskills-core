@@ -5,6 +5,7 @@ import { getFestivalBySlug } from "@/lib/api/festivalApi";
 import { getPublicHackathons } from "@/lib/api/hackathonApi";
 import { getPublicEvents } from "@/lib/api/eventApi";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { stripHtml } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const title = `${festival.name} | OppSkills`;
     // Strip HTML from description for meta description
     const description = festival.description
-        ? festival.description.replace(/<[^>]*>/g, "").slice(0, 160)
+        ? stripHtml(festival.description).slice(0, 160)
         : `Join ${festival.name} at OppSkills.`;
 
     return {
