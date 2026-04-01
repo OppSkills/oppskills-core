@@ -1113,14 +1113,20 @@ export class UserAccountsService {
   }
 
   private async getHackathonParticipations(userId: string) {
-    const teamMemberships = await prisma.teamMemberEntity.findMany({
-      where: { userId },
+    const teams = await prisma.teamEntity.findMany({
+      where: {
+        OR: [{ leaderId: userId }, { members: { some: { userId } } }],
+        hackathon: { isDeleted: false },
+      },
       include: {
-        team: {
-          include: {
-            hackathon: true,
-            payments: true,
+        hackathon: true,
+        payments: {
+          where: {
+            paymentStatus: { in: ['CAPTURED', 'AUTHORIZED'] },
           },
+        },
+        members: {
+          where: { userId },
         },
       },
     });
@@ -1128,27 +1134,35 @@ export class UserAccountsService {
     const submissions =
       await prisma.hackathonRegistrationSubmissionEntity.findMany({
         where: { userId },
+        select: { id: true, hackathonId: true, teamId: true },
       });
 
-    return teamMemberships.map((tm) => {
-      const h = tm.team.hackathon;
-      const isPaid = h.isFree ? true : tm.team.payments.length > 0;
-      const hasSubmitted = submissions.some((s) => s.hackathonId === h.id);
-      const isLeader = tm.team.leaderId === userId;
+    return teams.map((t) => {
+      const h = t.hackathon;
+      const isPaid = h.isFree ? true : t.payments.length > 0;
+      const submission = submissions.find((s) => s.hackathonId === h.id);
+      const hasSubmitted = !!submission;
+      const isLeader = t.leaderId === userId;
+      const memberRecord = t.members[0];
+
+      // Use team creation date for leader, or join date for member
+      const registeredDate = isLeader
+        ? t.createdAt
+        : (memberRecord?.joinedAt ?? t.createdAt);
 
       return {
-        id: tm.id,
+        id: submission?.id ?? (memberRecord?.id ?? t.id),
         slug: h.slug,
         title: h.name,
         type: 'Competition',
-        opportunityType: 'hackathon',
-        registeredOn: tm.joinedAt.toLocaleDateString('en-GB', {
+        opportunityType: 'hackathon' as const,
+        registeredOn: registeredDate.toLocaleDateString('en-GB', {
           day: '2-digit',
           month: 'long',
           year: 'numeric',
         }),
         registeredBy: isLeader ? 'You' : 'Team Leader',
-        teamName: tm.team.name,
+        teamName: t.name,
         deadline:
           h.registrationDeadline?.toLocaleDateString('en-GB', {
             day: '2-digit',
@@ -1160,23 +1174,23 @@ export class UserAccountsService {
           'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=800&auto=format&fit=crop',
         isComplete: hasSubmitted && isPaid,
         stages: [
-          { label: 'Registration', status: 'completed' },
-          { label: 'Team', status: 'completed' },
+          { label: 'Registration', status: 'completed' as const },
+          { label: 'Team', status: 'completed' as const },
           ...(h.isFree
             ? []
             : [
                 {
                   label: 'Payment',
-                  status: tm.team.payments.length > 0 ? 'completed' : 'current',
+                  status: isPaid ? ('completed' as const) : ('current' as const),
                 },
               ]),
           {
             label: 'Extended Form',
             status: hasSubmitted
-              ? 'completed'
-              : h.isFree || tm.team.payments.length > 0
-                ? 'current'
-                : 'pending',
+              ? ('completed' as const)
+              : h.isFree || isPaid
+                ? ('current' as const)
+                : ('pending' as const),
           },
         ],
       };
