@@ -1188,7 +1188,7 @@ export class UserAccountsService {
             label: 'Extended Form',
             status: hasSubmitted
               ? ('completed' as const)
-              : h.isFree || isPaid
+              : isPaid
                 ? ('current' as const)
                 : ('pending' as const),
           },
