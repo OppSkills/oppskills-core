@@ -175,7 +175,7 @@ export interface HackathonApiData {
   } | null;
 }
 
-function transformApiData(data: HackathonApiData): CompetitionDetails {
+export function transformApiData(data: HackathonApiData): CompetitionDetails {
   const startDate = new Date(data.startDate);
   const endDate = new Date(data.endDate);
 
@@ -325,13 +325,17 @@ function transformApiData(data: HackathonApiData): CompetitionDetails {
   };
 }
 
-export function CompetitionDetailsClient() {
+export function CompetitionDetailsClient({
+  initialData,
+}: {
+  initialData?: CompetitionDetails;
+}) {
   const { slug } = useParams();
   const { getToken, isSignedIn, userId } = useAuth();
   const [competition, setCompetition] = useState<CompetitionDetails | null>(
-    null
+    initialData || null
   );
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [curTab, setCurTab] = useState<string | null>(null);
   const [isDraft, setIsDraft] = useState(false);
@@ -373,6 +377,10 @@ export function CompetitionDetailsClient() {
   useEffect(() => {
     async function fetchCompetition() {
       if (!slug || typeof slug !== "string") return;
+      if (competition?.slug === slug && !isDraft) {
+        setIsLoading(false);
+        return;
+      }
 
       setIsLoading(true);
       setError(null);
@@ -481,8 +489,8 @@ export function CompetitionDetailsClient() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent py-8 px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <div className="min-h-screen bg-transparent px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25">
+      <div className="container mx-auto p-4 max-w-7xl">
         {isDraft && (
           <div className="mb-6 flex items-center gap-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
             <AlertTriangle className="h-5 w-5 text-yellow-600" />
@@ -502,7 +510,7 @@ export function CompetitionDetailsClient() {
           </div>
 
           <div className="lg:col-span-2">
-            <h1 className="text-4xl font-semibold text-neutral-900 leading-tight mb-6">
+            <h1 className="hidden lg:block text-4xl font-semibold text-neutral-900 leading-tight mb-6">
               {competition.title}
             </h1>
 

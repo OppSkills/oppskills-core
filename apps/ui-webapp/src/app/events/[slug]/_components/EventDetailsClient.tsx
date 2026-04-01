@@ -9,13 +9,11 @@ import { RegistrationModal } from "@/app/hackathons/[slug]/_components/Registrat
 import { EventSidebar } from "./EventSidebar";
 import { EventDetails } from "./types";
 import Image from "next/image";
-import { MapPin } from "lucide-react";
 import { cn, ensureAbsoluteUrl } from "@/lib/utils";
 import { format, isSameDay, isSameYear } from "date-fns";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { checkMyRegistration } from "@/lib/api/eventApi";
 import { useQuery } from "@tanstack/react-query";
-import InfoCard from "./InfoCard";
 
 // Razorpay global type
 declare global {
@@ -217,6 +215,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
           <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-24">
             <EventSidebar
               event={sidebarEvent}
+              onRegister={handleRegistration}
             />
 
             {/* Contact Details (Hidden on desktop because it's usually in about or we can keep it here if sidebar is too long) */}
@@ -227,65 +226,8 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
           {/* RIGHT COLUMN: Info, Action, Content */}
           <div className="lg:col-span-8 space-y-4 lg:space-y-8 order-1 lg:order-2 px-2 sm:px-0 flex flex-col">
-            {/* Desktop Title (Hidden on mobile because it comes after InfoCard) */}
-            <h1 className="hidden lg:block text-neutral-900 text-4xl font-semibold pl-4">
-              {event.name}
-            </h1>
-            {/* Date & Location Grid */}
-            <div className="hidden lg:grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Date */}
-              <div className="flex gap-4 items-center">
-                <div>
-                  <div className="flex flex-col items-center justify-center shadow-sm overflow-hidden rounded-lg">
-                    <div className="bg-neutral-200 min-w-12 flex justify-center items-center py-0.5">
-                      <span className="text-neutral-700  text-xs">
-                        {monthShort}
-                      </span>
-                    </div>
-                    <span className="text-base font-medium text-neutral-900 py-0.5">
-                      {dayNum}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p className="font-medium text-neutral-800 text-BASE">
-                    {formattedDate}
-                  </p>
-                  {formattedTime && (
-                    <p className="text-xs text-neutral-600">{formattedTime}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex w-full gap-2 items-center">
-                <div className="border-0.5 shadow-sm border-neutral-400 rounded-lg p-3">
-                  <MapPin className="w-6 h-6 text-neutral-700" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p className="font-medium text-base text-neutral-800">
-                    {event.locationAddress}
-                  </p>
-                  <p className="text-xs text-neutral-600">{event.locationCity}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:hidden p-1">
-              <InfoCard
-                teamSize={sidebarEvent.teamSize || ""}
-                impressions={sidebarEvent.impressions || 0}
-                registrationDeadline={sidebarEvent.registrationDeadline || ""}
-                dateText={formattedDate}
-                timeText={formattedTime}
-                venueName={venueName}
-                venueAddress={venueAddress}
-                monthShort={monthShort}
-                dayNum={dayNum}
-              />
-            </div>
-
-            {/* Mobile Title (Comes after InfoCard) */}
-            <h1 className="lg:hidden text-neutral-900 text-4xl font-bold px-1 pt-2 mb-8 lg:mb-0">
+            {/* Title (Matches CompetitionDetails Client style) */}
+            <h1 className="hidden lg:block text-neutral-900 text-3xl md:text-4xl font-semibold px-1 lg:pl-4 mb-4 lg:mb-0">
               {event.name}
             </h1>
 

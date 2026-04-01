@@ -324,6 +324,11 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
   return (
     <div className="space-y-5 font-sans">
+      {/* Mobile Title */}
+      <h1 className="lg:hidden text-neutral-900 text-3xl font-semibold mb-4 px-1">
+        {competition.title}
+      </h1>
+
       {/* Featured In Pill */}
       {competition.featuredIn && (
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-200  rounded-md text-sm text-neutral-600 ">

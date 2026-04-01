@@ -11,58 +11,150 @@ import { ensureAbsoluteUrl } from "@/lib/utils";
 
 interface EventSidebarProps {
   event: EventDetails;
+  onRegister?: () => void;
 }
 
-export function EventSidebar({ event }: EventSidebarProps) {
+export function EventSidebar({ event, onRegister }: EventSidebarProps) {
   const startDate = event.startDate ? new Date(event.startDate) : (event.date ? new Date(event.date) : null);
 
+  const monthShort = startDate ? format(startDate, "MMM") : "---";
+  const dayNum = startDate ? format(startDate, "dd") : "--";
+
   return (
-    <div className="m-0 lg:m-auto lg:space-y-5">
-      <div className="flex flex-col lg:relative">
-        {/* Thumbnail */}
-        <div className="relative aspect-16/10 w-full overflow-hidden lg:rounded-2xl shadow-sm border border-neutral-100">
-          {event.thumbnail ? (
-            <Image
-              src={ensureAbsoluteUrl(event.thumbnail)}
-              alt={event.title}
-              fill
-              className="object-cover"
-              priority
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-slate-900 to-slate-800">
-              <span className="text-white font-bold opacity-20 text-4xl">
-                {event.title.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
-        </div>
-        {/* Featured In Pill */}
-        {event.festival?.name && (
-          <div className="pl-2 lg:pl-0">
-            <Link
-              href={`/festivals/${event.festival.slug}`}
-              className=" mt-4 flex gap-1 items-center bg-neutral-100 hover:bg-neutral-200 shadow-sm p-2 rounded-lg w-fit"
-            >
-              <span className="font-normal text-neutral-600">Featured in</span>
-              <span className="font-semibold text-neutral-800 ">
-                {event.festival.name}
-              </span>
-              <ChevronRight className="w-4 h-4 text-neutral-800 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+    <div className="p-4 lg:p-0 space-y-5 font-sans">
+      {/* Mobile Title (Matches CompetitionDetails Client style) */}
+      <h1 className="lg:hidden text-neutral-900 text-3xl font-semibold mb-4">
+        {event.title}
+      </h1>
+
+      {/* Featured In Pill */}
+      {event.festival?.name && (
+        <Link
+          href={`/festivals/${event.festival.slug}`}
+          className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-200 rounded-md text-sm text-neutral-600 hover:bg-neutral-300 transition-colors"
+        >
+          <span className="font-normal text-neutral-600">Featured in</span>
+          <span className="font-semibold text-neutral-800 ">
+            {event.festival.name}
+          </span>
+          <ChevronRight className="w-4 h-4 text-neutral-800" />
+        </Link>
+      )}
+
+      {/* Thumbnail / Banner */}
+      <div className="relative aspect-16/10 w-full overflow-hidden rounded-2xl shadow-sm border border-neutral-100">
+        {event.thumbnail ? (
+          <Image
+            src={ensureAbsoluteUrl(event.thumbnail)}
+            alt={event.title}
+            fill
+            className="object-cover"
+            priority
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-slate-900 to-slate-800">
+            <span className="text-white font-bold opacity-20 text-4xl">
+              {event.title.charAt(0).toUpperCase()}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Desktop Sidebar (Thumbnail + Stats) */}
-      <div className="hidden lg:block bg-background rounded-2xl border border-neutral-200 p-6 shadow-sm space-y-5">
-        <InfoCard
-          teamSize={event.teamSize || ""}
-          impressions={event.impressions || 0}
-          registrationDeadline={event.registrationDeadline || ""}
-          noBorder
-          noPadding
-        />
+      {/* Info Card (Matches CompetitionSidebar style) */}
+      <div className="bg-background rounded-2xl border border-neutral-200 p-6 shadow-sm">
+        <p className="text-neutral-600 text-[15px] mb-6">
+          Welcome! To join this event, please register below.
+        </p>
+
+        <div className="space-y-5">
+          {/* Date Row */}
+          <div className="flex gap-4 items-center">
+            <div className="shrink-0 w-12 h-12 rounded-xl border border-neutral-400 flex flex-col items-center justify-center">
+              <span className="text-[10px] uppercase text-neutral-500 font-medium leading-none mb-0.5">
+                {monthShort}
+              </span>
+              <span className="text-lg font-bold text-neutral-900 leading-none">
+                {dayNum}
+              </span>
+            </div>
+            <div>
+              <h4 className="font-semibold text-neutral-900 text-[15px]">
+                {event.date}
+              </h4>
+              <p className="text-sm text-neutral-500">
+                {event.time || "Time TBD"}
+              </p>
+            </div>
+          </div>
+
+          {/* Location Row */}
+          <div className="flex gap-4 items-center">
+            <div className="shrink-0 w-12 h-12 rounded-xl border border-neutral-400 flex items-center justify-center shadow-sm">
+              <MapPin className="w-5 h-5 text-neutral-700" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-neutral-900 text-[15px]">
+                {event.venueName || "Venue Name"}
+              </h4>
+              <p className="text-sm text-neutral-500">
+                {event.venueAddress || "Location Address"}
+              </p>
+            </div>
+          </div>
+
+          {/* Register Button */}
+          <button
+            onClick={onRegister}
+            className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm transition-colors mt-2"
+          >
+            Register Now
+          </button>
+
+          {/* Divider */}
+          <div className="h-px bg-neutral-100 w-full my-2" />
+
+          {/* Stats List */}
+          <div className="space-y-4">
+            {/* Team Size / Entry Type */}
+            <div className="flex items-center gap-4">
+              <div className="shrink-0 w-10 h-10 rounded-xl border border-neutral-400 flex items-center justify-center shadow-sm">
+                <Users className="w-5 h-5 text-neutral-800" />
+              </div>
+              <div>
+                <div className="font-semibold text-neutral-900 text-sm">
+                  {event.teamSize || "Individual"}
+                </div>
+                <div className="text-xs text-neutral-500">Entry Type</div>
+              </div>
+            </div>
+
+            {/* Impressions */}
+            <div className="flex items-center gap-4">
+              <div className="shrink-0 w-10 h-10 rounded-xl border border-neutral-400 flex items-center justify-center shadow-sm">
+                <Sparkles className="w-5 h-5 text-neutral-800" />
+              </div>
+              <div>
+                <div className="font-semibold text-neutral-900 text-sm">
+                  {event.impressions || 0}
+                </div>
+                <div className="text-xs text-neutral-500">Impressions</div>
+              </div>
+            </div>
+
+            {/* Deadline */}
+            <div className="flex items-center gap-4">
+              <div className="shrink-0 w-10 h-10 rounded-xl border border-neutral-400 flex items-center justify-center shadow-sm">
+                <Clock className="w-5 h-5 text-neutral-800" />
+              </div>
+              <div>
+                <div className="font-semibold text-neutral-900 text-sm">
+                  {event.registrationDeadline || "Open until starts"}
+                </div>
+                <div className="text-xs text-neutral-500">Registration Deadline</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
