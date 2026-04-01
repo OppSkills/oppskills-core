@@ -100,7 +100,7 @@ export function GenericListingPage({
       <div className="flex flex-col gap-8 lg:flex-row">
         {filters && setFilters && (
           <aside className="hidden min-w-40 max-w-64 shrink-0 lg:block">
-            <div className="sticky top-20">
+            <div className="sticky top-20 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <GenericFilterSidebar
                 filters={filters}
                 setFilters={setFilters}

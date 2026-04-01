@@ -18,7 +18,6 @@ async function getEvent(slug: string): Promise<any> {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  // Wait for the slug params
   const { slug } = await params;
   const event = (await getEvent(slug)) as any;
 
@@ -30,10 +29,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const title = `${event.name}`;
-  // Strip HTML from description for meta description
   const description = event.description
     ? event.description.replace(/<[^>]*>/g, "").slice(0, 160)
     : `Join ${event.name} at OppSkills.`;
+
+  const bannerImageUrl = event.bannerImageUrl
+    ? `${API_URL}/image/serve?url=${encodeURIComponent(event.bannerImageUrl)}`
+    : `${SITE_URL}/og_poster.png`;
 
   return {
     title,
@@ -43,10 +45,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url: `${SITE_URL}/events/${event.slug}`,
       siteName: "OppSkills",
-      images: event.bannerImageUrl
+      images: bannerImageUrl
         ? [
             {
-              url: `${API_URL}/image/serve?url=${event.bannerImageUrl}`,
+              url: bannerImageUrl,
               width: 1200,
               height: 630,
               alt: event.name,
@@ -59,9 +61,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title,
       description,
-      images: event.bannerImageUrl
-        ? [`${API_URL}/image/serve?url=${event.bannerImageUrl}`]
-        : undefined,
+      images: bannerImageUrl ? [bannerImageUrl] : undefined,
     },
     alternates: {
       canonical: `${SITE_URL}/events/${event.slug}`,

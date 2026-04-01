@@ -23,315 +23,23 @@ import {
   type RoundSubmissionInfo,
 } from "@/lib/api/hackathonApi";
 import { checkMyHackathonTeam } from "@/lib/api/teamApi";
-import { format, formatDistanceToNow } from "date-fns";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
+import { transformApiData, type HackathonApiData } from "./_components/transform";
 
-function mapRoundStatus(
-  startsAt: string,
-  endsAt: string,
-  status?: string
-): RoundStatus {
-  const now = new Date();
-  const start = new Date(startsAt);
-  const end = new Date(endsAt);
+// Functions moved to transform.ts
 
-  if (status === "COMPLETED" || now > end) return "completed";
-  if (status === "ONGOING" || (now >= start && now <= end)) return "live";
-  return "upcoming";
-}
-
-function mapTeamSize(participantType: string): string {
-  switch (participantType) {
-    case "INDIVIDUAL":
-      return "1 Member";
-    case "TEAM_OF_2":
-      return "2 Members";
-    case "TEAM_OF_3":
-      return "3 Members";
-    case "TEAM_OF_4":
-      return "4 Members";
-    case "TEAM_OF_5":
-      return "5 Members";
-    case "TEAM_OF_6":
-      return "6 Members";
-    case "MORE_THAN_6":
-      return "6+ Members";
-    case "TEAM_OF_2_3":
-      return "2-3 Members";
-    case "TEAM_OF_2_4":
-      return "2-4 Members";
-    case "TEAM_OF_3_4":
-      return "3-4 Members";
-    case "TEAM_OF_3_5":
-      return "3-5 Members";
-    case "TEAM_OF_4_5":
-      return "4-5 Members";
-    case "TEAM_OF_4_6":
-      return "4-6 Members";
-    case "TEAM_OF_5_6":
-      return "5-6 Members";
-    default:
-      return "1+ Members";
-  }
-}
-
-function mapPrizeIcon(position: number): "trophy" | "coin" | "gift" | "star" {
-  if (position === 1) return "trophy";
-  if (position === 2) return "coin";
-  if (position === 3) return "gift";
-  return "star";
-}
-
-export interface HackathonApiData {
-  id: string;
-  slug: string;
-  name: string;
-  createdAt: Date;
-  description: string | null;
-  bannerImageUrl: string | null;
-  startDate: string;
-  endDate: string;
-  status?: string;
-  approvalStatus?: string;
-  mode: string;
-  locationType: string | null;
-  locationCity: string | null;
-  locationAddress: string | null;
-  locationVirtualLink: string | null;
-  hackathonType: string;
-  participantType: string;
-  impressions?: number;
-  registrationDeadline: string | null;
-  isRegistrationPaused: boolean;
-  prizeTotalWorthAmount: number | null;
-  currency: string;
-  isFree: boolean;
-  entryFeeAmount: number | null;
-  chargeMode?: "PER_TEAM" | "PER_USER";
-  feeBearer?: "ORGANISER" | "PARTICIPANT";
-  organizationName: string | null;
-  maxTeams?: number | null;
-  registrationCount?: number;
-  contactName?: string | null;
-  contactEmail?: string | null;
-  contactPhone?: string | null;
-  owner: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    imageUrl: string | null;
-  };
-  festival: {
-    id: string;
-    name: string;
-    slug: string;
-  } | null;
-  rounds: Array<{
-    id: string;
-    name: string;
-    description: string | null;
-    startsAt: string;
-    endsAt: string;
-    order: number;
-    roundType: string;
-    status: string;
-    submissionConfig?: {
-      enabled?: boolean;
-      requiresFileUpload?: boolean;
-      allowedFileTypes?: string[];
-      maxFileSizeBytes?: number;
-      requiresLinkSubmission?: boolean;
-      requiresDescription?: boolean;
-      instructions?: string;
-    };
-  }>;
-  attachments?: Array<{
-    id: string;
-    storageKey: string;
-    publicUrl: string | null;
-    fileName: string | null;
-    mimeType: string | null;
-    sizeBytes: number | null;
-  }>;
-  prizeBreakdown: Array<{
-    id: string;
-    position: number;
-    amount: number;
-    description: string | null;
-  }>;
-  registrationForm: {
-    id: string;
-    externalFormLink: string | null;
-    fields: Array<{
-      id: string;
-      label: string;
-      type: string;
-      required: boolean;
-      order: number;
-      options: string[];
-      placeholder: string | null;
-    }>;
-  } | null;
-}
-
-function transformApiData(data: HackathonApiData): CompetitionDetails {
-  const startDate = new Date(data.startDate);
-  const endDate = new Date(data.endDate);
-
-  let location = "Online";
-  if (data.locationType === "PHYSICAL" || data.locationType === "OFFLINE") {
-    location = data.locationCity || data.locationAddress || "In-Person";
-  } else if (data.locationType === "HYBRID") {
-    location = data.locationCity ? `${data.locationCity} + Online` : "Hybrid";
-  }
-
-  const dateRange =
-    startDate.toDateString() === endDate.toDateString()
-      ? format(startDate, "MMMM d, yyyy")
-      : `${format(startDate, "MMMM d")} - ${format(endDate, "d, yyyy")}`;
-
-  const rounds: Round[] = data.rounds.map((r) => ({
-    id: r.id,
-    name: r.name,
-    description: r.description || "",
-    startDate: format(new Date(r.startsAt), "MMM d, yyyy h:mm a"),
-    endDate: format(new Date(r.endsAt), "MMM d, yyyy h:mm a"),
-    status: mapRoundStatus(r.startsAt, r.endsAt, r.status),
-    roundType: (r.roundType as any) ?? "ONLINE",
-    submissionConfig: r.submissionConfig
-      ? {
-        ...r.submissionConfig,
-        // Normalize: set enabled based on requiresFileUpload if enabled is not explicitly set
-        enabled:
-          r.submissionConfig.enabled ?? r.submissionConfig.requiresFileUpload,
-      }
-      : undefined,
-  }));
-
-  const organizers: Organizer[] = [];
-  if (data.owner) {
-    const ownerName = [data.owner.firstName, data.owner.lastName]
-      .filter(Boolean)
-      .join(" ");
-    organizers.push({
-      id: data.owner.id,
-      name: ownerName || "Organizer",
-      role: "Organizer",
-      avatar: data.owner.imageUrl || "",
-      company: data.organizationName || undefined,
-    });
-  }
-
-  const prizes: Prize[] = data.prizeBreakdown.map((p) => {
-    const amountValue = p.amount ?? 0;
-    return {
-      id: p.id,
-      title:
-        p.position === 1
-          ? "Winner"
-          : p.position === 2
-            ? "1st Runner Up"
-            : p.position === 3
-              ? "2nd Runner Up"
-              : `Position ${p.position}`,
-      amount: `${data.currency} ${amountValue.toLocaleString()}`,
-      description: p.description || "",
-      icon: mapPrizeIcon(p.position),
-    };
-  });
-
-  let registrationDeadline = "Open";
-  if (data.registrationDeadline) {
-    const deadline = new Date(data.registrationDeadline);
-    if (deadline > new Date()) {
-      registrationDeadline = formatDistanceToNow(deadline, {
-        addSuffix: false,
-      });
-    } else {
-      registrationDeadline = "Closed";
-    }
-  }
-
-  const tags: string[] = [];
-  if (data.hackathonType) {
-    tags.push(
-      data.hackathonType
-        .replace(/_/g, " ")
-        .toLowerCase()
-        .replace(/\b\w/g, (c) => c.toUpperCase())
-    );
-  }
-  if (data.mode) {
-    tags.push(data.mode);
-  }
-
-  const attachments = (data.attachments || []).map((att) => ({
-    id: att.id,
-    fileName: att.fileName || "Attachment",
-    publicUrl: att.publicUrl || "",
-    mimeType: att.mimeType || undefined,
-    sizeBytes: att.sizeBytes || undefined,
-  }));
-
-  return {
-    id: data.id,
-    slug: data.slug,
-    title: data.name,
-    thumbnail: data.bannerImageUrl || "",
-    location,
-    dateRange,
-    tags,
-    about: data.description || "",
-    rounds,
-    organizers,
-    prizes,
-    featuredIn: data.festival?.name,
-    specificDate: format(startDate, "EEEE, d MMMM yyyy"),
-    specificTime: `${format(startDate, "HH:mm")} - ${format(endDate, "HH:mm")}`,
-    venueName:
-      data.locationType === "VIRTUAL"
-        ? "Online Event"
-        : data.organizationName || undefined,
-    venueAddress: data.locationAddress || data.locationCity || undefined,
-    teamSize: mapTeamSize(data.participantType),
-    impressions: data.impressions ?? 0,
-    registrationDeadline,
-    participantType: data.participantType,
-    registrationForm: data.registrationForm,
-    isRegistrationPaused: data.isRegistrationPaused,
-    registrationDeadlineDate: data.registrationDeadline
-      ? new Date(data.registrationDeadline)
-      : null,
-    maxTeams: data.maxTeams,
-    registrationCount: data.registrationCount ?? 0,
-    isFree: data.isFree,
-    entryFeeAmount: data.entryFeeAmount,
-    chargeMode: data.chargeMode,
-    currency: data.currency,
-    feeBearer: data.feeBearer,
-    contact:
-      data.contactName || data.contactEmail || data.contactPhone
-        ? {
-          name: data.contactName || "",
-          email: data.contactEmail || "",
-          phone: data.contactPhone || "",
-        }
-        : undefined,
-    attachments: attachments.length > 0 ? attachments : undefined,
-    createdAt: data.createdAt,
-    startDate,
-    endDate,
-  };
-}
-
-export function CompetitionDetailsClient() {
+export function CompetitionDetailsClient({
+  initialData,
+}: {
+  initialData?: CompetitionDetails;
+}) {
   const { slug } = useParams();
   const { getToken, isSignedIn, userId } = useAuth();
   const [competition, setCompetition] = useState<CompetitionDetails | null>(
-    null
+    initialData || null
   );
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [curTab, setCurTab] = useState<string | null>(null);
   const [isDraft, setIsDraft] = useState(false);
@@ -373,6 +81,10 @@ export function CompetitionDetailsClient() {
   useEffect(() => {
     async function fetchCompetition() {
       if (!slug || typeof slug !== "string") return;
+      if (competition?.slug === slug && !isDraft) {
+        setIsLoading(false);
+        return;
+      }
 
       setIsLoading(true);
       setError(null);
@@ -481,8 +193,8 @@ export function CompetitionDetailsClient() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent py-8 px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <div className="min-h-screen bg-transparent px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25">
+      <div className="container mx-auto p-4 max-w-7xl">
         {isDraft && (
           <div className="mb-6 flex items-center gap-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
             <AlertTriangle className="h-5 w-5 text-yellow-600" />
@@ -502,7 +214,7 @@ export function CompetitionDetailsClient() {
           </div>
 
           <div className="lg:col-span-2">
-            <h1 className="text-4xl font-semibold text-neutral-900 leading-tight mb-6">
+            <h1 className="hidden lg:block text-4xl font-semibold text-neutral-900 leading-tight mb-6">
               {competition.title}
             </h1>
 

@@ -132,7 +132,7 @@ export default function CompetitionListClient({
       <div className="flex flex-col gap-8 lg:flex-row">
         {/* Sidebar - Desktop */}
         <aside className="hidden w-64 shrink-0 lg:block">
-          <div className="sticky top-20">
+          <div className="sticky top-20 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <CompetitionsFilterSidebar
               filters={filters}
               setFilters={setFilters}

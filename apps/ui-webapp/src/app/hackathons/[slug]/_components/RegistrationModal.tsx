@@ -476,16 +476,16 @@ export function RegistrationModal({
 
             await submitRegistration(verifyToken, competition.slug, formattedAnswers);
 
-            const myUpdatedTeam = type === "HACKATHON" 
+            const myUpdatedTeam = type === "HACKATHON"
               ? await checkMyHackathonTeam(verifyToken, competition.id)
               : null;
-            
+
             toast.dismiss(completingId);
             toast.success("Registration successful!");
             if (myUpdatedTeam) {
               onSuccess?.(myUpdatedTeam);
             }
-            
+
             const redirectPath = type === "HACKATHON" ? `/hackathons/${competition.slug}` : `/events/${competition.slug}`;
             router.push(`${redirectPath}?registered=true`);
           } catch (err) {
@@ -691,7 +691,7 @@ export function RegistrationModal({
       <DialogContent className="p-0 md:w-[460px] overflow-hidden sm:rounded-3xl border-none shadow-2xl max-h-full h-full sm:h-auto sm:max-h-[80vh] flex flex-col bg-neutral-100">
         {/* Header Area (Fixed) */}
         <div className="p-6 pb-4 shadow-sm">
-          <h2 className="mb-6 text-3xl font-medium tracking-tight text-neutral-900">
+          <h2 className="text-3xl font-medium tracking-tight text-neutral-900">
             Registration Form
           </h2>
           {!isIndividual && (

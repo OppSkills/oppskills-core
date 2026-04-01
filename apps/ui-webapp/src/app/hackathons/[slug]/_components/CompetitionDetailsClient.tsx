@@ -34,7 +34,7 @@ export default function CompetitionDetailsClient({
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative items-start">
           {/* Sidebar */}
-          <div className="lg:col-span-1 lg:sticky lg:top-20">
+          <div className="lg:col-span-1 lg:sticky lg:top-20 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <CompetitionSidebar competition={competition} />
           </div>
 
