@@ -1140,7 +1140,7 @@ export class UserAccountsService {
     return teams.map((t) => {
       const h = t.hackathon;
       const isPaid = h.isFree ? true : t.payments.length > 0;
-      const submission = submissions.find((s) => s.hackathonId === h.id);
+      const submission = submissions.find((s) => s.hackathonId === h.id && s.teamId === t.id);
       const hasSubmitted = !!submission;
       const isLeader = t.leaderId === userId;
       const memberRecord = t.members[0];
