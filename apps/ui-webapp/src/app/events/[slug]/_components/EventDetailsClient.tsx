@@ -212,7 +212,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
 
           {/* LEFT COLUMN: Sidebar (Like Hackathons) */}
-          <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-24">
+          <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden rounded-2xl">
             <EventSidebar
               event={sidebarEvent}
               onRegister={handleRegistration}
@@ -227,7 +227,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
           {/* RIGHT COLUMN: Info, Action, Content */}
           <div className="lg:col-span-8 space-y-4 lg:space-y-8 order-1 lg:order-2 px-2 sm:px-0 flex flex-col">
             {/* Title (Matches CompetitionDetails Client style) */}
-            <h1 className="hidden lg:block text-neutral-900 text-3xl md:text-4xl font-semibold px-1 lg:pl-4 mb-4 lg:mb-0">
+            <h1 className="hidden lg:block text-neutral-900 text-3xl font-semibold px-1 pl-4 mb-2 break-all line-clamp-2">
               {event.name}
             </h1>
 

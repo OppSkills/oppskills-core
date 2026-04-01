@@ -3,9 +3,11 @@ import { getPublicHackathonBySlug } from "@/lib/api/hackathonApi";
 import { API_URL, SITE_URL } from "@/lib/constants";
 import {
   CompetitionDetailsClient,
-  type HackathonApiData,
-  transformApiData,
 } from "./CompetitionDetailsClient";
+import {
+  transformApiData,
+  type HackathonApiData,
+} from "./_components/transform";
 
 type Props = {
   params: Promise<{ slug: string }>;

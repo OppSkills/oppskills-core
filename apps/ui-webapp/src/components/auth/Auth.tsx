@@ -27,11 +27,6 @@ export default function Auth({ onClose }: { onClose: () => void }) {
   const currentMode = authMode === "signup" ? "signup" : "login";
   const isSignUpOtpStep = currentMode === "signup" && registerStep === 2;
 
-  useEffect(() => {
-    if (isSignedIn) {
-      signOut();
-    }
-  }, [isSignedIn, signOut]);
 
   const handleGoogleLogin = async () => {
     if (!isLoaded) return;

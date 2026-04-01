@@ -23,7 +23,7 @@ export function EventSidebar({ event, onRegister }: EventSidebarProps) {
   return (
     <div className="p-4 lg:p-0 space-y-5 font-sans">
       {/* Mobile Title (Matches CompetitionDetails Client style) */}
-      <h1 className="lg:hidden text-neutral-900 text-3xl font-semibold mb-4">
+      <h1 className="lg:hidden text-neutral-900 text-3xl font-semibold mb-4 break-all">
         {event.title}
       </h1>
 

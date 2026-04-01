@@ -325,7 +325,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   return (
     <div className="space-y-5 font-sans">
       {/* Mobile Title */}
-      <h1 className="lg:hidden text-neutral-900 text-3xl font-semibold mb-4 px-1">
+      <h1 className="lg:hidden text-neutral-900 text-3xl font-semibold mb-4 break-all px-1">
         {competition.title}
       </h1>
 
