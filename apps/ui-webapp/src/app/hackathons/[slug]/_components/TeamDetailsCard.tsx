@@ -18,6 +18,7 @@ import {
   leaveTeam,
   removeMember
 } from "@/lib/api/teamApi";
+import { mapMaxSize } from "./transform";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -32,6 +33,7 @@ interface TeamDetailsCardProps {
   /** Payment succeeded or free team, but registration answers were not saved */
   needsCompleteRegistration?: boolean;
   onCompleteRegistration?: () => void;
+  participantType?: string;
 }
 
 export function TeamDetailsCard({
@@ -41,6 +43,7 @@ export function TeamDetailsCard({
   onUpdate,
   needsCompleteRegistration = false,
   onCompleteRegistration,
+  participantType,
 }: TeamDetailsCardProps) {
   const { getToken } = useAuth();
   const router = useRouter();
@@ -48,7 +51,7 @@ export function TeamDetailsCard({
 
   /** Create/join API responses may omit `members`; avoid crashing on .length / .map */
   const members = team.members ?? [];
-
+  const effectiveMaxSize = participantType ? mapMaxSize(participantType) : team.maxSize;
   const isLeader = team.leaderId === currentUserId;
 
   const handleLeaveTeam = async () => {
@@ -185,7 +188,7 @@ export function TeamDetailsCard({
           <p className="text-base">
             <span className="text-neutral-700">Team Name: </span>
             <span className="font-semibold text-purple-700">
-              {team.name} ({members.length + 1}/{team.maxSize})
+              {team.name} ({members.length + 1}/{effectiveMaxSize})
             </span>
           </p>
           <button
@@ -207,7 +210,7 @@ export function TeamDetailsCard({
         {members.map((member) => renderMemberCard(member, "Member"))}
 
         {/* Empty slots indicator if team is not full */}
-        {members.length + 1 < team.maxSize && (
+        {members.length + 1 < effectiveMaxSize && (
           <div className="flex items-center gap-4 p-4 mb-3 border-2 border-dashed border-neutral-200 rounded-4xl opacity-50">
             <div className="shrink-0 w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400">
               <UserMinus className="w-6 h-6" />

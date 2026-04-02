@@ -113,10 +113,11 @@ function mapRoundStatus(
   return "upcoming";
 }
 
-function mapTeamSize(participantType: string): string {
-  switch (participantType) {
+function mapTeamSize(participantType?: string | null): string {
+  const type = (participantType || "").toUpperCase().trim();
+  switch (type) {
     case "INDIVIDUAL":
-      return "1 Member";
+      return "Individual";
     case "TEAM_OF_2":
       return "2 Members";
     case "TEAM_OF_3":
@@ -145,6 +146,45 @@ function mapTeamSize(participantType: string): string {
       return "5-6 Members";
     default:
       return "1+ Members";
+  }
+}
+
+export function mapMaxSize(participantType?: string | null): number {
+  const type = (participantType || "").toUpperCase().trim();
+  switch (type) {
+    case "INDIVIDUAL":
+      return 1;
+    case "TEAM_OF_2":
+      return 2;
+    case "TEAM_OF_3":
+      return 3;
+    case "TEAM_OF_4":
+      return 4;
+    case "TEAM_OF_5":
+      return 5;
+    case "TEAM_OF_6":
+      return 6;
+    case "MORE_THAN_6":
+      return 10;
+    case "TEAM_OF_2_3":
+      return 3;
+    case "TEAM_OF_2_4":
+      return 4;
+    case "TEAM_OF_3_4":
+      return 4;
+    case "TEAM_OF_3_5":
+      return 5;
+    case "TEAM_OF_4_5":
+      return 5;
+    case "TEAM_OF_4_6":
+      return 6;
+    case "TEAM_OF_5_6":
+      return 6;
+    default: {
+      const matches = type.match(/\d+/g);
+      if (!matches || matches.length === 0) return 4;
+      return Math.max(...matches.map(Number));
+    }
   }
 }
 
