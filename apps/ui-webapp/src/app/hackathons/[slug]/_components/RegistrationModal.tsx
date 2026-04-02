@@ -50,6 +50,7 @@ import type { RegistrationModalProps, RegistrationMode } from "./RegistrationMod
 import { CreateTeamFormContent } from "./CreateTeamFormContent";
 import { JoinTeamFormContent } from "./JoinTeamFormContent";
 import type { RegistrationField } from "@/lib/registration/mergeRegistrationFields";
+import { mapMaxSize } from "./transform";
 
 declare global {
   interface Window {
@@ -57,19 +58,6 @@ declare global {
   }
 }
 
-function getMaxSizeFromParticipantType(participantType?: string): number {
-  if (!participantType) return 4;
-  switch (participantType) {
-    case "INDIVIDUAL": return 1;
-    case "TEAM_OF_2": return 2;
-    case "TEAM_OF_3": return 3;
-    case "TEAM_OF_4": return 4;
-    case "TEAM_OF_5": return 5;
-    case "TEAM_OF_6": return 6;
-    case "MORE_THAN_6": return 10;
-    default: return 4;
-  }
-}
 
 /**
  * After payment, verifyPayment or the Razorpay webhook may already have created the team.
@@ -119,7 +107,7 @@ export function RegistrationModal({
     MeResponseDto["onboardingProfile"]
   >(undefined);
 
-  const maxSize = getMaxSizeFromParticipantType(competition.participantType);
+  const maxSize = mapMaxSize(competition.participantType || "");
   const isIndividual = type === "EVENT" || competition.participantType === "INDIVIDUAL";
 
   const onUpdateAnswer = useCallback((fieldId: string, value: any) => {

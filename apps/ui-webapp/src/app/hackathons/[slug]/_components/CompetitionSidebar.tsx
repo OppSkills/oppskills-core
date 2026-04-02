@@ -12,6 +12,7 @@ import {
   Clock,
   IndianRupee,
   Loader2,
+  Activity,
   CheckCircle,
   ShareIcon,
 } from "lucide-react";
@@ -455,9 +456,24 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
           {/* Stats List */}
           <div className="space-y-4">
-            {/* Team Size */}
+            {/* Participation Capacity */}
+            {competition.maxTeams && (
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
+                  <Activity className="w-5 h-5 text-neutral-800 " />
+                </div>
+                <div>
+                  <div className="font-semibold text-neutral-900  text-sm">
+                    {competition.registrationCount || 0}/{competition.maxTeams} Teams
+                  </div>
+                  <div className="text-xs text-neutral-500">Capacity</div>
+                </div>
+              </div>
+            )}
+
+            {/* Team Size Members */}
             <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm shadow-sm">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
                 <Users className="w-5 h-5 text-neutral-800 " />
               </div>
               <div>

@@ -116,7 +116,7 @@ function mapRoundStatus(
 function mapTeamSize(participantType: string): string {
   switch (participantType) {
     case "INDIVIDUAL":
-      return "1 Member";
+      return "Individual";
     case "TEAM_OF_2":
       return "2 Members";
     case "TEAM_OF_3":
@@ -146,6 +146,41 @@ function mapTeamSize(participantType: string): string {
     default:
       return "1+ Members";
   }
+}
+
+export function mapMaxSize(participantType: string): number {
+    switch (participantType) {
+        case "INDIVIDUAL":
+            return 1;
+        case "TEAM_OF_2":
+            return 2;
+        case "TEAM_OF_3":
+            return 3;
+        case "TEAM_OF_4":
+            return 4;
+        case "TEAM_OF_5":
+            return 5;
+        case "TEAM_OF_6":
+            return 6;
+        case "MORE_THAN_6":
+            return 10;
+        case "TEAM_OF_2_3":
+            return 3;
+        case "TEAM_OF_2_4":
+            return 4;
+        case "TEAM_OF_3_4":
+            return 4;
+        case "TEAM_OF_3_5":
+            return 5;
+        case "TEAM_OF_4_5":
+            return 5;
+        case "TEAM_OF_4_6":
+            return 6;
+        case "TEAM_OF_5_6":
+            return 6;
+        default:
+            return 4;
+    }
 }
 
 function mapPrizeIcon(position: number): "trophy" | "coin" | "gift" | "star" {
