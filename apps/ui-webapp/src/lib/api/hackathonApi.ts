@@ -513,8 +513,8 @@ export async function bulkSetTeamRoundQualification(
 // =====================
 
 /**
- * Submit a hackathon for admin approval.
- * Sets status to PUBLISHED and approvalStatus to PENDING.
+ * Organizer-first publish: sets status to PUBLISHED and approvalStatus to PENDING
+ * until an admin approves. (UI: “Publish opportunity”.)
  */
 export async function submitHackathonForApproval(
   token: string,

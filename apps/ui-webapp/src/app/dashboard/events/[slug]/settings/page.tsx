@@ -11,7 +11,7 @@ import {
   XCircle,
   Pause,
   Play,
-  Send,
+  Rocket,
   Trash2,
   Ban,
   ArrowLeft,
@@ -140,19 +140,20 @@ export default function EventSettingsPage({
   // Cast event data
   const event = eventData as EventData | null | undefined;
 
-  // Submit for approval mutation
-  const submitApprovalMutation = useMutation({
+  const publishMutation = useMutation({
     mutationFn: async () => {
       const token = await getToken();
       if (!token || !event) throw new Error("Not authenticated");
       return submitEventForApproval(token, event.id);
     },
     onSuccess: () => {
-      toast.success("Event submitted for approval!");
+      toast.success(
+        "Published. Your event is visible as published; admin approval is pending before registrations open.",
+      );
       queryClient.invalidateQueries({ queryKey: getEventBySlugQueryKey(slug) });
     },
     onError: (error: unknown) => {
-      toast.error(getApiErrorMessage(error, "Failed to submit for approval"));
+      toast.error(getApiErrorMessage(error, "Failed to publish"));
     },
   });
 
@@ -239,7 +240,7 @@ export default function EventSettingsPage({
 
   const isLive =
     event.status === "PUBLISHED" && event.approvalStatus === "APPROVED";
-  const canSubmitForApproval =
+  const canPublish =
     event.status === "DRAFT" || event.approvalStatus === "REJECTED";
   const isPendingApproval = event.approvalStatus === "PENDING";
   const isTerminal =
@@ -310,40 +311,44 @@ export default function EventSettingsPage({
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                 <p className="text-sm text-yellow-800 flex items-center gap-2">
                   <Clock className="w-4 h-4" />
-                  Your event is pending admin approval. You will be notified
-                  once reviewed.
+                  Published — awaiting admin approval. Registrations stay closed
+                  until an admin approves. You will be notified when reviewed.
                 </p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Approval Section */}
+        {/* Publishing */}
         <Card className="py-6">
           <CardHeader>
             <CardTitle className="text-lg">Publishing & Approval</CardTitle>
             <CardDescription>
-              Submit your event for review to make it publicly visible
+              Publish to set your event to Published. An admin then approves
+              (one-time) before registrations open. Use Publish again only if
+              your listing was rejected.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {canSubmitForApproval && (
+            {canPublish && (
               <Button
-                onClick={() => submitApprovalMutation.mutate()}
-                disabled={submitApprovalMutation.isPending}
+                onClick={() => publishMutation.mutate()}
+                disabled={publishMutation.isPending}
                 className="w-full sm:w-auto"
               >
-                <Send className="w-4 h-4 mr-2" />
-                {submitApprovalMutation.isPending
-                  ? "Submitting..."
-                  : "Submit for Approval"}
+                <Rocket className="w-4 h-4 mr-2" />
+                {publishMutation.isPending
+                  ? "Publishing..."
+                  : event.approvalStatus === "REJECTED"
+                    ? "Publish again"
+                    : "Publish event"}
               </Button>
             )}
 
             {isPendingApproval && (
               <p className="text-sm text-muted-foreground">
-                Your event is currently under review. Please wait for admin
-                approval.
+                Published — waiting for an admin to approve. Registrations open
+                after approval.
               </p>
             )}
 

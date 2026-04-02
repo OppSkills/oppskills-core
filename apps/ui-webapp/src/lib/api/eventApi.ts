@@ -337,7 +337,8 @@ type UpdateRegistrationPausedPayload = {
 };
 
 /**
- * Submit event for approval (sets status to PUBLISHED, approvalStatus to PENDING).
+ * Organizer-first publish: sets status to PUBLISHED and approvalStatus to PENDING
+ * until an admin approves. (UI: “Publish event”.)
  */
 export async function submitEventForApproval(
   token: string,
