@@ -22,6 +22,20 @@ interface RegistrationSettingsProps {
   setFormData: (data: React.SetStateAction<FormData>) => void;
 }
 
+function applyTimeToDate(date: Date, timeHHmm: string): Date {
+  const d = new Date(date.getTime());
+  const trimmed = timeHHmm.trim();
+  const [hhRaw, mmRaw] = trimmed.split(":");
+  const hh = Number(hhRaw);
+  const mm = Number(mmRaw);
+  if (!Number.isInteger(hh) || !Number.isInteger(mm)) {
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  d.setHours(hh, mm, 0, 0);
+  return d;
+}
+
 export default function RegistrationSettings({
   formData,
   setFormData,
@@ -30,13 +44,33 @@ export default function RegistrationSettings({
   const updateSettings = (
     updates: Partial<FormData["registrationSettings"]>
   ) => {
-    setFormData((prev) => ({
-      ...prev,
-      registrationSettings: {
+    setFormData((prev) => {
+      const nextRegs: FormData["registrationSettings"] = {
         ...prev.registrationSettings,
         ...updates,
-      },
-    }));
+      };
+      const next: FormData = {
+        ...prev,
+        registrationSettings: nextRegs,
+      };
+      if (updates.endDate !== undefined || updates.endTime !== undefined) {
+        if (nextRegs.endDate) {
+          next.eventRegisterBy = applyTimeToDate(
+            nextRegs.endDate,
+            nextRegs.endTime,
+          );
+        } else {
+          next.eventRegisterBy = undefined;
+        }
+      }
+      if (updates.eventDate !== undefined) {
+        next.eventDate = nextRegs.eventDate;
+      }
+      if (updates.eventTime !== undefined) {
+        next.eventTimeFrom = nextRegs.eventTime;
+      }
+      return next;
+    });
   };
 
   const toggleCandidate = (type: string) => {

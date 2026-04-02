@@ -635,18 +635,34 @@ export default function EditEventPage() {
           ? formData.eventThumbnail.trim()
           : undefined,
         location: toLocationDto(formData.eventLocation),
-        registrationDeadline: formData.eventRegisterBy
-          ? combineDateAndTimeToIso(
-            formData.eventRegisterBy,
-            formData.registrationSettings.endTime,
-          )
-          : undefined,
-        startDate: formData.eventDate
-          ? combineDateAndTimeToIso(formData.eventDate, formData.eventTimeFrom)
-          : undefined,
-        endDate: formData.eventDate
-          ? combineDateAndTimeToIso(formData.eventDate, formData.eventTimeFrom)
-          : undefined,
+        registrationDeadline: (() => {
+          const deadlineDate =
+            formData.registrationSettings.endDate ?? formData.eventRegisterBy;
+          return deadlineDate
+            ? combineDateAndTimeToIso(
+                deadlineDate,
+                formData.registrationSettings.endTime,
+              )
+            : undefined;
+        })(),
+        startDate: (() => {
+          const start =
+            formData.registrationSettings.eventDate ?? formData.eventDate;
+          const time =
+            formData.registrationSettings.eventTime.trim().length > 0
+              ? formData.registrationSettings.eventTime
+              : formData.eventTimeFrom;
+          return start ? combineDateAndTimeToIso(start, time) : undefined;
+        })(),
+        endDate: (() => {
+          const start =
+            formData.registrationSettings.eventDate ?? formData.eventDate;
+          const time =
+            formData.registrationSettings.eventTime.trim().length > 0
+              ? formData.registrationSettings.eventTime
+              : formData.eventTimeFrom;
+          return start ? combineDateAndTimeToIso(start, time) : undefined;
+        })(),
         maxUsers: formData.registrationSettings.maxTeamsNoLimit
           ? undefined
           : formData.registrationSettings.maxUsers,

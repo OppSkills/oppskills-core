@@ -912,21 +912,38 @@ export default function EditOpportunityPage() {
         attendeeEligibility: mapCandidateTypesToEligibility(
           formData.registrationSettings.candidateTypes
         ),
-        registrationDeadline: formData.eventRegisterBy
-          ? combineDateAndTimeToIso(
-            formData.eventRegisterBy,
-            formData.registrationSettings.endTime
-          )
-          : undefined,
-        startDate: formData.eventDate
-          ? combineDateAndTimeToIso(formData.eventDate, formData.eventTimeFrom)
-          : undefined,
-        endDate: formData.eventDate
-          ? combineDateAndTimeToIso(
-            formData.eventEndDate ?? formData.eventDate,
-            formData.eventTimeTo ?? formData.eventTimeFrom
-          )
-          : undefined,
+        // Registration tab edits `registrationSettings.endDate` / `endTime`; deadline must use
+        // those (with fallback to `eventRegisterBy`, which basic-details keeps in sync).
+        registrationDeadline: (() => {
+          const deadlineDate =
+            formData.registrationSettings.endDate ?? formData.eventRegisterBy;
+          return deadlineDate
+            ? combineDateAndTimeToIso(
+                deadlineDate,
+                formData.registrationSettings.endTime,
+              )
+            : undefined;
+        })(),
+        // Registration tab edits `registrationSettings.eventDate` / `eventTime`; must not rely
+        // only on basic-details `eventDate` or changes revert on refresh.
+        startDate: (() => {
+          const start =
+            formData.registrationSettings.eventDate ?? formData.eventDate;
+          const time =
+            formData.registrationSettings.eventTime.trim().length > 0
+              ? formData.registrationSettings.eventTime
+              : formData.eventTimeFrom;
+          return start ? combineDateAndTimeToIso(start, time) : undefined;
+        })(),
+        endDate: (() => {
+          const start =
+            formData.registrationSettings.eventDate ?? formData.eventDate;
+          if (!start) return undefined;
+          return combineDateAndTimeToIso(
+            formData.eventEndDate ?? formData.eventDate ?? start,
+            formData.eventTimeTo ?? formData.eventTimeFrom,
+          );
+        })(),
         prizeCertificate:
           typeof formData.prizes.certificateProvided === "boolean"
             ? formData.prizes.certificateProvided
