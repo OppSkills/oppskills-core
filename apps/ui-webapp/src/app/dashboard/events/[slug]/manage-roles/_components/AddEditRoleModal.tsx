@@ -24,7 +24,10 @@ import {
 } from "@/components/ui/popover";
 import { useState, useEffect, useMemo } from "react";
 import { Loader2, CheckIcon, ChevronsUpDownIcon, UserIcon } from "lucide-react";
-import { useUserSearch } from "@/hooks/useUserSearch";
+import {
+  looksLikeCompleteEmail,
+  useUserSearch,
+} from "@/hooks/useUserSearch";
 import { type UserSearchResult } from "@/lib/api/usersApi";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -65,7 +68,9 @@ export default function AddRoleModal({
   const [error, setError] = useState<string | null>(null);
 
   // Use React Query for user search
-  const userSearchQuery = useUserSearch(searchQuery, comboboxOpen);
+  const userSearchQuery = useUserSearch(searchQuery, comboboxOpen, {
+    requireCompleteEmail: true,
+  });
 
   // Filter out the owner from search results
   const searchResults = useMemo(() => {
@@ -119,8 +124,9 @@ export default function AddRoleModal({
         <DialogHeader>
           <DialogTitle>Add {roleType}</DialogTitle>
           <DialogDescription>
-            Search and select a user to add as a {roleType.toLowerCase()}. The
-            user must already have an account in the system.
+            Enter the person&apos;s full email address to find them, then add
+            them as a {roleType.toLowerCase()}. They must already have an
+            account.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-4">
@@ -153,7 +159,7 @@ export default function AddRoleModal({
                     </div>
                   ) : (
                     <span className="text-muted-foreground">
-                      Search for a user...
+                      Add by email…
                     </span>
                   )}
                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -162,7 +168,7 @@ export default function AddRoleModal({
               <PopoverContent className="w-[350px] p-0" align="start">
                 <Command shouldFilter={false}>
                   <CommandInput
-                    placeholder="Search by email..."
+                    placeholder="name@example.com"
                     value={searchQuery}
                     onValueChange={setSearchQuery}
                   />
@@ -172,12 +178,23 @@ export default function AddRoleModal({
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                       </div>
                     )}
-                    {!isSearching && searchQuery.length >= 2 && searchResults.length === 0 && (
-                      <CommandEmpty>No users found.</CommandEmpty>
-                    )}
-                    {!isSearching && searchQuery.length < 2 && (
+                    {!isSearching &&
+                      looksLikeCompleteEmail(searchQuery) &&
+                      searchResults.length === 0 && (
+                        <CommandEmpty>No users found.</CommandEmpty>
+                      )}
+                    {!isSearching &&
+                      searchQuery.trim().length > 0 &&
+                      !looksLikeCompleteEmail(searchQuery) && (
+                        <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+                          Enter a complete email address to search (e.g.
+                          name@company.com).
+                        </div>
+                      )}
+                    {!isSearching && searchQuery.trim().length === 0 && (
                       <div className="py-6 text-center text-sm text-muted-foreground">
-                        Type at least 2 characters to search...
+                        Type or paste the user&apos;s full email, then select
+                        them from the list.
                       </div>
                     )}
                     {!isSearching && searchResults.length > 0 && (
