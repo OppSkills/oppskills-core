@@ -31,6 +31,8 @@ import {
   verifyPayment,
   submitRegistration,
 } from "@/lib/api/paymentsApi";
+import { withRetry } from "@/lib/utils/retry";
+import { SITE_URL } from "@/lib/constants";
 import { getMe } from "@/lib/api/usersApi";
 import {
   HackathonRegistrationModal,
@@ -391,6 +393,10 @@ export function JoinTeamList({
 
       const order = await createPaymentOrder(token, hackathonSlug, {
         discountCode: discountCode.trim() || undefined,
+        ...(invitationCode && {
+          invitationCode: invitationCode.toUpperCase(),
+        }),
+        ...(teamId && { joinTeamId: teamId }),
       });
 
       // If discount makes this a zero-amount payment, backend already marks it as CAPTURED.
@@ -429,6 +435,7 @@ export function JoinTeamList({
         name: hackathonName,
         description: "Registration Fee",
         order_id: razorpayOrderId,
+        callback_url: `${SITE_URL}/hackathons/${hackathonSlug}?razorpay_return=1`,
         handler: async (response: any) => {
           try {
             const verifyToken = await getToken();
@@ -444,30 +451,19 @@ export function JoinTeamList({
               );
             }
 
-            // Verify payment first
-            await verifyPayment(verifyToken, hackathonSlug, {
-              razorpayOrderId: responseOrderId,
-              razorpayPaymentId: responsePaymentId,
-              razorpaySignature: responseSignature,
-            });
+            const formattedAnswers = answers.map((a) => ({
+              fieldId: a.fieldId,
+              value: String(a.value),
+            }));
 
-            // Only after successful payment verification, join the team
-            if (teamId) {
-              await joinDraftTeam(verifyToken, hackathonSlug, { teamId });
-            } else if (invitationCode) {
-              await joinDraftTeam(verifyToken, hackathonSlug, { invitationCode });
-            }
-
-            // Submit registration after joining team (for PER_USER mode)
-              const formattedAnswers = answers.map((a) => ({
-                fieldId: a.fieldId,
-                value: String(a.value),
-              }));
-              await submitRegistration(
-                verifyToken,
-                hackathonSlug,
-                formattedAnswers,
-              );
+            await withRetry(() =>
+              verifyPayment(verifyToken, hackathonSlug, {
+                razorpayOrderId: responseOrderId,
+                razorpayPaymentId: responsePaymentId,
+                razorpaySignature: responseSignature,
+                answers: formattedAnswers,
+              }),
+            );
 
             setIsSuccess(true);
             toast.success("Payment successful! You have joined the team.");
@@ -505,8 +501,10 @@ export function JoinTeamList({
       // body while open, which blocks all interaction with the Razorpay iframe.
       setShowRegistrationModal(false);
 
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      requestAnimationFrame(() => {
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      });
     } catch (error: unknown) {
       console.error("Payment init error:", error);
       const message =

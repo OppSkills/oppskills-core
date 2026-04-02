@@ -46,6 +46,14 @@ import {
 import { presignDocumentUpload } from "@/lib/api/mediaApi";
 import { uploadDocumentToS3PresignedPost } from "@/lib/uploads/uploadDocumentToS3";
 import { getApiErrorMessage, cn, ensureAbsoluteUrl } from "@/lib/utils";
+import { withRetry } from "@/lib/utils/retry";
+import { SITE_URL } from "@/lib/constants";
+import {
+  writePendingHackathonRegistration,
+  writePendingEventRegistration,
+  clearPendingHackathonRegistration,
+  clearPendingEventRegistration,
+} from "@/lib/registration/pendingHackathonRegistration";
 import type { RegistrationModalProps, RegistrationMode } from "./RegistrationModal.types";
 import { CreateTeamFormContent } from "./CreateTeamFormContent";
 import { JoinTeamFormContent } from "./JoinTeamFormContent";
@@ -337,21 +345,26 @@ export function RegistrationModal({
           name: competition.title || (competition as any).name,
           description: "Event registration",
           order_id: order.razorpayOrderId || (order as any).orderId,
+          /** Mobile redirect flows: return to app if checkout kills the tab */
+          callback_url: `${SITE_URL}/events/${competition.slug}?razorpay_return=1`,
           handler: async (response: any) => {
             const completingId = toast.loading("Completing your registration…");
             try {
               const verifyToken = await getToken();
               if (!verifyToken) throw new Error("Authentication required.");
 
-              await verifyEventPayment(verifyToken, competition.slug, {
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-                answers: formattedAnswers,
-              });
+              await withRetry(() =>
+                verifyEventPayment(verifyToken, competition.slug, {
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
+                  answers: formattedAnswers,
+                }),
+              );
 
               toast.dismiss(completingId);
               toast.success("Registration successful!");
+              clearPendingEventRegistration(competition.slug);
               onSuccess?.(null);
               router.push(`/events/${competition.slug}?registered=true`);
             } catch (err) {
@@ -369,6 +382,10 @@ export function RegistrationModal({
         };
 
         if (!window.Razorpay) throw new Error("Razorpay not loaded");
+        writePendingEventRegistration(competition.slug, {
+          answers: formattedAnswers,
+          userId: user?.id,
+        });
         onClose();
         requestAnimationFrame(() => {
           new window.Razorpay(options).open();
@@ -376,13 +393,26 @@ export function RegistrationModal({
         return;
       }
 
-      const orderParams: any = {
+      const orderParams: {
+        discountCode?: string;
+        teamId?: string;
+        teamName?: string;
+        maxSize?: number;
+        invitationCode?: string;
+      } = {
         discountCode: discountCode.trim() || undefined,
       };
 
       if (competition.chargeMode === "PER_TEAM") {
         if (opts.teamId) {
           orderParams.teamId = opts.teamId;
+        } else {
+          orderParams.teamName = finalTeamName;
+          orderParams.maxSize = maxSize;
+        }
+      } else if (competition.chargeMode === "PER_USER") {
+        if (opts.invitationCode) {
+          orderParams.invitationCode = opts.invitationCode;
         } else {
           orderParams.teamName = finalTeamName;
           orderParams.maxSize = maxSize;
@@ -440,6 +470,8 @@ export function RegistrationModal({
         name: competition.title || (competition as any).name,
         description: "Hackathon registration",
         order_id: order.razorpayOrderId || order.orderId,
+        /** Mobile redirect flows: return to app if checkout kills the tab */
+        callback_url: `${SITE_URL}/hackathons/${competition.slug}?razorpay_return=1`,
         handler: async (response: any) => {
           // Modal is already closed (onClose before rzp.open) so do not call setState here.
           // Use a global toast so the user sees progress/errors after pay.
@@ -448,34 +480,14 @@ export function RegistrationModal({
             const verifyToken = await getToken();
             if (!verifyToken) throw new Error("Authentication required. Please sign in and try again.");
 
-            await verifyPayment(verifyToken, competition.slug, {
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-            });
-
-            if (competition.chargeMode === "PER_USER") {
-              if (opts.invitationCode) {
-                try {
-                  await joinDraftTeam(verifyToken, competition.slug, {
-                    invitationCode: opts.invitationCode,
-                  });
-                } catch (e) {
-                  if (!isBenignTeamAlreadyExistsError(e)) throw e;
-                }
-              } else if (!opts.teamId) {
-                try {
-                  await createDraftTeam(verifyToken, competition.slug, {
-                    name: finalTeamName,
-                    maxSize,
-                  });
-                } catch (e) {
-                  if (!isBenignTeamAlreadyExistsError(e)) throw e;
-                }
-              }
-            }
-
-            await submitRegistration(verifyToken, competition.slug, formattedAnswers);
+            await withRetry(() =>
+              verifyPayment(verifyToken, competition.slug, {
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+                answers: formattedAnswers,
+              }),
+            );
 
             const myUpdatedTeam = type === "HACKATHON"
               ? await checkMyHackathonTeam(verifyToken, competition.id)
@@ -483,6 +495,7 @@ export function RegistrationModal({
 
             toast.dismiss(completingId);
             toast.success("Registration successful!");
+            clearPendingHackathonRegistration(competition.slug);
             if (myUpdatedTeam) {
               onSuccess?.(myUpdatedTeam);
             }
@@ -515,6 +528,14 @@ export function RegistrationModal({
       };
 
       if (!window.Razorpay) throw new Error("Razorpay not loaded");
+
+      writePendingHackathonRegistration(competition.slug, {
+        answers: formattedAnswers,
+        teamName: opts.invitationCode ? undefined : finalTeamName,
+        maxSize,
+        invitationCode: opts.invitationCode,
+        userId: user?.id,
+      });
 
       // Close the registration dialog BEFORE opening Razorpay (same as event registration flow).
       // Radix Dialog focus trap + overlay can block taps on the Razorpay iframe on mobile.

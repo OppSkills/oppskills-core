@@ -15,6 +15,7 @@ import {
 import { RazorpayService } from './razorpay.service';
 import { PaymentsRouteService } from './payments-route.service';
 import { DraftTeamService } from './draft-team.service';
+import { RegistrationSubmitService } from './registration-submit.service';
 import { Decimal } from '@prisma/client/runtime/library';
 import { Logger } from 'src/_utils/logger';
 
@@ -28,6 +29,7 @@ export class HackathonCheckoutService {
     private readonly razorpayService: RazorpayService,
     private readonly paymentsRouteService: PaymentsRouteService,
     private readonly draftTeamService: DraftTeamService,
+    private readonly registrationSubmitService: RegistrationSubmitService,
   ) {}
 
   async createPaymentOrder(params: {
@@ -37,6 +39,9 @@ export class HackathonCheckoutService {
     teamName?: string;
     maxSize?: number;
     discountCode?: string;
+    /** Stored on Razorpay order notes for PER_USER join + server-side registration completion */
+    invitationCode?: string;
+    joinTeamId?: string;
   }) {
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { slug: params.hackathonSlug, isDeleted: false },
@@ -400,6 +405,12 @@ export class HackathonCheckoutService {
     if (params.maxSize) {
       orderNotes.maxSize = String(params.maxSize);
     }
+    if (params.invitationCode) {
+      orderNotes.invitationCode = params.invitationCode;
+    }
+    if (params.joinTeamId) {
+      orderNotes.joinTeamId = params.joinTeamId;
+    }
 
     const razorpayOrder = await this.razorpayService.createOrder({
       amountPaise: grossAmountPaise,
@@ -444,11 +455,152 @@ export class HackathonCheckoutService {
     };
   }
 
+  /**
+   * Best-effort match for race where webhook/verify already created the team.
+   */
+  private isBenignTeamAlreadyExistsError(err: unknown): boolean {
+    const msg =
+      err instanceof Error
+        ? err.message.toLowerCase()
+        : String(err).toLowerCase();
+    return (
+      msg.includes('already in a team') ||
+      msg.includes('already the leader of this team') ||
+      msg.includes('already a member of this team')
+    );
+  }
+
+  /**
+   * After payment is CAPTURED, ensure PER_USER users have a team then save registration answers.
+   * Answers are bundled with verify so a single successful request persists both payment and form.
+   */
+  private async submitRegistrationAnswersAfterPaymentIfProvided(params: {
+    paymentId: string;
+    hackathonId: string;
+    hackathonSlug: string;
+    userId: string;
+    razorpayOrderId: string;
+    answers?: Array<{ fieldId: string; value: string }>;
+  }): Promise<void> {
+    const { answers, userId, hackathonSlug, razorpayOrderId, paymentId } =
+      params;
+    if (!answers?.length) {
+      return;
+    }
+
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id: params.hackathonId, isDeleted: false },
+      select: { id: true, chargeMode: true },
+    });
+    if (!hackathon) {
+      throw new NotFoundException('Hackathon not found');
+    }
+
+    const chargeMode = hackathon.chargeMode || HackathonChargeMode.PER_TEAM;
+
+    const status =
+      await this.registrationSubmitService.getRegistrationStatus(
+        hackathonSlug,
+        userId,
+      );
+    if (status.hasSubmitted) {
+      this.logger.log(
+        `Registration already submitted for user ${userId} hackathon ${hackathonSlug}; skipping bundled submit`,
+      );
+      return;
+    }
+
+    if (chargeMode === HackathonChargeMode.PER_USER) {
+      const hasTeam =
+        status.hasTeam ||
+        (await prisma.teamEntity.findFirst({
+          where: {
+            hackathonId: hackathon.id,
+            OR: [{ leaderId: userId }, { members: { some: { userId } } }],
+          },
+          select: { id: true },
+        }));
+
+      if (!hasTeam) {
+        const razorpayOrder =
+          await this.razorpayService.fetchOrder(razorpayOrderId);
+        const notes = razorpayOrder.notes || {};
+        const joinTeamId = notes.joinTeamId?.trim();
+        const invitationRaw = notes.invitationCode?.trim();
+        const teamName = notes.teamName?.trim();
+        const maxSize = notes.maxSize
+          ? parseInt(notes.maxSize, 10)
+          : undefined;
+
+        if (joinTeamId) {
+          try {
+            await this.draftTeamService.joinDraftTeam({
+              teamId: joinTeamId,
+              userId,
+            });
+          } catch (err) {
+            if (!this.isBenignTeamAlreadyExistsError(err)) {
+              throw err;
+            }
+          }
+        } else if (invitationRaw) {
+          try {
+            await this.draftTeamService.joinDraftTeam({
+              invitationCode: invitationRaw.toUpperCase(),
+              userId,
+            });
+          } catch (err) {
+            if (!this.isBenignTeamAlreadyExistsError(err)) {
+              throw err;
+            }
+          }
+        } else if (teamName) {
+          try {
+            await this.draftTeamService.createDraftTeam({
+              hackathonSlug,
+              name: teamName,
+              maxSize,
+              leaderId: userId,
+            });
+          } catch (err) {
+            if (!this.isBenignTeamAlreadyExistsError(err)) {
+              throw err;
+            }
+          }
+        } else {
+          this.logger.warn(
+            `Bundled registration: no teamName/invitationCode on Razorpay order ${razorpayOrderId} for payment ${paymentId}; client must pass team context in order notes`,
+          );
+          throw new BadRequestException(
+            'Could not complete registration: team context missing. Please open Register again to finish — you will not be charged twice.',
+          );
+        }
+      }
+    }
+
+    try {
+      await this.registrationSubmitService.submitRegistration({
+        hackathonSlug,
+        userId,
+        answers,
+      });
+    } catch (err) {
+      if (
+        err instanceof BadRequestException &&
+        err.message.includes('already submitted')
+      ) {
+        return;
+      }
+      throw err;
+    }
+  }
+
   async verifyPayment(params: {
     razorpayOrderId: string;
     razorpayPaymentId: string;
     razorpaySignature: string;
     userId: string;
+    answers?: Array<{ fieldId: string; value: string }>;
   }) {
     const payment = await prisma.hackathonPaymentEntity.findUnique({
       where: { razorpayOrderId: params.razorpayOrderId },
@@ -473,6 +625,14 @@ export class HackathonCheckoutService {
       this.logger.log(
         `Hackathon payment already captured (pre-check) for order: ${params.razorpayOrderId}`,
       );
+      await this.submitRegistrationAnswersAfterPaymentIfProvided({
+        paymentId: payment.id,
+        hackathonId: payment.hackathonId,
+        hackathonSlug: payment.hackathon.slug,
+        userId: params.userId,
+        razorpayOrderId: params.razorpayOrderId,
+        answers: params.answers,
+      });
       return { success: true, paymentId: payment.id, teamId: payment.teamId };
     }
 
@@ -605,6 +765,14 @@ export class HackathonCheckoutService {
           where: { id: payment.id },
           select: { teamId: true },
         });
+        await this.submitRegistrationAnswersAfterPaymentIfProvided({
+          paymentId: payment.id,
+          hackathonId: payment.hackathonId,
+          hackathonSlug: payment.hackathon.slug,
+          userId: params.userId,
+          razorpayOrderId: params.razorpayOrderId,
+          answers: params.answers,
+        });
         return {
           success: true,
           paymentId: payment.id,
@@ -613,6 +781,15 @@ export class HackathonCheckoutService {
       }
       throw error;
     }
+
+    await this.submitRegistrationAnswersAfterPaymentIfProvided({
+      paymentId: payment.id,
+      hackathonId: payment.hackathonId,
+      hackathonSlug: payment.hackathon.slug,
+      userId: params.userId,
+      razorpayOrderId: params.razorpayOrderId,
+      answers: params.answers,
+    });
 
     return { success: true, paymentId: payment.id, teamId: finalTeamId };
   }

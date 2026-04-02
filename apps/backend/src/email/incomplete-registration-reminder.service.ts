@@ -63,8 +63,8 @@ export function formatListingLocation(params: {
   return 'Check event details';
 }
 
-/** Minimum hours between reminder emails for the same payment row. */
-export const INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS = 12;
+/** Minimum minutes between reminder emails for the same payment row. */
+export const INCOMPLETE_REGISTRATION_REMINDER_MIN_MINUTES = 30;
 
 @Injectable()
 export class IncompleteRegistrationReminderService {
@@ -89,7 +89,7 @@ export class IncompleteRegistrationReminderService {
   async run(): Promise<IncompleteRegistrationReminderRunResult> {
     const cutoff = new Date(
       Date.now() -
-        INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS * 60 * 60 * 1000,
+        INCOMPLETE_REGISTRATION_REMINDER_MIN_MINUTES * 60 * 1000,
     );
 
     const now = new Date();

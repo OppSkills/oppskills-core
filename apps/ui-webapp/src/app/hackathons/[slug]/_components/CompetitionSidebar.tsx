@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { SquareShareLine } from '@solar-icons/react'
 import { useRouter, useSearchParams } from "next/navigation";
@@ -21,12 +21,20 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import {
   checkMyHackathonTeam,
+  createDraftTeam,
+  joinDraftTeam,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
 import {
   getHackathonRegistrationStatus,
+  submitRegistration,
   type HackathonRegistrationStatus,
 } from "@/lib/api/paymentsApi";
+import { withRetry } from "@/lib/utils/retry";
+import {
+  readPendingHackathonRegistration,
+  clearPendingHackathonRegistration,
+} from "@/lib/registration/pendingHackathonRegistration";
 import { TeamDetailsCard } from "./TeamDetailsCard";
 import { getApiErrorMessage } from "@/lib/utils";
 import { format } from "date-fns";
@@ -150,6 +158,103 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     setRegistration,
     setInvitation,
     setAuthMode,
+  ]);
+
+  const pendingRecoveryTriedRef = useRef(false);
+
+  /** Recover registration answers if payment succeeded but Razorpay handler never ran (common on mobile). */
+  useEffect(() => {
+    if (pendingRecoveryTriedRef.current) return;
+    if (!isLoaded || !isSignedIn || !competition.slug || !user?.id) return;
+    if (!registrationStatus || isCheckingRegistration) return;
+
+    const pending = readPendingHackathonRegistration(competition.slug);
+    if (!pending || pending.userId !== user.id || pending.answers.length === 0) {
+      return;
+    }
+
+    if (registrationStatus.hasSubmitted) {
+      clearPendingHackathonRegistration(competition.slug);
+      return;
+    }
+
+    if (competition.isFree) {
+      clearPendingHackathonRegistration(competition.slug);
+      return;
+    }
+
+    if (!registrationStatus.paymentCompleted) return;
+
+    pendingRecoveryTriedRef.current = true;
+
+    void (async () => {
+      try {
+        const token = await getToken();
+        if (!token) {
+          pendingRecoveryTriedRef.current = false;
+          return;
+        }
+
+        if (
+          registrationStatus.hasTeam &&
+          registrationStatus.canCompleteRegistrationWithoutPayment
+        ) {
+          await withRetry(() =>
+            submitRegistration(token, competition.slug, pending.answers),
+          );
+          clearPendingHackathonRegistration(competition.slug);
+          toast.success("Your registration form was saved.");
+          window.location.reload();
+          return;
+        }
+
+        if (!registrationStatus.hasTeam) {
+          if (pending.invitationCode) {
+            await withRetry(() =>
+              joinDraftTeam(token, competition.slug, {
+                invitationCode: pending.invitationCode!.toUpperCase(),
+              }),
+            );
+          } else if (pending.teamName) {
+            await withRetry(() =>
+              createDraftTeam(token, competition.slug, {
+                name: pending.teamName!,
+                maxSize: pending.maxSize,
+              }),
+            );
+          } else {
+            pendingRecoveryTriedRef.current = false;
+            return;
+          }
+          await withRetry(() =>
+            submitRegistration(token, competition.slug, pending.answers),
+          );
+          clearPendingHackathonRegistration(competition.slug);
+          toast.success("Your registration form was saved.");
+          window.location.reload();
+        } else {
+          pendingRecoveryTriedRef.current = false;
+        }
+      } catch (e) {
+        pendingRecoveryTriedRef.current = false;
+        console.error("Pending registration recovery failed:", e);
+        toast.error(
+          getApiErrorMessage(
+            e,
+            "Could not restore your registration. Try Register again — you will not be charged twice.",
+          ),
+        );
+      }
+    })();
+  }, [
+    isLoaded,
+    isSignedIn,
+    competition.slug,
+    competition.isFree,
+    user?.id,
+    registrationStatus,
+    isCheckingRegistration,
+    getToken,
   ]);
 
   // Check if registration is closed
