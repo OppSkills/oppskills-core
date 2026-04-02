@@ -503,8 +503,16 @@ function getAutosaveErrorMessage(error: unknown): string {
   if (status === 403) {
     if (isRecord(data) && typeof data["message"] === "string") {
       const msg = data["message"];
+      if (
+        msg.includes("completed") ||
+        msg.includes("cancelled") ||
+        msg.includes("Completed") ||
+        msg.includes("Cancelled")
+      ) {
+        return "This opportunity can no longer be edited.";
+      }
       if (msg.includes("DRAFT") || msg.includes("status")) {
-        return "Rounds can only be edited while the opportunity is in Draft status.";
+        return "This opportunity cannot be edited in its current status.";
       }
       if (msg.includes("permission") || msg.includes("access")) {
         return "You don't have permission to edit this opportunity. Contact the owner to get manager access.";

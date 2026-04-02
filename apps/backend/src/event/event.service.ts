@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { prisma } from '@oppskills/db';
-import type { Prisma } from '@oppskills/db';
 import type {
   CreateEventDto,
   UpdateEventDto,
@@ -852,8 +851,8 @@ export class EventService {
 
   /**
    * Update an event (owner, admin, or manager).
-   * - DRAFT events can be fully edited.
-   * - PUBLISHED+APPROVED events can have basic info edited, but this triggers re-approval.
+   * - Edits allowed when status is DRAFT, PUBLISHED, or ONGOING (not COMPLETED/CANCELLED).
+   * - Does not reset admin approval when editing approved listings.
    */
   async updateEvent(id: string, dto: UpdateEventDto, userId: string) {
     const event = await prisma.eventEntity.findUnique({
@@ -862,7 +861,6 @@ export class EventService {
         id: true,
         ownerId: true,
         status: true,
-        approvalStatus: true,
         name: true,
         slug: true,
         description: true,
@@ -882,24 +880,7 @@ export class EventService {
       throw new ForbiddenException('You are not allowed to edit this event.');
     }
 
-    // Determine if basic info is being changed (triggers re-approval)
-    const isBasicInfoChange =
-      (dto.name !== undefined && dto.name !== event.name) ||
-      (dto.slug !== undefined && dto.slug !== event.slug) ||
-      (dto.description !== undefined &&
-        dto.description !== event.description) ||
-      (dto.bannerImageUrl !== undefined &&
-        dto.bannerImageUrl !== event.bannerImageUrl);
-
-    // For non-DRAFT events, only allow edits if they are basic info changes (which will reset approval)
-    const isDraft = event.status === 'DRAFT';
-    const isApproved = event.approvalStatus === 'APPROVED';
-
-    if (!isDraft && !isBasicInfoChange) {
-      throw new ForbiddenException(
-        'Only DRAFT events can be fully edited. For published events, only basic info changes are allowed.',
-      );
-    }
+    this.assertEventLifecycleAllowsContentEdit(event.status as LifecycleStatus);
 
     // Parse dates if provided
     const startDate = dto.startDate
@@ -963,15 +944,6 @@ export class EventService {
       allowedEmailDomains: dto.allowedEmailDomains,
       collegeMatchMode: dto.collegeMatchMode,
     };
-
-    // If an approved event's basic info is being changed, reset approval status
-    if (!isDraft && isApproved && isBasicInfoChange) {
-      updateData.approvalStatus = 'PENDING';
-      updateData.approvalSubmittedAt = new Date();
-      updateData.approvalApprovedAt = null;
-      updateData.approvalRejectedAt = null;
-      updateData.approvalNote = null;
-    }
 
     return prisma.eventEntity.update({
       where: { id },
@@ -1046,18 +1018,9 @@ export class EventService {
     const currentStatus = event.status as LifecycleStatus;
     this.assertLifecycleTransitionAllowed(currentStatus, nextStatus);
 
-    const updateData: Prisma.EventEntityUpdateInput = { status: nextStatus };
-    if (nextStatus === 'DRAFT') {
-      updateData.approvalStatus = 'PENDING';
-      updateData.approvalSubmittedAt = null;
-      updateData.approvalApprovedAt = null;
-      updateData.approvalRejectedAt = null;
-      updateData.approvalNote = null;
-    }
-
     return prisma.eventEntity.update({
       where: { id },
-      data: updateData,
+      data: { status: nextStatus },
     });
   }
 
@@ -2604,7 +2567,7 @@ export class EventService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // Nested Update Methods (DRAFT only)
+  // Nested Update Methods (same lifecycle rules as updateEvent)
   // ─────────────────────────────────────────────────────────────────────────────
 
   /**
@@ -2937,7 +2900,7 @@ export class EventService {
   // ─────────────────────────────────────────────────────────────────────────────
 
   /**
-   * Assert that an event exists, is editable (DRAFT status),
+   * Assert that an event exists, is editable (DRAFT/PUBLISHED/ONGOING),
    * and the user has permission to edit it (owner OR admin OR manager).
    */
   private async assertEventEditableByUser(id: string, userId: string) {
@@ -2954,10 +2917,6 @@ export class EventService {
     });
     if (!event) throw new NotFoundException('Event not found');
 
-    if (event.status !== 'DRAFT') {
-      throw new ForbiddenException('Only DRAFT events can be edited.');
-    }
-
     const hasPermission = await this.hasEditPermission(
       event.ownerId,
       userId,
@@ -2967,7 +2926,17 @@ export class EventService {
       throw new ForbiddenException('You are not allowed to edit this event.');
     }
 
+    this.assertEventLifecycleAllowsContentEdit(event.status as LifecycleStatus);
+
     return event;
+  }
+
+  private assertEventLifecycleAllowsContentEdit(status: LifecycleStatus) {
+    if (status === 'COMPLETED' || status === 'CANCELLED') {
+      throw new ForbiddenException(
+        'You cannot edit an event that is completed or cancelled.',
+      );
+    }
   }
 
   private async hasEditPermission(

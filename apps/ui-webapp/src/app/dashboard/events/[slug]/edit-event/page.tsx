@@ -491,21 +491,17 @@ export default function EditEventPage() {
       id: "additional-info",
       label: "Additional Info",
       icon: <FileText className="w-4 h-4" />,
-      draftOnly: true, // DRAFT-only: contacts, attachments
+      draftOnly: false,
     },
     {
       id: "pass-settings",
       label: "Pass Settings",
       icon: <Settings className="w-4 h-4" />,
-      draftOnly: true, // DRAFT-only: pass sending mode, college restrictions
+      draftOnly: false,
     },
   ];
 
-  // Filter tabs based on event status - hide DRAFT-only tabs for non-DRAFT events
-  const isDraftEvent = eventStatus === "DRAFT";
-  const availableTabs = isDraftEvent
-    ? tabs
-    : tabs.filter((tab) => !tab.draftOnly);
+  const availableTabs = tabs;
 
   const [formData, setFormData] = useState<FormData>(() => ({
     eventFestName: "Standalone Event",
@@ -686,93 +682,84 @@ export default function EditEventPage() {
 
       await updateEvent(token, eventId, payload);
 
-      // DRAFT-only updates: Only call these when event is in DRAFT status
-      // Backend enforces DRAFT-only via assertEventEditableByUser() for nested updates
-      const isDraft = eventStatus === "DRAFT";
+      const currentAdditionalInfoSnapshot = serializeAdditionalInfo(
+        formData.additionalInfo,
+      );
+      if (
+        currentAdditionalInfoSnapshot !==
+        lastSavedAdditionalInfoSnapshotRef.current
+      ) {
+        const primaryContact = formData.additionalInfo.contacts[0];
+        const contact = primaryContact
+          ? {
+            name: primaryContact.name || undefined,
+            email: primaryContact.email || undefined,
+            phone: primaryContact.phone || undefined,
+          }
+          : undefined;
 
-      // Save additional info (contact + attachments) if changed - DRAFT only
-      if (isDraft) {
-        const currentAdditionalInfoSnapshot = serializeAdditionalInfo(
-          formData.additionalInfo,
-        );
-        if (
-          currentAdditionalInfoSnapshot !==
-          lastSavedAdditionalInfoSnapshotRef.current
-        ) {
-          const primaryContact = formData.additionalInfo.contacts[0];
-          const contact = primaryContact
-            ? {
-              name: primaryContact.name || undefined,
-              email: primaryContact.email || undefined,
-              phone: primaryContact.phone || undefined,
-            }
-            : undefined;
+        const attachments = formData.additionalInfo.attachments.map((a) => ({
+          storageKey: a.storageKey ?? a.id,
+          publicUrl: a.url,
+          fileName: a.title,
+          mimeType: a.mimeType || a.type,
+          sizeBytes: a.size,
+        }));
 
-          const attachments = formData.additionalInfo.attachments.map((a) => ({
-            storageKey: a.storageKey ?? a.id,
-            publicUrl: a.url,
-            fileName: a.title,
-            mimeType: a.mimeType || a.type,
-            sizeBytes: a.size,
-          }));
+        await updateEventAdditionalInfo(token, eventId, {
+          additionalInfo: {
+            contact,
+            attachments,
+          },
+        });
+        savingAdditionalInfoSnapshotRef.current =
+          currentAdditionalInfoSnapshot;
+      }
 
-          await updateEventAdditionalInfo(token, eventId, {
-            additionalInfo: {
-              contact,
-              attachments,
-            },
-          });
-          savingAdditionalInfoSnapshotRef.current =
-            currentAdditionalInfoSnapshot;
-        }
+      const currentPrizesSnapshot = serializePrizes(formData.prizes);
+      if (currentPrizesSnapshot !== lastSavedPrizesSnapshotRef.current) {
+        await updateEventPrizeBreakdown(token, eventId, {
+          prizeBreakdown: formData.prizes.list.map((p) => ({
+            position: p.name,
+            amount: p.amount,
+            description: p.description,
+          })),
+        });
+        savingPrizesSnapshotRef.current = currentPrizesSnapshot;
+      }
 
-        // Save prizes if changed - DRAFT only
-        const currentPrizesSnapshot = serializePrizes(formData.prizes);
-        if (currentPrizesSnapshot !== lastSavedPrizesSnapshotRef.current) {
-          await updateEventPrizeBreakdown(token, eventId, {
-            prizeBreakdown: formData.prizes.list.map((p) => ({
-              position: p.name,
-              amount: p.amount,
-              description: p.description,
+      const currentRegQuestionsSnapshot = serializeRegistrationQuestions(
+        formData.registrationQuestions,
+      );
+      if (
+        currentRegQuestionsSnapshot !==
+        lastSavedRegistrationQuestionsSnapshotRef.current
+      ) {
+        const typeMap: Record<
+          RegistrationQuestion["type"],
+          "TEXT" | "PHONE_NO" | "EMAIL" | "NUMBER" | "ATTACHMENTS" | "OPTIONS"
+        > = {
+          Text: "TEXT",
+          "Phone No.": "PHONE_NO",
+          Email: "EMAIL",
+          Number: "NUMBER",
+          Attachments: "ATTACHMENTS",
+          Options: "OPTIONS",
+        };
+
+        await updateEventRegistrationForm(token, eventId, {
+          registrationForm: {
+            fields: formData.registrationQuestions.map((q, idx) => ({
+              label: q.label,
+              type: typeMap[q.type],
+              required: q.required,
+              order: idx,
+              options: q.options ?? [],
             })),
-          });
-          savingPrizesSnapshotRef.current = currentPrizesSnapshot;
-        }
-
-        // Save registration questions if changed - DRAFT only
-        const currentRegQuestionsSnapshot = serializeRegistrationQuestions(
-          formData.registrationQuestions,
-        );
-        if (
-          currentRegQuestionsSnapshot !==
-          lastSavedRegistrationQuestionsSnapshotRef.current
-        ) {
-          const typeMap: Record<
-            RegistrationQuestion["type"],
-            "TEXT" | "PHONE_NO" | "EMAIL" | "NUMBER" | "ATTACHMENTS" | "OPTIONS"
-          > = {
-            Text: "TEXT",
-            "Phone No.": "PHONE_NO",
-            Email: "EMAIL",
-            Number: "NUMBER",
-            Attachments: "ATTACHMENTS",
-            Options: "OPTIONS",
-          };
-
-          await updateEventRegistrationForm(token, eventId, {
-            registrationForm: {
-              fields: formData.registrationQuestions.map((q, idx) => ({
-                label: q.label,
-                type: typeMap[q.type],
-                required: q.required,
-                order: idx,
-                options: q.options ?? [],
-              })),
-            },
-          });
-          savingRegistrationQuestionsSnapshotRef.current =
-            currentRegQuestionsSnapshot;
-        }
+          },
+        });
+        savingRegistrationQuestionsSnapshotRef.current =
+          currentRegQuestionsSnapshot;
       }
     },
     onError: (err: unknown) => {
@@ -992,25 +979,21 @@ export default function EditEventPage() {
     );
   }
 
-  // Determine if event is non-DRAFT (limited editing)
-  const isNonDraft = eventStatus !== "DRAFT";
-  const isPublishedOrOngoing =
-    eventStatus === "PUBLISHED" || eventStatus === "ONGOING";
+  const isCompletedOrCancelled =
+    eventStatus === "COMPLETED" || eventStatus === "CANCELLED";
 
   return (
     <div className="w-full flex flex-col items-center p-2 sm:p-4 md:p-6 lg:p-10 gap-6 bg-background">
-      {/* Warning Banner for Non-DRAFT Events */}
-      {isNonDraft && (
+      {isCompletedOrCancelled && (
         <div className="w-full max-w-4xl flex items-start gap-3 p-4 rounded-lg border border-amber-500/30 bg-amber-500/10">
           <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-amber-700">
-              Limited Editing Mode
+              Editing disabled
             </span>
             <span className="text-xs text-amber-600">
-              {isPublishedOrOngoing
-                ? "This event is live. You can only edit basic details (name, description, banner). Changes to registration settings, prizes, or questions are disabled to maintain data integrity for participants."
-                : `This event is in ${eventStatus} status. Some editing features may be restricted.`}
+              This event is {eventStatus.toLowerCase()}. Content can no longer be
+              edited.
             </span>
           </div>
         </div>
@@ -1244,17 +1227,19 @@ export default function EditEventPage() {
                 </DialogContent>
               </Dialog>
 
-              {/* Registration Form - Only editable in DRAFT status */}
+              {/* Registration Form */}
               <div
                 onClick={() => {
-                  if (isDraftEvent) {
+                  if (!isCompletedOrCancelled) {
                     setShowRegistrationModal(true);
                   }
                 }}
-                className={!isDraftEvent ? "opacity-50 cursor-not-allowed" : ""}
+                className={
+                  isCompletedOrCancelled ? "opacity-50 cursor-not-allowed" : ""
+                }
                 title={
-                  !isDraftEvent
-                    ? "Registration form can only be edited for DRAFT events"
+                  isCompletedOrCancelled
+                    ? "Registration form cannot be edited for this status"
                     : undefined
                 }
               >
@@ -1262,9 +1247,9 @@ export default function EditEventPage() {
                   icon={<FileEdit className="w-6 h-6" />}
                   label="Registration Form"
                   subLabel={
-                    isDraftEvent
-                      ? "Customize registration questions"
-                      : "Locked (event is not in DRAFT)"
+                    isCompletedOrCancelled
+                      ? "Editing disabled for this status"
+                      : "Customize registration questions"
                   }
                 />
               </div>

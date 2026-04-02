@@ -1039,7 +1039,7 @@ export class HackathonService {
 
   /**
    * Update a hackathon (owner, admin, or manager).
-   * - Allowed only when status is DRAFT.
+   * - Allowed when status is DRAFT, PUBLISHED, or ONGOING (not COMPLETED/CANCELLED).
    * - Nested updates (rounds, questions, additionalInfo, etc.) use dedicated endpoints.
    */
   async updateHackathon(id: string, dto: UpdateHackathonDto, userId: string) {
@@ -1061,12 +1061,9 @@ export class HackathonService {
       }
     }
 
-    const status = hackathon.status as LifecycleStatus;
-    if (status !== 'DRAFT') {
-      throw new ForbiddenException(
-        'You can only edit a hackathon in DRAFT status.',
-      );
-    }
+    this.assertHackathonLifecycleAllowsContentEdit(
+      hackathon.status as LifecycleStatus,
+    );
 
     // Nested updates are not supported via this endpoint - use dedicated endpoints.
     if (
@@ -1228,20 +1225,9 @@ export class HackathonService {
       'hackathon',
     );
 
-    const updateData: Prisma.HackathonEntityUpdateInput = {
-      status: nextStatus,
-    };
-    if (nextStatus === 'DRAFT') {
-      updateData.approvalStatus = 'PENDING';
-      updateData.approvalSubmittedAt = null;
-      updateData.approvalApprovedAt = null;
-      updateData.approvalRejectedAt = null;
-      updateData.approvalNote = null;
-    }
-
     return prisma.hackathonEntity.update({
       where: { id },
-      data: updateData,
+      data: { status: nextStatus },
     });
   }
 
@@ -1408,7 +1394,7 @@ export class HackathonService {
 
   /**
    * Update additional info (contact + attachments) of a hackathon.
-   * - Allowed only when status is DRAFT.
+   * - Allowed when lifecycle allows content edits (see assertHackathonEditableByUser).
    * - Owner-only (or admin).
    */
   async updateHackathonAdditionalInfo(
@@ -1627,7 +1613,7 @@ export class HackathonService {
   /**
    * Update the max teams limit.
    * - `null` means unlimited.
-   * - Allowed only when status is DRAFT (permission enforced via assert).
+   * - Allowed when lifecycle allows content edits (assert).
    */
   async updateHackathonMaxTeams(
     id: string,
@@ -1646,7 +1632,7 @@ export class HackathonService {
   }
 
   /**
-   * Assert that a hackathon exists, is editable (DRAFT status),
+   * Assert that a hackathon exists, is editable (DRAFT/PUBLISHED/ONGOING),
    * and the user has permission to edit it (owner OR admin OR manager).
    * @returns The hackathon if all checks pass.
    */
@@ -1669,14 +1655,20 @@ export class HackathonService {
       }
     }
 
-    const status = hackathon.status as LifecycleStatus;
-    if (status !== 'DRAFT') {
-      throw new ForbiddenException(
-        'You can only edit a hackathon in DRAFT status.',
-      );
-    }
+    this.assertHackathonLifecycleAllowsContentEdit(
+      hackathon.status as LifecycleStatus,
+    );
 
     return hackathon;
+  }
+
+  /** Content edits allowed unless the hackathon is finished or cancelled. */
+  private assertHackathonLifecycleAllowsContentEdit(status: LifecycleStatus) {
+    if (status === 'COMPLETED' || status === 'CANCELLED') {
+      throw new ForbiddenException(
+        'You cannot edit a hackathon that is completed or cancelled.',
+      );
+    }
   }
 
   private async assertHackathonRoundsEditableByUser(
@@ -2195,7 +2187,7 @@ export class HackathonService {
   }
 
   /**
-   * Assert that a hackathon exists, is editable (DRAFT status),
+   * Assert that a hackathon exists, is editable (DRAFT/PUBLISHED/ONGOING),
    * and the user has permission to write (owner OR admin OR manager).
    * @returns The hackathon if all checks pass.
    */
@@ -2218,12 +2210,9 @@ export class HackathonService {
       }
     }
 
-    const status = hackathon.status as LifecycleStatus;
-    if (status !== 'DRAFT') {
-      throw new ForbiddenException(
-        'You can only edit a hackathon in DRAFT status.',
-      );
-    }
+    this.assertHackathonLifecycleAllowsContentEdit(
+      hackathon.status as LifecycleStatus,
+    );
 
     return hackathon;
   }
