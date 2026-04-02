@@ -236,6 +236,10 @@ export async function createPaymentOrder(
     teamName?: string;
     maxSize?: number;
     discountCode?: string;
+    /** PER_USER join: stored on Razorpay order for server-side registration completion */
+    invitationCode?: string;
+    /** PER_USER join-by-team list: stored on Razorpay order notes */
+    joinTeamId?: string;
   },
 ): Promise<PaymentOrder & { teamId?: string }> {
   const res = await HackathonsAPI.post(
@@ -255,6 +259,8 @@ export async function verifyPayment(
     razorpayOrderId: string;
     razorpayPaymentId: string;
     razorpaySignature: string;
+    /** When set, backend saves registration answers in the same request as verify (hackathons). */
+    answers?: Array<{ fieldId: string; value: string }>;
   },
 ): Promise<{ success: boolean; paymentId: string; teamId?: string }> {
   const res = await HackathonsAPI.post(

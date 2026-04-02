@@ -92,14 +92,14 @@ const InputBlock = ({
 interface BasicDetailsProps {
   formData: FormData;
   setFormData: (data: React.SetStateAction<FormData>) => void;
-  /** Whether the event is in DRAFT status (allows registration form editing) */
-  isDraftEvent?: boolean;
+  /** When true, registration questions UI is read-only (e.g. completed/cancelled). */
+  registrationFormLocked?: boolean;
 }
 
 export default function BasicDetails({
   formData,
   setFormData,
-  isDraftEvent = true, // Default to true for backwards compatibility
+  registrationFormLocked = false,
 }: BasicDetailsProps) {
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const { getToken } = useAuth();
@@ -464,17 +464,19 @@ export default function BasicDetails({
             </DropdownMenu>
           </div>
 
-          {/* Registration Form - Only editable in DRAFT status */}
+          {/* Registration Form */}
           <div
             onClick={() => {
-              if (isDraftEvent) {
+              if (!registrationFormLocked) {
                 setShowRegistrationModal(true);
               }
             }}
-            className={!isDraftEvent ? "opacity-50 cursor-not-allowed" : ""}
+            className={
+              registrationFormLocked ? "opacity-50 cursor-not-allowed" : ""
+            }
             title={
-              !isDraftEvent
-                ? "Registration form can only be edited for DRAFT events"
+              registrationFormLocked
+                ? "Registration form cannot be edited for this status"
                 : undefined
             }
           >
@@ -482,9 +484,9 @@ export default function BasicDetails({
               icon={<FileEdit className="w-6 h-6" />}
               label="Registration Form"
               subLabel={
-                isDraftEvent
-                  ? "Customize registration questions"
-                  : "Locked (event is not in DRAFT)"
+                registrationFormLocked
+                  ? "Editing disabled for this status"
+                  : "Customize registration questions"
               }
             />
           </div>

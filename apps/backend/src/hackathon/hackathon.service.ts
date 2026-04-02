@@ -1039,7 +1039,7 @@ export class HackathonService {
 
   /**
    * Update a hackathon (owner, admin, or manager).
-   * - Allowed only when status is DRAFT.
+   * - Allowed when status is DRAFT, PUBLISHED, or ONGOING (not COMPLETED/CANCELLED).
    * - Nested updates (rounds, questions, additionalInfo, etc.) use dedicated endpoints.
    */
   async updateHackathon(id: string, dto: UpdateHackathonDto, userId: string) {
@@ -1061,12 +1061,9 @@ export class HackathonService {
       }
     }
 
-    const status = hackathon.status as LifecycleStatus;
-    if (status !== 'DRAFT') {
-      throw new ForbiddenException(
-        'You can only edit a hackathon in DRAFT status.',
-      );
-    }
+    this.assertHackathonLifecycleAllowsContentEdit(
+      hackathon.status as LifecycleStatus,
+    );
 
     // Nested updates are not supported via this endpoint - use dedicated endpoints.
     if (
@@ -1228,20 +1225,9 @@ export class HackathonService {
       'hackathon',
     );
 
-    const updateData: Prisma.HackathonEntityUpdateInput = {
-      status: nextStatus,
-    };
-    if (nextStatus === 'DRAFT') {
-      updateData.approvalStatus = 'PENDING';
-      updateData.approvalSubmittedAt = null;
-      updateData.approvalApprovedAt = null;
-      updateData.approvalRejectedAt = null;
-      updateData.approvalNote = null;
-    }
-
     return prisma.hackathonEntity.update({
       where: { id },
-      data: updateData,
+      data: { status: nextStatus },
     });
   }
 
@@ -1408,7 +1394,7 @@ export class HackathonService {
 
   /**
    * Update additional info (contact + attachments) of a hackathon.
-   * - Allowed only when status is DRAFT.
+   * - Allowed when lifecycle allows content edits (see assertHackathonEditableByUser).
    * - Owner-only (or admin).
    */
   async updateHackathonAdditionalInfo(
@@ -1627,7 +1613,7 @@ export class HackathonService {
   /**
    * Update the max teams limit.
    * - `null` means unlimited.
-   * - Allowed only when status is DRAFT (permission enforced via assert).
+   * - Allowed when lifecycle allows content edits (assert).
    */
   async updateHackathonMaxTeams(
     id: string,
@@ -1646,7 +1632,7 @@ export class HackathonService {
   }
 
   /**
-   * Assert that a hackathon exists, is editable (DRAFT status),
+   * Assert that a hackathon exists, is editable (DRAFT/PUBLISHED/ONGOING),
    * and the user has permission to edit it (owner OR admin OR manager).
    * @returns The hackathon if all checks pass.
    */
@@ -1669,14 +1655,20 @@ export class HackathonService {
       }
     }
 
-    const status = hackathon.status as LifecycleStatus;
-    if (status !== 'DRAFT') {
-      throw new ForbiddenException(
-        'You can only edit a hackathon in DRAFT status.',
-      );
-    }
+    this.assertHackathonLifecycleAllowsContentEdit(
+      hackathon.status as LifecycleStatus,
+    );
 
     return hackathon;
+  }
+
+  /** Content edits allowed unless the hackathon is finished or cancelled. */
+  private assertHackathonLifecycleAllowsContentEdit(status: LifecycleStatus) {
+    if (status === 'COMPLETED' || status === 'CANCELLED') {
+      throw new ForbiddenException(
+        'You cannot edit a hackathon that is completed or cancelled.',
+      );
+    }
   }
 
   private async assertHackathonRoundsEditableByUser(
@@ -2195,7 +2187,7 @@ export class HackathonService {
   }
 
   /**
-   * Assert that a hackathon exists, is editable (DRAFT status),
+   * Assert that a hackathon exists, is editable (DRAFT/PUBLISHED/ONGOING),
    * and the user has permission to write (owner OR admin OR manager).
    * @returns The hackathon if all checks pass.
    */
@@ -2218,12 +2210,9 @@ export class HackathonService {
       }
     }
 
-    const status = hackathon.status as LifecycleStatus;
-    if (status !== 'DRAFT') {
-      throw new ForbiddenException(
-        'You can only edit a hackathon in DRAFT status.',
-      );
-    }
+    this.assertHackathonLifecycleAllowsContentEdit(
+      hackathon.status as LifecycleStatus,
+    );
 
     return hackathon;
   }
@@ -2577,6 +2566,27 @@ export class HackathonService {
       orderBy: { createdAt: 'desc' },
     });
 
+    const registrationSubmissions =
+      await prisma.hackathonRegistrationSubmissionEntity.findMany({
+        where: {
+          hackathonId: hackathon.id,
+          teamId: { in: teams.map((t) => t.id) },
+        },
+        include: {
+          answers: {
+            include: {
+              field: { select: { type: true, label: true } },
+            },
+          },
+        },
+      });
+
+    const mobileFromRegistrationByUserId = new Map<string, string>();
+    for (const sub of registrationSubmissions) {
+      const mobile = this.extractMobileFromRegistrationAnswers(sub.answers);
+      mobileFromRegistrationByUserId.set(sub.userId, mobile);
+    }
+
     // Map to dashboard-friendly format
     return {
       hackathonId: hackathon.id,
@@ -2658,6 +2668,8 @@ export class HackathonService {
           email: m.user.email,
           firstName: m.user.firstName,
           lastName: m.user.lastName,
+          phone:
+            mobileFromRegistrationByUserId.get(m.user.id) ?? '',
         }));
 
         return {
@@ -2678,6 +2690,8 @@ export class HackathonService {
             imageUrl: leader.imageUrl,
             university,
             location,
+            phone:
+              mobileFromRegistrationByUserId.get(leader.id) ?? '',
           },
           roundSubmissions,
           roundQualifications,
@@ -3039,6 +3053,47 @@ export class HackathonService {
       })),
       respondents,
     };
+  }
+
+  /**
+   * Best-effort mobile from registration form answers (PHONE_NO field or label heuristic).
+   */
+  private extractMobileFromRegistrationAnswers(
+    answers: Array<{
+      valueText: string | null;
+      valueJson: Prisma.JsonValue;
+      field: { type: RegistrationFieldType; label: string };
+    }>,
+  ): string {
+    const stringifyAnswer = (a: (typeof answers)[0]): string => {
+      if (a.valueText !== null && a.valueText.trim() !== '') {
+        return a.valueText.trim();
+      }
+      if (a.valueJson === null || a.valueJson === undefined) {
+        return '';
+      }
+      if (typeof a.valueJson === 'string') {
+        return a.valueJson.trim();
+      }
+      if (typeof a.valueJson === 'number' || typeof a.valueJson === 'boolean') {
+        return String(a.valueJson);
+      }
+      return '';
+    };
+
+    for (const a of answers) {
+      if (a.field.type === RegistrationFieldType.PHONE_NO) {
+        const s = stringifyAnswer(a);
+        if (s) return s;
+      }
+    }
+    for (const a of answers) {
+      if (/phone|mobile|whatsapp/i.test(a.field.label)) {
+        const s = stringifyAnswer(a);
+        if (s) return s;
+      }
+    }
+    return '';
   }
 
   private formatAnswersForUser(

@@ -323,13 +323,6 @@ export default function Page() {
   useEffect(() => {
     if (!hasHydrated || !hackathonId) return;
 
-    // Don't auto-save if hackathon is not in DRAFT status
-    const isDraftStatus = hackathon?.status === "DRAFT";
-    if (!isDraftStatus) {
-      if (autoSaveStatus !== "saved") setAutoSaveStatus("saved");
-      return;
-    }
-
     const snapshot = serializePricing(currentPricing);
     if (snapshot === lastSavedSnapshotRef.current) {
       if (autoSaveStatus !== "saving") setAutoSaveStatus("saved");
@@ -356,7 +349,6 @@ export default function Page() {
     currentPricing,
     hasHydrated,
     hackathonId,
-    hackathon?.status,
     autoSaveStatus,
     runSaveMutation,
   ]);
@@ -384,8 +376,12 @@ export default function Page() {
     hackathon &&
     (hackathon.registrationCount > 0 ||
       (hackathon.teams && hackathon.teams.length > 0));
-  const isDraft = hackathon?.status === "DRAFT";
-  const canEditPricing = isDraft;
+  const isPricingLifecycleEditable =
+    hackathon &&
+    hackathon.status !== "COMPLETED" &&
+    hackathon.status !== "CANCELLED";
+  const canEditPricing =
+    !!isPricingLifecycleEditable && !registrationStarted;
 
   return (
     <div className="flex flex-col items-start gap-5 p-10 w-full flex-1 self-stretch min-h-[600px] rounded-[20px] bg-background border border-transparent shadow-sm">
@@ -441,7 +437,9 @@ export default function Page() {
           </h6>
           {!canEditPricing && (
             <p className="text-sm text-muted-foreground">
-              Pricing can only be edited while the opportunity is in draft.
+              {registrationStarted
+                ? "Pricing cannot be changed after registration has started."
+                : "Pricing cannot be edited for this status."}
             </p>
           )}
         </div>

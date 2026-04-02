@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { EventRegistrationCard } from "./EventRegistrationCard";
@@ -12,7 +12,17 @@ import Image from "next/image";
 import { cn, ensureAbsoluteUrl } from "@/lib/utils";
 import { format, isSameDay, isSameYear } from "date-fns";
 import { useAuth, useClerk } from "@clerk/nextjs";
-import { checkMyRegistration } from "@/lib/api/eventApi";
+import {
+  checkMyRegistration,
+  submitMissingRegistrationAnswers,
+} from "@/lib/api/eventApi";
+import { withRetry } from "@/lib/utils/retry";
+import {
+  readPendingEventRegistration,
+  clearPendingEventRegistration,
+} from "@/lib/registration/pendingHackathonRegistration";
+import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 
 // Razorpay global type
@@ -93,6 +103,54 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
   const isUserRegistered = !!registrationStatus?.isRegistered;
   const isPaidButIncomplete = !!registrationStatus?.isPaidButIncomplete;
+
+  const eventRecoveryTriedRef = useRef(false);
+
+  useEffect(() => {
+    if (eventRecoveryTriedRef.current) return;
+    if (!isSignedIn || !event?.id || !event?.slug || !user?.id) return;
+    if (!registrationStatus?.isPaidButIncomplete) return;
+
+    const pending = readPendingEventRegistration(event.slug);
+    if (!pending || pending.userId !== user.id || !pending.answers?.length) {
+      return;
+    }
+
+    eventRecoveryTriedRef.current = true;
+
+    void (async () => {
+      try {
+        const token = await getToken();
+        if (!token) {
+          eventRecoveryTriedRef.current = false;
+          return;
+        }
+        await withRetry(() =>
+          submitMissingRegistrationAnswers(token, event.id, pending.answers),
+        );
+        clearPendingEventRegistration(event.slug);
+        toast.success("Your registration form was saved.");
+        await refetchRegistrationStatus();
+      } catch (e) {
+        eventRecoveryTriedRef.current = false;
+        console.error("Event pending registration recovery failed:", e);
+        toast.error(
+          getApiErrorMessage(
+            e,
+            "Could not restore your registration. Try again from the event page.",
+          ),
+        );
+      }
+    })();
+  }, [
+    isSignedIn,
+    event?.id,
+    event?.slug,
+    user?.id,
+    registrationStatus?.isPaidButIncomplete,
+    getToken,
+    refetchRegistrationStatus,
+  ]);
 
   const TABS = [
     "About Event",

@@ -411,6 +411,8 @@ export interface HackathonTeamLeader {
   imageUrl: string | null;
   university: string;
   location: string;
+  /** From registration form answers (e.g. PHONE_NO field), not Clerk */
+  phone: string;
 }
 
 export interface HackathonTeamRoundSubmission {
@@ -423,6 +425,8 @@ export interface HackathonTeamMemberExport {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  /** From that member's registration submission answers */
+  phone: string;
 }
 
 export interface HackathonTeamRegistration {
@@ -509,8 +513,8 @@ export async function bulkSetTeamRoundQualification(
 // =====================
 
 /**
- * Submit a hackathon for admin approval.
- * Sets status to PUBLISHED and approvalStatus to PENDING.
+ * Organizer-first publish: sets status to PUBLISHED and approvalStatus to PENDING
+ * until an admin approves. (UI: “Publish opportunity”.)
  */
 export async function submitHackathonForApproval(
   token: string,

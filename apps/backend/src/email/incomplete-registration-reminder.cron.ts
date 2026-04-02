@@ -10,8 +10,8 @@ export class IncompleteRegistrationReminderCron {
     private readonly reminderService: IncompleteRegistrationReminderService,
   ) {}
 
-  /** Every 6 hours at minute 0 */
-  @Cron('0 */6 * * *')
+  /** Every 15 minutes — catch paid-but-incomplete registrations sooner */
+  @Cron('*/15 * * * *')
   async handleIncompleteRegistrationReminders(): Promise<void> {
     try {
       await this.reminderService.run();

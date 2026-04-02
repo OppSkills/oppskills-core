@@ -31,6 +31,8 @@ export class HackathonCheckoutController {
       teamName: dto.teamName,
       maxSize: dto.maxSize,
       discountCode: dto.discountCode,
+      invitationCode: dto.invitationCode,
+      joinTeamId: dto.joinTeamId,
     });
   }
 
@@ -46,6 +48,7 @@ export class HackathonCheckoutController {
       razorpayPaymentId: dto.razorpayPaymentId,
       razorpaySignature: dto.razorpaySignature,
       userId,
+      answers: dto.answers,
     });
   }
 

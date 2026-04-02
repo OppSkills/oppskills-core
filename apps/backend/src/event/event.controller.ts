@@ -486,7 +486,11 @@ export class EventController {
 
   @Put(':id')
   @UseGuards(ClerkAuthGuard)
-  @ApiOperation({ summary: 'Update event' })
+  @ApiOperation({
+    summary: 'Update event',
+    description:
+      'Full update while status is DRAFT, PUBLISHED, or ONGOING (not completed/cancelled).',
+  })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({ status: 200, description: 'Event updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
@@ -553,7 +557,7 @@ export class EventController {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // Nested Update Endpoints (DRAFT only)
+  // Nested Update Endpoints (same lifecycle rules as PUT :id)
   // ─────────────────────────────────────────────────────────────────────────────
 
   @Put(':id/additional-info')
@@ -565,7 +569,7 @@ export class EventController {
   @ApiResponse({ status: 200, description: 'Additional info updated' })
   @ApiResponse({
     status: 400,
-    description: 'Invalid input or event not in DRAFT',
+    description: 'Invalid input',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -591,7 +595,7 @@ export class EventController {
   @ApiResponse({ status: 200, description: 'Registration form updated' })
   @ApiResponse({
     status: 400,
-    description: 'Invalid input or event not in DRAFT',
+    description: 'Invalid input',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -617,7 +621,7 @@ export class EventController {
   @ApiResponse({ status: 200, description: 'Prize breakdown updated' })
   @ApiResponse({
     status: 400,
-    description: 'Invalid input or event not in DRAFT',
+    description: 'Invalid input',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -643,7 +647,7 @@ export class EventController {
   @ApiResponse({ status: 200, description: 'Max users limit updated' })
   @ApiResponse({
     status: 400,
-    description: 'Invalid input or event not in DRAFT',
+    description: 'Invalid input',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })

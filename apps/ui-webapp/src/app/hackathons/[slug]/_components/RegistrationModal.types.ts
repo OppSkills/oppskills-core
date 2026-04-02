@@ -9,6 +9,8 @@ export interface RegistrationModalProps {
   initialMode?: RegistrationMode;
   initialInvitationCode?: string;
   type?: "HACKATHON" | "EVENT";
+  /** Paid/free team exists but registration answers were not saved; submit without payment */
+  completionMode?: boolean;
 }
 
 export type RegistrationMode = "CREATE" | "JOIN";
@@ -41,6 +43,8 @@ export interface CreateTeamFormContentProps {
   isOpenToggle: boolean;
   setIsOpenToggle: (value: boolean) => void;
   type?: "HACKATHON" | "EVENT";
+  /** Hide team name / fee / discount; show completion notice (hackathon only) */
+  completionMode?: boolean;
 }
 
 export interface JoinTeamFormContentProps {

@@ -11,7 +11,7 @@ import {
   XCircle,
   Pause,
   Play,
-  Send,
+  Rocket,
   Trash2,
   Ban,
   ArrowLeft,
@@ -143,21 +143,23 @@ export default function OpportunitySettingsPage({
   // Cast hackathon data
   const hackathon = hackathonData as HackathonData | null | undefined;
 
-  // Submit for approval mutation
-  const submitApprovalMutation = useMutation({
+  // Publish (sets lifecycle to PUBLISHED; admin approval tracked separately)
+  const publishMutation = useMutation({
     mutationFn: async () => {
       const token = await getToken();
       if (!token || !hackathon) throw new Error("Not authenticated");
       return submitHackathonForApproval(token, hackathon.id);
     },
     onSuccess: () => {
-      toast.success("Opportunity submitted for approval!");
+      toast.success(
+        "Published. Your opportunity is visible as published; admin approval is pending before registrations open.",
+      );
       queryClient.invalidateQueries({
         queryKey: getHackathonBySlugQueryKey(slug),
       });
     },
     onError: (error: Error) => {
-      toast.error(getApiErrorMessage(error, "Failed to submit for approval"));
+      toast.error(getApiErrorMessage(error, "Failed to publish"));
     },
   });
 
@@ -258,7 +260,7 @@ export default function OpportunitySettingsPage({
 
   const isLive =
     hackathon.status === "PUBLISHED" && hackathon.approvalStatus === "APPROVED";
-  const canSubmitForApproval =
+  const canPublish =
     hackathon.status === "DRAFT" || hackathon.approvalStatus === "REJECTED";
   const isPendingApproval = hackathon.approvalStatus === "PENDING";
   const isTerminal =
@@ -334,40 +336,44 @@ export default function OpportunitySettingsPage({
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                 <p className="text-sm text-yellow-800 flex items-center gap-2">
                   <Clock className="w-4 h-4" />
-                  Your opportunity is pending admin approval. You will be
-                  notified once reviewed.
+                  Published — awaiting admin approval. Registrations stay closed
+                  until an admin approves. You will be notified when reviewed.
                 </p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Approval Section */}
+        {/* Publishing */}
         <Card className="py-6">
           <CardHeader>
             <CardTitle className="text-lg">Publishing & Approval</CardTitle>
             <CardDescription>
-              Submit your opportunity for review to make it publicly visible
+              Publish to set your opportunity to Published. An admin then
+              approves (one-time) before registrations open. Use Publish again
+              only if your listing was rejected.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {canSubmitForApproval && (
+            {canPublish && (
               <Button
-                onClick={() => submitApprovalMutation.mutate()}
-                disabled={submitApprovalMutation.isPending}
+                onClick={() => publishMutation.mutate()}
+                disabled={publishMutation.isPending}
                 className="w-full sm:w-auto"
               >
-                <Send className="w-4 h-4 mr-2" />
-                {submitApprovalMutation.isPending
-                  ? "Submitting..."
-                  : "Submit for Approval"}
+                <Rocket className="w-4 h-4 mr-2" />
+                {publishMutation.isPending
+                  ? "Publishing..."
+                  : hackathon.approvalStatus === "REJECTED"
+                    ? "Publish again"
+                    : "Publish opportunity"}
               </Button>
             )}
 
             {isPendingApproval && (
               <p className="text-sm text-muted-foreground">
-                Your opportunity is currently under review. Please wait for
-                admin approval.
+                Published — waiting for an admin to approve. Registrations open
+                after approval.
               </p>
             )}
 

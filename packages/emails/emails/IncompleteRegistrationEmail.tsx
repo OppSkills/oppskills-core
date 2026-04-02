@@ -70,7 +70,7 @@ export function IncompleteRegistrationEmail({
 
   const registrationHref =
     resourceType === "hackathon"
-      ? `${baseUrl}/hackathons/${eventSlug}`
+      ? `${baseUrl}/hackathons/${eventSlug}?registration=complete`
       : `${baseUrl}/events/${eventSlug}`;
 
   return (

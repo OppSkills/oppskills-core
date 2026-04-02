@@ -156,6 +156,8 @@ describe('Incomplete registration CTA URL pattern', () => {
     const base = 'https://oppskills.com';
     const slug = 'my-slug';
     expect(`${base}/events/${slug}`).toContain('/events/my-slug');
-    expect(`${base}/hackathons/${slug}`).toContain('/hackathons/my-slug');
+    expect(`${base}/hackathons/${slug}?registration=complete`).toContain(
+      '/hackathons/my-slug?registration=complete',
+    );
   });
 });

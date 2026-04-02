@@ -636,7 +636,7 @@ export class HackathonController {
   @ApiOperation({
     summary: 'Update hackathon',
     description:
-      'Update hackathon details. Only the owner can perform this action.',
+      'Update hackathon details while status is DRAFT, PUBLISHED, or ONGOING (not completed/cancelled). Owner, admin, or manager.',
   })
   @ApiParam({
     name: 'id',
@@ -659,7 +659,11 @@ export class HackathonController {
       },
     },
   })
-  @ApiResponse({ status: 403, description: 'Forbidden - Not the owner' })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - No permission or hackathon is completed/cancelled',
+  })
   @ApiResponse({ status: 404, description: 'Hackathon not found' })
   @ApiResponse({
     status: 401,
@@ -811,13 +815,13 @@ export class HackathonController {
   /**
    * Replace all rounds of a hackathon.
    * - Owner-only (or admin).
-   * - Allowed only when status is DRAFT.
+   * - In DRAFT: full edit. When published/ongoing: future rounds editable; started rounds constrained.
    */
   @Put(':id/rounds')
   @ApiOperation({
     summary: 'Update hackathon rounds',
     description:
-      'Replace all rounds of a hackathon. Only allowed in DRAFT status. Owner only.',
+      'Replace all rounds. In DRAFT, full edit. After publish, only future rounds may change. Owner, admin, or manager.',
   })
   @ApiParam({
     name: 'id',
@@ -849,7 +853,8 @@ export class HackathonController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Not the owner or not in DRAFT status',
+    description:
+      'Forbidden - No permission, completed/cancelled, or round edit not allowed',
   })
   @ApiResponse({ status: 404, description: 'Hackathon not found' })
   @ApiResponse({
@@ -883,13 +888,13 @@ export class HackathonController {
   /**
    * Update additional info (contact + attachments) of a hackathon.
    * - Owner-only (or admin).
-   * - Allowed only when status is DRAFT.
+   * - Allowed when status is DRAFT, PUBLISHED, or ONGOING.
    */
   @Put(':id/additional-info')
   @ApiOperation({
     summary: 'Update hackathon additional info',
     description:
-      'Update contact information and attachments for a hackathon. Only allowed in DRAFT status. Owner only.',
+      'Update contact information and attachments. Not allowed when completed/cancelled. Owner, admin, or manager.',
   })
   @ApiParam({
     name: 'id',
@@ -921,7 +926,8 @@ export class HackathonController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Not the owner or not in DRAFT status',
+    description:
+      'Forbidden - No permission or hackathon is completed/cancelled',
   })
   @ApiResponse({ status: 404, description: 'Hackathon not found' })
   @ApiResponse({
@@ -955,13 +961,13 @@ export class HackathonController {
   /**
    * Replace the registration form (external form link OR internal fields).
    * - Owner-only (or admin).
-   * - Allowed only when status is DRAFT.
+   * - Allowed when status is DRAFT, PUBLISHED, or ONGOING.
    */
   @Put(':id/registration-form')
   @ApiOperation({
     summary: 'Update hackathon registration form',
     description:
-      'Replace the registration form for a hackathon. Only allowed in DRAFT status. Owner only.',
+      'Replace the registration form. Not allowed when completed/cancelled. Owner, admin, or manager.',
   })
   @ApiParam({
     name: 'id',
@@ -993,7 +999,8 @@ export class HackathonController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Not the owner or not in DRAFT status',
+    description:
+      'Forbidden - No permission or hackathon is completed/cancelled',
   })
   @ApiResponse({ status: 404, description: 'Hackathon not found' })
   @ApiResponse({
@@ -1026,13 +1033,13 @@ export class HackathonController {
   /**
    * Replace the prize breakdown list of a hackathon.
    * - Owner-only (or admin).
-   * - Allowed only when status is DRAFT.
+   * - Allowed when status is DRAFT, PUBLISHED, or ONGOING.
    */
   @Put(':id/prize-breakdown')
   @ApiOperation({
     summary: 'Update hackathon prize breakdown',
     description:
-      'Replace the prize breakdown list for a hackathon. Only allowed in DRAFT status. Owner only.',
+      'Replace the prize breakdown list. Not allowed when completed/cancelled. Owner, admin, or manager.',
   })
   @ApiParam({
     name: 'id',
@@ -1064,7 +1071,8 @@ export class HackathonController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Not the owner or not in DRAFT status',
+    description:
+      'Forbidden - No permission or hackathon is completed/cancelled',
   })
   @ApiResponse({ status: 404, description: 'Hackathon not found' })
   @ApiResponse({
@@ -1094,14 +1102,14 @@ export class HackathonController {
   /**
    * Update the max teams limit.
    * - Owner-only (or admin).
-   * - Allowed only when status is DRAFT.
+   * - Allowed when status is DRAFT, PUBLISHED, or ONGOING.
    * - `null` means unlimited.
    */
   @Put(':id/max-teams')
   @ApiOperation({
     summary: 'Update max teams',
     description:
-      'Update the max teams limit for a hackathon. Only allowed in DRAFT status. Owner only. Use null for unlimited.',
+      'Update the max teams limit. Not allowed when completed/cancelled. Owner, admin, or manager. Use null for unlimited.',
   })
   @ApiParam({
     name: 'id',
@@ -1133,7 +1141,8 @@ export class HackathonController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Not the owner or not in DRAFT status',
+    description:
+      'Forbidden - No permission or hackathon is completed/cancelled',
   })
   @ApiResponse({ status: 404, description: 'Hackathon not found' })
   @ApiResponse({
