@@ -638,6 +638,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
               team={myTeam}
               currentUserId={user.id}
               hackathonSlug={competition.slug}
+              participantType={competition.participantType}
               needsCompleteRegistration={needsCompleteRegistration}
               onCompleteRegistration={() => setRegistration("complete")}
               onUpdate={() => {
