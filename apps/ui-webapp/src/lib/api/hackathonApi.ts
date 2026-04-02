@@ -411,6 +411,8 @@ export interface HackathonTeamLeader {
   imageUrl: string | null;
   university: string;
   location: string;
+  /** From registration form answers (e.g. PHONE_NO field), not Clerk */
+  phone: string;
 }
 
 export interface HackathonTeamRoundSubmission {
@@ -423,6 +425,8 @@ export interface HackathonTeamMemberExport {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  /** From that member's registration submission answers */
+  phone: string;
 }
 
 export interface HackathonTeamRegistration {

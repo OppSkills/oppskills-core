@@ -170,6 +170,7 @@ export default function Page() {
         teamInvitationCode: team.invitationCode,
         leaderFirstName: team.leader.firstName,
         leaderLastName: team.leader.lastName,
+        leaderPhone: team.leader.phone ?? "",
         maxSize: team.maxSize,
         teamMembers: team.members,
       };

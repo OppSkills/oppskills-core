@@ -56,6 +56,8 @@ export type Participant = {
   teamInvitationCode: string | null;
   leaderFirstName: string | null;
   leaderLastName: string | null;
+  /** Leader mobile from registration form answers */
+  leaderPhone: string;
   maxSize: number;
   /** Non-leader members, join order (for member1..memberN columns). */
   teamMembers: HackathonTeamMemberExport[];
@@ -143,6 +145,7 @@ export default function Participants({
           leader_email: p.email,
           leader_first_name: p.leaderFirstName ?? "",
           leader_last_name: p.leaderLastName ?? "",
+          leader_mobile: p.leaderPhone ?? "",
         };
 
         for (let i = 1; i <= memberSlotCount; i++) {
@@ -150,6 +153,7 @@ export default function Participants({
           row[`member${i}_email`] = m?.email ?? "";
           row[`member${i}_first_name`] = m?.firstName ?? "";
           row[`member${i}_last_name`] = m?.lastName ?? "";
+          row[`member${i}_mobile`] = m?.phone ?? "";
         }
 
         row.total_team_members = p.memberCount;

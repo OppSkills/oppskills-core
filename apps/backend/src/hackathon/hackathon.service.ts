@@ -2577,6 +2577,27 @@ export class HackathonService {
       orderBy: { createdAt: 'desc' },
     });
 
+    const registrationSubmissions =
+      await prisma.hackathonRegistrationSubmissionEntity.findMany({
+        where: {
+          hackathonId: hackathon.id,
+          teamId: { in: teams.map((t) => t.id) },
+        },
+        include: {
+          answers: {
+            include: {
+              field: { select: { type: true, label: true } },
+            },
+          },
+        },
+      });
+
+    const mobileFromRegistrationByUserId = new Map<string, string>();
+    for (const sub of registrationSubmissions) {
+      const mobile = this.extractMobileFromRegistrationAnswers(sub.answers);
+      mobileFromRegistrationByUserId.set(sub.userId, mobile);
+    }
+
     // Map to dashboard-friendly format
     return {
       hackathonId: hackathon.id,
@@ -2658,6 +2679,8 @@ export class HackathonService {
           email: m.user.email,
           firstName: m.user.firstName,
           lastName: m.user.lastName,
+          phone:
+            mobileFromRegistrationByUserId.get(m.user.id) ?? '',
         }));
 
         return {
@@ -2678,6 +2701,8 @@ export class HackathonService {
             imageUrl: leader.imageUrl,
             university,
             location,
+            phone:
+              mobileFromRegistrationByUserId.get(leader.id) ?? '',
           },
           roundSubmissions,
           roundQualifications,
@@ -3039,6 +3064,47 @@ export class HackathonService {
       })),
       respondents,
     };
+  }
+
+  /**
+   * Best-effort mobile from registration form answers (PHONE_NO field or label heuristic).
+   */
+  private extractMobileFromRegistrationAnswers(
+    answers: Array<{
+      valueText: string | null;
+      valueJson: Prisma.JsonValue;
+      field: { type: RegistrationFieldType; label: string };
+    }>,
+  ): string {
+    const stringifyAnswer = (a: (typeof answers)[0]): string => {
+      if (a.valueText !== null && a.valueText.trim() !== '') {
+        return a.valueText.trim();
+      }
+      if (a.valueJson === null || a.valueJson === undefined) {
+        return '';
+      }
+      if (typeof a.valueJson === 'string') {
+        return a.valueJson.trim();
+      }
+      if (typeof a.valueJson === 'number' || typeof a.valueJson === 'boolean') {
+        return String(a.valueJson);
+      }
+      return '';
+    };
+
+    for (const a of answers) {
+      if (a.field.type === RegistrationFieldType.PHONE_NO) {
+        const s = stringifyAnswer(a);
+        if (s) return s;
+      }
+    }
+    for (const a of answers) {
+      if (/phone|mobile|whatsapp/i.test(a.field.label)) {
+        const s = stringifyAnswer(a);
+        if (s) return s;
+      }
+    }
+    return '';
   }
 
   private formatAnswersForUser(
