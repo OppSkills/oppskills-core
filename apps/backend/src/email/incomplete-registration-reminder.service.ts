@@ -75,6 +75,13 @@ export class IncompleteRegistrationReminderService {
   /**
    * Sends incomplete-registration reminder emails for approved hackathons/events
    * where payment is captured/authorized but no registration submission exists.
+   *
+   * Hackathons: one row per `hackathon_payment` with successful status where the
+   * payer has no `hackathon_registration_submission` for that hackathon (same
+   * `(hackathon_id, user_id)` pair as `RegistrationSubmitService.getRegistrationStatus`
+   * when `hasSubmitted` is false). This matches users who paid but `submitRegistration`
+   * failed or never ran after checkout.
+   *
    * Only targets listings that are still open for registration (aligned with
    * submit/join validation): lifecycle status, not paused, before end date, and
    * before registration deadline when one is set.
