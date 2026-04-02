@@ -8,7 +8,8 @@ import {
   Phone,
   CheckCircle,
   MoreVertical,
-  Share2
+  Share2,
+  AlertTriangle,
 } from "lucide-react";
 import { SquareShareLine } from '@solar-icons/react';
 import { Button } from "@/components/ui/button";
@@ -28,13 +29,18 @@ interface TeamDetailsCardProps {
   currentUserId: string;
   hackathonSlug: string;
   onUpdate?: () => void;
+  /** Payment succeeded or free team, but registration answers were not saved */
+  needsCompleteRegistration?: boolean;
+  onCompleteRegistration?: () => void;
 }
 
 export function TeamDetailsCard({
   team,
   currentUserId,
   hackathonSlug,
-  onUpdate
+  onUpdate,
+  needsCompleteRegistration = false,
+  onCompleteRegistration,
 }: TeamDetailsCardProps) {
   const { getToken } = useAuth();
   const router = useRouter();
@@ -154,6 +160,24 @@ export function TeamDetailsCard({
 
   return (
     <div className="flex flex-col w-full gap-4 mt-4">
+      {needsCompleteRegistration && onCompleteRegistration && (
+        <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
+            <p className="leading-snug">
+              Your registration form is not complete. Finish it so organizers can
+              see your details — you will not be charged again.
+            </p>
+          </div>
+          <Button
+            type="button"
+            className="w-full rounded-full bg-[#9333ea] hover:bg-[#7e22ce] text-white"
+            onClick={onCompleteRegistration}
+          >
+            Complete registration
+          </Button>
+        </div>
+      )}
       {/* Team Header */}
       <div className="flex flex-col gap-2">
         <h4 className="text-2xl font-medium tracking-tight">Team Details</h4>

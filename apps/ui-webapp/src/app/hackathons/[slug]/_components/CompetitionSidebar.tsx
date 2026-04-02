@@ -23,6 +23,10 @@ import {
   checkMyHackathonTeam,
   type TeamDetailResponse,
 } from "@/lib/api/teamApi";
+import {
+  getHackathonRegistrationStatus,
+  type HackathonRegistrationStatus,
+} from "@/lib/api/paymentsApi";
 import { TeamDetailsCard } from "./TeamDetailsCard";
 import { getApiErrorMessage } from "@/lib/utils";
 import { format } from "date-fns";
@@ -41,15 +45,28 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   const [, setAuthMode] = useQueryState("auth");
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(!!isSignedIn);
   const [isStartingRegistration, setIsStartingRegistration] = useState(false);
-  const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
   const [myTeam, setMyTeam] = useState<TeamDetailResponse | null>(null);
+  const [registrationStatus, setRegistrationStatus] =
+    useState<HackathonRegistrationStatus | null>(null);
 
   const [registration, setRegistration] = useQueryState("registration");
   const [invitation, setInvitation] = useQueryState("invitation");
 
   const isOrganizer = !!user && !!competition.organizers?.some((o) => o.id === user.id);
 
-  const isRegistrationModalOpen = !!registration && !isCheckingRegistration && !isAlreadyRegistered && !isOrganizer;
+  const hasTeam = !!myTeam;
+  const isFullyRegistered = registrationStatus?.hasSubmitted === true;
+  const needsCompleteRegistration =
+    hasTeam &&
+    registrationStatus?.canCompleteRegistrationWithoutPayment === true;
+
+  const isCompletionFlow = registration === "complete";
+  const isRegistrationModalOpen =
+    !!registration &&
+    !isCheckingRegistration &&
+    !isOrganizer &&
+    ((!hasTeam && (registration === "create" || registration === "join")) ||
+      (needsCompleteRegistration && isCompletionFlow));
 
   const initialMode = registration === "join" ? "JOIN" : "CREATE";
 
@@ -81,26 +98,59 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         if (!token) return;
 
         const team = await checkMyHackathonTeam(token, competition.id);
-        const isRegistered = !!team;
-        setIsAlreadyRegistered(isRegistered);
         setMyTeam(team);
 
-        // If user is already registered, clear registration query params to prevent modal popping up
-        if (isRegistered && registration) {
-          setRegistration(null);
-          setInvitation(null);
+        let status: HackathonRegistrationStatus | null = null;
+        if (team) {
+          try {
+            status = await getHackathonRegistrationStatus(
+              token,
+              competition.slug,
+            );
+          } catch (statusErr) {
+            console.error("Error loading registration status:", statusErr);
+          }
+        }
+        setRegistrationStatus(status);
+
+        const canComplete =
+          !!team &&
+          status?.canCompleteRegistrationWithoutPayment === true;
+
+        if (team && registration) {
+          if (status?.hasSubmitted) {
+            setRegistration(null);
+            setInvitation(null);
+          } else if (
+            canComplete &&
+            (registration === "create" || registration === "join")
+          ) {
+            setRegistration(null);
+            setInvitation(null);
+          }
         }
       } catch (error) {
         console.error("Error checking registration:", error);
-        setIsAlreadyRegistered(false);
         setMyTeam(null);
+        setRegistrationStatus(null);
       } finally {
         setIsCheckingRegistration(false);
       }
     }
 
     checkRegistration();
-  }, [isLoaded, isSignedIn, competition.id, getToken, justRegistered, registration, setRegistration, setInvitation, setAuthMode]);
+  }, [
+    isLoaded,
+    isSignedIn,
+    competition.id,
+    competition.slug,
+    getToken,
+    justRegistered,
+    registration,
+    setRegistration,
+    setInvitation,
+    setAuthMode,
+  ]);
 
   // Check if registration is closed
   const isRegistrationClosed =
@@ -139,8 +189,13 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         return;
       }
 
-      if (isAlreadyRegistered) {
+      if (isFullyRegistered) {
         toast.info("You are already registered for this competition!");
+        return;
+      }
+
+      if (needsCompleteRegistration) {
+        setRegistration("complete");
         return;
       }
 
@@ -180,8 +235,38 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
       );
     }
 
-    // If already registered
-    if (isAlreadyRegistered && myTeam) {
+    if (needsCompleteRegistration) {
+      return (
+        <div className="space-y-2">
+          <Button
+            className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
+            onClick={async () => {
+              setIsStartingRegistration(true);
+              try {
+                setRegistration("complete");
+              } finally {
+                setIsStartingRegistration(false);
+              }
+            }}
+            disabled={
+              isStartingRegistration || Boolean(isRegistrationClosed)
+            }
+          >
+            {isStartingRegistration ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              "Complete registration"
+            )}
+          </Button>
+        </div>
+      );
+    }
+
+    // Team exists and form submitted
+    if (isFullyRegistered && myTeam) {
       return (
         <Button
           className="w-full bg-green-600 text-white rounded-full h-[52px] font-semibold text-base shadow-sm"
@@ -189,6 +274,18 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         >
           <CheckCircle className="w-4 h-4 mr-2" />
           Registered
+        </Button>
+      );
+    }
+
+    // Team exists but cannot complete without payment (edge case)
+    if (hasTeam && myTeam && !isFullyRegistered) {
+      return (
+        <Button
+          className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-base shadow-sm cursor-not-allowed"
+          disabled
+        >
+          Registration incomplete
         </Button>
       );
     }
@@ -429,23 +526,36 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           {/* Register Button */}
           {renderRegisterButton()}
 
-          {/* Team Status Card - shown when registered */}
-          {isAlreadyRegistered && myTeam && user && (
+          {/* Team Status Card - shown when user has a team */}
+          {hasTeam && myTeam && user && (
             <TeamDetailsCard
               team={myTeam}
               currentUserId={user.id}
               hackathonSlug={competition.slug}
+              needsCompleteRegistration={needsCompleteRegistration}
+              onCompleteRegistration={() => setRegistration("complete")}
               onUpdate={() => {
-                // Force a re-fetch of registration status if needed
                 const checkReg = async () => {
                   const token = await getToken();
                   if (token) {
                     const team = await checkMyHackathonTeam(token, competition.id);
                     setMyTeam(team);
-                    setIsAlreadyRegistered(!!team);
+                    if (team) {
+                      try {
+                        const status = await getHackathonRegistrationStatus(
+                          token,
+                          competition.slug,
+                        );
+                        setRegistrationStatus(status);
+                      } catch {
+                        setRegistrationStatus(null);
+                      }
+                    } else {
+                      setRegistrationStatus(null);
+                    }
                   }
                 };
-                checkReg();
+                void checkReg();
               }}
             />
           )}
@@ -528,11 +638,23 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         competition={competition}
         initialMode={initialMode as any}
         initialInvitationCode={invitation || undefined}
-        onSuccess={(updatedTeam) => {
-          setIsAlreadyRegistered(true);
+        completionMode={isCompletionFlow}
+        onSuccess={async (updatedTeam) => {
           setMyTeam(updatedTeam);
           setRegistration(null);
           setInvitation(null);
+          const token = await getToken();
+          if (token) {
+            try {
+              const status = await getHackathonRegistrationStatus(
+                token,
+                competition.slug,
+              );
+              setRegistrationStatus(status);
+            } catch {
+              setRegistrationStatus(null);
+            }
+          }
         }}
       />
     </div>

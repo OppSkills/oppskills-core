@@ -29,10 +29,23 @@ export function CreateTeamFormContent({
   isOpenToggle,
   setIsOpenToggle,
   type,
+  completionMode,
 }: CreateTeamFormContentProps) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      {type !== "EVENT" && (
+      {completionMode && (
+        <div className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-sm text-neutral-800">
+          {type !== "EVENT" && !isFree ? (
+            <p>
+              Payment received. Complete the form below to finish your registration
+              — you will not be charged again.
+            </p>
+          ) : (
+            <p>Finish your registration by completing the form below.</p>
+          )}
+        </div>
+      )}
+      {type !== "EVENT" && !completionMode && (
         <div className="space-y-4">
           <RegistrationInputField
             label="Team Name"
@@ -65,7 +78,7 @@ export function CreateTeamFormContent({
         </div>
       )}
 
-      {!isFree && (
+      {!isFree && !completionMode && (
         <div className="space-y-4">
           {(() => {
             const base = typeof entryFeeAmount === "number" ? entryFeeAmount : Number(entryFeeAmount ?? 0) || 0;

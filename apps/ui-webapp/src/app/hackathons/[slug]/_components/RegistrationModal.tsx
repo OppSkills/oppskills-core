@@ -92,6 +92,7 @@ export function RegistrationModal({
   initialMode,
   initialInvitationCode,
   type = "HACKATHON",
+  completionMode = false,
 }: RegistrationModalProps) {
   const router = useRouter();
   const { user } = useUser();
@@ -587,6 +588,25 @@ export function RegistrationModal({
         return;
       }
 
+      if (completionMode && type === "HACKATHON") {
+        await submitRegistration(
+          token,
+          competition.slug,
+          filteredFormatted,
+        );
+        const myUpdatedTeam = await checkMyHackathonTeam(
+          token,
+          competition.id,
+        );
+        toast.success("Registration successful!");
+        if (myUpdatedTeam) {
+          onSuccess?.(myUpdatedTeam);
+        }
+        onClose();
+        router.push(`/hackathons/${competition.slug}?registered=true`);
+        return;
+      }
+
       const finalTeamName = teamName.trim();
 
       if (type === "EVENT") {
@@ -692,9 +712,11 @@ export function RegistrationModal({
         {/* Header Area (Fixed) */}
         <div className="p-6 pb-4 shadow-sm">
           <h2 className="text-3xl font-medium tracking-tight text-neutral-900">
-            Registration Form
+            {completionMode && type === "HACKATHON"
+              ? "Complete registration"
+              : "Registration Form"}
           </h2>
-          {!isIndividual && (
+          {!isIndividual && !completionMode && (
             <div className="flex gap-3">
               {[
                 { title: "Create team", id: "CREATE" as RegistrationMode, icon: Users },
@@ -724,7 +746,28 @@ export function RegistrationModal({
           <div
             className="px-6 py-2"
           >
-            {mode === "CREATE" ? (
+            {completionMode && type === "HACKATHON" ? (
+              <CreateTeamFormContent
+                fields={mergedFields}
+                answers={answers}
+                onUpdateAnswer={onUpdateAnswer}
+                teamName={teamName}
+                setTeamName={setTeamName}
+                onFileSelect={handleFileSelect}
+                isUploading={isUploading}
+                uploadedFiles={uploadedFiles}
+                isIndividual={isIndividual}
+                isFree={competition.isFree}
+                entryFeeAmount={competition.entryFeeAmount}
+                feeBearer={competition.feeBearer}
+                discountCode={discountCode}
+                setDiscountCode={setDiscountCode}
+                isOpenToggle={isOpenToggle}
+                setIsOpenToggle={setIsOpenToggle}
+                type={type}
+                completionMode
+              />
+            ) : mode === "CREATE" ? (
               <CreateTeamFormContent
                 fields={mergedFields}
                 answers={answers}
@@ -807,6 +850,8 @@ export function RegistrationModal({
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Processing...
                   </>
+                ) : completionMode && type === "HACKATHON" ? (
+                  "Submit registration"
                 ) : mode === "CREATE" ? (
                   isIndividual ? "Register" : "Register as team"
                 ) : (
