@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Sparkles, Users, ChevronRight, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { format, isAfter } from "date-fns";
 import { EventDetails } from "./types";
 import InfoCard from "./InfoCard";
 import { ensureAbsoluteUrl } from "@/lib/utils";
@@ -19,6 +19,26 @@ export function EventSidebar({ event, onRegister }: EventSidebarProps) {
 
   const monthShort = startDate ? format(startDate, "MMM") : "---";
   const dayNum = startDate ? format(startDate, "dd") : "--";
+
+  const deadline = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
+  const isDeadlinePassed = deadline ? isAfter(new Date(), deadline) : false;
+
+  const mainTicket = event.tickets?.[0];
+  const isFree = mainTicket ? mainTicket.price === 0 : true;
+  const currency = event.currency || "INR";
+  const priceDisplay = mainTicket ? `${currency} ${mainTicket.price.toFixed(2)}` : "";
+
+  let buttonText = "Register Now";
+  let isDisabled = false;
+
+  if (isDeadlinePassed) {
+    buttonText = "Registration closed";
+    isDisabled = true;
+  } else if (isFree) {
+    buttonText = "Register now";
+  } else {
+    buttonText = `Register for ${priceDisplay}`;
+  }
 
   return (
     <div className="p-4 lg:p-0 space-y-5 font-sans">
@@ -105,9 +125,14 @@ export function EventSidebar({ event, onRegister }: EventSidebarProps) {
           {/* Register Button */}
           <button
             onClick={onRegister}
-            className="w-full bg-[#9333ea] hover:bg-[#7e22ce] text-white rounded-full h-[52px] font-semibold text-base shadow-sm transition-colors mt-2"
+            disabled={isDisabled}
+            className={`w-full ${
+              isDisabled 
+              ? "bg-neutral-300 cursor-not-allowed" 
+              : "bg-[#9333ea] hover:bg-[#7e22ce]"
+            } text-white rounded-full h-[52px] font-semibold text-base shadow-sm transition-colors mt-2`}
           >
-            Register Now
+            {buttonText}
           </button>
 
           {/* Divider */}
@@ -148,7 +173,9 @@ export function EventSidebar({ event, onRegister }: EventSidebarProps) {
               </div>
               <div>
                 <div className="font-semibold text-neutral-900 text-sm">
-                  {event.registrationDeadline || "Open until starts"}
+                  {event.registrationDeadline
+                    ? format(new Date(event.registrationDeadline), "MMM d, yyyy h:mm a")
+                    : "Open until starts"}
                 </div>
                 <div className="text-xs text-neutral-500">Registration Deadline</div>
               </div>

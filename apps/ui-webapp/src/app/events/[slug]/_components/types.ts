@@ -45,7 +45,8 @@ export interface EventDetails {
     name: string;
     slug: string;
   };
-  registrationDeadline?: string;
+  registrationDeadline?: string | Date;
+  currency?: string;
   teamSize?: string;
   impressions?: number;
 

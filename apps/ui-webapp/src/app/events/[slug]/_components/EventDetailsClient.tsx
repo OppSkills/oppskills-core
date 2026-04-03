@@ -248,9 +248,8 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     registrationCount: event.registrationCount,
     createdAt: event.createdAt,
     festival: event.festival,
-    registrationDeadline: event.registrationDeadline
-      ? format(new Date(event.registrationDeadline), "MMM d, yyyy h:mm a")
-      : undefined,
+    registrationDeadline: event.registrationDeadline,
+    currency: event.currency || "INR",
     impressions: event.impressions,
     teamSize: event.isRecruitmentEvent ? "Recruitment" : "Individual", // Customize as needed
   };
@@ -288,20 +287,6 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             <h1 className="hidden lg:block text-neutral-900 text-3xl font-semibold px-1 pl-4 mb-2 break-all line-clamp-2">
               {event.name}
             </h1>
-
-            {/* Registration Card */}
-            <EventRegistrationCard
-              tickets={tickets}
-              user={cardUser}
-              selectedTicketId={selectedTicketId}
-              onSelectTicket={setSelectedTicketId}
-              onRegister={handleRegistration}
-              isRegistering={isModalOpen}
-              isRegistered={isUserRegistered}
-              isPaidButIncomplete={isPaidButIncomplete}
-              registrationDeadline={event.registrationDeadline}
-              feeBearer={event.feeBearer ?? "ORGANISER"}
-            />
 
             <div className="space-y-6">
               <EventTabs
