@@ -253,11 +253,11 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
     return {
       id: p.id,
       title:
-        p.position === "1" || rank === 1
+        p.position === 1 || rank === 1
           ? "Winner"
-          : p.position === "2" || rank === 2
+          : p.position === 2 || rank === 2
             ? "1st Runner Up"
-            : p.position === "3" || rank === 3
+            : p.position === 3 || rank === 3
               ? "2nd Runner Up"
               : `Position ${p.position}`,
       amount: `${data.currency} ${amountValue.toLocaleString()}`,
