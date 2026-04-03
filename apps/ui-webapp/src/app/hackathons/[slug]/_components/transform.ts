@@ -84,6 +84,7 @@ export interface HackathonApiData {
     amount: number;
     description: string | null;
   }>;
+  prizeCertificate: boolean;
   registrationForm: {
     id: string;
     externalFormLink: string | null;
@@ -221,10 +222,10 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
     roundType: (r.roundType as any) ?? "ONLINE",
     submissionConfig: r.submissionConfig
       ? {
-          ...r.submissionConfig,
-          enabled:
-            r.submissionConfig.enabled ?? r.submissionConfig.requiresFileUpload,
-        }
+        ...r.submissionConfig,
+        enabled:
+          r.submissionConfig.enabled ?? r.submissionConfig.requiresFileUpload,
+      }
       : undefined,
   }));
 
@@ -242,30 +243,63 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
     });
   }
 
-  const prizes: Prize[] = data.prizeBreakdown.map((p) => {
+  const prizes: Prize[] = data.prizeBreakdown.map((p, index) => {
     const amountValue = p.amount ?? 0;
+    const positionNum = Number(p.position) || 0;
+    
+    // For the first three prizes, use fixed icons/images based on their order in the array
+    const rank = index + 1;
+    
     return {
       id: p.id,
       title:
-        p.position === 1
+        p.position === "1" || rank === 1
           ? "Winner"
-          : p.position === 2
+          : p.position === "2" || rank === 2
             ? "1st Runner Up"
-            : p.position === 3
+            : p.position === "3" || rank === 3
               ? "2nd Runner Up"
               : `Position ${p.position}`,
       amount: `${data.currency} ${amountValue.toLocaleString()}`,
       description: p.description || "",
-      icon: mapPrizeIcon(p.position),
+      icon: mapPrizeIcon(rank <= 3 ? rank : positionNum),
+      image:
+        rank === 1
+          ? "trophy.svg"
+          : rank === 2
+            ? "coin.svg"
+            : rank === 3
+              ? "gift.svg"
+              : "star.svg",
+      tags: data.prizeCertificate ? ["Appreciation Certificate"] : [],
     };
   });
+
+  // Add Participation prize if certificate is enabled and not already in breakdown
+  const hasParticipation = prizes.some(
+    (p) =>
+      p.title?.toLowerCase().includes("participation") ||
+      p.description?.toLowerCase().includes("participation")
+  );
+
+  if (data.prizeCertificate && !hasParticipation) {
+    prizes.push({
+      id: "participation-prize",
+      title: "Participation",
+      amount: "Goodies",
+      description: "For all participants",
+      image: "star.svg",
+      tags: ["Participation Certificate"],
+      icon: "star",
+    });
+  }
 
   let registrationDeadline = "Open";
   if (data.registrationDeadline) {
     const deadline = new Date(data.registrationDeadline);
     if (deadline > new Date()) {
       registrationDeadline = formatDistanceToNow(deadline, {
-          addSuffix: false,
+        addSuffix: false,
       });
     } else {
       registrationDeadline = "Closed";
@@ -332,10 +366,10 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
     contact:
       data.contactName || data.contactEmail || data.contactPhone
         ? {
-            name: data.contactName || "",
-            email: data.contactEmail || "",
-            phone: data.contactPhone || "",
-          }
+          name: data.contactName || "",
+          email: data.contactEmail || "",
+          phone: data.contactPhone || "",
+        }
         : undefined,
     attachments: attachments.length > 0 ? attachments : undefined,
     createdAt: data.createdAt,
