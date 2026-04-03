@@ -45,7 +45,7 @@ export function Prizes({ prizes }: PrizesProps) {
               <div className="hidden md:block">
                 <div className="w-40 h-36 rounded-[50%] bg-primary-900 absolute -right-5 -bottom-20"></div>
                 {prize.image && (
-                  <div className="absolute right-0 bottom-0 w-37 h-37">
+<div className="absolute right-0 bottom-0 w-40 h-40">
                     <Image
                       src={`/illustrations/prices/${prize.image}`}
                       alt={prize.title || "Prize"}
