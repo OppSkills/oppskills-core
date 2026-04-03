@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsIn,
   IsInt,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -76,6 +77,15 @@ export { FeeBearer };
 // CREATE PAYMENT ORDER DTO
 // =============================================================================
 
+class CreateEventPaymentOrderAnswerDto {
+  @IsString()
+  @IsNotEmpty()
+  fieldId: string;
+
+  @IsString()
+  value: string;
+}
+
 /**
  * DTO for creating a payment order for event registration.
  */
@@ -89,6 +99,16 @@ export class CreateEventPaymentOrderDto {
   @IsString()
   @MaxLength(50)
   discountCode?: string;
+
+  /** Escrowed server-side when creating the Razorpay order (verify/webhook fallback). */
+  @ApiPropertyOptional({
+    description: "Registration answers to escrow for payment verification / webhook",
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateEventPaymentOrderAnswerDto)
+  answers?: CreateEventPaymentOrderAnswerDto[];
 }
 
 // =============================================================================

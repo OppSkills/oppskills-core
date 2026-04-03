@@ -33,6 +33,7 @@ import {
 } from "@/lib/api/paymentsApi";
 import { withRetry } from "@/lib/utils/retry";
 import { SITE_URL } from "@/lib/constants";
+import { writePendingHackathonRegistration } from "@/lib/registration/pendingHackathonRegistration";
 import { getMe } from "@/lib/api/usersApi";
 import {
   HackathonRegistrationModal,
@@ -495,6 +496,16 @@ export function JoinTeamList({
           },
         },
       };
+
+      const formattedAnswersForPending = answers.map((a) => ({
+        fieldId: a.fieldId,
+        value: String(a.value),
+      }));
+      writePendingHackathonRegistration(hackathonSlug, {
+        answers: formattedAnswersForPending,
+        userId: user?.id,
+        invitationCode: invitationCode?.toUpperCase(),
+      });
 
       // Close the registration modal BEFORE opening Razorpay.
       // Radix UI Dialog uses a focus trap and sets pointer-events:none on the

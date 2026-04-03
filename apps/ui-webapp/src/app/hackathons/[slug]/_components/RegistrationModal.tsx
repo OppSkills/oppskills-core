@@ -314,6 +314,7 @@ export function RegistrationModal({
       if (type === "EVENT") {
         const order = await createEventPaymentOrder(token, competition.slug, {
           discountCode: discountCode.trim() || undefined,
+          answers: formattedAnswers,
         });
 
         if (order.zeroAmountPayment || order.amountPaise === 0) {
@@ -387,8 +388,10 @@ export function RegistrationModal({
         teamName?: string;
         maxSize?: number;
         invitationCode?: string;
+        answers?: Array<{ fieldId: string; value: string }>;
       } = {
         discountCode: discountCode.trim() || undefined,
+        answers: formattedAnswers,
       };
 
       if (competition.chargeMode === "PER_TEAM") {

@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { EventModule } from '../event/event.module';
 import { RazorpayService } from './razorpay.service';
 import { PaymentsRouteService } from './payments-route.service';
 import { PaymentsRouteController } from './payments-route.controller';
@@ -18,8 +19,10 @@ import { PayoutDetailsService } from './payout-details.service';
 import { PayoutDetailsController } from './payout-details.controller';
 import { AdminPayoutsService } from './admin-payouts.service';
 import { AdminPayoutsController } from './admin-payouts.controller';
+import { PaymentRegistrationEscrowService } from './payment-registration-escrow.service';
 
 @Module({
+  imports: [forwardRef(() => EventModule)],
   controllers: [
     PaymentsRouteController,
     RazorpayWebhookController,
@@ -42,6 +45,7 @@ import { AdminPayoutsController } from './admin-payouts.controller';
     DiscountCodeService,
     PayoutDetailsService,
     AdminPayoutsService,
+    PaymentRegistrationEscrowService,
   ],
   exports: [
     RazorpayService,
@@ -54,6 +58,7 @@ import { AdminPayoutsController } from './admin-payouts.controller';
     DiscountCodeService,
     PayoutDetailsService,
     AdminPayoutsService,
+    PaymentRegistrationEscrowService,
   ],
 })
 export class PaymentsModule {}

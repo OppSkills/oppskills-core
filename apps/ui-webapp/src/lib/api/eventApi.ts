@@ -706,7 +706,10 @@ export interface EventPricingData {
 export async function createEventPaymentOrder(
   token: string,
   eventSlug: string,
-  params: { discountCode?: string },
+  params: {
+    discountCode?: string;
+    answers?: Array<{ fieldId: string; value: string }>;
+  },
 ): Promise<EventPaymentOrderResponse> {
   const res = await API.post(
     `/${encodeURIComponent(eventSlug)}/payment/order`,

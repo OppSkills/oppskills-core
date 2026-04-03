@@ -62,6 +62,7 @@ export class EventPaymentController {
       eventSlug: slug,
       userId,
       discountCode: dto.discountCode,
+      answers: dto.answers,
     });
   }
 

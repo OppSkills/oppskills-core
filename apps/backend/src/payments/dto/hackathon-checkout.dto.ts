@@ -19,6 +19,15 @@ class VerifyPaymentAnswerDto {
   value: string;
 }
 
+class CreateOrderAnswerDto {
+  @IsString()
+  @IsNotEmpty()
+  fieldId: string;
+
+  @IsString()
+  value: string;
+}
+
 export class CreateOrderDto {
   @IsOptional()
   @IsString()
@@ -47,6 +56,13 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   joinTeamId?: string;
+
+  /** Escrowed server-side when creating the Razorpay order (verify/webhook fallback). */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateOrderAnswerDto)
+  answers?: CreateOrderAnswerDto[];
 }
 
 export class VerifyPaymentDto {
