@@ -81,7 +81,7 @@ export function HackathonCard({
                 {/* Content Section */}
                 <div className="relative bg-card pt-4 px-5 pb-5 flex flex-col flex-1 min-h-[140px]">
                     <div className="flex-1 flex flex-col">
-                        <h3 className="text-xl text-neutral-900 font-semibold line-clamp-2 leading-tight tracking-tight min-h-[3.25rem]">
+                        <h3 className="text-xl text-neutral-900 font-semibold line-clamp-2 leading-tight tracking-tight">
                             {title}
                         </h3>
 
