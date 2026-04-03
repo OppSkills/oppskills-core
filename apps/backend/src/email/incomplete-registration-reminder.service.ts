@@ -70,6 +70,15 @@ export const INCOMPLETE_REGISTRATION_REMINDER_MIN_MINUTES = 30;
 export class IncompleteRegistrationReminderService {
   private readonly logger = new Logger(IncompleteRegistrationReminderService.name);
 
+  /** ISO timestamp of the last cron `run()` completion (success or failure). */
+  lastRunFinishedAt: string | null = null;
+
+  /** Result of the last successful `run()`, if any. */
+  lastRunResult: IncompleteRegistrationReminderRunResult | null = null;
+
+  /** Error message if the last `run()` threw. */
+  lastRunError: string | null = null;
+
   constructor(private readonly emailService: EmailService) {}
 
   /**
@@ -87,6 +96,17 @@ export class IncompleteRegistrationReminderService {
    * before registration deadline when one is set.
    */
   async run(): Promise<IncompleteRegistrationReminderRunResult> {
+    this.lastRunError = null;
+    try {
+      return await this.runInternal();
+    } catch (err) {
+      this.lastRunError = err instanceof Error ? err.message : String(err);
+      this.lastRunFinishedAt = new Date().toISOString();
+      throw err;
+    }
+  }
+
+  private async runInternal(): Promise<IncompleteRegistrationReminderRunResult> {
     const cutoff = new Date(
       Date.now() -
         INCOMPLETE_REGISTRATION_REMINDER_MIN_MINUTES * 60 * 1000,
@@ -295,11 +315,14 @@ export class IncompleteRegistrationReminderService {
       `Incomplete registration reminders: hackathons ${hackathonEmailsSent}/${hackathonRows.length} sent, events ${eventEmailsSent}/${eventRows.length} sent`,
     );
 
-    return {
+    const result: IncompleteRegistrationReminderRunResult = {
       hackathonEmailsAttempted: hackathonRows.length,
       hackathonEmailsSent,
       eventEmailsAttempted: eventRows.length,
       eventEmailsSent,
     };
+    this.lastRunResult = result;
+    this.lastRunFinishedAt = new Date().toISOString();
+    return result;
   }
 }

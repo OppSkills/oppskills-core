@@ -19,6 +19,7 @@ import {
 import { withRetry } from "@/lib/utils/retry";
 import { SITE_URL } from "@/lib/constants";
 import { getMe } from "@/lib/api/usersApi";
+import { writePendingHackathonRegistration } from "@/lib/registration/pendingHackathonRegistration";
 import {
   HackathonRegistrationModal,
   type RegistrationField,
@@ -270,8 +271,13 @@ export function CreateTeamForm({
         teamName?: string;
         maxSize?: number;
         discountCode?: string;
+        answers?: Array<{ fieldId: string; value: string }>;
       } = {
         discountCode: discountCode.trim() || undefined,
+        answers: answers.map((a) => ({
+          fieldId: a.fieldId,
+          value: String(a.value),
+        })),
       };
 
       if (chargeMode === "PER_TEAM") {
@@ -418,6 +424,17 @@ export function CreateTeamForm({
           "Razorpay payment gateway is not loaded. Please refresh the page and try again.",
         );
       }
+
+      const formattedAnswersForPending = answers.map((a) => ({
+        fieldId: a.fieldId,
+        value: String(a.value),
+      }));
+      writePendingHackathonRegistration(hackathonSlug, {
+        answers: formattedAnswersForPending,
+        userId: user?.id,
+        teamName,
+        maxSize,
+      });
 
       // Close the registration modal BEFORE opening Razorpay.
       // Radix UI Dialog uses a focus trap and sets pointer-events:none on the

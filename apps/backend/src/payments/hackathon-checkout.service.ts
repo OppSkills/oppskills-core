@@ -16,6 +16,7 @@ import { RazorpayService } from './razorpay.service';
 import { PaymentsRouteService } from './payments-route.service';
 import { DraftTeamService } from './draft-team.service';
 import { RegistrationSubmitService } from './registration-submit.service';
+import { PaymentRegistrationEscrowService } from './payment-registration-escrow.service';
 import { Decimal } from '@prisma/client/runtime/library';
 import { Logger } from 'src/_utils/logger';
 
@@ -30,6 +31,7 @@ export class HackathonCheckoutService {
     private readonly paymentsRouteService: PaymentsRouteService,
     private readonly draftTeamService: DraftTeamService,
     private readonly registrationSubmitService: RegistrationSubmitService,
+    private readonly paymentEscrowService: PaymentRegistrationEscrowService,
   ) {}
 
   async createPaymentOrder(params: {
@@ -42,6 +44,8 @@ export class HackathonCheckoutService {
     /** Stored on Razorpay order notes for PER_USER join + server-side registration completion */
     invitationCode?: string;
     joinTeamId?: string;
+    /** Escrowed server-side for verify/webhook when client omits answers */
+    answers?: Array<{ fieldId: string; value: string }>;
   }) {
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { slug: params.hackathonSlug, isDeleted: false },
@@ -440,6 +444,13 @@ export class HackathonCheckoutService {
       },
     });
 
+    await this.paymentEscrowService.upsertHackathonEscrow({
+      razorpayOrderId: razorpayOrder.id,
+      payerUserId: params.userId,
+      hackathonId: hackathon.id,
+      answers: params.answers ?? [],
+    });
+
     return {
       paymentId: payment.id,
       razorpayKeyId: this.razorpayService.getKeyId(),
@@ -485,6 +496,15 @@ export class HackathonCheckoutService {
     const { answers, userId, hackathonSlug, razorpayOrderId, paymentId } =
       params;
     if (!answers?.length) {
+      const form = await prisma.registrationFormEntity.findUnique({
+        where: { hackathonId: params.hackathonId },
+        select: { fields: { select: { id: true } } },
+      });
+      if (form?.fields?.length) {
+        this.logger.warn(
+          `verifyPayment: no registration answers for hackathon ${params.hackathonSlug} (paymentId=${paymentId}, order=${razorpayOrderId}) but form has ${form.fields.length} field(s) — answers will not be saved`,
+        );
+      }
       return;
     }
 
@@ -584,15 +604,77 @@ export class HackathonCheckoutService {
         userId,
         answers,
       });
+      await this.paymentEscrowService.deleteByRazorpayOrderId(razorpayOrderId);
     } catch (err) {
       if (
         err instanceof BadRequestException &&
         err.message.includes('already submitted')
       ) {
+        await this.paymentEscrowService.deleteByRazorpayOrderId(razorpayOrderId);
         return;
       }
       throw err;
     }
+  }
+
+  /**
+   * Called from Razorpay webhook after capture: if client never called verify with answers,
+   * submit from server escrow (when present).
+   */
+  async trySubmitRegistrationFromEscrowAfterWebhook(
+    razorpayOrderId: string,
+  ): Promise<void> {
+    const payment = await prisma.hackathonPaymentEntity.findUnique({
+      where: { razorpayOrderId },
+      include: {
+        hackathon: { select: { slug: true } },
+      },
+    });
+    if (!payment || payment.paymentStatus !== HackathonPaymentStatus.CAPTURED) {
+      return;
+    }
+    const answers = await this.paymentEscrowService.loadAnswersForVerify(
+      razorpayOrderId,
+      payment.payerUserId,
+    );
+    if (!answers?.length) {
+      return;
+    }
+    try {
+      await this.submitRegistrationAnswersAfterPaymentIfProvided({
+        paymentId: payment.id,
+        hackathonId: payment.hackathonId,
+        hackathonSlug: payment.hackathon.slug,
+        userId: payment.payerUserId,
+        razorpayOrderId,
+        answers,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Escrow submit after webhook failed for order ${razorpayOrderId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  private async resolveMergedAnswersForVerify(
+    razorpayOrderId: string,
+    userId: string,
+    bodyAnswers?: Array<{ fieldId: string; value: string }>,
+  ): Promise<Array<{ fieldId: string; value: string }> | undefined> {
+    if (bodyAnswers?.length) {
+      return bodyAnswers;
+    }
+    const fromEscrow = await this.paymentEscrowService.loadAnswersForVerify(
+      razorpayOrderId,
+      userId,
+    );
+    if (fromEscrow?.length) {
+      this.logger.log(
+        `verifyPayment: using server-escrowed registration answers for order ${razorpayOrderId} (${fromEscrow.length} fields)`,
+      );
+      return fromEscrow;
+    }
+    return undefined;
   }
 
   async verifyPayment(params: {
@@ -619,6 +701,12 @@ export class HackathonCheckoutService {
       throw new ForbiddenException('Payment does not belong to this user');
     }
 
+    const mergedAnswers = await this.resolveMergedAnswersForVerify(
+      params.razorpayOrderId,
+      params.userId,
+      params.answers,
+    );
+
     // Layer 1 — pre-check: if the webhook already captured this payment, return
     // idempotently rather than downgrading CAPTURED → AUTHORIZED.
     if (payment.paymentStatus === HackathonPaymentStatus.CAPTURED) {
@@ -631,7 +719,7 @@ export class HackathonCheckoutService {
         hackathonSlug: payment.hackathon.slug,
         userId: params.userId,
         razorpayOrderId: params.razorpayOrderId,
-        answers: params.answers,
+        answers: mergedAnswers,
       });
       return { success: true, paymentId: payment.id, teamId: payment.teamId };
     }
@@ -771,7 +859,7 @@ export class HackathonCheckoutService {
           hackathonSlug: payment.hackathon.slug,
           userId: params.userId,
           razorpayOrderId: params.razorpayOrderId,
-          answers: params.answers,
+          answers: mergedAnswers,
         });
         return {
           success: true,
@@ -788,7 +876,7 @@ export class HackathonCheckoutService {
       hackathonSlug: payment.hackathon.slug,
       userId: params.userId,
       razorpayOrderId: params.razorpayOrderId,
-      answers: params.answers,
+      answers: mergedAnswers,
     });
 
     return { success: true, paymentId: payment.id, teamId: finalTeamId };

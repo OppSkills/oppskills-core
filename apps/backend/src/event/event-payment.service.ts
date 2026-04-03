@@ -11,6 +11,7 @@ import {
   EventPaymentOrderStatus,
 } from '@oppskills/db';
 import { RazorpayService } from '../payments/razorpay.service';
+import { PaymentRegistrationEscrowService } from '../payments/payment-registration-escrow.service';
 import { Decimal } from '@prisma/client/runtime/library';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
@@ -23,6 +24,7 @@ export class EventPaymentService {
   constructor(
     private readonly razorpayService: RazorpayService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly paymentEscrowService: PaymentRegistrationEscrowService,
   ) {}
 
   /**
@@ -33,6 +35,8 @@ export class EventPaymentService {
     eventSlug: string;
     userId: string;
     discountCode?: string;
+    /** Escrowed server-side for verify/webhook when client omits answers */
+    answers?: Array<{ fieldId: string; value: string }>;
   }) {
     const event = await prisma.eventEntity.findUnique({
       where: { slug: params.eventSlug, isDeleted: false },
@@ -280,6 +284,13 @@ export class EventPaymentService {
       },
     });
 
+    await this.paymentEscrowService.upsertEventEscrow({
+      razorpayOrderId: razorpayOrder.id,
+      payerUserId: params.userId,
+      eventId: event.id,
+      answers: params.answers ?? [],
+    });
+
     return {
       paymentId: payment.id,
       razorpayKey: this.razorpayService.getKeyId(),
@@ -298,6 +309,100 @@ export class EventPaymentService {
         : undefined,
       feeBearer: event.feeBearer,
     };
+  }
+
+  /**
+   * Called from Razorpay webhook after capture: submit escrowed answers when the client
+   * never called verify with answers (e.g. mobile redirect).
+   */
+  async trySubmitRegistrationFromEscrowAfterWebhook(
+    razorpayOrderId: string,
+  ): Promise<void> {
+    const payment = await prisma.eventPaymentEntity.findUnique({
+      where: { razorpayOrderId },
+      include: {
+        event: {
+          select: {
+            id: true,
+            slug: true,
+            registrationForm: { select: { fields: { select: { id: true } } } },
+          },
+        },
+      },
+    });
+    if (!payment || payment.paymentStatus !== EventPaymentStatus.CAPTURED) {
+      return;
+    }
+    const escrowAnswers = await this.paymentEscrowService.loadAnswersForVerify(
+      razorpayOrderId,
+      payment.payerUserId,
+    );
+    if (!escrowAnswers?.length) {
+      return;
+    }
+    const participant = await prisma.eventParticipantEntity.findUnique({
+      where: {
+        eventId_userId: {
+          eventId: payment.eventId,
+          userId: payment.payerUserId,
+        },
+      },
+    });
+    if (!participant) {
+      this.logger.warn(
+        `Escrow submit skipped: no participant yet for event order ${razorpayOrderId}`,
+      );
+      return;
+    }
+    try {
+      const merged = escrowAnswers.map((a) => ({
+        fieldId: a.fieldId,
+        value: a.value,
+      }));
+      const mappedAnswers = await this.mapFrontendFieldIdsToDbIds(
+        payment.eventId,
+        payment.payerUserId,
+        merged,
+      );
+      if (!mappedAnswers.length) {
+        return;
+      }
+      await this.saveRegistrationAnswersIfMissing(
+        payment.eventId,
+        payment.payerUserId,
+        participant.id,
+        mappedAnswers,
+      );
+      await this.paymentEscrowService.deleteByRazorpayOrderId(razorpayOrderId);
+    } catch (err) {
+      this.logger.warn(
+        `Escrow submit after event webhook failed for order ${razorpayOrderId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  private async resolveMergedAnswersForEventVerify(
+    razorpayOrderId: string,
+    userId: string,
+    bodyAnswers?: Array<{ fieldId: string; value: string | number | string[] }>,
+  ): Promise<Array<{ fieldId: string; value: string | number | string[] }>> {
+    if (bodyAnswers?.length) {
+      return bodyAnswers;
+    }
+    const fromEscrow = await this.paymentEscrowService.loadAnswersForVerify(
+      razorpayOrderId,
+      userId,
+    );
+    if (fromEscrow?.length) {
+      this.logger.log(
+        `Event verifyPayment: using server-escrowed registration answers for order ${razorpayOrderId} (${fromEscrow.length} fields)`,
+      );
+      return fromEscrow.map((a) => ({
+        fieldId: a.fieldId,
+        value: a.value,
+      }));
+    }
+    return [];
   }
 
   /**
@@ -338,6 +443,21 @@ export class EventPaymentService {
       throw new ForbiddenException('Payment does not belong to this user');
     }
 
+    const mergedAnswers = await this.resolveMergedAnswersForEventVerify(
+      params.razorpayOrderId,
+      params.userId,
+      params.answers,
+    );
+
+    if (
+      !mergedAnswers.length &&
+      payment.event.registrationForm?.fields?.length
+    ) {
+      this.logger.warn(
+        `Event verifyPayment: no registration answers for order ${params.razorpayOrderId} but form has ${payment.event.registrationForm.fields.length} field(s) — answers will not be saved`,
+      );
+    }
+
     // If payment is not yet captured, verify the signature
     if (payment.paymentStatus !== EventPaymentStatus.CAPTURED) {
       const isValid = this.razorpayService.verifyCheckoutSignature({
@@ -356,7 +476,7 @@ export class EventPaymentService {
     const mappedAnswers = await this.mapFrontendFieldIdsToDbIds(
       payment.event.id,
       params.userId,
-      params.answers || [],
+      mergedAnswers,
     );
 
     // Check for existing participant (might have been created by webhook)
@@ -392,6 +512,10 @@ export class EventPaymentService {
         params.userId,
         existingParticipant.id,
         mappedAnswers,
+      );
+
+      await this.paymentEscrowService.deleteByRazorpayOrderId(
+        params.razorpayOrderId,
       );
 
       return {
@@ -554,6 +678,10 @@ export class EventPaymentService {
         });
       }
 
+      await this.paymentEscrowService.deleteByRazorpayOrderId(
+        params.razorpayOrderId,
+      );
+
       return {
         success: true,
         paymentId: payment.id,
@@ -596,6 +724,10 @@ export class EventPaymentService {
             params.userId,
             raceParticipant.id,
             mappedAnswers,
+          );
+
+          await this.paymentEscrowService.deleteByRazorpayOrderId(
+            params.razorpayOrderId,
           );
 
           return {

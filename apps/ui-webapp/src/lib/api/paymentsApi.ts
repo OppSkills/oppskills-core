@@ -240,6 +240,8 @@ export async function createPaymentOrder(
     invitationCode?: string;
     /** PER_USER join-by-team list: stored on Razorpay order notes */
     joinTeamId?: string;
+    /** Escrowed server-side when creating the Razorpay order (verify/webhook fallback). */
+    answers?: Array<{ fieldId: string; value: string }>;
   },
 ): Promise<PaymentOrder & { teamId?: string }> {
   const res = await HackathonsAPI.post(

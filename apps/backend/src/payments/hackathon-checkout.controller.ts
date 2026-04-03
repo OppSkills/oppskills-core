@@ -33,6 +33,7 @@ export class HackathonCheckoutController {
       discountCode: dto.discountCode,
       invitationCode: dto.invitationCode,
       joinTeamId: dto.joinTeamId,
+      answers: dto.answers,
     });
   }
 

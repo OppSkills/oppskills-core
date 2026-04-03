@@ -19,6 +19,7 @@ This documentation is organized into the following sections:
 ### Operations
 - [Authentication & Authorization](./authentication.md) - Clerk integration, auth guards, and role-based access
 - [Deployment Guide](./deployment.md) - Infrastructure, CI/CD, and production deployment
+- [Paid registration answers (escrow + flows)](./paid-registration-answers-flow.md) - How form answers sync with Razorpay and edge cases
 - [Features & Business Logic](./features.md) - Key features, workflows, and implementation patterns
 
 ## Quick Start

@@ -1,4 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
+import { HackathonCheckoutService } from './hackathon-checkout.service';
+import { EventPaymentService } from '../event/event-payment.service';
 import { randomBytes } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
@@ -87,7 +94,12 @@ export interface RazorpayWebhookPayload {
 export class RazorpayWebhookService {
   private readonly logger = new Logger(RazorpayWebhookService.name);
 
-  constructor(private readonly eventEmitter: EventEmitter2) {}
+  constructor(
+    private readonly eventEmitter: EventEmitter2,
+    private readonly hackathonCheckout: HackathonCheckoutService,
+    @Inject(forwardRef(() => EventPaymentService))
+    private readonly eventPayment: EventPaymentService,
+  ) {}
 
   async processEvent(eventType: string, payload: RazorpayWebhookPayload) {
     switch (eventType) {
@@ -159,6 +171,9 @@ export class RazorpayWebhookService {
 
     if (paymentRecord.paymentStatus === 'CAPTURED') {
       this.logger.log(`Event payment already captured for order: ${orderId}`);
+      await this.eventPayment.trySubmitRegistrationFromEscrowAfterWebhook(
+        orderId,
+      );
       return;
     }
 
@@ -294,6 +309,10 @@ export class RazorpayWebhookService {
       });
     }
 
+    await this.eventPayment.trySubmitRegistrationFromEscrowAfterWebhook(
+      orderId,
+    );
+
     this.logger.log(`Event payment captured for order: ${orderId}`);
   }
 
@@ -319,6 +338,9 @@ export class RazorpayWebhookService {
     if (paymentRecord.paymentStatus === 'CAPTURED') {
       this.logger.log(
         `Hackathon payment already captured (pre-check) for order: ${orderId}`,
+      );
+      await this.hackathonCheckout.trySubmitRegistrationFromEscrowAfterWebhook(
+        orderId,
       );
       return;
     }
@@ -483,6 +505,10 @@ export class RazorpayWebhookService {
         },
       });
     }
+
+    await this.hackathonCheckout.trySubmitRegistrationFromEscrowAfterWebhook(
+      orderId,
+    );
 
     this.logger.log(`Hackathon payment captured for order: ${orderId}`);
   }
