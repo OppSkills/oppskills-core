@@ -76,7 +76,7 @@ const columns = [
     cell: (info) => (
       <div className="text-center font-medium text-lg">
         <Link
-          href={`/dashboard/opportunity/${info.row.original.dashboardSlug}`}
+          href={`/dashboard/hackathon/${info.row.original.dashboardSlug}`}
           aria-label={`Open ${info.row.original.name}`}
           className="inline-flex w-full justify-center hover:underline"
         >
@@ -89,7 +89,7 @@ const columns = [
     header: "Name",
     cell: (info) => (
       <Link
-        href={`/dashboard/opportunity/${info.row.original.dashboardSlug}`}
+        href={`/dashboard/hackathon/${info.row.original.dashboardSlug}`}
         aria-label={`Open ${info.row.original.name}`}
         className="flex flex-col gap-1 hover:underline"
       >
@@ -173,7 +173,7 @@ const columns = [
     cell: (info) => (
       <div className="flex justify-center">
         <ActionDropdown
-          editHref={`/dashboard/opportunity/${info.row.original.dashboardSlug}/edit-opportunity`}
+          editHref={`/dashboard/hackathon/${info.row.original.dashboardSlug}/edit-opportunity`}
         />
       </div>
     ),

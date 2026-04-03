@@ -8,6 +8,8 @@ import {
   ForbiddenException,
   Param,
   Logger,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { IsString, IsNotEmpty, IsEmail, IsOptional } from 'class-validator';
@@ -22,16 +24,22 @@ import {
   EMAIL_EVENTS,
   EventDirectMessageEventPayload,
   EventBulkEmailPayload,
+  HackathonBulkEmailPayload,
 } from './email.events';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { EventService } from '../event/event.service';
+import { HackathonService } from '../hackathon/hackathon.service';
 import { EmailService } from './email.service';
 import { prisma } from '@oppskills/db';
 
 export class SendBulkEmailDto {
   @IsString()
-  @IsNotEmpty()
-  eventId: string;
+  @IsOptional()
+  eventId?: string;
+
+  @IsString()
+  @IsOptional()
+  hackathonId?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -75,6 +83,7 @@ export class EmailController {
   constructor(
     private readonly eventEmitter: EventEmitter2,
     private readonly EventService: EventService,
+    private readonly hackathonService: HackathonService,
     private readonly emailService: EmailService,
   ) {}
 
@@ -115,23 +124,53 @@ export class EmailController {
     @Body() dto: SendBulkEmailDto,
   ) {
     const senderId = req.user.id;
-    const { eventId, htmlBody } = dto;
+    const { eventId, hackathonId, htmlBody } = dto;
 
-    // Verify ownership/permission
-    const event = await this.EventService.getEventByIdForDashboard(
-      eventId,
-      senderId,
-    );
+    if (!eventId && !hackathonId) {
+      throw new BadRequestException('Either eventId or hackathonId must be provided.');
+    }
 
-    const payload: EventBulkEmailPayload = {
-      eventId,
-      htmlBody,
-      organizerEmail: event.owner.email,
-      organizerName: event.owner.firstName || 'Organizer',
-      eventName: event.name,
-    };
+    if (eventId) {
+      // Verify ownership/permission for event
+      const event = await this.EventService.getEventByIdForDashboard(
+        eventId,
+        senderId,
+      );
 
-    this.eventEmitter.emit(EMAIL_EVENTS.EVENT_BULK_EMAIL, payload);
+      const payload: EventBulkEmailPayload = {
+        eventId,
+        htmlBody,
+        organizerEmail: event.owner.email,
+        organizerName: event.owner.firstName || 'Organizer',
+        eventName: event.name,
+      };
+
+      this.eventEmitter.emit(EMAIL_EVENTS.EVENT_BULK_EMAIL, payload);
+    } else if (hackathonId) {
+      // Verify ownership/permission for hackathon
+      const hackathon = await prisma.hackathonEntity.findUnique({
+        where: { id: hackathonId, isDeleted: false },
+        include: { owner: true },
+      });
+
+      if (!hackathon) {
+        throw new NotFoundException('Hackathon not found');
+      }
+
+      if (hackathon.ownerId !== senderId) {
+        throw new ForbiddenException('Only the owner can send bulk emails for this hackathon.');
+      }
+
+      const payload: HackathonBulkEmailPayload = {
+        hackathonId,
+        htmlBody,
+        organizerEmail: hackathon.owner.email,
+        organizerName: hackathon.owner.firstName || 'Organizer',
+        hackathonName: hackathon.name,
+      };
+
+      this.eventEmitter.emit(EMAIL_EVENTS.HACKATHON_BULK_EMAIL, payload);
+    }
 
     return {
       success: true,

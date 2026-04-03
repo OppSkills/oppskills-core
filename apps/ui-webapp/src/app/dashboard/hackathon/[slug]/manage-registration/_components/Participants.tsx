@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { formatInTimeZone } from "date-fns-tz";
 import {
   ColumnDef,
   flexRender,
@@ -128,36 +129,37 @@ export default function Participants({
     }
 
     try {
-      /** Max non-leader slots = max(team.maxSize) - 1 across exported rows (hackathon roster). */
-      const memberSlotCount = Math.max(
-        0,
-        ...filteredData.map((p) => Math.max(0, p.maxSize - 1)),
-      );
+      const rows: Record<string, string | number | boolean>[] = [];
+      filteredData.forEach((p) => {
+        // 1. Leader
+        rows.push({
+          "Team Name": p.teamName,
+          "Name": [p.leaderFirstName, p.leaderLastName].filter(Boolean).join(" ") || "—",
+          "Email": p.email,
+          "Mobile Number": p.leaderPhone || "",
+          "Participant Type": "Leader",
+          "University": p.university || "—",
+          "Team Registration Status": p.status,
+          "Team Created At": p.teamCreatedAt
+            ? formatInTimeZone(new Date(p.teamCreatedAt), "Asia/Kolkata", "dd/MM/yyyy HH:mm:ss")
+            : "—",
+        });
 
-      const rows = filteredData.map((p) => {
-        const row: Record<string, string | number | boolean> = {
-          team_name: p.teamName,
-          team_created_at: p.teamCreatedAt
-            ? new Date(p.teamCreatedAt).toISOString()
-            : "",
-          team_is_open: p.teamIsOpen,
-          team_invitation_code: p.teamInvitationCode ?? "",
-          leader_email: p.email,
-          leader_first_name: p.leaderFirstName ?? "",
-          leader_last_name: p.leaderLastName ?? "",
-          leader_mobile: p.leaderPhone ?? "",
-        };
-
-        for (let i = 1; i <= memberSlotCount; i++) {
-          const m = p.teamMembers[i - 1];
-          row[`member${i}_email`] = m?.email ?? "";
-          row[`member${i}_first_name`] = m?.firstName ?? "";
-          row[`member${i}_last_name`] = m?.lastName ?? "";
-          row[`member${i}_mobile`] = m?.phone ?? "";
-        }
-
-        row.total_team_members = p.memberCount;
-        return row;
+        // 2. Members
+        p.teamMembers.forEach((m) => {
+          rows.push({
+            "Team Name": p.teamName,
+            "Name": [m.firstName, m.lastName].filter(Boolean).join(" ") || "—",
+            "Email": m.email,
+            "Mobile Number": m.phone || "",
+            "Participant Type": "Member",
+            "University": "—", // Currently not in HackathonTeamMemberExport
+            "Team Registration Status": p.status,
+            "Team Created At": p.teamCreatedAt
+              ? formatInTimeZone(new Date(p.teamCreatedAt), "Asia/Kolkata", "dd/MM/yyyy HH:mm:ss")
+              : "—",
+          });
+        });
       });
 
       exportToExcel({
@@ -200,7 +202,7 @@ export default function Participants({
           </div>
         ),
         cell: ({ row }) => {
-          const { avatarUrl, teamName, memberCount, email, university } =
+          const { avatarUrl, teamName, memberCount, email, leaderPhone } =
             row.original;
 
           return (
@@ -218,7 +220,7 @@ export default function Participants({
                     className="font-semibold hover:text-primary-500 cursor-pointer break-words"
                     onClick={() => {
                       router.push(
-                        `/dashboard/opportunity/${slug}/manage-registration/${row.original.id}`,
+                        `/dashboard/hackathon/${slug}/manage-registration/${row.original.id}`,
                       );
                     }}
                   >
@@ -229,9 +231,7 @@ export default function Participants({
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground break-all">{email}</span>
-                <span className="text-xs text-muted-foreground break-words">
-                  {university}
-                </span>
+                <span className="text-xs text-muted-foreground">{leaderPhone}</span>
               </div>
             </div>
           );

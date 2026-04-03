@@ -38,7 +38,7 @@ todos:
 ## Key repo facts (current behavior)
 
 - `apps/backend/src/hackathon/hackathon.service.ts` enforces edit permissions via `hackathon.ownerId !== userId` fallback to `isAdminUser(userId)` (e.g. `updateHackathon`, `assertHackathonEditableByUser`) and delete via the same pattern (`deleteHackathon`).
-- `apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-roles/page.tsx` is currently **mock-only** (local state arrays) and not tied to backend.
+- `apps/ui-landing/src/app/dashboard/hackathon/[slug]/manage-roles/page.tsx` is currently **mock-only** (local state arrays) and not tied to backend.
 
 ## Data model changes (Prisma)
 
@@ -110,8 +110,8 @@ Update `manage-roles` to use real data:
 
 Files:
 
-- [`apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-roles/page.tsx`](apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-roles/page.tsx)
-- `apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-roles/_components/*`
+- [`apps/ui-landing/src/app/dashboard/hackathon/[slug]/manage-roles/page.tsx`](apps/ui-landing/src/app/dashboard/hackathon/[slug]/manage-roles/page.tsx)
+- `apps/ui-landing/src/app/dashboard/hackathon/[slug]/manage-roles/_components/*`
 - Likely add API helper in `apps/ui-landing/src/lib/api/` consistent with existing patterns.
 
 ## Type safety & shared types

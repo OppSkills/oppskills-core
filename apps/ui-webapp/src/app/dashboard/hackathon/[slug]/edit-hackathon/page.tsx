@@ -509,17 +509,17 @@ function getAutosaveErrorMessage(error: unknown): string {
         msg.includes("Completed") ||
         msg.includes("Cancelled")
       ) {
-        return "This opportunity can no longer be edited.";
+        return "This hackathon can no longer be edited.";
       }
       if (msg.includes("DRAFT") || msg.includes("status")) {
-        return "This opportunity cannot be edited in its current status.";
+        return "This hackathon cannot be edited in its current status.";
       }
       if (msg.includes("permission") || msg.includes("access")) {
-        return "You don't have permission to edit this opportunity. Contact the owner to get manager access.";
+        return "You don't have permission to edit this hackathon. Contact the owner to get manager access.";
       }
       return msg;
     }
-    return "You don't have permission to edit this opportunity.";
+    return "You don't have permission to edit this hackathon.";
   }
 
   if (status === 400) {
@@ -672,11 +672,11 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
       const label = getString(f, "label");
       if (!label) return null;
       const required = f["required"];
-      
+
       const isDefault = [
         "name", "email", "phone no.", "gender", "school name", "college name", "company name"
       ].includes(label.toLowerCase().trim());
-      
+
       return {
         id: getString(f, "id") ?? crypto.randomUUID(),
         label,
@@ -769,9 +769,9 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
 }
 
 /**
- * Edit Opportunity Page
+ * Edit Hackathon Page
  */
-export default function EditOpportunityPage() {
+export default function EditHackathonPage() {
   const [activeTab, setActiveTab] = useQueryState("tab", {
     defaultValue: "basic-details",
   });
@@ -919,9 +919,9 @@ export default function EditOpportunityPage() {
             formData.registrationSettings.endDate ?? formData.eventRegisterBy;
           return deadlineDate
             ? combineDateAndTimeToIso(
-                deadlineDate,
-                formData.registrationSettings.endTime,
-              )
+              deadlineDate,
+              formData.registrationSettings.endTime,
+            )
             : undefined;
         })(),
         // Registration tab edits `registrationSettings.eventDate` / `eventTime`; must not rely
@@ -1301,7 +1301,7 @@ export default function EditOpportunityPage() {
     return (
       <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
         <div className="w-full max-w-3xl text-muted-foreground">
-          Loading opportunity...
+          Loading hackathon...
         </div>
       </div>
     );
@@ -1311,7 +1311,7 @@ export default function EditOpportunityPage() {
     return (
       <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
         <div className="w-full max-w-3xl text-destructive-foreground">
-          Failed to load opportunity.
+          Failed to load hackathon.
         </div>
       </div>
     );

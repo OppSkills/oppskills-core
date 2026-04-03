@@ -4,7 +4,7 @@ import { createElement } from 'react';
 import { render } from '@react-email/components';
 import { EmailService } from './email.service';
 import { EMAIL_EVENTS } from './email.events';
-import { EventNotificationEmail } from '@oppskills/emails';
+import { EventNotificationEmail, HackathonNotificationEmail } from '@oppskills/emails';
 import type { AdminWelcomeEmailProps } from '@oppskills/emails';
 import type {
   UserCreatedEventPayload,
@@ -14,6 +14,7 @@ import type {
   EventBulkEmailPayload,
   HackathonJoinConfirmationPayload,
   HackathonNewMemberJoinedPayload,
+  HackathonBulkEmailPayload,
 } from './email.events';
 import { Logger } from 'src/_utils/logger';
 import { prisma } from '@oppskills/db';
@@ -451,6 +452,96 @@ export class EmailListener {
 
     this.logger.log(
       `Finished bulk email for event ${eventId}. Sent ${sentCount} emails.`,
+    );
+  }
+
+  @OnEvent(EMAIL_EVENTS.HACKATHON_BULK_EMAIL)
+  async handleHackathonBulkEmail(
+    payload: HackathonBulkEmailPayload,
+  ): Promise<void> {
+    const {
+      hackathonId,
+      htmlBody,
+      organizerEmail,
+      organizerName,
+      hackathonName,
+    } = payload;
+    this.logger.log(`Starting bulk email for hackathon ${hackathonId}`);
+
+    // Fetch hackathon slug
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id: hackathonId, isDeleted: false },
+      select: { slug: true },
+    });
+
+    if (!hackathon) {
+      this.logger.error(`Hackathon ${hackathonId} not found for bulk email`);
+      return;
+    }
+
+    // Fetch all unique users registered for this hackathon
+    const participants = await prisma.hackathonRegistrationSubmissionEntity.findMany({
+      where: { hackathonId },
+      include: {
+        user: {
+          select: {
+            email: true,
+            firstName: true,
+          },
+        },
+      },
+    });
+
+    const BATCH_SIZE = 100;
+    let sentCount = 0;
+
+    for (let i = 0; i < participants.length; i += BATCH_SIZE) {
+      const batch = participants.slice(i, i + BATCH_SIZE);
+      const emailBatch: Array<{ to: string; subject: string; html: string }> =
+        [];
+
+      for (const participant of batch) {
+        if (!participant.user.email) continue;
+
+        const emailHtml = await render(
+          createElement(HackathonNotificationEmail, {
+            firstName: participant.user.firstName || 'Participant',
+            hackathonName,
+            hackathonSlug: hackathon.slug,
+            htmlBody,
+            baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
+          }),
+        );
+
+        emailBatch.push({
+          to: participant.user.email,
+          subject: `Update from ${hackathonName}`,
+          html: emailHtml,
+        });
+      }
+
+      if (emailBatch.length > 0) {
+        await this.emailService.sendBatch(emailBatch);
+        sentCount += emailBatch.length;
+      }
+
+      // reliable sleep
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+
+    // Send success email to organizer
+    await this.emailService.send({
+      type: 'bulk-email-success',
+      to: organizerEmail,
+      props: {
+        firstName: organizerName,
+        eventName: hackathonName,
+        count: sentCount,
+      },
+    });
+
+    this.logger.log(
+      `Finished bulk email for hackathon ${hackathonId}. Sent ${sentCount} emails.`,
     );
   }
 

@@ -60,15 +60,15 @@ export function SiteHeader() {
   const getTitle = () => {
     if (pathname.includes("/manage-registration")) return "Manage Registration";
     if (pathname.includes("/edit-event")) return "Edit Event";
-    if (pathname.includes("/edit-opportunity")) return "Edit Opportunity";
+    if (pathname.includes("/edit-hackathon")) return "Edit Hackathon";
     if (pathname.includes("/tickets")) return "Tickets";
     if (pathname.includes("/manage-roles")) return "Manage Roles";
     if (pathname.includes("/notifications")) return "Notifications";
 
     // Check main sections
     if (pathname.includes("/dashboard/events")) return "Events";
-    if (pathname.includes("/dashboard/opportunity"))
-      return slug ? slug.split("-").join(" ").toUpperCase() : "Opportunities";
+    if (pathname.includes("/dashboard/hackathon"))
+      return slug ? slug.split("-").join(" ").toUpperCase() : "Hackathons";
     if (pathname.includes("/dashboard/festivals")) return "Festivals";
 
     if (pathname.startsWith("/profile")) return "Profile";

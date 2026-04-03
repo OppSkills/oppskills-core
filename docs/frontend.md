@@ -116,16 +116,16 @@ apps/ui-webapp/src/
   - Round stats
   - Alerts
 
-#### `/dashboard/opportunity` - Opportunities List
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/page.tsx`
+#### `/dashboard/hackathon` - Opportunities List
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/page.tsx`
 - **Purpose**: List all hackathons/opportunities managed by user
 
-#### `/dashboard/opportunity/[slug]` - Opportunity Dashboard
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/page.tsx`
+#### `/dashboard/hackathon/[slug]` - Opportunity Dashboard
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/page.tsx`
 - **Purpose**: Individual opportunity management hub
 
-#### `/dashboard/opportunity/[slug]/edit-opportunity` - Edit Hackathon
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/edit-opportunity/page.tsx`
+#### `/dashboard/hackathon/[slug]/edit-opportunity` - Edit Hackathon
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/edit-opportunity/page.tsx`
 - **Purpose**: Comprehensive hackathon editor with tabs
 - **Features**:
   - **Preview Tab**: Live preview of competition page
@@ -140,8 +140,8 @@ apps/ui-webapp/src/
   - Query params for tab navigation (`?tab=basic-details`)
   - Form validation and error handling
 
-#### `/dashboard/opportunity/[slug]/manage-roles` - Manage Roles
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/manage-roles/page.tsx`
+#### `/dashboard/hackathon/[slug]/manage-roles` - Manage Roles
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/manage-roles/page.tsx`
 - **Purpose**: Assign managers and evaluators to hackathon
 - **Features**:
   - Owner display (non-editable)
@@ -151,16 +151,16 @@ apps/ui-webapp/src/
   - User search integration
   - Role cards with avatar, name, email
 
-#### `/dashboard/opportunity/[slug]/manage-registration` - Manage Registrations
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/manage-registration/page.tsx`
+#### `/dashboard/hackathon/[slug]/manage-registration` - Manage Registrations
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/manage-registration/page.tsx`
 - **Purpose**: View and manage team registrations
 - **Features**:
   - Participant list with filters
   - Stage/round management
   - Team approval workflow
 
-#### `/dashboard/opportunity/[slug]/manage-registration/[teamID]` - Team Details
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/manage-registration/[teamID]/page.tsx`
+#### `/dashboard/hackathon/[slug]/manage-registration/[teamID]` - Team Details
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/manage-registration/[teamID]/page.tsx`
 - **Purpose**: View individual team details
 - **Features**:
   - Team member information
@@ -168,12 +168,12 @@ apps/ui-webapp/src/
   - Synopsis submission
   - Presentation submission
 
-#### `/dashboard/opportunity/[slug]/payments` - Payments
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/payments/page.tsx`
+#### `/dashboard/hackathon/[slug]/payments` - Payments
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/payments/page.tsx`
 - **Purpose**: Manage payments and tickets for events
 
-#### `/dashboard/opportunity/[slug]/send-notifications` - Send Notifications
-- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/opportunity/[slug]/send-notifications/page.tsx`
+#### `/dashboard/hackathon/[slug]/send-notifications` - Send Notifications
+- **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/send-notifications/page.tsx`
 - **Purpose**: Send notifications to participants
 
 #### `/dashboard/events` - Events (Festivals)

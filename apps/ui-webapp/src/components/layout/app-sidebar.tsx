@@ -35,8 +35,8 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "Opportunity",
-      url: "/dashboard/opportunity",
+      title: "Hackathons",
+      url: "/dashboard/hackathon",
       icon: IconReport,
     },
     {

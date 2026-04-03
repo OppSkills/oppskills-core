@@ -9,3 +9,4 @@ export * from './IncompleteRegistrationEmail';
 export * from './AdminOnboarding';
 export * from './HackathonJoinConfirmationEmail';
 export * from './HackathonNewMemberJoinedEmail';
+export * from './HackathonNotificationEmail';

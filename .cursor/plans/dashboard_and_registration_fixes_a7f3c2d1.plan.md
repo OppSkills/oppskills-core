@@ -26,7 +26,7 @@
 **Files**:
 
 - Public: `apps/ui-landing/src/app/competitions/[slug]/_components/RoundsTimeline.tsx`
-- Organizer: `apps/ui-landing/src/app/dashboard/opportunity/[slug]/edit-opportunity/_components/RoundsAndStages.tsx`
+- Organizer: `apps/ui-landing/src/app/dashboard/hackathon/[slug]/edit-opportunity/_components/RoundsAndStages.tsx`
 
 **Problem**: About section appears after rounds; rounds description is plain text.**Fix**:
 
@@ -67,7 +67,7 @@
 
 **Files**:
 
-- `apps/ui-landing/src/app/dashboard/opportunity/[slug]/edit-opportunity/_components/RoundsAndStages.tsx`
+- `apps/ui-landing/src/app/dashboard/hackathon/[slug]/edit-opportunity/_components/RoundsAndStages.tsx`
 - `apps/backend/src/hackathon/hackathon.service.ts`
 
 **Problem**: Enabling attachments for rounds doesn't persist after reload.**Fix**: Ensure attachment toggle state is included in round update payload and backend persists it.---
@@ -77,13 +77,13 @@
 **Files**:
 
 - `apps/ui-landing/src/app/dashboard/events/[slug]/settings/page.tsx`
-- `apps/ui-landing/src/app/dashboard/opportunity/[slug]/settings/page.tsx`
+- `apps/ui-landing/src/app/dashboard/hackathon/[slug]/settings/page.tsx`
 
 **Problem**: No way to move a published event/opportunity back to draft.**Fix**: Add "Move to Draft" button with confirmation dialog, calling status update endpoint.---
 
 ### 8. Managed Registration Qualify/Disqualify UX
 
-**File**: `apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-registration/_components/Participants.tsx`**Problem**: Currently uses batch select + action pattern.**Fix**:
+**File**: `apps/ui-landing/src/app/dashboard/hackathon/[slug]/manage-registration/_components/Participants.tsx`**Problem**: Currently uses batch select + action pattern.**Fix**:
 
 - Add row-level actions: primary "Qualify to Next Round" button, secondary "Disqualify" button
 - Remove batch selection controls (or keep as secondary option)
@@ -92,11 +92,11 @@
 
 ### 9. Managed Registration Tabs Filtering
 
-**File**: `apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-registration/page.tsx`**Problem**: Round tabs may not filter correctly; need "All" to show everyone, round tabs to show only participants in that round.**Fix**: Ensure filtering logic correctly separates all registrations vs round-specific qualified participants.---
+**File**: `apps/ui-landing/src/app/dashboard/hackathon/[slug]/manage-registration/page.tsx`**Problem**: Round tabs may not filter correctly; need "All" to show everyone, round tabs to show only participants in that round.**Fix**: Ensure filtering logic correctly separates all registrations vs round-specific qualified participants.---
 
 ### 10. Team Detail Page Fixes
 
-**File**: `apps/ui-landing/src/app/dashboard/opportunity/[slug]/manage-registration/[teamID]/page.tsx`**Problems**:
+**File**: `apps/ui-landing/src/app/dashboard/hackathon/[slug]/manage-registration/[teamID]/page.tsx`**Problems**:
 
 - Team members missing full details (only email and register date showing)
 - Registration answers showing error in console
@@ -132,11 +132,11 @@
 - `app/dashboard/events/[slug]/edit-event/page.tsx` - save mutation
 - `app/dashboard/events/[slug]/edit-event/_components/AdditionalInfo.tsx` - verify
 - `app/dashboard/events/[slug]/settings/page.tsx` - draft toggle
-- `app/dashboard/opportunity/[slug]/edit-opportunity/_components/RoundsAndStages.tsx` - attachments + rich text
-- `app/dashboard/opportunity/[slug]/settings/page.tsx` - draft toggle
-- `app/dashboard/opportunity/[slug]/manage-registration/page.tsx` - tabs filtering
-- `app/dashboard/opportunity/[slug]/manage-registration/_components/Participants.tsx` - qualify buttons
-- `app/dashboard/opportunity/[slug]/manage-registration/[teamID]/page.tsx` - team detail fixes
+- `app/dashboard/hackathon/[slug]/edit-opportunity/_components/RoundsAndStages.tsx` - attachments + rich text
+- `app/dashboard/hackathon/[slug]/settings/page.tsx` - draft toggle
+- `app/dashboard/hackathon/[slug]/manage-registration/page.tsx` - tabs filtering
+- `app/dashboard/hackathon/[slug]/manage-registration/_components/Participants.tsx` - qualify buttons
+- `app/dashboard/hackathon/[slug]/manage-registration/[teamID]/page.tsx` - team detail fixes
 - `app/competitions/[slug]/_components/CompetitionTabs.tsx` - remove reviews
 - `app/competitions/[slug]/_components/CompetitionSidebar.tsx` - register button + team status
 - `app/competitions/[slug]/_components/RoundsTimeline.tsx` - about ordering + rich text

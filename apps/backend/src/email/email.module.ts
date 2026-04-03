@@ -6,9 +6,10 @@ import { TeamModule } from '../team/team.module';
 import { EventModule } from 'src/event/event.module';
 import { IncompleteRegistrationReminderService } from './incomplete-registration-reminder.service';
 import { IncompleteRegistrationReminderCron } from './incomplete-registration-reminder.cron';
+import { HackathonModule } from 'src/hackathon/hackathon.module';
 
 @Module({
-  imports: [EventModule, TeamModule],
+  imports: [EventModule, TeamModule, HackathonModule],
   controllers: [EmailController],
   providers: [
     EmailService,
@@ -18,4 +19,4 @@ import { IncompleteRegistrationReminderCron } from './incomplete-registration-re
   ],
   exports: [EmailService],
 })
-export class EmailModule {}
+export class EmailModule { }

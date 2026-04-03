@@ -14,7 +14,8 @@ export interface SendDirectMessagePayload {
 }
 
 export interface SendBulkEmailPayload {
-  eventId: string;
+  eventId?: string;
+  hackathonId?: string;
   htmlBody: string;
 }
 

@@ -41,7 +41,7 @@ function normalizePath(path: string): string {
 
 /**
  * Match on the longest URL prefix so that:
- * - `/dashboard/opportunity/...` activates "Opportunity" over "Dashboards"
+ * - `/dashboard/hackathon/...` activates "Opportunity" over "Dashboards"
  * - nested pages like `/manage-registration/...` still activate "Registration"
  */
 function findActiveUrl(

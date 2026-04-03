@@ -613,21 +613,21 @@ export default function OpportunitySettingsPage({
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Link
-              href={`/dashboard/opportunity/${slug}/edit-opportunity`}
+              href={`/dashboard/hackathon/${slug}/edit-hackathon`}
               className="text-primary-500 hover:underline text-sm"
             >
-              Edit Opportunity Details
+              Edit Hackathon Details
             </Link>
             <span className="text-muted-foreground">•</span>
             <Link
-              href={`/dashboard/opportunity/${slug}/manage-roles`}
+              href={`/dashboard/hackathon/${slug}/manage-roles`}
               className="text-primary-500 hover:underline text-sm"
             >
               Manage Team
             </Link>
             <span className="text-muted-foreground">•</span>
             <Link
-              href={`/dashboard/opportunity/${slug}/manage-registration`}
+              href={`/dashboard/hackathon/${slug}/manage-registration`}
               className="text-primary-500 hover:underline text-sm"
             >
               View Registrations

@@ -20,50 +20,48 @@ import {
   SidebarContent,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 
 /**
- * Define the navigation items for the opportunity detail sidebar
- * These routes are relative to /dashboard/opportunity/[slug]
+ * Define the navigation items for the hackathon detail sidebar
+ * These routes are relative to /dashboard/hackathon/[slug]
  */
 const getOpportunityNavItems = (slug: string) => [
   {
     title: "Dashboard",
-    url: `/dashboard/opportunity/${slug}`,
+    url: `/dashboard/hackathon/${slug}`,
     icon: IconDashboard,
   },
   {
     title: "Manage registration",
-    url: `/dashboard/opportunity/${slug}/manage-registration`,
+    url: `/dashboard/hackathon/${slug}/manage-registration`,
     icon: IconUsers,
   },
   {
-    title: "Edit Opportunity",
-    url: `/dashboard/opportunity/${slug}/edit-opportunity`,
+    title: "Edit Hackathon",
+    url: `/dashboard/hackathon/${slug}/edit-hackathon`,
     icon: IconPencil,
   },
   {
     title: "Payments",
-    url: `/dashboard/opportunity/${slug}/payments`,
+    url: `/dashboard/hackathon/${slug}/payments`,
     icon: IconCreditCard,
   },
   {
     title: "Manage Roles",
-    url: `/dashboard/opportunity/${slug}/manage-roles`,
+    url: `/dashboard/hackathon/${slug}/manage-roles`,
     icon: IconUserCog,
   },
-  // {
-  //   title: "Send Notifications",
-  //   url: `/dashboard/opportunity/${slug}/send-notifications`,
-  //   icon: IconMail,
-  // },
+  {
+    title: "Send Notifications",
+    url: `/dashboard/hackathon/${slug}/notifications`,
+    icon: IconMail,
+  },
   {
     title: "Settings",
-    url: `/dashboard/opportunity/${slug}/settings`,
+    url: `/dashboard/hackathon/${slug}/settings`,
     icon: IconSettings,
   },
 ];
@@ -72,7 +70,7 @@ const getOpportunityNavItems = (slug: string) => [
  * OpportunitySidebar component for opportunity detail pages
  * Shows navigation specific to a single opportunity
  */
-export function OpportunitySidebar({
+export function HackathonSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
   // Get the slug from the URL params

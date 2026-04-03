@@ -10,7 +10,7 @@ import { SidebarContextProvider, SidebarProvider } from "./ui/sidebar";
 import { SiteHeader } from "./layout/site-header";
 import { cn } from "@/lib/utils";
 import React from "react";
-import { OpportunitySidebar } from "./layout/opportunity-sidebar";
+import { HackathonSidebar } from "./layout/hackathon-sidebar";
 import { EventsSidebar } from "./layout/events-sidebar";
 import { FestivalsSidebar } from "./layout/festivals-sidebar";
 import { MobileNavigationProvider } from "./layout/mobile-navigation-context";
@@ -38,13 +38,13 @@ export default function LayoutProvider({
   }
 
   /**
-   * Check if the current route is an opportunity detail page
-   * Pattern: /dashboard/opportunity/[slug] or /dashboard/opportunity/[slug]/...
-   * Excludes the opportunity list page: /dashboard/opportunity
+   * Check if the current route is an hackathon detail page
+   * Pattern: /dashboard/hackathon/[slug] or /dashboard/hackathon/[slug]/...
+   * Excludes the hackathon list page: /dashboard/hackathon
    */
-  const isOpportunityDetail = React.useMemo(() => {
-    const opportunityDetailPattern = /^\/dashboard\/opportunity\/[^/]+/;
-    return opportunityDetailPattern.test(pathname);
+  const ishackathonDetail = React.useMemo(() => {
+    const hackathonDetailPattern = /^\/dashboard\/hackathon\/[^/]+/;
+    return hackathonDetailPattern.test(pathname);
   }, [pathname]);
 
   /**
@@ -76,11 +76,11 @@ export default function LayoutProvider({
   }, [pathname]);
 
   const hasSecondarySidebar =
-    isOpportunityDetail || isEventsDashboard || isFestivalsDashboard;
+    ishackathonDetail || isEventsDashboard || isFestivalsDashboard;
 
   /**
    * Control the main sidebar's open state
-   * When on opportunity detail pages or events dashboard, force collapse to icon mode
+   * When on hackathon detail pages or events dashboard, force collapse to icon mode
    * Hooks must be at the top level, not inside conditionals
    */
   const [mainSidebarOpen, setMainSidebarOpen] =
@@ -110,7 +110,7 @@ export default function LayoutProvider({
           setMobileMenuOpen,
           activeMobileTab,
           setActiveMobileTab,
-          isOpportunityDetail: hasSecondarySidebar,
+          ishackathonDetail: hasSecondarySidebar,
         }}
       >
         <main className="">
@@ -143,8 +143,8 @@ export default function LayoutProvider({
                   if (open) setActiveMobileTab("secondary");
                 }}
               >
-                {isOpportunityDetail && (
-                  <OpportunitySidebar
+                {ishackathonDetail && (
+                  <HackathonSidebar
                     side="left"
                     variant="floating"
                     collapsible="icon"
