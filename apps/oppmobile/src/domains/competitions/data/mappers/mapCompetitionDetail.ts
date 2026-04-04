@@ -2,6 +2,11 @@ import type { OpportunityDetailModel } from '../../../../shared/types/opportunit
 import { mockCompetitionDetail } from '../mockCompetitionDetail';
 
 export function mapCompetitionDetail(): OpportunityDetailModel {
+  const supplementarySections = mockCompetitionDetail.supplementarySections?.map((section) => ({
+    ...section,
+    points: [...section.points],
+  }));
+
   return {
     ...mockCompetitionDetail,
     keyInfo: [...mockCompetitionDetail.keyInfo],
@@ -11,5 +16,6 @@ export function mapCompetitionDetail(): OpportunityDetailModel {
     rounds: [...mockCompetitionDetail.rounds],
     prizes: [...mockCompetitionDetail.prizes],
     contact: { ...mockCompetitionDetail.contact },
+    ...(supplementarySections ? { supplementarySections } : {}),
   };
 }

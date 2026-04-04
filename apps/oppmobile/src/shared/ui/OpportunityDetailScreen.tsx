@@ -14,6 +14,7 @@ import hackathonHeroImage from '../../../assets/Organizing projects-amico 1.png'
 import genericHeroImage from '../../../assets/Track and field-amico 1.png';
 import type {
   OpportunityDetailModel,
+  OpportunitySupplementarySection,
   OpportunityDetailTabId,
   OpportunityPrizeCard,
   OpportunityRoundCard,
@@ -263,6 +264,20 @@ export function OpportunityDetailScreen({ detail, onBack }: OpportunityDetailScr
           </View>
         </View>
 
+        {detail.supplementarySections?.length ? (
+          <View style={styles.sectionWrap}>
+            <AppText style={styles.sectionHeading} variant="sectionHeading">
+              {detail.supplementaryHeading ?? 'More Information'}
+            </AppText>
+
+            <View style={styles.supplementaryStack}>
+              {detail.supplementarySections.map((section) => (
+                <SupplementarySectionCard key={section.id} section={section} />
+              ))}
+            </View>
+          </View>
+        ) : null}
+
         <FooterSignatureBlock compact />
       </ScrollView>
     </SafeAreaView>
@@ -464,6 +479,22 @@ function PrizeCard({ prize }: { readonly prize: OpportunityPrizeCard }) {
         <AppText colorToken="textInverse" style={styles.prizeOrbLabel} variant="title">
           {rankGlyph(prize.rankLabel)}
         </AppText>
+      </View>
+    </View>
+  );
+}
+
+function SupplementarySectionCard({ section }: { readonly section: OpportunitySupplementarySection }) {
+  return (
+    <View style={styles.supplementaryCard}>
+      <AppText style={styles.supplementaryTitle} variant="bodyStrong">
+        {section.title}
+      </AppText>
+
+      <View style={styles.supplementaryPoints}>
+        {section.points.map((point) => (
+          <BulletText key={`${section.id}-${point}`} text={point} />
+        ))}
       </View>
     </View>
   );
@@ -956,6 +987,26 @@ const styles = StyleSheet.create({
     gap: lightTheme.spacing[16],
     paddingHorizontal: lightTheme.spacing[20],
     paddingTop: lightTheme.spacing[20],
+  },
+  supplementaryCard: {
+    backgroundColor: '#FAFAFA',
+    borderColor: '#C3BFC4',
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: lightTheme.spacing[10],
+    padding: lightTheme.spacing[12],
+  },
+  supplementaryPoints: {
+    gap: lightTheme.spacing[6],
+  },
+  supplementaryStack: {
+    gap: lightTheme.spacing[12],
+  },
+  supplementaryTitle: {
+    color: '#342636',
+    fontFamily: 'Aeonik Pro',
+    fontSize: 16,
+    lineHeight: 20,
   },
   tabChip: {
     alignItems: 'center',

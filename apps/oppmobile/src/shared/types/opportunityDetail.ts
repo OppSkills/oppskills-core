@@ -28,11 +28,18 @@ export interface OpportunityContactInfo {
   readonly venue: string;
 }
 
+export interface OpportunitySupplementarySection {
+  readonly id: string;
+  readonly title: string;
+  readonly points: readonly string[];
+}
+
 export interface OpportunityDetailModel {
   readonly routeLabel: string;
   readonly heroLabel: string;
   readonly heroTitle: string;
   readonly aboutHeading?: string;
+  readonly supplementaryHeading?: string;
   readonly hostName: string;
   readonly modeLabel: string;
   readonly registrationDeadline: string;
@@ -44,4 +51,5 @@ export interface OpportunityDetailModel {
   readonly rounds: readonly OpportunityRoundCard[];
   readonly prizes: readonly OpportunityPrizeCard[];
   readonly contact: OpportunityContactInfo;
+  readonly supplementarySections?: readonly OpportunitySupplementarySection[];
 }

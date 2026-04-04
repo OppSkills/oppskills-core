@@ -2,6 +2,11 @@ import type { OpportunityDetailModel } from '../../../../shared/types/opportunit
 import { mockHackathonDetail } from '../mockHackathonDetail';
 
 export function mapHackathonDetail(): OpportunityDetailModel {
+  const supplementarySections = mockHackathonDetail.supplementarySections?.map((section) => ({
+    ...section,
+    points: [...section.points],
+  }));
+
   return {
     ...mockHackathonDetail,
     keyInfo: [...mockHackathonDetail.keyInfo],
@@ -11,5 +16,6 @@ export function mapHackathonDetail(): OpportunityDetailModel {
     rounds: [...mockHackathonDetail.rounds],
     prizes: [...mockHackathonDetail.prizes],
     contact: { ...mockHackathonDetail.contact },
+    ...(supplementarySections ? { supplementarySections } : {}),
   };
 }
