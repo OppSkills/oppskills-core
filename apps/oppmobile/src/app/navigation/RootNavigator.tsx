@@ -64,11 +64,9 @@ const AppliedStack = createNativeStackNavigator<AppliedStackParamList>();
 const MainTabs = createBottomTabNavigator<MainTabParamList>();
 
 const TAB_ITEM_WIDTH = 100;
-const TAB_ITEM_HEIGHT = 54;
-const TAB_BAR_LEFT_PADDING = 10;
-const TAB_BAR_RIGHT_PADDING = 4;
-const TAB_BAR_WIDTH = TAB_ITEM_WIDTH * 3 + TAB_BAR_LEFT_PADDING + TAB_BAR_RIGHT_PADDING;
-const TAB_BAR_LEFT_NUDGE = -8;
+const TAB_ITEM_HEIGHT = 74;
+const TAB_ITEM_GAP = 8;
+const TAB_BAR_WIDTH = TAB_ITEM_WIDTH * 3 + TAB_ITEM_GAP * 2 + 8;
 const TAB_BAR_BOTTOM_OFFSET = 48;
 
 function OnboardingNavigator() {
@@ -642,7 +640,7 @@ function MainTabIcon({ focused, routeName }: { readonly focused: boolean; readon
 
 function MainTabNavigator() {
   const { width: screenWidth } = useWindowDimensions();
-  const leftOffset = (screenWidth - TAB_BAR_WIDTH) / 2 + TAB_BAR_LEFT_NUDGE;
+  const leftOffset = Math.floor((screenWidth - TAB_BAR_WIDTH) / 2);
 
   return (
     <MainTabs.Navigator
@@ -688,24 +686,23 @@ const tabStyles = StyleSheet.create({
   },
   appliedGlyphBody: {
     borderBottomColor: '#271B40',
-    borderBottomWidth: 20,
+    borderBottomWidth: 18,
     borderLeftColor: 'transparent',
-    borderLeftWidth: 7,
+    borderLeftWidth: 8,
     borderRightColor: 'transparent',
-    borderRightWidth: 7,
+    borderRightWidth: 8,
     height: 0,
-    transform: [{ rotate: '-20deg' }],
+    marginTop: 2,
     width: 0,
   },
   appliedGlyphCore: {
     backgroundColor: '#AC89F2',
-    borderRadius: lightTheme.radius.xs,
-    height: 9,
+    borderRadius: 4,
+    height: 8,
+    left: 16,
     position: 'absolute',
-    right: 8,
-    top: 17,
-    transform: [{ rotate: '-20deg' }],
-    width: 9,
+    top: 16,
+    width: 8,
   },
   discoverGlyph: {
     alignItems: 'center',
@@ -715,17 +712,19 @@ const tabStyles = StyleSheet.create({
     width: 32,
   },
   discoverGlyphBody: {
-    backgroundColor: '#271B40',
-    borderRadius: 8,
+    borderColor: '#271B40',
+    borderRadius: lightTheme.radius.pill,
+    borderWidth: 5,
     height: 20,
-    transform: [{ rotate: '30deg' }],
     width: 20,
   },
   discoverGlyphCore: {
     backgroundColor: '#AC89F2',
     borderRadius: lightTheme.radius.pill,
     height: 8,
+    left: 12,
     position: 'absolute',
+    top: 12,
     width: 8,
   },
   homeGlyph: {
@@ -760,12 +759,12 @@ const tabStyles = StyleSheet.create({
     borderColor: lightTheme.colors.surfaceBorder,
     borderRadius: lightTheme.radius.pill,
     borderTopWidth: 0,
-    borderWidth: 0.5,
+    borderWidth: 1,
     bottom: TAB_BAR_BOTTOM_OFFSET,
     elevation: 6,
     height: 82,
-    paddingLeft: TAB_BAR_LEFT_PADDING,
-    paddingRight: TAB_BAR_RIGHT_PADDING,
+    paddingLeft: 0,
+    paddingRight: 0,
     paddingBottom: 4,
     paddingTop: 4,
     position: 'absolute',
@@ -778,6 +777,7 @@ const tabStyles = StyleSheet.create({
     flex: 0,
     height: TAB_ITEM_HEIGHT,
     margin: 0,
+    marginHorizontal: TAB_ITEM_GAP / 2,
     paddingHorizontal: 0,
     paddingVertical: 0,
     width: TAB_ITEM_WIDTH,
@@ -785,11 +785,11 @@ const tabStyles = StyleSheet.create({
   tabItem: {
     alignItems: 'center',
     borderRadius: lightTheme.radius.pill,
-    gap: 8,
+    gap: 6,
     height: TAB_ITEM_HEIGHT,
     justifyContent: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     width: TAB_ITEM_WIDTH,
   },
   tabItemActive: {
