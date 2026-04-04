@@ -147,7 +147,8 @@ export default function EarningsPage() {
               {earnings?.currency} {earnings?.totalGross}
             </div>
             <p className="text-xs text-muted-foreground">
-              Gross volume from {earnings?.capturedPaymentsCount} payments
+              Sum of registration fees from {earnings?.capturedPaymentsCount}{" "}
+              payments (excluding payment-gateway charges)
             </p>
           </CardContent>
         </Card>
@@ -161,7 +162,7 @@ export default function EarningsPage() {
               {earnings?.currency} {earnings?.totalOrganizerShare}
             </div>
             <p className="text-xs text-muted-foreground">
-              After platform fees ({earnings?.totalPlatformFee})
+              After Razorpay processing fees ({earnings?.totalPlatformFee})
             </p>
           </CardContent>
         </Card>

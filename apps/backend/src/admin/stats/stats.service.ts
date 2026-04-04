@@ -42,7 +42,7 @@ export class AdminStatsService {
       }),
     ]);
 
-    // --- Revenue Stats (Using platformFeeAmount) ---
+    // --- Razorpay gateway fees (platformFeeAmount column; not an OppSkills cut) ---
     // Helper to sum revenue
     const sumRevenue = async (model: any, where: any) => {
       const result = await model.aggregate({

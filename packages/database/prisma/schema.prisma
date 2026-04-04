@@ -1353,9 +1353,13 @@ model HackathonPaymentEntity {
 
   // Money
   currency             String  @default("INR")
+  /// Registration / entry fee amount (organizer-facing); excludes payment-gateway charges.
   grossAmount          Decimal @map("gross_amount") @db.Decimal(12, 2)
+  /// Razorpay gateway fee (2% + GST on that fee), not an OppSkills platform cut.
   platformFeeAmount    Decimal @map("platform_fee_amount") @db.Decimal(12, 2)
   organizerShareAmount Decimal @map("organizer_share_amount") @db.Decimal(12, 2)
+  /// Total charged via Razorpay (used for refunds). Null on legacy rows.
+  chargedAmount        Decimal? @map("charged_amount") @db.Decimal(12, 2)
 
   // Razorpay order/payment
   razorpayOrderId   String  @unique @map("razorpay_order_id")
@@ -1574,9 +1578,13 @@ model EventPaymentEntity {
 
   // Money
   currency             String  @default("INR")
+  /// Registration / entry fee amount (organizer-facing); excludes payment-gateway charges.
   grossAmount          Decimal @map("gross_amount") @db.Decimal(12, 2)
+  /// Razorpay gateway fee (2% + GST on that fee), not an OppSkills platform cut.
   platformFeeAmount    Decimal @map("platform_fee_amount") @db.Decimal(12, 2)
   organizerShareAmount Decimal @map("organizer_share_amount") @db.Decimal(12, 2)
+  /// Total charged via Razorpay (used for refunds). Null on legacy rows.
+  chargedAmount        Decimal? @map("charged_amount") @db.Decimal(12, 2)
 
   // Razorpay order/payment
   razorpayOrderId   String  @unique @map("razorpay_order_id")

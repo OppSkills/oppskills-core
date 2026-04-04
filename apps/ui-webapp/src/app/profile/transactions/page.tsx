@@ -54,7 +54,10 @@ interface Transaction {
   type: "Event" | "Competition";
   opportunityType: "event" | "hackathon";
   slug: string;
+  /** Registration fee (organizer-facing); excludes gateway when participant paid it on top. */
   grossAmount: number;
+  /** Total charged via Razorpay when set (use for display). */
+  chargedAmount?: number | null;
   currency: string;
   paymentStatus: string;
   refundStatus: string | null;
@@ -72,6 +75,10 @@ function formatCurrency(amount: number, currency: string) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);
+}
+
+function amountCharged(tx: Transaction): number {
+  return tx.chargedAmount ?? tx.grossAmount;
 }
 
 function formatDate(iso: string | null) {
@@ -198,7 +205,7 @@ export default function TransactionsPage() {
           </div>
         ),
       }),
-      columnHelper.accessor("grossAmount", {
+      columnHelper.accessor((row) => amountCharged(row), {
         id: "amount",
         header: ({ column }) => (
           <Button
@@ -213,12 +220,13 @@ export default function TransactionsPage() {
         cell: (info) => {
           const tx = info.row.original;
           const isRefunded = tx.paymentStatus === "REFUNDED";
+          const paid = amountCharged(tx);
           return (
             <div className="flex flex-col items-start gap-0.5 tabular-nums">
               {isRefunded ? (
                 <>
                   <span className="text-xs text-neutral-400 line-through">
-                    {formatCurrency(tx.grossAmount, tx.currency)}
+                    {formatCurrency(paid, tx.currency)}
                   </span>
                   <span className="text-sm font-bold text-amber-600">
                     +{formatCurrency(tx.refundedAmount, tx.currency)}
@@ -226,7 +234,7 @@ export default function TransactionsPage() {
                 </>
               ) : (
                 <span className="text-sm font-bold text-neutral-900">
-                  {formatCurrency(tx.grossAmount, tx.currency)}
+                  {formatCurrency(paid, tx.currency)}
                 </span>
               )}
             </div>
@@ -326,7 +334,7 @@ export default function TransactionsPage() {
   const totals = useMemo(() => {
     const paid = transactions
       .filter((t) => t.paymentStatus === "CAPTURED")
-      .reduce((s, t) => s + t.grossAmount, 0);
+      .reduce((s, t) => s + amountCharged(t), 0);
     const refunded = transactions
       .filter((t) => t.paymentStatus === "REFUNDED")
       .reduce((s, t) => s + t.refundedAmount, 0);

@@ -997,6 +997,8 @@ export class UserAccountsService {
       opportunityType: 'hackathon' as const,
       slug: p.hackathon.slug,
       grossAmount: Number(p.grossAmount),
+      chargedAmount:
+        p.chargedAmount != null ? Number(p.chargedAmount) : null,
       currency: p.currency,
       paymentStatus: p.paymentStatus,
       refundStatus: p.refundStatus ?? null,
@@ -1014,6 +1016,8 @@ export class UserAccountsService {
       opportunityType: 'event' as const,
       slug: p.event.slug,
       grossAmount: Number(p.grossAmount),
+      chargedAmount:
+        p.chargedAmount != null ? Number(p.chargedAmount) : null,
       currency: p.currency,
       paymentStatus: p.paymentStatus,
       refundStatus: p.refundStatus ?? null,

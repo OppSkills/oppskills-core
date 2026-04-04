@@ -19,8 +19,7 @@ import { RegistrationSubmitService } from './registration-submit.service';
 import { PaymentRegistrationEscrowService } from './payment-registration-escrow.service';
 import { Decimal } from '@prisma/client/runtime/library';
 import { Logger } from 'src/_utils/logger';
-
-const PLATFORM_FEE_PERCENT = 2;
+import { computeRazorpayGatewayFee } from './payment-gateway-fee.util';
 
 @Injectable()
 export class HackathonCheckoutService {
@@ -290,7 +289,7 @@ export class HackathonCheckoutService {
       };
     }
 
-    let grossAmount = new Decimal(hackathon.entryFeeAmount);
+    let registrationFee = new Decimal(hackathon.entryFeeAmount);
     let discountAmount = new Decimal(0);
     let discountCodeId: string | null = null;
 
@@ -299,43 +298,35 @@ export class HackathonCheckoutService {
         hackathon.id,
         params.userId,
         params.discountCode,
-        grossAmount,
+        registrationFee,
       );
       discountAmount = discount.discountAmount;
       discountCodeId = discount.discountCodeId;
-      grossAmount = grossAmount.minus(discountAmount);
+      registrationFee = registrationFee.minus(discountAmount);
 
-      if (grossAmount.lessThanOrEqualTo(0)) {
-        grossAmount = new Decimal(0);
+      if (registrationFee.lessThanOrEqualTo(0)) {
+        registrationFee = new Decimal(0);
       }
     }
 
-    // When participant bears the fee, add the processing fee (2% + 18% GST = 2.36%) on top.
-    const baseAmountBeforeProcessingFee = grossAmount;
-    let processingFeeAmount = new Decimal(0);
-    if (hackathon.feeBearer === 'PARTICIPANT' && grossAmount.greaterThan(0)) {
-      processingFeeAmount = grossAmount
-        .times('0.0236')
-        .toDecimalPlaces(2, Decimal.ROUND_UP);
-      grossAmount = grossAmount.plus(processingFeeAmount);
+    const gatewayFee = registrationFee.greaterThan(0)
+      ? computeRazorpayGatewayFee(registrationFee)
+      : new Decimal(0);
+
+    let chargeAmount: Decimal;
+    let organizerShareAmount: Decimal;
+    if (
+      hackathon.feeBearer === 'PARTICIPANT' &&
+      registrationFee.greaterThan(0)
+    ) {
+      chargeAmount = registrationFee.plus(gatewayFee);
+      organizerShareAmount = registrationFee;
+    } else {
+      chargeAmount = registrationFee;
+      organizerShareAmount = registrationFee.minus(gatewayFee);
     }
 
-    const platformFeeAmount = grossAmount
-      .times(PLATFORM_FEE_PERCENT)
-      .dividedBy(100)
-      .toDecimalPlaces(2);
-
-    // Add 18% GST on the platform fee
-    const platformFeeGstAmount = platformFeeAmount
-      .times(18)
-      .dividedBy(100)
-      .toDecimalPlaces(2);
-
-    const totalDeduction = platformFeeAmount.plus(platformFeeGstAmount);
-
-    const organizerShareAmount = grossAmount.minus(totalDeduction);
-
-    const grossAmountPaise = grossAmount.times(100).toNumber();
+    const grossAmountPaise = chargeAmount.times(100).toNumber();
 
     if (grossAmountPaise === 0) {
       const payment = await prisma.hackathonPaymentEntity.create({
@@ -431,9 +422,10 @@ export class HackathonCheckoutService {
         payerUserId: params.userId,
         teamId,
         currency: hackathon.currency || 'INR',
-        grossAmount,
-        platformFeeAmount: totalDeduction, // Total deduction includes Platform Fee + GST
+        grossAmount: registrationFee,
+        platformFeeAmount: gatewayFee,
         organizerShareAmount,
+        chargedAmount: chargeAmount,
         razorpayOrderId: razorpayOrder.id,
         transferOnHold: false,
         transferOnHoldUntil: null,
@@ -458,10 +450,11 @@ export class HackathonCheckoutService {
       amountPaise: grossAmountPaise,
       currency: hackathon.currency || 'INR',
       hackathonName: hackathon.name,
-      baseAmount: Number(baseAmountBeforeProcessingFee),
-      processingFeeAmount: processingFeeAmount.greaterThan(0)
-        ? Number(processingFeeAmount)
-        : undefined,
+      baseAmount: Number(registrationFee),
+      processingFeeAmount:
+        hackathon.feeBearer === 'PARTICIPANT' && gatewayFee.greaterThan(0)
+          ? Number(gatewayFee)
+          : undefined,
       feeBearer: hackathon.feeBearer,
     };
   }
@@ -965,6 +958,7 @@ export class HackathonCheckoutService {
       scope: payment.scope,
       hackathon: payment.hackathon,
       grossAmount: payment.grossAmount,
+      chargedAmount: payment.chargedAmount,
       platformFeeAmount: payment.platformFeeAmount,
       organizerShareAmount: payment.organizerShareAmount,
       discountAmount: payment.discountAmount,
@@ -1114,6 +1108,7 @@ export class HackathonCheckoutService {
       payer: p.payerUser,
       team: p.team,
       grossAmount: p.grossAmount.toString(),
+      chargedAmount: p.chargedAmount?.toString() ?? null,
       platformFeeAmount: p.platformFeeAmount.toString(),
       organizerShareAmount: p.organizerShareAmount.toString(),
       discountAmount: p.discountAmount?.toString() ?? null,
