@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { EmailService } from './email.service';
 import { EmailListener } from './email.listener';
 import { EmailController } from './email.controller';
@@ -9,7 +9,7 @@ import { IncompleteRegistrationReminderCron } from './incomplete-registration-re
 import { HackathonModule } from 'src/hackathon/hackathon.module';
 
 @Module({
-  imports: [EventModule, TeamModule, HackathonModule],
+  imports: [forwardRef(() => EventModule), TeamModule, forwardRef(() => HackathonModule)],
   controllers: [EmailController],
   providers: [
     EmailService,

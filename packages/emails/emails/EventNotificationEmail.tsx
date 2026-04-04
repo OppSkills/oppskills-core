@@ -49,7 +49,10 @@ export function EventNotificationEmail({
                         </Text>
 
                         <Section style={messageContainer}>
-                            <div dangerouslySetInnerHTML={{ __html: htmlBody }} />
+                            <div 
+                                style={messageBody}
+                                dangerouslySetInnerHTML={{ __html: htmlBody }} 
+                            />
                         </Section>
 
                         <Section style={ctaSection}>
@@ -115,9 +118,13 @@ const messageContainer = {
     padding: "24px",
     marginBottom: "24px",
     border: "1px solid #f3f4f6",
+};
+
+const messageBody = {
     fontSize: "16px",
     lineHeight: "26px",
     color: "#111827",
+    margin: "0",
 };
 
 const ctaSection = {

@@ -17,7 +17,7 @@ export interface ParticipantDirectMessageProps {
   firstName?: string;
   eventName: string;
   eventSlug: string;
-  body: string;
+  htmlBody: string;
   email: string;
   baseUrl?: string;
 }
@@ -26,7 +26,7 @@ export function ParticipantDirectMessage({
   firstName,
   eventName,
   eventSlug,
-  body,
+  htmlBody,
   baseUrl = "https://www.oppskills.com",
 }: ParticipantDirectMessageProps) {
   const previewText = `Message from ${eventName} Organizer`;
@@ -51,11 +51,10 @@ export function ParticipantDirectMessage({
             </Text>
 
             <Section style={messageContainer}>
-              <Text style={messageText}>
-                {/* Preserving whitespace for simple text formatting if needed, though HTML usually collapses it. 
-                     Assuming body is plain text. If it is HTML, we might need a parser, but usually plain text is safer here. */}
-                {body}
-              </Text>
+              <div 
+                style={messageBody}
+                dangerouslySetInnerHTML={{ __html: htmlBody }} 
+              />
             </Section>
 
             <Text style={footerNote}>
@@ -114,19 +113,18 @@ const link = {
 };
 
 const messageContainer = {
-  backgroundColor: "#f9fafb",
-  borderRadius: "8px",
-  padding: "24px",
-  marginBottom: "24px",
-  border: "1px solid #f3f4f6",
+    backgroundColor: "#f9fafb",
+    borderRadius: "8px",
+    padding: "24px",
+    marginBottom: "24px",
+    border: "1px solid #f3f4f6",
 };
 
-const messageText = {
-  fontSize: "16px",
-  lineHeight: "26px",
-  color: "#111827",
-  margin: "0",
-  whiteSpace: "pre-wrap" as const, // Preserves newlines from the body text
+const messageBody = {
+    fontSize: "16px",
+    lineHeight: "26px",
+    color: "#111827",
+    margin: "0",
 };
 
 const footerNote = {

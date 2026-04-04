@@ -10,7 +10,7 @@ export interface SendDirectMessagePayload {
   eventId: string;
   eventName: string;
   eventSlug: string;
-  body: string;
+  htmlBody: string;
 }
 
 export interface SendBulkEmailPayload {
@@ -19,27 +19,38 @@ export interface SendBulkEmailPayload {
   htmlBody: string;
 }
 
+export interface ApiResponse {
+  success: boolean;
+  message: string;
+  [key: string]: any;
+}
+
 export async function sendEmail(
   token: string | null,
   payload: SendDirectMessagePayload
-): Promise<unknown> {
-  if (!token) return toast.error("User is not authenticated");
+): Promise<ApiResponse> {
+  if (!token) {
+    const errorMsg = "User is not authenticated";
+    toast.error(errorMsg);
+    throw new Error(errorMsg);
+  }
   const res = await API.post("/messages/direct", payload, {
     headers: buildAuthHeaders(token),
   });
-  return res.data as unknown;
+  return res.data as ApiResponse;
 }
 
 export async function sendBulkEmail(
   token: string | null,
   payload: SendBulkEmailPayload
-): Promise<unknown> {
+): Promise<ApiResponse> {
   if (!token) {
-    toast.error("User is not authenticated");
-    throw new Error("User is not authenticated");
+    const errorMsg = "User is not authenticated";
+    toast.error(errorMsg);
+    throw new Error(errorMsg);
   }
   const res = await API.post("/bulk", payload, {
     headers: buildAuthHeaders(token),
   });
-  return res.data as unknown;
+  return res.data as ApiResponse;
 }

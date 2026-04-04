@@ -9,6 +9,7 @@ import type {
   RemoveHackathonRoleDto,
   HackathonRolesResponse,
   TeamInvitePreviewResponse,
+  SendTeamEmailDto,
 } from "@oppskills/types/frontend";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
@@ -450,6 +451,7 @@ export interface HackathonTeamRegistration {
 
 export interface HackathonRegistrationsBySlugResponse {
   hackathonId: string;
+  name: string;
   rounds: HackathonRoundInfo[];
   teams: HackathonTeamRegistration[];
 }
@@ -715,4 +717,26 @@ export async function upsertRoundSubmission(
     { headers: buildAuthHeaders(token) },
   );
   return res.data as SubmissionResponse;
+}
+
+// =====================
+// Team Communications
+// =====================
+
+/**
+ * Send custom email to all members of a specific team (organizer only).
+ * Uses Resend Batch API via the backend.
+ */
+export async function sendTeamEmail(
+  token: string,
+  hackathonId: string,
+  teamId: string,
+  data: SendTeamEmailDto,
+): Promise<{ message: string; count: number }> {
+  const res = await API.post(
+    `/${encodeURIComponent(hackathonId)}/teams/${encodeURIComponent(teamId)}/send-email`,
+    data,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as { message: string; count: number };
 }

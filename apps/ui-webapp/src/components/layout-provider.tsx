@@ -198,6 +198,7 @@ export default function LayoutProvider({
               </SidebarInset>
             )}
           </SidebarProvider>
+          <Toaster position="bottom-right" duration={5000} richColors />
         </main>
       </MobileNavigationProvider>
     );

@@ -103,7 +103,7 @@ export class EmailListener {
         email: payload.email,
         eventName: payload.eventName,
         eventSlug: payload.eventSlug,
-        body: payload.body,
+        htmlBody: payload.htmlBody,
         baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
       },
     });
@@ -421,6 +421,7 @@ export class EmailListener {
             htmlBody,
             baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
           }),
+          { pretty: true },
         );
 
         emailBatch.push({
@@ -511,6 +512,7 @@ export class EmailListener {
             htmlBody,
             baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
           }),
+          { pretty: true },
         );
 
         emailBatch.push({

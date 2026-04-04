@@ -17,6 +17,7 @@ import {
   Check,
   X,
   Download,
+  Mail,
 } from "lucide-react";
 
 import {
@@ -39,6 +40,7 @@ import { bulkSetTeamRoundQualification } from "@/lib/api/hackathonApi";
 import { getApiErrorMessage } from "@/lib/utils";
 import { exportToExcel } from "@/lib/exportToExcel";
 import type { HackathonTeamMemberExport } from "@/lib/api/hackathonApi";
+import SendTeamEmailModal from "./SendTeamEmailModal";
 
 export type Participant = {
   id: string;
@@ -74,12 +76,16 @@ interface ParticipantsProps {
    * Example: when viewing R1 tab, nextRoundId should be the R2 id.
    */
   nextRoundId?: string | null;
+  hackathonId: string;
+  hackathonName: string;
 }
 
 export default function Participants({
   data,
   selectedRoundId,
   nextRoundId,
+  hackathonId,
+  hackathonName,
 }: ParticipantsProps) {
   const params = useParams();
   const slug = params.slug as string;
@@ -89,6 +95,17 @@ export default function Participants({
 
   const [filteredData, setFilteredData] = React.useState(data);
   const [filterValue, setFilteredValue] = React.useState("all");
+
+  const [selectedTeamForEmail, setSelectedTeamForEmail] = React.useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [successAlert, setSuccessAlert] = React.useState<string | null>(null);
+
+  const handleEmailSuccess = (result: any) => {
+    setSuccessAlert(result.message || `Email has been processed to all the members of ${selectedTeamForEmail?.name}`);
+    setTimeout(() => setSuccessAlert(null), 10000); // Hide after 10 seconds
+  };
 
   const { mutate: bulkQualify, isPending } = useMutation({
     mutationFn: async ({
@@ -331,6 +348,33 @@ export default function Participants({
           );
         },
       },
+      {
+        id: "emailTeam",
+        header: () => (
+          <div className="text-center text-primary-foreground">
+            Email
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedTeamForEmail({
+                  id: row.original.id,
+                  name: row.original.teamName,
+                });
+              }}
+              title="Send email to team"
+            >
+              <Mail className="w-4 h-4" />
+            </Button>
+          </div>
+        ),
+      },
     ],
     [
       bulkQualify,
@@ -360,6 +404,23 @@ export default function Participants({
 
   return (
     <div className="w-full space-y-4">
+      {successAlert && (
+        <div className="bg-primary/10 border border-primary/20 text-primary px-4 py-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="p-1 rounded-full bg-primary/20">
+            <Check className="w-4 h-4" />
+          </div>
+          <span className="text-sm font-medium">{successAlert}</span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="ml-auto h-7 w-7 p-0 hover:bg-primary/20 hover:text-primary rounded-full"
+            onClick={() => setSuccessAlert(null)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+
       {/* HEADER */}
       <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
         <div className="flex flex-wrap gap-2 items-center">
@@ -475,6 +536,19 @@ export default function Participants({
           </TableBody>
         </Table>
       </div>
+
+      {selectedTeamForEmail && (
+        <SendTeamEmailModal
+          isOpen={!!selectedTeamForEmail}
+          onClose={() => setSelectedTeamForEmail(null)}
+          teamId={selectedTeamForEmail.id}
+          teamName={selectedTeamForEmail.name}
+          hackathonId={hackathonId}
+          hackathonName={hackathonName}
+          slug={slug}
+          onSuccess={handleEmailSuccess}
+        />
+      )}
     </div>
   );
 }

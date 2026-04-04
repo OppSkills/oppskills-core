@@ -15,10 +15,13 @@ import type {
   HackathonAttendeeEligibilityValue,
   PrizeBreakdownDto,
   RegistrationFormDto,
+  SendTeamEmailDto,
 } from '@oppskills/types';
 import type { UpdateHackathonPrizeBreakdownDto } from './hackathon-update-nested.dto';
 import { AnalyticsService } from 'src/analytics/analytics.service';
 import { Logger } from '../_utils/logger';
+import { EmailService } from 'src/email/email.service';
+import { Inject, forwardRef } from '@nestjs/common';
 import { DELETED_RESOURCE_OWNER_ID } from '../_utils/constants';
 
 const BASE_DEFAULT_FIELDS = [
@@ -143,7 +146,11 @@ export class HackathonService {
    * - If `rounds` is not provided, no default rounds are created (organizers add them later).
    */
 
-  constructor(private readonly analyticsService: AnalyticsService) { }
+  constructor(
+    private readonly analyticsService: AnalyticsService,
+    @Inject(forwardRef(() => EmailService))
+    private readonly emailService: EmailService,
+  ) { }
 
   async createHackathon(dto: CreateHackathonDto, userId: string) {
     this.logger.log(
@@ -2460,7 +2467,7 @@ export class HackathonService {
     // Find hackathon by slug
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { slug, isDeleted: false },
-      select: { id: true, ownerId: true, participantType: true },
+      select: { id: true, name: true, ownerId: true, participantType: true },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
@@ -2590,6 +2597,7 @@ export class HackathonService {
     // Map to dashboard-friendly format
     return {
       hackathonId: hackathon.id,
+      name: hackathon.name,
       rounds: rounds.map((r) => ({
         id: r.id,
         name: r.name,
@@ -3129,5 +3137,127 @@ export class HackathonService {
       }
       return { fieldId: f.id, value: null };
     });
+  }
+
+  /**
+   * Send custom email to all members of a specific team.
+   * Only owner or manager of the hackathon can perform this.
+   */
+  async sendTeamEmail(
+    hackathonId: string,
+    userId: string,
+    dto: SendTeamEmailDto,
+  ) {
+    const { teamId, htmlBody, hackathonName, slug, teamName } = dto;
+
+    this.logger.log(`Sending team email for team ${teamId} in hackathon ${hackathonId}`);
+
+    // 1. Fetch hackathon and check permissions
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { id: hackathonId, isDeleted: false },
+      include: {
+        userRoles: {
+          where: { userId, role: 'MANAGER' },
+        },
+      },
+    });
+
+    if (!hackathon) {
+      throw new NotFoundException('Hackathon not found');
+    }
+
+    const isOwner = hackathon.ownerId === userId;
+    const isManager = hackathon.userRoles.length > 0;
+
+    if (!isOwner && !isManager) {
+      throw new ForbiddenException(
+        'You do not have permission to send emails for this hackathon.',
+      );
+    }
+
+    // 2. Fetch team and members
+    const team = await prisma.teamEntity.findUnique({
+      where: { id: teamId },
+      include: {
+        leader: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+          },
+        },
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!team) {
+      throw new NotFoundException('Team not found');
+    }
+
+    // 3. Collect all recipients
+    const recipients = new Map<string, { email: string; firstName: string }>();
+
+    if (team.leader.email) {
+      recipients.set(team.leader.id, {
+        email: team.leader.email,
+        firstName: team.leader.firstName || 'Leader',
+      });
+    }
+
+    for (const member of team.members) {
+      if (member.user.email) {
+        recipients.set(member.user.id, {
+          email: member.user.email,
+          firstName: member.user.firstName || 'Member',
+        });
+      }
+    }
+
+    // 4. Render and Batch Send
+    const emailBatch: Array<{ to: string; subject: string; html: string }> = [];
+
+    for (const recipient of recipients.values()) {
+      const rendered = await this.emailService.renderEmail(
+        'hackathon-team-notification',
+        {
+          firstName: recipient.firstName,
+          teamName,
+          hackathonName,
+          hackathonSlug: slug,
+          htmlBody,
+          baseUrl: process.env.FRONTEND_URL || 'https://www.oppskills.com',
+        },
+      );
+
+      emailBatch.push({
+        to: recipient.email,
+        subject: rendered.subject,
+        html: rendered.html,
+      });
+    }
+
+    if (emailBatch.length > 0) {
+      const result = await this.emailService.sendBatch(emailBatch);
+      if (!result.success) {
+        throw new InternalServerErrorException(
+          `Failed to send emails via Resend: ${result.error}`,
+        );
+      }
+    }
+
+    return {
+      message: `Successfully sent emails to ${emailBatch.length} team members.`,
+      count: emailBatch.length,
+    };
   }
 }

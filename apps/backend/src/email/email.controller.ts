@@ -72,7 +72,7 @@ export class SendDirectMessageDto {
 
   @IsString()
   @IsNotEmpty()
-  body: string;
+  htmlBody: string;
 }
 
 @ApiTags('Email')

@@ -64,6 +64,10 @@ export type {
   HackathonRolesResponse,
 } from './dtos/backend/hackathon/hackathon-roles.dto';
 
+export type {
+  SendTeamEmailDto,
+} from './dtos/backend/hackathon/send-team-email.dto';
+
 // Also export the value constant (it's just an array, no NestJS deps)
 export { HackathonUserRoleValues } from './dtos/backend/hackathon/hackathon-roles.dto';
 

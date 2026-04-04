@@ -21,6 +21,8 @@ import {
   Loader2,
   MailIcon,
   Download,
+  Check,
+  X,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,7 +31,7 @@ import type { EventRegistration } from "@/lib/api/eventApi";
 import { getParticipantRegistrationAnswers, getEventBySlug, approveParticipant } from "@/lib/api/eventApi";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ComposeEmailModal } from "./_components/ComposeEmailModal";
+import SendParticipantEmailModal from "./_components/SendParticipantEmailModal";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -101,6 +103,12 @@ export default function ManageRegistrationPage() {
   );
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [successAlert, setSuccessAlert] = useState<string | null>(null);
+
+  const handleEmailSuccess = (result: any) => {
+    setSuccessAlert(result.message || `Email has been processed successfully`);
+    setTimeout(() => setSuccessAlert(null), 10000);
+  };
 
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
@@ -496,10 +504,30 @@ export default function ManageRegistrationPage() {
 
   return (
     <div className="w-full bg-background min-h-screen p-8 flex flex-col items-center gap-8">
+      {successAlert && (
+        <div className="w-full max-w-5xl bg-primary-100 border border-primary-200 text-primary-800 px-4 py-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm">
+          <div className="p-1 rounded-full bg-primary-200">
+            <Check className="w-4 h-4 text-primary-700" />
+          </div>
+          <span className="text-sm font-semibold">{successAlert}</span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="ml-auto h-7 w-7 p-0 hover:bg-primary-200 hover:text-primary-700 rounded-full"
+            onClick={() => setSuccessAlert(null)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
 
-      <ComposeEmailModal
+      <SendParticipantEmailModal
         isOpen={!!emailRecipient}
         onClose={() => setEmailRecipient(null)}
+        onSuccess={(result) => {
+          setEmailRecipient(null);
+          handleEmailSuccess(result);
+        }}
         participant={emailRecipient}
         eventDetails={
           eventDetails
