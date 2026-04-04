@@ -39,7 +39,7 @@ export class HackathonManagerGuard implements CanActivate {
     }
 
     // 1. Fetch hackathon briefly for ownership check
-    const hackathon = await prisma.hackathonEntity.findUnique({
+    const hackathon = await prisma.hackathonEntity.findFirst({
       where: hackathonId
         ? { id: hackathonId, isDeleted: false }
         : { slug, isDeleted: false },

@@ -3155,7 +3155,7 @@ export class HackathonService {
     this.logger.log(`Sending team email for team ${teamId} in hackathon ${hackathonId}`);
 
     // 1. Fetch hackathon (needed for rendering details)
-    const hackathon = await prisma.hackathonEntity.findUnique({
+    const hackathon = await prisma.hackathonEntity.findFirst({
       where: { id: hackathonId, isDeleted: false },
     });
 
