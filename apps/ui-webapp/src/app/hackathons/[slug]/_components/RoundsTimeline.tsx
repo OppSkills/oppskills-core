@@ -12,10 +12,10 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SubmissionModal } from "./SubmissionModal";
 import type { RoundSubmissionInfo } from "@/lib/api/hackathonApi";
+import { formatDate } from "date-fns";
 
 export type { RoundSubmissionInfo };
 
@@ -129,12 +129,12 @@ export function RoundsTimeline({
                       <div className="flex items-center gap-3 text-neutral-600">
                         <Calendar className="w-4 h-4 text-neutral-500 stroke-[2] opacity-80" />
                         <span className="text-sm">
-                          Start: {round.startDate}
+                          Start: {formatDate(round.startDate, "dd MMM yyyy")}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-neutral-600">
                         <Calendar className="w-4 h-4 text-neutral-500 stroke-[2] opacity-80" />
-                        <span className="text-sm">End: {round.endDate}</span>
+                        <span className="text-sm">End: {formatDate(round.endDate, "dd MMM yyyy")}</span>
                       </div>
                     </div>
                   </div>
