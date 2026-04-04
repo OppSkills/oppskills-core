@@ -1,156 +1,136 @@
-# Turborepo starter
-docker compose up -d 
-pnpm dev:backend
-pnpm dev:ui-webapp
-pnpm db:dev
-svix listen http://localhost:3001/user-accounts/clerk-webhook
-await window.Clerk.session.getToken();
-pnpm build --filter=@oppskills/types
+# OppSkills Core - Platform for Hackathons & Events
 
+OppSkills is a high-performance, scalable platform designed for organizing, discovering, and managing hackathons, festivals, and tech events. Built with a modern monorepo architecture, it provides a seamless experience for both organizers and participants.
 
-docker-compose up --build -d 
+---
 
+## 🚀 Tech Stack
 
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | [Next.js 16](https://nextjs.org/), React 19, Tailwind CSS 4, TanStack Query |
+| **Backend** | [NestJS 11](https://nestjs.com/), Node.js, Express |
+| **Database** | [Prisma 6](https://www.prisma.io/), PostgreSQL (via Docker) |
+| **Caching/Bus** | [Redis](https://redis.io/) (via Docker) |
+| **Auth** | [Clerk](https://clerk.com/) |
+| **Webhooks** | [Svix](https://www.svix.com/) |
+| **Monorepo** | [Turborepo](https://turbo.build/repo) |
 
-{
-          "title": "AI Labs Challenge 2025",
-          "description": "An event to build AI-powered tools.",
-          "startDate": "2025-11-08",
-          "endDate": "2025-11-15 ",
-          "mode": "online",
-          "ownerId": "user_3594scawdQRhwSKG2vSM9Q3byvB"
-}
+---
 
-## Using this example
+## ⚙️ Prerequisites
 
-Run the following command:
+Ensure you have the following installed before starting:
+- **Node.js**: >= 18.x (LTS recommended)
+- **pnpm**: >= 10.5.2 (`npm install -g pnpm`)
+- **Docker Desktop**: Required for PostgreSQL and Redis
+- **Git**: For version control
 
-```sh
-npx create-turbo@latest
+---
+
+## 🛠️ Getting Started
+
+### 1. Clone the Repository
+```bash
+git clone <repository-url>
+cd oppskills-core
 ```
 
-## What's inside?
-
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+### 2. Install Dependencies
+```bash
+pnpm install
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
+### 3. Spin Up Infrastructure
+OppSkills uses Docker to manage local database and caching services.
+```bash
+docker compose up -d
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+*This starts **PostgreSQL** (port 5434) and **Redis** (port 6380).*
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+---
 
-### Develop
+## 🔑 Environment Configuration
 
-To develop all apps and packages, run the following command:
+You need to set up `.env.local` files for the backend and frontend. Use the templates below:
 
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+### Backend (`apps/backend/.env.local`)
+```env
+DATABASE_URL="postgresql://oppskills:oppskills@localhost:5434/oppskills?schema=oppskills"
+CLERK_SECRET_KEY="sk_test_..."
+CLERK_WEBHOOK_SECRET="whsec_..."
+REDISHOST="localhost"
+REDISPORT="6380"
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+### Frontend (`apps/ui-webapp/.env.local`)
+```env
+NEXT_PUBLIC_API_URL="http://localhost:3001"
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
+CLERK_SECRET_KEY="sk_test_..."
 ```
 
-### Remote Caching
+---
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+## 📦 Database Setup (Prisma)
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+Once your infrastructure is running, initialize the database:
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+1. **Generate Client**: `pnpm db:generate`
+2. **Push Schema**: `pnpm db:push` (Development only)
+3. **Run Studio**: `pnpm db:studio` (Opens GUI on port 3008)
 
+---
+
+## 📡 Webhooks & Svix
+
+To test Clerk user synchronization webhooks locally:
+1. Install Svix CLI: `npm install -g svix-cli`
+2. Start the listener:
+   ```bash
+   svix listen http://localhost:3001/user-accounts/clerk-webhook
+   ```
+3. Configure the output URL in your Clerk dashboard webhooks section.
+
+---
+
+## 💻 Development Workflow
+
+### Start All Services
+```bash
+pnpm dev
 ```
-cd my-turborepo
+- **UI Webapp**: [http://localhost:3000](http://localhost:3000)
+- **Backend API**: [http://localhost:3001](http://localhost:3001)
+- **API Reference**: [http://localhost:3001/api-reference](http://localhost:3001/api-reference)
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
+### Essential Commands
+| Command | Description |
+| :--- | :--- |
+| `pnpm build` | Build all projects in order |
+| `pnpm lint` | Run ESLint across the monorepo |
+| `pnpm format` | Format code using Prettier |
+| `pnpm check-types` | Run TypeScript compiler checks |
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
+---
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+## 📂 Monorepo Structure
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+- `apps/backend`: NestJS API and business logic.
+- `apps/ui-webapp`: Next.js frontend with App Router.
+- `packages/database`: Prisma schema and database client.
+- `packages/types`: Shared TypeScript DTOs and interfaces.
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
+---
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
+## 📖 Documentation
 
-## Useful Links
+For detailed guides, please refer to the `docs/` directory:
+- [Architecture Overview](docs/architecture.md)
+- [Comprehensive Development Guide](docs/development.md)
+- [API Reference](docs/api.md)
+- [Authentication Details](docs/authentication.md)
 
-Learn more about the power of Turborepo:
+---
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
-
-test for gemini code assist 
+© 2026 OppSkills Platform. All rights reserved.
