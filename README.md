@@ -32,7 +32,7 @@ Ensure you have the following installed before starting:
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/OppSkills/oppskills-core
 cd oppskills-core
 ```
 
@@ -116,10 +116,20 @@ pnpm dev
 
 ## 📂 Monorepo Structure
 
-- `apps/backend`: NestJS API and business logic.
-- `apps/ui-webapp`: Next.js frontend with App Router.
-- `packages/database`: Prisma schema and database client.
-- `packages/types`: Shared TypeScript DTOs and interfaces.
+### Applications (`apps/`)
+
+- **`backend`**: NestJS 11 API providing robust business logic, authentication guards, and database services.
+- **`ui-webapp`**: Next.js 16 frontend featuring App Router, Server Components, and a premium React developer experience.
+
+### Shared Packages (`packages/`)
+
+OppSkills utilizes a shared-nothing-architecture where possible, but leverages standard packages for core cross-cutting concerns:
+
+| Package | Purpose | Core Technologies |
+| :--- | :--- | :--- |
+| **`@oppskills/db`** | Single source of truth for the database schema and Prisma Client. | Prisma 6, PostgreSQL |
+| **`@oppskills/types`** | Shared DTOs, Enums, and TypeScript interfaces for full-stack type safety. | TypeScript, class-validator |
+| **`@oppskills/emails`** | Modular email templates used for automated platform notifications. | React Email, Resend |
 
 ---
 
