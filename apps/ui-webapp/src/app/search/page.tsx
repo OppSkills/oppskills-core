@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 
 function SearchLoadingSkeleton() {
     return (
-        <div className="container w-full px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-24">
+        <div className="container w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 xl:px-24">
             <div className="flex w-full flex-col gap-8 md:gap-12 lg:gap-16 xl:gap-20">
                 {/* Top Opportunities Skeleton */}
                 <section className="space-y-4">
@@ -146,7 +146,7 @@ function SearchContent() {
     }
 
     return (
-        <div className="container w-full px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-24">
+        <div className="container w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 xl:px-24">
             <div className="flex w-full flex-col gap-8 md:gap-12 lg:gap-16 xl:gap-20">
                 {/* Top Opportunities */}
                 {data.topOpportunities.length > 0 && (
