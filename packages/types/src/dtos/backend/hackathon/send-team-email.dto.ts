@@ -18,31 +18,5 @@ export class SendTeamEmailDto {
   @IsString()
   @MaxLength(50000)
   htmlBody: string;
-
-  /** The hackathon name */
-  @ApiProperty({
-    description: "The hackathon name",
-    example: "Tech Innovation Hackathon 2025",
-  })
-  @IsString()
-  @MaxLength(200)
-  hackathonName: string;
-
-  /** The hackathon slug */
-  @ApiProperty({
-    description: "The hackathon slug",
-    example: "tech-innovation-2025",
-  })
-  @IsString()
-  @MaxLength(180)
-  slug: string;
-
-  /** The team name */
-  @ApiProperty({
-    description: "The team name",
-    example: "Alpha Hackers",
-  })
-  @IsString()
-  @MaxLength(200)
-  teamName: string;
 }
+

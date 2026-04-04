@@ -31,6 +31,7 @@ import { EventService } from '../event/event.service';
 import { HackathonService } from '../hackathon/hackathon.service';
 import { EmailService } from './email.service';
 import { prisma } from '@oppskills/db';
+import { sanitizeHtmlContent } from '../_utils/html-sanitizer.utils';
 
 export class SendBulkEmailDto {
   @IsString()
@@ -109,7 +110,10 @@ export class EmailController {
       );
     }
 
-    const payload: EventDirectMessageEventPayload = { ...dto };
+    const payload: EventDirectMessageEventPayload = {
+      ...dto,
+      htmlBody: sanitizeHtmlContent(dto.htmlBody),
+    };
 
     this.eventEmitter.emit(EMAIL_EVENTS.EVENT_DIRECT_MESSAGE, payload);
 
@@ -139,7 +143,7 @@ export class EmailController {
 
       const payload: EventBulkEmailPayload = {
         eventId,
-        htmlBody,
+        htmlBody: sanitizeHtmlContent(htmlBody),
         organizerEmail: event.owner.email,
         organizerName: event.owner.firstName || 'Organizer',
         eventName: event.name,
@@ -163,7 +167,7 @@ export class EmailController {
 
       const payload: HackathonBulkEmailPayload = {
         hackathonId,
-        htmlBody,
+        htmlBody: sanitizeHtmlContent(htmlBody),
         organizerEmail: hackathon.owner.email,
         organizerName: hackathon.owner.firstName || 'Organizer',
         hackathonName: hackathon.name,

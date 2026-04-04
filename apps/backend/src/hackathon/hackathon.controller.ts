@@ -46,6 +46,8 @@ import {
   UpdateHackathonRegistrationFormDto,
   UpdateHackathonMaxTeamsDto,
 } from './hackathon-update-nested.dto';
+import { HackathonManagerGuard } from './hackathon-manager.guard';
+
 
 function assertNonEmptyId(id: string, fieldName: string): string {
   const trimmed = id.trim();
@@ -1470,6 +1472,7 @@ export class HackathonController {
   }
 
   @Post(':id/teams/:teamId/send-email')
+  @UseGuards(HackathonManagerGuard)
   @ApiOperation({
     summary: 'Send custom email to all members of a team',
     description:

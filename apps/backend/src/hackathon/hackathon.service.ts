@@ -137,6 +137,7 @@ const DEFAULT_ATTENDEE_ELIGIBILITY: HackathonAttendeeEligibilityValue[] = [
   'EVERYONE_CAN_APPLY',
 ];
 
+import { sanitizeHtmlContent } from '../_utils/html-sanitizer.utils';
 @Injectable()
 export class HackathonService {
   private readonly logger = new Logger(HackathonService.name);
@@ -548,7 +549,7 @@ export class HackathonService {
         : input.appendResults
           ? 20
           : 10;
-    
+
     const page = input.page ? Math.max(1, input.page) : 1;
     const skip = (page - 1) * take;
 
@@ -2130,7 +2131,7 @@ export class HackathonService {
     }
   }
 
-  private async isAdminUser(userId: string): Promise<boolean> {
+  async isAdminUser(userId: string): Promise<boolean> {
     const user = await prisma.userEntity.findUnique({
       where: { id: userId },
       select: { accessLevel: true },
@@ -3148,36 +3149,24 @@ export class HackathonService {
     userId: string,
     dto: SendTeamEmailDto,
   ) {
-    const { teamId, htmlBody, hackathonName, slug, teamName } = dto;
+    const { teamId, htmlBody: rawHtmlBody } = dto;
+    const htmlBody = sanitizeHtmlContent(rawHtmlBody);
 
     this.logger.log(`Sending team email for team ${teamId} in hackathon ${hackathonId}`);
 
-    // 1. Fetch hackathon and check permissions
+    // 1. Fetch hackathon (needed for rendering details)
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { id: hackathonId, isDeleted: false },
-      include: {
-        userRoles: {
-          where: { userId, role: 'MANAGER' },
-        },
-      },
     });
 
     if (!hackathon) {
       throw new NotFoundException('Hackathon not found');
     }
 
-    const isOwner = hackathon.ownerId === userId;
-    const isManager = hackathon.userRoles.length > 0;
-
-    if (!isOwner && !isManager) {
-      throw new ForbiddenException(
-        'You do not have permission to send emails for this hackathon.',
-      );
-    }
 
     // 2. Fetch team and members
     const team = await prisma.teamEntity.findUnique({
-      where: { id: teamId },
+      where: { id: teamId, hackathonId },
       include: {
         leader: {
           select: {
@@ -3231,9 +3220,9 @@ export class HackathonService {
         'hackathon-team-notification',
         {
           firstName: recipient.firstName,
-          teamName,
-          hackathonName,
-          hackathonSlug: slug,
+          teamName: team.name,
+          hackathonName: hackathon.name,
+          hackathonSlug: hackathon.slug,
           htmlBody,
           baseUrl: process.env.FRONTEND_URL || 'https://www.oppskills.com',
         },

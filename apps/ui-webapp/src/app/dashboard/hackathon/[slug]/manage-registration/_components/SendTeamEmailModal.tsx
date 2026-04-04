@@ -35,9 +35,6 @@ export default function SendTeamEmailModal({
     return sendTeamEmail(token, hackathonId, teamId, {
       teamId,
       htmlBody: content,
-      hackathonName,
-      slug,
-      teamName,
     });
   };
 
