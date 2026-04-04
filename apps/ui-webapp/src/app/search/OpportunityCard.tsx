@@ -39,7 +39,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     return (
         <Link href={`${baseUrl}/${opportunity.slug}`} className="block">
             <div className='flex w-full flex-col gap-4 relative'>
-                <div className='group relative rounded-2xl overflow-hidden aspect-video bg-neutral-100'>
+                <div className='group relative rounded-2xl overflow-hidden aspect-[4/3] bg-neutral-100'>
                     {opportunity.bannerImageUrl ? (
                         <Image
                             src={opportunity.bannerImageUrl}

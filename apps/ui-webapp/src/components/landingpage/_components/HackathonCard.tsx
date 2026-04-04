@@ -30,7 +30,7 @@ export function HackathonCard({
         <Link href={href} prefetch={false} className="h-full block">
             <Card className="group h-full flex flex-col overflow-hidden border-border/50 bg-card hover:shadow-lg transition-all duration-300 rounded-3xl">
                 {/* Image Section */}
-                <div className="relative w-full h-48 sm:h-52 overflow-hidden bg-muted flex-shrink-0">
+                <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted flex-shrink-0">
                     {imageSrc ? (
                         <Image
                             src={imageSrc}
