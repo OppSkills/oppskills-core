@@ -22,7 +22,8 @@ import { useCompetitionDetail } from '../hooks/useCompetitionDetail';
 import type { DiscoverCategoryId } from '../../../../shared/types/discover';
 import { lightTheme } from '../../../../shared/theme';
 import type { DiscoverOpportunityItem } from '../../../../shared/types/discover';
-import { AppText, OpportunityDetailScreen, SearchInput } from '../../../../shared/ui';
+import { AppText, SearchInput } from '../../../../shared/ui';
+import { OpportunityDetailScreen } from '../../../../shared/ui/OpportunityDetailScreen';
 
 interface DiscoverCompetitionsScreenProps {
   readonly onOpenEvents: () => void;

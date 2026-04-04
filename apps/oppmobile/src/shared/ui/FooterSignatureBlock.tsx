@@ -11,13 +11,10 @@ export function FooterSignatureBlock({ compact = false }: FooterSignatureBlockPr
   return (
     <View style={[styles.wrapper, compact ? styles.compact : null]}>
       <AppText style={styles.title} variant="displayH2">
-        Global Opportunities.
-      </AppText>
-      <AppText style={styles.title} variant="displayH2">
-        Powered by Skills.
+        Global Opportunities. Powered by Skills.
       </AppText>
       <AppText colorToken="textSecondary" style={styles.meta} variant="caption">
-        Made with love in India
+        Made with ❤️ in India
       </AppText>
     </View>
   );
