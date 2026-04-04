@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SubmissionModal } from "./SubmissionModal";
 import type { RoundSubmissionInfo } from "@/lib/api/hackathonApi";
-import { formatDate } from "date-fns";
 
 export type { RoundSubmissionInfo };
 
@@ -129,12 +128,12 @@ export function RoundsTimeline({
                       <div className="flex items-center gap-3 text-neutral-600">
                         <Calendar className="w-4 h-4 text-neutral-500 stroke-[2] opacity-80" />
                         <span className="text-sm">
-                          Start: {formatDate(round.startDate, "dd MMM yyyy")}
+                          Start: {round.startDate}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-neutral-600">
                         <Calendar className="w-4 h-4 text-neutral-500 stroke-[2] opacity-80" />
-                        <span className="text-sm">End: {formatDate(round.endDate, "dd MMM yyyy")}</span>
+                        <span className="text-sm">End: {round.endDate}</span>
                       </div>
                     </div>
                   </div>

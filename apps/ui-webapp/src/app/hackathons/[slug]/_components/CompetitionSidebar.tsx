@@ -38,7 +38,7 @@ import {
 } from "@/lib/registration/pendingHackathonRegistration";
 import { TeamDetailsCard } from "./TeamDetailsCard";
 import { getApiErrorMessage } from "@/lib/utils";
-import { format } from "date-fns";
+import { formatToIST, transformApiData, type HackathonApiData } from "./transform";
 import type { CompetitionDetails } from "./types";
 import { RegistrationModal } from "./RegistrationModal";
 
@@ -573,21 +573,23 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           <div className="flex gap-4 items-center">
             <div className="flex-shrink-0 w-12 h-12 rounded-xl border border-neutral-400  flex flex-col items-center justify-center">
               <span className="text-[10px] uppercase text-neutral-500 font-medium leading-none mb-0.5">
-                {competition.startDate ? format(competition.startDate, "MMM") : "TBD"}
+                {competition.startDate ? formatToIST(competition.startDate, "short_month") : "TBD"}
               </span>
               <span className="text-lg font-bold text-neutral-900  leading-none">
-                {competition.startDate ? format(competition.startDate, "dd") : "--"}
+                {competition.startDate ? formatToIST(competition.startDate, "day") : "--"}
               </span>
             </div>
             <div>
               <h4 className="font-semibold text-neutral-900  text-[15px]">
                 {(() => {
                   if (competition.startDate && competition.endDate) {
-                    const isSameDay = competition.startDate.toDateString() === competition.endDate.toDateString();
+                    const isSameDay =
+                      competition.startDate.toDateString() ===
+                      competition.endDate.toDateString();
                     if (isSameDay) {
-                      return format(competition.startDate, "EEEE, d MMMM yyyy");
+                      return formatToIST(competition.startDate, "date");
                     } else {
-                      return `${format(competition.startDate, "MMM d")} - ${format(competition.endDate, "MMM d, yyyy")}`;
+                      return `${formatToIST(competition.startDate, "short_month")} ${formatToIST(competition.startDate, "day")} - ${formatToIST(competition.endDate, "date")}`;
                     }
                   }
                   return competition.specificDate || "Date TBD";
@@ -596,16 +598,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
               <p className="text-sm text-neutral-500">
                 {(() => {
                   if (competition.startDate && competition.endDate) {
-                    const isSameDay = competition.startDate.toDateString() === competition.endDate.toDateString();
-                    if (isSameDay) {
-                      return `${format(competition.startDate, "h:mm a")} - ${format(competition.endDate, "h:mm a")}`;
-                    } else {
-                      // For different days, maybe showing time is less critical or we show full range?
-                      // User asked: "show starting date time and enfing date time"
-                      // Since the header already shows date range, maybe detailed time here?
-                      // Let's show: Starts <Time> - Ends <Time> (on respective days)
-                      return `${format(competition.startDate, "h:mm a")} - ${format(competition.endDate, "h:mm a")}`;
-                    }
+                    return `${formatToIST(competition.startDate, "time")} - ${formatToIST(competition.endDate, "time")}`;
                   }
                   return competition.specificTime || "Time TBD";
                 })()}
