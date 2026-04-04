@@ -10,7 +10,7 @@ export class OpportunityService {
   constructor(
     private readonly eventService: EventService,
     private readonly hackathonService: HackathonService,
-  ) {}
+  ) { }
 
   /**
    * List past public opportunities (Deadline < Now).
@@ -78,9 +78,33 @@ export class OpportunityService {
    */
   async searchOpportunities(query: string) {
     const q = query.trim();
-
-    // 1. Fetch 4 matching hackathons and 4 matching events
+    if (!q) {
+      return {
+        hackathons: [],
+        events: [],
+        topOpportunities: [],
+      };
+    }
     // (PUBLISHED + APPROVED)
+    const opportunitySelect = {
+      id: true,
+      name: true,
+      slug: true,
+      bannerImageUrl: true,
+      startDate: true,
+      registrationDeadline: true,
+      locationAddress: true,
+      locationType: true,
+      registrationCount: true,
+      prizeTotalWorthAmount: true,
+      entryFeeAmount: true,
+      isFree: true,
+      currency: true,
+      organizationName: true,
+      views: true,
+      impressions: true,
+    };
+
     const [matchingHackathons, matchingEvents] = await Promise.all([
       prisma.hackathonEntity.findMany({
         where: {
@@ -89,10 +113,7 @@ export class OpportunityService {
           approvalStatus: 'APPROVED',
           isDeleted: false,
         },
-        include: {
-          owner: { select: { id: true, firstName: true, lastName: true, imageUrl: true } },
-          festival: { select: { id: true, name: true, slug: true } },
-        },
+        select: opportunitySelect,
         take: 4,
         orderBy: { createdAt: 'desc' },
       }),
@@ -103,10 +124,7 @@ export class OpportunityService {
           approvalStatus: 'APPROVED',
           isDeleted: false,
         },
-        include: {
-          owner: { select: { id: true, firstName: true, lastName: true, imageUrl: true } },
-          festival: { select: { id: true, name: true, slug: true } },
-        },
+        select: opportunitySelect,
         take: 4,
         orderBy: { createdAt: 'desc' },
       }),
@@ -122,10 +140,7 @@ export class OpportunityService {
           approvalStatus: 'APPROVED',
           isDeleted: false,
         },
-        include: {
-          owner: { select: { id: true, firstName: true, lastName: true, imageUrl: true } },
-          festival: { select: { id: true, name: true, slug: true } },
-        },
+        select: opportunitySelect,
         take: 8,
         orderBy: [
           { registrationCount: 'desc' },
@@ -140,10 +155,7 @@ export class OpportunityService {
           approvalStatus: 'APPROVED',
           isDeleted: false,
         },
-        include: {
-          owner: { select: { id: true, firstName: true, lastName: true, imageUrl: true } },
-          festival: { select: { id: true, name: true, slug: true } },
-        },
+        select: opportunitySelect,
         take: 8,
         orderBy: [
           { registrationCount: 'desc' },
