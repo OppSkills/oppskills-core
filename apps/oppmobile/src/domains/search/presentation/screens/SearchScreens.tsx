@@ -5,7 +5,7 @@ import type { SearchFlowState } from '../../model/searchStateMachine';
 import type { SearchResultEntity } from '../../domain/entities/SearchCatalog';
 import { appDimensions } from '../../../../shared/constants/dimensions';
 import { lightTheme } from '../../../../shared/theme';
-import { AppText, SearchInput, TopBar } from '../../../../shared/ui';
+import { AppText, SearchInput } from '../../../../shared/ui';
 
 interface SearchPageRecentScreenProps {
   readonly query: string;
@@ -189,8 +189,6 @@ function SearchScaffold({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardContainer}
       >
-        <TopBar />
-
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -494,6 +492,7 @@ const styles = StyleSheet.create({
     minHeight: '100%',
     paddingBottom: lightTheme.spacing[32],
     paddingHorizontal: appDimensions.screenHorizontalPadding,
+    paddingTop: lightTheme.spacing[8],
   },
   scrollView: {
     flex: 1,

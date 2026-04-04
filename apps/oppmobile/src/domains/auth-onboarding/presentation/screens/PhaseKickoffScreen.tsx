@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { useScreenStatusList } from '../hooks/useScreenStatusList';
 import { lightTheme } from '../../../../shared/theme';
 import { formatDateLabel } from '../../../../shared/utils/formatDate';
-import { AppText, FooterSignatureBlock, ScreenContainer, TopBar } from '../../../../shared/ui';
+import { AppText, FooterSignatureBlock, ScreenContainer } from '../../../../shared/ui';
 
 const todayLabel = formatDateLabel(new Date('2026-03-13T00:00:00.000Z'));
 
@@ -12,8 +12,6 @@ export function PhaseKickoffScreen() {
 
   return (
     <ScreenContainer>
-      <TopBar />
-
       <View style={styles.heroCard}>
         <AppText colorToken="brandPrimaryStrong" style={styles.eyebrow} variant="caption">
           OppSkills Mobile

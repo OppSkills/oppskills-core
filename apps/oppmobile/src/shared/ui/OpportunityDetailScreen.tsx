@@ -11,7 +11,6 @@ import type {
 import { lightTheme } from '../theme';
 import { AppText } from './AppText';
 import { FooterSignatureBlock } from './FooterSignatureBlock';
-import { TopBar } from './TopBar';
 
 interface OpportunityDetailScreenProps {
   readonly detail: OpportunityDetailModel;
@@ -36,8 +35,6 @@ export function OpportunityDetailScreen({ detail, onBack }: OpportunityDetailScr
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-      <TopBar />
-
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <AppText colorToken="textMuted" variant="caption">
@@ -507,6 +504,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: lightTheme.spacing[40],
     paddingHorizontal: lightTheme.spacing[20],
+    paddingTop: lightTheme.spacing[8],
   },
   sectionTitle: {
     marginBottom: lightTheme.spacing[12],

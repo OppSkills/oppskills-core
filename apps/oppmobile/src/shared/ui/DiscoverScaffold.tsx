@@ -7,7 +7,6 @@ import type { DiscoverCategoryItem, DiscoverCardTone, DiscoverVariantItem } from
 import { AppText } from './AppText';
 import { FooterSignatureBlock } from './FooterSignatureBlock';
 import { SearchInput } from './SearchInput';
-import { TopBar } from './TopBar';
 
 interface DiscoverScaffoldProps extends PropsWithChildren {
   readonly title: string;
@@ -40,8 +39,6 @@ export function DiscoverScaffold({
 }: DiscoverScaffoldProps) {
   return (
     <View style={styles.screen}>
-      <TopBar />
-
       <View style={styles.contentArea}>
         <Pressable hitSlop={8} onPress={onSearchPress} style={styles.searchPressable}>
           <View pointerEvents="none">
@@ -436,6 +433,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingBottom: lightTheme.spacing[28],
     paddingHorizontal: appDimensions.screenHorizontalPadding,
+    paddingTop: lightTheme.spacing[8],
   },
   emptyState: {
     alignItems: 'center',

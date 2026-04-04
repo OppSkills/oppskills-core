@@ -1,7 +1,7 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { lightTheme } from '../../../../shared/theme';
-import { AppText, FooterSignatureBlock, ScreenContainer, TopBar } from '../../../../shared/ui';
+import { AppText, FooterSignatureBlock, ScreenContainer } from '../../../../shared/ui';
 import { usePhaseReadiness } from '../hooks/usePhaseReadiness';
 
 const plannedDomains = [
@@ -23,8 +23,6 @@ export function PhaseOneFoundationScreen() {
 
   return (
     <ScreenContainer>
-      <TopBar />
-
       <View style={styles.heroCard}>
         <AppText colorToken="brandPrimaryStrong" style={styles.eyebrow} variant="caption">
           OppSkills Mobile

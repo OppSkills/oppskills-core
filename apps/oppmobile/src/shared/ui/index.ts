@@ -7,4 +7,3 @@ export * from './OpportunityDetailScreen';
 export * from './PrimaryButton';
 export * from './ScreenContainer';
 export * from './SearchInput';
-export * from './TopBar';

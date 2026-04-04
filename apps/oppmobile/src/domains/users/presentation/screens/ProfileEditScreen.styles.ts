@@ -135,6 +135,7 @@ export const styles = StyleSheet.create({
     minHeight: 1487,
     paddingBottom: 60,
     paddingHorizontal: 20,
+    paddingTop: 8,
   },
   sectionWrap: {
     gap: 16,
@@ -143,43 +144,6 @@ export const styles = StyleSheet.create({
   sectionWrapBottom: {
     gap: 16,
     marginTop: 36,
-  },
-  systemIconFrame: {
-    alignItems: 'center',
-    height: 24,
-    justifyContent: 'center',
-    width: 24,
-  },
-  systemIconRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 10,
-  },
-  systemSignalFull: {
-    backgroundColor: '#100013',
-    borderRadius: 2,
-    height: 13,
-    width: 12,
-  },
-  systemSignalMid: {
-    backgroundColor: '#100013',
-    borderRadius: 2,
-    height: 9,
-    width: 10,
-  },
-  systemTime: {
-    color: '#100013',
-    fontFamily: 'Inter',
-    fontSize: 16,
-    fontWeight: '400',
-    lineHeight: 19,
-  },
-  systemTopBar: {
-    alignItems: 'flex-end',
-    flexDirection: 'row',
-    height: 54,
-    justifyContent: 'space-between',
-    paddingBottom: 12,
   },
   verifiedCheck: {
     borderBottomColor: '#7C737E',

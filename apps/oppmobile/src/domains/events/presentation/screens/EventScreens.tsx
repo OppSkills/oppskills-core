@@ -8,6 +8,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import hackathonCategoryButtonImage from '../../../../../assets/Frame 548.png';
 import competitionsCategoryButtonImage from '../../../../../assets/Frame 549.png';
@@ -19,7 +20,7 @@ import attendeeTwo from '../../../../../assets/sharda 1.png';
 import { useDiscoverFeed } from '../../../discover/presentation/hooks/useDiscoverFeed';
 import type { DiscoverCategoryId, DiscoverFeatureEventItem } from '../../../../shared/types/discover';
 import { lightTheme } from '../../../../shared/theme';
-import { AppText, SearchInput, TopBar } from '../../../../shared/ui';
+import { AppText, SearchInput } from '../../../../shared/ui';
 
 interface DiscoverEventsPrimaryScreenProps {
   readonly onOpenCompetitions: () => void;
@@ -133,9 +134,8 @@ function DiscoverEventsTemplate({
   };
 
   return (
-    <View style={styles.eventsScreen}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.eventsScreen}>
       <View style={styles.frame544}>
-        <TopBar />
         <View style={styles.searchHeaderRow}>
           <Pressable hitSlop={8} onPress={onOpenSearch} style={styles.searchFieldWrap}>
             <View pointerEvents="none">
@@ -231,7 +231,7 @@ function DiscoverEventsTemplate({
           </AppText>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -481,12 +481,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     borderBottomColor: '#A099A1',
     borderBottomWidth: 0.5,
-    left: 0,
     paddingHorizontal: 20,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    zIndex: 5,
+    paddingTop: lightTheme.spacing[8],
   },
   frame545Content: {
     gap: 40,
@@ -495,11 +491,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   frame545Scroll: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 110,
+    flex: 1,
   },
   frame552: {
     flexDirection: 'row',

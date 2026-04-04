@@ -9,13 +9,12 @@ import {
   PrimaryButton,
   ScreenContainer,
   SearchInput,
-  TopBar,
 } from '../../../../shared/ui';
 
 const primitiveChecklist = [
   'Tokenized colors, spacing, radius, and typography scales',
   'ScreenContainer layout primitive with safe-area defaults',
-  'TopBar status primitive for onboarding and auth flows',
+  'Safe-area status spacing primitive for onboarding and auth flows',
   'SearchInput and InputField form primitives',
   'PrimaryButton with primary, secondary, and outline tones',
   'FooterSignatureBlock for reusable bottom sections',
@@ -27,8 +26,6 @@ export function PhaseTwoDesignSystemScreen() {
 
   return (
     <ScreenContainer>
-      <TopBar />
-
       <View style={styles.heroCard}>
         <AppText colorToken="brandPrimaryStrong" variant="caption">
           OppSkills Mobile

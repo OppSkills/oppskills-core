@@ -9,7 +9,7 @@ import {
 } from '../../domain/entities/AppliedFeed';
 import { useAppliedFeed } from '../hooks/useAppliedFeed';
 import { lightTheme } from '../../../../shared/theme';
-import { AppText, FooterSignatureBlock, TopBar } from '../../../../shared/ui';
+import { AppText, FooterSignatureBlock } from '../../../../shared/ui';
 
 interface AppliedScreenProps {
   readonly onOpenCompetition: () => void;
@@ -49,8 +49,6 @@ export function AppliedScreen({ onOpenCompetition, onOpenHackathon, onSignOut }:
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-      <TopBar />
-
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
@@ -535,6 +533,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: lightTheme.spacing[40],
     paddingHorizontal: lightTheme.spacing[20],
+    paddingTop: lightTheme.spacing[8],
   },
   signOutChip: {
     borderColor: lightTheme.colors.focusRing,

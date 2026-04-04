@@ -121,21 +121,6 @@ export function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator>
-        <View style={styles.systemTopBar}>
-          <AppText style={styles.systemTime} variant="statusTime">
-            13:46
-          </AppText>
-
-          <View style={styles.systemIconRow}>
-            <View style={styles.systemIconFrame}>
-              <View style={styles.systemSignalMid} />
-            </View>
-            <View style={styles.systemIconFrame}>
-              <View style={styles.systemSignalFull} />
-            </View>
-          </View>
-        </View>
-
         <View style={styles.headerRow}>
           <Pressable accessibilityLabel="Go back" hitSlop={8} onPress={onBack} style={styles.backButton}>
             <AppText style={styles.backButtonText} variant="title">

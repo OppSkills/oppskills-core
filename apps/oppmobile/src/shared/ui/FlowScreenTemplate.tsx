@@ -6,7 +6,6 @@ import { AppText } from './AppText';
 import { FooterSignatureBlock } from './FooterSignatureBlock';
 import { PrimaryButton } from './PrimaryButton';
 import { ScreenContainer } from './ScreenContainer';
-import { TopBar } from './TopBar';
 
 type FlowAction = {
   readonly label: string;
@@ -36,8 +35,6 @@ export function FlowScreenTemplate({
 }: FlowScreenTemplateProps) {
   return (
     <ScreenContainer scrollable={scrollable}>
-      <TopBar />
-
       <View style={styles.headerCard}>
         <AppText colorToken="brandPrimaryStrong" style={styles.routeLabel} variant="caption">
           {routeLabel}

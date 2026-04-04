@@ -8,13 +8,14 @@ import {
   View,
 } from 'react-native';
 import { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useDiscoverFeed } from '../../../discover/presentation/hooks/useDiscoverFeed';
 import { useHackathonDetail } from '../hooks/useHackathonDetail';
 import type { DiscoverCategoryId } from '../../../../shared/types/discover';
 import { lightTheme } from '../../../../shared/theme';
 import type { DiscoverOpportunityItem } from '../../../../shared/types/discover';
-import { AppText, OpportunityDetailScreen, SearchInput, TopBar } from '../../../../shared/ui';
+import { AppText, OpportunityDetailScreen, SearchInput } from '../../../../shared/ui';
 
 import frame548 from '../../../../../assets/Frame 548.png';
 import frame549 from '../../../../../assets/Frame 549.png';
@@ -66,9 +67,8 @@ export function DiscoverHackathonsScreen({
   const hackathonCards = (discoverFeed?.hackathonListings ?? []).slice(0, 2);
 
   return (
-    <View style={styles.hackathonScreen}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.hackathonScreen}>
       <View style={styles.frame544}>
-        <TopBar />
         <View style={styles.searchHeaderRow}>
           <Pressable hitSlop={8} onPress={onSearchTyping} style={styles.searchFieldWrap}>
             <View pointerEvents="none">
@@ -163,7 +163,7 @@ export function DiscoverHackathonsScreen({
           </AppText>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -397,12 +397,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     borderBottomColor: '#A099A1',
     borderBottomWidth: 0.5,
-    left: 0,
     paddingHorizontal: lightTheme.spacing[20],
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    zIndex: 5,
+    paddingTop: lightTheme.spacing[8],
   },
   frame545Content: {
     gap: 40,
@@ -411,11 +407,7 @@ const styles = StyleSheet.create({
     paddingTop: lightTheme.spacing[20],
   },
   frame545Scroll: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 112,
+    flex: 1,
   },
   frame552: {
     flexDirection: 'row',
