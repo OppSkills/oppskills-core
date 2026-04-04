@@ -13,6 +13,7 @@ import { styles } from './ProfileScreen.styles';
 
 interface ProfileScreenProps {
   readonly onBack: () => void;
+  readonly onEdit: () => void;
 }
 
 const FALLBACK_PROFILE = {
@@ -73,7 +74,7 @@ function StatRow({ label, value, iconSource }: StatRowProps) {
   );
 }
 
-export function ProfileScreen({ onBack }: ProfileScreenProps) {
+export function ProfileScreen({ onBack, onEdit }: ProfileScreenProps) {
   const session = useMockSession();
   const fullName = session.mockProfile?.fullName || FALLBACK_PROFILE.fullName;
   const email = session.mockProfile?.email || FALLBACK_PROFILE.email;
@@ -116,7 +117,7 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
             </View>
           </View>
 
-          <Pressable style={styles.editPill}>
+          <Pressable accessibilityLabel="Edit profile" hitSlop={8} onPress={onEdit} style={styles.editPill}>
             <View style={styles.editPen} />
             <AppText style={styles.editText} variant="caption">
               Edit

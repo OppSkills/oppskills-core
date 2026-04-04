@@ -20,6 +20,7 @@ export const appRoutes = {
   discoverTab: 'discover-tab',
   appliedTab: 'applied-tab',
   profilePage: 'profile-page',
+  profileEditPage: 'profile-edit-page',
   discoverHackathons: 'discover-hackathons',
   discoverCompetitions: 'discover-competitions',
   discoverEventsPrimary: 'discover-events-primary',

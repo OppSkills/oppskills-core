@@ -22,6 +22,7 @@ export type AuthStackParamList = {
 export type HomeStackParamList = {
   [appRoutes.homeStack]: undefined;
   [appRoutes.profilePage]: undefined;
+  [appRoutes.profileEditPage]: undefined;
   [appRoutes.competitionPage]: undefined;
   [appRoutes.hackathonPage]: undefined;
 };

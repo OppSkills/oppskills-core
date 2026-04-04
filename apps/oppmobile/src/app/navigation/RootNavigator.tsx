@@ -44,6 +44,7 @@ import {
 import { transitionSearchFlowState, type SearchFlowState } from '../../domains/search/model/searchStateMachine';
 import { useMockSession } from '../../domains/user-accounts/presentation/providers/MockSessionProvider';
 import { HomePageScreen } from '../../domains/users/presentation/screens/HomePageScreen';
+import { ProfileEditScreen } from '../../domains/users/presentation/screens/ProfileEditScreen';
 import { ProfileScreen } from '../../domains/users/presentation/screens/ProfileScreen';
 import { appRoutes } from '../../shared/constants/routes';
 import { lightTheme } from '../../shared/theme';
@@ -305,6 +306,21 @@ function HomeStackNavigator() {
               }
 
               navigation.navigate(appRoutes.homeStack);
+            }}
+            onEdit={() => navigation.navigate(appRoutes.profileEditPage)}
+          />
+        )}
+      </HomeStack.Screen>
+      <HomeStack.Screen name={appRoutes.profileEditPage}>
+        {({ navigation }) => (
+          <ProfileEditScreen
+            onBack={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+
+              navigation.navigate(appRoutes.profilePage);
             }}
           />
         )}
