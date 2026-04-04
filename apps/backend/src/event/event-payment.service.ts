@@ -14,8 +14,7 @@ import { RazorpayService } from '../payments/razorpay.service';
 import { PaymentRegistrationEscrowService } from '../payments/payment-registration-escrow.service';
 import { Decimal } from '@prisma/client/runtime/library';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-
-const PLATFORM_FEE_PERCENT = 2;
+import { computeRazorpayGatewayFee } from '../payments/payment-gateway-fee.util';
 
 @Injectable()
 export class EventPaymentService {
@@ -163,7 +162,7 @@ export class EventPaymentService {
       };
     }
 
-    let grossAmount = new Decimal(event.entryFeeAmount);
+    let registrationFee = new Decimal(event.entryFeeAmount);
     let discountAmount = new Decimal(0);
     let discountCodeId: string | null = null;
 
@@ -173,42 +172,37 @@ export class EventPaymentService {
         event.id,
         params.userId,
         params.discountCode,
-        grossAmount,
+        registrationFee,
       );
       discountAmount = discount.discountAmount;
       discountCodeId = discount.discountCodeId;
-      grossAmount = grossAmount.minus(discountAmount);
+      registrationFee = registrationFee.minus(discountAmount);
 
-      if (grossAmount.lessThanOrEqualTo(0)) {
-        grossAmount = new Decimal(0);
+      if (registrationFee.lessThanOrEqualTo(0)) {
+        registrationFee = new Decimal(0);
       }
     }
 
-    // When participant bears the fee, add the processing fee (2% + 18% GST = 2.36%) on top.
-    const baseAmountBeforeProcessingFee = grossAmount;
-    let processingFeeAmount = new Decimal(0);
-    if (event.feeBearer === 'PARTICIPANT' && grossAmount.greaterThan(0)) {
-      processingFeeAmount = grossAmount
-        .times('0.0236')
-        .toDecimalPlaces(2, Decimal.ROUND_UP);
-      grossAmount = grossAmount.plus(processingFeeAmount);
+    const gatewayFee = registrationFee.greaterThan(0)
+      ? computeRazorpayGatewayFee(registrationFee)
+      : new Decimal(0);
+
+    let chargeAmount: Decimal;
+    let organizerShareAmount: Decimal;
+    if (event.feeBearer === 'PARTICIPANT' && registrationFee.greaterThan(0)) {
+      chargeAmount = registrationFee.plus(gatewayFee);
+      organizerShareAmount = registrationFee;
+    } else {
+      chargeAmount = registrationFee;
+      organizerShareAmount = registrationFee.minus(gatewayFee);
     }
 
-    // Calculate fees
-    const platformFeeAmount = grossAmount
-      .times(PLATFORM_FEE_PERCENT)
-      .dividedBy(100)
-      .toDecimalPlaces(2);
+    const processingFeeAmount =
+      event.feeBearer === 'PARTICIPANT' && gatewayFee.greaterThan(0)
+        ? gatewayFee
+        : new Decimal(0);
 
-    // Add 18% GST on the platform fee
-    const platformFeeGstAmount = platformFeeAmount
-      .times(18)
-      .dividedBy(100)
-      .toDecimalPlaces(2);
-
-    const totalDeduction = platformFeeAmount.plus(platformFeeGstAmount);
-    const organizerShareAmount = grossAmount.minus(totalDeduction);
-    const grossAmountPaise = grossAmount.times(100).toNumber();
+    const grossAmountPaise = chargeAmount.times(100).toNumber();
 
     // Handle zero amount after discount
     if (grossAmountPaise === 0) {
@@ -271,9 +265,10 @@ export class EventPaymentService {
         organizerId: event.ownerId,
         payerUserId: params.userId,
         currency: event.currency || 'INR',
-        grossAmount,
-        platformFeeAmount: totalDeduction,
+        grossAmount: registrationFee,
+        platformFeeAmount: gatewayFee,
         organizerShareAmount,
+        chargedAmount: chargeAmount,
         razorpayOrderId: razorpayOrder.id,
         transferOnHold: false,
         transferOnHoldUntil: null,
@@ -300,7 +295,7 @@ export class EventPaymentService {
       eventName: event.name,
       eventSlug: event.slug,
       originalAmount: Number(event.entryFeeAmount),
-      finalAmount: Number(baseAmountBeforeProcessingFee),
+      finalAmount: Number(registrationFee),
       discountAmount: discountAmount.greaterThan(0)
         ? Number(discountAmount)
         : undefined,
@@ -1274,6 +1269,7 @@ export class EventPaymentService {
       id: p.id,
       payer: p.payerUser,
       grossAmount: p.grossAmount.toString(),
+      chargedAmount: p.chargedAmount?.toString() ?? null,
       platformFeeAmount: p.platformFeeAmount.toString(),
       organizerShareAmount: p.organizerShareAmount.toString(),
       discountAmount: p.discountAmount?.toString() ?? null,

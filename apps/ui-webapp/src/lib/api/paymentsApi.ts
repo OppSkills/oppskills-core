@@ -130,6 +130,11 @@ export interface PayoutDetails {
   updatedAt: string;
 }
 
+/** Backend may return `{ exists: false }` when the user has not saved details yet. */
+export type PayoutDetailsApiResponse =
+  | { exists: false }
+  | ({ exists: true } & PayoutDetails);
+
 export interface PayoutDetailsInput {
   accountHolderName: string;
   accountNumber: string;
@@ -354,7 +359,15 @@ export async function getPayoutDetails(
   const res = await PaymentsAPI.get("/payout-details", {
     headers: buildAuthHeaders(token),
   });
-  return res.data;
+  const data = res.data as PayoutDetailsApiResponse;
+  if (data && typeof data === "object" && "exists" in data && data.exists === false) {
+    return null;
+  }
+  if (data && typeof data === "object" && "exists" in data && data.exists === true) {
+    const { exists: _e, ...rest } = data;
+    return rest as PayoutDetails;
+  }
+  return res.data as PayoutDetails | null;
 }
 
 export async function upsertPayoutDetails(

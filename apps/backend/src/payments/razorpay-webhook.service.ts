@@ -581,16 +581,21 @@ export class RazorpayWebhookService {
 
     const hackathonPayment = await prisma.hackathonPaymentEntity.findFirst({
       where: { razorpayPaymentId: paymentId },
-      select: { id: true, grossAmount: true, refundedAmount: true },
+      select: {
+        id: true,
+        grossAmount: true,
+        refundedAmount: true,
+        chargedAmount: true,
+      },
     });
 
     if (hackathonPayment) {
       const newRefundedAmount = new Prisma.Decimal(
         hackathonPayment.refundedAmount,
       ).add(refundAmountInRupees);
-      const isFullyRefunded = newRefundedAmount.gte(
-        hackathonPayment.grossAmount,
-      );
+      const chargedTotal =
+        hackathonPayment.chargedAmount ?? hackathonPayment.grossAmount;
+      const isFullyRefunded = newRefundedAmount.gte(chargedTotal);
 
       await prisma.hackathonPaymentEntity.update({
         where: { id: hackathonPayment.id },
@@ -608,14 +613,21 @@ export class RazorpayWebhookService {
 
     const eventPayment = await prisma.eventPaymentEntity.findFirst({
       where: { razorpayPaymentId: paymentId },
-      select: { id: true, grossAmount: true, refundedAmount: true },
+      select: {
+        id: true,
+        grossAmount: true,
+        refundedAmount: true,
+        chargedAmount: true,
+      },
     });
 
     if (eventPayment) {
       const newRefundedAmount = new Prisma.Decimal(
         eventPayment.refundedAmount,
       ).add(refundAmountInRupees);
-      const isFullyRefunded = newRefundedAmount.gte(eventPayment.grossAmount);
+      const chargedTotal =
+        eventPayment.chargedAmount ?? eventPayment.grossAmount;
+      const isFullyRefunded = newRefundedAmount.gte(chargedTotal);
 
       await prisma.eventPaymentEntity.update({
         where: { id: eventPayment.id },

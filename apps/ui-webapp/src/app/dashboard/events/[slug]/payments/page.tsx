@@ -10,7 +10,7 @@ import React, {
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { cn, getApiErrorMessage } from "@/lib/utils";
 import {
   Pencil,
   CheckCircle,
@@ -356,7 +356,9 @@ export default function Page() {
       setIsPayoutFormOpen(false);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to save payout details");
+      toast.error(
+        getApiErrorMessage(error, "Failed to save payout details"),
+      );
     }
   };
 
@@ -701,8 +703,8 @@ export default function Page() {
               </h6>
               <p className="font-sans text-muted-foreground text-base font-normal leading-normal">
                 {feeBearer === "PARTICIPANT"
-                  ? "Participant pays entry fee + processing fee. You receive the full entry fee."
-                  : "Deductions include platform fee (2%) and GST on platform fee (18%)"}
+                  ? "Participant pays the entry fee plus Razorpay processing (2% + 18% GST on that fee). You receive the full entry fee — there is no separate platform cut."
+                  : "Participant pays only the entry fee. Razorpay processing (2% + 18% GST on that fee) is deducted from your payout."}
               </p>
             </div>
 
@@ -712,21 +714,20 @@ export default function Page() {
                   title="Participant View"
                   isSelected={true}
                   onClick={() => { }}
+                  totalRowLabel="Participant pays total"
                   values={(() => {
                     const entryFee = parseFloat(entryFeeAmount || "0");
-                    const processingFee = Math.ceil(entryFee * 0.0236 * 100) / 100;
-                    const participantPays = entryFee + processingFee;
-                    const platformFee = participantPays * 0.02;
-                    const gst = platformFee * 0.18;
-                    const totalDeduction = platformFee + gst;
-                    const youGet = participantPays - totalDeduction;
+                    const rz = Math.round(entryFee * 0.02 * 100) / 100;
+                    const gstOnRz = Math.round(rz * 0.18 * 100) / 100;
+                    const processingTotal = rz + gstOnRz;
+                    const participantPays = entryFee + processingTotal;
 
                     return {
                       reg: `₹ ${entryFee.toFixed(2)}`,
-                      platformFee: `₹ ${processingFee.toFixed(2)} (Processing Fee)`,
-                      gst: `₹ ${participantPays.toFixed(2)} total`,
-                      totalDeduction: `₹ ${totalDeduction.toFixed(2)} (platform cut)`,
-                      youGet: `₹ ${youGet.toFixed(2)}`,
+                      platformFee: `₹ ${rz.toFixed(2)}`,
+                      gst: `₹ ${gstOnRz.toFixed(2)}`,
+                      totalDeduction: `₹ ${participantPays.toFixed(2)}`,
+                      youGet: `₹ ${entryFee.toFixed(2)}`,
                     };
                   })()}
                 />
@@ -735,18 +736,19 @@ export default function Page() {
                   title="Fee Structure"
                   isSelected={true}
                   onClick={() => { }}
+                  totalRowLabel="Total Razorpay processing"
                   values={(() => {
                     const entryFee = parseFloat(entryFeeAmount || "0");
-                    const platformFee = entryFee * 0.02;
-                    const gst = platformFee * 0.18;
-                    const totalDeduction = platformFee + gst;
-                    const youGet = entryFee - totalDeduction;
+                    const rz = Math.round(entryFee * 0.02 * 100) / 100;
+                    const gstOnRz = Math.round(rz * 0.18 * 100) / 100;
+                    const processingTotal = rz + gstOnRz;
+                    const youGet = entryFee - processingTotal;
 
                     return {
                       reg: `₹ ${entryFee.toFixed(2)}`,
-                      platformFee: `₹ ${platformFee.toFixed(2)} (2%)`,
-                      gst: `₹ ${gst.toFixed(2)} (18% of fee)`,
-                      totalDeduction: `₹ ${totalDeduction.toFixed(2)}`,
+                      platformFee: `₹ ${rz.toFixed(2)}`,
+                      gst: `₹ ${gstOnRz.toFixed(2)}`,
+                      totalDeduction: `₹ ${processingTotal.toFixed(2)}`,
                       youGet: `₹ ${youGet.toFixed(2)}`,
                     };
                   })()}
@@ -847,6 +849,7 @@ interface CalculationCardProps {
   title: string;
   isSelected: boolean;
   onClick: () => void;
+  totalRowLabel?: string;
   values: {
     reg: string;
     platformFee: string;
@@ -860,6 +863,7 @@ const CalculationCard = ({
   title,
   isSelected,
   onClick,
+  totalRowLabel = "Total processing",
   values,
 }: CalculationCardProps) => {
   return (
@@ -895,7 +899,7 @@ const CalculationCard = ({
 
         <div className="flex justify-between items-center self-stretch">
           <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-            Platform Fee:
+            Razorpay fee (2%):
           </span>
           <span className="font-sans text-primary-500 text-base font-normal leading-relaxed">
             {values.platformFee}
@@ -904,7 +908,7 @@ const CalculationCard = ({
 
         <div className="flex justify-between items-center self-stretch">
           <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-            GST on Fee:
+            GST on Razorpay fee:
           </span>
           <span className="font-sans text-primary-500 text-base font-normal leading-relaxed">
             {values.gst}
@@ -913,7 +917,7 @@ const CalculationCard = ({
 
         <div className="flex justify-between items-center self-stretch">
           <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-            Total Deduction:
+            {totalRowLabel}:
           </span>
           <span className="font-sans text-primary-500 text-base font-normal leading-relaxed">
             {values.totalDeduction}
@@ -925,7 +929,7 @@ const CalculationCard = ({
 
       <div className="flex justify-between items-center self-stretch">
         <span className="font-sans text-muted-foreground text-base font-normal leading-relaxed">
-          You get
+          You receive
         </span>
         <span className="font-sans text-primary-500 text-base font-normal leading-relaxed">
           {values.youGet}
