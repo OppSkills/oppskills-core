@@ -1,5 +1,5 @@
 import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, type BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
@@ -279,12 +279,21 @@ function HomeStackNavigator() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name={appRoutes.homeStack}>
-        {({ navigation }) => (
-          <HomePageScreen
-            onOpenCompetition={() => navigation.navigate(appRoutes.competitionPage)}
-            onOpenHackathon={() => navigation.navigate(appRoutes.hackathonPage)}
-          />
-        )}
+        {({ navigation }) => {
+          const tabNavigation = navigation.getParent() as BottomTabNavigationProp<MainTabParamList> | undefined;
+
+          const openDiscoverScreen = (screen: keyof DiscoverStackParamList) => {
+            tabNavigation?.navigate(appRoutes.discoverTab, { screen });
+          };
+
+          return (
+            <HomePageScreen
+              onOpenCompetition={() => openDiscoverScreen(appRoutes.discoverCompetitions)}
+              onOpenEvent={() => openDiscoverScreen(appRoutes.discoverEventsPrimary)}
+              onOpenHackathon={() => openDiscoverScreen(appRoutes.discoverHackathons)}
+            />
+          );
+        }}
       </HomeStack.Screen>
       <HomeStack.Screen name={appRoutes.competitionPage}>
         {({ navigation }) => (
@@ -328,6 +337,8 @@ function DiscoverStackNavigator() {
       <DiscoverStack.Screen name={appRoutes.discoverHackathons}>
         {({ navigation }) => (
           <DiscoverHackathonsScreen
+            onOpenCompetitions={() => navigation.navigate(appRoutes.discoverCompetitions)}
+            onOpenEvents={() => navigation.navigate(appRoutes.discoverEventsPrimary)}
             onOpenHackathonPage={() => navigation.navigate(appRoutes.hackathonPage)}
             onSearchTyping={() => {
               setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_TYPING' }));
@@ -339,6 +350,8 @@ function DiscoverStackNavigator() {
       <DiscoverStack.Screen name={appRoutes.discoverCompetitions}>
         {({ navigation }) => (
           <DiscoverCompetitionsScreen
+            onOpenEvents={() => navigation.navigate(appRoutes.discoverEventsPrimary)}
+            onOpenHackathons={() => navigation.navigate(appRoutes.discoverHackathons)}
             onOpenCompetitionPage={() => navigation.navigate(appRoutes.competitionPage)}
             onSearchResults={() => {
               const fallbackQuery = searchQuery.trim() || 'Hack';
@@ -355,7 +368,13 @@ function DiscoverStackNavigator() {
       <DiscoverStack.Screen name={appRoutes.discoverEventsPrimary}>
         {({ navigation }) => (
           <DiscoverEventsPrimaryScreen
+            onOpenCompetitions={() => navigation.navigate(appRoutes.discoverCompetitions)}
             onOpenEventsSecondary={() => navigation.navigate(appRoutes.discoverEventsSecondary)}
+            onOpenHackathons={() => navigation.navigate(appRoutes.discoverHackathons)}
+            onOpenCommunities={() => {
+              setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_RECENT' }));
+              navigation.navigate(appRoutes.searchRecent);
+            }}
             onOpenSearchRecent={() => {
               setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_RECENT' }));
               navigation.navigate(appRoutes.searchRecent);
@@ -366,7 +385,13 @@ function DiscoverStackNavigator() {
       <DiscoverStack.Screen name={appRoutes.discoverEventsSecondary}>
         {({ navigation }) => (
           <DiscoverEventsSecondaryScreen
+            onOpenCompetitions={() => navigation.navigate(appRoutes.discoverCompetitions)}
             onOpenEventsPrimary={() => navigation.navigate(appRoutes.discoverEventsPrimary)}
+            onOpenHackathons={() => navigation.navigate(appRoutes.discoverHackathons)}
+            onOpenCommunities={() => {
+              setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_POPULAR' }));
+              navigation.navigate(appRoutes.searchPopular);
+            }}
             onOpenSearchPopular={() => {
               setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_POPULAR' }));
               navigation.navigate(appRoutes.searchPopular);
@@ -521,12 +546,30 @@ function DiscoverStackNavigator() {
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.competitionPage}>
         {({ navigation }) => (
-          <CompetitionPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.discoverStack)} />
+          <CompetitionPageScreen
+            onBackToDiscover={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+
+              navigation.navigate(appRoutes.discoverStack);
+            }}
+          />
         )}
       </DiscoverStack.Screen>
       <DiscoverStack.Screen name={appRoutes.hackathonPage}>
         {({ navigation }) => (
-          <HackathonPageScreen onBackToDiscover={() => navigation.navigate(appRoutes.discoverStack)} />
+          <HackathonPageScreen
+            onBackToDiscover={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+
+              navigation.navigate(appRoutes.discoverStack);
+            }}
+          />
         )}
       </DiscoverStack.Screen>
     </DiscoverStack.Navigator>
@@ -616,7 +659,7 @@ function MainTabNavigator() {
       <MainTabs.Screen
         component={DiscoverStackNavigator}
         name={appRoutes.discoverTab}
-        options={{ title: 'Discover' }}
+        options={{ popToTopOnBlur: true, title: 'Discover' }}
       />
       <MainTabs.Screen component={AppliedStackNavigator} name={appRoutes.appliedTab} options={{ title: 'Applied' }} />
     </MainTabs.Navigator>

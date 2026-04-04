@@ -22,17 +22,25 @@ import { lightTheme } from '../../../../shared/theme';
 import { AppText, SearchInput, TopBar } from '../../../../shared/ui';
 
 interface DiscoverEventsPrimaryScreenProps {
+  readonly onOpenCompetitions: () => void;
   readonly onOpenEventsSecondary: () => void;
+  readonly onOpenHackathons: () => void;
+  readonly onOpenCommunities: () => void;
   readonly onOpenSearchRecent: () => void;
 }
 
 export function DiscoverEventsPrimaryScreen({
+  onOpenCompetitions,
   onOpenEventsSecondary,
+  onOpenHackathons,
+  onOpenCommunities,
   onOpenSearchRecent,
 }: DiscoverEventsPrimaryScreenProps) {
   return (
     <DiscoverEventsTemplate
-      onOpenOtherCategory={onOpenEventsSecondary}
+      onOpenCommunities={onOpenCommunities}
+      onOpenCompetitions={onOpenCompetitions}
+      onOpenHackathons={onOpenHackathons}
       onOpenSearch={onOpenSearchRecent}
       onOpenVariant={onOpenEventsSecondary}
       preselectedBookmarkedIds={[]}
@@ -42,17 +50,25 @@ export function DiscoverEventsPrimaryScreen({
 }
 
 interface DiscoverEventsSecondaryScreenProps {
+  readonly onOpenCompetitions: () => void;
   readonly onOpenEventsPrimary: () => void;
+  readonly onOpenHackathons: () => void;
+  readonly onOpenCommunities: () => void;
   readonly onOpenSearchPopular: () => void;
 }
 
 export function DiscoverEventsSecondaryScreen({
+  onOpenCompetitions,
   onOpenEventsPrimary,
+  onOpenHackathons,
+  onOpenCommunities,
   onOpenSearchPopular,
 }: DiscoverEventsSecondaryScreenProps) {
   return (
     <DiscoverEventsTemplate
-      onOpenOtherCategory={onOpenEventsPrimary}
+      onOpenCommunities={onOpenCommunities}
+      onOpenCompetitions={onOpenCompetitions}
+      onOpenHackathons={onOpenHackathons}
       onOpenSearch={onOpenSearchPopular}
       onOpenVariant={onOpenEventsPrimary}
       preselectedBookmarkedIds={['discover-event-feature-2']}
@@ -62,17 +78,21 @@ export function DiscoverEventsSecondaryScreen({
 }
 
 interface DiscoverEventsTemplateProps {
+  readonly onOpenCommunities: () => void;
+  readonly onOpenCompetitions: () => void;
+  readonly onOpenHackathons: () => void;
   readonly onOpenSearch: () => void;
   readonly onOpenVariant: () => void;
-  readonly onOpenOtherCategory: () => void;
   readonly preselectedBookmarkedIds: readonly string[];
   readonly retryErrorLabel: string;
 }
 
 function DiscoverEventsTemplate({
+  onOpenCommunities,
+  onOpenCompetitions,
+  onOpenHackathons,
   onOpenSearch,
   onOpenVariant,
-  onOpenOtherCategory,
   preselectedBookmarkedIds,
   retryErrorLabel,
 }: DiscoverEventsTemplateProps) {
@@ -93,7 +113,17 @@ function DiscoverEventsTemplate({
       return;
     }
 
-    onOpenOtherCategory();
+    if (categoryId === 'hackathons') {
+      onOpenHackathons();
+      return;
+    }
+
+    if (categoryId === 'competitions') {
+      onOpenCompetitions();
+      return;
+    }
+
+    onOpenCommunities();
   };
 
   const toggleBookmark = (itemId: string) => {

@@ -24,11 +24,15 @@ import type { DiscoverOpportunityItem } from '../../../../shared/types/discover'
 import { AppText, OpportunityDetailScreen, SearchInput, TopBar } from '../../../../shared/ui';
 
 interface DiscoverCompetitionsScreenProps {
+  readonly onOpenEvents: () => void;
+  readonly onOpenHackathons: () => void;
   readonly onOpenCompetitionPage: () => void;
   readonly onSearchResults: () => void;
 }
 
 export function DiscoverCompetitionsScreen({
+  onOpenEvents,
+  onOpenHackathons,
   onOpenCompetitionPage,
   onSearchResults,
 }: DiscoverCompetitionsScreenProps) {
@@ -43,6 +47,16 @@ export function DiscoverCompetitionsScreen({
 
   const handleCategorySelect = (categoryId: DiscoverCategoryId) => {
     if (categoryId === 'competitions') {
+      return;
+    }
+
+    if (categoryId === 'hackathons') {
+      onOpenHackathons();
+      return;
+    }
+
+    if (categoryId === 'events') {
+      onOpenEvents();
       return;
     }
 

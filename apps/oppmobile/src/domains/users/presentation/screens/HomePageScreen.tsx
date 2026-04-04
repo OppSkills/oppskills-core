@@ -28,11 +28,13 @@ import { styles } from './HomePageScreen.styles';
 
 interface HomePageScreenProps {
   readonly onOpenCompetition: () => void;
+  readonly onOpenEvent: () => void;
   readonly onOpenHackathon: () => void;
 }
 
 export function HomePageScreen({
   onOpenCompetition,
+  onOpenEvent,
   onOpenHackathon,
 }: HomePageScreenProps) {
   const { data: homeFeed } = useHomeFeed();
@@ -51,6 +53,24 @@ export function HomePageScreen({
     const timer = setTimeout(() => setLoadingSections(false), 650);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleCategoryChipPress = (chipId: string) => {
+    setActiveCategoryId(chipId);
+
+    if (chipId === 'hackathons') {
+      onOpenHackathon();
+      return;
+    }
+
+    if (chipId === 'competitions') {
+      onOpenCompetition();
+      return;
+    }
+
+    if (chipId === 'events') {
+      onOpenEvent();
+    }
+  };
 
   const sections = useMemo(
     () => [
@@ -111,7 +131,7 @@ export function HomePageScreen({
                   return (
                     <Pressable
                       key={chip.id}
-                      onPress={() => setActiveCategoryId(chip.id)}
+                      onPress={() => handleCategoryChipPress(chip.id)}
                       style={[styles.hackathonCategoryCard, selected ? styles.hackathonCategoryCardActive : null]}
                     >
                       <Image resizeMode="cover" source={categoryImage} style={styles.hackathonCategoryImage} />
@@ -122,7 +142,7 @@ export function HomePageScreen({
                 return (
                   <Pressable
                     key={chip.id}
-                    onPress={() => setActiveCategoryId(chip.id)}
+                    onPress={() => handleCategoryChipPress(chip.id)}
                     style={[styles.categoryCard, selected ? styles.categoryCardActive : null]}
                   >
                     <View style={[styles.categoryIcon, selected ? styles.categoryIconActive : null]} />
@@ -150,6 +170,7 @@ export function HomePageScreen({
               emptyLabel="No opportunities yet."
               items={homeFeed?.topOpportunities ?? []}
               onOpenCompetition={onOpenCompetition}
+              onOpenEvent={onOpenEvent}
               onOpenHackathon={onOpenHackathon}
             />
             <InlineArrowAction label="View all" />
@@ -166,6 +187,7 @@ export function HomePageScreen({
               emptyLabel="No listed competitions available."
               items={homeFeed?.listedCompetitions ?? []}
               onOpenCompetition={onOpenCompetition}
+              onOpenEvent={onOpenEvent}
               onOpenHackathon={onOpenHackathon}
             />
             <InlineArrowAction label="View all" />
@@ -178,7 +200,7 @@ export function HomePageScreen({
             subtitle="Do not miss what is next, stay updated with upcoming events and sessions."
             title="Upcoming Events"
           >
-            <EventCardRow items={homeFeed?.upcomingEvents ?? []} />
+            <EventCardRow items={homeFeed?.upcomingEvents ?? []} onOpenEvent={onOpenEvent} />
             <InlineArrowAction label="View all" />
           </SectionBlock>
         );
@@ -327,7 +349,13 @@ function InlineArrowAction({ label }: { readonly label: string }) {
   );
 }
 
-function EventCardRow({ items }: { readonly items: readonly HomeEventItemEntity[] }) {
+function EventCardRow({
+  items,
+  onOpenEvent,
+}: {
+  readonly items: readonly HomeEventItemEntity[];
+  readonly onOpenEvent: () => void;
+}) {
   if (items.length === 0) {
     return <SectionEmptyState label="No upcoming events available." />;
   }
@@ -340,7 +368,7 @@ function EventCardRow({ items }: { readonly items: readonly HomeEventItemEntity[
       style={styles.horizontalRail}
     >
       {items.map((item) => (
-        <View key={item.id} style={styles.eventCard}>
+        <Pressable key={item.id} onPress={onOpenEvent} style={styles.eventCard}>
           <View style={styles.eventHero}>
             <View style={styles.eventOnlinePill}>
               <AppText colorToken="brandPrimaryStrong" variant="micro">
@@ -379,7 +407,7 @@ function EventCardRow({ items }: { readonly items: readonly HomeEventItemEntity[
               <Metric align="right" label="Entry Fee" value="Free" />
             </View>
           </View>
-        </View>
+        </Pressable>
       ))}
     </ScrollView>
   );
@@ -388,11 +416,13 @@ function EventCardRow({ items }: { readonly items: readonly HomeEventItemEntity[
 function ListedCompetitionRail({
   items,
   onOpenCompetition,
+  onOpenEvent,
   onOpenHackathon,
   emptyLabel,
 }: {
   readonly items: readonly HomeOpportunityItemEntity[];
   readonly onOpenCompetition: () => void;
+  readonly onOpenEvent: () => void;
   readonly onOpenHackathon: () => void;
   readonly emptyLabel: string;
 }) {
@@ -408,7 +438,8 @@ function ListedCompetitionRail({
       style={styles.horizontalRail}
     >
       {items.map((item) => {
-        const openAction = item.kind === 'Competition' ? onOpenCompetition : onOpenHackathon;
+        const openAction =
+          item.kind === 'Competition' ? onOpenCompetition : item.kind === 'Event' ? onOpenEvent : onOpenHackathon;
 
         return (
           <Pressable key={item.id} onPress={openAction} style={styles.listedCompetitionCard}>

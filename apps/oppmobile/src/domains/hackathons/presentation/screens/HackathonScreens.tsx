@@ -24,11 +24,15 @@ import heroImageOne from '../../../../../assets/college campus-amico 1.png';
 import heroImageTwo from '../../../../../assets/Business challenge-amico 1.png';
 
 interface DiscoverHackathonsScreenProps {
+  readonly onOpenCompetitions: () => void;
+  readonly onOpenEvents: () => void;
   readonly onOpenHackathonPage: () => void;
   readonly onSearchTyping: () => void;
 }
 
 export function DiscoverHackathonsScreen({
+  onOpenCompetitions,
+  onOpenEvents,
   onOpenHackathonPage,
   onSearchTyping,
 }: DiscoverHackathonsScreenProps) {
@@ -43,6 +47,16 @@ export function DiscoverHackathonsScreen({
 
   const handleCategorySelect = (categoryId: DiscoverCategoryId) => {
     if (categoryId === 'hackathons') {
+      return;
+    }
+
+    if (categoryId === 'competitions') {
+      onOpenCompetitions();
+      return;
+    }
+
+    if (categoryId === 'events') {
+      onOpenEvents();
       return;
     }
 
