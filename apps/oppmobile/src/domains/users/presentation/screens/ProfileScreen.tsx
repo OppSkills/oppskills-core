@@ -1,6 +1,10 @@
 import { Image, Pressable, ScrollView, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import competitionStatIcon from '../../../../../assets/Frame 192 (1).png';
+import certificateStatIcon from '../../../../../assets/Frame 192 (2).png';
+import eventStatIcon from '../../../../../assets/Frame 192.png';
 import frame426Illustration from '../../../../../assets/Frame 426.png';
 import writingRoomIllustration from '../../../../../assets/Writing room-rafiki 1.png';
 import { useMockSession } from '../../../user-accounts/presentation/providers/MockSessionProvider';
@@ -48,17 +52,15 @@ function initialsFromName(fullName: string): string {
 interface StatRowProps {
   readonly label: string;
   readonly value: string;
-  readonly glyph: 'calendar' | 'stars' | 'certificate';
+  readonly iconSource: ImageSourcePropType;
 }
 
-function StatRow({ label, value, glyph }: StatRowProps) {
+function StatRow({ label, value, iconSource }: StatRowProps) {
   return (
     <View style={styles.statsRow}>
       <View style={styles.statsRowLeft}>
         <View style={styles.statsTile}>
-          {glyph === 'calendar' ? <CalendarGlyph /> : null}
-          {glyph === 'stars' ? <StarsGlyph /> : null}
-          {glyph === 'certificate' ? <CertificateGlyph /> : null}
+          <Image resizeMode="contain" source={iconSource} style={styles.statsIconImage} />
         </View>
         <AppText style={styles.statsRowLabel} variant="body">
           {label}
@@ -67,36 +69,6 @@ function StatRow({ label, value, glyph }: StatRowProps) {
       <AppText style={styles.statsRowValue} variant="bodyStrong">
         {value}
       </AppText>
-    </View>
-  );
-}
-
-function CalendarGlyph() {
-  return (
-    <View style={styles.iconCalendarBody}>
-      <View style={styles.iconCalendarDivider} />
-      <View style={[styles.iconCalendarDot, { left: 4, top: 10 }]} />
-      <View style={[styles.iconCalendarDot, { left: 8, top: 10 }]} />
-      <View style={[styles.iconCalendarDot, { left: 12, top: 10 }]} />
-    </View>
-  );
-}
-
-function StarsGlyph() {
-  return (
-    <View style={styles.iconWrap}>
-      <View style={styles.iconStarsRing} />
-      <View style={[styles.iconStarsDot, { left: 9, top: 1 }]} />
-      <View style={[styles.iconStarsDot, { left: 2, top: 9 }]} />
-    </View>
-  );
-}
-
-function CertificateGlyph() {
-  return (
-    <View style={styles.iconCertificateBody}>
-      <View style={styles.iconCertificateLine} />
-      <View style={styles.iconCertificateRibbon} />
     </View>
   );
 }
@@ -158,9 +130,9 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
           <AppText style={styles.cardTitle} variant="title">
             Your Stats
           </AppText>
-          <StatRow glyph="calendar" label="Events" value="12" />
-          <StatRow glyph="stars" label="Competitions" value="8" />
-          <StatRow glyph="certificate" label="Certificates" value="8" />
+          <StatRow iconSource={eventStatIcon} label="Events" value="12" />
+          <StatRow iconSource={competitionStatIcon} label="Competitions" value="8" />
+          <StatRow iconSource={certificateStatIcon} label="Certificates" value="8" />
         </View>
 
         <View style={styles.sectionCard}>

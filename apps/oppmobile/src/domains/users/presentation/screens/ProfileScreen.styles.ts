@@ -256,6 +256,10 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 40,
   },
+  statsIconImage: {
+    height: 30,
+    width: 30,
+  },
   tinyDot: {
     backgroundColor: '#342636',
     borderRadius: lightTheme.radius.pill,
