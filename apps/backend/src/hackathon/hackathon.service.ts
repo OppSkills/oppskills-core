@@ -2466,7 +2466,7 @@ export class HackathonService {
     requesterUserId: string,
   ) {
     // Find hackathon by slug
-    const hackathon = await prisma.hackathonEntity.findUnique({
+    const hackathon = await prisma.hackathonEntity.findFirst({
       where: { slug, isDeleted: false },
       select: { id: true, name: true, ownerId: true, participantType: true },
     });
@@ -3165,7 +3165,7 @@ export class HackathonService {
 
 
     // 2. Fetch team and members
-    const team = await prisma.teamEntity.findUnique({
+    const team = await prisma.teamEntity.findFirst({
       where: { id: teamId, hackathonId },
       include: {
         leader: {
@@ -3213,27 +3213,27 @@ export class HackathonService {
     }
 
     // 4. Render and Batch Send
-    const emailBatch: Array<{ to: string; subject: string; html: string }> = [];
+    const emailBatch = await Promise.all(
+      Array.from(recipients.values()).map(async (recipient) => {
+        const rendered = await this.emailService.renderEmail(
+          'hackathon-team-notification',
+          {
+            firstName: recipient.firstName,
+            teamName: team.name,
+            hackathonName: hackathon.name,
+            hackathonSlug: hackathon.slug,
+            htmlBody,
+            baseUrl: process.env.FRONTEND_URL || 'https://www.oppskills.com',
+          },
+        );
 
-    for (const recipient of recipients.values()) {
-      const rendered = await this.emailService.renderEmail(
-        'hackathon-team-notification',
-        {
-          firstName: recipient.firstName,
-          teamName: team.name,
-          hackathonName: hackathon.name,
-          hackathonSlug: hackathon.slug,
-          htmlBody,
-          baseUrl: process.env.FRONTEND_URL || 'https://www.oppskills.com',
-        },
-      );
-
-      emailBatch.push({
-        to: recipient.email,
-        subject: rendered.subject,
-        html: rendered.html,
-      });
-    }
+        return {
+          to: recipient.email,
+          subject: rendered.subject,
+          html: rendered.html,
+        };
+      }),
+    );
 
     if (emailBatch.length > 0) {
       const result = await this.emailService.sendBatch(emailBatch);
