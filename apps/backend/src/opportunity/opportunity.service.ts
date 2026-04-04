@@ -173,18 +173,20 @@ export class OpportunityService {
     // Final sort for the top 8
     combinedTop.sort((a, b) => {
       // Primary: Registrations
-      if (b.registrationCount !== a.registrationCount) {
-        return b.registrationCount - a.registrationCount;
+      const regB = Number(b.registrationCount ?? 0);
+      const regA = Number(a.registrationCount ?? 0);
+      if (regB !== regA) {
+        return regB - regA;
       }
       // Secondary: Views
-      const viewsB = Number(b.views);
-      const viewsA = Number(a.views);
+      const viewsB = Number(b.views ?? 0);
+      const viewsA = Number(a.views ?? 0);
       if (viewsB !== viewsA) {
         return viewsB - viewsA;
       }
       // Tertiary: Impressions
-      const imprB = Number(b.impressions);
-      const imprA = Number(a.impressions);
+      const imprB = Number(b.impressions ?? 0);
+      const imprA = Number(a.impressions ?? 0);
       return imprB - imprA;
     });
 
