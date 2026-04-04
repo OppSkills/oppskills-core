@@ -55,16 +55,16 @@ function SearchLoadingSkeleton() {
     );
 }
 
-function SearchEmptyState({ 
-    title, 
-    subtitle, 
-    emptyTitle, 
+function SearchEmptyState({
+    title,
+    subtitle,
+    emptyTitle,
     emptyMessage,
     onClear
-}: { 
+}: {
     title?: string;
     subtitle?: string;
-    emptyTitle: string; 
+    emptyTitle: string;
     emptyMessage: string;
     onClear?: () => void;
 }) {
@@ -78,15 +78,15 @@ function SearchEmptyState({
                     <Sparkles className="w-4 h-4 text-amber-600" />
                 </div>
             </div>
-            
+
             <div className="space-y-2 max-w-sm">
                 <h3 className="text-2xl font-bold text-neutral-900">{emptyTitle}</h3>
                 <p className="text-neutral-500">{emptyMessage}</p>
             </div>
 
             {onClear && (
-                <Button 
-                    variant="outline" 
+                <Button
+                    variant="outline"
                     onClick={onClear}
                     className="rounded-full border-neutral-200 hover:bg-neutral-50"
                 >
@@ -124,8 +124,7 @@ function SearchContent() {
         return (
             <SearchEmptyState
                 emptyTitle="Oops! Something went wrong"
-                emptyMessage="We're having trouble fetching results right now. Please try again in 
-                a few moments."
+                emptyMessage="We're having trouble fetching results right now. Please try again in a few moments."
                 onClear={handleClear}
             />
         );
