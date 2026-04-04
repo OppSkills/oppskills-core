@@ -23,6 +23,7 @@ import { Logger } from '../_utils/logger';
 import { EmailService } from 'src/email/email.service';
 import { Inject, forwardRef } from '@nestjs/common';
 import { DELETED_RESOURCE_OWNER_ID } from '../_utils/constants';
+import { sanitizeHtmlContent } from '../_utils/html-sanitizer.utils';
 
 const BASE_DEFAULT_FIELDS = [
   {
@@ -137,7 +138,6 @@ const DEFAULT_ATTENDEE_ELIGIBILITY: HackathonAttendeeEligibilityValue[] = [
   'EVERYONE_CAN_APPLY',
 ];
 
-import { sanitizeHtmlContent } from '../_utils/html-sanitizer.utils';
 @Injectable()
 export class HackathonService {
   private readonly logger = new Logger(HackathonService.name);
@@ -3161,6 +3161,18 @@ export class HackathonService {
 
     if (!hackathon) {
       throw new NotFoundException('Hackathon not found');
+    }
+
+    // Permission check (authorized users: owner, admin, or manager)
+    const hasPermission = await this.hasViewRegistrationsPermission(
+      hackathon.ownerId,
+      userId,
+      hackathon.id,
+    );
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have permission to send emails for this hackathon.',
+      );
     }
 
 
