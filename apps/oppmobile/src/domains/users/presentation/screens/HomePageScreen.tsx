@@ -30,12 +30,14 @@ interface HomePageScreenProps {
   readonly onOpenCompetition: () => void;
   readonly onOpenEvent: () => void;
   readonly onOpenHackathon: () => void;
+  readonly onOpenProfile: () => void;
 }
 
 export function HomePageScreen({
   onOpenCompetition,
   onOpenEvent,
   onOpenHackathon,
+  onOpenProfile,
 }: HomePageScreenProps) {
   const { data: homeFeed } = useHomeFeed();
   const [activeCategoryId, setActiveCategoryId] = useState('');
@@ -94,17 +96,24 @@ export function HomePageScreen({
         return (
           <View style={styles.heroSection}>
             <View style={styles.profileRow}>
-              <View style={styles.avatar}>
-                <AppText colorToken="textInverse" variant="label">
-                  RT
-                </AppText>
-              </View>
-              <View style={styles.profileMeta}>
-                <AppText variant="title">Hello, Rohit Tiwari</AppText>
-                <AppText colorToken="textMuted" numberOfLines={1} variant="caption">
-                  Guru Jambheshwar University
-                </AppText>
-              </View>
+              <Pressable
+                accessibilityLabel="Open profile"
+                hitSlop={8}
+                onPress={onOpenProfile}
+                style={styles.profileInfoPressable}
+              >
+                <View style={styles.avatar}>
+                  <AppText colorToken="textInverse" variant="label">
+                    RT
+                  </AppText>
+                </View>
+                <View style={styles.profileMeta}>
+                  <AppText variant="title">Hello, Rohit Tiwari</AppText>
+                  <AppText colorToken="textMuted" numberOfLines={1} variant="caption">
+                    Guru Jambheshwar University
+                  </AppText>
+                </View>
+              </Pressable>
               <View style={styles.headerSearchIcon}>
                 <View style={styles.headerSearchCircle} />
                 <View style={styles.headerSearchHandle} />

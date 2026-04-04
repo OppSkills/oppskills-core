@@ -598,6 +598,11 @@ export const styles = StyleSheet.create({
     flex: 1,
     marginLeft: lightTheme.spacing[10],
   },
+  profileInfoPressable: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+  },
   profileRow: {
     alignItems: 'center',
     backgroundColor: lightTheme.colors.surfacePrimary,

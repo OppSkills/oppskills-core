@@ -44,6 +44,7 @@ import {
 import { transitionSearchFlowState, type SearchFlowState } from '../../domains/search/model/searchStateMachine';
 import { useMockSession } from '../../domains/user-accounts/presentation/providers/MockSessionProvider';
 import { HomePageScreen } from '../../domains/users/presentation/screens/HomePageScreen';
+import { ProfileScreen } from '../../domains/users/presentation/screens/ProfileScreen';
 import { appRoutes } from '../../shared/constants/routes';
 import { lightTheme } from '../../shared/theme';
 import { AppText } from '../../shared/ui';
@@ -289,9 +290,24 @@ function HomeStackNavigator() {
               onOpenCompetition={() => openDiscoverScreen(appRoutes.discoverCompetitions)}
               onOpenEvent={() => openDiscoverScreen(appRoutes.discoverEventsPrimary)}
               onOpenHackathon={() => openDiscoverScreen(appRoutes.discoverHackathons)}
+              onOpenProfile={() => navigation.navigate(appRoutes.profilePage)}
             />
           );
         }}
+      </HomeStack.Screen>
+      <HomeStack.Screen name={appRoutes.profilePage}>
+        {({ navigation }) => (
+          <ProfileScreen
+            onBack={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+
+              navigation.navigate(appRoutes.homeStack);
+            }}
+          />
+        )}
       </HomeStack.Screen>
       <HomeStack.Screen name={appRoutes.competitionPage}>
         {({ navigation }) => (
