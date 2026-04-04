@@ -85,25 +85,6 @@ export async function getPublicUpcomingEvents(
   return res.data as { items: any[]; further: boolean };
 }
 
-/**
- * Lists past public events (Deadline < Now).
- */
-export async function getPublicPastEvents(
-  params: {
-    page?: number;
-    appendResults?: boolean;
-    q?: string;
-    festival_id?: string;
-    modes?: string[];
-    status?: string[];
-    eventDates?: string[];
-    eligibility?: string[];
-    sort?: string;
-  } = {},
-): Promise<unknown> {
-  const res = await API.get("/public/past", { params });
-  return res.data as unknown;
-}
 
 // =====================
 // Authenticated API Functions

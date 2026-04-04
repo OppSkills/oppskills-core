@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, PlusCircle, Search, Trophy, Calendar } from "lucide-react";
+import { Menu, X, PlusCircle, Search, Trophy, Calendar, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import {
@@ -17,9 +17,30 @@ import Image from "next/image";
 import { Input } from "./ui/input";
 import { UserAccountButton } from "./user-account-button";
 
+import { useRouter, useSearchParams } from "next/navigation";
+
 const Navbar = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") || "";
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [isSearching, setIsSearching] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [authMode, setAuthMode] = useQueryState("auth");
+
+  // Update local state when URL changes (e.g. user goes back/forward)
+  useEffect(() => {
+    setSearchQuery(searchParams.get("q") || "");
+    setIsSearching(false);
+  }, [searchParams]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setIsSearching(true);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   const navLinks = [
     { name: "Home", href: "/" },
@@ -68,16 +89,26 @@ const Navbar = () => {
         {/* --- RIGHT SIDE ACTIONS --- */}
         <div className="flex items-center gap-3">
           <div className="hidden xl:flex items-center justify-center">
-            <div className="relative w-full max-w-[300px]">
+            <form onSubmit={handleSearch} className="relative w-full max-w-[300px]">
               <Input
                 type="text"
                 placeholder="Search"
                 className="w-full rounded-full border-neutral-400 py-2"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
-                <Search className="h-6 w-6" />
-              </div>
-            </div>
+              <button
+                type="submit"
+                disabled={isSearching}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-primary-500 transition-colors disabled:opacity-50"
+              >
+                {isSearching ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-primary-500" />
+                ) : (
+                  <Search className="h-6 w-6" />
+                )}
+              </button>
+            </form>
           </div>
 
           {/* User actions / auth */}
@@ -143,6 +174,29 @@ const Navbar = () => {
       {/* --- MOBILE MENU --- */}
       {isOpen && (
         <div className="lg:hidden pt-4 pb-6 space-y-4 animate-in slide-in-from-top-5">
+          {/* Mobile Search */}
+          <div className="px-2 mb-4">
+            <form onSubmit={(e) => { handleSearch(e); setIsOpen(false); }} className="relative w-full">
+              <Input
+                type="text"
+                placeholder="Search"
+                className="w-full rounded-full border-neutral-400 py-2 pl-4 pr-12"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button
+                type="submit"
+                disabled={isSearching}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-primary-500 transition-colors disabled:opacity-50"
+              >
+                {isSearching ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-primary-500" />
+                ) : (
+                  <Search className="h-6 w-6" />
+                )}
+              </button>
+            </form>
+          </div>
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <Link

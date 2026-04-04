@@ -2,8 +2,8 @@
 import {
   getPublicEvents,
   getPublicUpcomingEvents,
-  getPublicPastEvents,
 } from "@/lib/api/eventApi";
+import { getPublicPastOpportunities } from "@/lib/api/opportunityApi";
 
 /**
  * Event data type for the public listing page.
@@ -155,15 +155,10 @@ export function usePastEvents(
   return useInfiniteQuery<PastOpportunitiesPage, Error>({
     queryKey: ["events", "past", festivalId, filters] as const,
     queryFn: async ({ pageParam = 1 }) => {
-      const data = await getPublicPastEvents({
+      const data = await getPublicPastOpportunities({
         festival_id: festivalId,
         page: pageParam as number,
         q: filters?.search,
-        modes: filters?.modes,
-        status: filters?.status,
-        eventDates: filters?.eventDates,
-        eligibility: filters?.eligibility,
-        sort: filters?.sort,
       });
       return data as PastOpportunitiesPage;
     },
