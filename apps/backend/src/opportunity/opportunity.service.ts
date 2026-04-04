@@ -6,6 +6,24 @@ import { HackathonService } from '../hackathon/hackathon.service';
 @Injectable()
 export class OpportunityService {
   private readonly logger = new Logger(OpportunityService.name);
+  private readonly OPPORTUNITY_SELECT = {
+    id: true,
+    name: true,
+    slug: true,
+    bannerImageUrl: true,
+    startDate: true,
+    registrationDeadline: true,
+    locationAddress: true,
+    locationType: true,
+    registrationCount: true,
+    prizeTotalWorthAmount: true,
+    entryFeeAmount: true,
+    isFree: true,
+    currency: true,
+    organizationName: true,
+    views: true,
+    impressions: true,
+  } as const;
 
   constructor(
     private readonly eventService: EventService,
@@ -86,25 +104,6 @@ export class OpportunityService {
       };
     }
     // (PUBLISHED + APPROVED)
-    const opportunitySelect = {
-      id: true,
-      name: true,
-      slug: true,
-      bannerImageUrl: true,
-      startDate: true,
-      registrationDeadline: true,
-      locationAddress: true,
-      locationType: true,
-      registrationCount: true,
-      prizeTotalWorthAmount: true,
-      entryFeeAmount: true,
-      isFree: true,
-      currency: true,
-      organizationName: true,
-      views: true,
-      impressions: true,
-    };
-
     const [matchingHackathons, matchingEvents] = await Promise.all([
       prisma.hackathonEntity.findMany({
         where: {
@@ -113,7 +112,7 @@ export class OpportunityService {
           approvalStatus: 'APPROVED',
           isDeleted: false,
         },
-        select: opportunitySelect,
+        select: this.OPPORTUNITY_SELECT,
         take: 4,
         orderBy: { createdAt: 'desc' },
       }),
@@ -124,7 +123,7 @@ export class OpportunityService {
           approvalStatus: 'APPROVED',
           isDeleted: false,
         },
-        select: opportunitySelect,
+        select: this.OPPORTUNITY_SELECT,
         take: 4,
         orderBy: { createdAt: 'desc' },
       }),
@@ -140,7 +139,7 @@ export class OpportunityService {
           approvalStatus: 'APPROVED',
           isDeleted: false,
         },
-        select: opportunitySelect,
+        select: this.OPPORTUNITY_SELECT,
         take: 8,
         orderBy: [
           { registrationCount: 'desc' },
@@ -155,7 +154,7 @@ export class OpportunityService {
           approvalStatus: 'APPROVED',
           isDeleted: false,
         },
-        select: opportunitySelect,
+        select: this.OPPORTUNITY_SELECT,
         take: 8,
         orderBy: [
           { registrationCount: 'desc' },
@@ -192,10 +191,16 @@ export class OpportunityService {
 
     const finalTop = combinedTop.slice(0, 8);
 
+    // 3. Cleanup: Remove internal sorting fields (views, impressions) before returning
+    const sanitize = (item: any) => {
+      const { views: _v, impressions: _i, ...rest } = item;
+      return rest;
+    };
+
     return {
-      hackathons: matchingHackathons,
-      events: matchingEvents,
-      topOpportunities: finalTop,
+      hackathons: matchingHackathons.map(sanitize),
+      events: matchingEvents.map(sanitize),
+      topOpportunities: finalTop.map(sanitize),
     };
   }
 }

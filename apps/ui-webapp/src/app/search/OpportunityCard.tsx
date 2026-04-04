@@ -32,14 +32,14 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
         ? formatInTimeZone(new Date(opportunity.registrationDeadline), 'UTC', 'dd MMM yyyy')
         : 'N/A'
 
-    const prizeValue = opportunity.prizeTotalWorthAmount
-        ? `${opportunity.currency === "INR" ? "₹" : opportunity.currency} ${opportunity.prizeTotalWorthAmount.toLocaleString()}`
-        : 'TBD'
+    const feeDisplay = opportunity.isFree
+        ? 'Free'
+        : `Paid ${opportunity.currency === "INR" ? "₹" : opportunity.currency} ${Number(opportunity.entryFeeAmount ?? 0).toLocaleString()}`
 
     return (
         <Link href={`${baseUrl}/${opportunity.slug}`} className="block">
             <div className='flex w-full flex-col gap-4 relative'>
-                <div className='relative rounded-2xl overflow-hidden aspect-video bg-neutral-100'>
+                <div className='group relative rounded-2xl overflow-hidden aspect-video bg-neutral-100'>
                     {opportunity.bannerImageUrl ? (
                         <Image
                             src={opportunity.bannerImageUrl}
@@ -48,7 +48,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
                             className="object-cover"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-neutral-200">
+                        <div className="w-full h-full flex items-center justify-center bg-neutral-200/60 group-hover:bg-neutral-200 transition-colors duration-300">
                             <span className="text-neutral-400 font-bold text-4xl opacity-50">
                                 {opportunity.name.charAt(0)}
                             </span>
@@ -67,11 +67,11 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
                 <div className='flex w-full justify-between'>
                     <div>
                         <p className='text-xs text-neutral-500'>Register By</p>
-                        <p className='text-base text-neutral-700 font-semibold'>{formattedDeadline}</p>
+                        <p className='text-base text-neutral-700'>{formattedDeadline}</p>
                     </div>
                     <div>
-                        <p className='text-xs text-neutral-500'>Prize Worth</p>
-                        <p className='text-base text-neutral-700 font-semibold'>{prizeValue}</p>
+                        <p className='text-xs text-neutral-500'>Entry Fee</p>
+                        <p className='text-base text-neutral-700'>{feeDisplay}</p>
                     </div>
                 </div>
             </div>
