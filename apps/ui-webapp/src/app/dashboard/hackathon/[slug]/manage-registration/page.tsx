@@ -236,6 +236,8 @@ export default function Page() {
           data={participants}
           selectedRoundId={selectedRoundId}
           nextRoundId={nextRoundId}
+          hackathonId={data.hackathonId}
+          hackathonName={data.name}
         />
       </div>
     </div>

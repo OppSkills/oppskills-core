@@ -18,7 +18,7 @@ import { HackathonModule } from 'src/hackathon/hackathon.module';
     GoogleSheetsModule,
     AnalyticsModule,
     forwardRef(() => PaymentsModule),
-    HackathonModule,
+    forwardRef(() => HackathonModule),
   ],
   controllers: [
     EventController,

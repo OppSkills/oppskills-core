@@ -34,6 +34,7 @@ import {
   AddHackathonRoleDto,
   RemoveHackathonRoleDto,
   UpsertRoundSubmissionDto,
+  SendTeamEmailDto,
 } from '@oppskills/types';
 import { Logger } from '../_utils/logger';
 import { AdminGuard } from '../common/admin.guard';
@@ -45,6 +46,7 @@ import {
   UpdateHackathonRegistrationFormDto,
   UpdateHackathonMaxTeamsDto,
 } from './hackathon-update-nested.dto';
+
 
 function assertNonEmptyId(id: string, fieldName: string): string {
   const trimmed = id.trim();
@@ -64,7 +66,7 @@ export class HackathonController {
   constructor(
     private readonly hackathonService: HackathonService,
     private readonly teamService: TeamService,
-  ) {}
+  ) { }
 
   @Get('my-team')
   @ApiOperation({
@@ -1466,5 +1468,51 @@ export class HackathonController {
       body.isRegistrationPaused,
       userId,
     );
+  }
+
+  @Post(':id/teams/:teamId/send-email')
+  @ApiOperation({
+    summary: 'Send custom email to all members of a team',
+    description:
+      'Send a custom HTML email to all members of a specific team (including leader). Only owner or manager of the hackathon can perform this.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Hackathon ID (CUID-like string)',
+    type: 'string',
+    example: 'clx1234567890abcdefghijk',
+  })
+  @ApiParam({
+    name: 'teamId',
+    description: 'Team ID (CUID-like string)',
+    type: 'string',
+    example: 'clxabcdefghijklmnopqrst',
+  })
+  @ApiBody({ type: SendTeamEmailDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Emails sent successfully',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden - No permission' })
+  @ApiResponse({ status: 404, description: 'Hackathon or team not found' })
+  async sendTeamEmail(
+    @Param('id') id: string,
+    @Param('teamId') teamId: string,
+    @Body() dto: SendTeamEmailDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+    const safeId = assertNonEmptyId(id, 'id');
+    const safeTeamId = assertNonEmptyId(teamId, 'teamId');
+
+    // Ensure DTO teamId matches param teamId
+    if (dto.teamId !== safeTeamId) {
+      throw new BadRequestException('Team ID mismatch between URL and body');
+    }
+    // We await the service call which now performs quick validations and then 
+    // offloads the actual email delivery to the background. This allows us to 
+    // return early while still catching immediate issues like 404/403.
+    return this.hackathonService.sendTeamEmail(safeId, userId, dto);
   }
 }

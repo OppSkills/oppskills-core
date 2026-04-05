@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format } from "date-fns";
+import { formatToIST } from "@/lib/date-utils";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -263,7 +263,7 @@ export default function RoundsAndStages({
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {tempRoundData.startDate ? (
-                                  format(tempRoundData.startDate, "d MMM yyyy")
+                                  formatToIST(tempRoundData.startDate, { formatType: "full_date", showSuffix: false })
                                 ) : (
                                   <span>Pick a date</span>
                                 )}
@@ -314,7 +314,7 @@ export default function RoundsAndStages({
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {tempRoundData.endDate ? (
-                                  format(tempRoundData.endDate, "d MMM yyyy")
+                                  formatToIST(tempRoundData.endDate, { formatType: "full_date", showSuffix: false })
                                 ) : (
                                   <span>Pick a date</span>
                                 )}
@@ -562,7 +562,7 @@ export default function RoundsAndStages({
                             Starts
                           </div>
                           <div className="text-sm font-medium whitespace-nowrap">
-                            {format(round.startDate, "d MMM yyyy")},{" "}
+                            {formatToIST(round.startDate, { formatType: "full_date", showSuffix: false })},{" "}
                             {round.startTime}
                           </div>
                         </div>
@@ -571,7 +571,7 @@ export default function RoundsAndStages({
                             Ends
                           </div>
                           <div className="text-sm font-medium whitespace-nowrap">
-                            {format(round.endDate, "d MMM yyyy")},{" "}
+                            {formatToIST(round.endDate, { formatType: "full_date", showSuffix: false })},{" "}
                             {round.endTime}
                           </div>
                         </div>

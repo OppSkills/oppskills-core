@@ -1494,7 +1494,14 @@ export default function EditHackathonPage() {
                       mode="single"
                       selected={formData.eventDate}
                       onSelect={(date) =>
-                        setFormData({ ...formData, eventDate: date })
+                        setFormData({
+                          ...formData,
+                          eventDate: date,
+                          registrationSettings: {
+                            ...formData.registrationSettings,
+                            eventDate: date,
+                          },
+                        })
                       }
                       initialFocus
                     />
@@ -1511,6 +1518,10 @@ export default function EditHackathonPage() {
                         setFormData({
                           ...formData,
                           eventTimeFrom: e.target.value,
+                          registrationSettings: {
+                            ...formData.registrationSettings,
+                            eventTime: e.target.value,
+                          },
                         })
                       }
                       className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"

@@ -15,11 +15,15 @@ import type {
   HackathonAttendeeEligibilityValue,
   PrizeBreakdownDto,
   RegistrationFormDto,
+  SendTeamEmailDto,
 } from '@oppskills/types';
 import type { UpdateHackathonPrizeBreakdownDto } from './hackathon-update-nested.dto';
 import { AnalyticsService } from 'src/analytics/analytics.service';
 import { Logger } from '../_utils/logger';
+import { EmailService } from 'src/email/email.service';
+import { Inject, forwardRef } from '@nestjs/common';
 import { DELETED_RESOURCE_OWNER_ID } from '../_utils/constants';
+import { sanitizeHtmlContent } from '../_utils/html-sanitizer.utils';
 
 const BASE_DEFAULT_FIELDS = [
   {
@@ -143,7 +147,11 @@ export class HackathonService {
    * - If `rounds` is not provided, no default rounds are created (organizers add them later).
    */
 
-  constructor(private readonly analyticsService: AnalyticsService) { }
+  constructor(
+    private readonly analyticsService: AnalyticsService,
+    @Inject(forwardRef(() => EmailService))
+    private readonly emailService: EmailService,
+  ) { }
 
   async createHackathon(dto: CreateHackathonDto, userId: string) {
     this.logger.log(
@@ -541,7 +549,7 @@ export class HackathonService {
         : input.appendResults
           ? 20
           : 10;
-    
+
     const page = input.page ? Math.max(1, input.page) : 1;
     const skip = (page - 1) * take;
 
@@ -2123,7 +2131,7 @@ export class HackathonService {
     }
   }
 
-  private async isAdminUser(userId: string): Promise<boolean> {
+  async isAdminUser(userId: string): Promise<boolean> {
     const user = await prisma.userEntity.findUnique({
       where: { id: userId },
       select: { accessLevel: true },
@@ -2458,9 +2466,9 @@ export class HackathonService {
     requesterUserId: string,
   ) {
     // Find hackathon by slug
-    const hackathon = await prisma.hackathonEntity.findUnique({
+    const hackathon = await prisma.hackathonEntity.findFirst({
       where: { slug, isDeleted: false },
-      select: { id: true, ownerId: true, participantType: true },
+      select: { id: true, name: true, ownerId: true, participantType: true },
     });
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
@@ -2590,6 +2598,7 @@ export class HackathonService {
     // Map to dashboard-friendly format
     return {
       hackathonId: hackathon.id,
+      name: hackathon.name,
       rounds: rounds.map((r) => ({
         id: r.id,
         name: r.name,
@@ -3129,5 +3138,163 @@ export class HackathonService {
       }
       return { fieldId: f.id, value: null };
     });
+  }
+
+  /**
+   * Send custom email to all members of a specific team.
+   * Only owner or manager of the hackathon can perform this.
+   */
+  async sendTeamEmail(
+    hackathonId: string,
+    userId: string,
+    dto: SendTeamEmailDto,
+  ) {
+    const { teamId, htmlBody: rawHtmlBody } = dto;
+    const htmlBody = sanitizeHtmlContent(rawHtmlBody);
+
+    this.logger.log(`Sending team email for team ${teamId} in hackathon ${hackathonId}`);
+
+    // 1. Fetch hackathon (needed for rendering details)
+    const hackathon = await prisma.hackathonEntity.findFirst({
+      where: { id: hackathonId, isDeleted: false },
+    });
+
+    if (!hackathon) {
+      throw new NotFoundException('Hackathon not found');
+    }
+
+    // Permission check (authorized users: owner, admin, or manager)
+    const hasPermission = await this.hasViewRegistrationsPermission(
+      hackathon.ownerId,
+      userId,
+      hackathon.id,
+    );
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have permission to send emails for this hackathon.',
+      );
+    }
+
+
+    // 2. Fetch team and members
+    const team = await prisma.teamEntity.findFirst({
+      where: { id: teamId, hackathonId },
+      include: {
+        leader: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+          },
+        },
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!team) {
+      throw new NotFoundException('Team not found');
+    }
+
+    // 3. Collect all recipients
+    const recipients = new Map<string, { email: string; firstName: string }>();
+
+    if (team.leader.email) {
+      recipients.set(team.leader.id, {
+        email: team.leader.email,
+        firstName: team.leader.firstName || 'Leader',
+      });
+    }
+
+    for (const member of team.members) {
+      if (member.user.email && !recipients.has(member.user.id)) {
+        recipients.set(member.user.id, {
+          email: member.user.email,
+          firstName: member.user.firstName || 'Member',
+        });
+      }
+    }
+
+    // 4. Fire background process for rendering and sending
+    // We do NOT await this so we can return success immediately to the user.
+    this._executeSendTeamEmailBackground(
+      hackathon,
+      team,
+      recipients,
+      htmlBody,
+    ).catch((err) => {
+      this.logger.error(
+        `Failed to deliver team emails in background for hackathon=${hackathon.id}, team=${team.id}: ${err.message}`,
+        err.stack,
+      );
+    });
+
+    return {
+      success: true,
+      message: `Successfully initiated email delivery to ${recipients.size} team members.`,
+      count: recipients.size,
+    };
+  }
+
+  /**
+   * Background execution for team email delivery.
+   * Handles rendering templates for each recipient and batch sending via EmailService.
+   */
+  private async _executeSendTeamEmailBackground(
+    hackathon: any,
+    team: any,
+    recipients: Map<string, { email: string; firstName: string }>,
+    htmlBody: string,
+  ) {
+    const results = await Promise.allSettled(
+      Array.from(recipients.values()).map(async (recipient) => {
+        const rendered = await this.emailService.renderEmail(
+          'hackathon-team-notification',
+          {
+            firstName: recipient.firstName,
+            teamName: team.name,
+            hackathonName: hackathon.name,
+            hackathonSlug: hackathon.slug,
+            htmlBody,
+            baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
+          },
+        );
+
+        return {
+          to: recipient.email,
+          subject: rendered.subject,
+          html: rendered.html,
+        };
+      }),
+    );
+
+    const emailBatch: Array<{ to: string; subject: string; html: string }> = [];
+
+    results.forEach((result, idx) => {
+      if (result.status === 'fulfilled') {
+        emailBatch.push(result.value);
+      } else {
+        const recipient = Array.from(recipients.values())[idx];
+        this.logger.error(
+          `Failed to render email for recipient ${recipient?.email}: ${result.reason}`,
+        );
+      }
+    });
+
+    if (emailBatch.length > 0) {
+      const result = await this.emailService.sendBatch(emailBatch);
+      if (!result.success) {
+        throw new Error(`Failed to send emails via Resend: ${result.error}`);
+      }
+    }
   }
 }

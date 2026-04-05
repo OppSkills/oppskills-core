@@ -24,6 +24,8 @@ import {
   HackathonJoinConfirmationEmailProps,
   HackathonNewMemberJoinedEmail,
   HackathonNewMemberJoinedEmailProps,
+  HackathonTeamNotificationEmail,
+  HackathonTeamNotificationEmailProps,
 } from '@oppskills/emails';
 import { Logger } from 'src/_utils/logger';
 
@@ -37,7 +39,8 @@ export type EmailType =
   | 'incomplete-registration'
   | 'admin-welcome'
   | 'hackathon-join-confirmation'
-  | 'hackathon-new-member-joined';
+  | 'hackathon-new-member-joined'
+  | 'hackathon-team-notification';
 
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
@@ -64,7 +67,9 @@ export interface SendEmailOptions<T extends EmailType> {
                     ? HackathonJoinConfirmationEmailProps
                     : T extends 'hackathon-new-member-joined'
                       ? HackathonNewMemberJoinedEmailProps
-                      : never;
+                      : T extends 'hackathon-team-notification'
+                        ? HackathonTeamNotificationEmailProps
+                        : never;
 }
 
 @Injectable()
@@ -182,7 +187,7 @@ export class EmailService {
   /**
    * Render email template to HTML with subject
    */
-  private async renderEmail(
+  async renderEmail(
     type: EmailType,
     props:
       | WelcomeEmailProps
@@ -194,7 +199,8 @@ export class EmailService {
       | IncompleteRegistrationEmailProps
       | AdminWelcomeEmailProps
       | HackathonJoinConfirmationEmailProps
-      | HackathonNewMemberJoinedEmailProps,
+      | HackathonNewMemberJoinedEmailProps
+      | HackathonTeamNotificationEmailProps,
   ): Promise<{ subject: string; html: string }> {
     switch (type) {
       case 'welcome': {
@@ -218,7 +224,7 @@ export class EmailService {
       case 'event-pass-pending': {
         const p = props as EventPassPendingEmailProps;
         const element = createElement(EventPassPendingEmail, p);
-        const html = await render(element);
+        const html = await render(element, { pretty: true });
         return {
           subject: `Your registration for ${p.eventName} is pending review`,
           html,
@@ -227,7 +233,7 @@ export class EmailService {
       case 'event-pass': {
         const p = props as EventPassEmailProps;
         const element = createElement(EventPassEmail, p);
-        const html = await render(element);
+        const html = await render(element, { pretty: true });
         return {
           subject: `Your event pass for ${p.eventName} is ready!`,
           html,
@@ -236,7 +242,7 @@ export class EmailService {
       case 'participant-direct-message': {
         const p = props as ParticipantDirectMessageProps;
         const element = createElement(ParticipantDirectMessage, p);
-        const html = await render(element);
+        const html = await render(element, { pretty: true });
         return {
           subject: `You have a new message from the organizer of ${p.eventName}`,
           html,
@@ -245,7 +251,7 @@ export class EmailService {
       case 'bulk-email-success': {
         const p = props as BulkEmailSuccessEmailProps;
         const element = createElement(BulkEmailSuccessEmail, p);
-        const html = await render(element);
+        const html = await render(element, { pretty: true });
         return {
           subject: `Bulk email sent for ${p.eventName}`,
           html,
@@ -254,7 +260,7 @@ export class EmailService {
       case 'incomplete-registration': {
         const p = props as IncompleteRegistrationEmailProps;
         const element = createElement(IncompleteRegistrationEmail, p);
-        const html = await render(element);
+        const html = await render(element, { pretty: true });
         return {
           subject: `Action Required: Complete your registration for ${p.eventName}`,
           html,
@@ -263,7 +269,7 @@ export class EmailService {
       case 'admin-welcome': {
         const p = props as AdminWelcomeEmailProps;
         const element = createElement(AdminOnboarding, p);
-        const html = await render(element);
+        const html = await render(element, { pretty: true });
         return {
           subject: 'Welcome to Oppskills Admin',
           html,
@@ -272,7 +278,7 @@ export class EmailService {
       case 'hackathon-join-confirmation': {
         const p = props as HackathonJoinConfirmationEmailProps;
         const element = createElement(HackathonJoinConfirmationEmail, p);
-        const html = await render(element);
+        const html = await render(element, { pretty: true });
         return {
           subject: `You joined ${p.hackathonName}`,
           html,
@@ -281,9 +287,18 @@ export class EmailService {
       case 'hackathon-new-member-joined': {
         const p = props as HackathonNewMemberJoinedEmailProps;
         const element = createElement(HackathonNewMemberJoinedEmail, p);
-        const html = await render(element);
+        const html = await render(element, { pretty: true });
         return {
           subject: `${p.newMemberName} joined your team`,
+          html,
+        };
+      }
+      case 'hackathon-team-notification': {
+        const p = props as HackathonTeamNotificationEmailProps;
+        const element = createElement(HackathonTeamNotificationEmail, p);
+        const html = await render(element, { pretty: true });
+        return {
+          subject: `Update for team ${p.teamName} - ${p.hackathonName}`,
           html,
         };
       }

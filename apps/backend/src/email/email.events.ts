@@ -62,7 +62,7 @@ export interface EventDirectMessageEventPayload {
   eventId: string;
   eventName: string;
   eventSlug: string;
-  body: string;
+  htmlBody: string;
 }
 
 export interface EventBulkEmailPayload {

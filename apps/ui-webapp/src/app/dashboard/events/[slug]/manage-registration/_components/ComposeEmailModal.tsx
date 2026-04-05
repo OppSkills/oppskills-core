@@ -58,17 +58,17 @@ export function ComposeEmailModal({
 
     try {
       setIsSending(true);
-      await sendEmail(token, {
+      const result = await sendEmail(token, {
         userId: participant.id,
         email: participant.email,
         firstName: participant.name.split(" ")[0],
         eventId: eventDetails.id,
         eventName: eventDetails.name,
         eventSlug: eventDetails.slug,
-        body: message,
+        htmlBody: message,
       });
 
-      toast.success("Email sent successfully!");
+      toast.success(result.message || "Email sent successfully!");
       setMessage("");
       onClose();
     } catch (error) {
@@ -83,7 +83,7 @@ export function ComposeEmailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[500px] p-0 overflow-hidden rounded-[20px] border-none bg-background">
+      <DialogContent className="max-w-[500px] max-h-[90vh] overflow-y-auto p-0 rounded-[20px] border-none bg-background scrollbar">
         <div className="flex flex-col p-6 gap-6">
           <DialogHeader>
             <DialogTitle>Message {participant.name}</DialogTitle>
