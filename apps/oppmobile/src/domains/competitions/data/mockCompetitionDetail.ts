@@ -8,7 +8,7 @@ export const mockCompetitionDetail: OpportunityDetailModel = {
   hostName: 'FestName',
   modeLabel: 'Offline',
   registrationDeadline: 'Monday, 5 January 2026',
-  ctaLabel: 'Next',
+  ctaLabel: 'Register Now',
   keyInfo: [
     { id: 'event-date', label: 'Event Date', value: 'Monday, 5 January 2026' },
     { id: 'event-time', label: 'Event Time', value: '8:00 - 20:00 GMT-8' },
