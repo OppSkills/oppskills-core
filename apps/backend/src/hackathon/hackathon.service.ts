@@ -3224,7 +3224,37 @@ export class HackathonService {
       }
     }
 
-    // 4. Render and Batch Send
+    // 4. Fire background process for rendering and sending
+    // We do NOT await this so we can return success immediately to the user.
+    this._executeSendTeamEmailBackground(
+      hackathon,
+      team,
+      recipients,
+      htmlBody,
+    ).catch((err) => {
+      this.logger.error(
+        `Failed to deliver team emails in background for hackathon=${hackathon.id}, team=${team.id}: ${err.message}`,
+        err.stack,
+      );
+    });
+
+    return {
+      success: true,
+      message: `Successfully initiated email delivery to ${recipients.size} team members.`,
+      count: recipients.size,
+    };
+  }
+
+  /**
+   * Background execution for team email delivery.
+   * Handles rendering templates for each recipient and batch sending via EmailService.
+   */
+  private async _executeSendTeamEmailBackground(
+    hackathon: any,
+    team: any,
+    recipients: Map<string, { email: string; firstName: string }>,
+    htmlBody: string,
+  ) {
     const emailBatch = await Promise.all(
       Array.from(recipients.values()).map(async (recipient) => {
         const rendered = await this.emailService.renderEmail(
@@ -3250,15 +3280,8 @@ export class HackathonService {
     if (emailBatch.length > 0) {
       const result = await this.emailService.sendBatch(emailBatch);
       if (!result.success) {
-        throw new InternalServerErrorException(
-          `Failed to send emails via Resend: ${result.error}`,
-        );
+        throw new Error(`Failed to send emails via Resend: ${result.error}`);
       }
     }
-
-    return {
-      message: `Successfully sent emails to ${emailBatch.length} team members.`,
-      count: emailBatch.length,
-    };
   }
 }

@@ -38,7 +38,7 @@ import {
 } from "@/lib/registration/pendingHackathonRegistration";
 import { TeamDetailsCard } from "./TeamDetailsCard";
 import { getApiErrorMessage } from "@/lib/utils";
-import { format } from "date-fns";
+import { formatToIST } from "@/lib/date-utils";
 import type { CompetitionDetails } from "./types";
 import { RegistrationModal } from "./RegistrationModal";
 
@@ -262,7 +262,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
   const isRegistrationClosed =
     competition.isRegistrationPaused ||
     (competition.registrationDeadlineDate &&
-      new Date() > competition.registrationDeadlineDate);
+      new Date() > new Date(competition.registrationDeadlineDate));
 
   const isMaxTeamsReached =
     competition.maxTeams !== null &&
@@ -573,10 +573,10 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
           <div className="flex gap-4 items-center">
             <div className="flex-shrink-0 w-12 h-12 rounded-xl border border-neutral-400  flex flex-col items-center justify-center">
               <span className="text-[10px] uppercase text-neutral-500 font-medium leading-none mb-0.5">
-                {competition.startDate ? format(competition.startDate, "MMM") : "TBD"}
+                {competition.startDate ? formatToIST(competition.startDate, { formatType: "short_month", showSuffix: false }) : "TBD"}
               </span>
               <span className="text-lg font-bold text-neutral-900  leading-none">
-                {competition.startDate ? format(competition.startDate, "dd") : "--"}
+                {competition.startDate ? formatToIST(competition.startDate, { formatType: "day", showSuffix: false }) : "--"}
               </span>
             </div>
             <div>
@@ -585,9 +585,9 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
                   if (competition.startDate && competition.endDate) {
                     const isSameDay = competition.startDate.toDateString() === competition.endDate.toDateString();
                     if (isSameDay) {
-                      return format(competition.startDate, "EEEE, d MMMM yyyy");
+                      return formatToIST(competition.startDate, { formatType: "full_date", showSuffix: false });
                     } else {
-                      return `${format(competition.startDate, "MMM d")} - ${format(competition.endDate, "MMM d, yyyy")}`;
+                      return `${formatToIST(competition.startDate, { formatType: "datetime", showSuffix: false }).split(',')[1].trim()} - ${formatToIST(competition.endDate, { formatType: "datetime", showSuffix: false })}`;
                     }
                   }
                   return competition.specificDate || "Date TBD";
@@ -598,13 +598,9 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
                   if (competition.startDate && competition.endDate) {
                     const isSameDay = competition.startDate.toDateString() === competition.endDate.toDateString();
                     if (isSameDay) {
-                      return `${format(competition.startDate, "h:mm a")} - ${format(competition.endDate, "h:mm a")}`;
+                      return `${formatToIST(competition.startDate, { formatType: "time" })} - ${formatToIST(competition.endDate, { formatType: "time" })}`;
                     } else {
-                      // For different days, maybe showing time is less critical or we show full range?
-                      // User asked: "show starting date time and enfing date time"
-                      // Since the header already shows date range, maybe detailed time here?
-                      // Let's show: Starts <Time> - Ends <Time> (on respective days)
-                      return `${format(competition.startDate, "h:mm a")} - ${format(competition.endDate, "h:mm a")}`;
+                      return `${formatToIST(competition.startDate, { formatType: "time" })} - ${formatToIST(competition.endDate, { formatType: "time" })}`;
                     }
                   }
                   return competition.specificTime || "Time TBD";

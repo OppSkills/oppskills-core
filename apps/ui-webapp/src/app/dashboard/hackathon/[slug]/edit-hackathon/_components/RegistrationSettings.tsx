@@ -16,7 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { formatToIST } from "@/lib/date-utils";
 
 interface RegistrationSettingsProps {
   formData: FormData;
@@ -152,10 +152,7 @@ export default function RegistrationSettings({
                   >
                     <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
                     {formData.registrationSettings.startDate
-                      ? format(
-                          formData.registrationSettings.startDate,
-                          "d MMM yyyy"
-                        )
+                      ? formatToIST(formData.registrationSettings.startDate, { formatType: "full_date", showSuffix: false })
                       : "Date"}
                   </Button>
                 </PopoverTrigger>
@@ -195,10 +192,7 @@ export default function RegistrationSettings({
                   >
                     <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
                     {formData.registrationSettings.endDate
-                      ? format(
-                          formData.registrationSettings.endDate,
-                          "d MMM yyyy"
-                        )
+                      ? formatToIST(formData.registrationSettings.endDate, { formatType: "full_date", showSuffix: false })
                       : "Date"}
                   </Button>
                 </PopoverTrigger>
@@ -236,10 +230,7 @@ export default function RegistrationSettings({
                   >
                     <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
                     {formData.registrationSettings.eventDate
-                      ? format(
-                          formData.registrationSettings.eventDate,
-                          "d MMM yyyy"
-                        )
+                      ? formatToIST(formData.registrationSettings.eventDate, { formatType: "full_date", showSuffix: false })
                       : "Date"}
                   </Button>
                 </PopoverTrigger>

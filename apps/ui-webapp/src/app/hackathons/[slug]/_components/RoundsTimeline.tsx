@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SubmissionModal } from "./SubmissionModal";
 import type { RoundSubmissionInfo } from "@/lib/api/hackathonApi";
+import { formatToIST } from "@/lib/date-utils";
 
 export type { RoundSubmissionInfo };
 
@@ -129,12 +130,12 @@ export function RoundsTimeline({
                       <div className="flex items-center gap-3 text-neutral-600">
                         <Calendar className="w-4 h-4 text-neutral-500 stroke-[2] opacity-80" />
                         <span className="text-sm">
-                          Start: {round.startDate}
+                          Start: {formatToIST(round.startDate, { formatType: "datetime" })}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-neutral-600">
                         <Calendar className="w-4 h-4 text-neutral-500 stroke-[2] opacity-80" />
-                        <span className="text-sm">End: {round.endDate}</span>
+                        <span className="text-sm">End: {formatToIST(round.endDate, { formatType: "datetime" })}</span>
                       </div>
                     </div>
                   </div>

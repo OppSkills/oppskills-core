@@ -43,7 +43,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import RichTextEditor from "@/components/ui/editor/RichtextEditor";
-import { format } from "date-fns";
+import { formatToIST } from "@/lib/date-utils";
 import Image from "next/image";
 import React, { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -288,7 +288,7 @@ export default function BasicDetails({
                     icon={<CalendarIcon className="w-6 h-6" />}
                     label={
                       formData.eventDate
-                        ? format(formData.eventDate, "d MMM yyyy")
+                        ? formatToIST(formData.eventDate, { formatType: "full_date", showSuffix: false })
                         : "Select Date"
                     }
                     subLabel="Hackathon Date"
@@ -334,7 +334,7 @@ export default function BasicDetails({
                     icon={<CalendarIcon className="w-6 h-6" />}
                     label={
                       formData.eventEndDate
-                        ? format(formData.eventEndDate, "d MMM yyyy")
+                        ? formatToIST(formData.eventEndDate, { formatType: "full_date", showSuffix: false })
                         : "Select End Date"
                     }
                     subLabel="Hackathon End Date (optional)"

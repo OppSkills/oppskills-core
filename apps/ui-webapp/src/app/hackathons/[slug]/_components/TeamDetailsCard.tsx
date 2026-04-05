@@ -1,17 +1,14 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import {
   LogOut,
   Trash2,
   UserMinus,
   Mail,
-  Phone,
-  CheckCircle,
-  MoreVertical,
-  Share2,
   AlertTriangle,
+  Copy,
+  Check,
 } from "lucide-react";
-import { SquareShareLine } from '@solar-icons/react';
 import { Button } from "@/components/ui/button";
 import {
   type TeamDetailResponse,
@@ -22,7 +19,6 @@ import { mapMaxSize } from "./transform";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 interface TeamDetailsCardProps {
@@ -48,6 +44,7 @@ export function TeamDetailsCard({
   const { getToken } = useAuth();
   const router = useRouter();
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   /** Create/join API responses may omit `members`; avoid crashing on .length / .map */
   const members = team.members ?? [];
@@ -99,7 +96,9 @@ export function TeamDetailsCard({
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://oppskills.com";
       const link = `${baseUrl}/hackathons/${hackathonSlug}?registration=join&invitation=${team.invitationCode}`;
       navigator.clipboard.writeText(link);
-      toast.success("Team registration link copied!");
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+      toast.success("Link copied, Share with other to join your team!");
     }
   };
 
@@ -184,20 +183,24 @@ export function TeamDetailsCard({
       {/* Team Header */}
       <div className="flex flex-col gap-2">
         <h4 className="text-2xl font-medium tracking-tight">Team Details</h4>
-        <div className="flex w-full justify-between items-center text-primary-600">
-          <p className="text-base">
+        <div className="flex flex-col md:flex-row w-full justify-between items-center text-primary-600">
+          <p className="text-sm">
             <span className="text-neutral-700">Team Name: </span>
             <span className="font-semibold text-purple-700">
               {team.name} ({members.length + 1}/{effectiveMaxSize})
             </span>
           </p>
-          <button
-            onClick={handleShareTeam}
-            className="text-xs flex items-center gap-1.5 font-medium hover:text-primary-700 transition-colors bg-primary-50 px-3 py-1.5 rounded-full border border-primary-100"
-          >
-            <SquareShareLine size={16} />
-            Share Team
-          </button>
+          <Badge variant={isCopied ? "default" : "outline"} onClick={handleShareTeam} className="cursor-pointer hover:border-primary-600 hover:shadow-sm active:bg-primary-100 justify-center gap-2">
+            {isCopied ? (
+              <>
+                <Check className="w-4 h-4" /> Copied!
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4" /> Join Link
+              </>
+            )}
+          </Badge>
         </div>
       </div>
 

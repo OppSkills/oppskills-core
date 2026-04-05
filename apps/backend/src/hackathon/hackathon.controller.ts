@@ -66,7 +66,7 @@ export class HackathonController {
   constructor(
     private readonly hackathonService: HackathonService,
     private readonly teamService: TeamService,
-  ) {}
+  ) { }
 
   @Get('my-team')
   @ApiOperation({
@@ -1496,8 +1496,8 @@ export class HackathonController {
   @ApiResponse({ status: 403, description: 'Forbidden - No permission' })
   @ApiResponse({ status: 404, description: 'Hackathon or team not found' })
   async sendTeamEmail(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('teamId', ParseUUIDPipe) teamId: string,
+    @Param('id') id: string,
+    @Param('teamId') teamId: string,
     @Body() dto: SendTeamEmailDto,
     @Req() req: Request,
   ) {
@@ -1510,7 +1510,9 @@ export class HackathonController {
     if (dto.teamId !== safeTeamId) {
       throw new BadRequestException('Team ID mismatch between URL and body');
     }
-
+    // We await the service call which now performs quick validations and then 
+    // offloads the actual email delivery to the background. This allows us to 
+    // return early while still catching immediate issues like 404/403.
     return this.hackathonService.sendTeamEmail(safeId, userId, dto);
   }
 }
