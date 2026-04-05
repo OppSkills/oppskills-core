@@ -3235,7 +3235,7 @@ export class HackathonService {
             hackathonName: hackathon.name,
             hackathonSlug: hackathon.slug,
             htmlBody,
-            baseUrl: process.env.FRONTEND_URL || 'https://www.oppskills.com',
+            baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
           },
         );
 
