@@ -35,8 +35,8 @@ export default function PastOpportunities() {
   if (isLoading) {
     return (
       <EventsSectionSkeleton
-        title="Past Events"
-        subtitle="Loading past events..."
+        title="Past Opportunties"
+        subtitle="Loading Past Opportunties..."
       />
     );
   }
@@ -50,10 +50,10 @@ export default function PastOpportunities() {
     // return null;
     return (
       <EventsEmptyState
-        title="Past Events"
+        title="Past Opportunties"
         subtitle="Explore our history of successful hackathons and workshops."
-        emptyTitle="No Past Events"
-        emptyMessage="There are no past events to display at the moment."
+        emptyTitle="No Past Opportunties"
+        emptyMessage="There are no Past Opportunties to display at the moment."
       />
     );
   }
