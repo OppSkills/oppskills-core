@@ -14,7 +14,7 @@ import { EventCard } from "./_components/EventCard";
 import { SwiperControls } from "./_components/SwiperControls";
 import Link from "next/link";
 
-export default function PastEvents() {
+export default function PastOpportunities() {
   const {
     data,
     fetchNextPage,
@@ -85,6 +85,7 @@ export default function PastEvents() {
 
         <div className="relative pb-10">
           <Swiper
+            className="!pb-5"
             modules={[Navigation, Pagination]}
             spaceBetween={24}
             breakpoints={{

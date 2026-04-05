@@ -76,6 +76,7 @@ export default function UpcomingHackathons() {
 
 
         <Swiper
+          className="!pb-5"
           modules={[Navigation, Pagination]}
           spaceBetween={24}
           breakpoints={{
