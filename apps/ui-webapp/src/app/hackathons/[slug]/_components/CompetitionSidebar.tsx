@@ -38,7 +38,7 @@ import {
 } from "@/lib/registration/pendingHackathonRegistration";
 import { TeamDetailsCard } from "./TeamDetailsCard";
 import { getApiErrorMessage } from "@/lib/utils";
-import { formatToIST } from "@/lib/date-utils";
+import { formatToIST, isSameDayInIST } from "@/lib/date-utils";
 import type { CompetitionDetails } from "./types";
 import { RegistrationModal } from "./RegistrationModal";
 
@@ -583,13 +583,13 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
               <h4 className="font-semibold text-neutral-900  text-[15px]">
                 {(() => {
                   if (competition.startDate && competition.endDate) {
-                    const isSameDay =
-                      competition.startDate.toDateString() ===
-                      competition.endDate.toDateString();
-                    if (isSameDay) {
+                    if (isSameDayInIST(competition.startDate, competition.endDate)) {
                       return formatToIST(competition.startDate, { formatType: "full_date", showSuffix: false });
                     } else {
-                      return `${formatToIST(competition.startDate, { formatType: "datetime", showSuffix: false }).split(',')[1].trim()} - ${formatToIST(competition.endDate, { formatType: "datetime", showSuffix: false })}`;
+                      const startMonth = formatToIST(competition.startDate, { formatType: "short_month" });
+                      const startDay = formatToIST(competition.startDate, { formatType: "day" });
+                      const endFormatted = formatToIST(competition.endDate, { formatType: "date" });
+                      return `${startMonth} ${startDay} - ${endFormatted}`;
                     }
                   }
                   return competition.specificDate || "Date TBD";
@@ -598,12 +598,9 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
               <p className="text-sm text-neutral-500">
                 {(() => {
                   if (competition.startDate && competition.endDate) {
-                    const isSameDay = competition.startDate.toDateString() === competition.endDate.toDateString();
-                    if (isSameDay) {
-                      return `${formatToIST(competition.startDate, { formatType: "time" })} - ${formatToIST(competition.endDate, { formatType: "time" })}`;
-                    } else {
-                      return `${formatToIST(competition.startDate, { formatType: "time" })} - ${formatToIST(competition.endDate, { formatType: "time" })}`;
-                    }
+                    const startTime = formatToIST(competition.startDate, { formatType: "time" });
+                    const endTime = formatToIST(competition.endDate, { formatType: "time" });
+                    return `${startTime} - ${endTime}`;
                   }
                   return competition.specificTime || "Time TBD";
                 })()}

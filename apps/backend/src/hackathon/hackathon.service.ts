@@ -3255,7 +3255,7 @@ export class HackathonService {
     recipients: Map<string, { email: string; firstName: string }>,
     htmlBody: string,
   ) {
-    const emailBatch = await Promise.all(
+    const results = await Promise.allSettled(
       Array.from(recipients.values()).map(async (recipient) => {
         const rendered = await this.emailService.renderEmail(
           'hackathon-team-notification',
@@ -3276,6 +3276,19 @@ export class HackathonService {
         };
       }),
     );
+
+    const emailBatch: Array<{ to: string; subject: string; html: string }> = [];
+
+    results.forEach((result, idx) => {
+      if (result.status === 'fulfilled') {
+        emailBatch.push(result.value);
+      } else {
+        const recipient = Array.from(recipients.values())[idx];
+        this.logger.error(
+          `Failed to render email for recipient ${recipient?.email}: ${result.reason}`,
+        );
+      }
+    });
 
     if (emailBatch.length > 0) {
       const result = await this.emailService.sendBatch(emailBatch);
