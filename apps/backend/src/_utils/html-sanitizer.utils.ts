@@ -22,7 +22,7 @@ const defaultOptions: sanitizeHtml.IOptions = {
     '*': ['style', 'align', 'dir', 'lang'],
   },
   selfClosing: ['img', 'br', 'hr', 'area', 'base', 'basefont', 'input', 'link', 'meta'],
-  allowedSchemes: ['http', 'https', 'ftp', 'mailto', 'tel'],
+  allowedSchemes: ['http', 'https', 'mailto', 'tel'],
   allowedSchemesByTag: {},
   allowedSchemesAppliedToAttributes: ['href', 'src', 'cite'],
   allowProtocolRelative: true,
