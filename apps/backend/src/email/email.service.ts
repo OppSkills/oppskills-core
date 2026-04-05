@@ -206,7 +206,7 @@ export class EmailService {
       case 'welcome': {
         const p = props as WelcomeEmailProps;
         const element = createElement(WelcomeEmail, p);
-        const html = await render(element, { pretty: true });
+        const html = await render(element);
         return {
           subject: 'Welcome to OppSkills - Start Your Journey!',
           html,
