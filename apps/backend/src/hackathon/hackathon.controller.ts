@@ -1478,15 +1478,15 @@ export class HackathonController {
   })
   @ApiParam({
     name: 'id',
-    description: 'Hackathon ID',
+    description: 'Hackathon ID (CUID-like string)',
     type: 'string',
-    format: 'uuid',
+    example: 'clx1234567890abcdefghijk',
   })
   @ApiParam({
     name: 'teamId',
-    description: 'Team ID',
+    description: 'Team ID (CUID-like string)',
     type: 'string',
-    format: 'uuid',
+    example: 'clxabcdefghijklmnopqrst',
   })
   @ApiBody({ type: SendTeamEmailDto })
   @ApiResponse({
