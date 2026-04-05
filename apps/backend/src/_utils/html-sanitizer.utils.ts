@@ -25,7 +25,7 @@ const defaultOptions: sanitizeHtml.IOptions = {
   allowedSchemes: ['http', 'https', 'mailto', 'tel'],
   allowedSchemesByTag: {},
   allowedSchemesAppliedToAttributes: ['href', 'src', 'cite'],
-  allowProtocolRelative: true,
+  allowProtocolRelative: false,
   enforceHtmlBoundary: false,
 };
 
