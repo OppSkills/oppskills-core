@@ -3216,7 +3216,7 @@ export class HackathonService {
     }
 
     for (const member of team.members) {
-      if (member.user.email) {
+      if (member.user.email && !recipients.has(member.user.id)) {
         recipients.set(member.user.id, {
           email: member.user.email,
           firstName: member.user.firstName || 'Member',
