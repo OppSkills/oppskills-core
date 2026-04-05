@@ -154,6 +154,7 @@ export default function MyOpportunities() {
 
         <div className="relative pb-10">
           <Swiper
+            className="!pb-5"
             modules={[Navigation, Pagination]}
             spaceBetween={24}
             breakpoints={{

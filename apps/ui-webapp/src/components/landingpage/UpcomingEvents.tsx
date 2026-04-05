@@ -60,7 +60,7 @@ export const UpcomingEvents = () => {
 
   return (
     <section
-      className="w-full pt-12 md:pt-16 lg:pt-20"
+      className="w-full pt-8"
       id="events"
     >
       <div className="container mx-auto">
@@ -83,6 +83,7 @@ export const UpcomingEvents = () => {
         </div>
 
         <Swiper
+          className="!pb-5"
           modules={[Pagination, Navigation]}
           spaceBetween={24}
           breakpoints={{

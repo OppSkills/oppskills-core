@@ -14,7 +14,7 @@ import { EventCard } from "./_components/EventCard";
 import { SwiperControls } from "./_components/SwiperControls";
 import Link from "next/link";
 
-export default function PastEvents() {
+export default function PastOpportunities() {
   const {
     data,
     fetchNextPage,
@@ -35,8 +35,8 @@ export default function PastEvents() {
   if (isLoading) {
     return (
       <EventsSectionSkeleton
-        title="Past Events"
-        subtitle="Loading past events..."
+        title="Past Opportunties"
+        subtitle="Loading Past Opportunties..."
       />
     );
   }
@@ -50,10 +50,10 @@ export default function PastEvents() {
     // return null;
     return (
       <EventsEmptyState
-        title="Past Events"
+        title="Past Opportunties"
         subtitle="Explore our history of successful hackathons and workshops."
-        emptyTitle="No Past Events"
-        emptyMessage="There are no past events to display at the moment."
+        emptyTitle="No Past Opportunties"
+        emptyMessage="There are no Past Opportunties to display at the moment."
       />
     );
   }
@@ -85,6 +85,7 @@ export default function PastEvents() {
 
         <div className="relative pb-10">
           <Swiper
+            className="!pb-5"
             modules={[Navigation, Pagination]}
             spaceBetween={24}
             breakpoints={{

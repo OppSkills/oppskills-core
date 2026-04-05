@@ -3,11 +3,11 @@ import OppskillsFlow from "@/components/landingpage/OppskillsFlow";
 import PromoPoster from "@/components/landingpage/PromoPoster";
 import UpcomingHackathons from "@/components/landingpage/UpcomingHackathons";
 import { UpcomingEvents } from "@/components/landingpage/UpcomingEvents";
-import PastEvents from "@/components/landingpage/PastEvents";
 import UpcomingFeatures from "@/components/landingpage/UpcomingFeatures";
 import TrustedBy from "@/components/landingpage/_components/TrustedBy";
 import WhyChoose from "@/components/landingpage/WhyChoose";
 import MyOpportunities from "@/components/landingpage/MyOpportunities";
+import PastOpportunities from "@/components/landingpage/PastOpportunities";
 
 const Home = () => {
   return (
@@ -17,7 +17,7 @@ const Home = () => {
         <MyOpportunities />
         <UpcomingHackathons />
         <UpcomingEvents />
-        <PastEvents />
+        <PastOpportunities />
         {/* <ActiveCommunitypage /> */}
         <OppskillsFlow />
         <WhyChoose />
