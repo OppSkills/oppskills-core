@@ -65,7 +65,7 @@ export function ComposeEmailModal({
         eventId: eventDetails.id,
         eventName: eventDetails.name,
         eventSlug: eventDetails.slug,
-        body: message,
+        htmlBody: message,
       });
 
       toast.success(result.message || "Email sent successfully!");
