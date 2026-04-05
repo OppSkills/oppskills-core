@@ -583,7 +583,9 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
               <h4 className="font-semibold text-neutral-900  text-[15px]">
                 {(() => {
                   if (competition.startDate && competition.endDate) {
-                    const isSameDay = competition.startDate.toDateString() === competition.endDate.toDateString();
+                    const isSameDay =
+                      competition.startDate.toDateString() ===
+                      competition.endDate.toDateString();
                     if (isSameDay) {
                       return formatToIST(competition.startDate, { formatType: "full_date", showSuffix: false });
                     } else {

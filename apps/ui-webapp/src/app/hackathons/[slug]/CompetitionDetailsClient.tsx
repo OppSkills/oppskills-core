@@ -93,7 +93,6 @@ export function CompetitionDetailsClient({
       try {
         const data = (await getPublicHackathonBySlug(slug)) as HackathonApiData;
         setCompetition(transformApiData(data));
-        console.log("competition data1", transformApiData(data));
       } catch (publicErr) {
         if (isSignedIn) {
           try {

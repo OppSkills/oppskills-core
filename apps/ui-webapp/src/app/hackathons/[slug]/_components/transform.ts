@@ -196,6 +196,63 @@ function mapPrizeIcon(position: number): "trophy" | "coin" | "gift" | "star" {
   return "star";
 }
 
+/**
+ * Formats a date to Indian Standard Time (IST, UTC+5:30)
+ * Format: MMM d, yyyy h:mm a (e.g., Apr 8, 2026 9:00 AM)
+ */
+export function formatToIST(dateInput: string | Date, formatType: "datetime" | "date" | "time" | "short_month" | "day" = "datetime"): string {
+  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  if (isNaN(date.getTime())) return "";
+
+  if (formatType === "short_month") {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Kolkata",
+      month: "short",
+    }).format(date);
+  }
+
+  if (formatType === "day") {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+    }).format(date);
+  }
+  
+  if (formatType === "date") {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Kolkata",
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(date);
+  }
+
+  if (formatType === "time") {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Kolkata",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(date);
+  }
+
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Kolkata",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: true,
+  }).formatToParts(date);
+
+  const getPart = (type: string) => parts.find((p) => p.type === type)?.value || "";
+  
+  // Construct "MMM d, yyyy h:mm a (IST)"
+  return `${getPart("month")} ${getPart("day")}, ${getPart("year")} ${getPart("hour")}:${getPart("minute")} ${getPart("dayPeriod")} (IST)`;
+}
+
 export function transformApiData(data: HackathonApiData): CompetitionDetails {
   const startDate = new Date(data.startDate);
   const endDate = new Date(data.endDate);
@@ -216,8 +273,8 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
     id: r.id,
     name: r.name,
     description: r.description || "",
-    startDate: format(new Date(r.startsAt), "MMM d, yyyy h:mm a"),
-    endDate: format(new Date(r.endsAt), "MMM d, yyyy h:mm a"),
+    startDate: formatToIST(r.startsAt),
+    endDate: formatToIST(r.endsAt),
     status: mapRoundStatus(r.startsAt, r.endsAt, r.status),
     roundType: (r.roundType as any) ?? "ONLINE",
     submissionConfig: r.submissionConfig
@@ -340,8 +397,8 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
     organizers,
     prizes,
     featuredIn: data.festival?.name,
-    specificDate: format(startDate, "EEEE, d MMMM yyyy"),
-    specificTime: `${format(startDate, "HH:mm")} - ${format(endDate, "HH:mm")}`,
+    specificDate: formatToIST(startDate, "date"),
+    specificTime: `${formatToIST(startDate, "time")} - ${formatToIST(endDate, "time")}`,
     venueName:
       data.locationType === "VIRTUAL"
         ? "Online Event"
