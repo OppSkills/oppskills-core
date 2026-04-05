@@ -1496,8 +1496,8 @@ export class HackathonController {
   @ApiResponse({ status: 403, description: 'Forbidden - No permission' })
   @ApiResponse({ status: 404, description: 'Hackathon or team not found' })
   async sendTeamEmail(
-    @Param('id') id: string,
-    @Param('teamId') teamId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('teamId', ParseUUIDPipe) teamId: string,
     @Body() dto: SendTeamEmailDto,
     @Req() req: Request,
   ) {
