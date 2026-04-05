@@ -19,7 +19,7 @@ const defaultOptions: sanitizeHtml.IOptions = {
     a: ['href', 'name', 'target'],
     img: ['src', 'srcset', 'alt', 'title', 'width', 'height', 'loading'],
     table: ['border', 'cellpadding', 'cellspacing', 'style'],
-    '*': ['style', 'class', 'id', 'align', 'dir', 'lang'],
+    '*': ['style', 'align', 'dir', 'lang'],
   },
   selfClosing: ['img', 'br', 'hr', 'area', 'base', 'basefont', 'input', 'link', 'meta'],
   allowedSchemes: ['http', 'https', 'ftp', 'mailto', 'tel'],
