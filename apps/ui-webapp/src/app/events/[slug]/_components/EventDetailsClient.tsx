@@ -179,7 +179,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   const sameDay = isSameDay(startDate, endDate);
 
   // Events with TBA dates
-  const TBA_EVENT_IDS = new Set(["cmm23i1ng01sgt901wd1f9z3b"]);
+  const TBA_EVENT_IDS = new Set<string>([]);
   const isDateTBA = TBA_EVENT_IDS.has(event.id);
 
   // Format date display

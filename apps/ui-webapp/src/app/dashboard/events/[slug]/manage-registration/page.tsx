@@ -42,6 +42,27 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { exportToExcel } from "@/lib/exportToExcel";
 
+/**
+ * Profile columns written before merging custom registration form answers.
+ * If the form defines fields with the same labels (e.g. "Name", "Email"), merging
+ * would overwrite these with empty or stale answers — the dashboard table would
+ * still show profile data from the list API. Skip those labels when applying answers.
+ */
+const EVENT_REGISTRATION_EXPORT_BASE_KEYS = new Set([
+  "Name",
+  "Email",
+  "Gender",
+  "University",
+  "Course",
+  "Location",
+  "Status",
+  "Registered On",
+  "Approved",
+  "Pass Sent",
+  "Pass Sent At",
+  "Approved At",
+]);
+
 // --- Types ---
 type RegistrationStatus = "Completed" | "Incomplete";
 
@@ -249,6 +270,9 @@ export default function ManageRegistrationPage() {
         const ans = answersResults[idx];
         if (ans) {
           for (const label of allLabels) {
+            if (EVENT_REGISTRATION_EXPORT_BASE_KEYS.has(label)) {
+              continue;
+            }
             const field = ans.fields.find((f) => f.label === label);
             if (field) {
               const answer = ans.answers.find((a) => a.fieldId === field.id);
@@ -264,6 +288,9 @@ export default function ManageRegistrationPage() {
           }
         } else {
           for (const label of allLabels) {
+            if (EVENT_REGISTRATION_EXPORT_BASE_KEYS.has(label)) {
+              continue;
+            }
             base[label] = "";
           }
         }
