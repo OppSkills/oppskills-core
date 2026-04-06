@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
-import { EventRegistrationCard } from "./EventRegistrationCard";
 import { EventTabs } from "./EventTabs";
 import { RegistrationModal } from "@/app/hackathons/[slug]/_components/RegistrationModal";
 import { EventSidebar } from "./EventSidebar";
@@ -90,18 +89,20 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>("standard");
 
   // Fetch registration status if logged in
-  const { data: registrationStatus, refetch: refetchRegistrationStatus } =
-    useQuery({
-      queryKey: ["event-registration-status", event?.id, user?.id],
-      enabled: !!event?.id && !!user?.id && isSignedIn,
-      queryFn: async () => {
-        const token = await getToken();
-        if (!token || !event?.id) return null;
-        return checkMyRegistration(token, event.id);
-      },
-    });
+  const {
+    data: registrationStatus,
+    refetch: refetchRegistrationStatus,
+    isPending: isRegistrationStatusPending,
+  } = useQuery({
+    queryKey: ["event-registration-status", event?.id, user?.id],
+    enabled: !!event?.id && !!user?.id && isSignedIn,
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token || !event?.id) return null;
+      return checkMyRegistration(token, event.id);
+    },
+  });
 
-  const isUserRegistered = !!registrationStatus?.isRegistered;
   const isPaidButIncomplete = !!registrationStatus?.isPaidButIncomplete;
 
   const eventRecoveryTriedRef = useRef(false);
@@ -165,6 +166,10 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         fallbackRedirectUrl: window.location.href,
         signUpFallbackRedirectUrl: window.location.href,
       });
+      return;
+    }
+
+    if (registrationStatus?.isRegistered) {
       return;
     }
 
@@ -273,6 +278,13 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             <EventSidebar
               event={sidebarEvent}
               onRegister={handleRegistration}
+              isCheckingRegistration={
+                isSignedIn && !!user?.id && isRegistrationStatusPending
+              }
+              isRegistered={!!registrationStatus?.isRegistered}
+              needsCompleteRegistration={
+                !!registrationStatus?.isPaidButIncomplete
+              }
             />
 
             {/* Contact Details (Hidden on desktop because it's usually in about or we can keep it here if sidebar is too long) */}
@@ -399,6 +411,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         onClose={() => setIsModalOpen(false)}
         competition={event}
         type="EVENT"
+        completionMode={!!registrationStatus?.isPaidButIncomplete}
         onSuccess={async () => {
           await refetchRegistrationStatus();
           setIsModalOpen(false);

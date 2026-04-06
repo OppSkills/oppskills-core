@@ -749,6 +749,9 @@ model EventParticipantEntity {
   // Relation to submission (optional, created if answers provided)
   submission EventRegistrationSubmissionEntity?
 
+  /// Rate-limit row for incomplete-registration reminder emails (free events)
+  incompleteRegistrationReminderLog IncompleteRegistrationReminderLogEntity?
+
   // Event Pass relation
   eventPass EventPassEntity?
 
@@ -1729,6 +1732,10 @@ model IncompleteRegistrationReminderLogEntity {
 
   eventPaymentId String? @unique @map("event_payment_id")
   eventPayment   EventPaymentEntity? @relation(fields: [eventPaymentId], references: [id], onDelete: Cascade)
+
+  /// Free event: participant row without a completed registration submission (no payment row).
+  eventParticipantId String? @unique @map("event_participant_id")
+  eventParticipant   EventParticipantEntity? @relation(fields: [eventParticipantId], references: [id], onDelete: Cascade)
 
   lastSentAt DateTime @map("last_sent_at")
   sentCount  Int      @default(1) @map("sent_count")
