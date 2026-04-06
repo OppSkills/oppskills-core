@@ -350,6 +350,7 @@ export class IncompleteRegistrationReminderService {
           eventSlug: row.slug,
           resourceType: 'event',
           baseUrl,
+          incompleteRegistrationKind: 'paid',
         },
       });
 
@@ -406,6 +407,7 @@ export class IncompleteRegistrationReminderService {
           eventSlug: row.slug,
           resourceType: 'event',
           baseUrl,
+          incompleteRegistrationKind: 'free',
         },
       });
 
