@@ -9,9 +9,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import competitionHeroImage from '../../../assets/Business challenge-amico 1.png';
-import hackathonHeroImage from '../../../assets/Organizing projects-amico 1.png';
 import genericHeroImage from '../../../assets/Track and field-amico 1.png';
+import defaultBannerImage from '../../../assets/highres_490352821 1.png';
 import type {
   OpportunityDetailModel,
   OpportunitySupplementarySection,
@@ -39,6 +38,10 @@ export function OpportunityDetailScreen({ detail, onBack }: OpportunityDetailScr
   const [activeChip, setActiveChip] = useState<OpportunityDetailTabId>('rounds');
 
   const heroImage = useMemo(() => selectHeroImage(detail), [detail]);
+  const bannerSource = useMemo<ImageSourcePropType>(
+    () => (detail.bannerImageUrl ? { uri: detail.bannerImageUrl } : heroImage),
+    [detail.bannerImageUrl, heroImage],
+  );
   const eventDate = useMemo(
     () => detail.keyInfo.find((item) => item.id === 'event-date')?.value ?? detail.registrationDeadline,
     [detail.keyInfo, detail.registrationDeadline],
@@ -105,7 +108,7 @@ export function OpportunityDetailScreen({ detail, onBack }: OpportunityDetailScr
       <View style={styles.topBar} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <ImageBackground imageStyle={styles.heroImageStyle} source={heroImage} style={styles.heroImage}>
+        <ImageBackground imageStyle={styles.heroImageStyle} source={bannerSource} style={styles.heroImage}>
           <Pressable onPress={onBack} style={styles.backButton}>
             <AppText colorToken="textPrimary" style={styles.backLabel} variant="bodyStrong">
               {'<'}
@@ -503,12 +506,8 @@ function SupplementarySectionCard({ section }: { readonly section: OpportunitySu
 function selectHeroImage(detail: OpportunityDetailModel): ImageSourcePropType {
   const tag = `${detail.heroLabel} ${detail.routeLabel}`.toLowerCase();
 
-  if (tag.includes('competition')) {
-    return competitionHeroImage;
-  }
-
-  if (tag.includes('hackathon')) {
-    return hackathonHeroImage;
+  if (tag.includes('competition') || tag.includes('hackathon')) {
+    return defaultBannerImage;
   }
 
   return genericHeroImage;

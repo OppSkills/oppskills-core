@@ -38,6 +38,7 @@ export interface OpportunityDetailModel {
   readonly routeLabel: string;
   readonly heroLabel: string;
   readonly heroTitle: string;
+  readonly bannerImageUrl?: string;
   readonly aboutHeading?: string;
   readonly supplementaryHeading?: string;
   readonly hostName: string;
