@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
@@ -135,7 +136,7 @@ export function ProfileEditScreen({ onBack }: ProfileEditScreenProps) {
 
         <View style={styles.avatarWrap}>
           <Pressable accessibilityLabel="Edit profile picture" style={styles.avatarEditBadge}>
-            <View style={styles.avatarEditPen} />
+            <Feather color="#584D5A" name="edit-2" size={14} />
           </Pressable>
 
           <View style={styles.avatarCircle}>

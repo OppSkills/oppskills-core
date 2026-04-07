@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -118,7 +119,7 @@ export function ProfileScreen({ onBack, onEdit }: ProfileScreenProps) {
           </View>
 
           <Pressable accessibilityLabel="Edit profile" hitSlop={8} onPress={onEdit} style={styles.editPill}>
-            <View style={styles.editPen} />
+            <Feather color="#584D5A" name="edit-2" size={13} />
             <AppText style={styles.editText} variant="caption">
               Edit
             </AppText>

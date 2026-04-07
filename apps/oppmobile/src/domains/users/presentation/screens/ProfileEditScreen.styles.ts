@@ -23,14 +23,6 @@ export const styles = StyleSheet.create({
     width: 32,
     zIndex: 2,
   },
-  avatarEditPen: {
-    borderColor: '#584D5A',
-    borderRadius: 2,
-    borderWidth: 1.2,
-    height: 13,
-    transform: [{ rotate: '-22deg' }],
-    width: 8,
-  },
   avatarInitials: {
     color: '#342636',
     fontFamily: 'Urbanist',

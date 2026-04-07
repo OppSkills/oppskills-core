@@ -335,6 +335,9 @@ export const styles = StyleSheet.create({
     gap: lightTheme.spacing[12],
   },
   heroTitle: {
+    color: lightTheme.colors.textPrimary,
+  },
+  heroSubtitle: {
     color: lightTheme.colors.brandPrimaryStrong,
   },
   horizontalRail: {
@@ -702,6 +705,8 @@ export const styles = StyleSheet.create({
   },
   sectionTitleBlock: {
     marginTop: lightTheme.spacing[8],
+    minHeight: 60,
+    width: 263,
   },
   skeletonBar: {
     backgroundColor: '#EEEAF8',

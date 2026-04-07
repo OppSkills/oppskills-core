@@ -125,7 +125,7 @@ export function HomePageScreen({
             </View>
 
             <SectionTitle
-              subtitle="Tap a category to quickly jump across opportunities."
+              subtitle="That Move You Forward"
               title="Discover Opportunities"
             />
 
@@ -333,7 +333,7 @@ function SectionTitle({ title, subtitle }: { readonly title: string; readonly su
       <AppText style={styles.heroTitle} variant="sectionHeading">
         {title}
       </AppText>
-      <AppText colorToken="textSecondary" variant="caption">
+      <AppText style={styles.heroSubtitle} variant="sectionHeading">
         {subtitle}
       </AppText>
     </View>
