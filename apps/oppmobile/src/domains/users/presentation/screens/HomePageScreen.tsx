@@ -9,6 +9,8 @@ import frame504 from '../../../../../assets/Frame 504.png';
 import frame505 from '../../../../../assets/Frame 505.png';
 import subtractHeroImage from '../../../../../assets/Subtract.png';
 import masterclassHeroImage from '../../../../../assets/highres_490352821 1.png';
+import communityLogoImage from '../../../../../assets/image 5.png';
+import communityDecorImage from '../../../../../assets/Exclude.png';
 import trustedByIith from '../../../../../assets/WhatsApp Image 2026-02-24 at 16.23.33 1.png';
 import trustedByIiitd from '../../../../../assets/iiitd 1.png';
 import trustedBySharda from '../../../../../assets/sharda 1.png';
@@ -222,10 +224,24 @@ export function HomePageScreen({
             subtitle="Communities designed for students to learn, contribute, and grow."
             title="Active Communities"
           >
-            <MiniSectionTitle title="Top Communities" />
-            <CommunityRow items={homeFeed?.topCommunities ?? []} />
-            <MiniSectionTitle title="Near You" />
-            <CommunityRow items={homeFeed?.nearbyCommunities ?? []} />
+            <View style={styles.communitySubsectionWrapper}>
+              <MiniSectionTitle title="Top Communities" />
+              <CommunityRow items={homeFeed?.topCommunities ?? []} />
+              <Image
+                resizeMode="contain"
+                source={communityDecorImage}
+                style={styles.communityDecorImageTop}
+              />
+            </View>
+            <View style={styles.communitySubsectionWrapper}>
+              <MiniSectionTitle title="Near You" />
+              <CommunityRow items={homeFeed?.nearbyCommunities ?? []} />
+              <Image
+                resizeMode="contain"
+                source={communityDecorImage}
+                style={styles.communityDecorImageNear}
+              />
+            </View>
             <InlineArrowAction label="View all" />
           </SectionBlock>
         );
@@ -534,7 +550,11 @@ function CommunityRow({ items }: { readonly items: readonly HomeCommunityItemEnt
       {items.map((item) => (
         <View key={item.id} style={styles.communityRailCard}>
           <View style={styles.communityRailHeaderRow}>
-            <View style={styles.communityRailLogo} />
+            <Image
+              resizeMode="contain"
+              source={communityLogoImage}
+              style={styles.communityRailLogo}
+            />
             <View style={styles.communityLocationPill}>
               <AppText colorToken="brandPrimaryStrong" numberOfLines={1} variant="micro">
                 {item.location}

@@ -66,6 +66,24 @@ export const styles = StyleSheet.create({
     padding: lightTheme.spacing[12],
     width: '48%',
   },
+  communityDecorImageTop: {
+    height: 80,
+    position: 'absolute',
+    bottom: -10,
+    right: 80,
+    width: 80,
+    zIndex: 1,
+    opacity: 0.9,
+  },
+  communityDecorImageNear: {
+    height: 80,
+    position: 'absolute',
+    bottom: -10,
+    right: 80,
+    width: 80,
+    zIndex: 1,
+    opacity: 0.9,
+  },
   communityGlyph: {
     backgroundColor: '#F8D8D4',
     borderRadius: lightTheme.radius.sm,
@@ -139,9 +157,9 @@ export const styles = StyleSheet.create({
     borderRadius: 14.9049,
     borderWidth: 0.372624,
     gap: 18,
-    height: 234.91,
-    padding: 12,
-    width: 242.21,
+    height: 260,
+    padding: 14,
+    width: 260,
   },
   communityRail: {
     marginHorizontal: -appDimensions.screenHorizontalPadding,
@@ -158,10 +176,8 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   communityRailLogo: {
-    backgroundColor: '#E8D9B6',
-    borderRadius: lightTheme.radius.pill,
-    height: 40.99,
-    width: 41.73,
+    height: 42,
+    width: 42,
   },
   communityRailMemberCount: {
     color: '#342636',
@@ -203,6 +219,12 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: lightTheme.spacing[10],
+  },
+  communitySubsectionWrapper: {
+    position: 'relative',
+    overflow: 'visible',
+    marginBottom: lightTheme.spacing[16],
+    paddingBottom: lightTheme.spacing[8],
   },
   emptyState: {
     alignItems: 'center',
