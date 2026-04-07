@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, SectionList, View } from 'react-native';
+import { Image, ImageBackground, Pressable, ScrollView, SectionList, View } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,6 +7,8 @@ import frame502 from '../../../../../assets/Frame 502.png';
 import frame503 from '../../../../../assets/Frame 503.png';
 import frame504 from '../../../../../assets/Frame 504.png';
 import frame505 from '../../../../../assets/Frame 505.png';
+import subtractHeroImage from '../../../../../assets/Subtract.png';
+import masterclassHeroImage from '../../../../../assets/highres_490352821 1.png';
 import trustedByIith from '../../../../../assets/WhatsApp Image 2026-02-24 at 16.23.33 1.png';
 import trustedByIiitd from '../../../../../assets/iiitd 1.png';
 import trustedBySharda from '../../../../../assets/sharda 1.png';
@@ -378,16 +380,22 @@ function EventCardRow({
     >
       {items.map((item) => (
         <Pressable key={item.id} onPress={onOpenEvent} style={styles.eventCard}>
-          <View style={styles.eventHero}>
-            <View style={styles.eventOnlinePill}>
-              <AppText colorToken="brandPrimaryStrong" variant="micro">
-                Offline
-              </AppText>
+          <ImageBackground
+            imageStyle={styles.eventHeroImage}
+            source={getHomeEventHeroImage(item)}
+            style={styles.eventHero}
+          >
+            <View style={styles.eventHeroOverlay}>
+              <View style={styles.eventOnlinePill}>
+                <AppText colorToken="brandPrimaryStrong" variant="micro">
+                  Offline
+                </AppText>
+              </View>
+              <View style={styles.eventBookmark}>
+                <View style={styles.eventBookmarkIcon} />
+              </View>
             </View>
-            <View style={styles.eventBookmark}>
-              <View style={styles.eventBookmarkIcon} />
-            </View>
-          </View>
+          </ImageBackground>
 
           <View style={styles.eventMeta}>
             <View style={styles.eventBasicDetailsRow}>
@@ -452,20 +460,26 @@ function ListedCompetitionRail({
 
         return (
           <Pressable key={item.id} onPress={openAction} style={styles.listedCompetitionCard}>
-            <View style={styles.listedCompetitionHero}>
-              <View style={styles.listedCompetitionModePill}>
-                <AppText colorToken="brandPrimaryStrong" variant="micro">
-                  Free
-                </AppText>
-                <View style={styles.listedCompetitionModeDot} />
-                <AppText colorToken="brandPrimaryStrong" variant="micro">
-                  Offline
-                </AppText>
+            <ImageBackground
+              imageStyle={styles.listedCompetitionHeroImage}
+              source={getListedCompetitionHeroImage(item)}
+              style={styles.listedCompetitionHero}
+            >
+              <View style={styles.listedCompetitionHeroOverlay}>
+                <View style={styles.listedCompetitionModePill}>
+                  <AppText colorToken="brandPrimaryStrong" variant="micro">
+                    Free
+                  </AppText>
+                  <View style={styles.listedCompetitionModeDot} />
+                  <AppText colorToken="brandPrimaryStrong" variant="micro">
+                    Offline
+                  </AppText>
+                </View>
+                <View style={styles.listedCompetitionBookmark}>
+                  <View style={styles.listedCompetitionBookmarkIcon} />
+                </View>
               </View>
-              <View style={styles.listedCompetitionBookmark}>
-                <View style={styles.listedCompetitionBookmarkIcon} />
-              </View>
-            </View>
+            </ImageBackground>
 
             <View style={styles.listedCompetitionBody}>
               <View style={styles.listedCompetitionHeaderBlock}>
@@ -487,6 +501,22 @@ function ListedCompetitionRail({
       })}
     </ScrollView>
   );
+}
+
+function getListedCompetitionHeroImage(item: HomeOpportunityItemEntity): ImageSourcePropType {
+  if (item.id === 'listed-2' || item.title.toLowerCase().includes('public speaking')) {
+    return subtractHeroImage;
+  }
+
+  return masterclassHeroImage;
+}
+
+function getHomeEventHeroImage(item: HomeEventItemEntity): ImageSourcePropType {
+  if (item.id === 'event-2') {
+    return subtractHeroImage;
+  }
+
+  return masterclassHeroImage;
 }
 
 function CommunityRow({ items }: { readonly items: readonly HomeCommunityItemEntity[] }) {

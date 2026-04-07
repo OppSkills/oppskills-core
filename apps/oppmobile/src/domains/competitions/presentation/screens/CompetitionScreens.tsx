@@ -356,11 +356,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   competitionHero: {
-    backgroundColor: '#E2D3FF',
-    height: 202.83,
-    justifyContent: 'flex-end',
-    paddingHorizontal: lightTheme.spacing[10],
-    paddingVertical: lightTheme.spacing[10],
+    height: 214.76,
     width: '100%',
   },
   competitionHeroImage: {

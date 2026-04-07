@@ -258,8 +258,16 @@ export const styles = StyleSheet.create({
     width: 9,
   },
   eventHero: {
-    backgroundColor: '#8FB5E0',
     height: 141,
+    overflow: 'hidden',
+  },
+  eventHeroImage: {
+    height: '100%',
+    width: '100%',
+  },
+  eventHeroOverlay: {
+    backgroundColor: 'rgba(9, 7, 20, 0.3)',
+    flex: 1,
     justifyContent: 'flex-end',
     paddingHorizontal: 9,
     paddingVertical: 9,
@@ -448,8 +456,16 @@ export const styles = StyleSheet.create({
     gap: 3,
   },
   listedCompetitionHero: {
-    backgroundColor: '#DCD4F8',
     height: 133,
+    overflow: 'hidden',
+  },
+  listedCompetitionHeroImage: {
+    height: '100%',
+    width: '100%',
+  },
+  listedCompetitionHeroOverlay: {
+    backgroundColor: 'rgba(9, 7, 20, 0.36)',
+    flex: 1,
     justifyContent: 'flex-end',
     paddingHorizontal: 12,
     paddingVertical: 10,
