@@ -22,8 +22,7 @@ import frame548 from '../../../../../assets/Frame 548.png';
 import frame549 from '../../../../../assets/Frame 549.png';
 import frame550 from '../../../../../assets/Frame 550.png';
 import frame551 from '../../../../../assets/Frame 551.png';
-import heroImageOne from '../../../../../assets/college campus-amico 1.png';
-import heroImageTwo from '../../../../../assets/Business challenge-amico 1.png';
+import subtractHeroImage from '../../../../../assets/Subtract.png';
 
 interface DiscoverHackathonsScreenProps {
   readonly onOpenCompetitions: () => void;
@@ -257,12 +256,8 @@ function HackathonCard({
   );
 }
 
-function heroImageByIndex(index: number): ImageSourcePropType {
-  if (index === 1) {
-    return heroImageTwo;
-  }
-
-  return heroImageOne;
+function heroImageByIndex(_index: number): ImageSourcePropType {
+  return subtractHeroImage;
 }
 
 interface HackathonPageScreenProps {
@@ -438,6 +433,7 @@ const styles = StyleSheet.create({
   hackathonHeroImage: {
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
+    resizeMode: 'cover',
   },
   hackathonScreen: {
     backgroundColor: '#FAFAFA',
@@ -480,20 +476,21 @@ const styles = StyleSheet.create({
   },
   modeDot: {
     backgroundColor: '#6949AA',
-    borderRadius: 99,
-    height: 1.47,
-    width: 1.47,
+    borderRadius: 999,
+    height: 4,
+    width: 4,
   },
   modePill: {
     alignItems: 'center',
-    backgroundColor: 'rgba(250, 250, 250, 0.8)',
-    borderRadius: 20,
-    columnGap: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 999,
+    bottom: 12,
+    columnGap: 5,
     flexDirection: 'row',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    width: 'auto',
-    alignSelf: 'flex-start',
+    left: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    position: 'absolute',
   },
   modePillText: {
     color: '#6949AA',

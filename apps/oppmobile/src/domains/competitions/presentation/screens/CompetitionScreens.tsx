@@ -14,9 +14,7 @@ import hackathonCategoryButtonImage from '../../../../../assets/Frame 548.png';
 import competitionsCategoryButtonImage from '../../../../../assets/Frame 549.png';
 import eventsCategoryButtonImage from '../../../../../assets/Frame 550.png';
 import communitiesCategoryButtonImage from '../../../../../assets/Frame 551.png';
-import businessChallengeIllustration from '../../../../../assets/Business challenge-amico 1.png';
-import organizingProjectsIllustration from '../../../../../assets/Organizing projects-amico 1.png';
-import trackAndFieldIllustration from '../../../../../assets/Track and field-amico 1.png';
+import subtractHeroImage from '../../../../../assets/Subtract.png';
 import { useDiscoverFeed } from '../../../discover/presentation/hooks/useDiscoverFeed';
 import { useCompetitionDetail } from '../hooks/useCompetitionDetail';
 import type { DiscoverCategoryId } from '../../../../shared/types/discover';
@@ -256,16 +254,8 @@ function CompetitionCard({
   );
 }
 
-function heroImageByIndex(index: number): ImageSourcePropType {
-  if (index === 1) {
-    return organizingProjectsIllustration;
-  }
-
-  if (index === 2) {
-    return trackAndFieldIllustration;
-  }
-
-  return businessChallengeIllustration;
+function heroImageByIndex(_index: number): ImageSourcePropType {
+  return subtractHeroImage;
 }
 
 interface CompetitionPageScreenProps {
@@ -376,6 +366,7 @@ const styles = StyleSheet.create({
   competitionHeroImage: {
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
+    resizeMode: 'cover',
   },
   competitionScreen: {
     backgroundColor: lightTheme.colors.backgroundPrimary,
@@ -478,16 +469,21 @@ const styles = StyleSheet.create({
   modeDot: {
     backgroundColor: '#6949AA',
     borderRadius: 999,
-    height: 1.47,
-    width: 1.47,
+    height: 4,
+    width: 4,
   },
   modePill: {
     alignItems: 'center',
     alignSelf: 'flex-start',
-    columnGap: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 999,
+    bottom: 12,
+    columnGap: 5,
     flexDirection: 'row',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
+    left: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    position: 'absolute',
   },
   modePillText: {
     color: '#6949AA',

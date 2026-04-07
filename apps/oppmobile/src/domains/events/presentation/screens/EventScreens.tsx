@@ -14,7 +14,7 @@ import hackathonCategoryButtonImage from '../../../../../assets/Frame 548.png';
 import competitionsCategoryButtonImage from '../../../../../assets/Frame 549.png';
 import eventsCategoryButtonImage from '../../../../../assets/Frame 550.png';
 import communitiesCategoryButtonImage from '../../../../../assets/Frame 551.png';
-import eventHeroImage from '../../../../../assets/WhatsApp Image 2026-02-24 at 16.23.33 1.png';
+import subtractHeroImage from '../../../../../assets/Subtract.png';
 import attendeeOne from '../../../../../assets/iiitd 1.png';
 import attendeeTwo from '../../../../../assets/sharda 1.png';
 import { useDiscoverFeed } from '../../../discover/presentation/hooks/useDiscoverFeed';
@@ -264,7 +264,7 @@ function EventCard({
 }) {
   return (
     <Pressable onPress={onOpen} style={styles.eventCard}>
-      <ImageBackground imageStyle={styles.eventHeroImage} source={eventHeroImage} style={styles.eventHero}>
+      <ImageBackground imageStyle={styles.eventHeroImage} source={subtractHeroImage} style={styles.eventHero}>
         <Pressable
           accessibilityLabel={`Toggle bookmark for ${item.title}`}
           onPress={() => {
@@ -277,9 +277,13 @@ function EventCard({
           </AppText>
         </Pressable>
 
-        <View style={styles.venueTag}>
-          <AppText style={styles.venueText} variant="caption">
-            {item.venue}
+        <View style={styles.modePill}>
+          <AppText style={styles.modePillText} variant="caption">
+            Free
+          </AppText>
+          <View style={styles.modeDot} />
+          <AppText style={styles.modePillText} variant="caption">
+            Offline
           </AppText>
         </View>
       </ImageBackground>
@@ -448,6 +452,7 @@ const styles = StyleSheet.create({
   eventHeroImage: {
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
+    resizeMode: 'cover',
   },
   eventTitle: {
     color: '#100013',
@@ -564,15 +569,26 @@ const styles = StyleSheet.create({
     height: 360.76,
     width: '100%',
   },
-  venueTag: {
-    alignItems: 'center',
-    bottom: 8,
-    flexDirection: 'row',
-    position: 'absolute',
-    right: 10,
+  modeDot: {
+    backgroundColor: '#6949AA',
+    borderRadius: 999,
+    height: 4,
+    width: 4,
   },
-  venueText: {
-    color: '#835BD5',
+  modePill: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 999,
+    bottom: 12,
+    columnGap: 5,
+    flexDirection: 'row',
+    left: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    position: 'absolute',
+  },
+  modePillText: {
+    color: '#6949AA',
     fontSize: 12,
     lineHeight: 18,
   },
