@@ -224,24 +224,10 @@ export function HomePageScreen({
             subtitle="Communities designed for students to learn, contribute, and grow."
             title="Active Communities"
           >
-            <View style={styles.communitySubsectionWrapper}>
-              <MiniSectionTitle title="Top Communities" />
-              <CommunityRow items={homeFeed?.topCommunities ?? []} />
-              <Image
-                resizeMode="contain"
-                source={communityDecorImage}
-                style={styles.communityDecorImageTop}
-              />
-            </View>
-            <View style={styles.communitySubsectionWrapper}>
-              <MiniSectionTitle title="Near You" />
-              <CommunityRow items={homeFeed?.nearbyCommunities ?? []} />
-              <Image
-                resizeMode="contain"
-                source={communityDecorImage}
-                style={styles.communityDecorImageNear}
-              />
-            </View>
+            <MiniSectionTitle title="Top Communities" />
+            <CommunityRow items={homeFeed?.topCommunities ?? []} />
+            <MiniSectionTitle title="Near You" />
+            <CommunityRow items={homeFeed?.nearbyCommunities ?? []} />
             <InlineArrowAction label="View all" />
           </SectionBlock>
         );
@@ -601,6 +587,12 @@ function CommunityRow({ items }: { readonly items: readonly HomeCommunityItemEnt
               Explore Now
             </AppText>
           </Pressable>
+
+          <Image
+            resizeMode="contain"
+            source={communityDecorImage}
+            style={styles.communityCardDecorImage}
+          />
         </View>
       ))}
     </ScrollView>

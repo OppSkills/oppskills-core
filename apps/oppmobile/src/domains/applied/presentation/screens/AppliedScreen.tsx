@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ImageBackground, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -7,6 +7,7 @@ import {
   type AppliedFilterIdEntity,
   type AppliedTimelineStageEntity,
 } from '../../domain/entities/AppliedFeed';
+import appliedCardThumbnailImage from '../../../../../assets/highres_490352821 1.png';
 import { useAppliedFeed } from '../hooks/useAppliedFeed';
 import { lightTheme } from '../../../../shared/theme';
 import { AppText, FooterSignatureBlock } from '../../../../shared/ui';
@@ -162,11 +163,11 @@ function AppliedCard({
   return (
     <View style={[styles.cardWrap, showBottomDivider ? styles.cardDivider : null]}>
       <Pressable onPress={openPrimaryDetail} style={styles.cardHeader}>
-        <View style={styles.heroThumb}>
+        <ImageBackground imageStyle={styles.heroThumbImage} source={appliedCardThumbnailImage} style={styles.heroThumb}>
           <AppText colorToken="textInverse" numberOfLines={2} style={styles.heroThumbLabel} variant="micro">
             GULLY CRICKET TOURNAMENT
           </AppText>
-        </View>
+        </ImageBackground>
 
         <View style={styles.cardMeta}>
           <AppText numberOfLines={2} style={styles.cardTitle} variant="title">
@@ -424,13 +425,15 @@ const styles = StyleSheet.create({
   },
   heroThumb: {
     alignItems: 'flex-start',
-    backgroundColor: '#2A1D3C',
     borderRadius: lightTheme.radius.sm,
     height: 72,
     justifyContent: 'flex-end',
     overflow: 'hidden',
     padding: lightTheme.spacing[8],
     width: 126,
+  },
+  heroThumbImage: {
+    borderRadius: lightTheme.radius.sm,
   },
   heroThumbLabel: {
     letterSpacing: 0.4,
