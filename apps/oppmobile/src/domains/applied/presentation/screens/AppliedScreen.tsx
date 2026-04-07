@@ -7,7 +7,7 @@ import {
   type AppliedFilterIdEntity,
   type AppliedTimelineStageEntity,
 } from '../../domain/entities/AppliedFeed';
-import appliedCardThumbnailImage from '../../../../../assets/highres_490352821 1.png';
+import appliedCardThumbnailImage from '../../../../../assets/Frame 455.png';
 import { useAppliedFeed } from '../hooks/useAppliedFeed';
 import { lightTheme } from '../../../../shared/theme';
 import { AppText, FooterSignatureBlock } from '../../../../shared/ui';
