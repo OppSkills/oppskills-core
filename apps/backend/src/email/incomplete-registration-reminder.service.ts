@@ -82,8 +82,11 @@ export function formatListingLocation(params: {
   return 'Check event details';
 }
 
-/** Minimum minutes between reminder emails for the same payment row. */
-export const INCOMPLETE_REGISTRATION_REMINDER_MIN_MINUTES = 30;
+/**
+ * Minimum hours between reminder emails for the same payment / participant row.
+ * With cron at 10:00 & 18:00 IST (~8h apart), users can receive at most ~2 reminders per day.
+ */
+export const INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS = 6;
 
 @Injectable()
 export class IncompleteRegistrationReminderService {
@@ -113,6 +116,10 @@ export class IncompleteRegistrationReminderService {
    * Only targets listings that are still open for registration (aligned with
    * submit/join validation): lifecycle status, not paused, before end date, and
    * before registration deadline when one is set.
+   *
+   * Schedule: see `IncompleteRegistrationReminderCron` (twice daily, IST).
+   * The same payment/participant is not emailed again within
+   * `INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS`.
    */
   async run(): Promise<IncompleteRegistrationReminderRunResult> {
     this.lastRunError = null;
@@ -128,7 +135,7 @@ export class IncompleteRegistrationReminderService {
   private async runInternal(): Promise<IncompleteRegistrationReminderRunResult> {
     const cutoff = new Date(
       Date.now() -
-        INCOMPLETE_REGISTRATION_REMINDER_MIN_MINUTES * 60 * 1000,
+        INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS * 60 * 60 * 1000,
     );
 
     const now = new Date();
