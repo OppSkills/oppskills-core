@@ -124,6 +124,7 @@ export class EventService {
       eventDates?: string[];
       eligibility?: string[];
       sort?: string;
+      sortOrder?: 'asc' | 'desc';
     } = {},
   ) {
     const now = new Date();
@@ -273,26 +274,30 @@ export class EventService {
     }
 
     // 7. Sorting Logic
-    let orderBy: any = { createdAt: 'desc' }; // Default
+    const direction = input.sortOrder || 'desc';
+    let orderBy: any = { createdAt: direction }; // Default
+
     if (input.sort) {
       switch (input.sort) {
         case 'recently_added':
-          orderBy = { createdAt: 'desc' };
+          orderBy = { createdAt: direction };
           break;
         case 'submission_date':
-          orderBy = { registrationDeadline: 'asc' };
+          orderBy = { registrationDeadline: direction };
           break;
         case 'price_amount':
-          orderBy = [{ isFree: 'desc' }, { entryFeeAmount: 'asc' }];
+          if (direction === 'desc') {
+            orderBy = [{ isFree: 'asc' }, { entryFeeAmount: 'desc' }];
+          } else {
+            orderBy = [{ isFree: 'desc' }, { entryFeeAmount: 'asc' }];
+          }
           break;
         case 'most_relevant':
         default:
-          // If only 'Recent' is selected, default to latest created first.
-          // Otherwise, soonest starting first.
           if (input.status?.length === 1 && input.status[0] === 'Recent') {
-            orderBy = { createdAt: 'desc' };
+            orderBy = { createdAt: direction };
           } else {
-            orderBy = { startDate: 'asc' };
+            orderBy = { startDate: direction === 'desc' ? 'desc' : 'asc' };
           }
           break;
       }

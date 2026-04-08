@@ -115,6 +115,7 @@ export class HackathonPublicController {
     @Query('eligibility', new ParseArrayPipe({ items: String, optional: true }))
     eligibility?: string[],
     @Query('sort') sort?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
     return this.hackathonService.listPublicHackathons({
       festivalId,
@@ -126,6 +127,7 @@ export class HackathonPublicController {
       eventDates,
       eligibility,
       sort,
+      sortOrder,
     });
   }
 
@@ -170,12 +172,16 @@ export class HackathonPublicController {
     @Query('appendResults', new ParseBoolPipe({ optional: true }))
     appendResults: boolean = false,
     @Query('q') search?: string,
+    @Query('sort') sort?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
     return this.hackathonService.listPublicHackathons({
       festivalId,
       page,
       appendResults,
       search,
+      sort,
+      sortOrder,
       filterMode: 'UPCOMING',
     });
   }

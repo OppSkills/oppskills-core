@@ -15,6 +15,7 @@ export default function CompetitionsPage() {
     eventDates: [],
     eligibility: [],
     sort: "recently_added",
+    sortOrder: "desc",
   });
 
   const {

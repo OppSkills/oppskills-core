@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
-import { SlidersHorizontal, Loader2 } from "lucide-react";
+import { SlidersHorizontal, Loader2, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ListingCard, ListingItem } from "./ListingCard";
@@ -46,20 +46,36 @@ export function GenericListingPage({
   description,
 }: GenericListingPageProps) {
   const [curSort, setCurSort] = useState(filters?.sort || "recently_added");
+  const [curSortOrder, setCurSortOrder] = useState<"asc" | "desc">(filters?.sortOrder || "desc");
 
   // Sync curSort from filters.sort (e.g. from Clear Filters)
   useEffect(() => {
     if (filters?.sort && filters.sort !== curSort) {
       setCurSort(filters.sort);
     }
-  }, [filters?.sort]);
+    if (filters?.sortOrder && filters.sortOrder !== curSortOrder) {
+      setCurSortOrder(filters.sortOrder);
+    }
+  }, [filters?.sort, filters?.sortOrder]);
 
   // Sync sort to filters if it changes from UI
   useEffect(() => {
-    if (filters && setFilters && filters.sort !== curSort) {
-      setFilters((prev) => ({ ...prev, sort: curSort }));
+    if (filters && setFilters && (filters.sort !== curSort || filters.sortOrder !== curSortOrder)) {
+      setFilters((prev) => ({ ...prev, sort: curSort, sortOrder: curSortOrder }));
     }
-  }, [curSort, filters, setFilters]);
+  }, [curSort, curSortOrder, filters, setFilters]);
+
+  const handleSortClick = (id: string) => {
+    if (id === curSort) {
+      // Toggle order if same sort is clicked
+      setCurSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      // Switch sort and set default order
+      setCurSort(id);
+      // Default to desc for recently_added, asc for others
+      setCurSortOrder(id === "recently_added" ? "desc" : "asc");
+    }
+  };
 
   return (
     <div className="container mx-auto min-h-screen px-4 py-4 md:px-6">
@@ -164,32 +180,50 @@ export function GenericListingPage({
                           "Price Amount"
                         ].map((e) => {
                           const id = e.toLowerCase().replaceAll(" ", "_")
+                          const isActive = curSort === id;
                           return (
-                            <p 
+                            <div 
                               key={id} 
-                              className={curSort == id ? "text-primary-600 font-bold cursor-default" : "cursor-pointer hover:text-primary-600"} 
-                              onClick={() => { id != curSort && setCurSort(id) }}
+                              className={`flex items-center gap-1 cursor-pointer select-none transition-colors ${isActive ? "text-primary-600 font-bold" : "text-neutral-700 hover:text-primary-600"}`}
+                              onClick={() => handleSortClick(id)}
                             >
-                              {e}
-                            </p>
+                              <p>{e}</p>
+                              {isActive && (
+                                curSortOrder === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                              )}
+                            </div>
                           )
                         })
                       }
                     </div>
 
                     {/* Mobile Sort Dropdown */}
-                    <div className="flex sm:hidden w-40">
-                      <Select value={curSort} onValueChange={setCurSort}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Sort by" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="most_relevant">Most Relevant</SelectItem>
-                          <SelectItem value="submission_date">Submission Date</SelectItem>
-                          <SelectItem value="recently_added">Recently Added</SelectItem>
-                          <SelectItem value="price_amount">Price Amount</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="flex sm:hidden items-center gap-2">
+                      <div className="w-32">
+                        <Select value={curSort} onValueChange={setCurSort}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Sort by" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="most_relevant">Most Relevant</SelectItem>
+                            <SelectItem value="submission_date">Submission Date</SelectItem>
+                            <SelectItem value="recently_added">Recently Added</SelectItem>
+                            <SelectItem value="price_amount">Price Amount</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 shrink-0"
+                        onClick={() => setCurSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))}
+                      >
+                        {curSortOrder === "asc" ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
                   </div>
                 )}

@@ -85,6 +85,7 @@ export function useEvents(
         eventDates: filters?.eventDates,
         eligibility: filters?.eligibility,
         sort: filters?.sort,
+        sortOrder: filters?.sortOrder,
       });
     },
     initialPageParam: 1,
@@ -115,6 +116,7 @@ export function useUpcomingEvents(
         eventDates: filters?.eventDates,
         eligibility: filters?.eligibility,
         sort: filters?.sort,
+        sortOrder: filters?.sortOrder,
       });
     },
     initialPageParam: 1,

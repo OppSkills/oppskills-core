@@ -35,6 +35,7 @@ export function usePublicHackathons(
         eventDates: filters?.eventDates,
         eligibility: filters?.eligibility,
         sort: filters?.sort,
+        sortOrder: filters?.sortOrder,
         appendResults: true,
       });
     },
@@ -68,6 +69,7 @@ export function useUpcomingHackathons(
         eventDates: filters?.eventDates,
         eligibility: filters?.eligibility,
         sort: filters?.sort,
+        sortOrder: filters?.sortOrder,
       });
     },
     initialPageParam: 1,

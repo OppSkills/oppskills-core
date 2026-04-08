@@ -32,6 +32,7 @@ export async function getPublicEvents(
     eventDates?: string[];
     eligibility?: string[];
     sort?: string;
+    sortOrder?: "asc" | "desc";
   } = {},
 ): Promise<{ items: any[]; further: boolean }> {
   const res = await API.get("/public", { params });
@@ -79,6 +80,7 @@ export async function getPublicUpcomingEvents(
     eventDates?: string[];
     eligibility?: string[];
     sort?: string;
+    sortOrder?: "asc" | "desc";
   } = {},
 ): Promise<{ items: any[]; further: boolean }> {
   const res = await API.get("/public/upcoming", { params });

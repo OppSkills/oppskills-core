@@ -144,6 +144,7 @@ export class EventController {
     @Query('eligibility', new ParseArrayPipe({ items: String, optional: true }))
     eligibility?: string[],
     @Query('sort') sort?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
     return this.eventService.listPublicEvents({
       festivalId,
@@ -155,6 +156,7 @@ export class EventController {
       eventDates,
       eligibility,
       sort,
+      sortOrder,
     });
   }
 

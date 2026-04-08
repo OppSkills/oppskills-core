@@ -12,6 +12,7 @@ export interface FilterState {
   eventDates: string[]; // This week, Next week, This month, Next month
   eligibility: string[]; // School, UG, PG, Open
   sort?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export interface FilterOptions {
