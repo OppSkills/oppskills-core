@@ -10,8 +10,13 @@ export class IncompleteRegistrationReminderCron {
     private readonly reminderService: IncompleteRegistrationReminderService,
   ) {}
 
-  /** Every 15 minutes — catch paid-but-incomplete registrations sooner */
-  @Cron('*/15 * * * *')
+  /**
+   * Twice per day during typical India active hours (IST).
+   * Rate limits per recipient are enforced in IncompleteRegistrationReminderService.
+   */
+  @Cron('0 10,18 * * *', {
+    timeZone: 'Asia/Kolkata',
+  })
   async handleIncompleteRegistrationReminders(): Promise<void> {
     try {
       await this.reminderService.run();

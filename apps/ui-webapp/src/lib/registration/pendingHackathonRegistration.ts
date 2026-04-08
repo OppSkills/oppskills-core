@@ -45,7 +45,7 @@ export function clearPendingHackathonRegistration(slug: string): void {
   }
 }
 
-/** Same pattern for paid event registration recovery */
+/** Same pattern for event registration: paid (before Razorpay) and free (before join API). */
 export const pendingEventRegistrationKey = (slug: string) =>
   `oppskills:pendingEventRegistration:${slug}`;
 

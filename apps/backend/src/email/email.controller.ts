@@ -295,6 +295,7 @@ export class EmailController {
             eventType: event.eventType,
             eventSlug: event.slug,
             resourceType: 'event',
+            incompleteRegistrationKind: 'paid',
           },
         });
 

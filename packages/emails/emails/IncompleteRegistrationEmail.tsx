@@ -27,6 +27,11 @@ export interface IncompleteRegistrationEmailProps {
   /** Defaults to event listing; use `hackathon` for `/hackathons/[slug]`. */
   resourceType?: "event" | "hackathon";
   baseUrl?: string;
+  /**
+   * `paid` — payment captured; copy references successful payment (default).
+   * `free` — free event: user joined but the registration form was not submitted (no payment wording).
+   */
+  incompleteRegistrationKind?: "paid" | "free";
 }
 
 export function IncompleteRegistrationEmail({
@@ -40,7 +45,10 @@ export function IncompleteRegistrationEmail({
   eventSlug,
   resourceType = "event",
   baseUrl = "https://oppskills.com",
+  incompleteRegistrationKind = "paid",
 }: IncompleteRegistrationEmailProps) {
+  const isFreeIncomplete = incompleteRegistrationKind === "free";
+
   const previewText = `Action Required: Complete your registration for ${eventName}`;
 
   const getEventTypeLabel = (type?: string) => {
@@ -87,16 +95,37 @@ export function IncompleteRegistrationEmail({
             <Heading style={subHeading}>Your Registration is Almost Complete!</Heading>
 
             <Text style={paragraph}>
-              Great news! Your <strong>payment for {eventName}</strong> was successful.
-              However, we noticed that your registration form wasn't fully submitted.
+              {isFreeIncomplete ? (
+                <>
+                  You&apos;re on the list for <strong>{eventName}</strong>, but your
+                  registration form wasn&apos;t finished. We still need a few details
+                  from you.
+                </>
+              ) : (
+                <>
+                  Great news! Your <strong>payment for {eventName}</strong> was
+                  successful. However, we noticed that your registration form
+                  wasn&apos;t fully submitted.
+                </>
+              )}
             </Text>
 
             {/* Alert Box */}
             <Section style={alertBox}>
               <Text style={alertTitle}>⚠️ Action Required</Text>
               <Text style={alertText}>
-                Please complete your registration form to secure your spot.
-                <strong> No additional payment is needed</strong> – just fill out the form!
+                {isFreeIncomplete ? (
+                  <>
+                    Please complete your registration form to secure your spot. This is
+                    a <strong>free event</strong> — no payment required.
+                  </>
+                ) : (
+                  <>
+                    Please complete your registration form to secure your spot.
+                    <strong> No additional payment is needed</strong> – just fill out the
+                    form!
+                  </>
+                )}
               </Text>
             </Section>
 
@@ -143,8 +172,12 @@ export function IncompleteRegistrationEmail({
                 <Section style={statusSection}>
                   <Row>
                     <Column style={statusCol}>
-                      <Text style={statusLabel}>PAYMENT</Text>
-                      <Text style={statusComplete}>✓ Complete</Text>
+                      <Text style={statusLabel}>
+                        {isFreeIncomplete ? "SIGN-UP" : "PAYMENT"}
+                      </Text>
+                      <Text style={statusComplete}>
+                        {isFreeIncomplete ? "✓ Started" : "✓ Complete"}
+                      </Text>
                     </Column>
                     <Column style={statusCol}>
                       <Text style={statusLabel}>REGISTRATION FORM</Text>

@@ -3,7 +3,15 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Sparkles, Users, ChevronRight, Clock } from "lucide-react";
+import {
+  MapPin,
+  Sparkles,
+  Users,
+  ChevronRight,
+  Clock,
+  Loader2,
+  CheckCircle,
+} from "lucide-react";
 import { format, isAfter } from "date-fns";
 import { EventDetails } from "./types";
 import InfoCard from "./InfoCard";
@@ -12,9 +20,21 @@ import { ensureAbsoluteUrl } from "@/lib/utils";
 interface EventSidebarProps {
   event: EventDetails;
   onRegister?: () => void;
+  /** When signed in, registration status is loading from API */
+  isCheckingRegistration?: boolean;
+  /** Participant row exists with submission (full registration) */
+  isRegistered?: boolean;
+  /** Participant exists but form answers not saved (paid or free) */
+  needsCompleteRegistration?: boolean;
 }
 
-export function EventSidebar({ event, onRegister }: EventSidebarProps) {
+export function EventSidebar({
+  event,
+  onRegister,
+  isCheckingRegistration = false,
+  isRegistered = false,
+  needsCompleteRegistration = false,
+}: EventSidebarProps) {
   const startDate = event.startDate ? new Date(event.startDate) : (event.date ? new Date(event.date) : null);
 
   const monthShort = startDate ? format(startDate, "MMM") : "---";
@@ -30,10 +50,25 @@ export function EventSidebar({ event, onRegister }: EventSidebarProps) {
 
   let buttonText = "Register Now";
   let isDisabled = false;
+  let registerButtonClass =
+    "bg-[#9333ea] hover:bg-[#7e22ce] text-white";
 
-  if (isDeadlinePassed) {
+  if (isCheckingRegistration) {
+    buttonText = "Checking…";
+    isDisabled = true;
+    registerButtonClass = "bg-[#9333ea] text-white";
+  } else if (isRegistered) {
+    buttonText = "Registered";
+    isDisabled = true;
+    registerButtonClass = "bg-green-600 text-white cursor-not-allowed";
+  } else if (needsCompleteRegistration) {
+    buttonText = "Complete registration";
+    isDisabled = false;
+    registerButtonClass = "bg-[#9333ea] hover:bg-[#7e22ce] text-white";
+  } else if (isDeadlinePassed) {
     buttonText = "Registration closed";
     isDisabled = true;
+    registerButtonClass = "bg-neutral-300 text-neutral-600 cursor-not-allowed";
   } else if (isFree) {
     buttonText = "Register now";
   } else {
@@ -124,15 +159,24 @@ export function EventSidebar({ event, onRegister }: EventSidebarProps) {
 
           {/* Register Button */}
           <button
+            type="button"
             onClick={onRegister}
             disabled={isDisabled}
-            className={`w-full ${
-              isDisabled 
-              ? "bg-neutral-300 cursor-not-allowed" 
-              : "bg-[#9333ea] hover:bg-[#7e22ce]"
-            } text-white rounded-full h-[52px] font-semibold text-base shadow-sm transition-colors mt-2`}
+            className={`w-full flex items-center justify-center gap-2 ${registerButtonClass} rounded-full h-[52px] font-semibold text-base shadow-sm transition-colors mt-2 disabled:opacity-90`}
           >
-            {buttonText}
+            {isCheckingRegistration ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                {buttonText}
+              </>
+            ) : isRegistered ? (
+              <>
+                <CheckCircle className="w-5 h-5 shrink-0" />
+                {buttonText}
+              </>
+            ) : (
+              buttonText
+            )}
           </button>
 
           {/* Divider */}

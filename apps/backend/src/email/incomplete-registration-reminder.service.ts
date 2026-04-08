@@ -9,6 +9,9 @@ export type IncompleteRegistrationReminderRunResult = {
   hackathonEmailsSent: number;
   eventEmailsAttempted: number;
   eventEmailsSent: number;
+  /** Free event: participant joined but no saved registration answers */
+  freeEventEmailsAttempted: number;
+  freeEventEmailsSent: number;
 };
 
 type HackathonReminderRow = {
@@ -28,6 +31,22 @@ type HackathonReminderRow = {
 
 type EventReminderRow = {
   paymentId: string;
+  slug: string;
+  name: string;
+  eventType: string;
+  startDate: Date;
+  endDate: Date;
+  locationType: string | null;
+  locationAddress: string | null;
+  locationCity: string | null;
+  locationVirtualLink: string | null;
+  payerEmail: string;
+  firstName: string | null;
+  lastName: string | null;
+};
+
+type FreeEventReminderRow = {
+  participantId: string;
   slug: string;
   name: string;
   eventType: string;
@@ -63,8 +82,11 @@ export function formatListingLocation(params: {
   return 'Check event details';
 }
 
-/** Minimum minutes between reminder emails for the same payment row. */
-export const INCOMPLETE_REGISTRATION_REMINDER_MIN_MINUTES = 30;
+/**
+ * Minimum hours between reminder emails for the same payment / participant row.
+ * With cron at 10:00 & 18:00 IST (~8h apart), users can receive at most ~2 reminders per day.
+ */
+export const INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS = 6;
 
 @Injectable()
 export class IncompleteRegistrationReminderService {
@@ -94,6 +116,10 @@ export class IncompleteRegistrationReminderService {
    * Only targets listings that are still open for registration (aligned with
    * submit/join validation): lifecycle status, not paused, before end date, and
    * before registration deadline when one is set.
+   *
+   * Schedule: see `IncompleteRegistrationReminderCron` (twice daily, IST).
+   * The same payment/participant is not emailed again within
+   * `INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS`.
    */
   async run(): Promise<IncompleteRegistrationReminderRunResult> {
     this.lastRunError = null;
@@ -109,7 +135,7 @@ export class IncompleteRegistrationReminderService {
   private async runInternal(): Promise<IncompleteRegistrationReminderRunResult> {
     const cutoff = new Date(
       Date.now() -
-        INCOMPLETE_REGISTRATION_REMINDER_MIN_MINUTES * 60 * 1000,
+        INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS * 60 * 60 * 1000,
     );
 
     const now = new Date();
@@ -185,6 +211,7 @@ export class IncompleteRegistrationReminderService {
           AND NOT EXISTS (
             SELECT 1
             FROM oppskills.event_registration_submission ers
+            INNER JOIN oppskills.event_registration_answer era ON era.submission_id = ers.id
             WHERE ers.event_id = ep.event_id
               AND ers.user_id = ep.payer_user_id
           )
@@ -197,8 +224,51 @@ export class IncompleteRegistrationReminderService {
       `,
     );
 
+    const freeEventRows = await prisma.$queryRaw<FreeEventReminderRow[]>(
+      Prisma.sql`
+        SELECT
+          ep.id AS "participantId",
+          e.slug AS "slug",
+          e.name AS "name",
+          e.event_type::text AS "eventType",
+          e.start_date AS "startDate",
+          e.end_date AS "endDate",
+          e.location_type::text AS "locationType",
+          e.location_address AS "locationAddress",
+          e.location_city AS "locationCity",
+          e.location_virtual_link AS "locationVirtualLink",
+          u.email AS "payerEmail",
+          u."firstName" AS "firstName",
+          u."lastName" AS "lastName"
+        FROM oppskills.event_participant ep
+        INNER JOIN oppskills.event e ON e.id = ep.event_id
+        INNER JOIN oppskills."user" u ON u.id = ep.user_id
+        WHERE e.is_free = true
+          AND e.is_deleted = false
+          AND e.approval_status = 'APPROVED'
+          AND e.status IN ('PUBLISHED', 'ONGOING')
+          AND e.is_registration_paused = false
+          AND e.end_date >= ${now}
+          AND (e.registration_deadline IS NULL OR e.registration_deadline >= ${now})
+          AND NOT EXISTS (
+            SELECT 1
+            FROM oppskills.event_registration_submission ers
+            INNER JOIN oppskills.event_registration_answer era ON era.submission_id = ers.id
+            WHERE ers.event_id = e.id
+              AND ers.user_id = ep.user_id
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM oppskills.incomplete_registration_reminder_log l
+            WHERE l.event_participant_id = ep.id
+              AND l.last_sent_at > ${cutoff}
+          )
+      `,
+    );
+
     let hackathonEmailsSent = 0;
     let eventEmailsSent = 0;
+    let freeEventEmailsSent = 0;
 
     for (const row of hackathonRows) {
       const eventDate = row.startDate.toLocaleDateString('en-IN', {
@@ -287,6 +357,7 @@ export class IncompleteRegistrationReminderService {
           eventSlug: row.slug,
           resourceType: 'event',
           baseUrl,
+          incompleteRegistrationKind: 'paid',
         },
       });
 
@@ -311,8 +382,65 @@ export class IncompleteRegistrationReminderService {
       }
     }
 
+    for (const row of freeEventRows) {
+      const eventDate = row.startDate.toLocaleDateString('en-IN', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      const eventTime = row.startDate.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const eventLocation = formatListingLocation({
+        locationType: row.locationType,
+        locationAddress: row.locationAddress,
+        locationCity: row.locationCity,
+        locationVirtualLink: row.locationVirtualLink,
+      });
+
+      const result = await this.emailService.send({
+        type: 'incomplete-registration',
+        to: row.payerEmail,
+        props: {
+          firstName: row.firstName ?? undefined,
+          email: row.payerEmail,
+          eventName: row.name,
+          eventDate,
+          eventTime,
+          eventLocation,
+          eventType: row.eventType,
+          eventSlug: row.slug,
+          resourceType: 'event',
+          baseUrl,
+          incompleteRegistrationKind: 'free',
+        },
+      });
+
+      if (result.success) {
+        await prisma.incompleteRegistrationReminderLogEntity.upsert({
+          where: { eventParticipantId: row.participantId },
+          create: {
+            eventParticipantId: row.participantId,
+            lastSentAt: new Date(),
+            sentCount: 1,
+          },
+          update: {
+            lastSentAt: new Date(),
+            sentCount: { increment: 1 },
+          },
+        });
+        freeEventEmailsSent += 1;
+      } else {
+        this.logger.warn(
+          `Free event reminder email failed for participant ${row.participantId}: ${result.error}`,
+        );
+      }
+    }
+
     this.logger.log(
-      `Incomplete registration reminders: hackathons ${hackathonEmailsSent}/${hackathonRows.length} sent, events ${eventEmailsSent}/${eventRows.length} sent`,
+      `Incomplete registration reminders: hackathons ${hackathonEmailsSent}/${hackathonRows.length} sent, paid events ${eventEmailsSent}/${eventRows.length} sent, free events ${freeEventEmailsSent}/${freeEventRows.length} sent`,
     );
 
     const result: IncompleteRegistrationReminderRunResult = {
@@ -320,6 +448,8 @@ export class IncompleteRegistrationReminderService {
       hackathonEmailsSent,
       eventEmailsAttempted: eventRows.length,
       eventEmailsSent,
+      freeEventEmailsAttempted: freeEventRows.length,
+      freeEventEmailsSent,
     };
     this.lastRunResult = result;
     this.lastRunFinishedAt = new Date().toISOString();

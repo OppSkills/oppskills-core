@@ -60,6 +60,7 @@ describe('IncompleteRegistrationReminderService.run', () => {
     (prisma.$queryRaw as jest.Mock)
       .mockReset()
       .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
     (prisma.incompleteRegistrationReminderLogEntity.upsert as jest.Mock).mockClear();
     mockSend.mockResolvedValue({ success: true });
@@ -89,6 +90,7 @@ describe('IncompleteRegistrationReminderService.run', () => {
           lastName: 'Lee',
         },
       ])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
 
     const service = new IncompleteRegistrationReminderService(
@@ -137,6 +139,7 @@ describe('IncompleteRegistrationReminderService.run', () => {
           lastName: null,
         },
       ])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
 
     mockSend.mockResolvedValue({ success: false, error: 'bounce' });

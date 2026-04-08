@@ -1953,13 +1953,18 @@ export class EventService {
       },
     });
 
-    // Check if registration answers exist
+    // Check if registration answers exist (submission row alone is not enough)
     const registrationSubmission =
       await prisma.eventRegistrationSubmissionEntity.findFirst({
         where: { eventId, userId },
-        select: { id: true },
+        select: {
+          id: true,
+          _count: { select: { answers: true } },
+        },
       });
-    const hasRegistrationAnswers = !!registrationSubmission;
+    const hasRegistrationAnswers =
+      !!registrationSubmission &&
+      registrationSubmission._count.answers > 0;
 
     // Check if payment exists and is captured (for paid events)
     let paymentCompleted = false;
@@ -2032,13 +2037,16 @@ export class EventService {
       );
     }
 
-    // Check if registration answers already exist
     const existingSubmission =
       await prisma.eventRegistrationSubmissionEntity.findFirst({
         where: { eventId, userId },
+        select: {
+          id: true,
+          _count: { select: { answers: true } },
+        },
       });
 
-    if (existingSubmission) {
+    if (existingSubmission && existingSubmission._count.answers > 0) {
       throw new BadRequestException(
         'Registration form has already been submitted.',
       );
@@ -2114,18 +2122,22 @@ export class EventService {
         return !a.fieldId.startsWith('default-');
       });
 
-    // Create submission and save answers
-    const submission = await prisma.eventRegistrationSubmissionEntity.create({
-      data: {
-        eventId,
-        userId,
-        participantId: participant.id,
-      },
-    });
+    const submissionId =
+      existingSubmission && existingSubmission._count.answers === 0
+        ? existingSubmission.id
+        : (
+            await prisma.eventRegistrationSubmissionEntity.create({
+              data: {
+                eventId,
+                userId,
+                participantId: participant.id,
+              },
+            })
+          ).id;
 
     if (mappedAnswers.length > 0) {
       const answerData = mappedAnswers.map((a) => ({
-        submissionId: submission.id,
+        submissionId,
         fieldId: a.fieldId,
         valueText:
           typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
@@ -2138,7 +2150,7 @@ export class EventService {
     }
 
     this.logger.log(
-      `Saved ${mappedAnswers.length} missing registration answers for user ${userId} in event ${eventId}`,
+      `Saved ${mappedAnswers.length} missing registration answers for user ${userId} in event ${eventId} (submission ${submissionId})`,
     );
 
     return {
@@ -2213,6 +2225,7 @@ export class EventService {
           select: {
             id: true,
             submittedAt: true,
+            _count: { select: { answers: true } },
           },
         },
       },
@@ -2285,7 +2298,10 @@ export class EventService {
         location,
         course,
         gender: profile?.gender ?? null,
-        status: p.submission ? 'Completed' : 'Incomplete',
+        status:
+          p.submission && p.submission._count.answers > 0
+            ? 'Completed'
+            : 'Incomplete',
         registeredOn: p.joinedAt.toISOString(),
         approved: p.approved,
         passEmailSent: p.passEmailSent,
