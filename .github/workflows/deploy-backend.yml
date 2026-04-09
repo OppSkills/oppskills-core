@@ -24,12 +24,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Prepare AWS credentials for the runner
+        env:
+          RAW_AK: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          RAW_SK: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          trim() { printf '%s' "$1" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          AWS_ACCESS_KEY_ID="$(trim "${RAW_AK}")"
+          AWS_SECRET_ACCESS_KEY="$(trim "${RAW_SK}")"
+          if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
+            echo "::error::AWS_ACCESS_KEY_ID and/or AWS_SECRET_ACCESS_KEY are empty (check repository or environment secrets)."
+            exit 1
+          fi
+          {
+            echo "AWS_ACCESS_KEY_ID<<__GITHUB_ACTIONS_EOF"
+            echo "${AWS_ACCESS_KEY_ID}"
+            echo "__GITHUB_ACTIONS_EOF"
+            echo "AWS_SECRET_ACCESS_KEY<<__GITHUB_ACTIONS_EOF"
+            echo "${AWS_SECRET_ACCESS_KEY}"
+            echo "__GITHUB_ACTIONS_EOF"
+          } >> "${GITHUB_ENV}"
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v4.3.1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+          unset-current-credentials: true
 
       - name: Login to Amazon ECR
         id: login-ecr
