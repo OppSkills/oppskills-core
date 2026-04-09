@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import {
   prisma,
@@ -26,6 +27,7 @@ interface SubmitRegistrationParams {
 
 @Injectable()
 export class RegistrationSubmitService {
+  private readonly logger = new Logger(RegistrationSubmitService.name);
   async submitRegistration(params: SubmitRegistrationParams) {
     const { hackathonSlug, userId, answers = [] } = params;
 
@@ -90,8 +92,8 @@ export class RegistrationSubmitService {
     const existingSubmission = membership?.registrationSubmission
       ? membership.registrationSubmission
       : await prisma.hackathonRegistrationSubmissionEntity.findFirst({
-          where: { hackathonId: hackathon.id, userId, teamId: leaderTeam.id },
-        });
+        where: { hackathonId: hackathon.id, userId, teamId: leaderTeam.id },
+      });
 
     if (existingSubmission) {
       throw new BadRequestException(
@@ -140,6 +142,15 @@ export class RegistrationSubmitService {
           submittedAt: new Date(),
         },
       });
+
+      if (mappedAnswers.length === 0) {
+        const formFieldCount = hackathon.registrationForm?.fields?.length ?? 0;
+        if (formFieldCount > 0) {
+          this.logger.warn(
+            `submitRegistration: submission for hackathon ${hackathon.id} / user ${userId} has 0 answers but form has ${formFieldCount} field(s)`,
+          );
+        }
+      }
 
       if (mappedAnswers.length > 0) {
         const answerData = mappedAnswers.map((a) => ({
@@ -611,13 +622,13 @@ export class RegistrationSubmitService {
     const submission = membership?.registrationSubmission
       ? membership.registrationSubmission
       : await prisma.hackathonRegistrationSubmissionEntity.findFirst({
-          where: {
-            hackathonId: hackathon.id,
-            userId,
-            teamId: leaderTeam.id,
-          },
-          select: { id: true },
-        });
+        where: {
+          hackathonId: hackathon.id,
+          userId,
+          teamId: leaderTeam.id,
+        },
+        select: { id: true },
+      });
 
     let paymentStatus: string | null = null;
 

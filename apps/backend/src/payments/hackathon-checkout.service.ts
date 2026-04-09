@@ -31,7 +31,7 @@ export class HackathonCheckoutService {
     private readonly draftTeamService: DraftTeamService,
     private readonly registrationSubmitService: RegistrationSubmitService,
     private readonly paymentEscrowService: PaymentRegistrationEscrowService,
-  ) {}
+  ) { }
 
   async createPaymentOrder(params: {
     hackathonSlug: string;
@@ -150,9 +150,9 @@ export class HackathonCheckoutService {
         if (existingTeamPayment) {
           if (
             existingTeamPayment.paymentStatus ===
-              HackathonPaymentStatus.CAPTURED ||
+            HackathonPaymentStatus.CAPTURED ||
             existingTeamPayment.paymentStatus ===
-              HackathonPaymentStatus.AUTHORIZED
+            HackathonPaymentStatus.AUTHORIZED
           ) {
             return {
               paymentId: existingTeamPayment.id,
@@ -440,7 +440,7 @@ export class HackathonCheckoutService {
       razorpayOrderId: razorpayOrder.id,
       payerUserId: params.userId,
       hackathonId: hackathon.id,
-      answers: params.answers ?? [],
+      answers: params.answers || [],
     });
 
     return {

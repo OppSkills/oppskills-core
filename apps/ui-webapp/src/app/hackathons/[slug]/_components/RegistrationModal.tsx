@@ -573,6 +573,19 @@ export function RegistrationModal({
         mergedFieldIds,
       );
 
+      // Defensive check: if the form has fields, answers should not be empty.
+      // This catches edge cases where field IDs mismatch or form state was lost.
+      if (mergedFields.length > 0 && filteredFormatted.length === 0) {
+        console.warn(
+          "[RegistrationModal] filteredFormatted is empty but mergedFields has entries",
+          { mergedFieldCount: mergedFields.length, answerKeys: Object.keys(answers) },
+        );
+        toast.error(
+          "Registration form answers are missing. Please fill in the required fields.",
+        );
+        return;
+      }
+
       let onboardingDto: CreateOnboardingDto;
       try {
         onboardingDto = buildCreateOnboardingDtoFromRegistration({

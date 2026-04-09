@@ -103,7 +103,7 @@ function getMinSizeFromParticipantType(participantType: string): number {
 @Injectable()
 export class TeamService {
   private readonly logger = new Logger(TeamService.name);
-  constructor(private readonly eventEmitter: EventEmitter2) {}
+  constructor(private readonly eventEmitter: EventEmitter2) { }
 
   /**
    * Create a team for a hackathon.
@@ -248,6 +248,16 @@ export class TeamService {
           isLeader: true,
         },
       });
+
+      if (providedAnswers.length === 0) {
+        const formFieldCount =
+          hackathon.registrationForm?.fields?.length ?? 0;
+        if (formFieldCount > 0) {
+          this.logger.warn(
+            `createTeam: registration submission for hackathon ${dto.hackathonId} / user ${leaderId} has 0 answers but form has ${formFieldCount} field(s)`,
+          );
+        }
+      }
 
       if (providedAnswers.length > 0) {
         const answerData = providedAnswers.map((a) => ({
@@ -562,6 +572,16 @@ export class TeamService {
           isLeader: false,
         },
       });
+
+      if (providedAnswers.length === 0) {
+        const formFieldCount =
+          hackathon.registrationForm?.fields?.length ?? 0;
+        if (formFieldCount > 0) {
+          this.logger.warn(
+            `joinTeam: registration submission for hackathon ${team.hackathonId} / user ${userId} has 0 answers but form has ${formFieldCount} field(s)`,
+          );
+        }
+      }
 
       if (providedAnswers.length > 0) {
         const answerData = providedAnswers.map((a) => ({
