@@ -100,7 +100,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             <div className="flex justify-between items-start w-full">
               <div className="space-y-1 flex flex-row justify-between items-center w-full">
                 <DialogTitle className="text-2xl font-medium text-neutral-900 font-sans! m-0">
-                  Share {title?.includes("Hackathon") ? "Hackathon" : "Event"} Link
+                  Share {title?.includes("Hackathon") ? "Hackathon" : "Event"}
                 </DialogTitle>
                 <DialogClose asChild>
                   <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-neutral-100 transition-all active:scale-95">
