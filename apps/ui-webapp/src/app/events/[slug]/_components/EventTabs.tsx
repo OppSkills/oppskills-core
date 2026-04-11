@@ -7,8 +7,8 @@ interface EventTabsProps {
   tabs: string[];
   activeTab: string;
   onTabChange: (tab: string) => void;
-  title: string;
-  slug: string;
+  title?: string;
+  slug?: string;
 }
 
 export function EventTabs({ tabs, activeTab, onTabChange, title, slug }: EventTabsProps) {
@@ -60,9 +60,11 @@ export function EventTabs({ tabs, activeTab, onTabChange, title, slug }: EventTa
             );
           })}
         </div>
-        <div className="flex-shrink-0 pb-3">
-          <ShareButton title={title} slug={slug} type="event" minimal />
-        </div>
+        {title && slug && (
+          <div className="flex-shrink-0 pb-3">
+            <ShareButton title={title} slug={slug} type="event" minimal />
+          </div>
+        )}
       </div>
     </div>
   );

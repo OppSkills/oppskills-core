@@ -17,8 +17,8 @@ interface CompetitionTabsProps {
   hasRounds?: boolean;
   hasPrizes?: boolean;
   hasAttachments?: boolean;
-  title: string;
-  slug: string;
+  title?: string;
+  slug?: string;
 }
 
 export function CompetitionTabs({
@@ -71,9 +71,11 @@ export function CompetitionTabs({
             );
           })}
         </div>
-        <div className="flex-shrink-0 pb-3">
-          <ShareButton title={title} slug={slug} type="hackathon" minimal />
-        </div>
+        {title && slug && (
+          <div className="flex-shrink-0 pb-3">
+            <ShareButton title={title} slug={slug} type="hackathon" minimal />
+          </div>
+        )}
       </div>
     </div>
   );
