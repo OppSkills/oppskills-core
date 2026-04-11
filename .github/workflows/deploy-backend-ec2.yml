@@ -53,12 +53,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # GitHub secret values often pick up a trailing newline when pasted; that breaks SigV4 and
+      # `configure-aws-credentials` fails right after "Proceeding with IAM user credentials".
+      - name: Prepare AWS credentials for the runner
+        env:
+          RAW_AK: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          RAW_SK: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          trim() { printf '%s' "$1" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          AWS_ACCESS_KEY_ID="$(trim "${RAW_AK}")"
+          AWS_SECRET_ACCESS_KEY="$(trim "${RAW_SK}")"
+          if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
+            echo "::error::AWS_ACCESS_KEY_ID and/or AWS_SECRET_ACCESS_KEY are empty (check repository or environment secrets)."
+            exit 1
+          fi
+          {
+            echo "AWS_ACCESS_KEY_ID<<__GITHUB_ACTIONS_EOF"
+            echo "${AWS_ACCESS_KEY_ID}"
+            echo "__GITHUB_ACTIONS_EOF"
+            echo "AWS_SECRET_ACCESS_KEY<<__GITHUB_ACTIONS_EOF"
+            echo "${AWS_SECRET_ACCESS_KEY}"
+            echo "__GITHUB_ACTIONS_EOF"
+          } >> "${GITHUB_ENV}"
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v4.3.1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+          unset-current-credentials: true
 
       - name: Login to Amazon ECR
         id: login_ecr
@@ -181,12 +206,35 @@ jobs:
     runs-on: ubuntu-latest
     needs: build_and_push
     steps:
+      - name: Prepare AWS credentials for the runner
+        env:
+          RAW_AK: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          RAW_SK: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          trim() { printf '%s' "$1" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          AWS_ACCESS_KEY_ID="$(trim "${RAW_AK}")"
+          AWS_SECRET_ACCESS_KEY="$(trim "${RAW_SK}")"
+          if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
+            echo "::error::AWS_ACCESS_KEY_ID and/or AWS_SECRET_ACCESS_KEY are empty (check repository or environment secrets)."
+            exit 1
+          fi
+          {
+            echo "AWS_ACCESS_KEY_ID<<__GITHUB_ACTIONS_EOF"
+            echo "${AWS_ACCESS_KEY_ID}"
+            echo "__GITHUB_ACTIONS_EOF"
+            echo "AWS_SECRET_ACCESS_KEY<<__GITHUB_ACTIONS_EOF"
+            echo "${AWS_SECRET_ACCESS_KEY}"
+            echo "__GITHUB_ACTIONS_EOF"
+          } >> "${GITHUB_ENV}"
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v4.3.1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+          unset-current-credentials: true
 
       - name: Deploy on EC2 via SSH
         env:
@@ -368,16 +416,37 @@ jobs:
              bash -s" <<'HEALTH_CHECK'
           set -euo pipefail
 
+          # Must match deploy step: same user may need `sudo -n docker` to talk to the daemon.
+          command -v docker >/dev/null 2>&1 || (echo "docker not installed" && exit 1)
+          USE_SUDO_DOCKER="0"
+          if ! docker info >/dev/null 2>&1; then
+            if command -v sudo >/dev/null 2>&1 && sudo -n docker info >/dev/null 2>&1; then
+              USE_SUDO_DOCKER="1"
+            else
+              echo "Docker is installed but this user cannot access /var/run/docker.sock."
+              echo "Fix options: add user to docker group OR allow sudo docker (NOPASSWD) OR run workflow with a different SSH user."
+              exit 1
+            fi
+          fi
+
+          docker_cmd() {
+            if [ "${USE_SUDO_DOCKER}" = "1" ]; then
+              sudo -n docker "$@"
+            else
+              docker "$@"
+            fi
+          }
+
           # Wait for container to be running (max 30 seconds)
           echo "Checking if container is running..."
           for i in {1..30}; do
-            if docker ps --format "{{.Names}}" | grep -qx "${CONTAINER_NAME}"; then
+            if docker_cmd ps --format "{{.Names}}" | grep -qx "${CONTAINER_NAME}"; then
               echo "Container is running"
               break
             fi
             if [ $i -eq 30 ]; then
               echo "ERROR: Container failed to start within 30 seconds"
-              docker logs --tail 50 "${CONTAINER_NAME}"
+              docker_cmd logs --tail 50 "${CONTAINER_NAME}" 2>/dev/null || true
               exit 1
             fi
             echo "Waiting for container to start... ($i/30)"
@@ -395,9 +464,9 @@ jobs:
             if [ $i -eq 60 ]; then
               echo "ERROR: Health check failed after 60 seconds"
               echo "Container logs:"
-              docker logs --tail 100 "${CONTAINER_NAME}"
+              docker_cmd logs --tail 100 "${CONTAINER_NAME}" 2>/dev/null || true
               echo "Container status:"
-              docker ps -a | grep "${CONTAINER_NAME}"
+              docker_cmd ps -a | grep "${CONTAINER_NAME}" || true
               exit 1
             fi
             echo "Waiting for backend to be healthy... ($i/60)"

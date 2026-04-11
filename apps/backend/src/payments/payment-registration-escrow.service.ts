@@ -16,7 +16,12 @@ export class PaymentRegistrationEscrowService {
     hackathonId: string;
     answers: EscrowAnswer[];
   }): Promise<void> {
-    if (!params.answers?.length) return;
+    if (!params.answers?.length) {
+      this.logger.warn(
+        `Skipping hackathon escrow save for order ${params.razorpayOrderId} — no answers provided`,
+      );
+      return;
+    }
     const expiresAt = new Date(Date.now() + ESCROW_TTL_MS);
     await prisma.paymentRegistrationEscrowEntity.upsert({
       where: { razorpayOrderId: params.razorpayOrderId },
@@ -46,7 +51,12 @@ export class PaymentRegistrationEscrowService {
     eventId: string;
     answers: EscrowAnswer[];
   }): Promise<void> {
-    if (!params.answers?.length) return;
+    if (!params.answers?.length) {
+      this.logger.warn(
+        `Skipping event escrow save for order ${params.razorpayOrderId} — no answers provided`,
+      );
+      return;
+    }
     const expiresAt = new Date(Date.now() + ESCROW_TTL_MS);
     await prisma.paymentRegistrationEscrowEntity.upsert({
       where: { razorpayOrderId: params.razorpayOrderId },

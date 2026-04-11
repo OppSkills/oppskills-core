@@ -24,7 +24,7 @@ export class EventPaymentService {
     private readonly razorpayService: RazorpayService,
     private readonly eventEmitter: EventEmitter2,
     private readonly paymentEscrowService: PaymentRegistrationEscrowService,
-  ) {}
+  ) { }
 
   /**
    * Create a payment order for event registration.
@@ -283,7 +283,7 @@ export class EventPaymentService {
       razorpayOrderId: razorpayOrder.id,
       payerUserId: params.userId,
       eventId: event.id,
-      answers: params.answers ?? [],
+      answers: params.answers || [],
     });
 
     return {
