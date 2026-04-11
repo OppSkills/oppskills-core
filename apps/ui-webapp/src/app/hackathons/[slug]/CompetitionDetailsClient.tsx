@@ -223,6 +223,8 @@ export function CompetitionDetailsClient({
               hasAttachments={
                 !!competition.attachments && competition.attachments.length > 0
               }
+              title={competition.title}
+              slug={competition.slug}
             />
 
             <div className="space-y-12">

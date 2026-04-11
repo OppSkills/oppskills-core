@@ -1,3 +1,4 @@
+import { ShareButton } from "@/app/dashboard/_components/ShareButton";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Suspense } from "react";
@@ -157,15 +158,11 @@ export default async function EventDashboard(props: {
             </p>
           </div>
           <div className="right self-end md:self-auto">
-            <Button className="rounded-full">
-              <Image
-                src="/icons/share.svg"
-                alt="Share"
-                width={16}
-                height={16}
-              />{" "}
-              Share
-            </Button>
+            <ShareButton
+              title={name}
+              slug={slug}
+              type="event"
+            />
           </div>
         </div>
 

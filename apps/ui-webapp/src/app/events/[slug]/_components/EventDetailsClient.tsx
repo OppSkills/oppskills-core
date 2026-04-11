@@ -305,6 +305,8 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                 tabs={TABS}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
+                title={event.name}
+                slug={event.slug}
               />
 
               <div className="space-y-8">

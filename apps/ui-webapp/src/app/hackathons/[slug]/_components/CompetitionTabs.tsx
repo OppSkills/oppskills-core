@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQueryState } from "nuqs";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
-import { Badge } from "@/components/ui/badge";
+import { ShareButton } from "@/app/dashboard/_components/ShareButton";
 
 const ALL_TABS = [
   { id: "rounds", label: "Rounds & Status" },
@@ -18,6 +17,8 @@ interface CompetitionTabsProps {
   hasRounds?: boolean;
   hasPrizes?: boolean;
   hasAttachments?: boolean;
+  title: string;
+  slug: string;
 }
 
 export function CompetitionTabs({
@@ -25,6 +26,8 @@ export function CompetitionTabs({
   hasRounds = true,
   hasPrizes = true,
   hasAttachments = false,
+  title,
+  slug,
 }: CompetitionTabsProps) {
   // Filter out tabs based on available content
   const tabs = useMemo(() => {
@@ -47,25 +50,30 @@ export function CompetitionTabs({
   }, [activeTab]);
 
   return (
-    <div className="border-b border-neutral-200 mb-8 overflow-x-auto sticky top-0 bg-background z-10 pt-4">
-      <div className="flex gap-8 min-w-max">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "pb-3 text-base font-semibold transition-colors relative",
-                isActive
-                  ? "text-primary-600 border-b-2 border-primary-600"
-                  : "text-neutral-500 hover:text-neutral-800"
-              )}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+    <div className="border-b border-neutral-200 mb-8 sticky top-0 bg-background z-10 pt-4">
+      <div className="flex justify-between items-center gap-4">
+        <div className="flex gap-8 overflow-x-auto min-w-max scrollbar-hide py-0.5">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "pb-3 text-sm sm:text-base font-semibold transition-colors relative",
+                  isActive
+                    ? "text-primary-600 border-b-2 border-primary-600"
+                    : "text-neutral-500 hover:text-neutral-800"
+                )}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex-shrink-0 pb-3">
+          <ShareButton title={title} slug={slug} type="hackathon" minimal />
+        </div>
       </div>
     </div>
   );

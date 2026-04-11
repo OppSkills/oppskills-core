@@ -44,7 +44,11 @@ export default function CompetitionDetailsClient({
               {competition.title}
             </h1>
 
-            <CompetitionTabs setCurTab={setCurTab} />
+            <CompetitionTabs
+              setCurTab={setCurTab}
+              title={competition.title}
+              slug={competition.slug}
+            />
 
             <div className="space-y-12">
               <section id="details" className="scroll-mt-24">
