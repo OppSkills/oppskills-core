@@ -332,6 +332,8 @@ export interface HackathonRegistrationStatus {
   teamName: string | null;
   isLeader: boolean;
   hasSubmitted: boolean;
+  /** True if a hackathon_registration_submission row exists (may be a shell with no answers). */
+  hasRegistrationRecord?: boolean;
   submissionId: string | null;
   paymentStatus: string | null;
   paymentCompleted: boolean;
