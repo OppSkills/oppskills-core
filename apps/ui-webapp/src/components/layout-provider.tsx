@@ -131,7 +131,7 @@ export default function LayoutProvider({
             }}
           >
             {/* Main application sidebar - collapses to icon mode on detail pages */}
-            <AppSidebar variant="floating" className="" />
+            <AppSidebar variant="sidebar" className="" />
 
             {/* Secondary sidebar - only visible on specific detailed pages */}
             {hasSecondarySidebar ? (
@@ -146,10 +146,10 @@ export default function LayoutProvider({
                 {ishackathonDetail && (
                   <HackathonSidebar
                     side="left"
-                    variant="floating"
+                    variant="sidebar"
                     collapsible="icon"
                     style={{
-                      left: "calc(var(--sidebar-width-icon) + 1rem)",
+                      left: "var(--sidebar-width-icon)",
                     }}
                   />
                 )}
@@ -157,10 +157,10 @@ export default function LayoutProvider({
                   <EventsSidebar
                     slug={eventsSlug}
                     side="left"
-                    variant="floating"
+                    variant="sidebar"
                     collapsible="icon"
                     style={{
-                      left: "calc(var(--sidebar-width-icon) + 1rem)",
+                      left: "var(--sidebar-width-icon)",
                     }}
                   />
                 )}
@@ -168,20 +168,19 @@ export default function LayoutProvider({
                   <FestivalsSidebar
                     slug={festivalsSlug}
                     side="left"
-                    variant="floating"
+                    variant="sidebar"
                     collapsible="icon"
                     style={{
-                      left: "calc(var(--sidebar-width-icon) + 1rem)",
+                      left: "var(--sidebar-width-icon)",
                     }}
                   />
                 )}
                 <SidebarInset
-                  className={cn("bg-neutral-200 p-2 space-y-4 my-1")}
+                  className={cn("bg-background overflow-hidden")}
                 >
                   <SiteHeader />
                   <div
-                    className="flex-1 flex min-h-0 rounded-[20px] overflow-hidden w-full min-w-0 bg-background
-"
+                    className="flex-1 flex min-h-0 overflow-hidden w-full min-w-0 bg-background"
                   >
 
                     {children as any}
@@ -189,9 +188,9 @@ export default function LayoutProvider({
                 </SidebarInset>
               </SidebarContextProvider>
             ) : (
-              <SidebarInset className={cn("bg-neutral-200 p-2 space-y-4 my-1")}>
+              <SidebarInset className={cn("bg-background overflow-hidden")}>
                 <SiteHeader />
-                <div className="flex flex-1 rounded-[20px] overflow-hidden w-full min-w-0 bg-background">
+                <div className="flex flex-1 overflow-hidden w-full min-w-0 bg-background">
 
                   {children as any}
                 </div>

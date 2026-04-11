@@ -17,10 +17,12 @@ import {
   IconCopy,
   IconShare,
   IconCheck,
+  IconX,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { Input } from "../ui/input";
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -43,8 +45,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     {
       name: "WhatsApp",
       icon: <IconBrandWhatsapp className="w-6 h-6" />,
-      color: "bg-[#25D366]",
-      hoverColor: "hover:bg-[#20bd5a]",
       onClick: () => {
         const safeDescription = description || "Check this out on OppSkills!";
         const url = `https://wa.me/?text=${encodeURIComponent(`${safeDescription}\n\n${link}`)}`;
@@ -53,9 +53,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     },
     {
       name: "Twitter",
-      icon: <IconBrandX className="w-5 h-5" />,
-      color: "bg-black",
-      hoverColor: "hover:bg-neutral-800",
+      icon: <IconBrandX className="w-6 h-6" />,
       onClick: () => {
         const safeDescription = description || "Check this out on OppSkills!";
         const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(safeDescription)}&url=${encodeURIComponent(link)}`;
@@ -65,8 +63,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     {
       name: "Facebook",
       icon: <IconBrandFacebook className="w-6 h-6" />,
-      color: "bg-[#1877F2]",
-      hoverColor: "hover:bg-[#166fe5]",
       onClick: () => {
         const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
         window.open(url, "_blank");
@@ -74,9 +70,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     },
     {
       name: "Other",
-      icon: <IconShare className="w-5 h-5" />,
-      color: "bg-neutral-600",
-      hoverColor: "hover:bg-neutral-700",
+      icon: <IconShare className="w-6 h-6" />,
       onClick: async () => {
         if (navigator.share) {
           try {
@@ -100,63 +94,42 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden border-none bg-background rounded-3xl">
-        <div className="relative p-6 sm:p-8">
-          {/* Header with gradient background hint */}
-          <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-primary/10 to-transparent -z-10" />
-          
-          <DialogHeader className="mb-6">
-            <div className="flex justify-between items-start">
-              <div className="space-y-1">
-                <DialogTitle className="text-2xl font-bold aeonicPro">
-                  Share this {title?.includes("Hackathon") ? "Hackathon" : "Event"}
+      <DialogContent showCloseButton={false} className="sm:max-w-sm p-0 overflow-hidden border-none bg-background !rounded-3xl">
+        <div className="relative">
+          <DialogHeader className="mb-6 bg-neutral-300 px-6 py-4 flex flex-row justify-between items-center">
+            <div className="flex justify-between items-start w-full">
+              <div className="space-y-1 flex flex-row justify-between items-center w-full">
+                <DialogTitle className="text-2xl font-medium text-neutral-900 font-sans! m-0">
+                  Share {title?.includes("Hackathon") ? "Hackathon" : "Event"} Link
                 </DialogTitle>
-                <DialogDescription className="text-muted-foreground urbanist">
-                  Spread the word and invite your friends!
-                </DialogDescription>
+                <DialogClose asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-neutral-100 transition-all active:scale-95">
+                    <IconX size={24} />
+                  </Button>
+                </DialogClose>
               </div>
             </div>
           </DialogHeader>
 
           {/* Share Grid */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-4 sm:px-6">
             {shareOptions.map((option) => (
-              <Button
-                key={option.name}
-                onClick={option.onClick}
-                variant="ghost"
-                className={cn(
-                  "flex flex-col items-center justify-center gap-3 h-28 rounded-2xl border border-neutral-200 bg-neutral-50/50 transition-all duration-300",
-                  "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
-                )}
-              >
-                <div
-                  className={cn(
-                    "flex items-center justify-center w-12 h-12 rounded-full text-white shadow-md transition-transform duration-300",
-                    option.color,
-                    "group-hover:scale-110"
-                  )}
-                >
+              <div key={option.name} className="flex w-full flex-col gap-2 justify-center items-center group cursor-pointer" onClick={option.onClick}>
+                <div className="flex justify-center items-center w-12 h-12 rounded-full bg-neutral-200 border border-neutral-200 group-hover:border-primary transition-colors group-hover:bg-primary/10 text-neutral-700">
                   {option.icon}
                 </div>
-                <span className="text-sm font-medium urbanist">
-                  {option.name}
-                </span>
-              </Button>
+                <p className="text-sm font-medium text-neutral-900 group-hover:text-primary transition-colors">{option.name}</p>
+              </div>
             ))}
           </div>
 
           {/* Link Display Section */}
-          <div className="mt-8 space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider urbanist">
-              Or copy link
+          <div className="mt-8 space-y-3 px-6 pb-6">
+            <p className="text-base text-neutral-900">
+              Copy Link
             </p>
-            <div className="flex items-center gap-2 p-2 rounded-xl border bg-neutral-50 hover:bg-neutral-100 transition-colors group">
-              <input
-                readOnly
-                value={link}
-                className="flex-1 bg-transparent px-2 text-sm text-neutral-600 outline-none truncate urbanist"
-              />
+            <div className="flex items-center gap-2 p-2 rounded-full border bg-neutral-50 hover:bg-neutral-100 transition-colors group">
+              <input type="text" readOnly value={link} className="flex-1 text-neutral-600 px-2 bg-transparent text-sm outline-none border-0 outline-0 truncate" />
               <Button
                 size="sm"
                 variant="ghost"

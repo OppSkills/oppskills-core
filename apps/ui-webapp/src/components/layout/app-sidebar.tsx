@@ -61,7 +61,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isOpportunityDetail } = useMobileNavigation();
   return (
     <Sidebar collapsible="icon" {...props} className="">
-      <SidebarHeader>
+      <SidebarHeader className="border-b pb-4">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -98,18 +98,18 @@ function SidebarLogo() {
       {state === "expanded" ? (
         <Image
           src="/logo.svg"
-          className="object-contain w-fit h-full"
+          className="object-contain w-fit h-6"
           alt="OppSkills"
           width={100}
-          height={100}
+          height={24}
         />
       ) : (
         <Image
           src="/logof.png"
-          className="object-contain w-8 h-8 mx-auto"
+          className="object-contain w-6 h-6 mx-auto"
           alt="OppSkills"
-          width={32}
-          height={32}
+          width={24}
+          height={24}
         />
       )}
       <span className="text-base font-semibold sr-only">OppSkills</span>

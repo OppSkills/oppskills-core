@@ -89,8 +89,8 @@ export function SiteHeader() {
   const initials = getInitials(userFirstName, userLastName, userEmail);
 
   return (
-    <header className="flex bg-background shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear rounded-xl px-4 lg:px-6">
-      <div className="flex w-full items-center justify-between p-5">
+    <header className="flex bg-background shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear px-4 lg:px-6 h-14">
+      <div className="flex w-full items-center justify-between ">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-1" />
           <Separator

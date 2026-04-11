@@ -64,6 +64,7 @@ import Link from "next/link"
 
 
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname();
