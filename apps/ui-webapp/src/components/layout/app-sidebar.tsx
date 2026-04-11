@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/sidebar";
 import Image from "next/image";
 import Link from "next/link";
-import { Calendar } from "lucide-react";
 
 const data = {
   navMain: [
@@ -61,7 +60,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isOpportunityDetail } = useMobileNavigation();
   return (
     <Sidebar collapsible="icon" {...props} className="">
-      <SidebarHeader className="border-b pb-4">
+      <SidebarHeader className="border-b">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -70,7 +69,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <Link
                 href="/"
-                className="flex relative justify-start items-center gap-2 h-full p-2"
+                className="flex relative justify-start items-center gap-2 p-2"
               >
                 <SidebarLogo />
               </Link>
@@ -112,7 +111,6 @@ function SidebarLogo() {
           height={24}
         />
       )}
-      <span className="text-base font-semibold sr-only">OppSkills</span>
     </>
   );
 }

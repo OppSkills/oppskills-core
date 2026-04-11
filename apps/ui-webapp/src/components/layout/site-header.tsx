@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User } from "lucide-react";
+import { useSidebar } from "@/components/ui/sidebar";
 
 function getInitials(
   firstName: string | null,
@@ -55,6 +56,8 @@ export function SiteHeader() {
   const params = useParams();
   const slug = params?.slug as string;
   const { user, isLoaded } = useUser();
+  const { state } = useSidebar();
+  const isExpanded = state === "expanded";
 
   // Helper to determine title
   const getTitle = () => {
@@ -93,14 +96,20 @@ export function SiteHeader() {
       <div className="flex w-full items-center justify-between ">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-1" />
-          <Separator
-            orientation="vertical"
-            className="mx-2 data-[orientation=vertical]:h-4"
-          />
+          {
+            !isExpanded && (
+              <>
+                <Separator
+                  orientation="vertical"
+                  className="mx-2 data-[orientation=vertical]:h-4"
+                />
 
-          <h1 className="text-2xl font-semibold tracking-tight text-primary-900">
-            {title}
-          </h1>
+                <h1 className="text-2xl font-semibold tracking-tight text-primary-900">
+                  {title}
+                </h1>
+              </>
+            )
+          }
         </div>
 
         <div className="flex items-center gap-4">

@@ -21,6 +21,7 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { useParams } from "next/navigation";
 
@@ -73,6 +74,7 @@ const getOpportunityNavItems = (slug: string) => [
 export function HackathonSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
+  const { state } = useSidebar();
   // Get the slug from the URL params
   const params = useParams();
   const slug = params?.slug as string;
@@ -84,16 +86,15 @@ export function HackathonSidebar({
 
   return (
     <Sidebar collapsible="icon" {...props} className="">
-      <SidebarHeader className="border-b border-border/50 pb-4">
+      <SidebarHeader className="border-b border-border/50">
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="px-2 py-3">
-              <h2 className="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
-                Opportunity
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1 truncate">
-                {slug || "Details"}
-              </p>
+            <div className="h-14 flex items-center justify-center">
+              {state === "expanded" && (
+                <p className="text-sm font-medium truncate">
+                  {slug.toLocaleUpperCase() || "Details"}
+                </p>
+              )}
             </div>
           </SidebarMenuItem>
         </SidebarMenu>

@@ -89,9 +89,6 @@ export function NavMain({ items }: { items: NavMainItem[] }) {
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
-        <SidebarGroupLabel>
-          <span className="text-sm font-medium">MENU</span>
-        </SidebarGroupLabel>
         <SidebarMenu>
           {items.map((item) => {
             const normalizedItemUrl = normalizePath(item.url);

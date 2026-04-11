@@ -22,6 +22,7 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 const getEventNavItems = (slug: string) => [
@@ -72,22 +73,22 @@ interface EventsSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function EventsSidebar({ slug, ...props }: EventsSidebarProps) {
+  const { state } = useSidebar();
   const navItems = React.useMemo(() => {
     return slug ? getEventNavItems(slug) : [];
   }, [slug]);
 
   return (
     <Sidebar collapsible="icon" {...props} className="">
-      <SidebarHeader className="border-b border-border/50 pb-4">
+      <SidebarHeader className="border-b border-border/50">
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="px-2 py-3">
-              <h2 className="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
-                Events
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1 truncate">
-                {slug || "Management"}
-              </p>
+            <div className="h-14 flex items-center justify-center">
+              {state === "expanded" && (
+                <p className="text-sm font-medium truncate">
+                  {slug.toLocaleUpperCase() || "Details"}
+                </p>
+              )}
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
