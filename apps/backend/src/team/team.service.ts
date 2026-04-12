@@ -239,7 +239,9 @@ export class TeamService {
         },
       });
 
-      // Create registration submission for leader (even if no answers)
+      // Create registration submission for leader (even if no answers).
+      // Paid flows: Razorpay verify calls RegistrationSubmitService.ensureRegistrationAnswersAfterPayment
+      // to attach form answers when this row exists with zero answer records (see hackathon-checkout).
       const submission = await tx.hackathonRegistrationSubmissionEntity.create({
         data: {
           hackathonId: dto.hackathonId,
@@ -562,7 +564,8 @@ export class TeamService {
         data: { userId, teamId: team.id },
       });
 
-      // Create registration submission for member (even if no answers)
+      // Create registration submission for member (even if no answers).
+      // Paid flows: answers may be appended post-payment via ensureRegistrationAnswersAfterPayment.
       const submission = await tx.hackathonRegistrationSubmissionEntity.create({
         data: {
           hackathonId: team.hackathonId,

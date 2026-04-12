@@ -2161,6 +2161,84 @@ export class EventService {
   }
 
   /**
+   * Dashboard registration status: aligns with join validation — all applicable
+   * required fields must have non-empty saved answers. Optional-only forms need
+   * at least one non-empty answer (otherwise "joined but form not filled").
+   */
+  private eventRegistrationDashboardStatus(params: {
+    formFields: Array<{ id: string; label: string; required: boolean }>;
+    userCategory: string | null | undefined;
+    submission: {
+      answers: Array<{
+        fieldId: string;
+        valueText: string | null;
+        valueJson: unknown;
+      }>;
+    } | null;
+  }): 'Completed' | 'Incomplete' {
+    const fields = params.formFields;
+    if (fields.length === 0) {
+      return 'Completed';
+    }
+
+    const answerValueIsEmpty = (value: unknown): boolean =>
+      value === '' ||
+      value === null ||
+      value === undefined ||
+      (Array.isArray(value) && value.length === 0);
+
+    const getAnswerStoredValue = (a: {
+      valueJson: unknown;
+      valueText: string | null;
+    }): unknown =>
+      a.valueJson !== null && a.valueJson !== undefined
+        ? a.valueJson
+        : a.valueText;
+
+    const userCategory = params.userCategory;
+    const identityFieldLabels = new Set([
+      'school name',
+      'college name',
+      'company name',
+    ]);
+    const requiredIdentityLabel =
+      userCategory === 'SCHOOL_STUDENT'
+        ? 'school name'
+        : userCategory === 'WORKING_PROFESSIONAL'
+          ? 'company name'
+          : 'college name';
+
+    const applicableRequiredFields = fields.filter((field) => {
+      if (!field.required) return false;
+      const fieldLabelLower = field.label.toLowerCase();
+      if (
+        identityFieldLabels.has(fieldLabelLower) &&
+        fieldLabelLower !== requiredIdentityLabel
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    const answers = params.submission?.answers ?? [];
+    const answersByFieldId = new Map(answers.map((a) => [a.fieldId, a]));
+
+    if (applicableRequiredFields.length > 0) {
+      for (const field of applicableRequiredFields) {
+        const ans = answersByFieldId.get(field.id);
+        if (!ans) return 'Incomplete';
+        if (answerValueIsEmpty(getAnswerStoredValue(ans))) return 'Incomplete';
+      }
+      return 'Completed';
+    }
+
+    const hasAnyNonEmptyAnswer = answers.some(
+      (a) => !answerValueIsEmpty(getAnswerStoredValue(a)),
+    );
+    return hasAnyNonEmptyAnswer ? 'Completed' : 'Incomplete';
+  }
+
+  /**
    * List all registrations for an event by slug (owner/manager/admin only).
    * Returns participant data enriched with onboarding profile information.
    */
@@ -2168,7 +2246,18 @@ export class EventService {
     // Find event by slug
     const event = await prisma.eventEntity.findUnique({
       where: { slug, isDeleted: false },
-      select: { id: true, ownerId: true },
+      select: {
+        id: true,
+        ownerId: true,
+        registrationForm: {
+          select: {
+            fields: {
+              select: { id: true, label: true, required: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
     });
     if (!event) throw new NotFoundException('Event not found');
 
@@ -2225,12 +2314,20 @@ export class EventService {
           select: {
             id: true,
             submittedAt: true,
-            _count: { select: { answers: true } },
+            answers: {
+              select: {
+                fieldId: true,
+                valueText: true,
+                valueJson: true,
+              },
+            },
           },
         },
       },
       orderBy: { joinedAt: 'desc' },
     });
+
+    const formFields = event.registrationForm?.fields ?? [];
 
     // Map to dashboard-friendly format
     return participants.map((p) => {
@@ -2298,10 +2395,11 @@ export class EventService {
         location,
         course,
         gender: profile?.gender ?? null,
-        status:
-          p.submission && p.submission._count.answers > 0
-            ? 'Completed'
-            : 'Incomplete',
+        status: this.eventRegistrationDashboardStatus({
+          formFields,
+          userCategory: profile?.userCategory,
+          submission: p.submission,
+        }),
         registeredOn: p.joinedAt.toISOString(),
         approved: p.approved,
         passEmailSent: p.passEmailSent,

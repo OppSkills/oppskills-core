@@ -516,12 +516,6 @@ export class HackathonCheckoutService {
         hackathonSlug,
         userId,
       );
-    if (status.hasSubmitted) {
-      this.logger.log(
-        `Registration already submitted for user ${userId} hackathon ${hackathonSlug}; skipping bundled submit`,
-      );
-      return;
-    }
 
     if (chargeMode === HackathonChargeMode.PER_USER) {
       const hasTeam =
@@ -592,11 +586,13 @@ export class HackathonCheckoutService {
     }
 
     try {
-      await this.registrationSubmitService.submitRegistration({
-        hackathonSlug,
-        userId,
-        answers,
-      });
+      await this.registrationSubmitService.ensureRegistrationAnswersAfterPayment(
+        {
+          hackathonSlug,
+          userId,
+          answers,
+        },
+      );
       await this.paymentEscrowService.deleteByRazorpayOrderId(razorpayOrderId);
     } catch (err) {
       if (

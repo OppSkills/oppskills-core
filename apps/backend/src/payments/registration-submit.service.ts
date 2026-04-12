@@ -1,7 +1,6 @@
 import {
   Injectable,
   BadRequestException,
-  ForbiddenException,
   NotFoundException,
   Logger,
 } from '@nestjs/common';
@@ -92,8 +91,8 @@ export class RegistrationSubmitService {
     const existingSubmission = membership?.registrationSubmission
       ? membership.registrationSubmission
       : await prisma.hackathonRegistrationSubmissionEntity.findFirst({
-        where: { hackathonId: hackathon.id, userId, teamId: leaderTeam.id },
-      });
+          where: { hackathonId: hackathon.id, userId, teamId: leaderTeam.id },
+        });
 
     if (existingSubmission) {
       throw new BadRequestException(
@@ -180,6 +179,144 @@ export class RegistrationSubmitService {
       hackathonName: hackathon.name,
       teamName: leaderTeam.name,
     };
+  }
+
+  /**
+   * After successful payment, persist registration answers when team create/join left a
+   * shell submission (0 answer rows). If no submission exists, delegates to
+   * {@link submitRegistration}. Idempotent when answers are already saved.
+   */
+  async ensureRegistrationAnswersAfterPayment(params: {
+    hackathonSlug: string;
+    userId: string;
+    answers: Array<{ fieldId: string; value: string }>;
+  }): Promise<void> {
+    const { hackathonSlug, userId, answers } = params;
+    if (!answers.length) {
+      return;
+    }
+
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug: hackathonSlug, isDeleted: false },
+      select: {
+        id: true,
+        name: true,
+        isFree: true,
+        chargeMode: true,
+        status: true,
+        approvalStatus: true,
+        isRegistrationPaused: true,
+        registrationDeadline: true,
+        ownerId: true,
+        registrationForm: {
+          select: {
+            externalFormLink: true,
+            fields: { select: { id: true } },
+          },
+        },
+      },
+    });
+
+    if (!hackathon) {
+      throw new NotFoundException('Hackathon not found');
+    }
+
+    this.validateRegistrationOpen(hackathon);
+
+    if (hackathon.registrationForm?.externalFormLink?.trim()) {
+      return;
+    }
+
+    const membership = await prisma.teamMemberEntity.findFirst({
+      where: {
+        userId,
+        team: { hackathonId: hackathon.id },
+      },
+      include: {
+        team: true,
+      },
+    });
+
+    const leaderTeam =
+      membership?.team ??
+      (await prisma.teamEntity.findFirst({
+        where: { hackathonId: hackathon.id, leaderId: userId },
+        select: { id: true, name: true, leaderId: true },
+      }));
+
+    if (!leaderTeam) {
+      throw new BadRequestException(
+        'You must join a team before submitting registration',
+      );
+    }
+
+    const existingShell =
+      await prisma.hackathonRegistrationSubmissionEntity.findFirst({
+        where: {
+          hackathonId: hackathon.id,
+          userId,
+          teamId: leaderTeam.id,
+        },
+        select: {
+          id: true,
+          _count: { select: { answers: true } },
+        },
+      });
+
+    if (!existingShell) {
+      await this.submitRegistration({ hackathonSlug, userId, answers });
+      return;
+    }
+
+    if (existingShell._count.answers > 0) {
+      return;
+    }
+
+    if (!hackathon.isFree) {
+      await this.validatePaymentRequirement(hackathon, leaderTeam, userId);
+    }
+
+    const { mappedAnswers, userCategory } =
+      await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
+
+    const updatedRegForm = await prisma.registrationFormEntity.findUnique({
+      where: { hackathonId: hackathon.id },
+      include: {
+        fields: {
+          select: {
+            id: true,
+            label: true,
+            type: true,
+            required: true,
+            options: true,
+          },
+        },
+      },
+    });
+
+    this.validateAnswers(
+      updatedRegForm?.fields || [],
+      mappedAnswers,
+      userCategory,
+    );
+
+    if (mappedAnswers.length === 0) {
+      return;
+    }
+
+    await prisma.hackathonRegistrationAnswerEntity.createMany({
+      data: mappedAnswers.map((a) => ({
+        submissionId: existingShell.id,
+        fieldId: a.fieldId,
+        valueText:
+          typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
+        valueJson: a.value,
+      })),
+    });
+
+    this.logger.log(
+      `Appended ${mappedAnswers.length} registration answers to shell submission ${existingShell.id} for user ${userId} hackathon ${hackathonSlug}`,
+    );
   }
 
   private validateRegistrationOpen(hackathon: {
@@ -571,7 +708,17 @@ export class RegistrationSubmitService {
   async getRegistrationStatus(hackathonSlug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { slug: hackathonSlug, isDeleted: false },
-      select: { id: true, isFree: true, chargeMode: true },
+      select: {
+        id: true,
+        isFree: true,
+        chargeMode: true,
+        registrationForm: {
+          select: {
+            externalFormLink: true,
+            fields: { select: { id: true } },
+          },
+        },
+      },
     });
 
     if (!hackathon) {
@@ -585,7 +732,6 @@ export class RegistrationSubmitService {
       },
       include: {
         team: true,
-        registrationSubmission: true,
       },
     });
 
@@ -609,6 +755,7 @@ export class RegistrationSubmitService {
         teamName: null,
         isLeader: false,
         hasSubmitted: false,
+        hasRegistrationRecord: false,
         submissionId: null,
         paymentStatus: null,
         paymentCompleted,
@@ -619,16 +766,25 @@ export class RegistrationSubmitService {
       };
     }
 
-    const submission = membership?.registrationSubmission
-      ? membership.registrationSubmission
-      : await prisma.hackathonRegistrationSubmissionEntity.findFirst({
+    const submissionRow =
+      await prisma.hackathonRegistrationSubmissionEntity.findFirst({
         where: {
           hackathonId: hackathon.id,
           userId,
           teamId: leaderTeam.id,
         },
-        select: { id: true },
+        select: {
+          id: true,
+          _count: { select: { answers: true } },
+        },
       });
+
+    const regForm = hackathon.registrationForm;
+    const hasRegistrationRecord = !!submissionRow;
+    const hasSubmitted = RegistrationSubmitService.computeMaterialHasSubmitted(
+      submissionRow,
+      regForm,
+    );
 
     let paymentStatus: string | null = null;
 
@@ -658,7 +814,6 @@ export class RegistrationSubmitService {
       }
     }
 
-    const hasSubmitted = !!submission;
     const paymentCompleted = await this.hasSuccessfulHackathonPayment(
       hackathon,
       userId,
@@ -676,12 +831,40 @@ export class RegistrationSubmitService {
       teamName: leaderTeam.name,
       isLeader: leaderTeam.leaderId === userId,
       hasSubmitted,
-      submissionId: submission?.id || null,
+      hasRegistrationRecord,
+      submissionId: submissionRow?.id || null,
       paymentStatus,
       paymentCompleted,
       isPaidButIncomplete,
       canCompleteRegistrationWithoutPayment,
       isRegistrationIncomplete: !hasSubmitted,
     };
+  }
+
+  /**
+   * "Submitted" for UX: external-form hackathons need only a submission row;
+   * internal forms need at least one saved answer when the form defines fields.
+   */
+  private static computeMaterialHasSubmitted(
+    submissionRow: { _count: { answers: number } } | null,
+    regForm:
+      | {
+          externalFormLink: string | null;
+          fields: { id: string }[];
+        }
+      | null
+      | undefined,
+  ): boolean {
+    if (!submissionRow) {
+      return false;
+    }
+    if (regForm?.externalFormLink?.trim()) {
+      return true;
+    }
+    const fieldCount = regForm?.fields?.length ?? 0;
+    if (fieldCount === 0) {
+      return true;
+    }
+    return submissionRow._count.answers > 0;
   }
 }
