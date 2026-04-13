@@ -16,6 +16,8 @@ import type {
 import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
 import { Logger } from '../_utils/logger';
 import { DELETED_RESOURCE_OWNER_ID } from '../_utils/constants';
+import { extractMobileFromRegistrationFieldAnswers } from '../_utils/extract-mobile-from-registration-field-answers';
+import { syncUserOnboardingMobileFromRegistration } from '../_utils/sync-user-onboarding-mobile';
 import { EMAIL_EVENTS } from '../email/email.events';
 import type { EventJoinedEventPayload } from '../email/email.events';
 import { AnalyticsService } from 'src/analytics/analytics.service';
@@ -1649,6 +1651,16 @@ export class EventService {
       return { participantId: participant.id };
     });
 
+    const mobile = extractMobileFromRegistrationFieldAnswers(
+      providedAnswers,
+      registrationFields.map((f) => ({
+        id: f.id,
+        label: f.label,
+        type: f.type,
+      })),
+    );
+    await syncUserOnboardingMobileFromRegistration(userId, mobile);
+
     // Format event date and time for email
     const eventDate = event.startDate.toLocaleDateString('en-IN', {
       weekday: 'long',
@@ -2147,6 +2159,16 @@ export class EventService {
       await prisma.eventRegistrationAnswerEntity.createMany({
         data: answerData,
       });
+
+      const mobile = extractMobileFromRegistrationFieldAnswers(
+        mappedAnswers,
+        (regForm?.fields ?? []).map((f) => ({
+          id: f.id,
+          label: f.label,
+          type: f.type,
+        })),
+      );
+      await syncUserOnboardingMobileFromRegistration(userId, mobile);
     }
 
     this.logger.log(

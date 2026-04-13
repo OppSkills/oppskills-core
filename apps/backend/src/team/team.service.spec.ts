@@ -36,6 +36,7 @@ jest.mock('@oppskills/db', () => {
     },
     userOnboardingProfileEntity: {
       findUnique: jest.fn(),
+      upsert: jest.fn(),
     },
   };
 

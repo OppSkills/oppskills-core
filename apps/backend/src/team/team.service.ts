@@ -14,6 +14,8 @@ import type {
 import { randomBytes } from 'crypto';
 import { EMAIL_EVENTS } from 'src/email/email.events';
 import { Logger } from 'src/_utils/logger';
+import { extractMobileFromRegistrationFieldAnswers } from 'src/_utils/extract-mobile-from-registration-field-answers';
+import { syncUserOnboardingMobileFromRegistration } from 'src/_utils/sync-user-onboarding-mobile';
 
 /**
  * Generate a unique invitation code.
@@ -203,11 +205,12 @@ export class TeamService {
     const maxSize =
       dto.maxSize ?? getMaxSizeFromParticipantType(hackathon.participantType);
 
-    const { providedAnswers } = await this.prepareHackathonRegistrationAnswers({
-      hackathonId: dto.hackathonId,
-      userId: leaderId,
-      answers: dto.answers,
-    });
+    const { providedAnswers, registrationFields } =
+      await this.prepareHackathonRegistrationAnswers({
+        hackathonId: dto.hackathonId,
+        userId: leaderId,
+        answers: dto.answers,
+      });
 
     // Generate unique invitation code
     let invitationCode = generateInvitationCode();
@@ -283,6 +286,12 @@ export class TeamService {
 
       return team;
     });
+
+    const mobile = extractMobileFromRegistrationFieldAnswers(
+      providedAnswers,
+      registrationFields,
+    );
+    await syncUserOnboardingMobileFromRegistration(leaderId, mobile);
 
     // Emit only hackathon-join confirmation on create team (leader joined).
     this.emitHackathonJoinConfirmation({
@@ -544,11 +553,12 @@ export class TeamService {
       );
     }
 
-    const { providedAnswers } = await this.prepareHackathonRegistrationAnswers({
-      hackathonId: team.hackathonId,
-      userId,
-      answers: dto.answers,
-    });
+    const { providedAnswers, registrationFields } =
+      await this.prepareHackathonRegistrationAnswers({
+        hackathonId: team.hackathonId,
+        userId,
+        answers: dto.answers,
+      });
     const user = await prisma.userEntity.findUnique({
       where: { id: userId },
       select: {
@@ -608,6 +618,12 @@ export class TeamService {
 
       return newMember;
     });
+
+    const mobile = extractMobileFromRegistrationFieldAnswers(
+      providedAnswers,
+      registrationFields,
+    );
+    await syncUserOnboardingMobileFromRegistration(userId, mobile);
 
     const joiningUser = user ?? {
       email: null,
@@ -901,6 +917,7 @@ export class TeamService {
       fieldId: string;
       value: string | number | string[];
     }>;
+    registrationFields: Array<{ id: string; label: string; type: string }>;
   }> {
     const rawAnswers = input.answers ?? [];
 
@@ -920,7 +937,7 @@ export class TeamService {
         );
       }
 
-      return { providedAnswers: [] };
+      return { providedAnswers: [], registrationFields: [] };
     }
 
     const userOnboardingProfile =
@@ -1146,7 +1163,14 @@ export class TeamService {
       );
     }
 
-    return { providedAnswers };
+    return {
+      providedAnswers,
+      registrationFields: registrationFields.map((f) => ({
+        id: f.id,
+        label: f.label,
+        type: f.type,
+      })),
+    };
   }
 
   /**

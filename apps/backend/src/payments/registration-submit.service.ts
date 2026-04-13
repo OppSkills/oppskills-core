@@ -12,6 +12,8 @@ import {
   LifecycleStatus,
   ApprovalStatus,
 } from '@oppskills/db';
+import { extractMobileFromRegistrationFieldAnswers } from '../_utils/extract-mobile-from-registration-field-answers';
+import { syncUserOnboardingMobileFromRegistration } from '../_utils/sync-user-onboarding-mobile';
 
 const SUCCESSFUL_PAYMENT_STATUSES: HackathonPaymentStatus[] = [
   HackathonPaymentStatus.CAPTURED,
@@ -173,6 +175,12 @@ export class RegistrationSubmitService {
       return submission;
     });
 
+    const mobile = extractMobileFromRegistrationFieldAnswers(
+      mappedAnswers,
+      updatedRegForm?.fields ?? [],
+    );
+    await syncUserOnboardingMobileFromRegistration(userId, mobile);
+
     return {
       success: true,
       submissionId: result.id,
@@ -313,6 +321,12 @@ export class RegistrationSubmitService {
         valueJson: a.value,
       })),
     });
+
+    const mobile = extractMobileFromRegistrationFieldAnswers(
+      mappedAnswers,
+      updatedRegForm?.fields ?? [],
+    );
+    await syncUserOnboardingMobileFromRegistration(userId, mobile);
 
     this.logger.log(
       `Appended ${mappedAnswers.length} registration answers to shell submission ${existingShell.id} for user ${userId} hackathon ${hackathonSlug}`,

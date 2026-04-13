@@ -15,6 +15,8 @@ import { PaymentRegistrationEscrowService } from '../payments/payment-registrati
 import { Decimal } from '@prisma/client/runtime/library';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { computeRazorpayGatewayFee } from '../payments/payment-gateway-fee.util';
+import { extractMobileFromRegistrationFieldAnswers } from '../_utils/extract-mobile-from-registration-field-answers';
+import { syncUserOnboardingMobileFromRegistration } from '../_utils/sync-user-onboarding-mobile';
 
 @Injectable()
 export class EventPaymentService {
@@ -509,6 +511,12 @@ export class EventPaymentService {
         mappedAnswers,
       );
 
+      await this.syncOnboardingMobileFromEventVerify(
+        params.userId,
+        mappedAnswers,
+        payment.event.registrationForm?.fields,
+      );
+
       await this.paymentEscrowService.deleteByRazorpayOrderId(
         params.razorpayOrderId,
       );
@@ -673,6 +681,12 @@ export class EventPaymentService {
         });
       }
 
+      await this.syncOnboardingMobileFromEventVerify(
+        params.userId,
+        mappedAnswers,
+        payment.event.registrationForm?.fields,
+      );
+
       await this.paymentEscrowService.deleteByRazorpayOrderId(
         params.razorpayOrderId,
       );
@@ -721,6 +735,12 @@ export class EventPaymentService {
             mappedAnswers,
           );
 
+          await this.syncOnboardingMobileFromEventVerify(
+            params.userId,
+            mappedAnswers,
+            payment.event.registrationForm?.fields,
+          );
+
           await this.paymentEscrowService.deleteByRazorpayOrderId(
             params.razorpayOrderId,
           );
@@ -735,6 +755,29 @@ export class EventPaymentService {
 
       throw error;
     }
+  }
+
+  private async syncOnboardingMobileFromEventVerify(
+    userId: string,
+    mappedAnswers: Array<{
+      fieldId: string;
+      value: string | number | string[];
+    }>,
+    rawFields:
+      | Array<{ id: string; label: string; type: string }>
+      | undefined
+      | null,
+  ): Promise<void> {
+    const fields = (rawFields ?? []).map((f) => ({
+      id: f.id,
+      label: f.label,
+      type: f.type,
+    }));
+    const mobile = extractMobileFromRegistrationFieldAnswers(
+      mappedAnswers,
+      fields,
+    );
+    await syncUserOnboardingMobileFromRegistration(userId, mobile);
   }
 
   /**

@@ -372,6 +372,11 @@ export class UserAccountsService {
               update: {
                 gender: data.gender,
                 userCategory: data.userCategory,
+                ...(data.mobileNumber !== undefined
+                  ? {
+                      mobileNumber: data.mobileNumber?.trim() || null,
+                    }
+                  : {}),
                 schoolName: data.schoolName || null,
                 schoolClass: data.schoolClass || null,
                 schoolAddress: data.schoolAddress || null,
@@ -392,6 +397,7 @@ export class UserAccountsService {
               create: {
                 gender: data.gender,
                 userCategory: data.userCategory,
+                mobileNumber: data.mobileNumber?.trim() || null,
                 schoolName: data.schoolName || null,
                 schoolClass: data.schoolClass || null,
                 schoolAddress: data.schoolAddress || null,
