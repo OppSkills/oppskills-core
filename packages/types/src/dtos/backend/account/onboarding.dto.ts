@@ -30,6 +30,10 @@ export class CreateOnboardingDto {
   @IsNotEmpty()
   userCategory: UserCategoryValue;
 
+  @IsString()
+  @IsOptional()
+  mobileNumber?: string;
+
   // Step 2: Education/Work Details
   // School fields (required for SCHOOL_STUDENT)
   @ValidateIf((o) => o.userCategory === UserCategoryValue.SCHOOL_STUDENT)
@@ -239,6 +243,7 @@ export interface OnboardingProfileResponseDto {
   userId: string;
   gender: GenderValue;
   userCategory: UserCategoryValue;
+  mobileNumber?: string | null;
   schoolName?: string | null;
   schoolClass?: string | null;
   schoolAddress?: string | null;
