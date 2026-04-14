@@ -97,7 +97,7 @@ export function NavMain({
             const isActive = activeUrl === normalizedItemUrl;
 
             return (
-              <SidebarMenuItem key={item.title} className="my-2">
+              <SidebarMenuItem key={item.title} className="my-1">
                 <SidebarMenuButton
                   variant={"outline"}
                   asChild
@@ -108,10 +108,10 @@ export function NavMain({
                   <Link
                     href={item.url}
                     aria-current={isActive ? "page" : undefined}
-                    className="block cursor-pointer text-neutral-700 "
+                    className="flex items-center gap-3 cursor-pointer text-neutral-700 w-full"
                   >
-                    <div className="w-10 h-8">{item.icon}</div>
-                    <span className="text-xl">{item.title}</span>
+                    <div className="flex items-center justify-center size-4">{item.icon}</div>
+                    <span className="text-base font-medium">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

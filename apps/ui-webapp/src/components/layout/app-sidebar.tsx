@@ -1,13 +1,6 @@
 "use client";
 
 import * as React from "react";
-import {
-  IconCalendarEvent,
-  IconConfetti,
-  IconDashboard,
-  IconReport,
-  IconUsers,
-} from "@tabler/icons-react";
 
 import { NavMain } from "./nav-main";
 import { MobileSidebarSwitcher } from "./mobile-sidebar-switcher";
@@ -32,22 +25,22 @@ const data = {
     {
       title: "Home",
       url: "/dashboard",
-      icon: <Home size={32} className="size-8" />,
+      icon: <Home className="size-4" />,
     },
     {
       title: "Hackathons",
       url: "/dashboard/hackathon",
-      icon: <Rocket size={32} className="size-8" />,
+      icon: <Rocket className="size-4" />,
     },
     {
       title: "Events",
       url: "/dashboard/events",
-      icon: <Rocket2 size={32} className="size-8" />,
+      icon: <Rocket2 className="size-4" />,
     },
     {
       title: "Festivals",
       url: "/dashboard/festivals",
-      icon: <Confetti size={32} className="size-8" />,
+      icon: <Confetti className="size-4" />,
     },
     // {
     //   title: "Talent pipeline",

@@ -24,37 +24,37 @@ const getOpportunityNavItems = (slug: string) => [
   {
     title: "Dashboard",
     url: `/dashboard/hackathon/${slug}`,
-    icon: <Widget2 size={32} className="size-8" />,
+    icon: <Widget2 className="size-4" />,
   },
   {
     title: "Manage registration",
     url: `/dashboard/hackathon/${slug}/manage-registration`,
-    icon: <Checklist size={32} className="size-8" />,
+    icon: <Checklist className="size-4" />,
   },
   {
     title: "Edit Hackathon",
     url: `/dashboard/hackathon/${slug}/edit-hackathon`,
-    icon: <Pen2 size={32} className="size-8" />,
+    icon: <Pen2 className="size-4" />,
   },
   {
     title: "Payments",
     url: `/dashboard/hackathon/${slug}/payments`,
-    icon: <Card size={32} className="size-8" />,
+    icon: <Card className="size-4" />,
   },
   {
     title: "Manage Roles",
     url: `/dashboard/hackathon/${slug}/manage-roles`,
-    icon: <UserId size={32} className="size-8" />,
+    icon: <UserId className="size-4" />,
   },
   {
     title: "Send Notifications",
     url: `/dashboard/hackathon/${slug}/notifications`,
-    icon: <NotificationUnreadLines size={32} className="size-8" />,
+    icon: <NotificationUnreadLines className="size-4" />,
   },
   {
     title: "Settings",
     url: `/dashboard/hackathon/${slug}/settings`,
-    icon: <Settings size={32} className="size-8" />,
+    icon: <Settings className="size-4" />,
   },
 ];
 

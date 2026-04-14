@@ -20,42 +20,42 @@ const getEventNavItems = (slug: string) => [
   {
     title: "Dashboard",
     url: `/dashboard/events/${slug}`,
-    icon: <Widget2 size={32} className="size-8" />,
+    icon: <Widget2 className="size-4" />,
   },
   {
     title: "Manage Registration",
     url: `/dashboard/events/${slug}/manage-registration`,
-    icon: <Checklist size={32} className="size-8" />,
+    icon: <Checklist className="size-4" />,
   },
   {
     title: "Edit Event",
     url: `/dashboard/events/${slug}/edit-event`,
-    icon: <Pen2 size={32} className="size-8" />,
+    icon: <Pen2 className="size-4" />,
   },
   {
     title: "Payments",
     url: `/dashboard/events/${slug}/payments`,
-    icon: <Card size={32} className="size-8" />,
+    icon: <Card className="size-4" />,
   },
   // {
   //   title: "Tickets",
   //   url: `/dashboard/events/${slug}/tickets`,
-  //   icon: <IconTicket size={32} className="size-8" />,
+  //   icon: <IconTicket className="size-4" />,
   // },
   {
     title: "Manage Roles",
     url: `/dashboard/events/${slug}/manage-roles`,
-    icon: <UserId size={32} className="size-8" />,
+    icon: <UserId className="size-4" />,
   },
   {
     title: "Send Notifications",
     url: `/dashboard/events/${slug}/notifications`,
-    icon: <NotificationUnreadLines size={32} className="size-8" />,
+    icon: <NotificationUnreadLines className="size-4" />,
   },
   {
     title: "Settings",
     url: `/dashboard/events/${slug}/settings`,
-    icon: <Settings size={32} className="size-8" />,
+    icon: <Settings className="size-4" />,
   },
 ];
 

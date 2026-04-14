@@ -20,12 +20,12 @@ const getFestivalNavItems = (slug: string) => [
     {
         title: "Edit Festival",
         url: `/dashboard/festivals/${slug}/edit-festival`,
-        icon: <Pen2 size={32} className="size-8" />,
+        icon: <Pen2 className="size-4" />,
     },
     {
         title: "Settings",
         url: `/dashboard/festivals/${slug}/settings`,
-        icon: <Settings size={32} className="size-8" />,
+        icon: <Settings className="size-4" />,
     },
 ];
 

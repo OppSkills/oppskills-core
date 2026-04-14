@@ -614,7 +614,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  "relative peer/menu-button flex w-full items-center gap-2 rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:bg-transparent hover:text-primary-600 focus-visible:ring-2 active:bg-transparent active:text-primary-600 disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-transparent data-[active=true]:font-medium data-[active=true]:text-primary-600 data-[state=open]:hover:bg-transparent data-[state=open]:hover:text-primary-600 group-data-[collapsible=icon]:size-12! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "relative peer/menu-button flex w-full items-center gap-2 rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:bg-transparent hover:text-primary-600 focus-visible:ring-2 active:bg-transparent active:text-primary-600 disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-transparent data-[active=true]:font-medium data-[active=true]:text-primary-600 data-[state=open]:hover:bg-transparent data-[state=open]:hover:text-primary-600 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-3! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
   {
     variants: {
       variant: {
