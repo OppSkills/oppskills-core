@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import React from "react";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { Home } from "@solar-icons/react";
@@ -34,7 +35,7 @@ export function Breadcrumbs() {
   };
 
   const getBreadcrumbs = () => {
-    const items = [
+    const items: { label: React.ReactNode; href: string; active: boolean }[] = [
       {
         label: <Home className="size-4" />,
         href: "/dashboard",
