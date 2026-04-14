@@ -112,7 +112,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           </DialogHeader>
 
           {/* Share Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-4 sm:px-6">
+          <div className="grid grid-cols-4 gap-4 px-4 sm:px-6">
             {shareOptions.map((option) => (
               <div key={option.name} className="flex w-full flex-col gap-2 justify-center items-center group cursor-pointer" onClick={option.onClick}>
                 <div className="flex justify-center items-center w-12 h-12 rounded-full bg-neutral-200 border border-neutral-200 group-hover:border-primary transition-colors group-hover:bg-primary/10 text-neutral-700">
