@@ -1,16 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  IconDashboard,
-  IconTicket,
-  IconListCheck,
-  IconPencil,
-  IconUsers,
-  IconBell,
-  IconSettings,
-  IconCreditCard,
-} from "@tabler/icons-react";
+import { Card, Checklist, NotificationUnreadLines, Pen2, Settings, UserId, Widget2 } from "@solar-icons/react";
 
 import { MobileSidebarSwitcher } from "./mobile-sidebar-switcher";
 import { SidebarFooter } from "@/components/ui/sidebar";
@@ -29,42 +20,42 @@ const getEventNavItems = (slug: string) => [
   {
     title: "Dashboard",
     url: `/dashboard/events/${slug}`,
-    icon: IconDashboard,
+    icon: <Widget2 size={32} className="size-8" />,
   },
   {
     title: "Manage Registration",
     url: `/dashboard/events/${slug}/manage-registration`,
-    icon: IconListCheck,
+    icon: <Checklist size={32} className="size-8" />,
   },
   {
     title: "Edit Event",
     url: `/dashboard/events/${slug}/edit-event`,
-    icon: IconPencil,
+    icon: <Pen2 size={32} className="size-8" />,
   },
   {
     title: "Payments",
     url: `/dashboard/events/${slug}/payments`,
-    icon: IconCreditCard,
+    icon: <Card size={32} className="size-8" />,
   },
   // {
   //   title: "Tickets",
   //   url: `/dashboard/events/${slug}/tickets`,
-  //   icon: IconTicket,
+  //   icon: <IconTicket size={32} className="size-8" />,
   // },
   {
     title: "Manage Roles",
     url: `/dashboard/events/${slug}/manage-roles`,
-    icon: IconUsers,
+    icon: <UserId size={32} className="size-8" />,
   },
   {
     title: "Send Notifications",
     url: `/dashboard/events/${slug}/notifications`,
-    icon: IconBell,
+    icon: <NotificationUnreadLines size={32} className="size-8" />,
   },
   {
     title: "Settings",
     url: `/dashboard/events/${slug}/settings`,
-    icon: IconSettings,
+    icon: <Settings size={32} className="size-8" />,
   },
 ];
 
@@ -79,8 +70,8 @@ export function EventsSidebar({ slug, ...props }: EventsSidebarProps) {
   }, [slug]);
 
   return (
-    <Sidebar collapsible="icon" {...props} className="">
-      <SidebarHeader className="border-b border-border/50">
+    <Sidebar collapsible="icon" {...props} className="border-neutral-300">
+      <SidebarHeader className="border-b border-neutral-300">
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="h-14 flex items-center justify-center">
@@ -94,7 +85,7 @@ export function EventsSidebar({ slug, ...props }: EventsSidebarProps) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navItems} />
+        <NavMain items={navItems} showPill={true} />
       </SidebarContent>
       <SidebarFooter>
         <MobileSidebarSwitcher />

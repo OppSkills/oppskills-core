@@ -1,15 +1,5 @@
 "use client";
-
 import * as React from "react";
-import {
-  IconUsers,
-  IconDashboard,
-  IconPencil,
-  IconCreditCard,
-  IconUserCog,
-  IconMail,
-  IconSettings,
-} from "@tabler/icons-react";
 
 import { MobileSidebarSwitcher } from "./mobile-sidebar-switcher";
 import { SidebarFooter } from "@/components/ui/sidebar";
@@ -24,6 +14,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useParams } from "next/navigation";
+import { Card, Checklist, NotificationUnreadLines, Pen2, Settings, UserId, Widget2 } from "@solar-icons/react";
 
 /**
  * Define the navigation items for the hackathon detail sidebar
@@ -33,37 +24,37 @@ const getOpportunityNavItems = (slug: string) => [
   {
     title: "Dashboard",
     url: `/dashboard/hackathon/${slug}`,
-    icon: IconDashboard,
+    icon: <Widget2 size={32} className="size-8" />,
   },
   {
     title: "Manage registration",
     url: `/dashboard/hackathon/${slug}/manage-registration`,
-    icon: IconUsers,
+    icon: <Checklist size={32} className="size-8" />,
   },
   {
     title: "Edit Hackathon",
     url: `/dashboard/hackathon/${slug}/edit-hackathon`,
-    icon: IconPencil,
+    icon: <Pen2 size={32} className="size-8" />,
   },
   {
     title: "Payments",
     url: `/dashboard/hackathon/${slug}/payments`,
-    icon: IconCreditCard,
+    icon: <Card size={32} className="size-8" />,
   },
   {
     title: "Manage Roles",
     url: `/dashboard/hackathon/${slug}/manage-roles`,
-    icon: IconUserCog,
+    icon: <UserId size={32} className="size-8" />,
   },
   {
     title: "Send Notifications",
     url: `/dashboard/hackathon/${slug}/notifications`,
-    icon: IconMail,
+    icon: <NotificationUnreadLines size={32} className="size-8" />,
   },
   {
     title: "Settings",
     url: `/dashboard/hackathon/${slug}/settings`,
-    icon: IconSettings,
+    icon: <Settings size={32} className="size-8" />,
   },
 ];
 
@@ -85,8 +76,8 @@ export function HackathonSidebar({
   }, [slug]);
 
   return (
-    <Sidebar collapsible="icon" {...props} className="">
-      <SidebarHeader className="border-b border-border/50">
+    <Sidebar collapsible="icon" {...props} className="border-neutral-300">
+      <SidebarHeader className="border-b border-neutral-300">
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="h-14 flex items-center justify-center">
@@ -100,7 +91,7 @@ export function HackathonSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navItems} />
+        <NavMain items={navItems} showPill={true} />
       </SidebarContent>
       <SidebarFooter>
         <MobileSidebarSwitcher />

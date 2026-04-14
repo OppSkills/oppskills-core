@@ -1,13 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { IconCirclePlusFilled, IconMail, type Icon } from "@tabler/icons-react";
-
-import { Button } from "@/components/ui/button";
 import {
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -18,7 +14,7 @@ import { usePathname } from "next/navigation";
 type NavMainItem = {
   title: string;
   url: string;
-  icon?: Icon;
+  icon?: React.ReactNode;
 };
 
 /**
@@ -79,7 +75,13 @@ function findActiveUrl(
   return bestUrl;
 }
 
-export function NavMain({ items }: { items: NavMainItem[] }) {
+export function NavMain({
+  items,
+  showPill = false,
+}: {
+  items: NavMainItem[];
+  showPill?: boolean;
+}) {
   const pathname = usePathname();
 
   const activeUrl = React.useMemo(() => {
@@ -88,26 +90,28 @@ export function NavMain({ items }: { items: NavMainItem[] }) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-2">
+      <SidebarGroupContent className="flex flex-col gap-2 mt-4">
         <SidebarMenu>
           {items.map((item) => {
             const normalizedItemUrl = normalizePath(item.url);
             const isActive = activeUrl === normalizedItemUrl;
 
             return (
-              <SidebarMenuItem key={item.title}>
+              <SidebarMenuItem key={item.title} className="my-2">
                 <SidebarMenuButton
+                  variant={"outline"}
                   asChild
                   tooltip={item.title}
                   isActive={isActive}
+                  showPill={showPill}
                 >
                   <Link
                     href={item.url}
                     aria-current={isActive ? "page" : undefined}
-                    className="block cursor-pointer"
+                    className="block cursor-pointer text-neutral-700 "
                   >
-                    {item.icon && <item.icon />}
-                    <span>{item.title}</span>
+                    <div className="w-10 h-8">{item.icon}</div>
+                    <span className="text-xl">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

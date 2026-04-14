@@ -134,7 +134,7 @@
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #bf66e6;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #ffffff;
+  --sidebar-border: var(--color-neutral-300);
   --sidebar-ring: #9500d5;
 }
 

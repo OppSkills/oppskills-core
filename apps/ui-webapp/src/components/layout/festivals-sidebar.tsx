@@ -1,11 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-    IconDashboard,
-    IconPencil,
-    IconSettings,
-} from "@tabler/icons-react";
+import { Pen2, Settings } from "@solar-icons/react";
 
 import { MobileSidebarSwitcher } from "./mobile-sidebar-switcher";
 import { SidebarFooter } from "@/components/ui/sidebar";
@@ -24,12 +20,12 @@ const getFestivalNavItems = (slug: string) => [
     {
         title: "Edit Festival",
         url: `/dashboard/festivals/${slug}/edit-festival`,
-        icon: IconPencil,
+        icon: <Pen2 size={32} className="size-8" />,
     },
     {
         title: "Settings",
         url: `/dashboard/festivals/${slug}/settings`,
-        icon: IconSettings,
+        icon: <Settings size={32} className="size-8" />,
     },
 ];
 
@@ -44,8 +40,8 @@ export function FestivalsSidebar({ slug, ...props }: FestivalsSidebarProps) {
     }, [slug]);
 
     return (
-        <Sidebar collapsible="icon" {...props} className="">
-            <SidebarHeader className="border-b border-border/50">
+        <Sidebar collapsible="icon" {...props} className="border-neutral-300">
+            <SidebarHeader className="border-b border-neutral-300">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <div className="h-14 flex items-center justify-center">
@@ -59,7 +55,7 @@ export function FestivalsSidebar({ slug, ...props }: FestivalsSidebarProps) {
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
-                <NavMain items={navItems} />
+                <NavMain items={navItems} showPill={true} />
             </SidebarContent>
             <SidebarFooter>
                 <MobileSidebarSwitcher />

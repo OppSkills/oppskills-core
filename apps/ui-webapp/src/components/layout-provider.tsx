@@ -94,6 +94,14 @@ export default function LayoutProvider({
     setMainSidebarOpen(!hasSecondarySidebar);
   }, [hasSecondarySidebar]);
 
+  // Track hover state for main sidebar to support "hover-to-expand"
+  const [isMainSidebarHovered, setIsMainSidebarHovered] = React.useState(false);
+
+  // Reset hover state when navigating or clicking locally
+  React.useEffect(() => {
+    setIsMainSidebarHovered(false);
+  }, [pathname]);
+
   // Mobile sidebar state management
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [activeMobileTab, setActiveMobileTab] = React.useState<
@@ -122,7 +130,7 @@ export default function LayoutProvider({
               } as React.CSSProperties
             }
             className="bg-neutral-200"
-            open={mainSidebarOpen}
+            open={mainSidebarOpen || isMainSidebarHovered}
             onOpenChange={setMainSidebarOpen}
             openMobile={activeMobileTab === "main" && mobileMenuOpen}
             onOpenMobileChange={(open) => {
@@ -131,7 +139,18 @@ export default function LayoutProvider({
             }}
           >
             {/* Main application sidebar - collapses to icon mode on detail pages */}
-            <AppSidebar variant="sidebar" className="" />
+            <div
+              onMouseEnter={() => hasSecondarySidebar && setIsMainSidebarHovered(true)}
+              onMouseLeave={() => setIsMainSidebarHovered(false)}
+              onClick={() => setIsMainSidebarHovered(false)}
+              className={cn("z-50", isMainSidebarHovered && "z-[60]")}
+            >
+              <AppSidebar 
+                variant="sidebar" 
+                className={cn(isMainSidebarHovered && "z-[60] shadow-xl")}
+                data-hover-expand={isMainSidebarHovered && hasSecondarySidebar}
+              />
+            </div>
 
             {/* Secondary sidebar - only visible on specific detailed pages */}
             {hasSecondarySidebar ? (

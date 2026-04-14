@@ -25,28 +25,29 @@ import {
 } from "@/components/ui/sidebar";
 import Image from "next/image";
 import Link from "next/link";
+import { Confetti, Home, Rocket, Rocket2, UsersGroupRounded } from "@solar-icons/react";
 
 const data = {
   navMain: [
     {
-      title: "Dashboards",
+      title: "Home",
       url: "/dashboard",
-      icon: IconDashboard,
+      icon: <Home size={32} className="size-8" />,
     },
     {
       title: "Hackathons",
       url: "/dashboard/hackathon",
-      icon: IconReport,
+      icon: <Rocket size={32} className="size-8" />,
     },
     {
       title: "Events",
       url: "/dashboard/events",
-      icon: IconCalendarEvent,
+      icon: <Rocket2 size={32} className="size-8" />,
     },
     {
       title: "Festivals",
       url: "/dashboard/festivals",
-      icon: IconConfetti,
+      icon: <Confetti size={32} className="size-8" />,
     },
     // {
     //   title: "Talent pipeline",
@@ -59,17 +60,17 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isOpportunityDetail } = useMobileNavigation();
   return (
-    <Sidebar collapsible="icon" {...props} className="">
-      <SidebarHeader className="border-b">
+    <Sidebar collapsible="icon" {...props} className="border-neutral-300">
+      <SidebarHeader className="border-b h-14 flex items-center justify-center border-neutral-300">
         <SidebarMenu>
-          <SidebarMenuItem>
+          <SidebarMenuItem className="flex justify-center">
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:p-2! h-14!"
+              className="hover:bg-transparent w-full"
             >
               <Link
                 href="/"
-                className="flex relative justify-start items-center gap-2 p-2"
+                className="pl-4"
               >
                 <SidebarLogo />
               </Link>
