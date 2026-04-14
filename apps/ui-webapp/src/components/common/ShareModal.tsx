@@ -94,7 +94,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="sm:max-w-sm p-0 overflow-hidden border-none bg-background !rounded-3xl">
+      <DialogContent showCloseButton={false} className="max-w-[90vw] sm:max-w-sm p-0 overflow-hidden border-none bg-background rounded-3xl!">
         <div className="relative">
           <DialogHeader className="mb-6 bg-neutral-300 px-6 py-4 flex flex-row justify-between items-center">
             <div className="flex justify-between items-start w-full">
