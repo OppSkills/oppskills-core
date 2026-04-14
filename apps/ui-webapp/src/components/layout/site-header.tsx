@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Breadcrumbs } from "./breadcrumbs";
 
 function getInitials(
   firstName: string | null,
@@ -92,24 +93,10 @@ export function SiteHeader() {
   const initials = getInitials(userFirstName, userLastName, userEmail);
 
   return (
-    <header className="flex bg-background shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear px-4 lg:px-6 h-14 border-neutral-300">
+    <header className="sticky top-0 z-40 flex bg-background shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear px-4 lg:px-6 h-14 border-neutral-300">
       <div className="flex w-full items-center justify-between ">
         <div className="flex items-center gap-2">
-          <SidebarTrigger className="-ml-1" />
-          {
-            !isExpanded && (
-              <>
-                <Separator
-                  orientation="vertical"
-                  className="mx-2 data-[orientation=vertical]:h-4"
-                />
-
-                <h1 className="text-2xl font-semibold tracking-tight text-primary-900">
-                  {title}
-                </h1>
-              </>
-            )
-          }
+          <Breadcrumbs />
         </div>
 
         <div className="flex items-center gap-4">

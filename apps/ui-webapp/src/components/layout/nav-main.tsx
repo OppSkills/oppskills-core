@@ -97,7 +97,7 @@ export function NavMain({
             const isActive = activeUrl === normalizedItemUrl;
 
             return (
-              <SidebarMenuItem key={item.title} className="my-1">
+              <SidebarMenuItem key={item.title} className="mt-1">
                 <SidebarMenuButton
                   variant={"outline"}
                   asChild
@@ -111,7 +111,7 @@ export function NavMain({
                     className="flex items-center gap-3 cursor-pointer text-neutral-700 w-full"
                   >
                     <div className="flex items-center justify-center size-4">{item.icon}</div>
-                    <span className="text-base font-medium">{item.title}</span>
+                    <span className="text-xs font-medium">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

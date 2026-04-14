@@ -94,13 +94,7 @@ export default function LayoutProvider({
     setMainSidebarOpen(!hasSecondarySidebar);
   }, [hasSecondarySidebar]);
 
-  // Track hover state for main sidebar to support "hover-to-expand"
-  const [isMainSidebarHovered, setIsMainSidebarHovered] = React.useState(false);
 
-  // Reset hover state when navigating or clicking locally
-  React.useEffect(() => {
-    setIsMainSidebarHovered(false);
-  }, [pathname]);
 
   // Mobile sidebar state management
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -121,16 +115,16 @@ export default function LayoutProvider({
           ishackathonDetail: hasSecondarySidebar,
         }}
       >
-        <main className="">
+        <main className="h-svh overflow-hidden">
           <SidebarProvider
             style={
               {
-                "--sidebar-width": "calc(var(--spacing) * 62)",
+                "--sidebar-width": "calc(var(--spacing) * 64)",
                 "--header-height": "calc(var(--spacing) * 12)",
               } as React.CSSProperties
             }
             className="bg-neutral-200"
-            open={mainSidebarOpen || isMainSidebarHovered}
+            open={mainSidebarOpen}
             onOpenChange={setMainSidebarOpen}
             openMobile={activeMobileTab === "main" && mobileMenuOpen}
             onOpenMobileChange={(open) => {
@@ -138,17 +132,9 @@ export default function LayoutProvider({
               if (open) setActiveMobileTab("main");
             }}
           >
-            {/* Main application sidebar - collapses to icon mode on detail pages */}
-            <div
-              onMouseEnter={() => hasSecondarySidebar && setIsMainSidebarHovered(true)}
-              onMouseLeave={() => setIsMainSidebarHovered(false)}
-              onClick={() => setIsMainSidebarHovered(false)}
-              className={cn("z-50", isMainSidebarHovered && "z-[60]")}
-            >
+            <div>
               <AppSidebar 
                 variant="sidebar" 
-                className={cn(isMainSidebarHovered && "z-[60] shadow-xl")}
-                data-hover-expand={isMainSidebarHovered && hasSecondarySidebar}
               />
             </div>
 
@@ -168,8 +154,9 @@ export default function LayoutProvider({
                     variant="sidebar"
                     collapsible="icon"
                     style={{
-                      left: "var(--sidebar-width-icon)",
-                    }}
+                      "--sidebar-width": "12rem",
+                      left: "64px",
+                    } as React.CSSProperties}
                   />
                 )}
                 {isEventsDashboard && eventsSlug && (
@@ -179,8 +166,9 @@ export default function LayoutProvider({
                     variant="sidebar"
                     collapsible="icon"
                     style={{
-                      left: "var(--sidebar-width-icon)",
-                    }}
+                      "--sidebar-width": "12rem",
+                      left: "64px",
+                    } as React.CSSProperties}
                   />
                 )}
                 {isFestivalsDashboard && festivalsSlug && (
@@ -190,16 +178,17 @@ export default function LayoutProvider({
                     variant="sidebar"
                     collapsible="icon"
                     style={{
-                      left: "var(--sidebar-width-icon)",
-                    }}
+                      "--sidebar-width": "12rem",
+                      left: "64px",
+                    } as React.CSSProperties}
                   />
                 )}
                 <SidebarInset
-                  className={cn("bg-background overflow-hidden")}
+                  className={cn("bg-background overflow-hidden h-svh")}
                 >
                   <SiteHeader />
                   <div
-                    className="flex-1 flex min-h-0 overflow-hidden w-full min-w-0 bg-background"
+                    className="flex-1 flex min-h-0 overflow-y-auto w-full min-w-0 bg-background"
                   >
 
                     {children as any}
@@ -207,9 +196,9 @@ export default function LayoutProvider({
                 </SidebarInset>
               </SidebarContextProvider>
             ) : (
-              <SidebarInset className={cn("bg-background overflow-hidden")}>
+              <SidebarInset className={cn("bg-background overflow-hidden h-svh")}>
                 <SiteHeader />
-                <div className="flex flex-1 overflow-hidden w-full min-w-0 bg-background">
+                <div className="flex flex-1 overflow-y-auto w-full min-w-0 bg-background">
 
                   {children as any}
                 </div>

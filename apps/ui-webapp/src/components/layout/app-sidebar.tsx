@@ -59,11 +59,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem className="flex justify-center">
             <SidebarMenuButton
               asChild
-              className="hover:bg-transparent w-full"
+              className="hover:bg-transparent w-full group-data-[collapsible=icon]:p-0!"
             >
               <Link
                 href="/"
-                className="pl-4"
+                className="pl-4 group-data-[collapsible=icon]:p-0!"
               >
                 <SidebarLogo />
               </Link>
