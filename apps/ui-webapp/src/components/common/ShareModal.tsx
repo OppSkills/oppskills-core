@@ -12,8 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   IconBrandWhatsapp,
+  IconBrandLinkedin,
   IconBrandX,
-  IconBrandFacebook,
+  IconFlame,
   IconCopy,
   IconShare,
   IconCheck,
@@ -40,19 +41,62 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   link,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [showFireIcon, setShowFireIcon] = useState(false);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setShowFireIcon((prev) => !prev);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   const shareOptions = [
     {
-      name: "WhatsApp",
-      icon: <IconBrandWhatsapp className="w-6 h-6" />,
-      onClick: () => {
-        const safeDescription = description || "Check this out on OppSkills!";
-        const url = `https://wa.me/?text=${encodeURIComponent(`${safeDescription}\n\n${link}`)}`;
-        window.open(url, "_blank");
+      name: "LinkedIn",
+      isHot: true,
+      icon: (
+        <div className="relative w-6 h-6 flex items-center justify-center">
+          <AnimatePresence mode="wait">
+            {showFireIcon ? (
+              <motion.div
+                key="fire"
+                initial={{ opacity: 0, scale: 0.5, rotate: -15 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, scale: 0.5, rotate: 15 }}
+                transition={{ duration: 0.3 }}
+              >
+                <IconFlame className="w-6 h-6 text-orange-500 fill-orange-500" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="linkedin"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.3 }}
+              >
+                <IconBrandLinkedin className="w-6 h-6 text-[#0A66C2]" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      ),
+      onClick: async () => {
+        const caption = `Another step forward 🚀\n\nJoined ${title} to level up my skills and work on real challenges.\nLet’s see where this goes 👀\n\n#KeepBuilding #NextLevel`;
+        try {
+          await navigator.clipboard.writeText(caption);
+          toast.success("Caption copied! You can now paste it on LinkedIn.");
+        } catch (err) {
+          console.error("Failed to copy caption:", err);
+        }
+        setTimeout(() => {
+          const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link)}`;
+          window.open(url, "_blank");
+        }, 1000);
       },
     },
     {
-      name: "Twitter",
+      name: "X",
       icon: <IconBrandX className="w-6 h-6" />,
       onClick: () => {
         const safeDescription = description || "Check this out on OppSkills!";
@@ -61,10 +105,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       },
     },
     {
-      name: "Facebook",
-      icon: <IconBrandFacebook className="w-6 h-6" />,
+      name: "WhatsApp",
+      icon: <IconBrandWhatsapp className="w-6 h-6" />,
       onClick: () => {
-        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
+        const safeDescription = description || "Check this out on OppSkills!";
+        const url = `https://wa.me/?text=${encodeURIComponent(`${safeDescription}\n\n${link}`)}`;
         window.open(url, "_blank");
       },
     },
@@ -114,7 +159,27 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           {/* Share Grid */}
           <div className="grid grid-cols-4 gap-4 px-4 sm:px-6">
             {shareOptions.map((option) => (
-              <div key={option.name} className="flex w-full flex-col gap-2 justify-center items-center group cursor-pointer" onClick={option.onClick}>
+              <div key={option.name} className="flex w-full flex-col gap-2 justify-center items-center group cursor-pointer relative" onClick={option.onClick}>
+                {"isHot" in option && option.isHot && (
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ 
+                      scale: [1, 1.1, 1],
+                      opacity: 1 
+                    }}
+                    transition={{
+                      scale: {
+                        repeat: Infinity,
+                        duration: 1.5,
+                        ease: "easeInOut"
+                      },
+                      opacity: { duration: 0.2 }
+                    }}
+                    className="absolute -top-1 -right-1 z-10 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-red-500 to-orange-500 text-[10px] font-bold text-white shadow-sm border border-white/20"
+                  >
+                    HOT
+                  </motion.div>
+                )}
                 <div className="flex justify-center items-center w-12 h-12 rounded-full bg-neutral-200 border border-neutral-200 group-hover:border-primary transition-colors group-hover:bg-primary/10 text-neutral-700">
                   {option.icon}
                 </div>
