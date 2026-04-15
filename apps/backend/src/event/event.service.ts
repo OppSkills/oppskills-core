@@ -1663,12 +1663,14 @@ export class EventService {
 
     // Format event date and time for email
     const eventDate = event.startDate.toLocaleDateString('en-IN', {
+      timeZone: 'Asia/Kolkata',
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
     const eventTime = event.startDate.toLocaleTimeString('en-IN', {
+      timeZone: 'Asia/Kolkata',
       hour: '2-digit',
       minute: '2-digit',
     });

@@ -25,6 +25,30 @@ import * as QRCode from 'qrcode';
 export class EmailListener {
   private readonly logger = new Logger(EmailListener.name);
 
+  /** Format event start in IST for attendee-facing emails (server TZ may be UTC). */
+  private formatEventDateTimeIST(startDate: Date): {
+    eventDate: string;
+    eventTime: string;
+  } {
+    const tz: Pick<Intl.DateTimeFormatOptions, 'timeZone'> = {
+      timeZone: 'Asia/Kolkata',
+    };
+    const eventDate = startDate.toLocaleDateString('en-IN', {
+      ...tz,
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const eventTime =
+      startDate.toLocaleTimeString('en-IN', {
+        ...tz,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }) + ' onwards';
+    return { eventDate, eventTime };
+  }
+
   constructor(
     private readonly emailService: EmailService,
     @Inject(forwardRef(() => EventPassService))
@@ -149,16 +173,9 @@ export class EmailListener {
       await this.sendEventPassEmail(participant, user, event);
     } else {
       // Send pending email
-      const eventDate = event.startDate.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-      const eventTime =
-        event.startDate.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }) + ' onwards';
+      const { eventDate, eventTime } = this.formatEventDateTimeIST(
+        event.startDate,
+      );
       let eventLocation: string | undefined;
       if (event.locationType === 'PHYSICAL') {
         eventLocation = [event.locationAddress, event.locationCity]
@@ -267,16 +284,9 @@ export class EmailListener {
       'Participant Name';
     const participantCollege =
       user.onboardingProfile?.college?.name || 'College Name';
-    const eventDate = event.startDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-    const eventTime =
-      event.startDate.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }) + ' onwards';
+    const { eventDate, eventTime } = this.formatEventDateTimeIST(
+      event.startDate,
+    );
 
     // Generate event pass in database BEFORE sending email
     const eventPass = await this.eventPassService.generateEventPass(

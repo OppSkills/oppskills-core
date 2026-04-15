@@ -49,37 +49,7 @@ export function EventPassEmail({
 }: EventPassEmailProps) {
   const previewText = `Your event pass for ${eventName} is ready!`;
 
-  const formatIST = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return dateStr;
-      
-      return new Intl.DateTimeFormat('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      }).format(date);
-    } catch {
-      return dateStr;
-    }
-  };
-
-  const formatDateIST = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return dateStr;
-
-      return new Intl.DateTimeFormat('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }).format(date);
-    } catch {
-      return dateStr;
-    }
-  };
+  // eventDate / eventTime are pre-formatted in Asia/Kolkata by the backend.
 
   // Construct the OG image URL with all parameters
   const ogImageParams = new URLSearchParams({
@@ -144,10 +114,10 @@ export function EventPassEmail({
                 <strong>Event:</strong> {eventName}
               </Text>
               <Text style={detailsItem}>
-                <strong>Date:</strong> {formatDateIST(eventDate)}
+                <strong>Date:</strong> {eventDate}
               </Text>
               <Text style={detailsItem}>
-                <strong>Time:</strong> {formatIST(eventTime)}
+                <strong>Time:</strong> {eventTime}
               </Text>
               <Text style={detailsItem}>
                 <strong>Ticket ID:</strong> {ticketId}

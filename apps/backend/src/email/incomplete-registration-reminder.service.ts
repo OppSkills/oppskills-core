@@ -272,12 +272,14 @@ export class IncompleteRegistrationReminderService {
 
     for (const row of hackathonRows) {
       const eventDate = row.startDate.toLocaleDateString('en-IN', {
+        timeZone: 'Asia/Kolkata',
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       });
       const eventTime = row.startDate.toLocaleTimeString('en-IN', {
+        timeZone: 'Asia/Kolkata',
         hour: '2-digit',
         minute: '2-digit',
       });
@@ -327,12 +329,14 @@ export class IncompleteRegistrationReminderService {
 
     for (const row of eventRows) {
       const eventDate = row.startDate.toLocaleDateString('en-IN', {
+        timeZone: 'Asia/Kolkata',
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       });
       const eventTime = row.startDate.toLocaleTimeString('en-IN', {
+        timeZone: 'Asia/Kolkata',
         hour: '2-digit',
         minute: '2-digit',
       });
@@ -384,12 +388,14 @@ export class IncompleteRegistrationReminderService {
 
     for (const row of freeEventRows) {
       const eventDate = row.startDate.toLocaleDateString('en-IN', {
+        timeZone: 'Asia/Kolkata',
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       });
       const eventTime = row.startDate.toLocaleTimeString('en-IN', {
+        timeZone: 'Asia/Kolkata',
         hour: '2-digit',
         minute: '2-digit',
       });

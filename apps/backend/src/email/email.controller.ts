@@ -255,12 +255,14 @@ export class EmailController {
 
     // Format event date and time
     const eventDate = event.startDate.toLocaleDateString('en-IN', {
+      timeZone: 'Asia/Kolkata',
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
     const eventTime = event.startDate.toLocaleTimeString('en-IN', {
+      timeZone: 'Asia/Kolkata',
       hour: '2-digit',
       minute: '2-digit',
     });
