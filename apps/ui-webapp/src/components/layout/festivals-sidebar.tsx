@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Pen2, Settings } from "@solar-icons/react";
+import { Pen2, Settings, UserSpeak } from "@solar-icons/react";
 
 import { MobileSidebarSwitcher } from "./mobile-sidebar-switcher";
 import { SidebarFooter } from "@/components/ui/sidebar";
@@ -26,6 +26,11 @@ const getFestivalNavItems = (slug: string) => [
         title: "Settings",
         url: `/dashboard/festivals/${slug}/settings`,
         icon: <Settings className="size-4" />,
+    },
+    {
+        title: "Referrals",
+        url: `/dashboard/festivals/${slug}/referrals`,
+        icon: <UserSpeak className="size-4" />,
     },
 ];
 

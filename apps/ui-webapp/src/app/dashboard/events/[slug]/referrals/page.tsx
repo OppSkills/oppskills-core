@@ -1,16 +1,15 @@
-import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Suspense } from "react";
 import { auth } from "@clerk/nextjs/server";
 import { getEventBySlug } from "@/lib/api/eventApi";
 import AnalyticCard from "@/app/dashboard/_components/AnalyticCard";
-import { AddReferrerButton } from "./_components/AddReferrerButton";
-import { ReferralsTable } from "./_components/ReferralsTable";
 import {
     MotionContainer,
     MotionItem,
 } from "@/components/ui/derived/MotionWrapper";
-import { QRCodeSVG } from "qrcode.react";
+
+import { AddReferrerButton } from "@/app/dashboard/_components/referrals/AddReferrerButton";
+import { ReferralsTable } from "@/app/dashboard/_components/referrals/ReferralsTable";
 
 // Helper components
 function AnalyticsLoader() {
@@ -65,7 +64,7 @@ export default async function ReferralsPage(props: {
 
                 {/* Referrals Table */}
                 <div className="w-full">
-                    <ReferralsTable />
+                    <ReferralsTable baseUrl={`/dashboard/events/${slug}/referrals`} />
                 </div>
             </div>
         </div>

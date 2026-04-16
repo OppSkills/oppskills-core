@@ -25,6 +25,7 @@ import {
 import { Copy, ExternalLink, Trash2, Maximize2 } from "lucide-react";
 import { SortFromTopToBottom } from "@solar-icons/react";
 import { toast } from "sonner";
+import Link from "next/link";
 
 interface ReferrerData {
   id: string;
@@ -36,6 +37,10 @@ interface ReferrerData {
   clicksRecent: number;
   registrations: number;
   registrationsRecent: number;
+}
+
+interface ReferralsTableProps {
+  baseUrl: string;
 }
 
 const MOCK_DATA: ReferrerData[] = [
@@ -107,7 +112,11 @@ const MOCK_DATA: ReferrerData[] = [
   },
 ];
 
-export const ReferralsTable: React.FC = () => {
+interface ReferralsTableProps {
+  baseUrl: string;
+}
+
+export const ReferralsTable: React.FC<ReferralsTableProps> = ({ baseUrl }) => {
   const [rowSelection, setRowSelection] = useState({});
 
   const columns = useMemo<ColumnDef<ReferrerData>[]>(
@@ -148,15 +157,15 @@ export const ReferralsTable: React.FC = () => {
         cell: (info) => {
           const row = info.row.original;
           return (
-            <div className="flex items-center gap-4 py-2">
-              <Avatar className="w-12 h-12 rounded-full border border-neutral-100">
+            <Link href={`${baseUrl}/${row.id}`} className="flex items-center gap-4 py-2 group/name cursor-pointer">
+              <Avatar className="w-12 h-12 rounded-full border border-neutral-100 group-hover/name:border-primary-200 transition-colors">
                 <AvatarImage src={row.avatarUrl} className="object-cover" />
                 <AvatarFallback>{row.name.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col gap-0.5">
-                <span className="font-bold text-neutral-900 text-base">{row.name}</span>
+                <span className="font-bold text-neutral-900 text-base group-hover/name:text-primary-800 transition-colors">{row.name}</span>
                 <span className="text-xs text-neutral-500 font-medium">{row.email}</span>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1" onClick={(e) => e.stopPropagation()}>
                   <span className="text-xs text-blue-600 font-medium">{row.referralLink}</span>
                   <button
                     onClick={() => {
@@ -172,7 +181,7 @@ export const ReferralsTable: React.FC = () => {
                   </button>
                 </div>
               </div>
-            </div>
+            </Link>
           );
         },
       },
@@ -221,15 +230,17 @@ export const ReferralsTable: React.FC = () => {
       {
         id: "view",
         header: "View Referrals",
-        cell: () => (
+        cell: (info) => (
           <div className="flex justify-center">
-            <Button
-              variant="outline"
-              className="rounded-xl h-10 px-4 flex items-center gap-2 bg-[#342636] hover:bg-[#271B40] text-white border-none shadow-sm transition-all active:scale-95"
-            >
-              <Maximize2 size={16} />
-              <span className="text-xs font-semibold">View list</span>
-            </Button>
+            <Link href={`${baseUrl}/${info.row.original.id}`}>
+              <Button
+                variant="outline"
+                className="rounded-xl h-10 px-4 flex items-center gap-2 bg-[#342636] hover:bg-[#271B40] text-white border-none shadow-sm transition-all active:scale-95"
+              >
+                <Maximize2 size={16} />
+                <span className="text-xs font-semibold">View list</span>
+              </Button>
+            </Link>
           </div>
         ),
       },
@@ -275,7 +286,7 @@ export const ReferralsTable: React.FC = () => {
                       header.id === "registrations" ||
                       header.id === "view" ||
                       header.id === "delete") &&
-                      "text-center"
+                    "text-center"
                   )}
                   style={{
                     width: header.id === "select" ? "60px" : header.id === "sno" ? "80px" : "auto",
@@ -311,7 +322,7 @@ export const ReferralsTable: React.FC = () => {
                         cell.column.id === "registrations" ||
                         cell.column.id === "view" ||
                         cell.column.id === "delete") &&
-                        "text-center"
+                      "text-center"
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

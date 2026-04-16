@@ -41,6 +41,20 @@ export interface FestivalItem {
   slug: string;
 }
 
+function stripHtmlToText(input: string): string {
+  const value = input.trim();
+  if (value.length === 0) return "";
+  if (typeof window !== "undefined" && typeof document !== "undefined") {
+    const el = document.createElement("div");
+    el.innerHTML = value;
+    return (el.textContent ?? el.innerText ?? "").replace(/\s+/g, " ").trim();
+  }
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 interface FestivalsTableProps {
   data: FestivalItem[];
   onToggleRegistration?: (id: string, isOpen: boolean) => void;
@@ -89,7 +103,7 @@ export default function FestivalsTable({
             <span className="font-semibold text-base">{item.name}</span>
             {item.description && (
               <span className="text-muted-foreground text-xs line-clamp-1 max-w-[200px]">
-                {item.description}
+                {stripHtmlToText(item.description)}
               </span>
             )}
             <div className="mt-1">

@@ -14,7 +14,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useParams } from "next/navigation";
-import { Card, Checklist, NotificationUnreadLines, Pen2, Settings, UserId, Widget2 } from "@solar-icons/react";
+import { Card, Checklist, NotificationUnreadLines, Pen2, Settings, UserId, UserSpeak, Widget2 } from "@solar-icons/react";
 
 /**
  * Define the navigation items for the hackathon detail sidebar
@@ -55,6 +55,11 @@ const getOpportunityNavItems = (slug: string) => [
     title: "Settings",
     url: `/dashboard/hackathon/${slug}/settings`,
     icon: <Settings className="size-4" />,
+  },
+  {
+    title: "Referrals",
+    url: `/dashboard/hackathon/${slug}/referrals`,
+    icon: <UserSpeak className="size-4" />,
   },
 ];
 
