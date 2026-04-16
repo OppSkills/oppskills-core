@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Card, Checklist, NotificationUnreadLines, Pen2, Settings, UserId, Widget2 } from "@solar-icons/react";
+import { Card, Checklist, NotificationUnreadLines, Pen2, Settings, UserId, UserSpeak, Widget2 } from "@solar-icons/react";
 
 import { MobileSidebarSwitcher } from "./mobile-sidebar-switcher";
 import { SidebarFooter } from "@/components/ui/sidebar";
@@ -56,6 +56,11 @@ const getEventNavItems = (slug: string) => [
     title: "Settings",
     url: `/dashboard/events/${slug}/settings`,
     icon: <Settings className="size-4" />,
+  },
+  {
+    title: "Referrals",
+    url: `/dashboard/events/${slug}/referrals`,
+    icon: <UserSpeak className="size-4" />,
   },
 ];
 
