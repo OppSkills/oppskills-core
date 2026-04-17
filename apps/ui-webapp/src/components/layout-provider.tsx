@@ -112,7 +112,7 @@ export default function LayoutProvider({
           setMobileMenuOpen,
           activeMobileTab,
           setActiveMobileTab,
-          ishackathonDetail: hasSecondarySidebar,
+          isOpportunityDetail: hasSecondarySidebar,
         }}
       >
         <main className="h-svh overflow-hidden">

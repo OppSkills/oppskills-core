@@ -19,7 +19,7 @@ export function MobileSidebarSwitcher({
   return (
     <div
       className={cn(
-        "flex items-center gap-1 rounded-md border bg-background p-1 md:hidden",
+        "flex items-center gap-1 p-2 border-t bg-background md:hidden",
         className
       )}
     >
