@@ -25,22 +25,22 @@ const data = {
     {
       title: "Home",
       url: "/dashboard",
-      icon: <Home className="size-4" />,
+      icon: <Home />,
     },
     {
       title: "Hackathons",
       url: "/dashboard/hackathon",
-      icon: <Rocket className="size-4" />,
+      icon: <Rocket />,
     },
     {
       title: "Events",
       url: "/dashboard/events",
-      icon: <Rocket2 className="size-4" />,
+      icon: <Rocket2 />,
     },
     {
       title: "Festivals",
       url: "/dashboard/festivals",
-      icon: <Confetti className="size-4" />,
+      icon: <Confetti />,
     },
     // {
     //   title: "Talent pipeline",
@@ -53,7 +53,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isOpportunityDetail } = useMobileNavigation();
   return (
-    <Sidebar collapsible="icon" {...props} className="border-neutral-300">
+    <Sidebar collapsible="icon" allowHoverExpand={true} {...props} className="border-neutral-300">
       <SidebarHeader className="border-b h-14 flex items-center justify-center border-neutral-300">
         <SidebarMenu>
           <SidebarMenuItem className="flex justify-center">
@@ -84,11 +84,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 }
 
 function SidebarLogo() {
-  const { state } = useSidebar();
+  const { state, isHovered } = useSidebar();
+  const isVisualExpanded = state === "expanded" || isHovered;
 
   return (
     <>
-      {state === "expanded" ? (
+      {isVisualExpanded ? (
         <Image
           src="/logo.svg"
           className="object-contain w-fit h-6"

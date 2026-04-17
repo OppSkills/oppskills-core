@@ -57,11 +57,11 @@ const getEventNavItems = (slug: string) => [
     url: `/dashboard/events/${slug}/settings`,
     icon: <Settings className="size-4" />,
   },
-  {
-    title: "Referrals",
-    url: `/dashboard/events/${slug}/referrals`,
-    icon: <UserSpeak className="size-4" />,
-  },
+  // {
+  //   title: "Referrals",
+  //   url: `/dashboard/events/${slug}/referrals`,
+  //   icon: <UserSpeak className="size-4" />,
+  // },
 ];
 
 interface EventsSidebarProps extends React.ComponentProps<typeof Sidebar> {

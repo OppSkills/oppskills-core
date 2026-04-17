@@ -56,11 +56,11 @@ const getOpportunityNavItems = (slug: string) => [
     url: `/dashboard/hackathon/${slug}/settings`,
     icon: <Settings className="size-4" />,
   },
-  {
-    title: "Referrals",
-    url: `/dashboard/hackathon/${slug}/referrals`,
-    icon: <UserSpeak className="size-4" />,
-  },
+  // {
+  //   title: "Referrals",
+  //   url: `/dashboard/hackathon/${slug}/referrals`,
+  //   icon: <UserSpeak className="size-4" />,
+  // },
 ];
 
 /**

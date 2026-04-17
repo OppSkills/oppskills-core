@@ -96,6 +96,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 flex bg-background shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear px-4 lg:px-6 h-14 border-neutral-300">
       <div className="flex w-full items-center justify-between ">
         <div className="flex items-center gap-2">
+          <SidebarTrigger className="md:hidden" />
           <Breadcrumbs />
         </div>
 

@@ -27,11 +27,11 @@ const getFestivalNavItems = (slug: string) => [
         url: `/dashboard/festivals/${slug}/settings`,
         icon: <Settings className="size-4" />,
     },
-    {
-        title: "Referrals",
-        url: `/dashboard/festivals/${slug}/referrals`,
-        icon: <UserSpeak className="size-4" />,
-    },
+    // {
+    //     title: "Referrals",
+    //     url: `/dashboard/festivals/${slug}/referrals`,
+    //     icon: <UserSpeak className="size-4" />,
+    // },
 ];
 
 interface FestivalsSidebarProps extends React.ComponentProps<typeof Sidebar> {

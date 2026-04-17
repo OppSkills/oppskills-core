@@ -7,9 +7,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 type NavMainItem = {
   title: string;
@@ -84,6 +86,9 @@ export function NavMain({
 }) {
   const pathname = usePathname();
 
+  const { isHovered, setOpen, state } = useSidebar();
+  const isVisualExpanded = state === "expanded" || isHovered;
+
   const activeUrl = React.useMemo(() => {
     return findActiveUrl(items, pathname);
   }, [items, pathname]);
@@ -108,9 +113,17 @@ export function NavMain({
                   <Link
                     href={item.url}
                     aria-current={isActive ? "page" : undefined}
+                    onClick={() => {
+                      if (isHovered) setOpen(false);
+                    }}
                     className="flex items-center gap-3 cursor-pointer text-neutral-700 w-full"
                   >
-                    <div className="flex items-center justify-center size-4">{item.icon}</div>
+                    <div className={cn(
+                      "flex items-center justify-center transition-all duration-200",
+                      isVisualExpanded ? "size-6" : "size-4"
+                    )}>
+                      {item.icon}
+                    </div>
                     <span className="text-xs font-medium">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>

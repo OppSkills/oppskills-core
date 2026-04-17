@@ -39,6 +39,8 @@ type SidebarContextProps = {
   openMobile: boolean;
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
+  isHovered: boolean;
+  setIsHovered: (isHovered: boolean) => void;
   toggleSidebar: () => void;
 };
 
@@ -79,6 +81,7 @@ function SidebarContextProvider({
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
+  const [isHovered, setIsHovered] = React.useState(false);
 
   // Helper to set the mobile state, supporting controlled via prop or local state
   const setOpenMobileState = React.useCallback(
@@ -126,6 +129,8 @@ function SidebarContextProvider({
       open,
       setOpen,
       isMobile,
+      isHovered,
+      setIsHovered,
       openMobile: finalOpenMobile,
       setOpenMobile: setOpenMobileState,
       toggleSidebar,
@@ -135,6 +140,8 @@ function SidebarContextProvider({
       open,
       setOpen,
       isMobile,
+      isHovered,
+      setIsHovered,
       finalOpenMobile,
       setOpenMobileState,
       toggleSidebar,
@@ -167,6 +174,7 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
+  const [isHovered, setIsHovered] = React.useState(false);
 
   // Helper to set the mobile state, supporting controlled via prop or local state
   const setOpenMobileState = React.useCallback(
@@ -236,6 +244,8 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
+      isHovered,
+      setIsHovered,
       openMobile: finalOpenMobile,
       setOpenMobile: setOpenMobileState,
       toggleSidebar,
@@ -245,6 +255,8 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
+      isHovered,
+      setIsHovered,
       finalOpenMobile,
       setOpenMobileState,
       toggleSidebar,
@@ -280,6 +292,7 @@ function Sidebar({
   side = "left",
   variant = "sidebar",
   collapsible = "offcanvas",
+  allowHoverExpand = false,
   className,
   children,
   ...props
@@ -287,8 +300,9 @@ function Sidebar({
   side?: "left" | "right";
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
+  allowHoverExpand?: boolean;
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, state, openMobile, setOpenMobile, isHovered, setIsHovered } = useSidebar();
 
   if (collapsible === "none") {
     return (
@@ -334,10 +348,17 @@ function Sidebar({
     <div
       className="group peer text-sidebar-foreground hidden md:block"
       data-state={state}
-      data-collapsible={state === "collapsed" ? collapsible : ""}
+      data-collapsible={(state === "collapsed" && !isHovered) ? collapsible : ""}
+      data-hover-expand={isHovered}
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"
+      onMouseEnter={() => {
+        if (allowHoverExpand) setIsHovered(true);
+      }}
+      onMouseLeave={() => {
+        if (allowHoverExpand) setIsHovered(false);
+      }}
       {...props}
     >
       {/* This is what handles the sidebar gap on desktop */}
@@ -357,7 +378,7 @@ function Sidebar({
         data-slot="sidebar-container"
         className={cn(
           "fixed inset-y-0 z-50 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
-          "group-data-[hover-expand=true]:w-(--sidebar-width)",
+          "group-data-[hover-expand=true]:w-(--sidebar-width) group-data-[hover-expand=true]:z-[100]",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
