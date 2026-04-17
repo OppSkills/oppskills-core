@@ -32,9 +32,18 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
     posthog.init(posthogKey, {
       api_host: posthogHost || "https://us.i.posthog.com",
-      // Uses recommended 2025 defaults which automatically handles pageview and pageleave events
+      /**
+       * Uses recommended 2025 defaults which automatically handle pageview and
+       * pageleave events. These defaults also turn on session replay (rrweb)
+       * whenever the project has it enabled server-side, which caused multi-
+       * second main-thread stalls on heavy dashboard screens (notably on
+       * `/dashboard/.../referrals`) because rrweb serializes the full DOM on
+       * open / pointer events. We explicitly disable it here; re-enable per
+       * route if replays become necessary.
+       */
       defaults: "2025-11-30",
       capture_pageleave: true,
+      disable_session_recording: true,
       loaded: (posthog) => {
         if (process.env.NODE_ENV === "development") {
           console.log("PostHog initialized successfully");
