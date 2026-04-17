@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { cn } from "@/lib/utils";
+import React from "react";
 import {
   Dialog,
   DialogContent,
@@ -29,12 +28,12 @@ interface AddReferrerModalProps {
   entityId: string;
 }
 
-export const AddReferrerModal: React.FC<AddReferrerModalProps> = ({
+export const AddReferrerModal = memo(function AddReferrerModal({
   isOpen,
   onOpenChange,
   entityType,
   entityId,
-}) => {
+}: AddReferrerModalProps) {
   const [email, setEmail] = useState("");
   const [debouncedEmail, setDebouncedEmail] = useState("");
   const [sendEmail, setSendEmail] = useState(true);
@@ -254,4 +253,4 @@ export const AddReferrerModal: React.FC<AddReferrerModalProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+});
