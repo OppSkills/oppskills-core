@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { memo, useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import { useCreateReferral, useReferrerLookup, useReferrals } from "@/hooks/useR
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import type { ReferralEntityType } from "@/lib/api/referralApi";
+import { cn } from "@/lib/utils";
 
 interface AddReferrerModalProps {
   isOpen: boolean;
