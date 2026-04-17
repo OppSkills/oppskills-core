@@ -4,6 +4,7 @@ import React from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogClose,
@@ -55,8 +56,15 @@ export const AddReferrerModal: React.FC<AddReferrerModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="max-w-[90vw] sm:max-w-xl p-0 overflow-hidden border-none bg-background rounded-3xl! shadow-2xl">
+      <DialogContent
+        showCloseButton={false}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="max-w-[90vw] sm:max-w-xl p-0 overflow-hidden border-none bg-background rounded-3xl! shadow-2xl"
+      >
         <div className="relative">
+          <DialogDescription className="sr-only">
+            Invite an existing OppSkills user as a referrer for this listing.
+          </DialogDescription>
           {/* Header */}
           <DialogHeader className="bg-neutral-300 px-6 py-5 flex flex-row justify-between items-center sm:rounded-t-3xl">
             <DialogTitle className="text-2xl font-semibold text-neutral-900 font-sans!">

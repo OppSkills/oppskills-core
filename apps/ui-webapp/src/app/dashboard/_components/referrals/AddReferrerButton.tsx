@@ -22,12 +22,14 @@ export const AddReferrerButton: React.FC<{
         Add Referrer
       </Button>
 
-      <AddReferrerModal
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        entityType={entityType}
-        entityId={entityId}
-      />
+      {isOpen ? (
+        <AddReferrerModal
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          entityType={entityType}
+          entityId={entityId}
+        />
+      ) : null}
     </>
   );
 };
