@@ -23,7 +23,7 @@ import { AdminPayoutsController } from './admin-payouts.controller';
 import { PaymentRegistrationEscrowService } from './payment-registration-escrow.service';
 
 @Module({
-  imports: [forwardRef(() => EventModule), ReferralModule],
+  imports: [forwardRef(() => EventModule), forwardRef(() => ReferralModule)],
   controllers: [
     PaymentsRouteController,
     RazorpayWebhookController,

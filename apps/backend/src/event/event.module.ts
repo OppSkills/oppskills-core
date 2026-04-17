@@ -20,7 +20,7 @@ import { ReferralModule } from 'src/referral/referral.module';
     AnalyticsModule,
     forwardRef(() => PaymentsModule),
     forwardRef(() => HackathonModule),
-    ReferralModule,
+    forwardRef(() => ReferralModule),
   ],
   controllers: [
     EventController,
