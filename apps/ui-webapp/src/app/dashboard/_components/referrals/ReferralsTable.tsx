@@ -120,31 +120,47 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
         cell: (info) => {
           const row = info.row.original;
           return (
-            <Link href={`${baseUrl}/${row.id}`} className="flex items-center gap-4 py-2 group/name cursor-pointer">
-              <Avatar className="w-12 h-12 rounded-full border border-neutral-100 group-hover/name:border-primary-200 transition-colors">
-                <AvatarImage src={row.avatarUrl} className="object-cover" />
-                <AvatarFallback>{row.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col gap-0.5">
-                <span className="font-bold text-neutral-900 text-base group-hover/name:text-primary-800 transition-colors">{row.name}</span>
-                <span className="text-xs text-neutral-500 font-medium">{row.email}</span>
-                <div className="flex items-center gap-2 mt-1" onClick={(e) => e.stopPropagation()}>
-                  <span className="text-xs text-blue-600 font-medium">{row.referralLink}</span>
+            <div className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:gap-4">
+              <Link
+                href={`${baseUrl}/${row.id}`}
+                className="flex min-w-0 shrink-0 items-center gap-4 group/name cursor-pointer"
+              >
+                <Avatar className="w-12 h-12 shrink-0 rounded-full border border-neutral-100 group-hover/name:border-primary-200 transition-colors">
+                  <AvatarImage src={row.avatarUrl} className="object-cover" />
+                  <AvatarFallback>{row.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-bold text-neutral-900 text-base group-hover/name:text-primary-800 transition-colors">
+                    {row.name}
+                  </span>
+                  <span className="text-xs text-neutral-500 font-medium">{row.email}</span>
+                </div>
+              </Link>
+              <div className="flex min-w-0 flex-1 flex-col gap-1 sm:justify-center">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="break-all text-xs font-medium text-blue-600">{row.referralLink}</span>
                   <button
+                    type="button"
                     onClick={() => {
-                      navigator.clipboard.writeText(row.referralLink);
+                      void navigator.clipboard.writeText(row.referralLink);
                       toast.success("Link copied!");
                     }}
                     className="text-neutral-400 hover:text-neutral-600"
+                    aria-label="Copy referral link"
                   >
                     <Copy size={14} />
                   </button>
-                  <button className="text-neutral-400 hover:text-neutral-600">
+                  <button
+                    type="button"
+                    onClick={() => window.open(row.referralLink, "_blank", "noopener,noreferrer")}
+                    className="text-neutral-400 hover:text-neutral-600"
+                    aria-label="Open referral link in new tab"
+                  >
                     <ExternalLink size={14} />
                   </button>
                 </div>
               </div>
-            </Link>
+            </div>
           );
         },
       },

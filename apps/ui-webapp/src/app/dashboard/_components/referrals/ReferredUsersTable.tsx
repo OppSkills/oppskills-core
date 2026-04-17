@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { memo, useMemo } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -31,9 +31,9 @@ export interface ReferredUserData {
   status: "Registered" | "Participated" | "Waitlisted";
 }
 
-export const ReferredUsersTable: React.FC<{ referralId: string }> = ({ referralId }) => {
+export const ReferredUsersTable = memo(function ReferredUsersTable({ referralId }: { referralId: string }) {
   const { data } = useReferralRegistrations(referralId);
-  const rows = (data?.data ?? []) as ReferredUserData[];
+  const rows = useMemo(() => (data?.data ?? []) as ReferredUserData[], [data?.data]);
   const columns = useMemo<ColumnDef<ReferredUserData>[]>(
     () => [
       {
@@ -148,4 +148,4 @@ export const ReferredUsersTable: React.FC<{ referralId: string }> = ({ referralI
       </Table>
     </div>
   );
-};
+});

@@ -1,19 +1,10 @@
-import { Loader2 } from "lucide-react";
 import { Suspense } from "react";
 import { auth } from "@clerk/nextjs/server";
 import { getEventBySlug } from "@/lib/api/eventApi";
 import { AddReferrerButton } from "@/app/dashboard/_components/referrals/AddReferrerButton";
 import { ReferralsTable } from "@/app/dashboard/_components/referrals/ReferralsTable";
 import { ReferralAnalyticsCards } from "@/app/dashboard/_components/referrals/ReferralAnalyticsCards";
-
-// Helper components
-function AnalyticsLoader() {
-    return (
-        <div className="flex h-40 w-full items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-    );
-}
+import { ReferralsAnalyticsLoader } from "@/app/dashboard/_components/referrals/ReferralsAnalyticsLoader";
 
 async function getEventData(token: string, slug: string) {
     try {
@@ -53,7 +44,7 @@ export default async function ReferralsPage(props: {
                 </div>
 
                 {/* Analytics Cards */}
-                <Suspense fallback={<AnalyticsLoader />}>
+                <Suspense fallback={<ReferralsAnalyticsLoader />}>
                     <ReferralAnalyticsCards entityType="EVENT" entityId={event.id} />
                 </Suspense>
 
