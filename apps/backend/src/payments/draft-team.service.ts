@@ -15,6 +15,7 @@ import {
 } from '@oppskills/db';
 import { Logger } from 'src/_utils/logger';
 import { EMAIL_EVENTS } from 'src/email/email.events';
+import { ReferralService } from 'src/referral/referral.service';
 
 /**
  * Get max team size from participant type.
@@ -58,7 +59,10 @@ function getMaxSizeFromParticipantType(participantType: string): number {
 export class DraftTeamService {
   private readonly logger = new Logger(DraftTeamService.name);
 
-  constructor(private readonly eventEmitter: EventEmitter2) {}
+  constructor(
+    private readonly eventEmitter: EventEmitter2,
+    private readonly referralService: ReferralService,
+  ) {}
 
   private buildUserDisplayName(user: {
     firstName?: string | null;
@@ -214,8 +218,14 @@ export class DraftTeamService {
     teamId?: string;
     invitationCode?: string;
     userId: string;
+    /**
+     * Optional referral attribution. Persisted on TeamMemberEntity.referralId
+     * so the referrer dashboard can list this join. Callers resolve/validate
+     * the code before passing it (see ReferralService.resolveForRegistration).
+     */
+    referralId?: string | null;
   }) {
-    const { teamId, invitationCode, userId } = params;
+    const { teamId, invitationCode, userId, referralId } = params;
 
     if (!teamId && !invitationCode) {
       throw new BadRequestException(
@@ -353,6 +363,23 @@ export class DraftTeamService {
         },
       },
     });
+
+    // Atomic attribution: only bump counter when we actually claim referralId on this row.
+    if (referralId) {
+      const attributed = await prisma.teamMemberEntity.updateMany({
+        where: { id: member.id, referralId: null },
+        data: { referralId },
+      });
+      if (attributed.count > 0) {
+        try {
+          await this.referralService.markRegistrationAttributed(referralId);
+        } catch (err) {
+          this.logger.warn(
+            `Referral counter increment after draft join failed: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+      }
+    }
 
     this.logger.log(`User ${userId} joined draft team ${team.id}`);
 

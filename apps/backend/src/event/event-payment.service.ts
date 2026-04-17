@@ -17,6 +17,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { computeRazorpayGatewayFee } from '../payments/payment-gateway-fee.util';
 import { extractMobileFromRegistrationFieldAnswers } from '../_utils/extract-mobile-from-registration-field-answers';
 import { syncUserOnboardingMobileFromRegistration } from '../_utils/sync-user-onboarding-mobile';
+import { ReferralService } from '../referral/referral.service';
+import { ReferralEntityTypeDto } from '@oppskills/types';
 
 @Injectable()
 export class EventPaymentService {
@@ -26,6 +28,7 @@ export class EventPaymentService {
     private readonly razorpayService: RazorpayService,
     private readonly eventEmitter: EventEmitter2,
     private readonly paymentEscrowService: PaymentRegistrationEscrowService,
+    private readonly referralService: ReferralService,
   ) { }
 
   /**
@@ -38,6 +41,12 @@ export class EventPaymentService {
     discountCode?: string;
     /** Escrowed server-side for verify/webhook when client omits answers */
     answers?: Array<{ fieldId: string; value: string }>;
+    /**
+     * Referral code from /r/<code> link (oppskills_ref cookie). Persisted on
+     * Razorpay order notes so attribution survives redirects / webhooks.
+     * Silently ignored if invalid / mismatched.
+     */
+    referralCode?: string;
   }) {
     const event = await prisma.eventEntity.findUnique({
       where: { slug: params.eventSlug, isDeleted: false },
@@ -57,6 +66,7 @@ export class EventPaymentService {
         ownerId: true,
         maxUsers: true,
         registrationCount: true,
+        festivalId: true,
       },
     });
 
@@ -253,6 +263,9 @@ export class EventPaymentService {
       payerUserId: params.userId,
       type: 'event_registration',
     };
+    if (params.referralCode) {
+      orderNotes.referralCode = params.referralCode;
+    }
 
     const razorpayOrder = await this.razorpayService.createOrder({
       amountPaise: grossAmountPaise,
@@ -412,6 +425,11 @@ export class EventPaymentService {
     razorpaySignature: string;
     userId: string;
     answers?: Array<{ fieldId: string; value: string | number | string[] }>;
+    /**
+     * Optional referral code fallback. Primary source is Razorpay order notes
+     * (set at createPaymentOrder time). Silently ignored if invalid.
+     */
+    referralCode?: string;
   }) {
     const payment = await prisma.eventPaymentEntity.findUnique({
       where: { razorpayOrderId: params.razorpayOrderId },
@@ -422,6 +440,7 @@ export class EventPaymentService {
             slug: true,
             name: true,
             passSendingMode: true,
+            festivalId: true,
             registrationForm: {
               include: {
                 fields: true,
@@ -445,6 +464,15 @@ export class EventPaymentService {
       params.userId,
       params.answers,
     );
+
+    // Resolve referral code (DTO → Razorpay notes fallback). Best-effort only.
+    const referralId = await this.resolveReferralForEventPayment({
+      userId: params.userId,
+      eventId: payment.event.id,
+      festivalId: payment.event.festivalId,
+      razorpayOrderId: params.razorpayOrderId,
+      dtoReferralCode: params.referralCode,
+    });
 
     if (
       !mergedAnswers.length &&
@@ -520,6 +548,11 @@ export class EventPaymentService {
       await this.paymentEscrowService.deleteByRazorpayOrderId(
         params.razorpayOrderId,
       );
+
+      await this.attributeEventReferralIfNew({
+        referralId,
+        participantId: existingParticipant.id,
+      });
 
       return {
         success: true,
@@ -604,6 +637,7 @@ export class EventPaymentService {
             approved: isImmediate,
             approvedAt: isImmediate ? new Date() : null,
             passEmailSent: false,
+            ...(referralId ? { referralId } : {}),
           },
         });
 
@@ -681,6 +715,12 @@ export class EventPaymentService {
         });
       }
 
+      // Attribute referral (atomic check-and-set + idempotent counter bump).
+      await this.attributeEventReferralIfNew({
+        referralId,
+        participantId: result.participantId,
+      });
+
       await this.syncOnboardingMobileFromEventVerify(
         params.userId,
         mappedAnswers,
@@ -745,6 +785,11 @@ export class EventPaymentService {
             params.razorpayOrderId,
           );
 
+          await this.attributeEventReferralIfNew({
+            referralId,
+            participantId: raceParticipant.id,
+          });
+
           return {
             success: true,
             paymentId: payment.id,
@@ -754,6 +799,69 @@ export class EventPaymentService {
       }
 
       throw error;
+    }
+  }
+
+  /**
+   * Resolve a referral code for an event payment flow. Order of precedence:
+   * explicit DTO `referralCode`, then Razorpay `order.notes.referralCode`
+   * (set at createPaymentOrder time). Returns null on any failure / mismatch.
+   */
+  private async resolveReferralForEventPayment(input: {
+    userId: string;
+    eventId: string;
+    festivalId: string | null;
+    razorpayOrderId: string;
+    dtoReferralCode?: string;
+  }): Promise<string | null> {
+    let code = input.dtoReferralCode?.trim() || null;
+    if (!code) {
+      try {
+        const order = await this.razorpayService.fetchOrder(
+          input.razorpayOrderId,
+        );
+        const fromNotes = order?.notes?.referralCode;
+        if (fromNotes) code = fromNotes;
+      } catch {
+        // Razorpay fetch can fail on synthetic / zero-amount orders.
+      }
+    }
+    if (!code) return null;
+    try {
+      return await this.referralService.resolveForRegistration({
+        code,
+        userId: input.userId,
+        expectedEntityType: ReferralEntityTypeDto.EVENT,
+        expectedEntityId: input.eventId,
+        parentFestivalId: input.festivalId,
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Idempotent attribution helper: atomically sets `referralId` on the
+   * EventParticipantEntity only if it is currently null, and bumps the
+   * referral counter exactly once. Safe to call from both verify and webhook.
+   */
+  private async attributeEventReferralIfNew(input: {
+    referralId: string | null;
+    participantId: string;
+  }): Promise<void> {
+    if (!input.referralId) return;
+    try {
+      const res = await prisma.eventParticipantEntity.updateMany({
+        where: { id: input.participantId, referralId: null },
+        data: { referralId: input.referralId },
+      });
+      if (res.count > 0) {
+        await this.referralService.markRegistrationAttributed(input.referralId);
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Event referral attribution best-effort failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 

@@ -109,6 +109,19 @@ export class CreateEventPaymentOrderDto {
   @ValidateNested({ each: true })
   @Type(() => CreateEventPaymentOrderAnswerDto)
   answers?: CreateEventPaymentOrderAnswerDto[];
+
+  /**
+   * Referral code from the /r/<code> link (oppskills_ref cookie on web).
+   * Persisted on Razorpay order notes so attribution survives mobile-redirect
+   * / webhook flows. Optional; silently ignored if invalid or mismatched.
+   */
+  @ApiPropertyOptional({
+    description: "Referral code to attribute the registration to",
+    example: "Ab12Cd34Ef",
+  })
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }
 
 // =============================================================================
@@ -154,6 +167,19 @@ export class VerifyEventPaymentDto {
   @IsOptional()
   @IsArray()
   answers?: Array<{ fieldId: string; value: string | number | string[] }>;
+
+  /**
+   * Optional referral code fallback. Primary source is Razorpay order notes
+   * (set at createPaymentOrder time) so this is here only for clients that
+   * forward the cookie value at verify time (e.g. desktop handler callback).
+   */
+  @ApiPropertyOptional({
+    description: "Referral code to attribute the registration to",
+    example: "Ab12Cd34Ef",
+  })
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }
 
 // =============================================================================

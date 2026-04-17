@@ -21,6 +21,8 @@ import { syncUserOnboardingMobileFromRegistration } from '../_utils/sync-user-on
 import { EMAIL_EVENTS } from '../email/email.events';
 import type { EventJoinedEventPayload } from '../email/email.events';
 import { AnalyticsService } from 'src/analytics/analytics.service';
+import { ReferralService } from 'src/referral/referral.service';
+import { ReferralEntityTypeDto } from '@oppskills/types';
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 type LifecycleStatus =
@@ -41,7 +43,8 @@ export class EventService {
     private readonly googleSheetsService: GoogleSheetsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
-  ) { }
+    private readonly referralService: ReferralService,
+  ) {}
 
   /**
    * Create an event as a user.
@@ -1046,6 +1049,7 @@ export class EventService {
     eventId: string,
     userId: string,
     answers?: Array<{ fieldId: string; value: string | number | string[] }>,
+    referralCode?: string,
   ) {
     const event = await prisma.eventEntity.findUnique({
       where: { id: eventId, isDeleted: false },
@@ -1060,6 +1064,7 @@ export class EventService {
         locationCity: true,
         locationVirtualLink: true,
         ownerId: true,
+        festivalId: true,
         status: true,
         approvalStatus: true,
         isRegistrationPaused: true,
@@ -1577,6 +1582,14 @@ export class EventService {
       this.validateCollegeEligibility(event, user);
     }
 
+    const referralId = await this.referralService.resolveForRegistration({
+      code: referralCode,
+      userId,
+      expectedEntityType: ReferralEntityTypeDto.EVENT,
+      expectedEntityId: eventId,
+      parentFestivalId: event.festivalId,
+    });
+
     // Check capacity (use transaction for atomic update)
     const result = await prisma.$transaction(async (tx) => {
       // Re-fetch within transaction to ensure consistency
@@ -1600,6 +1613,7 @@ export class EventService {
         data: {
           eventId,
           userId,
+          referralId,
           approved: isImmediate,
           approvedAt: isImmediate ? new Date() : null,
           passEmailSent: false, // Will be set by email listener
@@ -1693,6 +1707,10 @@ export class EventService {
         participantId: result.participantId,
         passSendingMode: event.passSendingMode,
       });
+    }
+
+    if (referralId) {
+      await this.referralService.markRegistrationAttributed(referralId);
     }
 
     return { message: 'Successfully joined the event.' };

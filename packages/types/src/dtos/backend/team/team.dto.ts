@@ -105,6 +105,13 @@ export class CreateTeamDto {
   @ValidateNested({ each: true })
   @Type(() => RegistrationAnswerDto)
   answers?: RegistrationAnswerDto[];
+
+  @ApiPropertyOptional({
+    description: 'Referral code captured from referral link cookie',
+  })
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }
 
 /**
@@ -136,4 +143,11 @@ export class JoinTeamDto {
   @ValidateNested({ each: true })
   @Type(() => RegistrationAnswerDto)
   answers?: RegistrationAnswerDto[];
+
+  @ApiPropertyOptional({
+    description: 'Referral code captured from referral link cookie',
+  })
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }

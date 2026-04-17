@@ -12,6 +12,12 @@ import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/events");
 
+function getReferralCodeFromCookie(): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const match = document.cookie.match(/(?:^|;\s*)oppskills_ref=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 // =====================
 // Public API Functions (no auth required)
 // =====================
@@ -385,6 +391,7 @@ export interface JoinEventPayload {
     fieldId: string;
     value: string | number | string[];
   }>;
+  referralCode?: string;
 }
 
 /**
@@ -395,9 +402,14 @@ export async function joinEvent(
   id: string,
   data?: JoinEventPayload,
 ): Promise<unknown> {
-  const res = await API.post(`/${id}/join`, data ?? {}, {
+  const referralCode = data?.referralCode ?? getReferralCodeFromCookie();
+  const payload = { ...(data ?? {}), ...(referralCode ? { referralCode } : {}) };
+  const res = await API.post(`/${id}/join`, payload, {
     headers: buildAuthHeaders(token),
   });
+  if (typeof document !== "undefined" && referralCode) {
+    document.cookie = "oppskills_ref=; Path=/; Max-Age=0";
+  }
   return res.data as unknown;
 }
 
@@ -692,11 +704,18 @@ export async function createEventPaymentOrder(
   params: {
     discountCode?: string;
     answers?: Array<{ fieldId: string; value: string }>;
+    /**
+     * Referral code. Defaults to the `oppskills_ref` cookie if unset.
+     * Persisted to Razorpay order notes so attribution survives redirects.
+     */
+    referralCode?: string;
   },
 ): Promise<EventPaymentOrderResponse> {
+  const referralCode = params.referralCode ?? getReferralCodeFromCookie();
+  const body = { ...params, ...(referralCode ? { referralCode } : {}) };
   const res = await API.post(
     `/${encodeURIComponent(eventSlug)}/payment/order`,
-    params,
+    body,
     { headers: buildAuthHeaders(token) },
   );
   return res.data as EventPaymentOrderResponse;
@@ -713,13 +732,20 @@ export async function verifyEventPayment(
     razorpayPaymentId: string;
     razorpaySignature: string;
     answers?: Array<{ fieldId: string; value: string | number | string[] }>;
+    /** Fallback referral code (primary source is Razorpay notes). */
+    referralCode?: string;
   },
 ): Promise<EventPaymentVerifyResponse> {
+  const referralCode = params.referralCode ?? getReferralCodeFromCookie();
+  const body = { ...params, ...(referralCode ? { referralCode } : {}) };
   const res = await API.post(
     `/${encodeURIComponent(eventSlug)}/payment/verify`,
-    params,
+    body,
     { headers: buildAuthHeaders(token) },
   );
+  if (typeof document !== "undefined" && referralCode) {
+    document.cookie = "oppskills_ref=; Path=/; Max-Age=0";
+  }
   return res.data as EventPaymentVerifyResponse;
 }
 

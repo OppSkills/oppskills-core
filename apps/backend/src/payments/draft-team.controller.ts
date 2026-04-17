@@ -11,11 +11,17 @@ import {
 import { ClerkAuthGuard } from 'src/common/clerk-auth.guard';
 import { DraftTeamService } from './draft-team.service';
 import { CreateDraftTeamDto, JoinDraftTeamDto, LeaveDraftTeamDto } from './dto';
+import { ReferralService } from '../referral/referral.service';
+import { ReferralEntityTypeDto } from '@oppskills/types';
+import { prisma } from '@oppskills/db';
 
 @Controller('hackathons')
 @UseGuards(ClerkAuthGuard)
 export class DraftTeamController {
-  constructor(private readonly draftTeamService: DraftTeamService) {}
+  constructor(
+    private readonly draftTeamService: DraftTeamService,
+    private readonly referralService: ReferralService,
+  ) {}
 
   @Post(':slug/teams/draft')
   async createDraftTeam(
@@ -33,13 +39,38 @@ export class DraftTeamController {
 
   @Post(':slug/teams/draft/join')
   async joinDraftTeam(
+    @Param('slug') slug: string,
     @Body() body: JoinDraftTeamDto,
     @Req() req: { user: { id: string } },
   ) {
+    // Best-effort referral resolution — never blocks the join if the code is
+    // invalid / mismatched; passes a nullable referralId down to the service.
+    let referralId: string | null = null;
+    if (body.referralCode) {
+      try {
+        const hackathon = await prisma.hackathonEntity.findUnique({
+          where: { slug, isDeleted: false },
+          select: { id: true, festivalId: true },
+        });
+        if (hackathon) {
+          referralId = await this.referralService.resolveForRegistration({
+            code: body.referralCode,
+            userId: req.user.id,
+            expectedEntityType: ReferralEntityTypeDto.HACKATHON,
+            expectedEntityId: hackathon.id,
+            parentFestivalId: hackathon.festivalId,
+          });
+        }
+      } catch {
+        referralId = null;
+      }
+    }
+
     return this.draftTeamService.joinDraftTeam({
       userId: req.user.id,
       teamId: body.teamId,
       invitationCode: body.invitationCode,
+      referralId,
     });
   }
 

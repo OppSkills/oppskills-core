@@ -966,6 +966,13 @@ export class JoinEventDto {
   @ValidateNested({ each: true })
   @Type(() => EventRegistrationAnswerDto)
   answers?: EventRegistrationAnswerDto[];
+
+  @ApiPropertyOptional({
+    description: "Referral code captured from referral link cookie",
+  })
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }
 
 /**

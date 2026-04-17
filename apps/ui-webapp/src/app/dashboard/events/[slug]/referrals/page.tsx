@@ -2,14 +2,9 @@ import { Loader2 } from "lucide-react";
 import { Suspense } from "react";
 import { auth } from "@clerk/nextjs/server";
 import { getEventBySlug } from "@/lib/api/eventApi";
-import AnalyticCard from "@/app/dashboard/_components/AnalyticCard";
-import {
-    MotionContainer,
-    MotionItem,
-} from "@/components/ui/derived/MotionWrapper";
-
 import { AddReferrerButton } from "@/app/dashboard/_components/referrals/AddReferrerButton";
 import { ReferralsTable } from "@/app/dashboard/_components/referrals/ReferralsTable";
+import { ReferralAnalyticsCards } from "@/app/dashboard/_components/referrals/ReferralAnalyticsCards";
 
 // Helper components
 function AnalyticsLoader() {
@@ -22,10 +17,10 @@ function AnalyticsLoader() {
 
 async function getEventData(token: string, slug: string) {
     try {
-        const event = (await getEventBySlug(token, slug)) as { name: string };
+        const event = (await getEventBySlug(token, slug)) as { name: string; id: string };
         return event;
     } catch (e) {
-        return { name: "Event" };
+        return { name: "Event", id: "" };
     }
 }
 
@@ -53,72 +48,24 @@ export default async function ReferralsPage(props: {
                         </p>
                     </div>
                     <div className="right self-end md:self-auto w-full sm:w-auto">
-                        <AddReferrerButton />
+                        <AddReferrerButton entityType="EVENT" entityId={event.id} />
                     </div>
                 </div>
 
                 {/* Analytics Cards */}
                 <Suspense fallback={<AnalyticsLoader />}>
-                    <ReferralCardsSection />
+                    <ReferralAnalyticsCards entityType="EVENT" entityId={event.id} />
                 </Suspense>
 
                 {/* Referrals Table */}
                 <div className="w-full">
-                    <ReferralsTable baseUrl={`/dashboard/events/${slug}/referrals`} />
+                    <ReferralsTable
+                        baseUrl={`/dashboard/events/${slug}/referrals`}
+                        entityType="EVENT"
+                        entityId={event.id}
+                    />
                 </div>
             </div>
         </div>
-    );
-}
-
-function ReferralCardsSection() {
-    // Mock data as requested since backend doesn't exist yet
-    const referralData = [
-        {
-            type: "highlight" as const,
-            title: "Referred Participants",
-            value: "80",
-            badge: "Total registration",
-            badgeValue: "340",
-        },
-        {
-            type: "normal" as const,
-            title: "Referral Impressions",
-            value: "12,000",
-            badge: "Total Impressions",
-            badgeValue: "15,000",
-        },
-        {
-            type: "normal" as const,
-            title: "Referral Users",
-            value: "10",
-            badge: "Total Referral Users",
-            badgeValue: "20",
-        },
-        {
-            type: "normal" as const,
-            title: "Referral Link Generated",
-            value: "15",
-            badge: "Active Links",
-            badgeValue: "10",
-        },
-    ];
-
-    return (
-        <MotionContainer className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {referralData.map((item, index) => (
-                <MotionItem key={index}>
-                    <AnalyticCard
-                        type={item.type}
-                        title={item.title}
-                        value={item.value}
-                        badge={item.badge}
-                        badgeValue={item.badgeValue}
-                        className="h-full"
-                    />
-                </MotionItem>
-            ))}
-
-        </MotionContainer>
     );
 }

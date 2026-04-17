@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
+  ColumnDef,
   flexRender,
   getCoreRowModel,
-  useReactTable,
   getFilteredRowModel,
   getPaginationRowModel,
-  ColumnDef,
+  useReactTable,
 } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,6 +26,8 @@ import { Copy, ExternalLink, Trash2, Maximize2 } from "lucide-react";
 import { SortFromTopToBottom } from "@solar-icons/react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useDeleteReferral, useReferrals } from "@/hooks/useReferrals";
+import type { ReferralEntityType } from "@/lib/api/referralApi";
 
 interface ReferrerData {
   id: string;
@@ -41,83 +43,32 @@ interface ReferrerData {
 
 interface ReferralsTableProps {
   baseUrl: string;
+  entityType: ReferralEntityType;
+  entityId: string;
 }
-
-const MOCK_DATA: ReferrerData[] = [
-  {
-    id: "1",
-    name: "Ananya Sharma",
-    email: "ananya.sharma@brightwave.io",
-    avatarUrl: "https://i.pravatar.cc/150?u=1",
-    referralLink: "www.oppskills.com/re/4dfgtr5",
-    clicks: 987,
-    clicksRecent: 85,
-    registrations: 20,
-    registrationsRecent: 5,
-  },
-  {
-    id: "2",
-    name: "Rohit Verma",
-    email: "rohit.verma@brightwave.io",
-    avatarUrl: "https://i.pravatar.cc/150?u=2",
-    referralLink: "www.oppskills.com/re/7hjklm8",
-    clicks: 4567,
-    clicksRecent: 320,
-    registrations: 35,
-    registrationsRecent: 12,
-  },
-  {
-    id: "3",
-    name: "Suhani Mehta",
-    email: "suhani.mehta@brightwave.io",
-    avatarUrl: "https://i.pravatar.cc/150?u=3",
-    referralLink: "www.oppskills.com/re/9plmno3",
-    clicks: 3021,
-    clicksRecent: 270,
-    registrations: 50,
-    registrationsRecent: 18,
-  },
-  {
-    id: "4",
-    name: "Amitabh Singh",
-    email: "amitabh.singh@brightwave.io",
-    avatarUrl: "https://i.pravatar.cc/150?u=4",
-    referralLink: "www.oppskills.com/re/2xzcvb7",
-    clicks: 789,
-    clicksRecent: 60,
-    registrations: 80,
-    registrationsRecent: 15,
-  },
-  {
-    id: "5",
-    name: "Neha Kapoor",
-    email: "neha.kapoor@brightwave.io",
-    avatarUrl: "https://i.pravatar.cc/150?u=5",
-    referralLink: "www.oppskills.com/re/5qwerz1",
-    clicks: 1543,
-    clicksRecent: 110,
-    registrations: 65,
-    registrationsRecent: 20,
-  },
-  {
-    id: "6",
-    name: "Karan Malhotra",
-    email: "karan.malhotra@brightwave.io",
-    avatarUrl: "https://i.pravatar.cc/150?u=6",
-    referralLink: "www.oppskills.com/re/8tyuio6",
-    clicks: 2200,
-    clicksRecent: 180,
-    registrations: 95,
-    registrationsRecent: 22,
-  },
-];
-
-interface ReferralsTableProps {
-  baseUrl: string;
-}
-
-export const ReferralsTable: React.FC<ReferralsTableProps> = ({ baseUrl }) => {
+export const ReferralsTable: React.FC<ReferralsTableProps> = ({
+  baseUrl,
+  entityType,
+  entityId,
+}) => {
   const [rowSelection, setRowSelection] = useState({});
+  const { data } = useReferrals(entityType, entityId);
+  const deleteMutation = useDeleteReferral(entityType, entityId);
+  const rows: ReferrerData[] = (data?.data ?? []).map((row) => ({
+    id: row.id,
+    name:
+      [row.referrer.firstName, row.referrer.lastName].filter(Boolean).join(" ") ||
+      "Referrer",
+    email: row.referrer.email,
+    avatarUrl: row.referrer.imageUrl ?? "",
+    referralLink: `${
+      typeof window !== "undefined" ? window.location.origin : "https://www.oppskills.com"
+    }/r/${row.code}`,
+    clicks: row.clicksCount,
+    clicksRecent: row.clicksRecent ?? 0,
+    registrations: row.registrationsCount,
+    registrationsRecent: row.registrationsRecent ?? 0,
+  }));
 
   const columns = useMemo<ColumnDef<ReferrerData>[]>(
     () => [
@@ -247,9 +198,12 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = ({ baseUrl }) => {
       {
         id: "delete",
         header: "Delete",
-        cell: () => (
+        cell: (info) => (
           <div className="flex justify-center">
-            <button className="text-red-500 hover:text-red-700 transition-colors p-2">
+            <button
+              className="text-red-500 hover:text-red-700 transition-colors p-2"
+              onClick={() => deleteMutation.mutate(info.row.original.id)}
+            >
               <Trash2 size={20} />
             </button>
           </div>
@@ -260,7 +214,7 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = ({ baseUrl }) => {
   );
 
   const table = useReactTable({
-    data: MOCK_DATA,
+    data: rows,
     columns,
     state: {
       rowSelection,

@@ -1,0 +1,118 @@
+import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { prisma } from '@oppskills/db';
+import Redis from 'ioredis';
+import { createHash } from 'crypto';
+
+@Injectable()
+export class ReferralCounterService implements OnModuleDestroy {
+  private readonly logger = new Logger(ReferralCounterService.name);
+  private readonly flushInterval: NodeJS.Timeout;
+
+  constructor(@Inject('REDIS') private readonly redis: Redis) {
+    this.flushInterval = setInterval(() => {
+      this.flushToDb().catch((err) =>
+        this.logger.error('Failed to flush referral counters', err),
+      );
+    }, 60_000);
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.flushInterval);
+  }
+
+  private hashIp(ip: string): string {
+    const salt = process.env.REFERRAL_IP_SALT || 'oppskills-referrals';
+    return createHash('sha256').update(`${ip}:${salt}`).digest('hex');
+  }
+
+  async trackClick(params: {
+    referralId: string;
+    ip: string;
+    userAgent?: string;
+    source?: string;
+    isBot: boolean;
+  }): Promise<void> {
+    const ipHash = this.hashIp(params.ip || 'unknown');
+    const userAgentHash = createHash('sha256')
+      .update(params.userAgent || 'unknown')
+      .digest('hex');
+    await prisma.referralClickEntity.create({
+      data: {
+        referralId: params.referralId,
+        ipHash,
+        userAgentHash,
+        source: params.source,
+        isBot: params.isBot,
+      },
+    });
+
+    if (params.isBot) return;
+
+    const rateKey = `ref:ip:${ipHash}:${params.referralId}`;
+    const rate = await this.redis.incr(rateKey);
+    if (rate === 1) await this.redis.expire(rateKey, 3600);
+    if (rate > 10) return;
+
+    const now = Date.now();
+    await Promise.all([
+      this.redis.incr(`ref:c:${params.referralId}`),
+      this.redis.incr(`ref:h:${params.referralId}`),
+      this.redis.zadd(`ref:c24:${params.referralId}`, now, `${now}`),
+      this.redis.expire(`ref:c24:${params.referralId}`, 60 * 60 * 24 * 2),
+    ]);
+  }
+
+  async incrementRegistration(referralId: string): Promise<void> {
+    await this.redis.incr(`ref:reg:${referralId}`);
+  }
+
+  async getClicksLast24h(referralId: string): Promise<number> {
+    const now = Date.now();
+    const start = now - 24 * 60 * 60 * 1000;
+    const key = `ref:c24:${referralId}`;
+    await this.redis.zremrangebyscore(key, 0, start);
+    const count = await this.redis.zcount(key, start, now);
+    return Number(count || 0);
+  }
+
+  async flushToDb(): Promise<void> {
+    const stream = this.redis.scanStream({ match: 'ref:*:*', count: 200 });
+    for await (const keys of stream) {
+      for (const key of keys) {
+        const [kind, metric, referralId] = key.split(':');
+        if (kind !== 'ref' || !referralId || metric === 'c24') continue;
+        const value = await this.redis.eval(
+          "local v = redis.call('GET', KEYS[1]); redis.call('DEL', KEYS[1]); return v",
+          1,
+          key,
+        );
+        if (!value) continue;
+        const count = Number(value);
+        if (!Number.isFinite(count) || count <= 0) continue;
+
+        if (metric === 'c') {
+          await prisma.referralEntity.update({
+            where: { id: referralId },
+            data: { clicksCount: { increment: count }, lastClickAt: new Date() },
+          });
+        } else if (metric === 'h') {
+          await prisma.referralEntity.update({
+            where: { id: referralId },
+            data: {
+              humanClicksCount: { increment: count },
+              lastClickAt: new Date(),
+            },
+          });
+        } else if (metric === 'reg') {
+          await prisma.referralEntity.update({
+            where: { id: referralId },
+            data: {
+              registrationsCount: { increment: count },
+              lastRegistrationAt: new Date(),
+            },
+          });
+        }
+      }
+    }
+  }
+}

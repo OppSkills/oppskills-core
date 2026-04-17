@@ -5,6 +5,12 @@ import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/hackathons");
 
+function getReferralCodeFromCookie(): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const match = document.cookie.match(/(?:^|;\s*)oppskills_ref=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 // =====================
 // Types
 // =====================
@@ -76,6 +82,7 @@ export interface JoinTeamDto {
   teamId?: string;
   invitationCode?: string;
   answers?: Array<{ fieldId: string; value: string | number | string[] }>;
+  referralCode?: string;
 }
 
 // =====================
@@ -89,11 +96,17 @@ export async function createTeam(
   token: string,
   data: CreateTeamDto & {
     answers?: Array<{ fieldId: string; value: string | number | string[] }>;
+    referralCode?: string;
   },
 ): Promise<TeamDetailResponse> {
-  const res = await API.post("/create-team", data, {
+  const referralCode = data.referralCode ?? getReferralCodeFromCookie();
+  const payload = { ...data, ...(referralCode ? { referralCode } : {}) };
+  const res = await API.post("/create-team", payload, {
     headers: buildAuthHeaders(token),
   });
+  if (typeof document !== "undefined" && referralCode) {
+    document.cookie = "oppskills_ref=; Path=/; Max-Age=0";
+  }
   return res.data as TeamDetailResponse;
 }
 
@@ -104,9 +117,14 @@ export async function joinTeam(
   token: string,
   data: JoinTeamDto,
 ): Promise<unknown> {
-  const res = await API.post("/join-team", data, {
+  const referralCode = data.referralCode ?? getReferralCodeFromCookie();
+  const payload = { ...data, ...(referralCode ? { referralCode } : {}) };
+  const res = await API.post("/join-team", payload, {
     headers: buildAuthHeaders(token),
   });
+  if (typeof document !== "undefined" && referralCode) {
+    document.cookie = "oppskills_ref=; Path=/; Max-Age=0";
+  }
   return res.data as unknown;
 }
 
@@ -117,14 +135,19 @@ export async function joinTeamByCode(
   token: string,
   invitationCode: string,
   answers?: Array<{ fieldId: string; value: string | number | string[] }>,
+  referralCode?: string,
 ): Promise<unknown> {
+  const code = referralCode ?? getReferralCodeFromCookie();
   const res = await API.post(
     "/join-team",
-    { invitationCode, answers },
+    { invitationCode, answers, ...(code ? { referralCode: code } : {}) },
     {
       headers: buildAuthHeaders(token),
     },
   );
+  if (typeof document !== "undefined" && code) {
+    document.cookie = "oppskills_ref=; Path=/; Max-Age=0";
+  }
   return res.data as unknown;
 }
 
@@ -248,11 +271,18 @@ export async function joinDraftTeam(
   data: {
     teamId?: string;
     invitationCode?: string;
+    /** Defaults to the `oppskills_ref` cookie when not provided. */
+    referralCode?: string;
   },
 ): Promise<unknown> {
-  const res = await API.post(`/${hackathonSlug}/teams/draft/join`, data, {
+  const referralCode = data.referralCode ?? getReferralCodeFromCookie();
+  const payload = { ...data, ...(referralCode ? { referralCode } : {}) };
+  const res = await API.post(`/${hackathonSlug}/teams/draft/join`, payload, {
     headers: buildAuthHeaders(token),
   });
+  if (typeof document !== "undefined" && referralCode) {
+    document.cookie = "oppskills_ref=; Path=/; Max-Age=0";
+  }
   return res.data;
 }
 

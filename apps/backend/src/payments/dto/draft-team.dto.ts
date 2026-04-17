@@ -27,6 +27,15 @@ export class JoinDraftTeamDto {
   @IsOptional()
   @IsString()
   invitationCode?: string;
+
+  /**
+   * Optional referral code (from `oppskills_ref` cookie). Attributed to the
+   * resulting TeamMemberEntity and counted on the referrer's dashboard.
+   * Silently ignored if invalid / mismatched.
+   */
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }
 
 export class LeaveDraftTeamDto {

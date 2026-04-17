@@ -63,6 +63,15 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @Type(() => CreateOrderAnswerDto)
   answers?: CreateOrderAnswerDto[];
+
+  /**
+   * Referral code from the /r/<code> link (oppskills_ref cookie on web).
+   * Persisted on Razorpay order notes so attribution survives mobile-redirect /
+   * webhook flows. Optional and silently ignored if invalid.
+   */
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }
 
 export class VerifyPaymentDto {
@@ -84,4 +93,13 @@ export class VerifyPaymentDto {
   @ValidateNested({ each: true })
   @Type(() => VerifyPaymentAnswerDto)
   answers?: VerifyPaymentAnswerDto[];
+
+  /**
+   * Optional referral code fallback. Primary source is Razorpay order notes
+   * (set at createPaymentOrder time) so this is here only for clients that
+   * may forward the cookie value at verify time.
+   */
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }

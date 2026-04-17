@@ -602,7 +602,12 @@ export class EventController {
     }
 
     const validId = assertNonEmptyId(id, 'id');
-    return this.eventService.joinEvent(validId, userId, dto.answers);
+    return this.eventService.joinEvent(
+      validId,
+      userId,
+      dto.answers,
+      dto.referralCode,
+    );
   }
 
   @Get(':id/my-registration')

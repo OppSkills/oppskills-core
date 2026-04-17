@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import { useReferralRegistrations } from "@/hooks/useReferrals";
 
 export interface ReferredUserData {
   id: string;
@@ -30,42 +31,9 @@ export interface ReferredUserData {
   status: "Registered" | "Participated" | "Waitlisted";
 }
 
-const MOCK_REFERRED_USERS: ReferredUserData[] = [
-  {
-    id: "r1",
-    name: "Siddharth Malhotra",
-    email: "sid.m@example.com",
-    avatarUrl: "https://i.pravatar.cc/150?u=r1",
-    registrationDate: new Date().toISOString(),
-    status: "Registered",
-  },
-  {
-    id: "r2",
-    name: "Ishita Iyer",
-    email: "ishita.i@example.com",
-    avatarUrl: "https://i.pravatar.cc/150?u=r2",
-    registrationDate: new Date(Date.now() - 86400000).toISOString(),
-    status: "Participated",
-  },
-  {
-    id: "r3",
-    name: "Varun Dhawan",
-    email: "varun.d@example.com",
-    avatarUrl: "https://i.pravatar.cc/150?u=r3",
-    registrationDate: new Date(Date.now() - 172800000).toISOString(),
-    status: "Registered",
-  },
-  {
-    id: "r4",
-    name: "Kriti Sanon",
-    email: "kriti.s@example.com",
-    avatarUrl: "https://i.pravatar.cc/150?u=r4",
-    registrationDate: new Date(Date.now() - 259200000).toISOString(),
-    status: "Waitlisted",
-  },
-];
-
-export const ReferredUsersTable: React.FC = () => {
+export const ReferredUsersTable: React.FC<{ referralId: string }> = ({ referralId }) => {
+  const { data } = useReferralRegistrations(referralId);
+  const rows = (data?.data ?? []) as ReferredUserData[];
   const columns = useMemo<ColumnDef<ReferredUserData>[]>(
     () => [
       {
@@ -129,7 +97,7 @@ export const ReferredUsersTable: React.FC = () => {
   );
 
   const table = useReactTable({
-    data: MOCK_REFERRED_USERS,
+    data: rows,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

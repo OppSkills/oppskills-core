@@ -12,6 +12,7 @@ import { GoogleSheetsModule } from '../google-sheets/google-sheets.module';
 import { AnalyticsModule } from 'src/analytics/analytics.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { HackathonModule } from 'src/hackathon/hackathon.module';
+import { ReferralModule } from 'src/referral/referral.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { HackathonModule } from 'src/hackathon/hackathon.module';
     AnalyticsModule,
     forwardRef(() => PaymentsModule),
     forwardRef(() => HackathonModule),
+    ReferralModule,
   ],
   controllers: [
     EventController,

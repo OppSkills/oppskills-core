@@ -19,6 +19,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
 import { AdminModule } from './admin/admin.module';
 import { OpportunityModule } from './opportunity/opportunity.module';
+import { ReferralModule } from './referral/referral.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { OpportunityModule } from './opportunity/opportunity.module';
     WaitlistModule,
     AdminModule,
     OpportunityModule,
+    ReferralModule,
   ],
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],

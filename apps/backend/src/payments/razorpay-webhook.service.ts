@@ -9,7 +9,14 @@ import { EventPaymentService } from '../event/event-payment.service';
 import { randomBytes } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
-import { prisma, PassSendingMode, RazorpayRouteStatus } from '@oppskills/db';
+import {
+  prisma,
+  PassSendingMode,
+  RazorpayRouteStatus,
+  HackathonPaymentScope,
+} from '@oppskills/db';
+import { ReferralService } from '../referral/referral.service';
+import { ReferralEntityTypeDto } from '@oppskills/types';
 
 function getMaxSizeFromParticipantType(participantType: string): number {
   switch (participantType) {
@@ -99,7 +106,34 @@ export class RazorpayWebhookService {
     private readonly hackathonCheckout: HackathonCheckoutService,
     @Inject(forwardRef(() => EventPaymentService))
     private readonly eventPayment: EventPaymentService,
+    private readonly referralService: ReferralService,
   ) {}
+
+  /**
+   * Resolve referral from Razorpay order notes. Returns null on any failure
+   * so webhook logic is never blocked by referral errors.
+   */
+  private async resolveReferralIdFromNotes(input: {
+    notes: Record<string, string>;
+    userId: string;
+    expectedEntityType: ReferralEntityTypeDto;
+    expectedEntityId: string;
+    parentFestivalId?: string | null;
+  }): Promise<string | null> {
+    const code = input.notes?.referralCode;
+    if (!code) return null;
+    try {
+      return await this.referralService.resolveForRegistration({
+        code,
+        userId: input.userId,
+        expectedEntityType: input.expectedEntityType,
+        expectedEntityId: input.expectedEntityId,
+        parentFestivalId: input.parentFestivalId ?? null,
+      });
+    } catch {
+      return null;
+    }
+  }
 
   async processEvent(eventType: string, payload: RazorpayWebhookPayload) {
     switch (eventType) {
@@ -160,8 +194,12 @@ export class RazorpayWebhookService {
   private async handleEventPaymentCaptured(payload: RazorpayWebhookPayload) {
     const payment = payload.payload?.payment?.entity!;
     const orderId = payment.order_id;
+    const notes = payment.notes || {};
     const paymentRecord = await prisma.eventPaymentEntity.findUnique({
       where: { razorpayOrderId: orderId },
+      include: {
+        event: { select: { festivalId: true } },
+      },
     });
 
     if (!paymentRecord) {
@@ -169,11 +207,24 @@ export class RazorpayWebhookService {
       return;
     }
 
+    const referralId = await this.resolveReferralIdFromNotes({
+      notes,
+      userId: paymentRecord.payerUserId,
+      expectedEntityType: ReferralEntityTypeDto.EVENT,
+      expectedEntityId: paymentRecord.eventId,
+      parentFestivalId: paymentRecord.event?.festivalId ?? null,
+    });
+
     if (paymentRecord.paymentStatus === 'CAPTURED') {
       this.logger.log(`Event payment already captured for order: ${orderId}`);
       await this.eventPayment.trySubmitRegistrationFromEscrowAfterWebhook(
         orderId,
       );
+      await this.attributeEventParticipantReferral({
+        referralId,
+        eventId: paymentRecord.eventId,
+        userId: paymentRecord.payerUserId,
+      });
       return;
     }
 
@@ -236,6 +287,7 @@ export class RazorpayWebhookService {
               userId: paymentRecord.payerUserId,
               approved: isImmediate,
               approvedAt: isImmediate ? new Date() : null,
+              ...(referralId ? { referralId } : {}),
             },
           });
 
@@ -313,7 +365,47 @@ export class RazorpayWebhookService {
       orderId,
     );
 
+    await this.attributeEventParticipantReferral({
+      referralId,
+      eventId: paymentRecord.eventId,
+      userId: paymentRecord.payerUserId,
+      createdParticipantId: participantIdCreated,
+    });
+
     this.logger.log(`Event payment captured for order: ${orderId}`);
+  }
+
+  /**
+   * Atomically set referralId on the participant row if not already set, and
+   * bump the referrer counter exactly once. Safe to call from verify + webhook.
+   */
+  private async attributeEventParticipantReferral(input: {
+    referralId: string | null;
+    eventId: string;
+    userId: string;
+    createdParticipantId?: string | null;
+  }): Promise<void> {
+    if (!input.referralId) return;
+    try {
+      const where = input.createdParticipantId
+        ? { id: input.createdParticipantId, referralId: null }
+        : {
+            eventId: input.eventId,
+            userId: input.userId,
+            referralId: null,
+          };
+      const res = await prisma.eventParticipantEntity.updateMany({
+        where,
+        data: { referralId: input.referralId },
+      });
+      if (res.count > 0) {
+        await this.referralService.markRegistrationAttributed(input.referralId);
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Webhook referral attribution (event) failed best-effort: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   private async handleHackathonPaymentCaptured(
@@ -325,6 +417,9 @@ export class RazorpayWebhookService {
 
     const paymentRecord = await prisma.hackathonPaymentEntity.findUnique({
       where: { razorpayOrderId: orderId },
+      include: {
+        hackathon: { select: { festivalId: true } },
+      },
     });
 
     if (!paymentRecord) {
@@ -334,13 +429,27 @@ export class RazorpayWebhookService {
       return;
     }
 
+    const referralId = await this.resolveReferralIdFromNotes({
+      notes,
+      userId: paymentRecord.payerUserId,
+      expectedEntityType: ReferralEntityTypeDto.HACKATHON,
+      expectedEntityId: paymentRecord.hackathonId,
+      parentFestivalId: paymentRecord.hackathon?.festivalId ?? null,
+    });
+
     // Layer 1 — pre-check: Razorpay can retry webhooks; skip if already processed.
     if (paymentRecord.paymentStatus === 'CAPTURED') {
       this.logger.log(
         `Hackathon payment already captured (pre-check) for order: ${orderId}`,
       );
+      await this.attributeHackathonPerTeamLeaderReferralFromWebhook({
+        paymentId: paymentRecord.id,
+        referralId,
+        scope: paymentRecord.scope,
+      });
       await this.hackathonCheckout.trySubmitRegistrationFromEscrowAfterWebhook(
         orderId,
+        referralId,
       );
       return;
     }
@@ -506,11 +615,51 @@ export class RazorpayWebhookService {
       });
     }
 
+    await this.attributeHackathonPerTeamLeaderReferralFromWebhook({
+      paymentId: paymentRecord.id,
+      referralId,
+      scope: paymentRecord.scope,
+    });
+
     await this.hackathonCheckout.trySubmitRegistrationFromEscrowAfterWebhook(
       orderId,
+      referralId,
     );
 
     this.logger.log(`Hackathon payment captured for order: ${orderId}`);
+  }
+
+  /**
+   * When the webhook creates or links a PER_TEAM team (leader has no member row),
+   * atomically set TeamEntity.referralId once and bump the counter — idempotent
+   * with verifyPayment and safe on webhook retries.
+   */
+  private async attributeHackathonPerTeamLeaderReferralFromWebhook(input: {
+    paymentId: string;
+    referralId: string | null;
+    scope: string;
+  }): Promise<void> {
+    if (!input.referralId || input.scope !== HackathonPaymentScope.TEAM) {
+      return;
+    }
+    try {
+      const p = await prisma.hackathonPaymentEntity.findUnique({
+        where: { id: input.paymentId },
+        select: { teamId: true, payerUserId: true },
+      });
+      if (!p?.teamId) return;
+      const u = await prisma.teamEntity.updateMany({
+        where: { id: p.teamId, referralId: null },
+        data: { referralId: input.referralId },
+      });
+      if (u.count > 0) {
+        await this.referralService.markRegistrationAttributed(input.referralId);
+      }
+    } catch (err) {
+      this.logger.warn(
+        `PER_TEAM leader referral (webhook) best-effort failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   private async handlePaymentFailed(payload: RazorpayWebhookPayload) {

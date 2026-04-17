@@ -41,6 +41,15 @@ enum LifecycleStatus {
   @@schema("oppskills")
 }
 
+enum ReferralEntityType {
+  HACKATHON
+  EVENT
+  FESTIVAL
+
+  @@map("ReferralEntityType")
+  @@schema("oppskills")
+}
+
 enum Visibility {
   PUBLIC
   PRIVATE
@@ -428,6 +437,11 @@ model UserEntity {
   /// Escrowed registration answers for paid checkout (keyed by Razorpay order id)
   paymentRegistrationEscrows PaymentRegistrationEscrowEntity[]
 
+  /// Referral relations
+  referralsCreated ReferralEntity[] @relation("ReferralCreator")
+  referralsAssigned ReferralEntity[] @relation("ReferralReferrer")
+  approvedReferrals ReferralEntity[] @relation("ReferralApprover")
+
   @@map("user")
   @@schema("oppskills")
 }
@@ -745,6 +759,8 @@ model EventParticipantEntity {
   approvedBy      UserEntity? @relation("EventParticipantApprover", fields: [approvedById], references: [id], onDelete: SetNull)
   passEmailSent   Boolean     @default(false) @map("pass_email_sent")
   passEmailSentAt DateTime?   @map("pass_email_sent_at")
+  referralId      String?     @map("referral_id")
+  referral        ReferralEntity? @relation(fields: [referralId], references: [id], onDelete: SetNull)
 
   // Relation to submission (optional, created if answers provided)
   submission EventRegistrationSubmissionEntity?
@@ -761,7 +777,59 @@ model EventParticipantEntity {
   @@unique([eventId, userId])
   @@index([eventId])
   @@index([userId])
+  @@index([referralId])
   @@map("event_participant")
+  @@schema("oppskills")
+}
+
+model ReferralEntity {
+  id             String             @id @default(cuid())
+  code           String             @unique
+  entityType     ReferralEntityType @map("entity_type")
+  entityId       String             @map("entity_id")
+  referrerId     String             @map("referrer_id")
+  referrer       UserEntity         @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  createdById    String             @map("created_by_id")
+  createdBy      UserEntity         @relation("ReferralCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  approvedById   String?            @map("approved_by_id")
+  approvedBy     UserEntity?        @relation("ReferralApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  isActive       Boolean            @default(true) @map("is_active")
+  isDeleted      Boolean            @default(false) @map("is_deleted")
+  deletedAt      DateTime?          @map("deleted_at")
+  clicksCount    Int                @default(0) @map("clicks_count")
+  humanClicksCount Int              @default(0) @map("human_clicks_count")
+  registrationsCount Int            @default(0) @map("registrations_count")
+  lastClickAt    DateTime?          @map("last_click_at")
+  lastRegistrationAt DateTime?      @map("last_registration_at")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  clicks             ReferralClickEntity[]
+  eventParticipants  EventParticipantEntity[]
+  teamMembers        TeamMemberEntity[]
+  teams              TeamEntity[]
+
+  @@unique([entityType, entityId, referrerId])
+  @@index([entityType, entityId])
+  @@index([referrerId])
+  @@index([createdById])
+  @@map("referral")
+  @@schema("oppskills")
+}
+
+model ReferralClickEntity {
+  id            String         @id @default(cuid())
+  referralId    String         @map("referral_id")
+  referral      ReferralEntity @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  ipHash        String         @map("ip_hash")
+  userAgentHash String         @map("user_agent_hash")
+  source        String?
+  isBot         Boolean        @default(false) @map("is_bot")
+  clickedAt     DateTime       @default(now()) @map("clicked_at")
+
+  @@index([referralId, clickedAt])
+  @@index([clickedAt])
+  @@map("referral_click")
   @@schema("oppskills")
 }
 
@@ -949,6 +1017,11 @@ model TeamEntity {
   // Payments for this team (for PER_TEAM charge mode)
   payments HackathonPaymentEntity[]
 
+  /// When set, the PER_TEAM leader registration was attributed to this referral (leader has no TeamMemberEntity row).
+  referralId String?         @map("referral_id")
+  referral   ReferralEntity?   @relation(fields: [referralId], references: [id], onDelete: SetNull)
+
+  @@index([referralId])
   @@map("team")
   @@schema("oppskills")
 }
@@ -963,11 +1036,14 @@ model TeamMemberEntity {
 
   teamId String
   team   TeamEntity @relation(fields: [teamId], references: [id])
+  referralId String? @map("referral_id")
+  referral   ReferralEntity? @relation(fields: [referralId], references: [id], onDelete: SetNull)
 
   // Relation to registration submission
   registrationSubmission HackathonRegistrationSubmissionEntity?
 
   @@unique([userId, teamId]) // one user can't join the same team twice
+  @@index([referralId])
   @@map("team_member")
   @@schema("oppskills")
 }

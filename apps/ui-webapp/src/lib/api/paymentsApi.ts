@@ -3,6 +3,25 @@ import { buildAuthHeaders, createApiClient } from "./apiClient";
 const PaymentsAPI = createApiClient("/payments");
 const HackathonsAPI = createApiClient("/hackathons");
 
+/**
+ * Read the referral code from the `oppskills_ref` cookie set by
+ * `/r/<code>` redirects. Returns undefined in SSR or when absent.
+ *
+ * **Native / mobile:** pass `referralCode` explicitly on the same request bodies
+ * when this returns undefined — see `docs/referral-native-mobile.md`.
+ */
+function getReferralCodeFromCookie(): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const match = document.cookie.match(/(?:^|;\s*)oppskills_ref=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
+/** Clear the referral cookie after successful registration. */
+function clearReferralCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = "oppskills_ref=; Path=/; Max-Age=0";
+}
+
 export interface RouteOnboardingParams {
   email: string;
   phone: string;
@@ -247,11 +266,19 @@ export async function createPaymentOrder(
     joinTeamId?: string;
     /** Escrowed server-side when creating the Razorpay order (verify/webhook fallback). */
     answers?: Array<{ fieldId: string; value: string }>;
+    /**
+     * Referral code from /r/<code> link. If omitted, read from the
+     * `oppskills_ref` cookie. Persisted on Razorpay order notes so it
+     * survives payment redirects (mobile) and webhook-only completion.
+     */
+    referralCode?: string;
   },
 ): Promise<PaymentOrder & { teamId?: string }> {
+  const referralCode = params.referralCode ?? getReferralCodeFromCookie();
+  const body = { ...params, ...(referralCode ? { referralCode } : {}) };
   const res = await HackathonsAPI.post(
     `/${hackathonSlug}/payment/order`,
-    params,
+    body,
     {
       headers: buildAuthHeaders(token),
     },
@@ -268,15 +295,27 @@ export async function verifyPayment(
     razorpaySignature: string;
     /** When set, backend saves registration answers in the same request as verify (hackathons). */
     answers?: Array<{ fieldId: string; value: string }>;
+    /**
+     * Fallback referral code. Primary source is the Razorpay order notes
+     * (set at createPaymentOrder). If omitted, client also forwards the
+     * `oppskills_ref` cookie as a belt-and-braces fallback.
+     */
+    referralCode?: string;
   },
 ): Promise<{ success: boolean; paymentId: string; teamId?: string }> {
+  const referralCode = params.referralCode ?? getReferralCodeFromCookie();
+  const body = { ...params, ...(referralCode ? { referralCode } : {}) };
   const res = await HackathonsAPI.post(
     `/${hackathonSlug}/payment/verify`,
-    params,
+    body,
     {
       headers: buildAuthHeaders(token),
     },
   );
+  // On successful capture, clear the cookie so we don't re-attribute again.
+  if (res.data?.success) {
+    clearReferralCookie();
+  }
   return res.data;
 }
 

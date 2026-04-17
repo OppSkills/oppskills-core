@@ -16,6 +16,8 @@ import { EMAIL_EVENTS } from 'src/email/email.events';
 import { Logger } from 'src/_utils/logger';
 import { extractMobileFromRegistrationFieldAnswers } from 'src/_utils/extract-mobile-from-registration-field-answers';
 import { syncUserOnboardingMobileFromRegistration } from 'src/_utils/sync-user-onboarding-mobile';
+import { ReferralService } from 'src/referral/referral.service';
+import { ReferralEntityTypeDto } from '@oppskills/types';
 
 /**
  * Generate a unique invitation code.
@@ -105,7 +107,10 @@ function getMinSizeFromParticipantType(participantType: string): number {
 @Injectable()
 export class TeamService {
   private readonly logger = new Logger(TeamService.name);
-  constructor(private readonly eventEmitter: EventEmitter2) { }
+  constructor(
+    private readonly eventEmitter: EventEmitter2,
+    private readonly referralService: ReferralService,
+  ) {}
 
   /**
    * Create a team for a hackathon.
@@ -125,6 +130,7 @@ export class TeamService {
         isFree: true,
         maxTeams: true,
         participantType: true,
+        festivalId: true,
         status: true,
         approvalStatus: true,
         isRegistrationPaused: true,
@@ -211,6 +217,13 @@ export class TeamService {
         userId: leaderId,
         answers: dto.answers,
       });
+    const referralId = await this.referralService.resolveForRegistration({
+      code: dto.referralCode,
+      userId: leaderId,
+      expectedEntityType: ReferralEntityTypeDto.HACKATHON,
+      expectedEntityId: dto.hackathonId,
+      parentFestivalId: hackathon.festivalId,
+    });
 
     // Generate unique invitation code
     let invitationCode = generateInvitationCode();
@@ -300,6 +313,10 @@ export class TeamService {
       hackathonName: result.hackathon.name,
       teamName: result.name,
     });
+
+    if (referralId) {
+      await this.referralService.markRegistrationAttributed(referralId);
+    }
 
     return result;
   }
@@ -444,6 +461,7 @@ export class TeamService {
               id: true,
               name: true,
               ownerId: true,
+              festivalId: true,
               isFree: true,
               status: true,
               approvalStatus: true,
@@ -476,6 +494,7 @@ export class TeamService {
               id: true,
               name: true,
               ownerId: true,
+              festivalId: true,
               isFree: true,
               status: true,
               approvalStatus: true,
@@ -559,6 +578,13 @@ export class TeamService {
         userId,
         answers: dto.answers,
       });
+    const referralId = await this.referralService.resolveForRegistration({
+      code: dto.referralCode,
+      userId,
+      expectedEntityType: ReferralEntityTypeDto.HACKATHON,
+      expectedEntityId: team.hackathonId,
+      parentFestivalId: team.hackathon.festivalId,
+    });
     const user = await prisma.userEntity.findUnique({
       where: { id: userId },
       select: {
@@ -571,7 +597,7 @@ export class TeamService {
     // Create member and registration in transaction
     const result = await prisma.$transaction(async (tx) => {
       const newMember = await tx.teamMemberEntity.create({
-        data: { userId, teamId: team.id },
+        data: { userId, teamId: team.id, referralId },
       });
 
       // Create registration submission for member (even if no answers).
@@ -645,6 +671,9 @@ export class TeamService {
       teamName: team.name,
       hackathonName: team.hackathon.name,
     });
+    if (referralId) {
+      await this.referralService.markRegistrationAttributed(referralId);
+    }
 
     return result;
   }

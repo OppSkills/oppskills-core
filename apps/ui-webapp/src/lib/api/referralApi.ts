@@ -1,0 +1,119 @@
+import { buildAuthHeaders, createApiClient } from "./apiClient";
+
+const API = createApiClient("/referrals");
+const PUBLIC_API = createApiClient("/referrals/public");
+
+export type ReferralEntityType = "HACKATHON" | "EVENT" | "FESTIVAL";
+
+export interface ReferralListItem {
+  id: string;
+  code: string;
+  clicksCount: number;
+  registrationsCount: number;
+  clicksRecent?: number;
+  registrationsRecent?: number;
+  referrer: {
+    id: string;
+    email: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    imageUrl?: string | null;
+  };
+}
+
+export interface ReferralAnalytics {
+  totalClicks: number;
+  humanClicks: number;
+  referredParticipants: number;
+  totalRegistrations: number;
+  activeReferrers: number;
+  totalReferrers: number;
+  linksGenerated: number;
+}
+
+export async function createReferral(
+  token: string,
+  payload: {
+    entityType: ReferralEntityType;
+    entityId: string;
+    referrerEmail: string;
+    sendEmail?: boolean;
+  },
+) {
+  const res = await API.post("", payload, { headers: buildAuthHeaders(token) });
+  return res.data;
+}
+
+export async function listReferrals(
+  token: string,
+  query: { entityType: ReferralEntityType; entityId: string; page?: number; pageSize?: number },
+) {
+  const res = await API.get("", {
+    params: query,
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as { data: ReferralListItem[]; total: number; page: number; pageSize: number };
+}
+
+export async function getReferralAnalytics(
+  token: string,
+  query: { entityType: ReferralEntityType; entityId: string },
+) {
+  const res = await API.get("/analytics", {
+    params: query,
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as ReferralAnalytics;
+}
+
+export async function getReferralById(token: string, id: string) {
+  const res = await API.get(`/${id}`, { headers: buildAuthHeaders(token) });
+  return res.data;
+}
+
+export async function getReferralRegistrations(
+  token: string,
+  id: string,
+  page = 1,
+  pageSize = 20,
+) {
+  const res = await API.get(`/${id}/registrations`, {
+    params: { page, pageSize },
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as { data: any[]; total: number; page: number; pageSize: number };
+}
+
+export async function deleteReferral(token: string, id: string) {
+  const res = await API.delete(`/${id}`, { headers: buildAuthHeaders(token) });
+  return res.data as { success: boolean };
+}
+
+export async function lookupReferrerUser(
+  token: string,
+  params: { email: string; entityType: ReferralEntityType; entityId: string },
+) {
+  const res = await API.get("/user-lookup", {
+    params,
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as {
+    id: string;
+    email: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    imageUrl?: string | null;
+  };
+}
+
+export async function resolveReferralPublic(code: string) {
+  const res = await PUBLIC_API.get(`/resolve/${encodeURIComponent(code)}`);
+  return res.data as { entityType: ReferralEntityType; slug: string; isActive: boolean };
+}
+
+export async function trackReferralClick(
+  payload: { code: string; source?: string },
+) {
+  const res = await PUBLIC_API.post("/track-click", payload);
+  return res.data;
+}

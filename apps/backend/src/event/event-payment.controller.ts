@@ -63,6 +63,7 @@ export class EventPaymentController {
       userId,
       discountCode: dto.discountCode,
       answers: dto.answers,
+      referralCode: dto.referralCode,
     });
   }
 
@@ -92,6 +93,7 @@ export class EventPaymentController {
       razorpaySignature: dto.razorpaySignature,
       userId,
       answers: dto.answers,
+      referralCode: dto.referralCode,
     });
   }
 

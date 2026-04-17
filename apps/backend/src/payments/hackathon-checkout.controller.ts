@@ -34,6 +34,7 @@ export class HackathonCheckoutController {
       invitationCode: dto.invitationCode,
       joinTeamId: dto.joinTeamId,
       answers: dto.answers,
+      referralCode: dto.referralCode,
     });
   }
 
@@ -50,6 +51,7 @@ export class HackathonCheckoutController {
       razorpaySignature: dto.razorpaySignature,
       userId,
       answers: dto.answers,
+      referralCode: dto.referralCode,
     });
   }
 

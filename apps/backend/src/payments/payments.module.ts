@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { EventModule } from '../event/event.module';
+import { ReferralModule } from '../referral/referral.module';
 import { RazorpayService } from './razorpay.service';
 import { PaymentsRouteService } from './payments-route.service';
 import { PaymentsRouteController } from './payments-route.controller';
@@ -22,7 +23,7 @@ import { AdminPayoutsController } from './admin-payouts.controller';
 import { PaymentRegistrationEscrowService } from './payment-registration-escrow.service';
 
 @Module({
-  imports: [forwardRef(() => EventModule)],
+  imports: [forwardRef(() => EventModule), ReferralModule],
   controllers: [
     PaymentsRouteController,
     RazorpayWebhookController,
