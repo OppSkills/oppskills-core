@@ -349,7 +349,7 @@ function Sidebar({
       className="group peer text-sidebar-foreground hidden md:block"
       data-state={state}
       data-collapsible={(state === "collapsed" && !isHovered) ? collapsible : ""}
-      data-hover-expand={isHovered}
+      data-hover-expand={isHovered && state === "collapsed"}
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"

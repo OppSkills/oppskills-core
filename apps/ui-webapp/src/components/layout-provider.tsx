@@ -132,11 +132,9 @@ export default function LayoutProvider({
               if (open) setActiveMobileTab("main");
             }}
           >
-            <div>
-              <AppSidebar 
-                variant="sidebar" 
-              />
-            </div>
+            <AppSidebar 
+              variant="sidebar" 
+            />
 
             {/* Secondary sidebar - only visible on specific detailed pages */}
             {hasSecondarySidebar ? (
