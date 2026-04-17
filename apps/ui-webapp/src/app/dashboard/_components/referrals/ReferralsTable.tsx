@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { memo, useCallback, useMemo, useState } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -46,29 +46,41 @@ interface ReferralsTableProps {
   entityType: ReferralEntityType;
   entityId: string;
 }
-export const ReferralsTable: React.FC<ReferralsTableProps> = ({
+export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
   baseUrl,
   entityType,
   entityId,
 }) => {
+  if (process.env.NODE_ENV === "development") {
+    console.count("[render] ReferralsTable");
+  }
+
   const [rowSelection, setRowSelection] = useState({});
   const { data } = useReferrals(entityType, entityId);
   const deleteMutation = useDeleteReferral(entityType, entityId);
-  const rows: ReferrerData[] = (data?.data ?? []).map((row) => ({
-    id: row.id,
-    name:
-      [row.referrer.firstName, row.referrer.lastName].filter(Boolean).join(" ") ||
-      "Referrer",
-    email: row.referrer.email,
-    avatarUrl: row.referrer.imageUrl ?? "",
-    referralLink: `${
-      typeof window !== "undefined" ? window.location.origin : "https://www.oppskills.com"
-    }/r/${row.code}`,
-    clicks: row.clicksCount,
-    clicksRecent: row.clicksRecent ?? 0,
-    registrations: row.registrationsCount,
-    registrationsRecent: row.registrationsRecent ?? 0,
-  }));
+  const handleDelete = useCallback(
+    (id: string) => deleteMutation.mutate(id),
+    [deleteMutation.mutate],
+  );
+  const appOrigin =
+    typeof window !== "undefined" ? window.location.origin : "https://www.oppskills.com";
+  const rows: ReferrerData[] = useMemo(
+    () =>
+      (data?.data ?? []).map((row) => ({
+        id: row.id,
+        name:
+          [row.referrer.firstName, row.referrer.lastName].filter(Boolean).join(" ") ||
+          "Referrer",
+        email: row.referrer.email,
+        avatarUrl: row.referrer.imageUrl ?? "",
+        referralLink: `${appOrigin}/r/${row.code}`,
+        clicks: row.clicksCount,
+        clicksRecent: row.clicksRecent ?? 0,
+        registrations: row.registrationsCount,
+        registrationsRecent: row.registrationsRecent ?? 0,
+      })),
+    [appOrigin, data?.data],
+  );
 
   const columns = useMemo<ColumnDef<ReferrerData>[]>(
     () => [
@@ -202,7 +214,7 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = ({
           <div className="flex justify-center">
             <button
               className="text-red-500 hover:text-red-700 transition-colors p-2"
-              onClick={() => deleteMutation.mutate(info.row.original.id)}
+              onClick={() => handleDelete(info.row.original.id)}
             >
               <Trash2 size={20} />
             </button>
@@ -210,7 +222,7 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = ({
         ),
       },
     ],
-    []
+    [baseUrl, handleDelete]
   );
 
   const table = useReactTable({
@@ -289,4 +301,4 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = ({
       </Table>
     </div>
   );
-};
+});

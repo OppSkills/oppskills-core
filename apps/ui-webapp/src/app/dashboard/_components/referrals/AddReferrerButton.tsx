@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { AddReferrerModal } from "@/app/dashboard/_components/referrals/AddReferrerModal";
@@ -9,7 +9,11 @@ import type { ReferralEntityType } from "@/lib/api/referralApi";
 export const AddReferrerButton: React.FC<{
   entityType: ReferralEntityType;
   entityId: string;
-}> = ({ entityType, entityId }) => {
+}> = memo(({ entityType, entityId }) => {
+  if (process.env.NODE_ENV === "development") {
+    console.count("[render] AddReferrerButton");
+  }
+
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -32,4 +36,4 @@ export const AddReferrerButton: React.FC<{
       ) : null}
     </>
   );
-};
+});
