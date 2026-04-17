@@ -74,7 +74,7 @@ export const AddReferrerModal: React.FC<AddReferrerModalProps> = ({
       <DialogContent
         showCloseButton={false}
         onOpenAutoFocus={(e) => e.preventDefault()}
-        className="max-w-[90vw] sm:max-w-xl p-0 overflow-hidden border-none bg-background rounded-3xl! shadow-2xl"
+        className="ph-no-capture max-w-[90vw] sm:max-w-xl p-0 overflow-hidden border-none bg-background rounded-3xl! shadow-2xl"
       >
         <div className="relative">
           <DialogDescription className="sr-only">

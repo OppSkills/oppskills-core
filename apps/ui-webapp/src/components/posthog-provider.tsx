@@ -4,6 +4,7 @@ import posthog from "posthog-js";
 import { PostHogProvider as PHProvider, usePostHog } from "posthog-js/react";
 import { useEffect } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -30,23 +31,30 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    /**
+     * Session replay (rrweb) snapshots the DOM on mutations. The dashboard has a
+     * very large tree (sidebars, tables, nested Radix). Opening a Dialog adds a
+     * portal + overlay + scroll-lock — replay can spend multiple seconds on the
+     * main thread (seen as ~9s scripting in Performance). Disable replay on
+     * dashboard routes; events/analytics still work via capture + identify.
+     */
+    const disableSessionRecordingOnDashboard = window.location.pathname.startsWith(
+      "/dashboard",
+    );
+
     posthog.init(posthogKey, {
       api_host: posthogHost || "https://us.i.posthog.com",
-      /**
-       * Uses recommended 2025 defaults which automatically handle pageview and
-       * pageleave events. These defaults also turn on session replay (rrweb)
-       * whenever the project has it enabled server-side, which caused multi-
-       * second main-thread stalls on heavy dashboard screens (notably on
-       * `/dashboard/.../referrals`) because rrweb serializes the full DOM on
-       * open / pointer events. We explicitly disable it here; re-enable per
-       * route if replays become necessary.
-       */
+      // Uses recommended 2025 defaults which automatically handles pageview and pageleave events
       defaults: "2025-11-30",
       capture_pageleave: true,
-      disable_session_recording: true,
-      loaded: (posthog) => {
+      disable_session_recording: disableSessionRecordingOnDashboard,
+      loaded: (ph) => {
         if (process.env.NODE_ENV === "development") {
           console.log("PostHog initialized successfully");
+        }
+        // Remote config can re-enable replay; enforce off on dashboard after init.
+        if (window.location.pathname.startsWith("/dashboard") && ph.sessionRecordingStarted()) {
+          ph.stopSessionRecording();
         }
       },
     });
@@ -62,9 +70,32 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
   return (
     <PHProvider client={posthog}>
       <PostHogIdentify />
+      <PostHogStopSessionRecordingOnDashboard />
       {children}
     </PHProvider>
   );
+}
+
+/**
+ * If the user lands on a non-dashboard route first (session replay may start),
+ * stop recording when they client-navigate into `/dashboard/*`.
+ */
+function PostHogStopSessionRecordingOnDashboard() {
+  const pathname = usePathname();
+  const client = usePostHog();
+
+  useEffect(() => {
+    if (!client || !pathname.startsWith("/dashboard")) return;
+    try {
+      if (client.sessionRecordingStarted()) {
+        client.stopSessionRecording();
+      }
+    } catch {
+      // ignore
+    }
+  }, [pathname, client]);
+
+  return null;
 }
 
 // Identify logged-in users with PostHog
