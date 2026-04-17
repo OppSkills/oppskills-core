@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ClerkAuthConfigService } from 'src/common/config.service';
 import { EmailModule } from 'src/email/email.module';
 import { RedisProvider } from 'src/redis.provider';
@@ -9,7 +9,7 @@ import { ReferralPublicController } from './referral-public.controller';
 import { ReferralService } from './referral.service';
 
 @Module({
-  imports: [EmailModule],
+  imports: [forwardRef(() => EmailModule)],
   controllers: [ReferralController, ReferralPublicController],
   providers: [
     ReferralService,

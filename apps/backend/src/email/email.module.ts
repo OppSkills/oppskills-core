@@ -9,7 +9,11 @@ import { IncompleteRegistrationReminderCron } from './incomplete-registration-re
 import { HackathonModule } from 'src/hackathon/hackathon.module';
 
 @Module({
-  imports: [forwardRef(() => EventModule), TeamModule, forwardRef(() => HackathonModule)],
+  imports: [
+    forwardRef(() => EventModule),
+    forwardRef(() => TeamModule),
+    forwardRef(() => HackathonModule),
+  ],
   controllers: [EmailController],
   providers: [
     EmailService,
