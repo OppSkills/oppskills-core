@@ -135,6 +135,7 @@ export default function RegistrationQuestionsModal({
   useEffect(() => {
     if (open) {
       setQuestions(buildVisibleQuestions(getInitialCustom()));
+      setOptionDraftByQuestionId({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialQuestions, questionsInput, defaultFixedQuestions]);
@@ -146,6 +147,11 @@ export default function RegistrationQuestionsModal({
   );
   const [newQuestionRequired, setNewQuestionRequired] =
     useState<boolean>(false);
+
+  /** Pending text in the "add option" box per question (committed on Enter, Add, or Done). */
+  const [optionDraftByQuestionId, setOptionDraftByQuestionId] = useState<
+    Record<string, string>
+  >({});
 
   // Derived lists helpers
   const fixedQuestions = questions.filter((q) => q.fixed);
@@ -175,12 +181,24 @@ export default function RegistrationQuestionsModal({
 
   const handleDeleteQuestion = (id: string) => {
     setQuestions((prev) => prev.filter((q) => q.id !== id));
+    setOptionDraftByQuestionId((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   };
 
   const handleUpdateCustomQuestion = (
     id: string,
     updates: Partial<RegistrationQuestion>
   ) => {
+    if (updates.type !== undefined && updates.type !== "Options") {
+      setOptionDraftByQuestionId((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
     setQuestions((prev) =>
       prev.map((q) => {
         if (q.id !== id) return q;
@@ -206,6 +224,7 @@ export default function RegistrationQuestionsModal({
         return { ...q, options: [...existing, trimmed] };
       })
     );
+    setOptionDraftByQuestionId((prev) => ({ ...prev, [questionId]: "" }));
   };
 
   const handleRemoveOption = (questionId: string, option: string) => {
@@ -218,11 +237,30 @@ export default function RegistrationQuestionsModal({
     );
   };
 
+  const mergePendingOptionDrafts = (
+    list: RegistrationQuestion[],
+    drafts: Record<string, string>,
+  ): RegistrationQuestion[] => {
+    return list.map((q) => {
+      if (q.type !== "Options") return q;
+      const draft = (drafts[q.id] ?? "").trim();
+      if (draft.length === 0) return q;
+      const existing = Array.isArray(q.options) ? q.options : [];
+      if (existing.includes(draft)) return q;
+      return { ...q, options: [...existing, draft] };
+    });
+  };
+
   const handleSave = () => {
     // Only save CUSTOM questions to the backend.
     // Fixed/default questions are UI-only and will be lazy-created by the backend
     // at registration time. This prevents persisting broken defaults (e.g., Gender with no options).
-    const customOnly = questions.filter((q) => !q.fixed);
+    const withDraftOptions = mergePendingOptionDrafts(
+      questions,
+      optionDraftByQuestionId,
+    );
+    setOptionDraftByQuestionId({});
+    const customOnly = withDraftOptions.filter((q) => !q.fixed);
     onSave(customOnly);
     onOpenChange(false);
   };
@@ -345,16 +383,44 @@ export default function RegistrationQuestionsModal({
                 {/* Options Editor */}
                 {question.type === "Options" && (
                   <div className="pl-8 md:pl-8 mt-1 space-y-2">
-                    <Input
-                      placeholder="Type an option and press Enter"
-                      onKeyDown={(e) => {
-                        if (e.key !== "Enter") return;
-                        const target = e.target as HTMLInputElement;
-                        handleAddOption(question.id, target.value);
-                        target.value = "";
-                      }}
-                      className="h-9"
-                    />
+                    <p className="text-xs text-muted-foreground">
+                      Add each choice below, then press Enter or click Add. You can
+                      add as many options as you need.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        value={optionDraftByQuestionId[question.id] ?? ""}
+                        onChange={(e) =>
+                          setOptionDraftByQuestionId((prev) => ({
+                            ...prev,
+                            [question.id]: e.target.value,
+                          }))
+                        }
+                        placeholder="Type a choice, then Enter or Add"
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          handleAddOption(
+                            question.id,
+                            (e.currentTarget as HTMLInputElement).value,
+                          );
+                        }}
+                        className="h-9 flex-1 min-w-0"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="h-9 shrink-0"
+                        onClick={() =>
+                          handleAddOption(
+                            question.id,
+                            optionDraftByQuestionId[question.id] ?? ""
+                          )
+                        }
+                      >
+                        Add
+                      </Button>
+                    </div>
                     {Array.isArray(question.options) &&
                       question.options.length > 0 && (
                         <div className="flex flex-wrap gap-2">

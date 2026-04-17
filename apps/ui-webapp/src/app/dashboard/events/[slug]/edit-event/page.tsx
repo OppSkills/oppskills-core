@@ -1277,7 +1277,10 @@ export default function EditEventPage() {
               onOpenChange={setShowRegistrationModal}
               questions={formData.registrationQuestions}
               onSave={(questions) =>
-                setFormData({ ...formData, registrationQuestions: questions })
+                setFormData((prev) => ({
+                  ...prev,
+                  registrationQuestions: questions,
+                }))
               }
             />
           </div>
