@@ -77,8 +77,13 @@ export function useReferrerLookup(
   const { getToken } = useAuth();
   return useQuery({
     queryKey: ["referrer-lookup", entityType, entityId, email],
-    enabled,
+    enabled: enabled && email.length > 0,
     retry: false,
+    /**
+     * Keep the result fresh for a minute so re-focusing the window or
+     * re-mounting the modal doesn't re-hit the API for the same email.
+     */
+    staleTime: 60_000,
     queryFn: async () =>
       lookupReferrerUser(await tokenOrThrow(getToken), { entityType, entityId, email }),
   });

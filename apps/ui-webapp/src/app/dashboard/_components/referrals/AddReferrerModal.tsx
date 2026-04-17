@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { X } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCreateReferral, useReferrerLookup } from "@/hooks/useReferrals";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -35,13 +35,28 @@ export const AddReferrerModal: React.FC<AddReferrerModalProps> = ({
   entityId,
 }) => {
   const [email, setEmail] = useState("");
+  const [debouncedEmail, setDebouncedEmail] = useState("");
   const [sendEmail, setSendEmail] = useState(true);
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
+  /**
+   * Debounce the email used for the lookup query. Typing fires a re-render per
+   * keystroke, but we only want to hit the backend once the user has paused.
+   */
+  useEffect(() => {
+    const trimmed = email.trim();
+    const id = window.setTimeout(() => setDebouncedEmail(trimmed), 400);
+    return () => window.clearTimeout(id);
+  }, [email]);
   const isEmailValid = useMemo(
-    () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()),
-    [email],
+    () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(debouncedEmail),
+    [debouncedEmail],
   );
-  const lookup = useReferrerLookup(entityType, entityId, email.trim(), isOpen && isEmailValid);
+  const lookup = useReferrerLookup(
+    entityType,
+    entityId,
+    debouncedEmail,
+    isOpen && isEmailValid,
+  );
   const createReferral = useCreateReferral(entityType, entityId);
 
   async function onAddReferrer() {
