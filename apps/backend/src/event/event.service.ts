@@ -2937,9 +2937,9 @@ export class EventService {
   // ─────────────────────────────────────────────────────────────────────────────
 
   /**
-   * Submit an event for approval.
-   * - Sets status to PUBLISHED.
-   * - Sets approvalStatus to PENDING.
+   * Submit an event for approval (organizer “Publish”).
+   * - First publish (or after rejection): sets status PUBLISHED and approvalStatus PENDING for admin review.
+   * - If already APPROVED: only moves lifecycle back to PUBLISHED when in DRAFT; does not reset admin approval.
    * - Requires owner/admin/manager permission.
    */
   async submitForApproval(id: string, userId: string, note?: string) {
@@ -2960,7 +2960,31 @@ export class EventService {
       );
     }
 
-    // Update status to PUBLISHED and approvalStatus to PENDING
+    const select = {
+      id: true,
+      status: true,
+      approvalStatus: true,
+      approvalSubmittedAt: true,
+    } as const;
+
+    // Admin already approved: publishing is lifecycle-only (e.g. DRAFT → PUBLISHED after unpublish).
+    if (event.approvalStatus === 'APPROVED') {
+      if (event.status === 'DRAFT') {
+        return prisma.eventEntity.update({
+          where: { id },
+          data: { status: 'PUBLISHED' },
+          select,
+        });
+      }
+      const unchanged = await prisma.eventEntity.findUnique({
+        where: { id },
+        select,
+      });
+      if (!unchanged) throw new NotFoundException('Event not found');
+      return unchanged;
+    }
+
+    // First publish or re-submit after rejection: queue (or re-queue) admin review.
     return prisma.eventEntity.update({
       where: { id },
       data: {
@@ -2971,12 +2995,7 @@ export class EventService {
         approvalRejectedAt: null,
         approvalNote: note,
       },
-      select: {
-        id: true,
-        status: true,
-        approvalStatus: true,
-        approvalSubmittedAt: true,
-      },
+      select,
     });
   }
 

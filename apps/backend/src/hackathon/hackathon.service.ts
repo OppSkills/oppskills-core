@@ -2721,8 +2721,9 @@ export class HackathonService {
   // ─────────────────────────────────────────────────────────────────────────────
 
   /**
-   * Submit hackathon for approval.
-   * - Sets status to PUBLISHED and approvalStatus to PENDING.
+   * Submit hackathon for approval (organizer “Publish”).
+   * - First publish (or after rejection): PUBLISHED + PENDING for admin review.
+   * - If already APPROVED: only sets PUBLISHED when returning from DRAFT; does not reset approval.
    * - Requires owner/admin/manager permission.
    */
   async submitForApproval(id: string, userId: string, note?: string) {
@@ -2743,7 +2744,29 @@ export class HackathonService {
       );
     }
 
-    // Update status to PUBLISHED and approvalStatus to PENDING
+    const select = {
+      id: true,
+      status: true,
+      approvalStatus: true,
+      approvalSubmittedAt: true,
+    } as const;
+
+    if (hackathon.approvalStatus === 'APPROVED') {
+      if (hackathon.status === 'DRAFT') {
+        return prisma.hackathonEntity.update({
+          where: { id },
+          data: { status: 'PUBLISHED' },
+          select,
+        });
+      }
+      const unchanged = await prisma.hackathonEntity.findUnique({
+        where: { id },
+        select,
+      });
+      if (!unchanged) throw new NotFoundException('Hackathon not found');
+      return unchanged;
+    }
+
     return prisma.hackathonEntity.update({
       where: { id },
       data: {
@@ -2754,12 +2777,7 @@ export class HackathonService {
         approvalRejectedAt: null,
         approvalNote: note,
       },
-      select: {
-        id: true,
-        status: true,
-        approvalStatus: true,
-        approvalSubmittedAt: true,
-      },
+      select,
     });
   }
 

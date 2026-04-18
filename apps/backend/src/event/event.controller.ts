@@ -772,7 +772,7 @@ export class EventController {
   @ApiOperation({
     summary: 'Submit event for approval',
     description:
-      'Sets status to PUBLISHED and approvalStatus to PENDING. Requires owner/admin/manager.',
+      'Publishes the event. First-time (or post-rejection) publish sets approval to PENDING; if already APPROVED, only lifecycle is updated (no re-review). Requires owner/admin/manager.',
   })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({ status: 200, description: 'Event submitted for approval' })

@@ -17,9 +17,18 @@ import Image from "next/image";
 import { Input } from "./ui/input";
 import { UserAccountButton } from "./user-account-button";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { cn } from "@/lib/utils";
+
+function isNavLinkActive(href: string, pathname: string): boolean {
+  if (href === "/") {
+    return pathname === "/";
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 const Navbar = () => {
+  const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
@@ -74,16 +83,25 @@ const Navbar = () => {
         </Link>
 
         {/* --- DESKTOP NAVIGATION --- */}
-        <div className="hidden lg:flex items-center gap-8 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              href={link.href}
-              className="text-base font-medium text-neutral-700"
-            >
-              {link.name}
-            </Link>
-          ))}
+        <div className="hidden lg:flex items-center gap-2 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          {navLinks.map((link) => {
+            const active = isNavLinkActive(link.href, pathname);
+            return (
+              <Link
+                key={link.name}
+                href={link.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "text-base font-medium rounded-lg px-3 py-2 transition-colors",
+                  active
+                    ? "bg-primary/15 text-primary-700 font-semibold shadow-sm"
+                    : "text-neutral-700 hover:text-primary-600 hover:bg-neutral-200/80",
+                )}
+              >
+                {link.name}
+              </Link>
+            );
+          })}
         </div>
 
         {/* --- RIGHT SIDE ACTIONS --- */}
@@ -197,17 +215,26 @@ const Navbar = () => {
               </button>
             </form>
           </div>
-          <div className="flex flex-col gap-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="text-foreground hover:text-primary-500 transition-colors text-lg font-medium px-2"
-                onClick={() => setIsOpen(false)}
-              >
-                {link.name}
-              </Link>
-            ))}
+          <div className="flex flex-col gap-1">
+            {navLinks.map((link) => {
+              const active = isNavLinkActive(link.href, pathname);
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "rounded-lg px-3 py-2.5 text-lg font-medium transition-colors",
+                    active
+                      ? "bg-primary/15 text-primary-700 font-semibold"
+                      : "text-foreground hover:bg-neutral-200/80 hover:text-primary-600",
+                  )}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
 
             {/* Mobile Action Buttons */}
             <div className="flex flex-col gap-3 mt-4">

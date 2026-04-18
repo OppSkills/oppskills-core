@@ -326,8 +326,8 @@ type UpdateRegistrationPausedPayload = {
 };
 
 /**
- * Organizer-first publish: sets status to PUBLISHED and approvalStatus to PENDING
- * until an admin approves. (UI: “Publish event”.)
+ * Organizer publish: first publish (or after rejection) sets PUBLISHED + PENDING until
+ * an admin approves. If already APPROVED, republish from draft only updates lifecycle.
  */
 export async function submitEventForApproval(
   token: string,

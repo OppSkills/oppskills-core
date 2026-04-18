@@ -150,10 +150,17 @@ export default function OpportunitySettingsPage({
       if (!token || !hackathon) throw new Error("Not authenticated");
       return submitHackathonForApproval(token, hackathon.id);
     },
-    onSuccess: () => {
-      toast.success(
-        "Published. Your opportunity is visible as published; admin approval is pending before registrations open.",
-      );
+    onSuccess: (data: unknown) => {
+      const row = data as { approvalStatus?: string } | null | undefined;
+      if (row?.approvalStatus === "APPROVED") {
+        toast.success(
+          "Your opportunity is published again. Admin approval stays in place.",
+        );
+      } else {
+        toast.success(
+          "Published. Your opportunity is visible as published; admin approval is pending before registrations open.",
+        );
+      }
       queryClient.invalidateQueries({
         queryKey: getHackathonBySlugQueryKey(slug),
       });
@@ -349,9 +356,10 @@ export default function OpportunitySettingsPage({
           <CardHeader>
             <CardTitle className="text-lg">Publishing & Approval</CardTitle>
             <CardDescription>
-              Publish to set your opportunity to Published. An admin then
-              approves (one-time) before registrations open. Use Publish again
-              only if your listing was rejected.
+              Publish controls visibility (Draft vs Published). Admin approval
+              is separate and only needed once; moving back to draft does not
+              undo approval. After rejection, use Publish again to re-submit for
+              review.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -467,7 +475,9 @@ export default function OpportunitySettingsPage({
                         <AlertDialogDescription>
                           This will unpublish your opportunity and move it back to
                           draft status. The opportunity will no longer be visible
-                          to the public. You can publish it again later.
+                          to the public. Admin approval (if you already have it)
+                          is kept, so you will not need a new review when you
+                          publish again.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

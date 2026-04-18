@@ -1377,7 +1377,7 @@ export class HackathonController {
   @ApiOperation({
     summary: 'Submit hackathon for approval',
     description:
-      'Submit a hackathon for admin approval. Sets status to PUBLISHED and approvalStatus to PENDING.',
+      'Publishes the hackathon. First-time (or post-rejection) publish sets approval to PENDING; if already APPROVED, only lifecycle is updated (no re-review).',
   })
   @ApiParam({
     name: 'id',

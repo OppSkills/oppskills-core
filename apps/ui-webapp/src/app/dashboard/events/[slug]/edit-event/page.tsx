@@ -12,6 +12,7 @@ import {
   Calendar as CalendarIcon,
   Clock,
   AlignLeft,
+  Users,
 } from "lucide-react";
 import InputBlock from "@/components/ui/derived/InputBlock";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
@@ -56,7 +57,6 @@ import type {
 import {
   updateEvent,
   updateEventAdditionalInfo,
-  updateEventMaxUsers,
   updateEventPrizeBreakdown,
   updateEventRegistrationForm,
 } from "@/lib/api/eventApi";
@@ -488,6 +488,18 @@ export default function EditEventPage() {
       draftOnly: false,
     },
     {
+      id: "registration-settings",
+      label: "Registration Settings",
+      icon: <Users className="w-4 h-4" />,
+      draftOnly: false,
+    },
+    {
+      id: "prizes",
+      label: "Prizes",
+      icon: <Trophy className="w-4 h-4" />,
+      draftOnly: false,
+    },
+    {
       id: "additional-info",
       label: "Additional Info",
       icon: <FileText className="w-4 h-4" />,
@@ -663,9 +675,16 @@ export default function EditEventPage() {
               : formData.eventTimeFrom;
           return start ? combineDateAndTimeToIso(start, time) : undefined;
         })(),
-        maxUsers: formData.registrationSettings.maxTeamsNoLimit
-          ? undefined
-          : formData.registrationSettings.maxUsers,
+        maxUsers: (() => {
+          if (formData.registrationSettings.maxTeamsNoLimit) {
+            return null;
+          }
+          const n = formData.registrationSettings.maxUsers;
+          if (typeof n === "number" && Number.isInteger(n) && n >= 1) {
+            return n;
+          }
+          return undefined;
+        })(),
         organizationName:
           formData.organizationName.trim().length > 0
             ? formData.organizationName.trim()
@@ -1126,7 +1145,14 @@ export default function EditEventPage() {
                       mode="single"
                       selected={formData.eventDate}
                       onSelect={(date) =>
-                        setFormData({ ...formData, eventDate: date })
+                        setFormData((prev) => ({
+                          ...prev,
+                          eventDate: date,
+                          registrationSettings: {
+                            ...prev.registrationSettings,
+                            eventDate: date,
+                          },
+                        }))
                       }
                       initialFocus
                     />
@@ -1140,10 +1166,14 @@ export default function EditEventPage() {
                       type="time"
                       value={formData.eventTimeFrom}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           eventTimeFrom: e.target.value,
-                        })
+                          registrationSettings: {
+                            ...prev.registrationSettings,
+                            eventTime: e.target.value,
+                          },
+                        }))
                       }
                       className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
                     />

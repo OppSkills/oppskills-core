@@ -519,8 +519,8 @@ export async function bulkSetTeamRoundQualification(
 // =====================
 
 /**
- * Organizer-first publish: sets status to PUBLISHED and approvalStatus to PENDING
- * until an admin approves. (UI: “Publish opportunity”.)
+ * Organizer publish: first publish (or after rejection) sets PUBLISHED + PENDING until
+ * an admin approves. If already APPROVED, republish from draft only updates lifecycle.
  */
 export async function submitHackathonForApproval(
   token: string,

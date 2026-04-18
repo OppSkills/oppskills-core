@@ -19,7 +19,7 @@ export default function HeroSection() {
                 width={40}
                 height={40}
               />
-              <p className='text-sm sm:text-base text-neutral-800'>Grow your skills with 10,000 other hustlers</p>
+              <p className='text-sm sm:text-base text-neutral-800'>Grow your skills with 10,000+ other hustlers</p>
             </div>
           </div>
         </div>

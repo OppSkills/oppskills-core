@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -125,57 +126,14 @@ export default function RegistrationSettings({
         </div>
       </div>
 
-      {/* Registration Timeline */}
+      {/* Registration deadline + event schedule (events have no stored registration-open time) */}
       <div className="w-full border rounded-2xl p-6 bg-card shadow-sm">
-        <h3 className="text-lg font-bold mb-1">Registration Timeline</h3>
+        <h3 className="text-lg font-bold mb-1">Registration and schedule</h3>
         <p className="text-muted-foreground text-sm mb-6">
-          Start and end date of registration can be changed
+          Set when registration closes and when the event runs. Changes autosave.
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Start Date Block */}
-          <div className="bg-muted/30 p-4 rounded-xl flex flex-col gap-3">
-            <span className="text-xs font-semibold text-muted-foreground">
-              Registration Start Date & Time
-            </span>
-            <div className="flex gap-2 flex-col">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full bg-background border-none shadow-sm text-foreground justify-start px-3"
-                  >
-                    <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
-                    {formData.registrationSettings.startDate
-                      ? format(
-                          formData.registrationSettings.startDate,
-                          "d MMM yyyy"
-                        )
-                      : "Date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.registrationSettings.startDate}
-                    onSelect={(date) => updateSettings({ startDate: date })}
-                  />
-                </PopoverContent>
-              </Popover>
-              <div className="bg-background rounded-md flex items-center p-3 shadow-sm w-[130px]">
-                <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
-                <input
-                  type="time"
-                  className="bg-transparent border-none text-sm outline-none w-full font-medium"
-                  value={formData.registrationSettings.startTime}
-                  onChange={(e) =>
-                    updateSettings({ startTime: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Deadline Block */}
           <div className="bg-muted/30 p-4 rounded-xl flex flex-col gap-3">
             <span className="text-xs font-semibold text-muted-foreground">
@@ -272,11 +230,17 @@ export default function RegistrationSettings({
         </div>
         <div>
           <button
-            onClick={() =>
+            onClick={() => {
+              const next = !formData.registrationSettings.maxTeamsNoLimit;
               updateSettings({
-                maxTeamsNoLimit: !formData.registrationSettings.maxTeamsNoLimit,
-              })
-            }
+                maxTeamsNoLimit: next,
+                maxUsers: next
+                  ? undefined
+                  : typeof formData.registrationSettings.maxUsers === "number"
+                    ? formData.registrationSettings.maxUsers
+                    : 1,
+              });
+            }}
             className={cn(
               "flex items-center gap-2 px-6 py-2.5 rounded-full border transition-all",
               formData.registrationSettings.maxTeamsNoLimit
@@ -307,6 +271,49 @@ export default function RegistrationSettings({
           </button>
         </div>
       </div>
+
+      {!formData.registrationSettings.maxTeamsNoLimit && (
+        <div className="w-full border rounded-2xl p-6 bg-card shadow-sm">
+          <div className="flex flex-col gap-2 max-w-sm">
+            <span className="text-sm font-semibold text-foreground">
+              Max participants
+            </span>
+            <Input
+              type="number"
+              min={1}
+              step={1}
+              value={
+                typeof formData.registrationSettings.maxUsers === "number"
+                  ? String(formData.registrationSettings.maxUsers)
+                  : ""
+              }
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw.trim().length === 0) {
+                  updateSettings({ maxUsers: undefined });
+                  return;
+                }
+                const parsed = Number(raw);
+                if (!Number.isInteger(parsed) || parsed < 1) {
+                  updateSettings({ maxUsers: undefined });
+                  return;
+                }
+                updateSettings({ maxUsers: parsed });
+              }}
+              placeholder="e.g. 200"
+              className="bg-background"
+            />
+            {typeof formData.registrationSettings.maxUsers !== "number" && (
+              <p className="text-xs text-amber-600">
+                Enter a whole number (minimum 1) to enforce a cap.
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Choose &quot;No Limit&quot; to allow unlimited registrations.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
