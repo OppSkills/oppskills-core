@@ -7,6 +7,7 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
+  getFilteredRowModel,
 } from "@tanstack/react-table";
 import {
   Filter,
@@ -28,6 +29,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -93,14 +101,19 @@ export default function Participants({
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
-  const [filteredData, setFilteredData] = React.useState(data);
-  const [filterValue, setFilteredValue] = React.useState("all");
+  const [globalFilter, setGlobalFilter] = React.useState("");
+  const [filterStatus, setFilterStatus] = React.useState("all");
 
   const [selectedTeamForEmail, setSelectedTeamForEmail] = React.useState<{
     id: string;
     name: string;
   } | null>(null);
   const [successAlert, setSuccessAlert] = React.useState<string | null>(null);
+
+  const filteredByStatus = React.useMemo(() => {
+    if (filterStatus === "all") return data;
+    return data.filter((item) => item.status && item.status.toLowerCase() === filterStatus);
+  }, [data, filterStatus]);
 
   const handleEmailSuccess = (result: any) => {
     setSuccessAlert(result.message || `Email has been processed to all the members of ${selectedTeamForEmail?.name}`);
@@ -140,14 +153,14 @@ export default function Participants({
   });
 
   const handleExportParticipants = React.useCallback(() => {
-    if (filteredData.length === 0) {
+    if (filteredByStatus.length === 0) {
       toast.info("No participants to export");
       return;
     }
 
     try {
       const rows: Record<string, string | number | boolean>[] = [];
-      filteredData.forEach((p) => {
+      filteredByStatus.forEach((p) => {
         // 1. Leader
         rows.push({
           "Team Name": p.teamName,
@@ -190,7 +203,7 @@ export default function Participants({
       console.error("[handleExportParticipants]", err);
       toast.error("Export failed. Please try again.");
     }
-  }, [filteredData, slug]);
+  }, [filteredByStatus, slug]);
 
   const columns: ColumnDef<Participant>[] = React.useMemo(
     () => [
@@ -387,20 +400,19 @@ export default function Participants({
     ],
   );
 
+
+
   const table = useReactTable({
-    data: filteredData,
+    data: filteredByStatus,
     columns,
+    state: {
+      globalFilter,
+    },
+    onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     getRowId: (row) => row.id,
   });
-
-  React.useEffect(() => {
-    if (filterValue == "all") setFilteredData(data);
-    else if (filterValue == "completed")
-      setFilteredData(data.filter((item) => item.status == "Completed"));
-    else if (filterValue == "incomplete")
-      setFilteredData(data.filter((item) => item.status == "Incomplete"));
-  }, [filterValue, data]);
 
   return (
     <div className="w-full space-y-4">
@@ -410,9 +422,9 @@ export default function Participants({
             <Check className="w-4 h-4" />
           </div>
           <span className="text-sm font-medium">{successAlert}</span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="ml-auto h-7 w-7 p-0 hover:bg-primary/20 hover:text-primary rounded-full"
             onClick={() => setSuccessAlert(null)}
           >
@@ -423,65 +435,51 @@ export default function Participants({
 
       {/* HEADER */}
       <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex items-center gap-2">
           {(() => {
             const total = data.length;
             const completedCount = data.filter((d) => d.status === 'Completed').length;
             const incompleteCount = data.filter((d) => d.status === 'Incomplete').length;
             return (
-              <>
-                <Button
-                  size="sm"
-                  className="border-2"
-                  onClick={() => setFilteredValue("all")}
-                  variant={filterValue === "all" ? "default" : "outline"}
-                >
-                  All ({total})
-                </Button>
-                <Button
-                  size="sm"
-                  className="border-2"
-                  onClick={() => setFilteredValue("completed")}
-                  variant={filterValue === "completed" ? "default" : "outline"}
-                >
-                  Completed ({completedCount})
-                </Button>
-                <Button
-                  size="sm"
-                  className="border-2"
-                  onClick={() => setFilteredValue("incomplete")}
-                  variant={filterValue === "incomplete" ? "default" : "outline"}
-                >
-                  Incomplete ({incompleteCount})
-                </Button>
-              </>
+              <Select
+                value={filterStatus}
+                onValueChange={setFilterStatus}
+              >
+                <SelectTrigger className="w-[200px] h-10 rounded-full bg-primary-50 border-primary-100 text-foreground font-medium focus:ring-1 focus:ring-primary/20">
+                  <div className="flex items-center gap-2">
+                    <ListFilter className="w-4 h-4 text-primary-500" />
+                    <SelectValue placeholder="Filter Status" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border shadow-lg">
+                  <SelectItem value="all" className="rounded-lg">All Registrations ({total})</SelectItem>
+                  <SelectItem value="completed" className="rounded-lg">Completed ({completedCount})</SelectItem>
+                  <SelectItem value="incomplete" className="rounded-lg">Incomplete ({incompleteCount})</SelectItem>
+                </SelectContent>
+              </Select>
             );
           })()}
         </div>
         <div className="flex items-center gap-2">
-          <div className="relative w-full md:w-auto">
+          <div className="relative w-full md:w-auto hover:bg-muted/50 rounded-full transition-colors group">
             <FloatingInput
-              className="w-full rounded-full md:min-w-sm"
-              placeholder="Search"
+              className="w-full rounded-full md:min-w-sm pl-4 pr-10 border-border bg-background focus:ring-1 focus:ring-primary/20"
+              placeholder="Search teams"
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
             />
             <div className="absolute flex right-3 top-1/2 -translate-y-1/2">
-              <Search className="text-foreground/30" />
+              <Search className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
             </div>
           </div>
           <Button
             variant="outline"
-            size="sm"
-            className="flex items-center gap-2 shrink-0"
+            className="flex items-center gap-2 shrink-0 rounded-full"
             onClick={handleExportParticipants}
           >
             <Download className="w-4 h-4" />
             Export
           </Button>
-          <div className="px-2">
-            <div className="rounded-full w-8 h-8 border flex justify-center items-center cursor-pointer hover:bg-muted">
-              <EllipsisVertical className="w-4 h-4 text-foreground/30" />
-            </div>
-          </div>
         </div>
       </div>
 

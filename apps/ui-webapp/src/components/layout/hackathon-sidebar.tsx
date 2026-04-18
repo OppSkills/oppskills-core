@@ -37,14 +37,19 @@ const getOpportunityNavItems = (slug: string) => [
     icon: <Pen2 className="size-4" />,
   },
   {
-    title: "Payments",
-    url: `/dashboard/hackathon/${slug}/payments`,
-    icon: <Card className="size-4" />,
+    title: "Referrals",
+    url: `/dashboard/hackathon/${slug}/referrals`,
+    icon: <UserSpeak className="size-4" />,
   },
   {
     title: "Manage Roles",
     url: `/dashboard/hackathon/${slug}/manage-roles`,
     icon: <UserId className="size-4" />,
+  },
+  {
+    title: "Payments",
+    url: `/dashboard/hackathon/${slug}/payments`,
+    icon: <Card className="size-4" />,
   },
   {
     title: "Send Notifications",
@@ -55,11 +60,6 @@ const getOpportunityNavItems = (slug: string) => [
     title: "Settings",
     url: `/dashboard/hackathon/${slug}/settings`,
     icon: <Settings className="size-4" />,
-  },
-  {
-    title: "Referrals",
-    url: `/dashboard/hackathon/${slug}/referrals`,
-    icon: <UserSpeak className="size-4" />,
   },
 ];
 

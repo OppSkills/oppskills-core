@@ -888,4 +888,40 @@ export class EventController {
     await this.eventService.approveParticipant(event.id, participantId, userId);
     return { success: true };
   }
+
+  /**
+   * POST /events/by-slug/:slug/participants/bulk-approve
+   * Bulk approve participants for an event (owner/manager/admin only).
+   */
+  @Post('by-slug/:slug/participants/bulk-approve')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Bulk approve participants (owner/manager/admin only)',
+  })
+  @ApiParam({ name: 'slug', description: 'Event slug' })
+  @ApiResponse({
+    status: 200,
+    description: 'Participants approved successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async bulkApproveParticipants(
+    @Param('slug') slug: string,
+    @Body('participantIds') participantIds: string[],
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+
+    const event = await this.eventService.getEventBySlug(slug);
+    await this.eventService.bulkApproveParticipants(
+      event.id,
+      participantIds || [],
+      userId,
+    );
+    return { success: true };
+  }
 }

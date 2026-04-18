@@ -33,19 +33,19 @@ const getEventNavItems = (slug: string) => [
     icon: <Pen2 className="size-4" />,
   },
   {
-    title: "Payments",
-    url: `/dashboard/events/${slug}/payments`,
-    icon: <Card className="size-4" />,
+    title: "Referrals",
+    url: `/dashboard/events/${slug}/referrals`,
+    icon: <UserSpeak className="size-4" />,
   },
-  // {
-  //   title: "Tickets",
-  //   url: `/dashboard/events/${slug}/tickets`,
-  //   icon: <IconTicket className="size-4" />,
-  // },
   {
     title: "Manage Roles",
     url: `/dashboard/events/${slug}/manage-roles`,
     icon: <UserId className="size-4" />,
+  },
+  {
+    title: "Payments",
+    url: `/dashboard/events/${slug}/payments`,
+    icon: <Card className="size-4" />,
   },
   {
     title: "Send Notifications",
@@ -56,11 +56,6 @@ const getEventNavItems = (slug: string) => [
     title: "Settings",
     url: `/dashboard/events/${slug}/settings`,
     icon: <Settings className="size-4" />,
-  },
-  {
-    title: "Referrals",
-    url: `/dashboard/events/${slug}/referrals`,
-    icon: <UserSpeak className="size-4" />,
   },
 ];
 

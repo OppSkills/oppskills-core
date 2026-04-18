@@ -540,6 +540,21 @@ export async function approveParticipant(
   );
 }
 
+/**
+ * Bulk approve multiple participants for an event (owner/manager/admin only).
+ */
+export async function bulkApproveParticipants(
+  token: string,
+  eventSlug: string,
+  participantIds: string[],
+): Promise<void> {
+  await API.post(
+    `/by-slug/${encodeURIComponent(eventSlug)}/participants/bulk-approve`,
+    { participantIds },
+    { headers: buildAuthHeaders(token) },
+  );
+}
+
 // =====================
 // Event Pass API Functions
 // =====================

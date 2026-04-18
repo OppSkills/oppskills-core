@@ -644,7 +644,7 @@ const sidebarMenuButtonVariants = cva(
           "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-transparent hover:text-primary-600 hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
       activePill: {
-        true: "data-[active=true]:before:absolute data-[active=true]:before:-left-2 data-[active=true]:before:top-1/2 data-[active=true]:before:-translate-y-1/2 data-[active=true]:before:h-6 data-[active=true]:before:w-2 data-[active=true]:before:rounded-r-md data-[active=true]:before:bg-primary-600",
+        true: "data-[active=true]:before:absolute data-[active=true]:before:-left-2 data-[active=true]:before:top-1/2 data-[active=true]:before:-translate-y-1/2 data-[active=true]:before:h-6 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r-md data-[active=true]:before:bg-primary-600",
         false: "",
       },
       size: {

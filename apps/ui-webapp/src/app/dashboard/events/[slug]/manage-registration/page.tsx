@@ -28,9 +28,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEventRegistrationsBySlug } from "@/hooks/useEventRegistrationsBySlug";
 import type { EventRegistration } from "@/lib/api/eventApi";
-import { getParticipantRegistrationAnswers, getEventBySlug, approveParticipant } from "@/lib/api/eventApi";
+import { getParticipantRegistrationAnswers, getEventBySlug, approveParticipant, bulkApproveParticipants } from "@/lib/api/eventApi";
 import { useAuth } from "@clerk/nextjs";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import SendParticipantEmailModal from "./_components/SendParticipantEmailModal";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -173,7 +173,7 @@ export default function ManageRegistrationPage() {
 
   const handleApprove = useCallback(async (participantId: string) => {
     if (!slug) return;
-    
+
     setApprovingId(participantId);
     try {
       const token = await getToken();
@@ -181,10 +181,10 @@ export default function ManageRegistrationPage() {
         toast.error("Authentication required");
         return;
       }
-      
+
       await approveParticipant(token, slug, participantId);
       toast.success("Participant approved! Event pass is being sent.");
-      
+
       // Refresh the list
       queryClient.invalidateQueries({ queryKey: ['event-registrations-by-slug', slug] });
     } catch (error) {
@@ -195,133 +195,30 @@ export default function ManageRegistrationPage() {
     }
   }, [slug, getToken, queryClient]);
 
-  const handleExportRegistrations = useCallback(async () => {
-    if (!slug) return;
-
-    if (data.length === 0) {
-      toast.info("No registrations to export");
-      return;
-    }
-
-    setIsExporting(true);
-    const exportToastId = toast.loading("Preparing export…");
-
-    try {
+  const { mutate: handleBulkApprove, isPending: isBulkApproving } = useMutation({
+    mutationFn: async (participantIds: string[]) => {
       const token = await getToken();
-      if (!token) {
-        toast.dismiss(exportToastId);
-        toast.error("Authentication required");
-        return;
-      }
-
-      // Fetch per-participant answers in parallel — only for Completed registrations.
-      // Incomplete registrations have no submission, so we fall back to base profile data only.
-      const answersResults = await Promise.all(
-        data.map((p) => {
-          if (p.status !== "Completed") return Promise.resolve(null);
-          return getParticipantRegistrationAnswers(token, slug, p.id).catch(
-            () => null
-          );
-        })
-      );
-
-      // Collect all unique field labels in insertion order
-      const allLabels = new Set<string>();
-      answersResults.forEach((ans) => {
-        if (ans) ans.fields.forEach((f) => allLabels.add(f.label));
-      });
-
-      const rows = data.map((p, idx) => {
-        const base: Record<string, string | number | boolean | null | undefined> = {
-          "Name": p.name,
-          "Email": p.email,
-          "Gender": p.gender ?? "",
-          "University": p.university || "",
-          "Course": p.course || "",
-          "Location": p.location || "",
-          "Status": p.status,
-          "Registered On": p.registeredOn
-            ? new Date(p.registeredOn).toLocaleString("en-US", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })
-            : "",
-          "Approved": p.approved ? "Yes" : "No",
-          "Pass Sent": p.passEmailSent ? "Yes" : "No",
-          "Pass Sent At": p.passEmailSentAt
-            ? new Date(p.passEmailSentAt).toLocaleString("en-US", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })
-            : "",
-          "Approved At": p.approvedAt
-            ? new Date(p.approvedAt).toLocaleString("en-US", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })
-            : "",
-        };
-
-        const ans = answersResults[idx];
-        if (ans) {
-          for (const label of allLabels) {
-            if (EVENT_REGISTRATION_EXPORT_BASE_KEYS.has(label)) {
-              continue;
-            }
-            const field = ans.fields.find((f) => f.label === label);
-            if (field) {
-              const answer = ans.answers.find((a) => a.fieldId === field.id);
-              const val = answer?.value;
-              base[label] = Array.isArray(val)
-                ? val.join(", ")
-                : val !== null && val !== undefined
-                ? String(val)
-                : "";
-            } else {
-              base[label] = "";
-            }
-          }
-        } else {
-          for (const label of allLabels) {
-            if (EVENT_REGISTRATION_EXPORT_BASE_KEYS.has(label)) {
-              continue;
-            }
-            base[label] = "";
-          }
-        }
-
-        return base;
-      });
-
-      exportToExcel({
-        rows,
-        fileName: `${slug}-registrations.xlsx`,
-        sheetName: "Registrations",
-      });
-
-      toast.dismiss(exportToastId);
-      toast.success(`Exported ${rows.length} registration${rows.length === 1 ? "" : "s"}`);
-    } catch (err) {
-      console.error("[handleExportRegistrations]", err);
-      toast.dismiss(exportToastId);
-      toast.error("Export failed. Please try again.");
-    } finally {
-      setIsExporting(false);
+      if (!token || !slug) throw new Error("Missing requirements");
+      return bulkApproveParticipants(token, slug, participantIds);
+    },
+    onSuccess: () => {
+      toast.success("Selected participants approved! Passes are being sent.");
+      setRowSelection({});
+      queryClient.invalidateQueries({ queryKey: ['event-registrations-by-slug', slug] });
+    },
+    onError: (err) => {
+      console.error("Bulk approval error:", err);
+      toast.error("Failed to approve participants");
     }
-  }, [slug, data, getToken]);
+  });
 
+
+  const filteredData = useMemo(() => {
+    if (activeTab === "All") return data;
+    if (activeTab === "Pending") return data.filter((p) => !p.approved);
+    if (activeTab === "Approved") return data.filter((p) => p.approved);
+    return data.filter((participant) => participant.status === activeTab);
+  }, [data, activeTab]);
   const columns = useMemo<ColumnDef<Participant>[]>(
     () => [
       {
@@ -408,7 +305,7 @@ export default function ManageRegistrationPage() {
         cell: ({ row }) => {
           const sent = row.original.passEmailSent;
           const approved = row.original.approved;
-          
+
           if (sent) {
             return (
               <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
@@ -436,7 +333,7 @@ export default function ManageRegistrationPage() {
         cell: ({ row }) => {
           const participant = row.original;
           const needsApproval = !participant.approved;
-          
+
           return (
             <div className="flex items-center gap-2">
               {needsApproval && (
@@ -482,14 +379,6 @@ export default function ManageRegistrationPage() {
     ],
     [data.length, approvingId, handleApprove]
   );
-
-  const filteredData = useMemo(() => {
-    if (activeTab === "All") return data;
-    if (activeTab === "Pending") return data.filter((p) => !p.approved);
-    if (activeTab === "Approved") return data.filter((p) => p.approved);
-    return data.filter((participant) => participant.status === activeTab);
-  }, [data, activeTab]);
-
   const table = useReactTable({
     data: filteredData,
     columns,
@@ -509,6 +398,139 @@ export default function ManageRegistrationPage() {
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
+
+  const selectedRows = table.getSelectedRowModel().rows;
+  const canBulkApprove = selectedRows.length > 0 && selectedRows.every(row => !row.original.approved);
+  const selectedCount = selectedRows.length;
+
+  const handleExportRegistrations = useCallback(async () => {
+    if (!slug) return;
+
+    if (data.length === 0) {
+      toast.info("No registrations to export");
+      return;
+    }
+
+    setIsExporting(true);
+    const exportToastId = toast.loading("Preparing export…");
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.dismiss(exportToastId);
+        toast.error("Authentication required");
+        return;
+      }
+
+      // Fetch per-participant answers in parallel — only for Completed registrations.
+      // Incomplete registrations have no submission, so we fall back to base profile data only.
+      const answersResults = await Promise.all(
+        data.map((p) => {
+          if (p.status !== "Completed") return Promise.resolve(null);
+          return getParticipantRegistrationAnswers(token, slug, p.id).catch(
+            () => null
+          );
+        })
+      );
+
+      // Collect all unique field labels in insertion order
+      const allLabels = new Set<string>();
+      answersResults.forEach((ans) => {
+        if (ans) ans.fields.forEach((f) => allLabels.add(f.label));
+      });
+
+      const rows = data.map((p, idx) => {
+        const base: Record<string, string | number | boolean | null | undefined> = {
+          "Name": p.name,
+          "Email": p.email,
+          "Gender": p.gender ?? "",
+          "University": p.university || "",
+          "Course": p.course || "",
+          "Location": p.location || "",
+          "Status": p.status,
+          "Registered On": p.registeredOn
+            ? new Date(p.registeredOn).toLocaleString("en-US", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })
+            : "",
+          "Approved": p.approved ? "Yes" : "No",
+          "Pass Sent": p.passEmailSent ? "Yes" : "No",
+          "Pass Sent At": p.passEmailSentAt
+            ? new Date(p.passEmailSentAt).toLocaleString("en-US", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })
+            : "",
+          "Approved At": p.approvedAt
+            ? new Date(p.approvedAt).toLocaleString("en-US", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })
+            : "",
+        };
+
+        const ans = answersResults[idx];
+        if (ans) {
+          for (const label of allLabels) {
+            if (EVENT_REGISTRATION_EXPORT_BASE_KEYS.has(label)) {
+              continue;
+            }
+            const field = ans.fields.find((f) => f.label === label);
+            if (field) {
+              const answer = ans.answers.find((a) => a.fieldId === field.id);
+              const val = answer?.value;
+              base[label] = Array.isArray(val)
+                ? val.join(", ")
+                : val !== null && val !== undefined
+                  ? String(val)
+                  : "";
+            } else {
+              base[label] = "";
+            }
+          }
+        } else {
+          for (const label of allLabels) {
+            if (EVENT_REGISTRATION_EXPORT_BASE_KEYS.has(label)) {
+              continue;
+            }
+            base[label] = "";
+          }
+        }
+
+        return base;
+      });
+
+      exportToExcel({
+        rows,
+        fileName: `${slug}-registrations.xlsx`,
+        sheetName: "Registrations",
+      });
+
+      toast.dismiss(exportToastId);
+      toast.success(`Exported ${rows.length} registration${rows.length === 1 ? "" : "s"}`);
+    } catch (err) {
+      console.error("[handleExportRegistrations]", err);
+      toast.dismiss(exportToastId);
+      toast.error("Export failed. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [slug, data, getToken]);
+
+
 
   // Loading state
   if (isLoading) {
@@ -548,9 +570,9 @@ export default function ManageRegistrationPage() {
             <Check className="w-4 h-4 text-primary-700" />
           </div>
           <span className="text-sm font-semibold">{successAlert}</span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="ml-auto h-7 w-7 p-0 hover:bg-primary-200 hover:text-primary-700 rounded-full"
             onClick={() => setSuccessAlert(null)}
           >
@@ -615,10 +637,28 @@ export default function ManageRegistrationPage() {
             />
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
           </div>
+
+          {canBulkApprove && (
+            <Button
+              variant="default"
+              size="sm"
+              className="bg-primary-600 hover:bg-primary-700 text-white rounded-full px-4 flex items-center gap-2 animate-in zoom-in duration-200"
+              onClick={() => handleBulkApprove(selectedRows.map(r => r.original.id))}
+              disabled={isBulkApproving}
+            >
+              {isBulkApproving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              {isBulkApproving ? "Approving..." : `Approve All (${selectedCount})`}
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="sm"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 rounded-full h-10 border-border bg-background hover:bg-muted"
             onClick={handleExportRegistrations}
             disabled={isExporting}
           >
@@ -629,9 +669,6 @@ export default function ManageRegistrationPage() {
             )}
             {isExporting ? "Exporting…" : "Export"}
           </Button>
-          <button className="p-2 rounded-full border border-border hover:bg-muted text-muted-foreground transition-colors">
-            <MoreVertical className="w-5 h-5" />
-          </button>
         </div>
       </div>
 
@@ -716,7 +753,7 @@ export default function ManageRegistrationPage() {
                     {(() => {
                       const sent = row.original.passEmailSent;
                       const approved = row.original.approved;
-                      
+
                       if (sent) {
                         return (
                           <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">

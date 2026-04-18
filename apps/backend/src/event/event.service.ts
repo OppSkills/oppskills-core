@@ -1826,6 +1826,54 @@ export class EventService {
   }
 
   /**
+   * Approves multiple participants for an event at once.
+   * Strictly verifies participant-event relations and triggers pass emails.
+   */
+  async bulkApproveParticipants(
+    eventId: string,
+    participantIds: string[],
+    approverId: string,
+  ): Promise<void> {
+    if (!participantIds.length) return;
+
+    // Verify approver has permission (owner/manager) for this event
+    await this.getEventByIdForDashboard(eventId, approverId);
+
+    // Fetch applicable participants (must belong to this event and not be approved yet)
+    const participants = await prisma.eventParticipantEntity.findMany({
+      where: {
+        id: { in: participantIds },
+        eventId: eventId,
+        approved: false,
+      },
+      select: { id: true, userId: true },
+    });
+
+    if (participants.length === 0) return;
+
+    const idsToUpdate = participants.map((p) => p.id);
+
+    // Batch update approval status
+    await prisma.eventParticipantEntity.updateMany({
+      where: { id: { in: idsToUpdate } },
+      data: {
+        approved: true,
+        approvedAt: new Date(),
+        approvedById: approverId,
+      },
+    });
+
+    // Fire events for each participant for individual pass email generation
+    for (const participant of participants) {
+      this.eventEmitter.emit('event.participant.approved', {
+        participantId: participant.id,
+        eventId,
+        userId: participant.userId,
+      });
+    }
+  }
+
+  /**
    * Logs event registration to Google Sheets.
    * Writes to 'Registrations' tab with auto-headers and one column per question.
    */
