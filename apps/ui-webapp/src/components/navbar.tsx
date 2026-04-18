@@ -83,7 +83,7 @@ const Navbar = () => {
         </Link>
 
         {/* --- DESKTOP NAVIGATION --- */}
-        <div className="hidden lg:flex items-center gap-2 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div className="hidden lg:flex items-center gap-8 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           {navLinks.map((link) => {
             const active = isNavLinkActive(link.href, pathname);
             return (
@@ -92,10 +92,10 @@ const Navbar = () => {
                 href={link.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "text-base font-medium rounded-lg px-3 py-2 transition-colors",
+                  "text-base font-medium pb-1 border-b-2 transition-colors",
                   active
-                    ? "bg-primary/15 text-primary-700 font-semibold shadow-sm"
-                    : "text-neutral-700 hover:text-primary-600 hover:bg-neutral-200/80",
+                    ? "text-primary-700 border-primary-600"
+                    : "text-neutral-700 border-transparent hover:text-neutral-900",
                 )}
               >
                 {link.name}
@@ -215,7 +215,7 @@ const Navbar = () => {
               </button>
             </form>
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-0.5">
             {navLinks.map((link) => {
               const active = isNavLinkActive(link.href, pathname);
               return (
@@ -224,10 +224,10 @@ const Navbar = () => {
                   href={link.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "rounded-lg px-3 py-2.5 text-lg font-medium transition-colors",
+                    "border-l-2 pl-3 py-2 text-lg font-medium transition-colors",
                     active
-                      ? "bg-primary/15 text-primary-700 font-semibold"
-                      : "text-foreground hover:bg-neutral-200/80 hover:text-primary-600",
+                      ? "border-primary-600 text-primary-700"
+                      : "border-transparent text-foreground hover:text-primary-600",
                   )}
                   onClick={() => setIsOpen(false)}
                 >
