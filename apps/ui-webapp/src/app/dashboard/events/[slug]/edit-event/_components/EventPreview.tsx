@@ -159,7 +159,7 @@ export function EventPreview({ slug }: EventPreviewProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-transparent py-8 px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25 font-sans">
+    <div className="min-h-0 bg-transparent py-8 px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25 font-sans">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* TOP HEADER SECTION */}
         <div className="mb-8">

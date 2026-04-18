@@ -1034,47 +1034,48 @@ export default function EditEventPage() {
         </div>
       )}
 
-      {/* Tabs Navigation */}
-      <div className="w-full overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-4 px-2">
-          {availableTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all whitespace-nowrap",
-                activeTab === tab.id
-                  ? "bg-secondary text-secondary-foreground border-primary"
-                  : "bg-background border-border text-muted-foreground hover:bg-muted",
-              )}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Sticky Autosave Status */}
-      <div className="w-full sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border">
-        <div className="w-full flex items-center justify-between px-2 py-2">
-          <div className="text-xs font-medium">
-            {autoSaveStatus === "saving" ? (
-              <span className="text-primary">Saving…</span>
-            ) : autoSaveStatus === "dirty" ? (
-              <span className="text-amber-600">Unsaved changes</span>
-            ) : autoSaveStatus === "error" ? (
-              <span className="text-destructive-foreground">
-                Autosave error
-              </span>
-            ) : (
-              <span className="text-emerald-600">Saved</span>
-            )}
+      {/* Tabs + autosave: one sticky strip so switching tabs stays possible on long pages (Preview / Registration Settings). */}
+      <div className="sticky top-0 z-30 w-full border-b border-border bg-background/95 backdrop-blur-md supports-backdrop-filter:bg-background/85">
+        <div className="w-full max-w-6xl mx-auto flex flex-col gap-2 px-2 sm:px-4 py-3">
+          <div className="w-full overflow-x-auto no-scrollbar">
+            <div className="flex w-max min-w-full items-center gap-2 sm:gap-4">
+              {availableTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "flex shrink-0 items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all whitespace-nowrap",
+                    activeTab === tab.id
+                      ? "bg-secondary text-secondary-foreground border-primary"
+                      : "bg-background border-border text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="text-[11px] text-muted-foreground">
-            {typeof lastSavedAtRef.current === "number"
-              ? `Last saved: ${new Date(lastSavedAtRef.current).toLocaleTimeString()}`
-              : ""}
+          <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-2">
+            <div className="text-xs font-medium">
+              {autoSaveStatus === "saving" ? (
+                <span className="text-primary">Saving…</span>
+              ) : autoSaveStatus === "dirty" ? (
+                <span className="text-amber-600">Unsaved changes</span>
+              ) : autoSaveStatus === "error" ? (
+                <span className="text-destructive-foreground">
+                  Autosave error
+                </span>
+              ) : (
+                <span className="text-emerald-600">Saved</span>
+              )}
+            </div>
+            <div className="text-[11px] text-muted-foreground text-right tabular-nums">
+              {typeof lastSavedAtRef.current === "number"
+                ? `Last saved: ${new Date(lastSavedAtRef.current).toLocaleTimeString()}`
+                : ""}
+            </div>
           </div>
         </div>
       </div>
@@ -1333,7 +1334,7 @@ export default function EditEventPage() {
         )}
 
         {activeTab === "preview" && slugParam && (
-          <div className="bg-background rounded-2xl overflow-hidden">
+          <div className="bg-background rounded-2xl border border-border overflow-hidden max-h-[min(85dvh,1200px)] overflow-y-auto">
             <EventPreview slug={slugParam} />
           </div>
         )}
