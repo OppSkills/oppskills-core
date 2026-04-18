@@ -40,6 +40,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { exportToExcel } from "@/lib/exportToExcel";
 
 /**
@@ -117,7 +124,7 @@ export default function ManageRegistrationPage() {
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
   const [activeTab, setActiveTab] = useState<
-    "All" | "Completed" | "Incomplete"
+    "All" | "Completed" | "Incomplete" | "Pending" | "Approved"
   >("All");
   const [emailRecipient, setEmailRecipient] = useState<Participant | null>(
     null
@@ -478,6 +485,8 @@ export default function ManageRegistrationPage() {
 
   const filteredData = useMemo(() => {
     if (activeTab === "All") return data;
+    if (activeTab === "Pending") return data.filter((p) => !p.approved);
+    if (activeTab === "Approved") return data.filter((p) => p.approved);
     return data.filter((participant) => participant.status === activeTab);
   }, [data, activeTab]);
 
@@ -528,6 +537,8 @@ export default function ManageRegistrationPage() {
 
   const completedCount = data.filter((p) => p.status === "Completed").length;
   const incompleteCount = data.filter((p) => p.status === "Incomplete").length;
+  const pendingCount = data.filter((p) => !p.approved).length;
+  const approvedCount = data.filter((p) => p.approved).length;
 
   return (
     <div className="w-full bg-background min-h-screen p-8 flex flex-col items-center gap-8">
@@ -569,37 +580,28 @@ export default function ManageRegistrationPage() {
 
       {/* Header Controls */}
       <div className="w-full max-w-5xl flex flex-col md:flex-row justify-between items-center gap-4">
-        {/* Tabs */}
+        {/* Filter Dropdown */}
         <div className="flex items-center gap-2">
-          {[
-            {
-              label: `All (${data.length})`,
-              value: "All",
-            },
-            {
-              label: `Completed (${completedCount})`,
-              value: "Completed",
-            },
-            {
-              label: `Incomplete (${incompleteCount})`,
-              value: "Incomplete",
-            },
-          ].map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() =>
-                setActiveTab(tab.value as "All" | "Completed" | "Incomplete")
-              }
-              className={cn(
-                "px-4 py-2 rounded-full text-sm font-medium transition-colors",
-                activeTab === tab.value
-                  ? "bg-primary-500 text-primary-foreground"
-                  : "bg-primary-100 text-foreground hover:bg-primary-200"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
+          <Select
+            value={activeTab}
+            onValueChange={(value) =>
+              setActiveTab(value as any)
+            }
+          >
+            <SelectTrigger className="w-[200px] h-10 rounded-full bg-primary-50 border-primary-100 text-foreground font-medium focus:ring-1 focus:ring-primary/20">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-primary-500" />
+                <SelectValue placeholder="Filter Status" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-border shadow-lg">
+              <SelectItem value="All" className="rounded-lg">All Registrations ({data.length})</SelectItem>
+              <SelectItem value="Completed" className="rounded-lg">Completed ({completedCount})</SelectItem>
+              <SelectItem value="Incomplete" className="rounded-lg">Incomplete ({incompleteCount})</SelectItem>
+              <SelectItem value="Pending" className="rounded-lg">Pending Approval ({pendingCount})</SelectItem>
+              <SelectItem value="Approved" className="rounded-lg">Approved ({approvedCount})</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Search & Actions */}
