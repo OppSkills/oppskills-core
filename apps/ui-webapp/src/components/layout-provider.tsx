@@ -78,21 +78,16 @@ export default function LayoutProvider({
   const hasSecondarySidebar =
     ishackathonDetail || isEventsDashboard || isFestivalsDashboard;
 
-  /**
-   * Control the main sidebar's open state
-   * When on hackathon detail pages or events dashboard, force collapse to icon mode
-   * Hooks must be at the top level, not inside conditionals
-   */
   const [mainSidebarOpen, setMainSidebarOpen] =
     React.useState(!hasSecondarySidebar);
 
-  /**
-   * Update main sidebar state when route changes
-   * Collapse main sidebar when entering detailed/secondary sections
-   */
-  React.useEffect(() => {
+  // Sync state synchronously during render if the route type (main vs detail) changes.
+  // This prevents the one-frame flicker where the sidebar remains collapsed when navigating back to a main route.
+  const [prevHasSecondary, setPrevHasSecondary] = React.useState(hasSecondarySidebar);
+  if (hasSecondarySidebar !== prevHasSecondary) {
+    setPrevHasSecondary(hasSecondarySidebar);
     setMainSidebarOpen(!hasSecondarySidebar);
-  }, [hasSecondarySidebar]);
+  }
 
 
 
@@ -124,8 +119,12 @@ export default function LayoutProvider({
               } as React.CSSProperties
             }
             className="bg-neutral-200"
-            open={mainSidebarOpen}
-            onOpenChange={setMainSidebarOpen}
+            open={hasSecondarySidebar ? mainSidebarOpen : true}
+            onOpenChange={(open) => {
+              if (hasSecondarySidebar) {
+                setMainSidebarOpen(open);
+              }
+            }}
             openMobile={activeMobileTab === "main" && mobileMenuOpen}
             onOpenMobileChange={(open) => {
               setMobileMenuOpen(open);
