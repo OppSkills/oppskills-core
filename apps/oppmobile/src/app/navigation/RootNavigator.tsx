@@ -29,9 +29,14 @@ import {
   DiscoverEventsSecondaryScreen,
 } from '../../domains/events/presentation/screens/EventScreens';
 import {
+  EventFreePageScreen,
+  EventPaidPageScreen,
+} from '../../domains/events/presentation/screens/EventDetailScreens';
+import {
   DiscoverHackathonsScreen,
   HackathonPageScreen,
 } from '../../domains/hackathons/presentation/screens/HackathonScreens';
+import { HackathonRegistrationScreen } from '../../domains/hackathons/presentation/screens/HackathonRegistrationScreen';
 import {
   searchRepository,
 } from '../../domains/search/data/repositories';
@@ -399,8 +404,9 @@ function DiscoverStackNavigator() {
         {({ navigation }) => (
           <DiscoverEventsPrimaryScreen
             onOpenCompetitions={() => navigation.navigate(appRoutes.discoverCompetitions)}
-            onOpenEventsSecondary={() => navigation.navigate(appRoutes.discoverEventsSecondary)}
             onOpenHackathons={() => navigation.navigate(appRoutes.discoverHackathons)}
+            onOpenEventFreePage={() => navigation.navigate(appRoutes.eventPageFree)}
+            onOpenEventPaidPage={() => navigation.navigate(appRoutes.eventPagePaid)}
             onOpenCommunities={() => {
               setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_RECENT' }));
               navigation.navigate(appRoutes.searchRecent);
@@ -416,8 +422,9 @@ function DiscoverStackNavigator() {
         {({ navigation }) => (
           <DiscoverEventsSecondaryScreen
             onOpenCompetitions={() => navigation.navigate(appRoutes.discoverCompetitions)}
-            onOpenEventsPrimary={() => navigation.navigate(appRoutes.discoverEventsPrimary)}
             onOpenHackathons={() => navigation.navigate(appRoutes.discoverHackathons)}
+            onOpenEventFreePage={() => navigation.navigate(appRoutes.eventPageFree)}
+            onOpenEventPaidPage={() => navigation.navigate(appRoutes.eventPagePaid)}
             onOpenCommunities={() => {
               setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_POPULAR' }));
               navigation.navigate(appRoutes.searchPopular);
@@ -591,6 +598,49 @@ function DiscoverStackNavigator() {
       <DiscoverStack.Screen name={appRoutes.hackathonPage}>
         {({ navigation }) => (
           <HackathonPageScreen
+            onBackToDiscover={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+
+              navigation.navigate(appRoutes.discoverStack);
+            }}
+            onRegisterNow={() => navigation.navigate(appRoutes.hackathonRegistration)}
+          />
+        )}
+      </DiscoverStack.Screen>
+      <DiscoverStack.Screen name={appRoutes.hackathonRegistration}>
+        {({ navigation }) => (
+          <HackathonRegistrationScreen
+            onBack={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+
+              navigation.navigate(appRoutes.hackathonPage);
+            }}
+          />
+        )}
+      </DiscoverStack.Screen>
+      <DiscoverStack.Screen name={appRoutes.eventPageFree}>
+        {({ navigation }) => (
+          <EventFreePageScreen
+            onBackToDiscover={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+
+              navigation.navigate(appRoutes.discoverStack);
+            }}
+          />
+        )}
+      </DiscoverStack.Screen>
+      <DiscoverStack.Screen name={appRoutes.eventPagePaid}>
+        {({ navigation }) => (
+          <EventPaidPageScreen
             onBackToDiscover={() => {
               if (navigation.canGoBack()) {
                 navigation.goBack();

@@ -24,26 +24,29 @@ import { AppText, SearchInput } from '../../../../shared/ui';
 
 interface DiscoverEventsPrimaryScreenProps {
   readonly onOpenCompetitions: () => void;
-  readonly onOpenEventsSecondary: () => void;
   readonly onOpenHackathons: () => void;
   readonly onOpenCommunities: () => void;
+  readonly onOpenEventFreePage: () => void;
+  readonly onOpenEventPaidPage: () => void;
   readonly onOpenSearchRecent: () => void;
 }
 
 export function DiscoverEventsPrimaryScreen({
   onOpenCompetitions,
-  onOpenEventsSecondary,
   onOpenHackathons,
   onOpenCommunities,
+  onOpenEventFreePage,
+  onOpenEventPaidPage,
   onOpenSearchRecent,
 }: DiscoverEventsPrimaryScreenProps) {
   return (
     <DiscoverEventsTemplate
       onOpenCommunities={onOpenCommunities}
       onOpenCompetitions={onOpenCompetitions}
+      onOpenEventFreePage={onOpenEventFreePage}
+      onOpenEventPaidPage={onOpenEventPaidPage}
       onOpenHackathons={onOpenHackathons}
       onOpenSearch={onOpenSearchRecent}
-      onOpenVariant={onOpenEventsSecondary}
       preselectedBookmarkedIds={[]}
       retryErrorLabel="Unable to load event listings right now."
     />
@@ -52,26 +55,29 @@ export function DiscoverEventsPrimaryScreen({
 
 interface DiscoverEventsSecondaryScreenProps {
   readonly onOpenCompetitions: () => void;
-  readonly onOpenEventsPrimary: () => void;
   readonly onOpenHackathons: () => void;
   readonly onOpenCommunities: () => void;
+  readonly onOpenEventFreePage: () => void;
+  readonly onOpenEventPaidPage: () => void;
   readonly onOpenSearchPopular: () => void;
 }
 
 export function DiscoverEventsSecondaryScreen({
   onOpenCompetitions,
-  onOpenEventsPrimary,
   onOpenHackathons,
   onOpenCommunities,
+  onOpenEventFreePage,
+  onOpenEventPaidPage,
   onOpenSearchPopular,
 }: DiscoverEventsSecondaryScreenProps) {
   return (
     <DiscoverEventsTemplate
       onOpenCommunities={onOpenCommunities}
       onOpenCompetitions={onOpenCompetitions}
+      onOpenEventFreePage={onOpenEventFreePage}
+      onOpenEventPaidPage={onOpenEventPaidPage}
       onOpenHackathons={onOpenHackathons}
       onOpenSearch={onOpenSearchPopular}
-      onOpenVariant={onOpenEventsPrimary}
       preselectedBookmarkedIds={['discover-event-feature-2']}
       retryErrorLabel="Unable to load featured events right now."
     />
@@ -82,8 +88,9 @@ interface DiscoverEventsTemplateProps {
   readonly onOpenCommunities: () => void;
   readonly onOpenCompetitions: () => void;
   readonly onOpenHackathons: () => void;
+  readonly onOpenEventFreePage: () => void;
+  readonly onOpenEventPaidPage: () => void;
   readonly onOpenSearch: () => void;
-  readonly onOpenVariant: () => void;
   readonly preselectedBookmarkedIds: readonly string[];
   readonly retryErrorLabel: string;
 }
@@ -92,8 +99,9 @@ function DiscoverEventsTemplate({
   onOpenCommunities,
   onOpenCompetitions,
   onOpenHackathons,
+  onOpenEventFreePage,
+  onOpenEventPaidPage,
   onOpenSearch,
-  onOpenVariant,
   preselectedBookmarkedIds,
   retryErrorLabel,
 }: DiscoverEventsTemplateProps) {
@@ -213,7 +221,14 @@ function DiscoverEventsTemplate({
                   bookmarked={bookmarkedIds.includes(item.id)}
                   item={item}
                   key={item.id}
-                  onOpen={onOpenVariant}
+                  onOpen={() => {
+                    if (isEventFree(item.entryFee)) {
+                      onOpenEventFreePage();
+                      return;
+                    }
+
+                    onOpenEventPaidPage();
+                  }}
                   onToggleBookmark={toggleBookmark}
                   showFrequency={showFrequency}
                 />
@@ -262,6 +277,8 @@ function EventCard({
   readonly onToggleBookmark: (itemId: string) => void;
   readonly onOpen: () => void;
 }) {
+  const priceTypeLabel = isEventFree(item.entryFee) ? 'Free' : 'Paid';
+
   return (
     <Pressable onPress={onOpen} style={styles.eventCard}>
       <ImageBackground imageStyle={styles.eventHeroImage} source={subtractHeroImage} style={styles.eventHero}>
@@ -279,11 +296,11 @@ function EventCard({
 
         <View style={styles.modePill}>
           <AppText style={styles.modePillText} variant="caption">
-            Free
+            {priceTypeLabel}
           </AppText>
           <View style={styles.modeDot} />
           <AppText style={styles.modePillText} variant="caption">
-            Offline
+            {item.venue}
           </AppText>
         </View>
       </ImageBackground>
@@ -350,6 +367,10 @@ function EventCard({
       </View>
     </Pressable>
   );
+}
+
+function isEventFree(entryFee: string): boolean {
+  return entryFee.trim().toLowerCase() === 'free';
 }
 
 const styles = StyleSheet.create({
