@@ -19,6 +19,7 @@ import RegistrationLineChart from "@/app/dashboard/_components/RegistrationChart
 import Alerts from "@/app/dashboard/_components/Alerts";
 import RoundStats from "@/app/dashboard/_components/RoundStats";
 import DomainsChart from "@/app/dashboard/_components/DomainsChart";
+import PublicLinkQrCard from "@/app/dashboard/_components/PublicLinkQrCard";
 
 // Helper components
 function AnalyticsLoader() {
@@ -115,7 +116,7 @@ async function AnalyticsSection({
   ];
 
   return (
-    <MotionContainer className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 justify-between">
+    <MotionContainer className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
       {analyticData.map((item, index) => (
         <MotionItem key={index}>
           <AnalyticCard
@@ -127,6 +128,14 @@ async function AnalyticsSection({
           />
         </MotionItem>
       ))}
+
+      <MotionItem className="md:col-span-2 md:justify-self-center xl:col-span-1 xl:justify-self-stretch">
+        <PublicLinkQrCard
+          title="Event public link"
+          url={`https://www.oppskills.com/events/${slug}`}
+          downloadFileName={`event-${slug}-qr`}
+        />
+      </MotionItem>
     </MotionContainer>
   );
 }
