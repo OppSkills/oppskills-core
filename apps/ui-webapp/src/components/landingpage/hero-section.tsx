@@ -34,8 +34,8 @@ export default function HeroSection() {
           ].map((item, index) => {
             return (
               <Link href={item.link} className='bg-primary-200 rounded-xl p-4 relative h-40 overflow-hidden' key={index}>
-                <h4 className='text-neutral-900 text-lg font-normal'>{item.title}</h4>
-                <div className='rounded-full bg-primary-300 w-40 h-40 absolute -bottom-10 -right-10'>
+                <p className='text-neutral-900 text-xl font-normal'>{item.title}</p>
+                <div className='rounded-full bg-primary-300 w-35 h-35 absolute -bottom-10 -right-2'>
                 </div>
                 <Image
                   src={item.image}
