@@ -207,7 +207,7 @@ export default async function OpportunityDashboard(props: {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
           <div className="left">
-            <h1 className="font-semibold text-[24px] md:text-[28px] break-words">
+            <h1 className="font-semibold text-2xl md:text-3xl wrap-break-words">
               Welcome back, {user?.firstName} {user?.lastName}
             </h1>
             <p className="text-sm md:text-base text-muted-foreground pt-1 md:pt-2">
@@ -220,6 +220,7 @@ export default async function OpportunityDashboard(props: {
               title={name}
               slug={slug}
               type="hackathon"
+              className="rounded-full"
             />
           </div>
         </div>

@@ -88,7 +88,7 @@ export default function MyOpportunities() {
 
   if (isLoading) {
     return (
-      <section className="w-full pt-12 md:pt-16 lg:pt-20">
+      <section className="w-full pt-12">
         <div className="container mx-auto">
           <div className="mb-8 space-y-2 flex flex-col gap-2">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
