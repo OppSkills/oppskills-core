@@ -103,14 +103,6 @@ export function SiteHeader() {
         <div className="flex items-center gap-4">
           {showProfile && isLoaded && user ? (
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full bg-neutral-200 hover:bg-slate-200"
-              >
-                <Bell className="h-5 w-5 text-neutral-700" />
-              </Button>
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-3 cursor-pointer outline-none">
