@@ -58,7 +58,7 @@ async function AnalyticsSection({
     if (rawStats) {
       stats = {
         registrations: Number(rawStats.registrations) || 0,
-        periodRegistrations: Number((rawStats as any).periodRegistrations) || 0,
+        periodRegistrations: Number(rawStats.periodRegistrations) || 0,
         impressions: Number(rawStats.impressions) || 0,
         views: Number(rawStats.views) || 0,
       };
@@ -163,7 +163,7 @@ export default async function EventDashboard(props: {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
           <div className="left">
-            <h1 className="font-semibold text-2xl md:text-3xl wrap-break-words truncate">
+            <h1 className="font-semibold text-2xl md:text-3xl wrap-break-words">
               Welcome back, {user?.firstName} {user?.lastName}
             </h1>
             <p className="text-sm md:text-base text-muted-foreground pt-1 md:pt-2">

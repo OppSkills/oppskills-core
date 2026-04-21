@@ -5,7 +5,7 @@ import Redis from 'ioredis';
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
-  constructor(@Inject('REDIS') private readonly redis: Redis) {}
+  constructor(@Inject('REDIS') private readonly redis: Redis) { }
 
   private async resolveRange(options: { period?: string; from?: string; to?: string; slug?: string; type?: 'event' | 'hackathon' }) {
     const { period, from, to, slug, type } = options;
@@ -86,7 +86,7 @@ export class AnalyticsService {
     const data: { [key: string]: { men: number; women: number; other: number } } = {};
     const current = new Date(startDate);
     current.setUTCHours(0, 0, 0, 0);
-    
+
     const normalizedEndDate = new Date(endDate);
     normalizedEndDate.setUTCHours(23, 59, 59, 999);
 
@@ -112,30 +112,30 @@ export class AnalyticsService {
 
     // Fill buckets
     items.forEach(item => {
-        const registrationTime = item.joinedAt.getTime();
-        
-        // Find the right bucket (last boundary <= registrationTime)
-        let assignedKey: string | null = null;
-        for (let i = bucketBoundaries.length - 1; i >= 0; i--) {
-            if (registrationTime >= bucketBoundaries[i].start) {
-                assignedKey = bucketBoundaries[i].key;
-                break;
-            }
+      const registrationTime = item.joinedAt.getTime();
+
+      // Find the right bucket (last boundary <= registrationTime)
+      let assignedKey: string | null = null;
+      for (let i = bucketBoundaries.length - 1; i >= 0; i--) {
+        if (registrationTime >= bucketBoundaries[i].start) {
+          assignedKey = bucketBoundaries[i].key;
+          break;
         }
-        
-        if (assignedKey && data[assignedKey]) {
-            const gender = item.gender;
-            if (gender === 'MALE') data[assignedKey].men++;
-            else if (gender === 'FEMALE') data[assignedKey].women++;
-            else data[assignedKey].other++;
-        }
+      }
+
+      if (assignedKey && data[assignedKey]) {
+        const gender = item.gender;
+        if (gender === 'MALE') data[assignedKey].men++;
+        else if (gender === 'FEMALE') data[assignedKey].women++;
+        else data[assignedKey].other++;
+      }
     });
 
-    return bucketBoundaries.map(b => ({ 
-        date: b.key, 
-        men: data[b.key].men,
-        women: data[b.key].women,
-        other: data[b.key].other 
+    return bucketBoundaries.map(b => ({
+      date: b.key,
+      men: data[b.key].men,
+      women: data[b.key].women,
+      other: data[b.key].other
     }));
   }
 
@@ -146,21 +146,12 @@ export class AnalyticsService {
     return `${day}-${month}-${year}`;
   }
 
-  private stringToHash(str: string) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) - hash + str.charCodeAt(i);
-      hash |= 0;
-    }
-    return hash;
-  }
-
   async trackPageView(type: 'event' | 'opportunity', slug: string) {
-    this.redis.incr(`pv:${type}:${slug}`).catch(() => {});
+    this.redis.incr(`pv:${type}:${slug}`).catch(() => { });
   }
 
   async trackPostImpression(type: 'event' | 'opportunity', slug: string) {
-    this.redis.incr(`pi:${type}:${slug}`).catch(() => {});
+    this.redis.incr(`pi:${type}:${slug}`).catch(() => { });
   }
 
   async flushToDb() {
@@ -239,7 +230,7 @@ export class AnalyticsService {
     if (!event) return null;
 
     const { startDate, endDate } = await this.resolveRange({ ...options, slug, type: 'event' });
-    
+
     // Period-specific registrations
     const periodRegistrations = await prisma.eventParticipantEntity.count({
       where: {
@@ -275,31 +266,31 @@ export class AnalyticsService {
     if (!event) return null;
 
     const { startDate, endDate } = await this.resolveRange({ ...options, slug, type: 'event' });
-    
+
     // Fetch real registrations
     const rawRegistrations = await prisma.eventParticipantEntity.findMany({
       where: {
         event: { slug },
         joinedAt: { gte: startDate, lte: endDate },
       },
-      select: { 
+      select: {
         joinedAt: true,
         user: {
-            select: {
-                onboardingProfile: { select: { gender: true } }
-            }
+          select: {
+            onboardingProfile: { select: { gender: true } }
+          }
         }
       },
       orderBy: { joinedAt: 'asc' },
     });
 
     const registrationsTrend = this.processTrendData(
-        rawRegistrations.map(r => ({
-            joinedAt: r.joinedAt,
-            gender: r.user.onboardingProfile?.gender ?? undefined
-        })), 
-        startDate, 
-        endDate
+      rawRegistrations.map(r => ({
+        joinedAt: r.joinedAt,
+        gender: r.user.onboardingProfile?.gender ?? undefined
+      })),
+      startDate,
+      endDate
     );
 
     // Fetch real gender stats
@@ -309,7 +300,7 @@ export class AnalyticsService {
       where: {
         user: {
           eventParticipations: {
-            some: { 
+            some: {
               event: { slug },
               joinedAt: { gte: startDate, lte: endDate }
             }
@@ -354,7 +345,7 @@ export class AnalyticsService {
     if (!hackathon) return null;
 
     const { startDate, endDate } = await this.resolveRange({ ...options, slug, type: 'hackathon' });
-    
+
     // Period-specific registrations (Teams and Members)
     const teamLeaderCount = await prisma.teamEntity.count({
       where: {
@@ -397,17 +388,17 @@ export class AnalyticsService {
     if (!hackathon) return null;
 
     const { startDate, endDate } = await this.resolveRange({ ...options, slug, type: 'hackathon' });
-    
+
     // Fetch real registrations (Combined leader creation and member joining)
     const leaders = await prisma.teamEntity.findMany({
       where: {
         hackathon: { slug },
         createdAt: { gte: startDate, lte: endDate },
       },
-      select: { 
+      select: {
         createdAt: true,
         leader: {
-            select: { onboardingProfile: { select: { gender: true } } }
+          select: { onboardingProfile: { select: { gender: true } } }
         }
       },
     });
@@ -417,17 +408,17 @@ export class AnalyticsService {
         team: { hackathon: { slug } },
         joinedAt: { gte: startDate, lte: endDate },
       },
-      select: { 
+      select: {
         joinedAt: true,
         user: {
-            select: { onboardingProfile: { select: { gender: true } } }
+          select: { onboardingProfile: { select: { gender: true } } }
         }
       },
     });
 
     const combinedItems = [
-        ...leaders.map(l => ({ joinedAt: l.createdAt, gender: l.leader.onboardingProfile?.gender ?? undefined })),
-        ...members.map(m => ({ joinedAt: m.joinedAt, gender: m.user.onboardingProfile?.gender ?? undefined }))
+      ...leaders.map(l => ({ joinedAt: l.createdAt, gender: l.leader.onboardingProfile?.gender ?? undefined })),
+      ...members.map(m => ({ joinedAt: m.joinedAt, gender: m.user.onboardingProfile?.gender ?? undefined }))
     ].sort((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime());
 
     const registrationsTrend = this.processTrendData(combinedItems, startDate, endDate);
@@ -751,19 +742,19 @@ export class AnalyticsService {
     return {
       event: topEvent
         ? {
-            title: topEvent.name,
-            slug: topEvent.slug,
-            thumbnail: topEvent.bannerImageUrl,
-            tregistrations: topEvent._count?.participants ?? 0,
-          }
+          title: topEvent.name,
+          slug: topEvent.slug,
+          thumbnail: topEvent.bannerImageUrl,
+          tregistrations: topEvent._count?.participants ?? 0,
+        }
         : null,
       hackathon: topHackathon
         ? {
-            title: topHackathon.name,
-            slug: topHackathon.slug,
-            thumbnail: topHackathon.bannerImageUrl,
-            tregistrations: topHackathon.registrationCount ?? 0,
-          }
+          title: topHackathon.name,
+          slug: topHackathon.slug,
+          thumbnail: topHackathon.bannerImageUrl,
+          tregistrations: topHackathon.registrationCount ?? 0,
+        }
         : null,
     };
   }

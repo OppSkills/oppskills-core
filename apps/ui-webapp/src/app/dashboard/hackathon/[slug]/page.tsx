@@ -58,7 +58,7 @@ async function AnalyticsSection({
     if (rawStats) {
       stats = {
         registrations: Number(rawStats.registrations) || 0,
-        periodRegistrations: Number((rawStats as any).periodRegistrations) || 0,
+        periodRegistrations: Number(rawStats.periodRegistrations) || 0,
         impressions: Number(rawStats.impressions) || 0,
         views: Number(rawStats.views) || 0,
       };
@@ -226,23 +226,23 @@ export default async function OpportunityDashboard(props: {
 
         {/* Analytics Section with Loader */}
         <Suspense fallback={<AnalyticsLoader />}>
-          <AnalyticsSection 
-            token={token} 
-            slug={slug} 
-            period={period} 
-            from={from} 
-            to={to} 
+          <AnalyticsSection
+            token={token}
+            slug={slug}
+            period={period}
+            from={from}
+            to={to}
           />
         </Suspense>
 
         {/* CHARTS */}
         <Suspense fallback={<AnalyticsLoader />}>
-          <DetailedAnalyticsSection 
-            token={token} 
-            slug={slug} 
-            period={period} 
-            from={from} 
-            to={to} 
+          <DetailedAnalyticsSection
+            token={token}
+            slug={slug}
+            period={period}
+            from={from}
+            to={to}
           />
         </Suspense>
       </div>
