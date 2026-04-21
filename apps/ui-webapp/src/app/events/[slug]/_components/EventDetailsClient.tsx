@@ -245,7 +245,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     tickets: tickets,
     about: event.description || "",
     contact: {
-      email: event.owner.email || "",
+      email: event.contactEmail || event.owner?.email || "",
       phone: event.contactPhone || "",
     },
     speakers: [], // Map if needed
@@ -388,9 +388,13 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-500 mb-0.5">
+                      Organizer
+                    </p>
                     <h4 className="font-bold text-foreground truncate">
                       {(() => {
-                        const orgName = event?.organization_name;
+                        const orgName =
+                          event?.organizationName ?? event?.organization_name;
                         const ownerName = [event?.owner?.firstName, event?.owner?.lastName]
                           .filter(Boolean)
                           .join(" ");
@@ -402,6 +406,36 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                     )}
                   </div>
                 </div>
+
+                {/* Designated contact from Additional info (saved as contactName / contactEmail / contactPhone) */}
+                {(() => {
+                  const name = typeof event.contactName === "string" ? event.contactName.trim() : "";
+                  const email = typeof event.contactEmail === "string" ? event.contactEmail.trim() : "";
+                  const phone = typeof event.contactPhone === "string" ? event.contactPhone.trim() : "";
+                  const hasContact = Boolean(name || email || phone);
+                  if (!hasContact) return null;
+                  return (
+                    <div className="p-4 bg-[#FDF2FF] rounded-xl border border-purple-100 flex items-center gap-4 hover:border-purple-200 transition-colors">
+                      <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg shrink-0">
+                        {(name.charAt(0) || email.charAt(0) || "?").toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-500 mb-0.5">
+                          Event contact
+                        </p>
+                        <h4 className="font-bold text-foreground truncate">
+                          {name || "Contact"}
+                        </h4>
+                        {phone ? (
+                          <p className="text-xs text-neutral-500 truncate">{phone}</p>
+                        ) : null}
+                        {email ? (
+                          <p className="text-xs text-neutral-500 truncate">{email}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </section>
           </div>
