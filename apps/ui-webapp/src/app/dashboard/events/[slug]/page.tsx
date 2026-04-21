@@ -176,6 +176,7 @@ export default async function EventDashboard(props: {
               title={name}
               slug={slug}
               type="event"
+              className="rounded-full"
             />
           </div>
         </div>
