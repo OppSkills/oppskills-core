@@ -16,7 +16,7 @@ export class AnalyticsService {
       startDate = new Date(from);
       endDate = new Date(to);
     } else {
-      const activePeriod = period || 'this_week';
+      const activePeriod = period || 'all_time';
       switch (activePeriod) {
         case 'today':
           startDate.setHours(0, 0, 0, 0);

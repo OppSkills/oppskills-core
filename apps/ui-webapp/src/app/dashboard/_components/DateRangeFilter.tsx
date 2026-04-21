@@ -32,7 +32,7 @@ export function DateRangeFilter({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const currentPeriod = searchParams.get('period') || 'this_week';
+  const currentPeriod = searchParams.get('period') || 'all_time';
   const currentFrom = searchParams.get('from');
   const currentTo = searchParams.get('to');
 
