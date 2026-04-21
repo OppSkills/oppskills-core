@@ -25,6 +25,7 @@ interface RegistrationLineChartProps {
 const DefaultLines: ChartConfig[] = [
     { key: "men", color: "#8b5cf6", label: "Male" },
     { key: "women", color: "#ec4899", label: "Female" },
+    { key: "other", color: "#64748b", label: "Others" },
 ];
 
 const CustomLegend = ({ lines }: { lines: ChartConfig[] }) => (
@@ -78,9 +79,16 @@ export default function RegistrationLineChart({
                                 dataKey="date"
                                 axisLine={true}
                                 tickLine={false}
-                                tick={{ fill: '#6b7280', fontSize: 12 }}
+                                tick={{ fill: '#6b7280', fontSize: 10 }}
                                 dy={10}
                                 stroke="#e5e7eb"
+                                minTickGap={40}
+                                interval="preserveStartEnd"
+                                tickFormatter={(val) => {
+                                    // If it's a long date like "dd-mm-yyyy", maybe shorten it
+                                    // but for now the grouping logic in backend already handles this
+                                    return val;
+                                }}
                             />
 
                             <YAxis

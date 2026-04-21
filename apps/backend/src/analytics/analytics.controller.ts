@@ -5,6 +5,7 @@ import {
   NotFoundException,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { AnalyticsService } from './analytics.service';
@@ -15,33 +16,54 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('event/:slug/general')
-  async getEventGeneralStats(@Param('slug') slug: string, @Req() req: any) {
+  async getEventGeneralStats(
+    @Param('slug') slug: string,
+    @Query('period') period: string,
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Req() req: any,
+  ) {
     const userId = req.user?.id;
     const stats = await this.analyticsService.getEventGeneralStats(
       slug,
       userId,
+      { period, from, to },
     );
     if (!stats) throw new NotFoundException('Event not found');
     return stats;
   }
 
   @Get('event/:slug/detailed')
-  async getEventDetailedStats(@Param('slug') slug: string, @Req() req: any) {
+  async getEventDetailedStats(
+    @Param('slug') slug: string,
+    @Query('period') period: string,
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Req() req: any,
+  ) {
     const userId = req.user?.id;
     const stats = await this.analyticsService.getEventDetailedStats(
       slug,
       userId,
+      { period, from, to },
     );
     if (!stats) throw new NotFoundException('Event not found');
     return stats;
   }
 
   @Get('hackathon/:slug/general')
-  async getHackathonGeneralStats(@Param('slug') slug: string, @Req() req: any) {
+  async getHackathonGeneralStats(
+    @Param('slug') slug: string,
+    @Query('period') period: string,
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Req() req: any,
+  ) {
     const userId = req.user?.id;
     const stats = await this.analyticsService.getHackathonGeneralStats(
       slug,
       userId,
+      { period, from, to },
     );
     if (!stats) throw new NotFoundException('Hackathon not found');
     return stats;
@@ -50,12 +72,16 @@ export class AnalyticsController {
   @Get('hackathon/:slug/detailed')
   async getHackathonDetailedStats(
     @Param('slug') slug: string,
+    @Query('period') period: string,
+    @Query('from') from: string,
+    @Query('to') to: string,
     @Req() req: any,
   ) {
     const userId = req.user?.id;
     const stats = await this.analyticsService.getHackathonDetailedStats(
       slug,
       userId,
+      { period, from, to },
     );
     if (!stats) throw new NotFoundException('Hackathon not found');
     return stats;

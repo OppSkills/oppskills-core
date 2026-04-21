@@ -1,4 +1,5 @@
 import { ShareButton } from "@/app/dashboard/_components/ShareButton";
+import { DateRangeFilter } from "@/app/dashboard/_components/DateRangeFilter";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Suspense } from "react";
@@ -31,6 +32,7 @@ function AnalyticsLoader() {
 // Type definitions
 type InternalStats = {
   registrations: number;
+  periodRegistrations: number;
   impressions: number;
   views: number;
 };
@@ -39,17 +41,24 @@ type InternalStats = {
 async function AnalyticsSection({
   token,
   slug,
+  period,
+  from,
+  to,
 }: {
   token: string;
   slug: string;
+  period?: string;
+  from?: string;
+  to?: string;
 }) {
-  let stats: InternalStats = { registrations: 0, impressions: 0, views: 0 };
+  let stats: InternalStats = { registrations: 0, periodRegistrations: 0, impressions: 0, views: 0 };
 
   try {
-    const rawStats = await getEventGeneralStats(token, slug);
+    const rawStats = await getEventGeneralStats(token, slug, { period, from, to });
     if (rawStats) {
       stats = {
         registrations: Number(rawStats.registrations) || 0,
+        periodRegistrations: Number((rawStats as any).periodRegistrations) || 0,
         impressions: Number(rawStats.impressions) || 0,
         views: Number(rawStats.views) || 0,
       };
@@ -58,7 +67,7 @@ async function AnalyticsSection({
     console.error(`Failed to fetch Event analytics:`, error);
   }
 
-  const { registrations: completedRegistrations, impressions, views } = stats;
+  const { registrations: totalRegistrations, periodRegistrations, impressions, views } = stats;
 
   let ctrRatio = impressions > 0 ? views / impressions : 0;
   if (ctrRatio > 1) ctrRatio = 1;
@@ -78,30 +87,30 @@ async function AnalyticsSection({
     {
       type: "highlight",
       title: "Completed Registration",
-      value: completedRegistrations.toString(),
-      badge: "Total Registrations",
-      badgeValue: completedRegistrations.toString(),
+      value: totalRegistrations.toString(),
+      badge: "In Range",
+      badgeValue: periodRegistrations.toString(),
     },
     {
       type: "normal",
       title: "Total Impressions",
       value: impressions.toLocaleString(),
-      badge: "All Time",
-      badgeValue: "",
+      badge: "Overall Visibility",
+      badgeValue: "All Time",
     },
     {
       type: "normal",
       title: "Total Views",
       value: views.toLocaleString(),
-      badge: "All Time",
-      badgeValue: "",
+      badge: "Total engagement",
+      badgeValue: "All Time",
     },
     {
       type: "normal",
       title: "CTR Ratio",
       value: (ctrRatio * 100).toFixed(1) + "%",
-      badge: ctrBadge,
-      badgeValue: "",
+      badge: "Platform Efficiency",
+      badgeValue: "All Time",
     },
   ];
 
@@ -134,9 +143,13 @@ async function getEventName(token: string, slug: string): Promise<string> {
 
 export default async function EventDashboard(props: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ period?: string; from?: string; to?: string }>;
 }) {
   const params = await props.params;
+  const searchParams = await props.searchParams;
   const { slug } = params;
+  const { period, from, to } = searchParams;
+
   const user = await currentUser();
   const { getToken } = await auth();
   const token = (await getToken()) || "";
@@ -150,14 +163,15 @@ export default async function EventDashboard(props: {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
           <div className="left">
-            <h1 className="font-semibold text-[24px] md:text-[28px] break-words">
+            <h1 className="font-semibold text-2xl md:text-3xl wrap-break-words truncate">
               Welcome back, {user?.firstName} {user?.lastName}
             </h1>
             <p className="text-sm md:text-base text-muted-foreground pt-1 md:pt-2">
               View all the details for {name}
             </p>
           </div>
-          <div className="right self-end md:self-auto">
+          <div className="right flex flex-wrap items-center justify-end gap-3 self-end md:self-auto min-w-0">
+            <DateRangeFilter />
             <ShareButton
               title={name}
               slug={slug}
@@ -169,12 +183,24 @@ export default async function EventDashboard(props: {
         {/* Analytics Section with Loader */}
 
         <Suspense fallback={<AnalyticsLoader />}>
-          <AnalyticsSection token={token} slug={slug} />
+          <AnalyticsSection
+            token={token}
+            slug={slug}
+            period={period}
+            from={from}
+            to={to}
+          />
         </Suspense>
 
         {/* CHARTS */}
         <Suspense fallback={<AnalyticsLoader />}>
-          <DetailedAnalyticsSection token={token} slug={slug} />
+          <DetailedAnalyticsSection
+            token={token}
+            slug={slug}
+            period={period}
+            from={from}
+            to={to}
+          />
         </Suspense>
       </div>
     </div>
@@ -185,14 +211,20 @@ export default async function EventDashboard(props: {
 async function DetailedAnalyticsSection({
   token,
   slug,
+  period,
+  from,
+  to,
 }: {
   token: string;
   slug: string;
+  period?: string;
+  from?: string;
+  to?: string;
 }) {
   let chartsData = { registrations: [], gender: {} };
 
   try {
-    const rawStats = await getEventDetailedStats(token, slug);
+    const rawStats = await getEventDetailedStats(token, slug, { period, from, to });
     if (rawStats) {
       chartsData = {
         registrations: rawStats.registrations || [],

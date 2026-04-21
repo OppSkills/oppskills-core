@@ -247,7 +247,7 @@ export default function Participants({
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                   <span
-                    className="font-semibold hover:text-primary-500 cursor-pointer break-words"
+                    className="font-semibold hover:text-primary-500 cursor-pointer wrap-break-words"
                     onClick={() => {
                       router.push(
                         `/dashboard/hackathon/${slug}/manage-registration/${row.original.id}`,
