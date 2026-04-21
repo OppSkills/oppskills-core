@@ -220,8 +220,15 @@ export class AnalyticsService {
     userId: string,
     options: { period?: string; from?: string; to?: string },
   ) {
-    const event = await prisma.eventEntity.findUnique({
-      where: { slug, isDeleted: false },
+    const event = await prisma.eventEntity.findFirst({
+      where: {
+        slug,
+        isDeleted: false,
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
+      },
       select: {
         views: true,
         impressions: true,
@@ -254,8 +261,15 @@ export class AnalyticsService {
     userId: string,
     options: { period?: string; from?: string; to?: string },
   ) {
-    const event = await prisma.eventEntity.findUnique({
-      where: { slug, isDeleted: false },
+    const event = await prisma.eventEntity.findFirst({
+      where: {
+        slug,
+        isDeleted: false,
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
+      },
     });
 
     if (!event) return null;
@@ -321,8 +335,15 @@ export class AnalyticsService {
     userId: string,
     options: { period?: string; from?: string; to?: string },
   ) {
-    const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug, isDeleted: false },
+    const hackathon = await prisma.hackathonEntity.findFirst({
+      where: {
+        slug,
+        isDeleted: false,
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
+      },
       select: {
         views: true,
         impressions: true,
@@ -362,8 +383,15 @@ export class AnalyticsService {
     userId: string,
     options: { period?: string; from?: string; to?: string },
   ) {
-    const hackathon = await prisma.hackathonEntity.findUnique({
-      where: { slug, isDeleted: false },
+    const hackathon = await prisma.hackathonEntity.findFirst({
+      where: {
+        slug,
+        isDeleted: false,
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
+      },
     });
 
     if (!hackathon) return null;
