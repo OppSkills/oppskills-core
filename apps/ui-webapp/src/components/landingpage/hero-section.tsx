@@ -5,13 +5,13 @@ export default function HeroSection() {
 
   return (
     <div className='py-8 flex flex-col gap-8'>
-      <div className='flex sm:flex-row flex-col gap-4 justify-between'>
+      <div className='flex flex-col lg:flex-row gap-8 lg:gap-4 py-6 lg:py-0 justify-between items-center'>
         <div className='flex flex-col gap-2'>
           <h2 className='text-3xl sm:text-4xl md:text-5xl font-medium'>Discover Opportunities</h2>
           <h2 className='text-3xl sm:text-4xl md:text-5xl italic text-primary-500 font-medium'>That Move You Forward</h2>
         </div>
         <div className=''>
-          <div className='rounded-full bg-linear-to-r from-primary-600 to-primary-200 p-px overflow-hidden'>
+          <div className='rounded-full bg-linear-to-r from-primary-600 to-primary-200 p-px overflow-hidden w-fit'>
             <div className='bg-primary-100 px-3 py-1 rounded-full flex gap-2 items-center'>
               <Image
                 src="/illustrations/user-3d.svg"

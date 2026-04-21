@@ -59,7 +59,7 @@ export default function PastOpportunities() {
   }
 
   return (
-    <section className="w-full pt-12 md:pt-16 lg:pt-20">
+    <section className="w-full pt-8">
       <div className="container mx-auto">
         <div className="mb-8 flex flex-col gap-2">
           <div className="flex items-start justify-between gap-4">

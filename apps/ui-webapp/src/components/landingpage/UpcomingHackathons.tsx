@@ -53,7 +53,7 @@ export default function UpcomingHackathons() {
 
   return (
     <section
-      className="w-full pt-12 md:pt-16 lg:pt-20"
+      className="w-full"
       id="competitions"
     >
       <div className="container mx-auto">

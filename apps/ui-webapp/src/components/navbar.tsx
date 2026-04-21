@@ -170,7 +170,7 @@ const Navbar = () => {
                 onClick={() => {
                   setAuthMode("login");
                 }}
-                className="hidden lg:block bg-primary-500 text-primary-foreground hover:bg-primary/90"
+                className="hidden lg:block rounded-full"
               >
                 Sign In / Sign Up
               </Button>
@@ -295,7 +295,7 @@ const Navbar = () => {
                     setAuthMode("login");
                     setIsOpen(false);
                   }}
-                  className="w-full bg-primary-500 text-foreground"
+                  className="w-full rounded-full"
                 >
                   Sign In / Sign Up
                 </Button>
