@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 interface AnalyticCardProps {
   title: string;
   value: string | number;
-  badge: string;
-  badgeValue: string | number;
+  badge?: string;
+  badgeValue?: string | number;
   type?: "normal" | "highlight";
   className?: string;
 }
@@ -18,6 +18,8 @@ export default function AnalyticCard({
   type = "normal",
   className,
 }: AnalyticCardProps) {
+  const showMetadata = badge && badgeValue !== undefined && badgeValue !== "";
+
   return (
     <div
       className={cn(
@@ -28,31 +30,36 @@ export default function AnalyticCard({
         className
       )}
     >
-      <div className="flex flex-col gap-2 md:gap-4 justify-between">
-        <p
-          className={cn(
-            type === "highlight" ? "text-neutral-100" : "text-primary-900"
-          )}
-        >
-          {title}
-        </p>
-        <h3 className="text-4xl md:text-5xl font-bold tracking-tight">
-          {value}
-        </h3>
-
-        <div className="flex justify-between w-full items-center mt-auto">
-          <p
+      <div className="flex flex-col gap-2 md:gap-4 justify-between h-full">
+        <div className="flex flex-col gap-2">
+           <p
             className={cn(
-              "text-xs font-medium",
-              type === "normal" ? "text-purple-700" : "text-purple-200"
+              "font-medium",
+              type === "highlight" ? "text-neutral-100" : "text-primary-900"
             )}
           >
-            {badge}
+            {title}
           </p>
-          <Badge variant={type === "highlight" ? "default" : "gradient"}>
-            {badgeValue}
-          </Badge>
+          <h3 className="text-4xl md:text-5xl font-bold tracking-tight">
+            {value}
+          </h3>
         </div>
+
+        {showMetadata && (
+          <div className="flex justify-between w-full items-center mt-auto pt-2">
+            <p
+              className={cn(
+                "text-xs font-medium",
+                type === "normal" ? "text-purple-700" : "text-purple-200"
+              )}
+            >
+              {badge}
+            </p>
+            <Badge variant={type === "highlight" ? "secondary" : "gradient"}>
+              {badgeValue}
+            </Badge>
+          </div>
+        )}
       </div>
     </div>
   );
