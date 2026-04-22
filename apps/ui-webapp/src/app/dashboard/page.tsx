@@ -26,6 +26,12 @@ import Image from "next/image";
 interface OrganizerStats {
   total_participants: number;
   period_participants: number;
+  total_opportunities: number;
+  period_opportunities: number;
+  total_views: number;
+  period_views: number;
+  total_impressions: number;
+  period_impressions: number;
   hackathon: { active: number; total: number };
   event: { active: number; total: number };
   festival: { active: number; total: number };
@@ -53,6 +59,8 @@ export interface ListingItem {
   location: string;
   applied: number;
   finalized: number;
+  views: number;
+  impressions: number;
   type: string;
 }
 
@@ -128,33 +136,33 @@ export default function Page() {
   const analyticData = [
     {
       type: "highlight" as const,
-      title: "Total Participants",
+      title: "Total Candidates",
       value: stats?.period_participants.toLocaleString() ?? "...",
-      badge: "Overall Total",
+      badge: "Total All Time",
       badgeValue: stats?.total_participants.toLocaleString() ?? "...",
     },
     {
       type: "normal" as const,
-      title: "Active Events",
-      value: stats?.event.active.toString() ?? "...",
-      badge: "Total",
-      badgeValue: stats?.event.total.toString() ?? "...",
+      title: "Total Opportunities",
+      value: stats?.period_opportunities.toLocaleString() ?? "...",
+      badge: "Total All Time",
+      badgeValue: stats?.total_opportunities.toLocaleString() ?? "...",
       themeColor: "bg-secondary/40",
     },
     {
       type: "normal" as const,
-      title: "Active Opportunities", // Hackathons
-      value: stats?.hackathon.active.toString() ?? "...",
-      badge: "Total",
-      badgeValue: stats?.hackathon.total.toString() ?? "...",
+      title: "Opportunities View",
+      value: stats?.period_views.toLocaleString() ?? "...",
+      badge: "Total All Time",
+      badgeValue: stats?.total_views.toLocaleString() ?? "...",
       themeColor: "bg-secondary/40",
     },
     {
       type: "normal" as const,
-      title: "Active Festivals",
-      value: stats?.festival.active.toString() ?? "...",
-      badge: "Total",
-      badgeValue: stats?.festival.total.toString() ?? "...",
+      title: "Opportunities Impressions",
+      value: stats?.period_impressions.toLocaleString() ?? "...",
+      badge: "Total All Time",
+      badgeValue: stats?.total_impressions.toLocaleString() ?? "...",
       themeColor: "bg-secondary/40",
     },
   ];
@@ -278,7 +286,7 @@ export default function Page() {
 
         {/* Bottom Row: Recent Listings and Alerts */}
         <MotionContainer className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full pb-10">
-          <MotionItem>
+          <MotionItem className={cn("w-full", !showAlerts ? "lg:col-span-2" : "")}>
             <RecentListing data={topListingsRaw as ListingItem[] || []} />
           </MotionItem>
           {/* {showAlerts && (
@@ -286,25 +294,6 @@ export default function Page() {
               <Alerts data={highestPerforming} />
             </MotionItem>
           )} */}
-          <MotionItem>
-            <div className="w-full bg-background rounded-3xl p-4 lg:p-5 border-2 border-neutral-400 flex flex-col h-full min-h-[400px] shadow-sm relative overflow-hidden group">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-foreground tracking-tight">Community</h2>
-                <div className="px-3 py-1 rounded-full bg-primary-100 text-primary-600 text-xs font-bold uppercase tracking-wider">
-                  Coming Soon
-                </div>
-              </div>
-
-              <div className="flex-1 relative rounded-2xl overflow-hidden border border-border/60 shadow-inner aspect-video">
-                <Image
-                  src="/illustrations/community_placeholder.png"
-                  alt="Community Coming Soon"
-                  fill
-                  className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
-                />
-              </div>
-            </div>
-          </MotionItem>
         </MotionContainer>
       </div>
     </div>

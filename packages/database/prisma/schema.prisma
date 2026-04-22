@@ -438,7 +438,7 @@ model UserEntity {
   paymentRegistrationEscrows PaymentRegistrationEscrowEntity[]
 
   /// Referral relations
-  referralsCreated ReferralEntity[] @relation("ReferralCreator")
+  referralsCreated  ReferralEntity[] @relation("ReferralCreator")
   referralsAssigned ReferralEntity[] @relation("ReferralReferrer")
   approvedReferrals ReferralEntity[] @relation("ReferralApprover")
 
@@ -753,13 +753,13 @@ model EventParticipantEntity {
   joinedAt DateTime    @default(now()) @map("joined_at")
 
   // Event Pass Approval Fields
-  approved        Boolean     @default(false)
-  approvedAt      DateTime?   @map("approved_at")
-  approvedById    String?     @map("approved_by_id")
-  approvedBy      UserEntity? @relation("EventParticipantApprover", fields: [approvedById], references: [id], onDelete: SetNull)
-  passEmailSent   Boolean     @default(false) @map("pass_email_sent")
-  passEmailSentAt DateTime?   @map("pass_email_sent_at")
-  referralId      String?     @map("referral_id")
+  approved        Boolean         @default(false)
+  approvedAt      DateTime?       @map("approved_at")
+  approvedById    String?         @map("approved_by_id")
+  approvedBy      UserEntity?     @relation("EventParticipantApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  passEmailSent   Boolean         @default(false) @map("pass_email_sent")
+  passEmailSentAt DateTime?       @map("pass_email_sent_at")
+  referralId      String?         @map("referral_id")
   referral        ReferralEntity? @relation(fields: [referralId], references: [id], onDelete: SetNull)
 
   // Relation to submission (optional, created if answers provided)
@@ -783,31 +783,31 @@ model EventParticipantEntity {
 }
 
 model ReferralEntity {
-  id             String             @id @default(cuid())
-  code           String             @unique
-  entityType     ReferralEntityType @map("entity_type")
-  entityId       String             @map("entity_id")
-  referrerId     String             @map("referrer_id")
-  referrer       UserEntity         @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
-  createdById    String             @map("created_by_id")
-  createdBy      UserEntity         @relation("ReferralCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  approvedById   String?            @map("approved_by_id")
-  approvedBy     UserEntity?        @relation("ReferralApprover", fields: [approvedById], references: [id], onDelete: SetNull)
-  isActive       Boolean            @default(true) @map("is_active")
-  isDeleted      Boolean            @default(false) @map("is_deleted")
-  deletedAt      DateTime?          @map("deleted_at")
-  clicksCount    Int                @default(0) @map("clicks_count")
-  humanClicksCount Int              @default(0) @map("human_clicks_count")
-  registrationsCount Int            @default(0) @map("registrations_count")
-  lastClickAt    DateTime?          @map("last_click_at")
-  lastRegistrationAt DateTime?      @map("last_registration_at")
-  createdAt      DateTime           @default(now()) @map("created_at")
-  updatedAt      DateTime           @updatedAt @map("updated_at")
+  id                 String             @id @default(cuid())
+  code               String             @unique
+  entityType         ReferralEntityType @map("entity_type")
+  entityId           String             @map("entity_id")
+  referrerId         String             @map("referrer_id")
+  referrer           UserEntity         @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  createdById        String             @map("created_by_id")
+  createdBy          UserEntity         @relation("ReferralCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  approvedById       String?            @map("approved_by_id")
+  approvedBy         UserEntity?        @relation("ReferralApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  isActive           Boolean            @default(true) @map("is_active")
+  isDeleted          Boolean            @default(false) @map("is_deleted")
+  deletedAt          DateTime?          @map("deleted_at")
+  clicksCount        Int                @default(0) @map("clicks_count")
+  humanClicksCount   Int                @default(0) @map("human_clicks_count")
+  registrationsCount Int                @default(0) @map("registrations_count")
+  lastClickAt        DateTime?          @map("last_click_at")
+  lastRegistrationAt DateTime?          @map("last_registration_at")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
 
-  clicks             ReferralClickEntity[]
-  eventParticipants  EventParticipantEntity[]
-  teamMembers        TeamMemberEntity[]
-  teams              TeamEntity[]
+  clicks            ReferralClickEntity[]
+  eventParticipants EventParticipantEntity[]
+  teamMembers       TeamMemberEntity[]
+  teams             TeamEntity[]
 
   @@unique([entityType, entityId, referrerId])
   @@index([entityType, entityId])
@@ -1019,7 +1019,7 @@ model TeamEntity {
 
   /// When set, the PER_TEAM leader registration was attributed to this referral (leader has no TeamMemberEntity row).
   referralId String?         @map("referral_id")
-  referral   ReferralEntity?   @relation(fields: [referralId], references: [id], onDelete: SetNull)
+  referral   ReferralEntity? @relation(fields: [referralId], references: [id], onDelete: SetNull)
 
   @@index([referralId])
   @@map("team")
@@ -1034,9 +1034,9 @@ model TeamMemberEntity {
   userId String
   user   UserEntity @relation(fields: [userId], references: [id])
 
-  teamId String
-  team   TeamEntity @relation(fields: [teamId], references: [id])
-  referralId String? @map("referral_id")
+  teamId     String
+  team       TeamEntity      @relation(fields: [teamId], references: [id])
+  referralId String?         @map("referral_id")
   referral   ReferralEntity? @relation(fields: [referralId], references: [id], onDelete: SetNull)
 
   // Relation to registration submission

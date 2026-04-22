@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@oppskills/db';
 import { prisma } from '@oppskills/db';
 import { Logger } from 'src/_utils/logger';
 import { EmailService } from './email.service';

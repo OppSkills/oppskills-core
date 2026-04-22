@@ -23,7 +23,7 @@ export interface RecentListingItem {
 export default function RecentListing({ data }: { data: RecentListingItem[] }) {
   return (
     <div className="w-full bg-background rounded-3xl p-4 lg:p-5 border-2 border-neutral-400 flex flex-col h-full min-h-[400px] shadow-sm relative overflow-hidden">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-foreground tracking-tight">Recent Listing</h2>
       </div>
 
@@ -78,7 +78,7 @@ export default function RecentListing({ data }: { data: RecentListingItem[] }) {
                   </div>
 
                   {/* Stats Badges */}
-                  <div className="flex flex-col gap-2 shrink-0 sm:min-w-[140px]">
+                  <div className="flex flex-row sm:flex-col gap-2 shrink-0 sm:min-w-30">
                     <div className="flex items-center justify-between gap-4 px-4 py-2 rounded-xl bg-primary-200 text-primary-900">
                       <span className="text-sm ">Applied</span>
                       <span className="text-base tabular-nums">{(item.applied ?? (item as any).tregistrations ?? 0).toLocaleString()}</span>

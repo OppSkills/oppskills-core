@@ -458,6 +458,10 @@ export class AnalyticsService {
       select: {
         id: true,
         status: true,
+        views: true,
+        impressions: true,
+        createdAt: true,
+        registrationCount: true,
         _count: {
           select: { participants: true },
         },
@@ -471,7 +475,7 @@ export class AnalyticsService {
     };
 
     const eventParticipants = events.reduce(
-      (acc, e) => acc + (e._count?.participants ?? 0),
+      (acc, e) => acc + (e.registrationCount || 0),
       0,
     );
 
@@ -484,6 +488,9 @@ export class AnalyticsService {
       select: {
         id: true,
         status: true,
+        views: true,
+        impressions: true,
+        createdAt: true,
         _count: {
           select: {
             teams: true,
@@ -550,12 +557,55 @@ export class AnalyticsService {
       },
     });
 
+    // 5. Calculate View, Impression and Period Stats in a single pass
+    let totalViews = 0;
+    let totalImpressions = 0;
+    let periodViews = 0;
+    let periodImpressions = 0;
+    let periodEventsCount = 0;
+    let periodHackathonsCount = 0;
+
+    for (const e of events) {
+      const v = Number(e.views) || 0;
+      const i = Number(e.impressions) || 0;
+      totalViews += v;
+      totalImpressions += i;
+
+      if (e.createdAt >= startDate && e.createdAt <= endDate) {
+        periodEventsCount++;
+        periodViews += v;
+        periodImpressions += i;
+      }
+    }
+
+    for (const h of hackathons) {
+      const v = Number(h.views) || 0;
+      const i = Number(h.impressions) || 0;
+      totalViews += v;
+      totalImpressions += i;
+
+      if (h.createdAt >= startDate && h.createdAt <= endDate) {
+        periodHackathonsCount++;
+        periodViews += v;
+        periodImpressions += i;
+      }
+    }
+
     const totalParticipants = eventParticipants + hackathonParticipants;
     const periodParticipants = periodEventParticipants + periodHackathonLeaders + periodHackathonMembers;
+
+    const totalOpportunities = events.length + hackathons.length;
+    const periodOpportunities = periodEventsCount + periodHackathonsCount;
 
     return {
       total_participants: totalParticipants,
       period_participants: periodParticipants,
+      total_opportunities: totalOpportunities,
+      period_opportunities: periodOpportunities,
+      total_views: totalViews,
+      period_views: periodViews,
+      total_impressions: totalImpressions,
+      period_impressions: periodImpressions,
       hackathon: hackathonStats,
       event: eventStats,
       festival: festivalStats,
