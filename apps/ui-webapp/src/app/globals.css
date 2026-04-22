@@ -79,6 +79,27 @@
   --color-accent-pink-100: #FFB9EBFF;
   --color-accent-pink-300: #F675D1FF;
   --color-accent-pink-500: #C4048CFF;
+
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
+    }
+  }
 }
 
 .urbanist {
@@ -417,3 +438,8 @@ select:-webkit-autofill {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-neutral-500);
 }
+/* Smooth Marquee Effect for Swiper */
+.swiper-free-mode > .swiper-wrapper {
+  transition-timing-function: linear !important;
+}
+

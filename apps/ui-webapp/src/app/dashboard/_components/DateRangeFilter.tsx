@@ -139,10 +139,10 @@ export function DateRangeFilter({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="flex flex-col md:flex-row min-h-[350px]"
+                className="flex flex-col md:flex-row min-h-[300px]"
               >
                 {/* Left Sidebar: Shorthands */}
-                <div className="w-full md:w-40 border-b md:border-b-0 md:border-r border-primary/10 p-3 flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible scrollbar-hide">
+                <div className="w-full md:w-36 border-b md:border-b-0 md:border-r border-primary/10 p-2 flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible scrollbar-hide">
                   <p className="hidden md:block text-xs uppercase font-bold text-muted-foreground px-2 mb-2 tracking-widest">Presets</p>
                   {SHORTHANDS.map((s) => (
                     <Button
@@ -162,7 +162,7 @@ export function DateRangeFilter({
                 </div>
 
                 {/* Right: Calendar */}
-                <div className="p-4 flex flex-col justify-between min-w-[320px]">
+                <div className="p-3 flex flex-col justify-between min-w-[280px]">
                   <div>
                     <div className="flex items-center justify-between mb-4 px-2">
                       <h4 className="font-semibold text-sm flex items-center gap-2">
@@ -186,8 +186,9 @@ export function DateRangeFilter({
                           setTempDate(range);
                           setTempPeriod(null);
                         }}
-                        numberOfMonths={isMobile ? 1 : (tempPeriod === 'all_time' ? 1 : 2)}
-                        className="rounded-lg"
+                        numberOfMonths={1}
+                        disabled={{ after: new Date() }}
+                        className="rounded-lg [--cell-size:32px]"
                         classNames={{
                           months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                           day_range_start: "bg-primary text-primary-foreground rounded-l-full !important",
