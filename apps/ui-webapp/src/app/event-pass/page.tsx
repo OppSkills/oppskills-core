@@ -5,12 +5,12 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
-import { QRCodeSVG } from 'qrcode.react';
 import { getEventPass } from '@/lib/api/eventApi';
 import { format } from 'date-fns';
 import { SITE_URL } from '@/lib/constants';
 import '../event-pass.css';
 import { Loader2 } from 'lucide-react';
+import { StyledEventPassQr } from '@/app/event-pass/_components/StyledEventPassQr';
 
 const EventPassPage = () => {
   const ticketRef = useRef<HTMLDivElement>(null);
@@ -84,6 +84,8 @@ const EventPassPage = () => {
   const eventDate = format(new Date(passData.event.startDate), 'MMMM dd, yyyy');
   const eventTime = format(new Date(passData.event.startDate), 'hh:mm a') + ' onwards';
 
+  const validationUrl = `${SITE_URL}/pass/validate/${passData.token}`;
+
   return (
     <div className="event-pass-container">
       <div className="ticket-visual_visual" id="ticket" ref={ticketRef}>
@@ -143,10 +145,8 @@ const EventPassPage = () => {
             <div className="ticket-right">
               <div className="ticket-right-content">
                 <div className="qr-code-vertical">
-                  <QRCodeSVG
-                    value={`${typeof window !== 'undefined' ? window.location.origin : SITE_URL}/pass/validate/${passData.token}`}
-                    size={250}
-                    level="H"
+                  <StyledEventPassQr
+                    validationUrl={validationUrl}
                     className="qr-code-svg"
                   />
                 </div>

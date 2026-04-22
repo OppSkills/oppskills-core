@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
-import Image from "next/image";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
 
+import {
+  getOppSkillsStyledQrOptions,
+  OPPSKILLS_STYLED_QR_SIZES,
+} from "@/lib/oppSkillsStyledQrOptions";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -24,28 +26,6 @@ function clampFileName(name: string) {
   return safe.length > 0 ? safe : "qr-code";
 }
 
-function drawRoundedRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number,
-) {
-  const r = Math.min(radius, width / 2, height / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + width - r, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-  ctx.lineTo(x + width, y + height - r);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-  ctx.lineTo(x + r, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
 export default function PublicLinkQrCard({
   url,
   title = "Public QR Code",
@@ -53,7 +33,15 @@ export default function PublicLinkQrCard({
   watermarkSrc = "/logof.png",
   downloadFileName,
 }: Props) {
-  const svgRef = useRef<SVGSVGElement | null>(null);
+  const qrRef = useRef<{
+    update: (options: Record<string, unknown>) => void;
+    append: (container: HTMLElement) => void;
+  } | null>(null);
+  const qrDownloadRef = useRef<{
+    update: (options: Record<string, unknown>) => void;
+    download: (options?: { name?: string; extension?: "png" | "jpeg" | "webp" | "svg" }) => Promise<void>;
+  } | null>(null);
+  const qrContainerRef = useRef<HTMLDivElement | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
   const fileName = useMemo(() => {
@@ -61,88 +49,68 @@ export default function PublicLinkQrCard({
     return clampFileName(title);
   }, [downloadFileName, title]);
 
-  const handleDownload = useCallback(async () => {
-    if (isDownloading) return;
-    const svgEl = svgRef.current;
-    if (!svgEl) return;
+  useEffect(() => {
+    let mounted = true;
 
-    setIsDownloading(true);
-    try {
-      const serializer = new XMLSerializer();
-      const svgString = serializer.serializeToString(svgEl);
-      const svgBlob = new Blob([svgString], {
-        type: "image/svg+xml;charset=utf-8",
-      });
-      const svgUrl = URL.createObjectURL(svgBlob);
+    const initQr = async () => {
+      const container = qrContainerRef.current;
+      if (!container) return;
 
-      const qrImg = new window.Image();
-      qrImg.decoding = "async";
-      qrImg.src = svgUrl;
+      const { default: QRCodeStyling } = await import("qr-code-styling");
+      if (!mounted) return;
 
-      await new Promise<void>((resolve, reject) => {
-        qrImg.onload = () => resolve();
-        qrImg.onerror = () => reject(new Error("Failed to load QR image"));
-      });
-
-      const size = Math.max(qrImg.width, qrImg.height, 512);
-      const canvas = document.createElement("canvas");
-      canvas.width = size;
-      canvas.height = size;
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas context not available");
-
-      // White background (so QR is scannable in dark mode)
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, size, size);
-
-      // Draw QR
-      ctx.drawImage(qrImg, 0, 0, size, size);
-
-      // Draw watermark in center
-      const wm = new window.Image();
-      wm.decoding = "async";
-      wm.crossOrigin = "anonymous";
-      wm.src = watermarkSrc;
-
-      await new Promise<void>((resolve) => {
-        wm.onload = () => resolve();
-        wm.onerror = () => resolve(); // watermark is optional; still download QR
-      });
-
-      if (wm.naturalWidth > 0) {
-        const wmSize = Math.floor(size * 0.18);
-        const padding = Math.floor(size * 0.03);
-        const boxSize = wmSize + padding * 2;
-        const boxX = Math.floor(size / 2 - boxSize / 2);
-        const boxY = Math.floor(size / 2 - boxSize / 2);
-        const x = Math.floor(size / 2 - wmSize / 2);
-        const y = Math.floor(size / 2 - wmSize / 2);
-
-        // Match the in-card watermark container: bg-white/75 with rounded corners
-        ctx.globalAlpha = 0.75;
-        drawRoundedRect(ctx, boxX, boxY, boxSize, boxSize, Math.floor(size * 0.02));
-        ctx.fillStyle = "#ffffff";
-        ctx.fill();
-
-        ctx.globalAlpha = 0.85;
-        ctx.drawImage(wm, x, y, wmSize, wmSize);
-        ctx.globalAlpha = 1;
+      if (!qrRef.current) {
+        qrRef.current = new QRCodeStyling(
+          getOppSkillsStyledQrOptions({
+            data: url,
+            size: OPPSKILLS_STYLED_QR_SIZES.publicLinkDisplay,
+            image: watermarkSrc,
+          }),
+        );
+        container.innerHTML = "";
+        qrRef.current.append(container);
+      } else {
+        qrRef.current.update({
+          data: url,
+          image: watermarkSrc,
+        });
       }
 
-      const pngUrl = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.href = pngUrl;
-      a.download = `${fileName}.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      if (!qrDownloadRef.current) {
+        qrDownloadRef.current = new QRCodeStyling(
+          getOppSkillsStyledQrOptions({
+            data: url,
+            size: OPPSKILLS_STYLED_QR_SIZES.publicLinkDownload,
+            image: watermarkSrc,
+          }),
+        );
+      } else {
+        qrDownloadRef.current.update({
+          data: url,
+          image: watermarkSrc,
+        });
+      }
+    };
 
-      URL.revokeObjectURL(svgUrl);
+    void initQr();
+
+    return () => {
+      mounted = false;
+    };
+  }, [url, watermarkSrc]);
+
+  const handleDownload = useCallback(async () => {
+    if (isDownloading || !qrDownloadRef.current) return;
+    setIsDownloading(true);
+    try {
+      await qrDownloadRef.current.download({
+        name: fileName,
+        extension: "png",
+      });
     } finally {
       setIsDownloading(false);
     }
-  }, [fileName, isDownloading, watermarkSrc]);
+  }, [fileName, isDownloading]);
 
   return (
     <div
@@ -151,7 +119,7 @@ export default function PublicLinkQrCard({
         className,
       )}
     >
-      <div className="relative overflow-hidden rounded-2xl bg-white p-3 shadow-sm ring-1 ring-primary/10">
+      <div className="relative overflow-hidden rounded-2xl bg-white p-1 shadow-sm ring-1 ring-primary/10">
         <button
           type="button"
           onClick={handleDownload}
@@ -167,28 +135,8 @@ export default function PublicLinkQrCard({
           )}
         </button>
 
-        <QRCodeSVG
-          value={url}
-          size={110}
-          level="H"
-          includeMargin
-          ref={(node) => {
-            svgRef.current = node as unknown as SVGSVGElement | null;
-          }}
-          className="block"
-        />
-
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="rounded-xl bg-white/75 p-2 shadow-sm ring-1 ring-primary/10">
-            <Image
-              src={watermarkSrc}
-              alt="OppSkills"
-              width={44}
-              height={44}
-              className="h-11 w-11 object-contain"
-              priority={false}
-            />
-          </div>
+        <div className="rounded-lg bg-white">
+          <div ref={qrContainerRef} className="size-[120px]" />
         </div>
 
         <div className="pointer-events-none absolute inset-0 hidden items-center justify-center bg-black/45 opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:flex">
