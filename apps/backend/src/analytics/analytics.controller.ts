@@ -13,7 +13,7 @@ import { AnalyticsService } from './analytics.service';
 @Controller('analytics')
 @UseGuards(ClerkAuthGuard)
 export class AnalyticsController {
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(private readonly analyticsService: AnalyticsService) { }
 
   @Get('event/:slug/general')
   async getEventGeneralStats(
@@ -88,18 +88,32 @@ export class AnalyticsController {
   }
 
   @Get('organizer-stats')
-  async getOrganizerStats(@Req() req: any) {
+  async getOrganizerStats(
+    @Query('period') period: string,
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Req() req: any,
+  ) {
     const userId = req.user?.id;
     // userId is guaranteed by ClerkAuthGuard but let's be safe
     if (!userId) throw new NotFoundException('User not found');
-    return this.analyticsService.getOrganizerStats(userId);
+    return this.analyticsService.getOrganizerStats(userId, { period, from, to });
   }
 
   @Get('organizer-trends')
-  async getOrganizerRegistrationTrends(@Req() req: any) {
+  async getOrganizerRegistrationTrends(
+    @Query('period') period: string,
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Req() req: any,
+  ) {
     const userId = req.user?.id;
     if (!userId) throw new NotFoundException('User not found');
-    return this.analyticsService.getOrganizerRegistrationTrends(userId);
+    return this.analyticsService.getOrganizerRegistrationTrends(userId, {
+      period,
+      from,
+      to,
+    });
   }
 
   @Get('organizer-top-listings')

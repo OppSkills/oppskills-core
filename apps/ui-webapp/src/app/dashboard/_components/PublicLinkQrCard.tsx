@@ -9,12 +9,16 @@ import {
 } from "@/lib/oppSkillsStyledQrOptions";
 import { cn } from "@/lib/utils";
 
+import RTooltip from "@/components/ui/Rtooltip";
+
 type Props = {
   url: string;
   title?: string;
   className?: string;
   watermarkSrc?: string;
   downloadFileName?: string;
+  itemName?: string;
+  type?: "event" | "hackathon";
 };
 
 function clampFileName(name: string) {
@@ -32,6 +36,8 @@ export default function PublicLinkQrCard({
   className,
   watermarkSrc = "/logof.png",
   downloadFileName,
+  itemName = "",
+  type = "event",
 }: Props) {
   const qrRef = useRef<{
     update: (options: Record<string, unknown>) => void;
@@ -115,47 +121,53 @@ export default function PublicLinkQrCard({
   return (
     <div
       className={cn(
-        "group relative box-border flex sm:aspect-square sm:w-fit max-w-full w-full aspect-auto flex-col items-center justify-center rounded-[20px] border border-primary/30 bg-background p-3 lg:bg-linear-to-l lg:from-primary-100 lg:to-neutral-100",
+        "group relative box-border flex sm:w-fit max-w-full w-full h-full aspect-auto flex-col items-center justify-center rounded-[20px] border border-primary/30 bg-background p-3 lg:bg-linear-to-l lg:from-primary-100 lg:to-neutral-100",
         className,
       )}
     >
-      <div className="relative overflow-hidden rounded-2xl bg-white p-1 shadow-sm ring-1 ring-primary/10">
-        <button
-          type="button"
-          onClick={handleDownload}
-          disabled={isDownloading}
-          className="absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-lg border border-primary/20 bg-white/90 text-primary shadow-sm md:hidden"
-          aria-label="Download QR code"
-          title="Download QR"
-        >
-          {isDownloading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
-          )}
-        </button>
-
-        <div className="rounded-lg bg-white">
-          <div ref={qrContainerRef} className="size-[120px]" />
-        </div>
-
-        <div className="pointer-events-none absolute inset-0 hidden items-center justify-center bg-black/45 opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:flex">
+      <RTooltip
+        side="right"
+        className="max-w-[200px] text-center"
+        content={
+          <p className="text-xs">
+            Download shareable QR code for your {type}: <span className="font-bold">{itemName}</span>
+          </p>
+        }
+      >
+        <div className="relative overflow-hidden rounded-2xl bg-white p-1 shadow-sm ring-1 ring-primary/10 cursor-help">
           <button
             type="button"
             onClick={handleDownload}
             disabled={isDownloading}
-            className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white text-primary shadow-lg transition hover:scale-105 disabled:opacity-70"
-            aria-label="Download QR code"
-            title="Download QR"
+            className="absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-lg border border-primary/20 bg-white/90 text-primary shadow-sm md:hidden"
           >
             {isDownloading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Download className="h-5 w-5" />
+              <Download className="h-4 w-4" />
             )}
           </button>
+
+          <div className="rounded-lg bg-white">
+            <div ref={qrContainerRef} className="size-[120px]" />
+          </div>
+
+          <div className="pointer-events-none absolute inset-0 hidden items-center justify-center bg-black/45 opacity-0 transition-opacity duration-200 group-hover:opacity-100 md:flex">
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white text-primary shadow-lg transition hover:scale-105 disabled:opacity-70"
+            >
+              {isDownloading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Download className="h-5 w-5" />
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      </RTooltip>
     </div>
   );
 }

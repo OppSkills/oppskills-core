@@ -42,12 +42,14 @@ type InternalStats = {
 async function AnalyticsSection({
   token,
   slug,
+  itemName,
   period,
   from,
   to,
 }: {
   token: string;
   slug: string;
+  itemName: string;
   period?: string;
   from?: string;
   to?: string;
@@ -88,9 +90,9 @@ async function AnalyticsSection({
     {
       type: "highlight",
       title: "Completed Registration",
-      value: totalRegistrations.toString(),
-      badge: "In Range",
-      badgeValue: periodRegistrations.toString(),
+      value: periodRegistrations.toLocaleString(),
+      badge: "Overall Total",
+      badgeValue: totalRegistrations.toLocaleString(),
     },
     {
       type: "normal",
@@ -116,7 +118,7 @@ async function AnalyticsSection({
   ];
 
   return (
-    <MotionContainer className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
+    <MotionContainer className="grid grid-cols-1 gap-4 lg:gap-2 md:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
       {analyticData.map((item, index) => (
         <MotionItem key={index}>
           <AnalyticCard
@@ -134,6 +136,8 @@ async function AnalyticsSection({
           title="Event public link"
           url={`https://www.oppskills.com/events/${slug}`}
           downloadFileName={`event-${slug}-qr`}
+          itemName={itemName}
+          type="event"
         />
       </MotionItem>
     </MotionContainer>
@@ -196,6 +200,7 @@ export default async function EventDashboard(props: {
           <AnalyticsSection
             token={token}
             slug={slug}
+            itemName={name}
             period={period}
             from={from}
             to={to}

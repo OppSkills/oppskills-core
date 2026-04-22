@@ -12,8 +12,8 @@ const API = createApiClient("/analytics");
  * @returns Promise<AnalyticsGeneralStatsDto>
  */
 export async function getEventGeneralStats(
-    token: string, 
-    slug: string, 
+    token: string,
+    slug: string,
     params?: { period?: string; from?: string; to?: string }
 ): Promise<AnalyticsGeneralStatsDto> {
     const res = await API.get(`/event/${slug}/general`, {
@@ -24,7 +24,7 @@ export async function getEventGeneralStats(
 }
 
 export async function getHackathonGeneralStats(
-    token: string, 
+    token: string,
     slug: string,
     params?: { period?: string; from?: string; to?: string }
 ): Promise<AnalyticsGeneralStatsDto> {
@@ -36,7 +36,7 @@ export async function getHackathonGeneralStats(
 }
 
 export async function getEventDetailedStats(
-    token: string, 
+    token: string,
     slug: string,
     params?: { period?: string; from?: string; to?: string }
 ): Promise<any> {
@@ -48,7 +48,7 @@ export async function getEventDetailedStats(
 }
 
 export async function getHackathonDetailedStats(
-    token: string, 
+    token: string,
     slug: string,
     params?: { period?: string; from?: string; to?: string }
 ): Promise<any> {
@@ -62,19 +62,27 @@ export async function getHackathonDetailedStats(
 /**
  * Fetch organizer stats (overview of all events/hackathons/festivals).
  */
-export async function getOrganizerStats(token: string): Promise<unknown> {
+export async function getOrganizerStats(
+    token: string,
+    params?: { period?: string; from?: string; to?: string }
+): Promise<unknown> {
     const res = await API.get("/organizer-stats", {
         headers: buildAuthHeaders(token),
+        params
     });
     return res.data;
 }
 
 /**
- * Fetch organizer registration trends (last 7 days).
+ * Fetch organizer registration trends (last 7 days by default).
  */
-export async function getOrganizerRegistrationTrends(token: string): Promise<unknown> {
+export async function getOrganizerRegistrationTrends(
+    token: string,
+    params?: { period?: string; from?: string; to?: string }
+): Promise<unknown> {
     const res = await API.get("/organizer-trends", {
         headers: buildAuthHeaders(token),
+        params
     });
     return res.data;
 }
