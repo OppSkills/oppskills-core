@@ -557,46 +557,39 @@ export class AnalyticsService {
       },
     });
 
-    const periodEventsCount = await prisma.eventEntity.count({
-      where: {
-        OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
-        createdAt: { gte: startDate, lte: endDate },
-        isDeleted: false,
-      },
-    });
+    // 5. Calculate View, Impression and Period Stats in a single pass
+    let totalViews = 0;
+    let totalImpressions = 0;
+    let periodViews = 0;
+    let periodImpressions = 0;
+    let periodEventsCount = 0;
+    let periodHackathonsCount = 0;
 
-    const periodHackathonsCount = await prisma.hackathonEntity.count({
-      where: {
-        OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
-        createdAt: { gte: startDate, lte: endDate },
-        isDeleted: false,
-      },
-    });
+    for (const e of events) {
+      const v = Number(e.views) || 0;
+      const i = Number(e.impressions) || 0;
+      totalViews += v;
+      totalImpressions += i;
 
-    // 5. Calculate View and Impression Stats
-    const totalViews =
-      events.reduce((acc, e) => acc + (Number((e as any).views) || 0), 0) +
-      hackathons.reduce((acc, h) => acc + (Number((h as any).views) || 0), 0);
+      if (e.createdAt >= startDate && e.createdAt <= endDate) {
+        periodEventsCount++;
+        periodViews += v;
+        periodImpressions += i;
+      }
+    }
 
-    const totalImpressions =
-      events.reduce((acc, e) => acc + (Number((e as any).impressions) || 0), 0) +
-      hackathons.reduce((acc, h) => acc + (Number((h as any).impressions) || 0), 0);
+    for (const h of hackathons) {
+      const v = Number(h.views) || 0;
+      const i = Number(h.impressions) || 0;
+      totalViews += v;
+      totalImpressions += i;
 
-    const periodViews =
-      events
-        .filter((e) => e.createdAt >= startDate && e.createdAt <= endDate)
-        .reduce((acc, e) => acc + (Number((e as any).views) || 0), 0) +
-      hackathons
-        .filter((h) => h.createdAt >= startDate && h.createdAt <= endDate)
-        .reduce((acc, h) => acc + (Number((h as any).views) || 0), 0);
-
-    const periodImpressions =
-      events
-        .filter((e) => e.createdAt >= startDate && e.createdAt <= endDate)
-        .reduce((acc, e) => acc + (Number((e as any).impressions) || 0), 0) +
-      hackathons
-        .filter((h) => h.createdAt >= startDate && h.createdAt <= endDate)
-        .reduce((acc, h) => acc + (Number((h as any).impressions) || 0), 0);
+      if (h.createdAt >= startDate && h.createdAt <= endDate) {
+        periodHackathonsCount++;
+        periodViews += v;
+        periodImpressions += i;
+      }
+    }
 
     const totalParticipants = eventParticipants + hackathonParticipants;
     const periodParticipants = periodEventParticipants + periodHackathonLeaders + periodHackathonMembers;
