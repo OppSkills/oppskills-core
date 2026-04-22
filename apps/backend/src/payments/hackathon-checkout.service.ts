@@ -859,7 +859,7 @@ export class HackathonCheckoutService {
             `Hackathon payment already captured (in-tx re-check) for order: ${params.razorpayOrderId}`,
           );
           // Ensure teamId is persisted even if webhook missed it.
-          if (!current.teamId && finalTeamId) {
+          if (!current?.teamId && finalTeamId) {
             await tx.hackathonPaymentEntity.update({
               where: { id: payment.id },
               data: { teamId: finalTeamId },
