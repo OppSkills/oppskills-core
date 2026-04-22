@@ -2,6 +2,8 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import { SlidersHorizontal, Loader2, ChevronUp, ChevronDown } from "lucide-react";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { ListingGridFallback } from "@/components/boneyard/loading-fallbacks";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ListingCard, ListingItem } from "./ListingCard";
@@ -126,11 +128,13 @@ export function GenericListingPage({
         )}
 
         <div className="flex-1">
-          {isLoading ? (
-            <div className="flex h-64 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : error ? (
+          <BoneyardSkeleton
+            loading={isLoading}
+            name="generic-listing-page"
+            className="w-full"
+            fallback={<ListingGridFallback className="px-0 py-0" />}
+          >
+            {error ? (
             <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed text-center">
               <h3 className="text-lg font-semibold">Failed to load items</h3>
               <p className="text-sm text-muted-foreground">
@@ -237,6 +241,7 @@ export function GenericListingPage({
               </div>
             </div>
           )}
+          </BoneyardSkeleton>
 
           {/* Load More Button */}
           {hasMore && !isLoading && (

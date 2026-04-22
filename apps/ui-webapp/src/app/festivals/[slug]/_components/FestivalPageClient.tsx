@@ -4,7 +4,9 @@ import React, { useMemo } from "react";
 import { useFestivalBySlug } from "@/hooks/useFestivalBySlug";
 import { usePublicHackathons } from "@/hooks/usePublicHackathons";
 import { useEvents } from "@/hooks/useEvents";
-import { Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { HackathonDetailFallback } from "@/components/boneyard/loading-fallbacks";
 import FestivalDetailsClient from "./FestivalDetailsClient";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -48,16 +50,7 @@ export default function FestivalPageClient({ slug }: FestivalPageClientProps) {
     return eventsData?.pages.flatMap(page => (page as any).items || []) || [];
   }, [eventsData]);
 
-  if (isLoadingFestival) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
-        <p className="text-neutral-500 font-medium">Loading festival details...</p>
-      </div>
-    );
-  }
-
-  if (isErrorFestival || !festival) {
+  if (isErrorFestival || (!isLoadingFestival && !festival)) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
         <div className="bg-red-50 p-4 rounded-full mb-6">
@@ -91,6 +84,13 @@ export default function FestivalPageClient({ slug }: FestivalPageClientProps) {
   }
 
   return (
+    <BoneyardSkeleton
+      loading={isLoadingFestival}
+      name="festival-public-page"
+      className="w-full"
+      fallback={<HackathonDetailFallback />}
+    >
+    {festival ? (
     <FestivalDetailsClient
       festival={festival}
       hackathons={hackathons}
@@ -102,5 +102,7 @@ export default function FestivalPageClient({ slug }: FestivalPageClientProps) {
       fetchNextPageEvents={fetchNextPageEvents}
       isFetchingNextPageEvents={isFetchingNextPageEvents}
     />
+    ) : null}
+    </BoneyardSkeleton>
   );
 }

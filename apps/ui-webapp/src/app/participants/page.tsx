@@ -6,15 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { CardListFallback } from "@/components/boneyard/loading-fallbacks";
 
 export default function HackathonList() {
   const { data, isLoading, error } = usePublicHackathons();
   const router = useRouter();
   const { userId } = useAuth();
 
-  if (isLoading)
-    return <p className="p-6 text-center">Loading hackathons...</p>;
-  if (error)
+  if (!isLoading && error)
     return (
       <p className="p-6 text-center text-red-500">Failed to load hackathons.</p>
     );
@@ -38,6 +38,12 @@ export default function HackathonList() {
   };
 
   return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="participants-hackathon-list"
+      className="w-full"
+      fallback={<CardListFallback className="mt-8" />}
+    >
     <div className="max-w-4xl mx-auto mt-8 space-y-6">
       {hackathons.map((row) => {
         const id = row.id;
@@ -90,11 +96,12 @@ export default function HackathonList() {
         );
       })}
 
-      {hackathons.length === 0 && (
+      {!isLoading && hackathons.length === 0 && (
         <p className="text-center text-muted-foreground py-8">
           No hackathons available at the moment.
         </p>
       )}
     </div>
+    </BoneyardSkeleton>
   );
 }

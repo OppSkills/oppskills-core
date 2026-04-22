@@ -23,7 +23,9 @@ import {
   type RoundSubmissionInfo,
 } from "@/lib/api/hackathonApi";
 import { checkMyHackathonTeam } from "@/lib/api/teamApi";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { HackathonDetailFallback } from "@/components/boneyard/loading-fallbacks";
 import { useAuth } from "@clerk/nextjs";
 import { transformApiData, type HackathonApiData } from "./_components/transform";
 
@@ -161,19 +163,7 @@ export function CompetitionDetailsClient({
     }
   }, [curTab]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-transparent py-8 px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="flex items-center justify-center py-32">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !competition) {
+  if (error || (!isLoading && !competition)) {
     return (
       <div className="min-h-screen bg-transparent py-8 px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25">
         <div className="container mx-auto px-4 max-w-7xl">
@@ -192,8 +182,14 @@ export function CompetitionDetailsClient({
   }
 
   return (
-    <div className="min-h-screen bg-transparent px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25">
-      <div className="container mx-auto p-4 max-w-7xl">
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="hackathon-competition-detail"
+      className="min-h-screen w-full bg-transparent px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25"
+      fallback={<HackathonDetailFallback />}
+    >
+    {competition ? (
+      <div className="container mx-auto max-w-7xl p-4">
         {isDraft && (
           <div className="mb-6 flex items-center gap-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
             <AlertTriangle className="h-5 w-5 text-yellow-600" />
@@ -270,6 +266,7 @@ export function CompetitionDetailsClient({
           </div>
         </div>
       </div>
-    </div>
+    ) : null}
+    </BoneyardSkeleton>
   );
 }

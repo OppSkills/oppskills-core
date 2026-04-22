@@ -71,6 +71,8 @@ import type {
   UpdateHackathonDto,
   UpdateHackathonRoundsDto,
 } from "@oppskills/types/frontend";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
 import {
   updateHackathon,
   updateHackathonAdditionalInfo,
@@ -1299,11 +1301,14 @@ export default function EditHackathonPage() {
 
   if (isLoadingHackathon) {
     return (
-      <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
-        <div className="w-full max-w-3xl text-muted-foreground">
-          Loading hackathon...
-        </div>
-      </div>
+      <BoneyardSkeleton
+        loading
+        name="dashboard-edit-hackathon"
+        className="w-full bg-background p-6"
+        fallback={<ProfileLikeFallback className="max-w-3xl py-4" />}
+      >
+        {null}
+      </BoneyardSkeleton>
     );
   }
 

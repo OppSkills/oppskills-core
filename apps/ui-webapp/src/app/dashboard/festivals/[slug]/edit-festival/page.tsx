@@ -11,6 +11,8 @@ import { updateFestival } from "@/lib/api/festivalApi";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UpdateFestivalDto } from "@oppskills/types/frontend";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
 
 // Types
 export interface FestivalFormData {
@@ -177,15 +179,7 @@ export default function EditFestivalPage() {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex h-full w-full items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        );
-    }
-
-    if (error) {
+    if (!isLoading && error) {
         return (
             <div className="flex h-full w-full items-center justify-center flex-col gap-4">
                 <p className="text-destructive">Failed to load festival.</p>
@@ -195,6 +189,12 @@ export default function EditFestivalPage() {
     }
 
     return (
+        <BoneyardSkeleton
+            loading={isLoading}
+            name="dashboard-edit-festival"
+            className="flex h-full w-full flex-col bg-neutral-50/50"
+            fallback={<ProfileLikeFallback className="py-10" />}
+        >
         <div className="flex flex-col h-full bg-neutral-50/50 w-full">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 bg-background border-b sticky top-0 z-10 transition-all duration-200">
@@ -219,5 +219,6 @@ export default function EditFestivalPage() {
                 <BasicDetails formData={formData} setFormData={setFormData} />
             </div>
         </div>
+        </BoneyardSkeleton>
     );
 }

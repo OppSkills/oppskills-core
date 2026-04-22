@@ -4,7 +4,9 @@ import React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, Loader2, ClipboardList, UserCircle2 } from "lucide-react";
+import { ChevronLeft, ClipboardList, UserCircle2 } from "lucide-react";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { TableBlockFallback } from "@/components/boneyard/loading-fallbacks";
 import { Button } from "@/components/ui/button";
 import { getParticipantRegistrationAnswers, getEventBySlug } from "@/lib/api/eventApi";
 import { RegistrationInfoCard, ParticipantInfo } from "../../../../_components/registration/RegistrationInfoCard";
@@ -64,15 +66,9 @@ export default function EventRegistrationDetailPage() {
     router.back();
   };
 
-  if (isLoadingEvent || isLoadingRegistration) {
-    return (
-      <div className="flex w-full justify-center items-center min-h-[400px] bg-surface">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const detailLoading = isLoadingEvent || isLoadingRegistration;
 
-  if (!registrationData) {
+  if (!detailLoading && !registrationData) {
     return (
       <div className="flex w-full justify-center items-center min-h-[400px] bg-surface">
         <div className="text-center">
@@ -88,6 +84,15 @@ export default function EventRegistrationDetailPage() {
   const eventName = (eventData as any)?.name || "Event";
 
   return (
+    <BoneyardSkeleton
+      loading={detailLoading}
+      name="dashboard-event-registration-detail"
+      className="w-full bg-[#F8F9FA]"
+      fallback={
+        <TableBlockFallback className="min-h-[400px] bg-surface p-8" />
+      }
+    >
+    {registrationData ? (
     <div className="min-h-screen bg-[#F8F9FA] p-2 sm:p-4 md:p-6 lg:p-10 w-full space-y-6 font-inter">
       {/* Header Section */}
       <div className="flex items-center gap-4 bg-background p-4 rounded-xl shadow-sm border border-gray-100">
@@ -139,5 +144,7 @@ export default function EventRegistrationDetailPage() {
         </div>
       </div>
     </div>
+    ) : null}
+    </BoneyardSkeleton>
   );
 }

@@ -7,8 +7,9 @@ import {
   FileText,
   ExternalLink,
   X,
-  Loader2,
 } from "lucide-react";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { StackedFieldsFallback } from "@/components/boneyard/loading-fallbacks";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn, ensureAbsoluteUrl } from "@/lib/utils";
 
@@ -82,15 +83,7 @@ export function RegistrationAnswersView({
 }: RegistrationAnswersViewProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!fields.length) {
+  if (!isLoading && !fields.length) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <p className="text-muted-foreground text-lg">No registration form</p>
@@ -102,6 +95,12 @@ export function RegistrationAnswersView({
   }
 
   return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="dashboard-registration-answers"
+      className="w-full"
+      fallback={<StackedFieldsFallback />}
+    >
     <div className="space-y-8">
       {fields.map((field) => (
         <div key={field.id} className="space-y-4">
@@ -205,5 +204,6 @@ export function RegistrationAnswersView({
         </DialogContent>
       </Dialog>
     </div>
+    </BoneyardSkeleton>
   );
 }

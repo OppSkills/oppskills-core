@@ -4,7 +4,9 @@ import React, { useState } from "react";
 import { EventRegistrationCard } from "@/app/events/[slug]/_components/EventRegistrationCard";
 import { EventTabs } from "@/app/events/[slug]/_components/EventTabs";
 import Image from "next/image";
-import { MapPin, Loader2 } from "lucide-react";
+import { MapPin } from "lucide-react";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { HackathonDetailFallback } from "@/components/boneyard/loading-fallbacks";
 import { format } from "date-fns";
 import { useEventBySlug } from "@/hooks/useEventBySlug";
 
@@ -112,17 +114,7 @@ export function EventPreview({ slug }: EventPreviewProps) {
 
   const TABS = ["About Event", "Contact Details"];
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Error state
-  if (error || !eventRaw) {
+  if (!isLoading && (error || !eventRaw)) {
     return (
       <div className="min-h-[400px] flex flex-col items-center justify-center gap-4">
         <h1 className="text-xl font-bold text-foreground">
@@ -135,8 +127,19 @@ export function EventPreview({ slug }: EventPreviewProps) {
     );
   }
 
-  // Map the raw data to typed structure
-  const event = eventRaw as unknown as EventData;
+  const event = eventRaw ? (eventRaw as unknown as EventData) : null;
+  if (!event) {
+    return (
+      <BoneyardSkeleton
+        loading={isLoading}
+        name="dashboard-event-preview"
+        className="min-h-[400px] w-full"
+        fallback={<HackathonDetailFallback className="py-6" />}
+      >
+        {null}
+      </BoneyardSkeleton>
+    );
+  }
 
   // Format dates
   const startDate = new Date(event.startDate);

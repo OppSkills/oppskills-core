@@ -26,6 +26,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { lookupPassByToken, validateEventPass } from "@/lib/api/eventApi";
 import type { PublicPassLookupDto, ScanResultDto } from "@oppskills/types";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { CenteredCardFallback } from "@/components/boneyard/loading-fallbacks";
 
 export default function ValidatePassPage() {
   const params = useParams();
@@ -89,9 +91,14 @@ export default function ValidatePassPage() {
   // 1. Initial Loading State (Checking Auth)
   if (!authLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/30">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
-      </div>
+      <BoneyardSkeleton
+        loading
+        name="pass-validate-auth"
+        className="flex min-h-screen w-full items-center justify-center bg-gradient-to-b from-background to-muted/30"
+        fallback={<CenteredCardFallback />}
+      >
+        {null}
+      </BoneyardSkeleton>
     );
   }
 
@@ -129,14 +136,14 @@ export default function ValidatePassPage() {
   // 3. Loading Pass Data State
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/30">
-        <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-sm font-medium text-muted-foreground">
-            Checking pass permissions...
-          </p>
-        </div>
-      </div>
+      <BoneyardSkeleton
+        loading
+        name="pass-validate-lookup"
+        className="flex min-h-screen w-full items-center justify-center bg-gradient-to-b from-background to-muted/30"
+        fallback={<CenteredCardFallback />}
+      >
+        {null}
+      </BoneyardSkeleton>
     );
   }
 

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 
 function SearchLoadingSkeleton() {
     return (
@@ -116,11 +117,7 @@ function SearchContent() {
         );
     }
 
-    if (isLoading) {
-        return <SearchLoadingSkeleton />;
-    }
-
-    if (isError || !data) {
+    if (isError || (!isLoading && !data)) {
         return (
             <SearchEmptyState
                 emptyTitle="Oops! Something went wrong"
@@ -131,24 +128,27 @@ function SearchContent() {
     }
 
     const hasResults =
-        data.hackathons.length > 0 ||
+        !!data &&
+        (data.hackathons.length > 0 ||
         data.events.length > 0 ||
-        data.topOpportunities.length > 0;
+        data.topOpportunities.length > 0);
 
-    if (!hasResults) {
-        return (
+    return (
+        <BoneyardSkeleton
+            loading={isLoading}
+            name="search-results"
+            className="w-full"
+            fallback={<SearchLoadingSkeleton />}
+        >
+            {!isLoading && data && !hasResults ? (
             <SearchEmptyState
                 emptyTitle="No results found"
                 emptyMessage={`We couldn't find any opportunities matching "${query}". Try using broader keywords.`}
                 onClear={handleClear}
             />
-        );
-    }
-
-    return (
+        ) : !isLoading && data && hasResults ? (
         <div className="container w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 xl:px-24">
             <div className="flex w-full flex-col gap-8 md:gap-12 lg:gap-16 xl:gap-20">
-                {/* Top Opportunities */}
                 {data.topOpportunities.length > 0 && (
                     <section className="space-y-4">
                         <h2 className="text-2xl md:text-3xl font-bold text-neutral-900">Top Matches</h2>
@@ -168,7 +168,6 @@ function SearchContent() {
                     </section>
                 )}
 
-                {/* Hackathons Section */}
                 {data.hackathons.length > 0 && (
                     <section className="space-y-8">
                         <div className="flex items-center justify-between">
@@ -195,7 +194,6 @@ function SearchContent() {
                     </section>
                 )}
 
-                {/* Events Section */}
                 {data.events.length > 0 && (
                     <section className="space-y-8">
                         <div className="flex items-center justify-between">
@@ -223,6 +221,8 @@ function SearchContent() {
                 )}
             </div>
         </div>
+        ) : null}
+        </BoneyardSkeleton>
     );
 }
 

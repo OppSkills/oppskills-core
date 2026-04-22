@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth, useClerk } from "@clerk/nextjs";
-import { Loader2, ArrowLeft, CheckCircle, Copy, Link2, X } from "lucide-react";
+import { ArrowLeft, CheckCircle, Copy, Link2, Loader2, X } from "lucide-react";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { CenteredCardFallback } from "@/components/boneyard/loading-fallbacks";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -127,9 +129,14 @@ export default function TeamDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <BoneyardSkeleton
+        loading
+        name="hackathon-team-page"
+        className="flex min-h-screen w-full items-center justify-center"
+        fallback={<CenteredCardFallback />}
+      >
+        {null}
+      </BoneyardSkeleton>
     );
   }
 

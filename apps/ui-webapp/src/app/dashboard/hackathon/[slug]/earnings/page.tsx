@@ -45,6 +45,8 @@ import {
 } from "@/hooks/usePayments";
 import { toast } from "sonner";
 import { useState } from "react";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { TableBlockFallback } from "@/components/boneyard/loading-fallbacks";
 
 export default function EarningsPage() {
   const params = useParams();
@@ -105,15 +107,13 @@ export default function EarningsPage() {
 
   const isLoading = isLoadingEarnings || isLoadingPayments;
 
-  if (isLoading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="dashboard-hackathon-earnings"
+      className="w-full"
+      fallback={<TableBlockFallback className="min-h-[50vh] p-8" />}
+    >
     <div className="flex flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <div>
@@ -302,5 +302,6 @@ export default function EarningsPage() {
         </CardContent>
       </Card>
     </div>
+    </BoneyardSkeleton>
   );
 }

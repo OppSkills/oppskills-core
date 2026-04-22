@@ -53,6 +53,8 @@ import {
   deleteHackathon,
 } from "@/lib/api/hackathonApi";
 import Link from "next/link";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
 
 // Type for hackathon data with approval fields
 interface HackathonData {
@@ -245,15 +247,7 @@ export default function OpportunitySettingsPage({
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (error || !hackathon) {
+  if (!isLoading && (error || !hackathon)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <AlertCircle className="w-12 h-12 text-destructive" />
@@ -262,6 +256,19 @@ export default function OpportunitySettingsPage({
         </p>
         <Button onClick={() => router.back()}>Go Back</Button>
       </div>
+    );
+  }
+
+  if (!hackathon) {
+    return (
+      <BoneyardSkeleton
+        loading={isLoading}
+        name="dashboard-hackathon-settings"
+        className="flex min-h-screen w-full justify-center"
+        fallback={<ProfileLikeFallback className="max-w-4xl py-8" />}
+      >
+        {null}
+      </BoneyardSkeleton>
     );
   }
 
@@ -274,6 +281,12 @@ export default function OpportunitySettingsPage({
     hackathon.status === "COMPLETED" || hackathon.status === "CANCELLED";
 
   return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="dashboard-hackathon-settings"
+      className="flex min-h-screen w-full justify-center"
+      fallback={<ProfileLikeFallback className="max-w-4xl py-8" />}
+    >
     <div className="flex justify-center w-full min-h-screen">
       <div className="w-full max-w-4xl bg-background p-4 sm:p-6 flex flex-col gap-6">
         {/* Header */}
@@ -654,5 +667,6 @@ export default function OpportunitySettingsPage({
         </Card>
       </div>
     </div>
+    </BoneyardSkeleton>
   );
 }
