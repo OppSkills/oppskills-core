@@ -12,6 +12,7 @@ import { SwiperControls } from "./_components/SwiperControls";
 // import { EventCard } from "./_components/EventCard"; // No longer needed here
 import { EventsSectionSkeleton } from "./_components/EventsSectionSkeleton";
 import { EventsEmptyState } from "./_components/EventsEmptyState";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { CompetitionCard } from "./_components/CompetitionCard";
 import Link from "next/link";
 
@@ -31,16 +32,7 @@ export default function UpcomingHackathons() {
   // useUpcomingHackathons returns InfiniteData<{ items: PublicHackathonListItem[], further: boolean }>
   const displayHackathons = (hackathons?.pages.flatMap((page: any) => page.items || []) ?? []);
 
-  if (isLoading) {
-    return (
-      <EventsSectionSkeleton
-        title="Top Hackathons"
-        subtitle="Discover the most popular competitions students are joining right now."
-      />
-    );
-  }
-
-  if (isError || displayHackathons.length === 0) {
+  if (isError || (!isLoading && displayHackathons.length === 0)) {
     return (
       <EventsEmptyState
         title="Top Hackathons"
@@ -52,6 +44,16 @@ export default function UpcomingHackathons() {
   }
 
   return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="landing-upcoming-hackathons"
+      fallback={
+        <EventsSectionSkeleton
+          title="Top Hackathons"
+          subtitle="Discover the most popular competitions students are joining right now."
+        />
+      }
+    >
     <section
       className="w-full"
       id="competitions"
@@ -118,5 +120,6 @@ export default function UpcomingHackathons() {
 
       </div>
     </section>
+    </BoneyardSkeleton>
   );
 }

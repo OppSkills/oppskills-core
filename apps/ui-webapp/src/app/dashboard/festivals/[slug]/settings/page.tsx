@@ -44,6 +44,8 @@ import {
     deleteFestival,
 } from "@/lib/api/festivalApi";
 import Link from "next/link";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
 
 // Type for festival data
 interface FestivalData {
@@ -151,15 +153,7 @@ export default function FestivalSettingsPage({
         deleteFestivalMutation.mutate();
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex justify-center items-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-        );
-    }
-
-    if (error || !festival) {
+    if (!isLoading && (error || !festival)) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
                 <AlertCircle className="w-12 h-12 text-destructive" />
@@ -171,6 +165,19 @@ export default function FestivalSettingsPage({
         );
     }
 
+    if (!festival) {
+        return (
+            <BoneyardSkeleton
+                loading={isLoading}
+                name="dashboard-festival-settings"
+                className="flex min-h-screen w-full justify-center"
+                fallback={<ProfileLikeFallback className="max-w-4xl py-8" />}
+            >
+                {null}
+            </BoneyardSkeleton>
+        );
+    }
+
     const isTerminal =
         festival.status === "COMPLETED" || festival.status === "CANCELLED";
 
@@ -179,6 +186,12 @@ export default function FestivalSettingsPage({
     const isDraft = festival.status === "DRAFT";
 
     return (
+        <BoneyardSkeleton
+            loading={isLoading}
+            name="dashboard-festival-settings"
+            className="flex min-h-screen w-full justify-center"
+            fallback={<ProfileLikeFallback className="max-w-4xl py-8" />}
+        >
         <div className="flex justify-center w-full min-h-screen">
             <div className="w-full max-w-4xl bg-background p-4 sm:p-6 flex flex-col gap-6">
                 {/* Header */}
@@ -463,5 +476,6 @@ export default function FestivalSettingsPage({
                 </Card>
             </div>
         </div>
+        </BoneyardSkeleton>
     );
 }

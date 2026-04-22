@@ -29,6 +29,7 @@ import { createFestival } from "@/lib/api/festivalApi";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Upload } from "lucide-react";
 import Image from "next/image";
 
@@ -38,7 +39,7 @@ const RichTextEditor = dynamic(
     () => import("@/components/ui/editor/RichtextEditor"),
     {
         ssr: false,
-        loading: () => <div className="h-[200px] bg-muted animate-pulse rounded-lg" />
+        loading: () => <Skeleton className="h-[200px] w-full rounded-lg" />
     }
 );
 

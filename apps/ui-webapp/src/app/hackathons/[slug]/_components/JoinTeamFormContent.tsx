@@ -2,7 +2,9 @@
 
 import React from "react";
 import { RegistrationInputField } from "./RegistrationInputField";
-import { Users, Loader2, ArrowRight, User, Upload, Link as LinkIcon, LogOut, CheckCircle2, ShieldCheck, UserPlus, Search, Info } from "lucide-react";
+import { Users, ArrowRight, User, Upload, Link as LinkIcon, LogOut, CheckCircle2, ShieldCheck, UserPlus, Search, Info } from "lucide-react";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TeamDetailResponse } from "@/lib/api/teamApi";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -187,13 +189,20 @@ export function JoinTeamFormContent({
 
             <div className="min-h-[120px] max-h-[300px] overflow-y-auto rounded-[2rem] border border-neutral-200 bg-white shadow-inner p-3 space-y-3 scrollbar">
               {isLoadingTeams ? (
-                <div className="flex h-32 flex-col items-center justify-center gap-3 text-neutral-400">
-                  <div className="relative">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-                    <div className="absolute inset-0 h-8 w-8 rounded-full border-4 border-primary-100 animate-pulse" />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-widest">Fetching Teams</span>
-                </div>
+                <BoneyardSkeleton
+                  loading
+                  name="hackathon-join-team-list"
+                  className="min-h-[120px] w-full rounded-[2rem] border border-neutral-200 bg-white p-3"
+                  fallback={
+                    <div className="space-y-3">
+                      {[1, 2, 3, 4].map((i) => (
+                        <Skeleton key={i} className="h-16 w-full rounded-2xl" />
+                      ))}
+                    </div>
+                  }
+                >
+                  {null}
+                </BoneyardSkeleton>
               ) : filteredTeams.length > 0 ? (
                 <div className="grid grid-cols-1 gap-3">
                   <AnimatePresence mode="popLayout">

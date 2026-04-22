@@ -9,6 +9,7 @@ import "swiper/css/pagination";
 import { Navigation, Pagination } from "swiper/modules";
 import { EventsSectionSkeleton } from "./_components/EventsSectionSkeleton";
 import { EventsEmptyState } from "./_components/EventsEmptyState";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { EventCard } from "./_components/EventCard";
 import { SwiperControls } from "./_components/SwiperControls";
 import Link from "next/link";
@@ -36,18 +37,7 @@ export const UpcomingEvents = () => {
   // Show only the first 6 events
   const displayEvents = [...publishedEvents];
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <EventsSectionSkeleton
-        title="Upcoming Events"
-        subtitle="Don’t miss what’s next, stay updated with upcoming events and sessions."
-      />
-    );
-  }
-
-  // Empty state
-  if (isError || displayEvents.length === 0) {
+  if (isError || (!isLoading && displayEvents.length === 0)) {
     return (
       <EventsEmptyState
         title="Upcoming Events"
@@ -59,6 +49,16 @@ export const UpcomingEvents = () => {
   }
 
   return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="landing-upcoming-events"
+      fallback={
+        <EventsSectionSkeleton
+          title="Upcoming Events"
+          subtitle="Don’t miss what’s next, stay updated with upcoming events and sessions."
+        />
+      }
+    >
     <section
       className="w-full pt-8"
       id="events"
@@ -120,5 +120,6 @@ export const UpcomingEvents = () => {
         />
       </div>
     </section>
+    </BoneyardSkeleton>
   );
 };

@@ -9,7 +9,8 @@ import { getEventPass } from '@/lib/api/eventApi';
 import { format } from 'date-fns';
 import { SITE_URL } from '@/lib/constants';
 import '../event-pass.css';
-import { Loader2 } from 'lucide-react';
+import { BoneyardSkeleton } from '@/components/boneyard/boneyard-skeleton';
+import { CenteredCardFallback } from '@/components/boneyard/loading-fallbacks';
 import { StyledEventPassQr } from '@/app/event-pass/_components/StyledEventPassQr';
 
 const EventPassPage = () => {
@@ -51,19 +52,10 @@ const EventPassPage = () => {
     };
   }, []);
 
-  // Loading state
-  if (!isLoaded || isLoading) {
-    return (
-      <div className="event-pass-container">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </div>
-    );
-  }
+  const passLoading = !isLoaded || isLoading;
 
   // Error state
-  if (error || !passData) {
+  if (!passLoading && (error || !passData)) {
     return (
       <div className="event-pass-container">
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
@@ -80,7 +72,18 @@ const EventPassPage = () => {
     );
   }
 
-  // Format event date
+  return (
+    <BoneyardSkeleton
+      loading={passLoading}
+      name="event-pass-page"
+      className="w-full"
+      fallback={
+        <div className="event-pass-container">
+          <CenteredCardFallback className="min-h-[400px]" />
+        </div>
+      }
+    >
+    {passData ? (() => {
   const eventDate = format(new Date(passData.event.startDate), 'MMMM dd, yyyy');
   const eventTime = format(new Date(passData.event.startDate), 'hh:mm a') + ' onwards';
 
@@ -158,6 +161,9 @@ const EventPassPage = () => {
         </div>
       </div>
     </div>
+  );
+    })() : null}
+    </BoneyardSkeleton>
   );
 };
 

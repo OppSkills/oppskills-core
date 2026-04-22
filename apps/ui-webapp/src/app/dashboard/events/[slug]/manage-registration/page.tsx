@@ -32,6 +32,8 @@ import { getParticipantRegistrationAnswers, getEventBySlug, approveParticipant, 
 import { useAuth } from "@clerk/nextjs";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import SendParticipantEmailModal from "./_components/SendParticipantEmailModal";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { TableBlockFallback } from "@/components/boneyard/loading-fallbacks";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -532,17 +534,8 @@ export default function ManageRegistrationPage() {
 
 
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="w-full bg-background min-h-screen p-8 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   // Error state
-  if (error) {
+  if (!isLoading && error) {
     return (
       <div className="w-full bg-background min-h-screen p-8 flex flex-col items-center justify-center gap-4">
         <h1 className="text-2xl font-bold text-foreground">
@@ -563,6 +556,14 @@ export default function ManageRegistrationPage() {
   const approvedCount = data.filter((p) => p.approved).length;
 
   return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="dashboard-event-manage-registration"
+      className="w-full min-h-screen bg-background"
+      fallback={
+        <TableBlockFallback className="min-h-screen bg-background p-8" />
+      }
+    >
     <div className="w-full bg-background min-h-screen p-8 flex flex-col items-center gap-8">
       {successAlert && (
         <div className="w-full max-w-5xl bg-primary-100 border border-primary-200 text-primary-800 px-4 py-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm">
@@ -849,5 +850,6 @@ export default function ManageRegistrationPage() {
         </div>
       </div>
     </div>
+    </BoneyardSkeleton>
   );
 }

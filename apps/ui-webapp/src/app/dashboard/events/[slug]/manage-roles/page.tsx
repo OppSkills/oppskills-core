@@ -16,7 +16,9 @@ import type {
   EventRoleUserResponse,
   EventUserRoleValue,
 } from "@oppskills/types/frontend";
-import { Loader2, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { DashboardManageRolesFallback } from "@/components/boneyard/loading-fallbacks";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -147,16 +149,6 @@ export default function ManageRolesPage() {
   // Error state
   const queryError = eventQuery.error ?? rolesQuery.error;
 
-  if (isLoading) {
-    return (
-      <div className="flex w-full justify-center bg-surface min-h-[calc(100vh-100px)]">
-        <div className="w-full max-w-[1200px] p-6 md:p-10 rounded-[20px] bg-background flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-[#A020F0]" />
-        </div>
-      </div>
-    );
-  }
-
   if (queryError) {
     return (
       <div className="flex w-full justify-center bg-surface min-h-[calc(100vh-100px)]">
@@ -173,7 +165,13 @@ export default function ManageRolesPage() {
 
   return (
     <div className="flex w-full justify-center bg-surface min-h-[calc(100vh-100px)]">
-      <div className="w-full max-w-[1200px] p-6 md:p-10 rounded-[20px] bg-background flex flex-col gap-8">
+      <BoneyardSkeleton
+        loading={isLoading}
+        name="dashboard-event-manage-roles"
+        className="flex w-full max-w-[1200px] flex-col gap-8 rounded-[20px] bg-background p-6 md:p-10"
+        fallback={<DashboardManageRolesFallback />}
+      >
+      <div className="flex flex-col gap-8">
         {/* Header */}
         <div>
           <h1 className="text-muted-foreground text-base font-normal">
@@ -259,6 +257,7 @@ export default function ManageRolesPage() {
           ownerId={roles?.owner.id}
         />
       </div>
+      </BoneyardSkeleton>
     </div>
   );
 }

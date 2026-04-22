@@ -10,6 +10,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { EventsSectionSkeleton } from "./_components/EventsSectionSkeleton";
 import { EventsEmptyState } from "./_components/EventsEmptyState";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { EventCard } from "./_components/EventCard";
 import { SwiperControls } from "./_components/SwiperControls";
 import Link from "next/link";
@@ -32,20 +33,11 @@ export default function PastOpportunities() {
   // Helper to extract all events from infinite query pages
   const allEvents = data?.pages.flatMap((page) => page.items) || [];
 
-  if (isLoading) {
-    return (
-      <EventsSectionSkeleton
-        title="Past Opportunties"
-        subtitle="Loading Past Opportunties..."
-      />
-    );
-  }
-
   if (isError) {
     return null; // or show error state component
   }
 
-  if (allEvents.length === 0) {
+  if (!isLoading && allEvents.length === 0) {
     // Optionally return null to hide section if empty, or use EmptyState
     // return null;
     return (
@@ -59,6 +51,16 @@ export default function PastOpportunities() {
   }
 
   return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="landing-past-opportunities"
+      fallback={
+        <EventsSectionSkeleton
+          title="Past Opportunities"
+          subtitle="Explore our history of successful listings of opportunities."
+        />
+      }
+    >
     <section className="w-full pt-8">
       <div className="container mx-auto">
         <div className="mb-8 flex flex-col gap-2">
@@ -147,5 +149,6 @@ export default function PastOpportunities() {
         </div>
       </div>
     </section>
+    </BoneyardSkeleton>
   );
 }

@@ -9,7 +9,8 @@ import { PersonalInfo } from './_components/personal-info';
 import { EducationInfo } from './_components/education-info';
 import { SkillsInfo } from './_components/skills-info';
 import { InterestsInfo } from './_components/interests-info';
-import { Loader2 } from 'lucide-react';
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -51,15 +52,7 @@ export default function ProfilePage() {
     loadProfile();
   }, [isLoaded, getToken]);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-      </div>
-    );
-  }
-
-  if (!profileData) {
+  if (!isLoading && !profileData) {
     return (
       <div className="flex h-full w-full items-center justify-center text-neutral-500">
         Failed to load profile
@@ -116,6 +109,13 @@ export default function ProfilePage() {
   };
 
   return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="profile-page"
+      className="flex flex-1 flex-col gap-4 xl:flex-row"
+      fallback={<ProfileLikeFallback className="py-8" />}
+    >
+    {profileData ? (
     <div className='flex flex-col xl:flex-row gap-4 flex-1'>
       <div className='p-4 lg:p-8 bg-neutral-100 rounded-3xl flex-1 overflow-y-auto custom-scrollbar'>
         <PersonalInfo data={profileData.personalInfo} />
@@ -165,5 +165,7 @@ export default function ProfilePage() {
       </div>
       <ProfileStats data={profileData.stats} />
     </div>
+    ) : null}
+    </BoneyardSkeleton>
   );
 }

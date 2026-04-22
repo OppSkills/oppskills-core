@@ -10,9 +10,11 @@ import "swiper/css/pagination";
 import { getRegistrations } from "@/lib/api/usersApi";
 import { HackathonCard } from "./_components/HackathonCard";
 import { SwiperControls } from "./_components/SwiperControls";
-import { Loader2, CheckCircle2, Clock, Trophy, Calendar } from "lucide-react";
+import { CheckCircle2, Clock, Trophy, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { EventsSectionSkeleton } from "./_components/EventsSectionSkeleton";
 
 interface Registration {
   id: string;
@@ -83,32 +85,21 @@ export default function MyOpportunities() {
     load();
   }, [isLoaded, isSignedIn, getToken]);
 
-  // Don't render anything until auth is resolved
   if (!isLoaded || !isSignedIn) return null;
 
-  if (isLoading) {
-    return (
-      <section className="w-full pt-12">
-        <div className="container mx-auto">
-          <div className="mb-8 space-y-2 flex flex-col gap-2">
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl poppins text-foreground">
-              My Opportunities
-            </h2>
-            <p className="text-muted-foreground text-lg inter">
-              Events and competitions you have registered for.
-            </p>
-          </div>
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (registrations.length === 0) return null;
+  if (!isLoading && registrations.length === 0) return null;
 
   return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="landing-my-opportunities"
+      fallback={
+        <EventsSectionSkeleton
+          title="My Opportunities"
+          subtitle="Events and competitions you have registered for."
+        />
+      }
+    >
     <section className="w-full pt-12 md:pt-16 lg:pt-20">
       <div className="container mx-auto">
         <div className="mb-8 flex flex-col gap-2">
@@ -195,5 +186,6 @@ export default function MyOpportunities() {
         </div>
       </div>
     </section>
+    </BoneyardSkeleton>
   );
 }

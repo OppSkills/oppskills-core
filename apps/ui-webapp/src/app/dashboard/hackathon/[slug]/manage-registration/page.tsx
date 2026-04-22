@@ -6,7 +6,8 @@ import Stages from "./_components/Stages";
 import Participants, { Participant } from "./_components/Participants";
 import { useHackathonRegistrationsBySlug } from "@/hooks/useHackathonRegistrations";
 import { getApiErrorMessage } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { TableBlockFallback } from "@/components/boneyard/loading-fallbacks";
 
 export default function Page() {
   const params = useParams();
@@ -177,15 +178,7 @@ export default function Page() {
     });
   }, [data, selectedRoundId, nextRoundId]);
 
-  if (isLoading) {
-    return (
-      <div className="flex w-full justify-center items-center min-h-[400px] bg-surface">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
+  if (!isLoading && error) {
     return (
       <div className="flex w-full justify-center items-center min-h-[400px] bg-surface">
         <div className="text-center">
@@ -200,8 +193,14 @@ export default function Page() {
     );
   }
 
-  if (!data || data.teams.length === 0) {
-    return (
+  return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="dashboard-hackathon-manage-registration"
+      className="flex w-full justify-center bg-surface"
+      fallback={<TableBlockFallback className="min-h-[400px] rounded-[20px] bg-background p-6" />}
+    >
+      {!isLoading && (!data || data.teams.length === 0) ? (
       <div className="flex w-full justify-center bg-surface">
         <div className="w-full p-2 sm:p-4 md:p-6 lg:p-10 rounded-[20px] bg-background">
           <Stages
@@ -220,10 +219,7 @@ export default function Page() {
           </div>
         </div>
       </div>
-    );
-  }
-
-  return (
+      ) : !isLoading && data ? (
     <div className="flex w-full justify-center bg-surface">
       <div className="w-full p-2 sm:p-4 md:p-6 lg:p-10 rounded-[20px] bg-background">
         <Stages
@@ -241,5 +237,7 @@ export default function Page() {
         />
       </div>
     </div>
+      ) : null}
+    </BoneyardSkeleton>
   );
 }

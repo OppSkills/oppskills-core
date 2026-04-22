@@ -5,7 +5,9 @@ import { RegistrationCard } from "./_components/RegistrationCard";
 import { Registration } from "./_components/registration-types";
 import { getRegistrations } from "@/lib/api/usersApi";
 import { useAuth } from "@clerk/nextjs";
-import { Loader2, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { CardListFallback } from "@/components/boneyard/loading-fallbacks";
 import Image from "next/image";
 
 export default function RegistrationsPage() {
@@ -46,15 +48,15 @@ export default function RegistrationsPage() {
     });
   }, [registrations, activeTab, searchQuery]);
 
-  if (isLoading) {
-    return (
-      <div className="w-full bg-white rounded-3xl p-8 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
-      </div>
-    );
-  }
-
   return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="profile-registrations"
+      className="w-full rounded-3xl bg-white"
+      fallback={
+        <CardListFallback className="rounded-3xl bg-white p-8" rows={5} />
+      }
+    >
     <div className="w-full bg-white rounded-3xl p-8">
       <RegistrationTabs
         activeTab={activeTab}
@@ -82,5 +84,6 @@ export default function RegistrationsPage() {
         )}
       </div>
     </div>
+    </BoneyardSkeleton>
   );
 }

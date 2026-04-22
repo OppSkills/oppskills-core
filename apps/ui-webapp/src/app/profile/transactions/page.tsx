@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { getMyTransactions } from "@/lib/api/usersApi";
 import {
-  Loader2,
   Search,
   CheckCircle2,
   RotateCcw,
@@ -18,6 +17,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Image from "next/image";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { TableBlockFallback } from "@/components/boneyard/loading-fallbacks";
 import { cn } from "@/lib/utils";
 import {
   useReactTable,
@@ -343,15 +344,15 @@ export default function TransactionsPage() {
 
   const currency = transactions[0]?.currency ?? "INR";
 
-  if (isLoading) {
-    return (
-      <div className="w-full bg-white rounded-3xl p-8 flex items-center justify-center min-h-[400px] border border-[#E0E0E6]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
-      </div>
-    );
-  }
-
   return (
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="profile-transactions"
+      className="w-full"
+      fallback={
+        <TableBlockFallback className="min-h-[400px] rounded-3xl border border-[#E0E0E6] bg-white p-8" />
+      }
+    >
     <div className="w-full flex flex-col gap-6">
       {/* Summary cards */}
       {transactions.length > 0 && (
@@ -569,5 +570,6 @@ export default function TransactionsPage() {
         )}
       </div>
     </div>
+    </BoneyardSkeleton>
   );
 }
