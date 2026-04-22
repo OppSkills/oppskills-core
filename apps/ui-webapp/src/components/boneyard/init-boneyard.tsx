@@ -13,11 +13,11 @@ export function InitBoneyard() {
     if (configured) return;
     configured = true;
     configureBoneyard({
-      color: "#ece8f0",
-      darkColor: "#342636",
+      color: "#e5e5e5",
+      darkColor: "#3f3f46",
       animate: "shimmer",
-      shimmerColor: "#f5f2f8",
-      darkShimmerColor: "#3d3544",
+      shimmerColor: "#f0f0f0",
+      darkShimmerColor: "#52525b",
       speed: "2s",
       shimmerAngle: 110,
       transition: true,
