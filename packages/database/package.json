@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "pnpm run generate && tsc && powershell -Command \"if (Test-Path src/generated) { Copy-Item -Path src/generated -Destination dist/generated -Recurse -Force }\"",
+    "build": "pnpm run generate && tsc",
     "dev": "prisma studio --port 3008",
     "start": "prisma migrate deploy",
     "generate": "prisma generate",
