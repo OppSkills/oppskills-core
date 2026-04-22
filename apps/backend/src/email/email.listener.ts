@@ -19,7 +19,6 @@ import type {
 import { Logger } from 'src/_utils/logger';
 import { prisma } from '@oppskills/db';
 import { EventPassService } from '../event/event-pass.service';
-import * as QRCode from 'qrcode';
 
 @Injectable()
 export class EmailListener {
@@ -334,18 +333,24 @@ export class EmailListener {
 
     try {
       if (eventPass.token) {
-        // QR must encode the full validation URL — identical to what the
-        // event-pass page renders with QRCodeSVG on the ticket card.
-        const frontendUrl = process.env.FRONTEND_URL || 'https://oppskills.com';
-        const qrUrl = `${frontendUrl}/pass/validate/${eventPass.token}`;
-        const qrBuf = await QRCode.toBuffer(qrUrl, {
-          type: 'png',
-          errorCorrectionLevel: 'H',
-        });
-        attachments.push({
-          filename: `pass-qr-${safeTicketId}.png`,
-          content: qrBuf.toString('base64'),
-        });
+        const frontendUrl = (process.env.FRONTEND_URL || 'https://oppskills.com').replace(
+          /\/$/,
+          '',
+        );
+        const styledPngUrl = `${frontendUrl}/api/qr/styled-png?${new URLSearchParams({
+          token: eventPass.token,
+          size: '1024',
+        })}`;
+        const qrResp = await fetch(styledPngUrl);
+        if (qrResp.ok) {
+          const qrBuf = Buffer.from(await qrResp.arrayBuffer());
+          attachments.push({
+            filename: `pass-qr-${safeTicketId}.png`,
+            content: qrBuf.toString('base64'),
+          });
+        } else {
+          this.logger.warn(`Styled pass QR fetch failed: HTTP ${qrResp.status}`);
+        }
       }
     } catch (err) {
       this.logger.warn(`Failed to generate QR code for pass: ${err}`);

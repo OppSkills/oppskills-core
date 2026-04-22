@@ -1,6 +1,8 @@
 import { ImageResponse } from '@vercel/og';
 import { NextRequest } from 'next/server';
 
+import { OPPSKILLS_STYLED_QR_SIZES } from '@/lib/oppSkillsStyledQrOptions';
+
 export const runtime = 'edge';
 
 async function loadImageAsData(url: string): Promise<string> {
@@ -49,11 +51,12 @@ export async function GET(request: NextRequest) {
     // Generate QR code data URL if token is provided
     let qrCodeDataUrl = '';
     if (token) {
-      // Use a QR code API service for Edge runtime compatibility
-      // The QR code contains the validation URL, not just the token
-      const validationUrl = `${baseUrl}/pass/validate/${token}`;
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(validationUrl)}&ecc=H`;
-      qrCodeDataUrl = await loadImageAsData(qrCodeUrl);
+      // Styled QR (same as dashboard / event pass) via Node route; edge fetches PNG
+      const styledPngUrl = `${baseUrl}/api/qr/styled-png?${new URLSearchParams({
+        token,
+        size: String(OPPSKILLS_STYLED_QR_SIZES.ogEmbed),
+      })}`;
+      qrCodeDataUrl = await loadImageAsData(styledPngUrl);
     } else {
       // Fallback to barcode if no token
       qrCodeDataUrl = await loadImageAsData(`${baseUrl}/barcode.jpeg`);
