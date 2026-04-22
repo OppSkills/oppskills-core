@@ -1289,7 +1289,7 @@ export class HackathonService {
         _count: { select: { teamSubmissions: true } },
       },
     });
-    const existingById = new Map(existingRounds.map((r) => [r.id, r]));
+    const existingById = new Map<string, any>(existingRounds.map((r) => [r.id, r]));
 
     // Validate all incoming rounds
     for (const round of dto.rounds) {

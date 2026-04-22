@@ -8,12 +8,12 @@ import { HackathonCheckoutService } from './hackathon-checkout.service';
 import { EventPaymentService } from '../event/event-payment.service';
 import { randomBytes } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Prisma } from '@prisma/client';
 import {
   prisma,
   PassSendingMode,
   RazorpayRouteStatus,
   HackathonPaymentScope,
+  Prisma
 } from '@oppskills/db';
 import { ReferralService } from '../referral/referral.service';
 import { ReferralEntityTypeDto } from '@oppskills/types';
@@ -107,7 +107,7 @@ export class RazorpayWebhookService {
     @Inject(forwardRef(() => EventPaymentService))
     private readonly eventPayment: EventPaymentService,
     private readonly referralService: ReferralService,
-  ) {}
+  ) { }
 
   /**
    * Resolve referral from Razorpay order notes. Returns null on any failure
@@ -390,10 +390,10 @@ export class RazorpayWebhookService {
       const where = input.createdParticipantId
         ? { id: input.createdParticipantId, referralId: null }
         : {
-            eventId: input.eventId,
-            userId: input.userId,
-            referralId: null,
-          };
+          eventId: input.eventId,
+          userId: input.userId,
+          referralId: null,
+        };
       const res = await prisma.eventParticipantEntity.updateMany({
         where,
         data: { referralId: input.referralId },

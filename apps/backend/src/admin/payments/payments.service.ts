@@ -270,8 +270,8 @@ export class AdminPaymentsService {
                 })
                 : [];
 
-        const hMap = new Map(hackathonPayments.map((p) => [p.id, p]));
-        const eMap = new Map(eventPayments.map((p) => [p.id, p]));
+        const hMap = new Map<string, any>(hackathonPayments.map((p) => [p.id, p]));
+        const eMap = new Map<string, any>(eventPayments.map((p) => [p.id, p]));
 
         const data: PaymentRow[] = [];
         for (const row of idRows) {

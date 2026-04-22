@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
-import { ApprovalStatus, LifecycleStatus } from '@prisma/client';
+import { ApprovalStatus, LifecycleStatus } from '@oppskills/db';
 import { Logger } from '../../_utils/logger';
 import { AdminLogsService } from '../admin-log/Logs.service';
 import { REQUEST } from '@nestjs/core';

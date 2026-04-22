@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { AdminFeaturesService } from './features.service';
 import { AdminGuard } from '../admin.guard';
-import { ApprovalStatus } from '@prisma/client';
+import { ApprovalStatus } from '@oppskills/db';
 
 @Controller('admin/features')
 @UseGuards(AdminGuard)

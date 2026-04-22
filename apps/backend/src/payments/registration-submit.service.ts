@@ -546,7 +546,7 @@ export class RegistrationSubmitService {
         },
       }));
 
-    const existingFieldsByLabel = new Map(
+    const existingFieldsByLabel = new Map<string, any>(
       ensuredRegForm.fields.map((f) => [f.label.toLowerCase(), f]),
     );
 
