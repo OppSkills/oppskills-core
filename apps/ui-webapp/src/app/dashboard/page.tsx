@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button";
 import AnalyticCard from "./_components/AnalyticCard";
 
 import RegistrationLineChart from "./_components/RegistrationChart";
-import GenderChart from "./_components/GenderChart";
 import Alerts from "./_components/Alerts";
-import DomainsChart from "./_components/DomainsChart";
 import RecentListing from "./_components/RecentListing";
-import { Link, Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
+import { DateRangeFilter } from "./_components/DateRangeFilter";
 import { getOrganizerStats, getOrganizerRegistrationTrends, getTopListings, getHighestPerformingListings } from "@/lib/api/analyticsApi";
 import { cn } from "@/lib/utils";
 
@@ -19,10 +19,12 @@ import {
   MotionContainer,
   MotionItem,
 } from "@/components/ui/derived/MotionWrapper";
+import Link from "next/link";
 
 // Types matching API
 interface OrganizerStats {
   total_participants: number;
+  period_participants: number;
   hackathon: { active: number; total: number };
   event: { active: number; total: number };
   festival: { active: number; total: number };
@@ -65,25 +67,30 @@ export default function Page() {
   const { user, isLoaded: isUserLoaded } = useUser();
   const { getToken, isLoaded: isAuthLoaded } = useAuth();
 
+  const searchParams = useSearchParams();
+  const period = searchParams.get("period") || "all_time";
+  const from = searchParams.get("from") || undefined;
+  const to = searchParams.get("to") || undefined;
+
   // Fetch Stats
   const { data: statsRaw, isLoading: isStatsLoading } = useQuery({
-    queryKey: ["organizer-stats"],
+    queryKey: ["organizer-stats", period, from, to],
     enabled: isAuthLoaded,
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
-      return getOrganizerStats(token);
+      return getOrganizerStats(token, { period, from, to });
     },
   });
 
   // Fetch Trends
   const { data: trendsRaw, isLoading: isTrendsLoading } = useQuery({
-    queryKey: ["organizer-trends"],
+    queryKey: ["organizer-trends", period, from, to],
     enabled: isAuthLoaded,
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
-      return getOrganizerRegistrationTrends(token);
+      return getOrganizerRegistrationTrends(token, { period, from, to });
     },
   });
 
@@ -117,9 +124,9 @@ export default function Page() {
     {
       type: "highlight" as const,
       title: "Total Participants",
-      value: stats?.total_participants.toLocaleString() ?? "...",
-      badge: "Total", // Placeholder as API doesn't give 'registered last month' yet
-      badgeValue: "All Time",
+      value: stats?.period_participants.toLocaleString() ?? "...",
+      badge: "Overall Total",
+      badgeValue: stats?.total_participants.toLocaleString() ?? "...",
     },
     {
       type: "normal" as const,
@@ -210,7 +217,7 @@ export default function Page() {
     <div className="flex justify-center w-full min-h-screen bg-[#FAFAFA]">
       <div className="w-full max-w-[1600px] p-6 lg:p-10 flex flex-col gap-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
+        <div className="flex flex-col lg:flex-row justify-between items-start md:items-center gap-4 w-full">
           <div className="left space-y-2">
             <h1 className="font-bold text-3xl md:text-4xl text-foreground">
               Welcome Back, {user?.fullName || user?.firstName || "App Name"}
@@ -219,10 +226,11 @@ export default function Page() {
               Here is the summary of overall performance
             </p>
           </div>
-          <div className="right self-end md:self-auto w-full sm:w-auto">
+          <div className="right flex flex-wrap items-center justify-end gap-3 self-end md:self-auto w-full sm:w-auto">
+            <DateRangeFilter />
             <Link href="/dashboard/host">
-              <Button className="w-full rounded-full px-6 h-12 bg-primary-500 hover:bg-primary/90 text-background font-semibold shadow-lg shadow-purple-200">
-                <Plus className="mr-2 h-5 w-5" />
+              <Button className="flex gap-2 rounded-full">
+                <Plus className="h-5 w-5" />
                 Host
               </Button>
             </Link>
@@ -250,7 +258,7 @@ export default function Page() {
             <RegistrationLineChart
               data={registrationData}
               lines={registrationLines}
-              title="Registration Trends (7 Days)"
+              title={`Registration Trends (${period.replace('_', ' ')})`}
             />
           </MotionItem>
           <MotionItem className="w-full">
@@ -258,7 +266,7 @@ export default function Page() {
             <RegistrationLineChart
               data={genderChartData}
               lines={genderLines}
-              title="Gender Registration Trends (7 Days)"
+              title={`Gender Registration Trends (${period.replace('_', ' ')})`}
             />
           </MotionItem>
         </MotionContainer>

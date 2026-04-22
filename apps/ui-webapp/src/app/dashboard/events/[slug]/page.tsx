@@ -87,9 +87,9 @@ async function AnalyticsSection({
     {
       type: "highlight",
       title: "Completed Registration",
-      value: totalRegistrations.toString(),
-      badge: "In Range",
-      badgeValue: periodRegistrations.toString(),
+      value: periodRegistrations.toLocaleString(),
+      badge: "Overall Total",
+      badgeValue: totalRegistrations.toLocaleString(),
     },
     {
       type: "normal",
