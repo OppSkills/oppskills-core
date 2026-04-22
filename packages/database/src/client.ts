@@ -1,5 +1,5 @@
-export * from "./generated";
-import { PrismaClient } from "./generated";
+export * from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 /**
  * Prisma singleton for Node.js (prevents exhausting DB connections in dev with hot reload).
