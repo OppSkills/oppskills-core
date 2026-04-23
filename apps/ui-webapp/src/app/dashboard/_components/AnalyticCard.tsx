@@ -23,7 +23,7 @@ export default function AnalyticCard({
   return (
     <div
       className={cn(
-        "rounded-[20px] p-4 border border-primary/30 flex flex-col justify-center h-full",
+        "rounded-2xl p-4 border border-primary/30 flex flex-col justify-center h-full",
         type === "highlight"
           ? "bg-[radial-gradient(circle_at_top_left,var(--color-primary-700)_0%,var(--color-primary-900)_70%)] text-primary-foreground"
           : "bg-background lg:bg-linear-to-l lg:from-primary-100 lg:to-neutral-100",
@@ -31,31 +31,30 @@ export default function AnalyticCard({
       )}
     >
       <div className="flex flex-col gap-2 md:gap-4 justify-between h-full">
-        <div className="flex flex-col gap-2">
-           <p
+        <div className="flex flex-col gap-2 md:gap-4">
+          <p
             className={cn(
-              "font-medium",
               type === "highlight" ? "text-neutral-100" : "text-primary-900"
             )}
           >
             {title}
           </p>
-          <h3 className="text-4xl md:text-5xl font-bold tracking-tight">
+          <p className="text-4xl md:text-5xl font-medium tracking-tight">
             {value}
-          </h3>
+          </p>
         </div>
 
         {showMetadata && (
-          <div className="flex justify-between w-full items-center mt-auto pt-2">
+          <div className="flex justify-between w-full items-center">
             <p
               className={cn(
                 "text-xs font-medium",
-                type === "normal" ? "text-purple-700" : "text-purple-200"
+                type === "normal" ? "text-primary-700" : "text-primary-100"
               )}
             >
               {badge}
             </p>
-            <Badge variant={type === "highlight" ? "secondary" : "gradient"}>
+            <Badge variant={type === "highlight" ? "default" : "gradient"} className="min-w-auto px-3 text-primary-100">
               {badgeValue}
             </Badge>
           </div>

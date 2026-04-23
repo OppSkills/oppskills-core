@@ -12,7 +12,7 @@ const ACHIEVEMENTS = [
 export default function AchievementsPage() {
     return (
         <div className='flex gap-4 flex-1 h-full'>
-            <div className='p-8 bg-neutral-100 rounded-3xl flex-1 overflow-y-auto'>
+            <div className='p-0 flex-1 overflow-y-auto'>
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
                     {ACHIEVEMENTS.map((a, i) => (
                         <div key={i} className='p-6 bg-white rounded-2xl flex items-center gap-6 shadow-sm hover:shadow-md transition-shadow'>

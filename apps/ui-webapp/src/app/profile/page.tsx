@@ -115,57 +115,57 @@ export default function ProfilePage() {
       className="flex flex-1 flex-col gap-4 xl:flex-row"
       fallback={<ProfileLikeFallback className="py-8" />}
     >
-    {profileData ? (
-    <div className='flex flex-col xl:flex-row gap-4 flex-1'>
-      <div className='p-4 lg:p-8 bg-neutral-100 rounded-3xl flex-1 overflow-y-auto custom-scrollbar'>
-        <PersonalInfo data={profileData.personalInfo} />
-        <EducationInfo data={profileData.educationInfo} />
-        <SkillsInfo data={{ skills: profileData.skills }} />
-        <InterestsInfo data={{ interests: profileData.interests }} />
+      {profileData ? (
+        <div className='flex flex-col xl:flex-row gap-4 flex-1'>
+          <div className='p-4 lg:p-0 flex-1 overflow-y-auto custom-scrollbar'>
+            <PersonalInfo data={profileData.personalInfo} />
+            <EducationInfo data={profileData.educationInfo} />
+            <SkillsInfo data={{ skills: profileData.skills }} />
+            <InterestsInfo data={{ interests: profileData.interests }} />
 
-        <div className="mt-8 rounded-2xl border border-neutral-200 bg-background p-6">
-          <h3 className="text-lg font-semibold text-neutral-900">
-            {hasPassword ? 'Update Password' : 'Add Password'}
-          </h3>
-          <p className="mt-1 text-sm text-neutral-500">
-            {hasPassword
-              ? 'Keep your account secure by setting a new password.'
-              : 'You signed up using OAuth. Add a password to also sign in with email and password.'}
-          </p>
+            <div className="mt-8 rounded-2xl border border-neutral-200 bg-background p-6">
+              <h3 className="text-lg font-semibold text-neutral-900">
+                {hasPassword ? 'Update Password' : 'Add Password'}
+              </h3>
+              <p className="mt-1 text-sm text-neutral-500">
+                {hasPassword
+                  ? 'Keep your account secure by setting a new password.'
+                  : 'You signed up using OAuth. Add a password to also sign in with email and password.'}
+              </p>
 
-          <form onSubmit={handlePasswordSubmit} className="mt-4 space-y-3">
-            {hasPassword && (
-              <Input
-                type="password"
-                placeholder="Current password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                disabled={isSavingPassword}
-              />
-            )}
-            <Input
-              type="password"
-              placeholder="New password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              disabled={isSavingPassword}
-            />
-            <Input
-              type="password"
-              placeholder="Confirm new password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              disabled={isSavingPassword}
-            />
-            <Button type="submit" disabled={isSavingPassword}>
-              {isSavingPassword ? 'Saving...' : hasPassword ? 'Update Password' : 'Add Password'}
-            </Button>
-          </form>
+              <form onSubmit={handlePasswordSubmit} className="mt-4 space-y-3">
+                {hasPassword && (
+                  <Input
+                    type="password"
+                    placeholder="Current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    disabled={isSavingPassword}
+                  />
+                )}
+                <Input
+                  type="password"
+                  placeholder="New password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={isSavingPassword}
+                />
+                <Input
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={isSavingPassword}
+                />
+                <Button type="submit" disabled={isSavingPassword}>
+                  {isSavingPassword ? 'Saving...' : hasPassword ? 'Update Password' : 'Add Password'}
+                </Button>
+              </form>
+            </div>
+          </div>
+          <ProfileStats data={profileData.stats} />
         </div>
-      </div>
-      <ProfileStats data={profileData.stats} />
-    </div>
-    ) : null}
+      ) : null}
     </BoneyardSkeleton>
   );
 }

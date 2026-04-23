@@ -81,7 +81,7 @@ export async function getReferralRegistrations(
     params: { page, pageSize },
     headers: buildAuthHeaders(token),
   });
-  return res.data as { data: any[]; total: number; page: number; pageSize: number };
+  return res.data as { data: ReferredUser[]; total: number; page: number; pageSize: number };
 }
 
 export async function deleteReferral(token: string, id: string) {
@@ -116,4 +116,58 @@ export async function trackReferralClick(
 ) {
   const res = await PUBLIC_API.post("/track-click", payload);
   return res.data;
+}
+
+export interface ReferralPerformanceItem {
+  id: string;
+  code: string;
+  entityType: ReferralEntityType;
+  entityId: string;
+  title: string;
+  organization: string;
+  thumbnail: string;
+  slug: string;
+  clicks: number;
+  clicksLast24h: number;
+  registrations: number;
+  registrationsLast24h: number;
+  createdAt: string;
+  isActive: boolean;
+}
+
+export interface ReferralPerformanceResponse {
+  summary: {
+    linksGenerated: number;
+    activeLinks: number;
+    totalImpressions: number;
+    impressions24h: number;
+    totalRegistrations: number;
+    registrations24h: number;
+  };
+  referrals: ReferralPerformanceItem[];
+}
+
+export interface ReferredUser {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  registrationDate: string;
+  institution: string;
+  location: string;
+  profession: string;
+}
+
+export async function getMyReferralPerformance(token: string) {
+  const res = await API.get("/my/performance", {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as ReferralPerformanceResponse;
+}
+
+export async function getMyReferredUsers(token: string) {
+  const res = await API.get("/my/referred-users", {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as ReferralPerformanceResponse["referrals"];
 }

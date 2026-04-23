@@ -58,6 +58,11 @@ export class ReferralCounterService implements OnModuleDestroy {
       this.redis.incr(`ref:c:${params.referralId}`),
       this.redis.incr(`ref:h:${params.referralId}`),
       this.redis.zadd(`ref:c24:${params.referralId}`, now, `${now}`),
+      this.redis.zremrangebyscore(
+        `ref:c24:${params.referralId}`,
+        0,
+        now - 24 * 60 * 60 * 1000,
+      ),
       this.redis.expire(`ref:c24:${params.referralId}`, 60 * 60 * 24 * 2),
     ]);
   }
@@ -70,9 +75,37 @@ export class ReferralCounterService implements OnModuleDestroy {
     const now = Date.now();
     const start = now - 24 * 60 * 60 * 1000;
     const key = `ref:c24:${referralId}`;
-    await this.redis.zremrangebyscore(key, 0, start);
     const count = await this.redis.zcount(key, start, now);
     return Number(count || 0);
+  }
+
+  async getBatchClicksLast24h(referralIds: string[]): Promise<Record<string, number>> {
+    if (referralIds.length === 0) return {};
+    const now = Date.now();
+    const start = now - 24 * 60 * 60 * 1000;
+    
+    const pipeline = this.redis.pipeline();
+    for (const id of referralIds) {
+      const key = `ref:c24:${id}`;
+      pipeline.zcount(key, start, now);
+    }
+    
+    const results = await pipeline.exec();
+    const map: Record<string, number> = {};
+    
+    if (results) {
+      referralIds.forEach((id, index) => {
+        const zcountResult = results[index];
+        // results is [ [err, res], [err, res], ... ]
+        if (zcountResult && !zcountResult[0] && zcountResult[1] !== null) {
+          map[id] = Number(zcountResult[1]);
+        } else {
+          map[id] = 0;
+        }
+      });
+    }
+    
+    return map;
   }
 
   async flushToDb(): Promise<void> {

@@ -7,14 +7,11 @@ import {
   Search,
   CheckCircle2,
   RotateCcw,
-  Trophy,
-  Calendar,
   ArrowDownLeft,
-  ArrowUpDown,
-  MoreVertical,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
@@ -48,6 +45,7 @@ import {
   MotionItem,
 } from "@/components/ui/derived/MotionWrapper";
 import { toast } from "sonner";
+import { SortFromTopToBottom } from "@solar-icons/react";
 
 interface Transaction {
   id: string;
@@ -110,6 +108,7 @@ export default function TransactionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([
     { id: "date", desc: true },
   ]);
@@ -197,7 +196,7 @@ export default function TransactionsPage() {
             className="p-0 hover:bg-transparent -ml-2 text-neutral-500 font-medium whitespace-nowrap"
           >
             Date
-            <ArrowUpDown className="ml-2 h-3 w-3" />
+            <SortFromTopToBottom className="ml-2 h-3 w-3" />
           </Button>
         ),
         cell: (info) => (
@@ -215,7 +214,7 @@ export default function TransactionsPage() {
             className="p-0 hover:bg-transparent -ml-2 text-neutral-500 font-medium whitespace-nowrap"
           >
             Amount
-            <ArrowUpDown className="ml-2 h-3 w-3" />
+            <SortFromTopToBottom className="ml-2 h-3 w-3" />
           </Button>
         ),
         cell: (info) => {
@@ -353,223 +352,255 @@ export default function TransactionsPage() {
         <TableBlockFallback className="min-h-[400px] rounded-3xl border border-[#E0E0E6] bg-white p-8" />
       }
     >
-    <div className="w-full flex flex-col gap-6">
-      {/* Summary cards */}
-      {transactions.length > 0 && (
-        <MotionContainer className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
-          <MotionItem>
-            <AnalyticCard
-              title="Total Paid"
-              value={formatCurrency(totals.paid, currency)}
-              badge="Transactions"
-              badgeValue={
-                transactions.filter((t) => t.paymentStatus === "CAPTURED").length
-              }
-              type="normal"
-            />
-          </MotionItem>
-          <MotionItem>
-            <AnalyticCard
-              title="Refunded"
-              value={formatCurrency(totals.refunded, currency)}
-              badge="Refunds"
-              badgeValue={
-                transactions.filter((t) => t.paymentStatus === "REFUNDED")
-                  .length
-              }
-              type="normal"
-            />
-          </MotionItem>
-          <MotionItem
-            className="col-span-2 sm:col-span-1">
-            <AnalyticCard
-              title="Net Spent"
-              value={formatCurrency(totals.net, currency)}
-              badge="Actual Expenditure"
-              badgeValue="Net"
-              type="highlight"
-            />
-          </MotionItem>
-        </MotionContainer>
-      )}
+      <div className="w-full flex flex-col gap-6">
+        {/* Summary cards */}
+        {transactions.length > 0 && (
+          <MotionContainer className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+            <MotionItem>
+              <AnalyticCard
+                title="Total Paid"
+                value={formatCurrency(totals.paid, currency)}
+                badge="Transactions"
+                badgeValue={
+                  transactions.filter((t) => t.paymentStatus === "CAPTURED").length
+                }
+                type="normal"
+              />
+            </MotionItem>
+            <MotionItem>
+              <AnalyticCard
+                title="Refunded"
+                value={formatCurrency(totals.refunded, currency)}
+                badge="Refunds"
+                badgeValue={
+                  transactions.filter((t) => t.paymentStatus === "REFUNDED")
+                    .length
+                }
+                type="normal"
+              />
+            </MotionItem>
+            <MotionItem
+              className="col-span-2 sm:col-span-1">
+              <AnalyticCard
+                title="Net Spent"
+                value={formatCurrency(totals.net, currency)}
+                badge="Actual Expenditure"
+                badgeValue="Net"
+                type="highlight"
+              />
+            </MotionItem>
+          </MotionContainer>
+        )}
 
-      {/* Table Section */}
-      <div className="w-full bg-white rounded-3xl border border-[#E0E0E6] shadow-sm">
-        {/* Toolbar */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 px-6 py-5 border-b border-neutral-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-          <div className="flex items-center gap-6 overflow-x-auto no-scrollbar pb-1 md:pb-0">
-            {FILTER_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "text-sm font-semibold whitespace-nowrap pb-1 transition-all relative group",
-                  activeTab === tab.id
-                    ? "text-primary-600"
-                    : "text-neutral-500 hover:text-neutral-800"
-                )}
-              >
-                {tab.label}
-                <span
+        {/* Table Section */}
+        <div>
+          {/* Toolbar */}
+          <div className="flex items-stretch md:items-center justify-between gap-4 px-6 py-5 border-b border-neutral-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+            <div className={cn(
+              "flex items-center gap-6 overflow-x-auto no-scrollbar pb-1 md:pb-0 transition-all duration-300",
+              isSearchExpanded ? "hidden lg:flex" : "flex"
+            )}>
+              {FILTER_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "absolute bottom-[-1px] left-0 w-full h-[2px] rounded-full bg-primary-600 transition-transform duration-300",
+                    "text-sm font-semibold whitespace-nowrap pb-1 transition-all relative group",
                     activeTab === tab.id
-                      ? "scale-x-100"
-                      : "scale-x-0 group-hover:scale-x-50"
+                      ? "text-primary-600"
+                      : "text-neutral-500 hover:text-neutral-800"
                   )}
-                />
-              </button>
-            ))}
-          </div>
-
-          <div className="relative group">
-            <input
-              type="text"
-              placeholder="Search by title..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full md:w-[280px] bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2 pr-10 text-sm text-neutral-700 placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-primary-100 focus:border-primary-400 transition-all"
-            />
-            <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 group-focus-within:text-primary-500 transition-colors pointer-events-none" />
-          </div>
-        </div>
-
-        {/* Table Content */}
-        <div className="relative overflow-x-auto no-scrollbar">
-          <Table className="min-w-[700px]">
-            <TableHeader className="bg-neutral-50/50">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow
-                  key={headerGroup.id}
-                  className="hover:bg-transparent border-b border-neutral-100"
                 >
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      className="px-6 h-12 text-neutral-500 font-semibold"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </TableHead>
-                  ))}
-                </TableRow>
+                  {tab.label}
+                  <span
+                    className={cn(
+                      "absolute bottom-[-1px] left-0 w-full h-[2px] rounded-full bg-primary-600 transition-transform duration-300",
+                      activeTab === tab.id
+                        ? "scale-x-100"
+                        : "scale-x-0 group-hover:scale-x-50"
+                    )}
+                  />
+                </button>
               ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className="group border-b border-neutral-100 last:border-0 hover:bg-neutral-50/30 transition-colors"
+            </div>
+
+            <div className={cn(
+              "relative flex items-center gap-2 transition-all duration-300",
+              isSearchExpanded ? "w-full lg:w-auto" : "w-auto"
+            )}>
+              <div className={cn(
+                "relative flex-1 lg:flex-none transition-all duration-300",
+                isSearchExpanded ? "flex items-center gap-2 w-full" : "hidden lg:block"
+              )}>
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Search by title..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus={isSearchExpanded}
+                    className="w-full lg:w-[280px] bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2 pr-10 text-sm text-neutral-700 placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-primary-100 focus:border-primary-400 transition-all"
+                  />
+                  <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 group-focus-within:text-primary-500 transition-colors pointer-events-none" />
+                </div>
+
+                {isSearchExpanded && (
+                  <button
+                    onClick={() => setIsSearchExpanded(false)}
+                    className="lg:hidden p-2 rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-400 hover:text-neutral-600 transition-all"
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="px-6 py-4">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {!isSearchExpanded && (
+                <button
+                  onClick={() => setIsSearchExpanded(true)}
+                  className="lg:hidden p-2.5 rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-400 hover:text-primary-500 transition-all"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Table Content */}
+          <div className="relative overflow-x-auto no-scrollbar">
+            <Table className="min-w-[700px]">
+              <TableHeader className="bg-neutral-50/50">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow
+                    key={headerGroup.id}
+                    className="hover:bg-transparent border-b border-neutral-100"
+                  >
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className="px-6 h-12 text-neutral-500 font-semibold"
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-[400px] text-center"
-                  >
-                    <div className="flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
-                      <div className="w-48 h-48 relative">
-                        <Image
-                          src="/illustrations/working-on-desk.svg"
-                          alt="Empty state"
-                          fill
-                          className="object-contain opacity-60 grayscale-[0.2]"
-                        />
-                      </div>
-                      <div className="max-w-[280px]">
-                        <h3 className="text-lg font-bold text-neutral-800">
-                          No transactions found
-                        </h3>
-                        <p className="text-sm text-neutral-400 mt-1">
-                          We couldn't find any financial records matching your
-                          current filters or search.
-                        </p>
-                        {(activeTab !== "all" || searchQuery) && (
-                          <Button
-                            variant="link"
-                            className="mt-2 text-primary-600 font-semibold h-auto p-0"
-                            onClick={() => {
-                              setActiveTab("all");
-                              setSearchQuery("");
-                            }}
-                          >
-                            Clear all filters
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Pagination */}
-        {table.getRowModel().rows?.length > 0 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-100 bg-neutral-50/30">
-            <div className="text-xs font-medium text-neutral-400 uppercase tracking-widest leading-none">
-              Viewing {table.getRowModel().rows.length} of{" "}
-              {filteredData.length} records
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 rounded-lg border-neutral-200"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from(
-                  { length: table.getPageCount() },
-                  (_, i) => i + 1
-                ).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => table.setPageIndex(page - 1)}
-                    className={cn(
-                      "w-8 h-8 rounded-lg text-xs font-bold transition-all",
-                      table.getState().pagination.pageIndex === page - 1
-                        ? "bg-primary-600 text-white shadow-md shadow-primary-200"
-                        : "text-neutral-500 hover:bg-neutral-100"
-                    )}
-                  >
-                    {page}
-                  </button>
                 ))}
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 rounded-lg border-neutral-200"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      className="group border-b border-neutral-100 last:border-0 hover:bg-neutral-50/30 transition-colors"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="px-6 py-4">
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-[400px] text-center"
+                    >
+                      <div className="flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
+                        <div className="w-48 h-48 relative">
+                          <Image
+                            src="/illustrations/working-on-desk.svg"
+                            alt="Empty state"
+                            fill
+                            className="object-contain opacity-60 grayscale-[0.2]"
+                          />
+                        </div>
+                        <div className="max-w-[280px]">
+                          <h3 className="text-lg font-bold text-neutral-800">
+                            No transactions found
+                          </h3>
+                          <p className="text-sm text-neutral-400 mt-1">
+                            We couldn't find any financial records matching your
+                            current filters or search.
+                          </p>
+                          {(activeTab !== "all" || searchQuery) && (
+                            <Button
+                              variant="link"
+                              className="mt-2 text-primary-600 font-semibold h-auto p-0"
+                              onClick={() => {
+                                setActiveTab("all");
+                                setSearchQuery("");
+                              }}
+                            >
+                              Clear all filters
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
-        )}
+
+          {/* Pagination */}
+          {table.getRowModel().rows?.length > 0 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-100 bg-neutral-50/30">
+              <div className="text-xs font-medium text-neutral-400 uppercase tracking-widest leading-none">
+                Viewing {table.getRowModel().rows.length} of{" "}
+                {filteredData.length} records
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg border-neutral-200"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from(
+                    { length: table.getPageCount() },
+                    (_, i) => i + 1
+                  ).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => table.setPageIndex(page - 1)}
+                      className={cn(
+                        "w-8 h-8 rounded-lg text-xs font-bold transition-all",
+                        table.getState().pagination.pageIndex === page - 1
+                          ? "bg-primary-600 text-white shadow-md shadow-primary-200"
+                          : "text-neutral-500 hover:bg-neutral-100"
+                      )}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg border-neutral-200"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </BoneyardSkeleton>
   );
 }
