@@ -119,6 +119,11 @@ export class ReferralCounterService implements OnModuleDestroy {
           // Key format: ref:metric:referralId
           const parts = key.split(':');
           if (parts.length < 3) continue;
+          
+          const currentMetric = parts[1];
+          // Redis 'ref:c:*' matches 'ref:c24:*', so we must be explicit
+          if (currentMetric !== metric) continue;
+          
           const referralId = parts[2];
           
           const value = await this.redis.eval(
