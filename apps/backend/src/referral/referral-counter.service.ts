@@ -127,7 +127,15 @@ export class ReferralCounterService implements OnModuleDestroy {
           const referralId = parts[2];
           
           const value = await this.redis.eval(
-            "local v = redis.call('GET', KEYS[1]); redis.call('DEL', KEYS[1]); return v",
+            `
+            local t = redis.call('TYPE', KEYS[1]).ok
+            if t == 'string' then
+              local v = redis.call('GET', KEYS[1])
+              redis.call('DEL', KEYS[1])
+              return v
+            end
+            return nil
+            `,
             1,
             key,
           );
