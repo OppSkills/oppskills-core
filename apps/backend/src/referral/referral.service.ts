@@ -16,6 +16,22 @@ import { EmailService } from 'src/email/email.service';
 import { ReferralAuthzService } from './referral-authz.service';
 import { ReferralCounterService } from './referral-counter.service';
 
+const ONBOARDING_PROFILE_SELECT = {
+  select: {
+    userCategory: true,
+    locationCity: true,
+    locationState: true,
+    locationCountry: true,
+    college: { select: { name: true } },
+    schoolName: true,
+    companyName: true,
+    jobTitle: true,
+    course: true,
+    courseSpecialization: true,
+    collegeCurrentYear: true,
+  },
+} as const;
+
 @Injectable()
 export class ReferralService {
   constructor(
@@ -228,21 +244,7 @@ export class ReferralService {
               lastName: true,
               email: true,
               imageUrl: true,
-              onboardingProfile: {
-                select: {
-                  userCategory: true,
-                  locationCity: true,
-                  locationState: true,
-                  locationCountry: true,
-                  college: { select: { name: true } },
-                  schoolName: true,
-                  companyName: true,
-                  jobTitle: true,
-                  course: true,
-                  courseSpecialization: true,
-                  collegeCurrentYear: true,
-                },
-              },
+              onboardingProfile: ONBOARDING_PROFILE_SELECT,
             },
           },
         },
@@ -259,21 +261,7 @@ export class ReferralService {
               lastName: true,
               email: true,
               imageUrl: true,
-              onboardingProfile: {
-                select: {
-                  userCategory: true,
-                  locationCity: true,
-                  locationState: true,
-                  locationCountry: true,
-                  college: { select: { name: true } },
-                  schoolName: true,
-                  companyName: true,
-                  jobTitle: true,
-                  course: true,
-                  courseSpecialization: true,
-                  collegeCurrentYear: true,
-                },
-              },
+              onboardingProfile: ONBOARDING_PROFILE_SELECT,
             },
           },
         },
@@ -289,21 +277,7 @@ export class ReferralService {
               lastName: true,
               email: true,
               imageUrl: true,
-              onboardingProfile: {
-                select: {
-                  userCategory: true,
-                  locationCity: true,
-                  locationState: true,
-                  locationCountry: true,
-                  college: { select: { name: true } },
-                  schoolName: true,
-                  companyName: true,
-                  jobTitle: true,
-                  course: true,
-                  courseSpecialization: true,
-                  collegeCurrentYear: true,
-                },
-              },
+              onboardingProfile: ONBOARDING_PROFILE_SELECT,
             },
           },
         },
@@ -587,24 +561,24 @@ export class ReferralService {
       prisma.eventParticipantEntity.groupBy({
         by: ['referralId'],
         where: { referralId: { in: referralIds }, joinedAt: { gte: start24h } },
-        _count: true,
+        _count: { _all: true },
       }),
       prisma.teamEntity.groupBy({
         by: ['referralId'],
         where: { referralId: { in: referralIds }, createdAt: { gte: start24h } },
-        _count: true,
+        _count: { _all: true },
       }),
       prisma.teamMemberEntity.groupBy({
         by: ['referralId'],
         where: { referralId: { in: referralIds }, joinedAt: { gte: start24h } },
-        _count: true,
+        _count: { _all: true },
       }),
     ]);
 
     const regMap: Record<string, number> = {};
     [...eventRegs24h, ...teamRegs24h, ...teamMemberRegs24h].forEach((r) => {
       if (r.referralId) {
-        regMap[r.referralId] = (regMap[r.referralId] || 0) + r._count;
+        regMap[r.referralId] = (regMap[r.referralId] || 0) + r._count._all;
       }
     });
 

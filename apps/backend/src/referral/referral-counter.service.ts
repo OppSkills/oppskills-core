@@ -96,7 +96,8 @@ export class ReferralCounterService implements OnModuleDestroy {
     if (results) {
       referralIds.forEach((id, index) => {
         const zcountResult = results[index];
-        if (zcountResult && zcountResult[1] !== null) {
+        // results is [ [err, res], [err, res], ... ]
+        if (zcountResult && !zcountResult[0] && zcountResult[1] !== null) {
           map[id] = Number(zcountResult[1]);
         } else {
           map[id] = 0;

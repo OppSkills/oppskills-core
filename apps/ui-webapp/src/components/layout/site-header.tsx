@@ -8,39 +8,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { Breadcrumbs } from "./breadcrumbs";
 import { useUser } from "@clerk/nextjs";
 
-function getInitials(
-  firstName: string | null,
-  lastName: string | null,
-  email: string
-): string {
-  if (firstName && lastName) {
-    return `${firstName[0]}${lastName[0]}`.toUpperCase();
-  }
-  if (firstName) {
-    return firstName.slice(0, 2).toUpperCase();
-  }
-  if (lastName) {
-    return lastName.slice(0, 2).toUpperCase();
-  }
-  return email.slice(0, 2).toUpperCase();
-}
-
-function getDisplayName(
-  firstName: string | null,
-  lastName: string | null,
-  email: string
-): string {
-  if (firstName && lastName) {
-    return `${firstName} ${lastName}`;
-  }
-  if (firstName) {
-    return firstName;
-  }
-  if (lastName) {
-    return lastName;
-  }
-  return email.split("@")[0];
-}
+import { getInitials, getDisplayName } from "@/lib/user-utils";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -88,24 +56,6 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
           <Breadcrumbs />
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            asChild
-            size="sm"
-            className="hidden sm:flex"
-          >
-            <a
-              href="https://github.com/shadcn-ui/ui/tree/main/apps/v4/app/(examples)/dashboard"
-              rel="noopener noreferrer"
-              target="_blank"
-              className=""
-            >
-              GitHub
-            </a>
-          </Button>
         </div>
       </div>
     </header>
