@@ -49,6 +49,7 @@ import {
 import { transitionSearchFlowState, type SearchFlowState } from '../../domains/search/model/searchStateMachine';
 import { useMockSession } from '../../domains/user-accounts/presentation/providers/MockSessionProvider';
 import { HomePageScreen } from '../../domains/users/presentation/screens/HomePageScreen';
+import { OrganizerDashboardScreen } from '../../domains/users/presentation/screens/OrganizerDashboardScreen';
 import { ProfileEditScreen } from '../../domains/users/presentation/screens/ProfileEditScreen';
 import { ProfileScreen } from '../../domains/users/presentation/screens/ProfileScreen';
 import { appRoutes } from '../../shared/constants/routes';
@@ -296,6 +297,7 @@ function HomeStackNavigator() {
               onOpenEvent={() => openDiscoverScreen(appRoutes.discoverEventsPrimary)}
               onOpenHackathon={() => openDiscoverScreen(appRoutes.discoverHackathons)}
               onOpenProfile={() => navigation.navigate(appRoutes.profilePage)}
+              onOpenOrganizerDashboard={() => navigation.navigate(appRoutes.organizerDashboard)}
             />
           );
         }}
@@ -325,6 +327,19 @@ function HomeStackNavigator() {
               }
 
               navigation.navigate(appRoutes.profilePage);
+            }}
+          />
+        )}
+      </HomeStack.Screen>
+      <HomeStack.Screen name={appRoutes.organizerDashboard}>
+        {({ navigation }) => (
+          <OrganizerDashboardScreen
+            onBack={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+              navigation.navigate(appRoutes.homeStack);
             }}
           />
         )}
