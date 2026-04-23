@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Image,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   View,
   useWindowDimensions,
@@ -21,7 +22,21 @@ export type OrganizerSidebarIconName =
   | 'events'
   | 'participants'
   | 'organizer-id'
-  | 'notifications';
+  | 'notifications'
+  | 'registrations'
+  | 'edit-opportunity'
+  | 'payments'
+  | 'referrals';
+
+const HOME_CHILD_ITEMS = [
+  { key: 'dashboard', label: 'Dashboard', icon: 'dashboard' as OrganizerSidebarIconName },
+  { key: 'manage-registrations', label: 'Manage Registrations', icon: 'registrations' as OrganizerSidebarIconName },
+  { key: 'edit-opportunity', label: 'Edit Opportunity', icon: 'edit-opportunity' as OrganizerSidebarIconName },
+  { key: 'payments', label: 'Payments', icon: 'payments' as OrganizerSidebarIconName },
+  { key: 'manage-roles', label: 'Manage Roles', icon: 'organizer-id' as OrganizerSidebarIconName },
+  { key: 'send-notifications', label: 'Send Notifications', icon: 'notifications' as OrganizerSidebarIconName },
+  { key: 'referrals', label: 'Referrals', icon: 'referrals' as OrganizerSidebarIconName },
+] as const;
 
 export interface OrganizerSidebarItem {
   readonly key: string;
@@ -47,9 +62,12 @@ export function OrganizerSidebarDrawer({
   const { width } = useWindowDimensions();
   const drawerWidth = Math.min(299, Math.max(260, width * 0.82));
   const translateX = useRef(new Animated.Value(-drawerWidth)).current;
+  const [childVisible, setChildVisible] = useState(false);
+  const childTranslateX = useRef(new Animated.Value(drawerWidth)).current;
 
   useEffect(() => {
     if (!visible) {
+      setChildVisible(false);
       return;
     }
 
@@ -61,6 +79,23 @@ export function OrganizerSidebarDrawer({
       useNativeDriver: true,
     }).start();
   }, [drawerWidth, translateX, visible]);
+
+  useEffect(() => {
+    if (childVisible) {
+      childTranslateX.setValue(drawerWidth);
+      Animated.timing(childTranslateX, {
+        duration: 200,
+        toValue: 0,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(childTranslateX, {
+        duration: 180,
+        toValue: drawerWidth,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [childVisible, childTranslateX, drawerWidth]);
 
   if (!visible) {
     return null;
@@ -85,11 +120,19 @@ export function OrganizerSidebarDrawer({
             <View style={styles.menuContainer}>
               {items.map((item) => {
                 const isActive = item.key === activeItemKey;
+                const isHome = item.key === 'home';
 
                 return (
                   <Pressable
                     key={item.key}
-                    onPress={() => onSelect(item.key)}
+                    onPress={() => {
+                      if (isHome) {
+                        setChildVisible((prev) => !prev);
+                      } else {
+                        setChildVisible(false);
+                        onSelect(item.key);
+                      }
+                    }}
                     style={[styles.menuItem, isActive ? styles.menuItemActive : null]}
                   >
                     <View style={[styles.menuItemIndicator, isActive ? styles.menuItemIndicatorActive : null]} />
@@ -97,11 +140,57 @@ export function OrganizerSidebarDrawer({
                     <AppText style={[styles.menuItemLabel, isActive ? styles.menuItemLabelActive : null]} variant="body">
                       {item.label}
                     </AppText>
+                    {isHome ? (
+                      <View style={[styles.chevron, childVisible ? styles.chevronOpen : null]} />
+                    ) : null}
                   </Pressable>
                 );
               })}
             </View>
           </SafeAreaView>
+
+          <Animated.View
+            style={[
+              styles.childDrawer,
+              { transform: [{ translateX: childTranslateX }], width: drawerWidth },
+            ]}
+          >
+            <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.drawerSafeArea}>
+              <View style={styles.logoBar}>
+                <Pressable
+                  accessibilityLabel="Back to main sidebar"
+                  hitSlop={8}
+                  onPress={() => setChildVisible(false)}
+                  style={styles.closeButton}
+                >
+                  <View style={[styles.backChevronShaft]} />
+                  <View style={[styles.backChevronTipTop]} />
+                  <View style={[styles.backChevronTipBottom]} />
+                </Pressable>
+                <AppText style={styles.childDrawerTitle} variant="label">
+                  Home
+                </AppText>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false} style={styles.childMenuContainer}>
+                {HOME_CHILD_ITEMS.map((item) => (
+                  <Pressable
+                    key={item.key}
+                    onPress={() => {
+                      setChildVisible(false);
+                      onSelect(item.key);
+                    }}
+                    style={styles.menuItem}
+                  >
+                    <SidebarIcon active={false} name={item.icon} />
+                    <AppText style={styles.menuItemLabel} variant="body">
+                      {item.label}
+                    </AppText>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </SafeAreaView>
+          </Animated.View>
         </Animated.View>
       </View>
     </Modal>
@@ -183,6 +272,45 @@ function SidebarIcon({
         <View style={[styles.idBody, tintStyle]} />
         <View style={[styles.idLineOne, tintStyle]} />
         <View style={[styles.idLineTwo, tintStyle]} />
+      </View>
+    );
+  }
+
+  if (name === 'registrations') {
+    return (
+      <View style={styles.iconFrame}>
+        <View style={[styles.regOutline, tintStyle]} />
+        <View style={[styles.regLineTop, tintStyle]} />
+        <View style={[styles.regLineMid, tintStyle]} />
+        <View style={[styles.regLineBot, tintStyle]} />
+      </View>
+    );
+  }
+
+  if (name === 'edit-opportunity') {
+    return (
+      <View style={styles.iconFrame}>
+        <View style={[styles.editBody, tintStyle]} />
+        <View style={[styles.editUnderline, tintStyle]} />
+      </View>
+    );
+  }
+
+  if (name === 'payments') {
+    return (
+      <View style={styles.iconFrame}>
+        <View style={[styles.payCard, tintStyle]} />
+        <View style={[styles.payStripe, active ? styles.iconFillActive : styles.iconFill]} />
+      </View>
+    );
+  }
+
+  if (name === 'referrals') {
+    return (
+      <View style={styles.iconFrame}>
+        <View style={[styles.refHeadLeft, tintStyle]} />
+        <View style={[styles.refHeadRight, tintStyle]} />
+        <View style={[styles.refArrow, tintStyle]} />
       </View>
     );
   }
@@ -572,5 +700,170 @@ const styles = StyleSheet.create({
     top: 12,
     transform: [{ rotate: '-25deg' }],
     width: 1,
+  },
+  chevron: {
+    borderBottomColor: '#584D5A',
+    borderBottomWidth: 1.5,
+    borderRightColor: '#584D5A',
+    borderRightWidth: 1.5,
+    height: 7,
+    marginLeft: 'auto',
+    transform: [{ rotate: '-45deg' }],
+    width: 7,
+  },
+  chevronOpen: {
+    transform: [{ rotate: '45deg' }],
+  },
+  childDrawer: {
+    backgroundColor: '#FAFAFA',
+    borderColor: '#E8E6E8',
+    borderLeftWidth: 1,
+    bottom: 0,
+    position: 'absolute',
+    top: 0,
+  },
+  childDrawerTitle: {
+    color: '#100013',
+    flex: 1,
+    fontFamily: 'Aeonik Pro',
+    fontSize: 16,
+    fontWeight: '500',
+    paddingLeft: 8,
+  },
+  childMenuContainer: {
+    backgroundColor: '#FAFAFA',
+    flex: 1,
+    paddingTop: 33,
+  },
+  backChevronShaft: {
+    backgroundColor: '#584D5A',
+    borderRadius: 2,
+    height: 2,
+    position: 'absolute',
+    width: 12,
+  },
+  backChevronTipTop: {
+    backgroundColor: '#584D5A',
+    borderRadius: 2,
+    height: 2,
+    position: 'absolute',
+    transform: [{ rotate: '45deg' }],
+    left: 2,
+    top: 10,
+    width: 7,
+  },
+  backChevronTipBottom: {
+    backgroundColor: '#584D5A',
+    borderRadius: 2,
+    height: 2,
+    position: 'absolute',
+    transform: [{ rotate: '-45deg' }],
+    left: 2,
+    bottom: 10,
+    width: 7,
+  },
+  regOutline: {
+    borderColor: '#584D5A',
+    borderRadius: 4,
+    borderWidth: 1.5,
+    height: 20,
+    left: 5,
+    position: 'absolute',
+    top: 6,
+    width: 22,
+  },
+  regLineTop: {
+    borderColor: '#584D5A',
+    borderWidth: 1.5,
+    height: 1,
+    left: 9,
+    position: 'absolute',
+    top: 11,
+    width: 10,
+  },
+  regLineMid: {
+    borderColor: '#584D5A',
+    borderWidth: 1.5,
+    height: 1,
+    left: 9,
+    position: 'absolute',
+    top: 16,
+    width: 10,
+  },
+  regLineBot: {
+    borderColor: '#584D5A',
+    borderWidth: 1.5,
+    height: 1,
+    left: 9,
+    position: 'absolute',
+    top: 21,
+    width: 6,
+  },
+  editBody: {
+    borderColor: '#584D5A',
+    borderRadius: 3,
+    borderWidth: 1.5,
+    height: 16,
+    left: 8,
+    position: 'absolute',
+    top: 6,
+    transform: [{ rotate: '35deg' }],
+    width: 10,
+  },
+  editUnderline: {
+    borderColor: '#584D5A',
+    borderWidth: 1.5,
+    height: 1,
+    left: 5,
+    position: 'absolute',
+    top: 25,
+    width: 22,
+  },
+  payCard: {
+    borderColor: '#584D5A',
+    borderRadius: 4,
+    borderWidth: 1.5,
+    height: 18,
+    left: 5,
+    position: 'absolute',
+    top: 7,
+    width: 22,
+  },
+  payStripe: {
+    backgroundColor: '#584D5A',
+    height: 4,
+    left: 5,
+    position: 'absolute',
+    top: 12,
+    width: 22,
+  },
+  refHeadLeft: {
+    borderColor: '#584D5A',
+    borderRadius: 5,
+    borderWidth: 1.5,
+    height: 8,
+    left: 4,
+    position: 'absolute',
+    top: 7,
+    width: 8,
+  },
+  refHeadRight: {
+    borderColor: '#584D5A',
+    borderRadius: 5,
+    borderWidth: 1.5,
+    height: 8,
+    left: 20,
+    position: 'absolute',
+    top: 7,
+    width: 8,
+  },
+  refArrow: {
+    borderColor: '#584D5A',
+    borderTopWidth: 1.5,
+    height: 1,
+    left: 9,
+    position: 'absolute',
+    top: 19,
+    width: 14,
   },
 });
