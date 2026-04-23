@@ -57,61 +57,61 @@ export function ReferredParticipantsSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar p-4 sm:p-8 bg-neutral-200">
+        <div className="flex-1 overflow-y-auto no-scrollbar p-4 sm:p-6 bg-neutral-100">
           {isLoading ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="p-8 rounded-[32px] border border-neutral-100 bg-neutral-50/20 space-y-6">
-                  <div className="flex items-center gap-6">
-                    <Skeleton className="h-24 w-24 rounded-full" />
-                    <Skeleton className="h-8 w-48 rounded-md" />
+                <div key={i} className="p-6 rounded-[24px] border border-neutral-200 bg-white space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-[100px] w-[100px] rounded-full" />
+                    <Skeleton className="h-6 w-32 rounded-md" />
                   </div>
-                  <div className="space-y-4">
-                    {[1, 2, 3, 4, 5].map((j) => (
-                      <Skeleton key={j} className="h-6 w-full rounded-md" />
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((j) => (
+                      <Skeleton key={j} className="h-4 w-full rounded-md" />
                     ))}
                   </div>
                 </div>
               ))}
             </div>
           ) : data?.data && data.data.length > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {data.data.map((participant: any) => (
-                <div key={participant.id} className="flex flex-col gap-6 p-6 sm:p-10 rounded-[32px] bg-white border border-neutral-200 shadow-sm hover:border-neutral-300 transition-all group">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                    <Avatar className="h-24 w-24 sm:h-32 sm:w-32 border-4 border-white shadow-lg ring-1 ring-neutral-100 shrink-0">
+                <div key={participant.id} className="flex flex-col gap-4 p-5 sm:p-6 rounded-[24px] bg-white border border-neutral-200 shadow-sm hover:border-neutral-300 transition-all">
+                  <div className="flex items-center gap-5">
+                    <Avatar className="h-[100px] w-[100px] border-4 border-white shadow-md ring-1 ring-neutral-100 shrink-0">
                       <AvatarImage src={participant.avatarUrl} alt={participant.name} className="object-cover" />
-                      <AvatarFallback className="bg-primary-50 text-primary-600 text-3xl font-bold">
+                      <AvatarFallback className="bg-primary-50 text-primary-600 text-2xl font-bold">
                         {participant.name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <h3 className="text-3xl sm:text-4xl font-medium text-neutral-900 tracking-tight">{participant.name}</h3>
+                    <h3 className="text-2xl font-medium text-neutral-900 tracking-tight">{participant.name}</h3>
                   </div>
 
-                  <div className="flex flex-col gap-4 pl-1 sm:pl-2">
-                    <div className="flex items-start gap-4 text-[#8A8A8A]">
-                      <Building2 className="size-6 shrink-0 mt-0.5" />
-                      <span className="text-lg sm:text-xl font-normal tracking-tight">{participant.institution}</span>
+                  <div className="flex flex-col gap-3.5 pl-1">
+                    <div className="flex items-start gap-3.5 text-neutral-600">
+                      <Building2 className="size-5 shrink-0 mt-0.5" />
+                      <span className="text-base font-normal tracking-tight leading-snug">{participant.institution || "N/A"}</span>
                     </div>
 
-                    <div className="flex items-start gap-4 text-[#8A8A8A]">
-                      <Mail className="size-6 shrink-0 mt-0.5" />
-                      <span className="text-lg sm:text-xl font-normal tracking-tight">{participant.email}</span>
+                    <div className="flex items-start gap-3.5 text-neutral-600">
+                      <Mail className="size-5 shrink-0 mt-0.5" />
+                      <span className="text-base font-normal tracking-tight">{participant.email}</span>
                     </div>
 
-                    <div className="flex items-start gap-4 text-[#8A8A8A]">
-                      <MapPin className="size-6 shrink-0 mt-0.5" />
-                      <span className="text-lg sm:text-xl font-normal tracking-tight">{participant.location}</span>
+                    <div className="flex items-start gap-3.5 text-neutral-600">
+                      <MapPin className="size-5 shrink-0 mt-0.5" />
+                      <span className="text-base font-normal tracking-tight">{participant.location || "N/A"}</span>
                     </div>
 
-                    <div className="flex items-start gap-4 text-[#8A8A8A]">
-                      <GraduationCap className="size-6 shrink-0 mt-0.5" />
-                      <span className="text-lg sm:text-xl font-normal tracking-tight leading-snug">{participant.profession}</span>
+                    <div className="flex items-start gap-3.5 text-neutral-600">
+                      <GraduationCap className="size-5 shrink-0 mt-0.5" />
+                      <span className="text-base font-normal tracking-tight leading-snug">{participant.profession || "N/A"}</span>
                     </div>
 
-                    <div className="flex items-start gap-4 text-[#8A8A8A]">
-                      <PencilLine className="size-6 shrink-0 mt-0.5" />
-                      <span className="text-lg sm:text-xl font-normal tracking-tight">
+                    <div className="flex items-start gap-3.5 text-neutral-600">
+                      <PencilLine className="size-5 shrink-0 mt-0.5" />
+                      <span className="text-base font-normal tracking-tight">
                         Registered on: {format(new Date(participant.registrationDate), "dd MMM yyyy, hh:mm a")}
                       </span>
                     </div>
