@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { prisma } from '@oppskills/db';
+import { prisma, Prisma } from '@oppskills/db';
 import Redis from 'ioredis';
 import { createHash } from 'crypto';
 
@@ -160,11 +160,17 @@ export class ReferralCounterService implements OnModuleDestroy {
               });
             }
           } catch (err) {
-            this.logger.error(`Failed to update referral stats for ${referralId}, re-queueing to Redis`, err);
-            // Re-queue the count so it's not lost if the DB update failed
-            await this.redis.incrby(key, count).catch((redisErr) => {
-              this.logger.error(`CRITICAL: Failed to re-queue ${key} to Redis`, redisErr);
-            });
+            const isRecordNotFound = err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025';
+
+            if (isRecordNotFound) {
+              this.logger.warn(`Referral ${referralId} not found in DB. Dropping ${count} ${metric} stats for ${key}.`);
+            } else {
+              this.logger.error(`Failed to update referral stats for ${referralId}, re-queueing to Redis`, err);
+              // Re-queue the count so it's not lost if the DB update failed (transient error)
+              await this.redis.incrby(key, count).catch((redisErr) => {
+                this.logger.error(`CRITICAL: Failed to re-queue ${key} to Redis`, redisErr);
+              });
+            }
           }
         }
       }
