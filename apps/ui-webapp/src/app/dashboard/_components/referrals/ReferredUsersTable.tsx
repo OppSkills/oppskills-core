@@ -21,20 +21,13 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { useReferralRegistrations } from "@/hooks/useReferrals";
+import { ReferredUser } from "@/lib/api/referralApi";
 
-export interface ReferredUserData {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string;
-  registrationDate: string;
-  status: "Registered" | "Participated" | "Waitlisted";
-}
 
 export const ReferredUsersTable = memo(function ReferredUsersTable({ referralId }: { referralId: string }) {
   const { data } = useReferralRegistrations(referralId);
-  const rows = useMemo(() => (data?.data ?? []) as ReferredUserData[], [data?.data]);
-  const columns = useMemo<ColumnDef<ReferredUserData>[]>(
+  const rows = useMemo(() => (data?.data ?? []), [data?.data]);
+  const columns = useMemo<ColumnDef<ReferredUser>[]>(
     () => [
       {
         id: "sno",
@@ -49,7 +42,7 @@ export const ReferredUsersTable = memo(function ReferredUsersTable({ referralId 
           return (
             <div className="flex items-center gap-4 py-2">
               <Avatar className="w-10 h-10 rounded-full border border-neutral-100">
-                <AvatarImage src={row.avatarUrl} className="object-cover" />
+                <AvatarImage src={row.avatarUrl ?? undefined} className="object-cover" />
                 <AvatarFallback>{row.name.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
@@ -74,23 +67,22 @@ export const ReferredUsersTable = memo(function ReferredUsersTable({ referralId 
         },
       },
       {
-        accessorKey: "status",
-        header: "Status",
+        accessorKey: "institution",
+        header: "Institution / Profession",
         cell: (info) => {
-          const status = info.getValue() as string;
+          const row = info.row.original;
           return (
-            <Badge 
-              className={cn(
-                "font-bold roundex-sm px-3 py-1 text-xs border-none",
-                status === "Registered" && "bg-blue-100 text-blue-600",
-                status === "Participated" && "bg-green-100 text-green-600",
-                status === "Waitlisted" && "bg-yellow-100 text-yellow-600"
-              )}
-            >
-              {status}
-            </Badge>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-neutral-800 truncate max-w-[200px]">{row.institution || "N/A"}</span>
+              <span className="text-[11px] text-neutral-400">{row.profession || "N/A"}</span>
+            </div>
           );
         },
+      },
+      {
+        accessorKey: "location",
+        header: "Location",
+        cell: (info) => <span className="text-sm text-neutral-600">{info.getValue() as string || "N/A"}</span>,
       },
     ],
     []
