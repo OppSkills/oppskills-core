@@ -194,6 +194,13 @@ export class ReferralService {
     if (!referral || referral.isDeleted) {
       throw new NotFoundException('Referral not found');
     }
+
+    // Allow access if user is the referrer
+    if (referral.referrerId === userId) {
+      return referral;
+    }
+
+    // Otherwise check for management rights
     await this.authz.assertCanManageEntity(
       userId,
       referral.entityType as ReferralEntityTypeDto,
@@ -221,6 +228,21 @@ export class ReferralService {
               lastName: true,
               email: true,
               imageUrl: true,
+              onboardingProfile: {
+                select: {
+                  userCategory: true,
+                  locationCity: true,
+                  locationState: true,
+                  locationCountry: true,
+                  college: { select: { name: true } },
+                  schoolName: true,
+                  companyName: true,
+                  jobTitle: true,
+                  course: true,
+                  courseSpecialization: true,
+                  collegeCurrentYear: true,
+                },
+              },
             },
           },
         },
@@ -237,6 +259,21 @@ export class ReferralService {
               lastName: true,
               email: true,
               imageUrl: true,
+              onboardingProfile: {
+                select: {
+                  userCategory: true,
+                  locationCity: true,
+                  locationState: true,
+                  locationCountry: true,
+                  college: { select: { name: true } },
+                  schoolName: true,
+                  companyName: true,
+                  jobTitle: true,
+                  course: true,
+                  courseSpecialization: true,
+                  collegeCurrentYear: true,
+                },
+              },
             },
           },
         },
@@ -252,11 +289,60 @@ export class ReferralService {
               lastName: true,
               email: true,
               imageUrl: true,
+              onboardingProfile: {
+                select: {
+                  userCategory: true,
+                  locationCity: true,
+                  locationState: true,
+                  locationCountry: true,
+                  college: { select: { name: true } },
+                  schoolName: true,
+                  companyName: true,
+                  jobTitle: true,
+                  course: true,
+                  courseSpecialization: true,
+                  collegeCurrentYear: true,
+                },
+              },
             },
           },
         },
       }),
     ]);
+
+    const formatProfession = (profile: any) => {
+      if (!profile) return 'Other';
+      const categoryMap: any = {
+        SCHOOL_STUDENT: 'School Student',
+        COLLEGE_STUDENT: 'College Student',
+        WORKING_PROFESSIONAL: 'Working Professional',
+        FRESHER: 'Fresher',
+        PROFESSIONAL_SCHOOL_STUDENT: 'Professional Student',
+      };
+
+      const parts = [categoryMap[profile.userCategory] || 'User'];
+
+      if (profile.courseSpecialization) parts.push(profile.courseSpecialization);
+      if (profile.course) parts.push(profile.course);
+      if (profile.collegeCurrentYear) parts.push(profile.collegeCurrentYear);
+
+      if (profile.userCategory === 'WORKING_PROFESSIONAL') {
+        if (profile.jobTitle) parts.push(profile.jobTitle);
+        if (profile.companyName) parts.push(profile.companyName);
+      }
+
+      return parts.join(' | ');
+    };
+
+    const formatLocation = (profile: any) => {
+      if (!profile) return 'Unknown';
+      const parts = [
+        profile.locationCity,
+        profile.locationState,
+        profile.locationCountry,
+      ].filter(Boolean);
+      return parts.join(', ') || 'Unknown';
+    };
 
     const combined = [
       ...teamMembers.map((tm) => ({
@@ -265,7 +351,9 @@ export class ReferralService {
         email: tm.user.email,
         avatarUrl: tm.user.imageUrl,
         registrationDate: tm.joinedAt.toISOString(),
-        status: 'Registered',
+        institution: tm.user.onboardingProfile?.college?.name || tm.user.onboardingProfile?.schoolName || 'N/A',
+        location: formatLocation(tm.user.onboardingProfile),
+        profession: formatProfession(tm.user.onboardingProfile),
       })),
       ...leaderTeams.map((t) => ({
         id: `leader-team:${t.id}`,
@@ -273,7 +361,9 @@ export class ReferralService {
         email: t.leader.email,
         avatarUrl: t.leader.imageUrl,
         registrationDate: t.createdAt.toISOString(),
-        status: 'Registered (team leader)',
+        institution: t.leader.onboardingProfile?.college?.name || t.leader.onboardingProfile?.schoolName || 'N/A',
+        location: formatLocation(t.leader.onboardingProfile),
+        profession: formatProfession(t.leader.onboardingProfile),
       })),
       ...eventParticipants.map((ep) => ({
         id: ep.id,
@@ -281,7 +371,9 @@ export class ReferralService {
         email: ep.user.email,
         avatarUrl: ep.user.imageUrl,
         registrationDate: ep.joinedAt.toISOString(),
-        status: ep.approved ? 'Participated' : 'Registered',
+        institution: ep.user.onboardingProfile?.college?.name || ep.user.onboardingProfile?.schoolName || 'N/A',
+        location: formatLocation(ep.user.onboardingProfile),
+        profession: formatProfession(ep.user.onboardingProfile),
       })),
     ].sort(
       (a, b) =>
@@ -428,5 +520,196 @@ export class ReferralService {
 
   async markRegistrationAttributed(referralId: string): Promise<void> {
     await this.counter.incrementRegistration(referralId);
+  }
+
+  private async getEntityDetails(entityType: string, entityId: string) {
+    let title = 'Unknown';
+    let organization = 'Unknown';
+    let thumbnail = '';
+    let slug = '';
+
+    if (entityType === 'HACKATHON') {
+      const h = await prisma.hackathonEntity.findUnique({
+        where: { id: entityId },
+        select: {
+          name: true,
+          organizationName: true,
+          bannerImageUrl: true,
+          slug: true,
+        },
+      });
+      if (h) {
+        title = h.name;
+        organization = h.organizationName || 'Unknown';
+        thumbnail = h.bannerImageUrl || '';
+        slug = h.slug;
+      }
+    } else if (entityType === 'EVENT') {
+      const e = await prisma.eventEntity.findUnique({
+        where: { id: entityId },
+        select: {
+          name: true,
+          organizationName: true,
+          bannerImageUrl: true,
+          slug: true,
+        },
+      });
+      if (e) {
+        title = e.name;
+        organization = e.organizationName || 'Unknown';
+        thumbnail = e.bannerImageUrl || '';
+        slug = e.slug;
+      }
+    } else if (entityType === 'FESTIVAL') {
+      const f = await prisma.festivalEntity.findUnique({
+        where: { id: entityId },
+        select: {
+          name: true,
+          organizationName: true,
+          posterImageUrl: true,
+          slug: true,
+        },
+      });
+      if (f) {
+        title = f.name;
+        organization = f.organizationName || 'Unknown';
+        thumbnail = f.posterImageUrl || '';
+        slug = f.slug;
+      }
+    }
+
+    return { title, organization, thumbnail, slug };
+  }
+
+  async getMyReferralPerformance(userId: string) {
+    const referrals = await prisma.referralEntity.findMany({
+      where: {
+        referrerId: userId,
+        isDeleted: false,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const now = new Date();
+    const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const stats = await Promise.all(
+      referrals.map(async (ref) => {
+        const clicks24h = await this.counter.getClicksLast24h(ref.id);
+
+        const [eventRegs24h, teamRegs24h, teamMemberRegs24h] = await Promise.all([
+          prisma.eventParticipantEntity.count({
+            where: { referralId: ref.id, joinedAt: { gte: start24h } },
+          }),
+          prisma.teamEntity.count({
+            where: { referralId: ref.id, createdAt: { gte: start24h } },
+          }),
+          prisma.teamMemberEntity.count({
+            where: { referralId: ref.id, joinedAt: { gte: start24h } },
+          }),
+        ]);
+        const registrations24h = eventRegs24h + teamRegs24h + teamMemberRegs24h;
+
+        const details = await this.getEntityDetails(
+          ref.entityType,
+          ref.entityId,
+        );
+
+        return {
+          id: ref.id,
+          code: ref.code,
+          entityType: ref.entityType,
+          entityId: ref.entityId,
+          ...details,
+          clicks: ref.humanClicksCount,
+          clicksLast24h: clicks24h,
+          registrations: ref.registrationsCount,
+          registrationsLast24h: registrations24h,
+          createdAt: ref.createdAt,
+          isActive: ref.isActive,
+        };
+      }),
+    );
+
+    const totalImpressions = stats.reduce((acc, s) => acc + s.clicks, 0);
+    const impressions24h = stats.reduce((acc, s) => acc + s.clicksLast24h, 0);
+    const totalRegistrations = stats.reduce(
+      (acc, s) => acc + s.registrations,
+      0,
+    );
+    const registrations24h = stats.reduce(
+      (acc, s) => acc + s.registrationsLast24h,
+      0,
+    );
+    const linksGenerated = referrals.length;
+    const activeLinks = referrals.filter((r) => r.isActive).length;
+
+    return {
+      summary: {
+        totalReferrals: totalRegistrations,
+        totalReferrals24h: registrations24h,
+        linksGenerated,
+        activeLinks,
+        totalImpressions,
+        impressions24h,
+        totalRegistrations,
+        registrations24h,
+      },
+      referrals: stats,
+    };
+  }
+
+  async getMyReferredUsers(userId: string) {
+    const referrals = await prisma.referralEntity.findMany({
+      where: {
+        referrerId: userId,
+        registrationsCount: { gt: 0 },
+        isDeleted: false,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    const now = new Date();
+    const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const stats = await Promise.all(
+      referrals.map(async (ref) => {
+        const clicks24h = await this.counter.getClicksLast24h(ref.id);
+
+        const [eventRegs24h, teamRegs24h, teamMemberRegs24h] = await Promise.all([
+          prisma.eventParticipantEntity.count({
+            where: { referralId: ref.id, joinedAt: { gte: start24h } },
+          }),
+          prisma.teamEntity.count({
+            where: { referralId: ref.id, createdAt: { gte: start24h } },
+          }),
+          prisma.teamMemberEntity.count({
+            where: { referralId: ref.id, joinedAt: { gte: start24h } },
+          }),
+        ]);
+        const registrations24h = eventRegs24h + teamRegs24h + teamMemberRegs24h;
+
+        const details = await this.getEntityDetails(
+          ref.entityType,
+          ref.entityId,
+        );
+
+        return {
+          id: ref.id,
+          code: ref.code,
+          entityType: ref.entityType,
+          entityId: ref.entityId,
+          ...details,
+          clicks: ref.humanClicksCount,
+          clicksLast24h: clicks24h,
+          registrations: ref.registrationsCount,
+          registrationsLast24h: registrations24h,
+          createdAt: ref.createdAt,
+          isActive: ref.isActive,
+        };
+      }),
+    );
+
+    return stats;
   }
 }

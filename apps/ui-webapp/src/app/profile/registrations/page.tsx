@@ -57,33 +57,33 @@ export default function RegistrationsPage() {
         <CardListFallback className="rounded-3xl bg-white p-8" rows={5} />
       }
     >
-    <div className="w-full bg-white rounded-3xl p-8">
-      <RegistrationTabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        counts={counts}
-      />
+      <div className="">
+        <RegistrationTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          counts={counts}
+        />
 
-      <div className="mt-6 space-y-4">
-        {filteredRegistrations.length > 0 ? (
-          filteredRegistrations.map((reg) => (
-            <RegistrationCard key={reg.id} registration={reg} />
-          ))
-        ) : (
-          <div className="p-10 md:p-15 lg:p-20 flex flex-col items-center justify-center text-center">
-            <Image
-              src="/illustrations/working-on-desk.svg"
-              alt="No registrations"
-              width={300}
-              height={300}
-            />
-            <p className="text-neutral-800">You haven’t registered in any {activeTab === "all" ? "Competition, Event or Festival" : activeTab === "event" ? "Event" : "Competition"} till now.</p>
-          </div>
-        )}
-      </div>
-    </div>
-    </BoneyardSkeleton>
+        <div className="mt-6 space-y-4">
+          {filteredRegistrations.length > 0 ? (
+            filteredRegistrations.map((reg) => (
+              <RegistrationCard key={reg.id} registration={reg} />
+            ))
+          ) : (
+            <div className="p-10 md:p-15 lg:p-20 flex flex-col items-center justify-center text-center">
+              <Image
+                src="/illustrations/working-on-desk.svg"
+                alt="No registrations"
+                width={300}
+                height={300}
+              />
+              <p className="text-neutral-800">You haven’t registered in any {activeTab === "all" ? "Competition, Event or Festival" : activeTab === "event" ? "Event" : "Competition"} till now.</p>
+            </div>
+          )}
+        </div>
+      </div >
+    </BoneyardSkeleton >
   );
 }

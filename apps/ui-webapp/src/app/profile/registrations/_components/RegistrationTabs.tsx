@@ -30,7 +30,7 @@ export function RegistrationTabs({
   ];
 
   return (
-    <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+    <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-4">
       {/* Tabs */}
       <div className="flex items-center gap-8 self-start md:self-auto overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
         {tabs.map((tab) => (

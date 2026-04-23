@@ -28,6 +28,16 @@ export class ReferralController {
     return this.referralService.createReferral(dto, req.user!.id);
   }
 
+  @Get('my/performance')
+  getMyPerformance(@Req() req: Request) {
+    return this.referralService.getMyReferralPerformance(req.user!.id);
+  }
+
+  @Get('my/referred-users')
+  getMyReferredUsers(@Req() req: Request) {
+    return this.referralService.getMyReferredUsers(req.user!.id);
+  }
+
   @Get()
   listReferrals(@Query() query: ListReferralsQueryDto, @Req() req: Request) {
     return this.referralService.listReferrals(query, req.user!.id);

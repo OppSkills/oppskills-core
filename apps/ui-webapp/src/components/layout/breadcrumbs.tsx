@@ -35,19 +35,22 @@ export function Breadcrumbs() {
   };
 
   const getBreadcrumbs = () => {
+    const isProfile = segments.includes("profile");
+    const rootPath = isProfile ? "/profile" : "/dashboard";
+    
     const items: { label: React.ReactNode; href: string; active: boolean }[] = [
       {
         label: <Home className="size-4" />,
-        href: "/dashboard",
-        active: pathname === "/dashboard",
+        href: rootPath,
+        active: pathname === rootPath,
       },
     ];
 
-    let currentPath = "/dashboard";
+    let currentPath = rootPath;
     
-    // Skip the first "dashboard" segment as we've already added the Home icon
-    const dashboardIndex = segments.indexOf("dashboard");
-    const subSegments = segments.slice(dashboardIndex + 1);
+    // Skip the first root segment (dashboard or profile) as we've already added the Home icon
+    const rootIndex = segments.indexOf(isProfile ? "profile" : "dashboard");
+    const subSegments = segments.slice(rootIndex + 1);
 
     subSegments.forEach((segment, index) => {
       currentPath += `/${segment}`;

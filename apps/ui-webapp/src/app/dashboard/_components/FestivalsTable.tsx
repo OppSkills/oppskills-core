@@ -25,8 +25,8 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import ActionDropdown from "./ActionDropdown";
-import { ArrowUpDown } from "lucide-react";
 import Link from "next/link";
+import { SortFromTopToBottom } from "@solar-icons/react";
 
 export interface FestivalItem {
   id: string;
@@ -89,7 +89,7 @@ export default function FestivalsTable({
             className="p-0 hover:bg-transparent"
           >
             Name
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <SortFromTopToBottom className="ml-2 h-4 w-4" />
           </Button>
         );
       },

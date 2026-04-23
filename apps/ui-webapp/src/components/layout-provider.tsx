@@ -27,7 +27,7 @@ export default function LayoutProvider({
   const isOnboarding = pathname.startsWith("/onboarding");
 
   // Onboarding page - no header, footer, or sidebar
-  if (isOnboarding || isProfile) {
+  if (isOnboarding) {
     return (
       <main className="min-h-screen bg-neutral-200">
 
@@ -97,8 +97,8 @@ export default function LayoutProvider({
     "main" | "secondary"
   >("secondary");
 
-  // Dashboard layout with dual-sidebar support
-  if (isDashboard) {
+  // Dashboard or Profile layout with dual-sidebar support
+  if (isDashboard || isProfile) {
     return (
 
       <MobileNavigationProvider

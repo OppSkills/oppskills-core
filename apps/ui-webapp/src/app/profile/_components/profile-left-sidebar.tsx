@@ -12,6 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { UserSpeak } from "@solar-icons/react";
 
 const NAV_ITEMS = [
   {
@@ -33,6 +34,11 @@ const NAV_ITEMS = [
     title: "Transactions",
     href: "/profile/transactions",
     icon: Wallet,
+  },
+  {
+    title: "Referrals",
+    href: "/profile/referrals",
+    icon: UserSpeak,
   },
 ];
 

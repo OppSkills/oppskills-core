@@ -4,19 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useParams, usePathname } from "next/navigation";
-import { Bell } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useUser, SignOutButton } from "@clerk/nextjs";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { LogOut, User } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Breadcrumbs } from "./breadcrumbs";
+import { useUser } from "@clerk/nextjs";
 
 function getInitials(
   firstName: string | null,
@@ -101,87 +91,21 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-4">
-          {showProfile && isLoaded && user ? (
-            <div className="flex items-center gap-4">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-3 cursor-pointer outline-none">
-                    <Avatar className="h-10 w-10 border border-slate-200">
-                      <AvatarImage src={userImageUrl ?? undefined} />
-                      <AvatarFallback className="bg-primary-500 text-background">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="hidden flex-col md:flex items-start">
-                      <span className="text-sm font-bold text-[#1A1A1A]">
-                        {displayName}
-                      </span>
-                      <span className="text-xs text-[#5F6368]">
-                        {userEmail}
-                      </span>
-                    </div>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="flex items-center gap-2 p-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={userImageUrl ?? undefined} />
-                      <AvatarFallback className="bg-primary-500 text-background text-xs">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{displayName}</span>
-                      <span className="text-xs text-muted-foreground truncate max-w-[160px]">
-                        {userEmail}
-                      </span>
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <a
-                      href="/dashboard/profile"
-                      className="flex items-center cursor-pointer"
-                    >
-                      <User className="mr-2 h-4 w-4" />
-                      Profile
-                    </a>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <SignOutButton>
-                    <DropdownMenuItem className="text-red-600 focus:text-red-600 cursor-pointer">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sign out
-                    </DropdownMenuItem>
-                  </SignOutButton>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ) : showProfile ? (
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-neutral-200 animate-pulse" />
-              <div className="hidden md:flex flex-col gap-1">
-                <div className="h-4 w-24 bg-neutral-200 rounded animate-pulse" />
-                <div className="h-3 w-32 bg-neutral-200 rounded animate-pulse" />
-              </div>
-            </div>
-          ) : (
-            <Button
-              variant="ghost"
-              asChild
-              size="sm"
-              className="hidden sm:flex"
+          <Button
+            variant="ghost"
+            asChild
+            size="sm"
+            className="hidden sm:flex"
+          >
+            <a
+              href="https://github.com/shadcn-ui/ui/tree/main/apps/v4/app/(examples)/dashboard"
+              rel="noopener noreferrer"
+              target="_blank"
+              className=""
             >
-              <a
-                href="https://github.com/shadcn-ui/ui/tree/main/apps/v4/app/(examples)/dashboard"
-                rel="noopener noreferrer"
-                target="_blank"
-                className=""
-              >
-                GitHub
-              </a>
-            </Button>
-          )}
+              GitHub
+            </a>
+          </Button>
         </div>
       </div>
     </header>

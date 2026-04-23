@@ -175,10 +175,10 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
           const row = info.row.original;
           return (
             <div className="flex flex-col items-center gap-1">
-              <Badge className="bg-accent-yellow-100 text-accent-yellow-500 hover:bg-accent-yellow-100 border-none font-bold px-3 py-1 rounded-sm text-sm">
+              <Badge className="bg-accent-yellow-100 text-accent-yellow-500 px-3 py-1 rounded text-base">
                 {row.clicks} Clicks
               </Badge>
-              <span className="text-[11px] text-neutral-400 font-medium">
+              <span className="text-xs text-neutral-600 font-medium">
                 {row.clicksRecent} in last 24 hrs
               </span>
             </div>
@@ -196,10 +196,10 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
           const row = info.row.original;
           return (
             <div className="flex flex-col items-center gap-1">
-              <Badge className="bg-accent-pink-100 text-accent-pink-500 hover:bg-accent-pink-100 border-none font-bold px-3 py-1 rounded-sm text-sm">
+              <Badge className="bg-accent-pink-100 text-accent-pink-500 px-3 py-1 rounded text-base">
                 {row.registrations} Registrations
               </Badge>
-              <span className="text-[11px] text-neutral-400 font-medium">
+              <span className="text-xs text-neutral-600 font-medium">
                 {row.registrationsRecent.toString().padStart(2, "0")} in last 24 hrs
               </span>
             </div>
