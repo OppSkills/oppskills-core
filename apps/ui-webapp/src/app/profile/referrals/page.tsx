@@ -95,7 +95,8 @@ export default function ReferralsPage() {
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-[10px] text-primary-600 underline truncate max-w-[120px]">{referralLink}</span>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     navigator.clipboard.writeText(referralLink);
                     toast.success("Link copied to clipboard");
                   }}
@@ -106,6 +107,7 @@ export default function ReferralsPage() {
                 <Link
                   href={`/${row.entityType.toLowerCase()}/${row.slug}`}
                   target="_blank"
+                  onClick={(e) => e.stopPropagation()}
                   className="text-neutral-400 hover:text-primary-600 transition-colors"
                 >
                   <ExternalLink className="size-3" />

@@ -81,7 +81,7 @@ export async function getReferralRegistrations(
     params: { page, pageSize },
     headers: buildAuthHeaders(token),
   });
-  return res.data as { data: any[]; total: number; page: number; pageSize: number };
+  return res.data as { data: ReferredUser[]; total: number; page: number; pageSize: number };
 }
 
 export async function deleteReferral(token: string, id: string) {
@@ -137,8 +137,6 @@ export interface ReferralPerformanceItem {
 
 export interface ReferralPerformanceResponse {
   summary: {
-    totalReferrals: number;
-    totalReferrals24h: number;
     linksGenerated: number;
     activeLinks: number;
     totalImpressions: number;
@@ -151,17 +149,13 @@ export interface ReferralPerformanceResponse {
 
 export interface ReferredUser {
   id: string;
-  user: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    email: string;
-    imageUrl: string | null;
-  };
-  entityType: ReferralEntityType;
-  entityName: string;
-  entitySlug: string;
-  joinedAt: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  registrationDate: string;
+  institution: string;
+  location: string;
+  profession: string;
 }
 
 export async function getMyReferralPerformance(token: string) {

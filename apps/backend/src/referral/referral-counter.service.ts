@@ -75,6 +75,37 @@ export class ReferralCounterService implements OnModuleDestroy {
     return Number(count || 0);
   }
 
+  async getBatchClicksLast24h(referralIds: string[]): Promise<Record<string, number>> {
+    if (referralIds.length === 0) return {};
+    const now = Date.now();
+    const start = now - 24 * 60 * 60 * 1000;
+    
+    const pipeline = this.redis.pipeline();
+    for (const id of referralIds) {
+      const key = `ref:c24:${id}`;
+      pipeline.zremrangebyscore(key, 0, start);
+      pipeline.zcount(key, start, now);
+    }
+    
+    const results = await pipeline.exec();
+    const map: Record<string, number> = {};
+    
+    if (results) {
+      referralIds.forEach((id, index) => {
+        // results is [ [err, res], [err, res], ... ]
+        // We care about the second result for each ID (the zcount result)
+        const zcountResult = results[index * 2 + 1];
+        if (zcountResult && zcountResult[1] !== null) {
+          map[id] = Number(zcountResult[1]);
+        } else {
+          map[id] = 0;
+        }
+      });
+    }
+    
+    return map;
+  }
+
   async flushToDb(): Promise<void> {
     const stream = this.redis.scanStream({ match: 'ref:*:*', count: 200 });
     for await (const keys of stream) {

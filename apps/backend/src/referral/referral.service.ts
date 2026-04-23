@@ -590,46 +590,7 @@ export class ReferralService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const now = new Date();
-    const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    const stats = await Promise.all(
-      referrals.map(async (ref) => {
-        const clicks24h = await this.counter.getClicksLast24h(ref.id);
-
-        const [eventRegs24h, teamRegs24h, teamMemberRegs24h] = await Promise.all([
-          prisma.eventParticipantEntity.count({
-            where: { referralId: ref.id, joinedAt: { gte: start24h } },
-          }),
-          prisma.teamEntity.count({
-            where: { referralId: ref.id, createdAt: { gte: start24h } },
-          }),
-          prisma.teamMemberEntity.count({
-            where: { referralId: ref.id, joinedAt: { gte: start24h } },
-          }),
-        ]);
-        const registrations24h = eventRegs24h + teamRegs24h + teamMemberRegs24h;
-
-        const details = await this.getEntityDetails(
-          ref.entityType,
-          ref.entityId,
-        );
-
-        return {
-          id: ref.id,
-          code: ref.code,
-          entityType: ref.entityType,
-          entityId: ref.entityId,
-          ...details,
-          clicks: ref.humanClicksCount,
-          clicksLast24h: clicks24h,
-          registrations: ref.registrationsCount,
-          registrationsLast24h: registrations24h,
-          createdAt: ref.createdAt,
-          isActive: ref.isActive,
-        };
-      }),
-    );
+    const stats = await this.getReferralsWithStats(referrals);
 
     const totalImpressions = stats.reduce((acc, s) => acc + s.clicks, 0);
     const impressions24h = stats.reduce((acc, s) => acc + s.clicksLast24h, 0);
@@ -646,8 +607,6 @@ export class ReferralService {
 
     return {
       summary: {
-        totalReferrals: totalRegistrations,
-        totalReferrals24h: registrations24h,
         linksGenerated,
         activeLinks,
         totalImpressions,
@@ -669,47 +628,145 @@ export class ReferralService {
       orderBy: { updatedAt: 'desc' },
     });
 
+    return this.getReferralsWithStats(referrals);
+  }
+
+  private async getReferralsWithStats(referrals: any[]) {
     const now = new Date();
     const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const referralIds = referrals.map((r) => r.id);
 
-    const stats = await Promise.all(
-      referrals.map(async (ref) => {
-        const clicks24h = await this.counter.getClicksLast24h(ref.id);
+    // 1. Batch fetch clicks from Redis
+    const clicksLast24hMap =
+      await this.counter.getBatchClicksLast24h(referralIds);
 
-        const [eventRegs24h, teamRegs24h, teamMemberRegs24h] = await Promise.all([
-          prisma.eventParticipantEntity.count({
-            where: { referralId: ref.id, joinedAt: { gte: start24h } },
-          }),
-          prisma.teamEntity.count({
-            where: { referralId: ref.id, createdAt: { gte: start24h } },
-          }),
-          prisma.teamMemberEntity.count({
-            where: { referralId: ref.id, joinedAt: { gte: start24h } },
-          }),
-        ]);
-        const registrations24h = eventRegs24h + teamRegs24h + teamMemberRegs24h;
-
-        const details = await this.getEntityDetails(
-          ref.entityType,
-          ref.entityId,
-        );
-
-        return {
-          id: ref.id,
-          code: ref.code,
-          entityType: ref.entityType,
-          entityId: ref.entityId,
-          ...details,
-          clicks: ref.humanClicksCount,
-          clicksLast24h: clicks24h,
-          registrations: ref.registrationsCount,
-          registrationsLast24h: registrations24h,
-          createdAt: ref.createdAt,
-          isActive: ref.isActive,
-        };
+    // 2. Batch fetch registrations from DB
+    const [eventRegs24h, teamRegs24h, teamMemberRegs24h] = await Promise.all([
+      prisma.eventParticipantEntity.groupBy({
+        by: ['referralId'],
+        where: { referralId: { in: referralIds }, joinedAt: { gte: start24h } },
+        _count: true,
       }),
-    );
+      prisma.teamEntity.groupBy({
+        by: ['referralId'],
+        where: { referralId: { in: referralIds }, createdAt: { gte: start24h } },
+        _count: true,
+      }),
+      prisma.teamMemberEntity.groupBy({
+        by: ['referralId'],
+        where: { referralId: { in: referralIds }, joinedAt: { gte: start24h } },
+        _count: true,
+      }),
+    ]);
 
-    return stats;
+    const regMap: Record<string, number> = {};
+    [...eventRegs24h, ...teamRegs24h, ...teamMemberRegs24h].forEach((r) => {
+      if (r.referralId) {
+        regMap[r.referralId] = (regMap[r.referralId] || 0) + r._count;
+      }
+    });
+
+    // 3. Batch fetch entity details
+    const hackathonIds = [
+      ...new Set(
+        referrals
+          .filter((r) => r.entityType === 'HACKATHON')
+          .map((r) => r.entityId),
+      ),
+    ];
+    const eventIds = [
+      ...new Set(
+        referrals.filter((r) => r.entityType === 'EVENT').map((r) => r.entityId),
+      ),
+    ];
+    const festivalIds = [
+      ...new Set(
+        referrals
+          .filter((r) => r.entityType === 'FESTIVAL')
+          .map((r) => r.entityId),
+      ),
+    ];
+
+    const [hackathons, events, festivals] = await Promise.all([
+      prisma.hackathonEntity.findMany({
+        where: { id: { in: hackathonIds } },
+        select: {
+          id: true,
+          name: true,
+          organizationName: true,
+          bannerImageUrl: true,
+          slug: true,
+        },
+      }),
+      prisma.eventEntity.findMany({
+        where: { id: { in: eventIds } },
+        select: {
+          id: true,
+          name: true,
+          organizationName: true,
+          bannerImageUrl: true,
+          slug: true,
+        },
+      }),
+      prisma.festivalEntity.findMany({
+        where: { id: { in: festivalIds } },
+        select: {
+          id: true,
+          name: true,
+          organizationName: true,
+          posterImageUrl: true,
+          slug: true,
+        },
+      }),
+    ]);
+
+    const entityMap: Record<string, any> = {};
+    hackathons.forEach((h) => {
+      entityMap[`HACKATHON:${h.id}`] = {
+        title: h.name,
+        organization: h.organizationName || 'Unknown',
+        thumbnail: h.bannerImageUrl || '',
+        slug: h.slug,
+      };
+    });
+    events.forEach((e) => {
+      entityMap[`EVENT:${e.id}`] = {
+        title: e.name,
+        organization: e.organizationName || 'Unknown',
+        thumbnail: e.bannerImageUrl || '',
+        slug: e.slug,
+      };
+    });
+    festivals.forEach((f) => {
+      entityMap[`FESTIVAL:${f.id}`] = {
+        title: f.name,
+        organization: f.organizationName || 'Unknown',
+        thumbnail: f.posterImageUrl || '',
+        slug: f.slug,
+      };
+    });
+
+    return referrals.map((ref) => {
+      const details = entityMap[`${ref.entityType}:${ref.entityId}`] || {
+        title: 'Unknown',
+        organization: 'Unknown',
+        thumbnail: '',
+        slug: '',
+      };
+
+      return {
+        id: ref.id,
+        code: ref.code,
+        entityType: ref.entityType,
+        entityId: ref.entityId,
+        ...details,
+        clicks: ref.humanClicksCount,
+        clicksLast24h: clicksLast24hMap[ref.id] || 0,
+        registrations: ref.registrationsCount,
+        registrationsLast24h: regMap[ref.id] || 0,
+        createdAt: ref.createdAt,
+        isActive: ref.isActive,
+      };
+    });
   }
 }
