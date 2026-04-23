@@ -160,7 +160,11 @@ export class ReferralCounterService implements OnModuleDestroy {
               });
             }
           } catch (err) {
-            this.logger.error(`Failed to update referral stats for ${referralId}`, err);
+            this.logger.error(`Failed to update referral stats for ${referralId}, re-queueing to Redis`, err);
+            // Re-queue the count so it's not lost if the DB update failed
+            await this.redis.incrby(key, count).catch((redisErr) => {
+              this.logger.error(`CRITICAL: Failed to re-queue ${key} to Redis`, redisErr);
+            });
           }
         }
       }
