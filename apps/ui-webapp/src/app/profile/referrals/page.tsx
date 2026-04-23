@@ -166,9 +166,9 @@ export default function ReferralsPage() {
   const analyticData = [
     {
       title: "All Opportunities Referrals",
-      value: summary?.totalReferrals?.toString() || "0",
+      value: summary?.totalRegistrations?.toString() || "0",
       badge: "Last 24 Hrs",
-      badgeValue: summary?.totalReferrals24h?.toString() || "0",
+      badgeValue: summary?.registrations24h?.toString() || "0",
       type: "highlight" as const,
     },
     {

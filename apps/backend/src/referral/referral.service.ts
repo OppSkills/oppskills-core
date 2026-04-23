@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { prisma } from '@oppskills/db';
+import { prisma, ReferralEntity } from '@oppskills/db';
 import {
   CreateReferralDto,
   ListReferralsQueryDto,
@@ -522,64 +522,6 @@ export class ReferralService {
     await this.counter.incrementRegistration(referralId);
   }
 
-  private async getEntityDetails(entityType: string, entityId: string) {
-    let title = 'Unknown';
-    let organization = 'Unknown';
-    let thumbnail = '';
-    let slug = '';
-
-    if (entityType === 'HACKATHON') {
-      const h = await prisma.hackathonEntity.findUnique({
-        where: { id: entityId },
-        select: {
-          name: true,
-          organizationName: true,
-          bannerImageUrl: true,
-          slug: true,
-        },
-      });
-      if (h) {
-        title = h.name;
-        organization = h.organizationName || 'Unknown';
-        thumbnail = h.bannerImageUrl || '';
-        slug = h.slug;
-      }
-    } else if (entityType === 'EVENT') {
-      const e = await prisma.eventEntity.findUnique({
-        where: { id: entityId },
-        select: {
-          name: true,
-          organizationName: true,
-          bannerImageUrl: true,
-          slug: true,
-        },
-      });
-      if (e) {
-        title = e.name;
-        organization = e.organizationName || 'Unknown';
-        thumbnail = e.bannerImageUrl || '';
-        slug = e.slug;
-      }
-    } else if (entityType === 'FESTIVAL') {
-      const f = await prisma.festivalEntity.findUnique({
-        where: { id: entityId },
-        select: {
-          name: true,
-          organizationName: true,
-          posterImageUrl: true,
-          slug: true,
-        },
-      });
-      if (f) {
-        title = f.name;
-        organization = f.organizationName || 'Unknown';
-        thumbnail = f.posterImageUrl || '';
-        slug = f.slug;
-      }
-    }
-
-    return { title, organization, thumbnail, slug };
-  }
 
   async getMyReferralPerformance(userId: string) {
     const referrals = await prisma.referralEntity.findMany({
@@ -631,7 +573,7 @@ export class ReferralService {
     return this.getReferralsWithStats(referrals);
   }
 
-  private async getReferralsWithStats(referrals: any[]) {
+  private async getReferralsWithStats(referrals: ReferralEntity[]) {
     const now = new Date();
     const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const referralIds = referrals.map((r) => r.id);
