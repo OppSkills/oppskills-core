@@ -109,41 +109,54 @@ export class ReferralCounterService implements OnModuleDestroy {
   }
 
   async flushToDb(): Promise<void> {
-    const stream = this.redis.scanStream({ match: 'ref:*:*', count: 200 });
-    for await (const keys of stream) {
-      for (const key of keys) {
-        const [kind, metric, referralId] = key.split(':');
-        if (kind !== 'ref' || !referralId || metric === 'c24') continue;
-        const value = await this.redis.eval(
-          "local v = redis.call('GET', KEYS[1]); redis.call('DEL', KEYS[1]); return v",
-          1,
-          key,
-        );
-        if (!value) continue;
-        const count = Number(value);
-        if (!Number.isFinite(count) || count <= 0) continue;
+    const metrics = ['c', 'h', 'reg'];
+    
+    for (const metric of metrics) {
+      const stream = this.redis.scanStream({ match: `ref:${metric}:*`, count: 200 });
+      
+      for await (const keys of stream) {
+        for (const key of keys) {
+          // Key format: ref:metric:referralId
+          const parts = key.split(':');
+          if (parts.length < 3) continue;
+          const referralId = parts[2];
+          
+          const value = await this.redis.eval(
+            "local v = redis.call('GET', KEYS[1]); redis.call('DEL', KEYS[1]); return v",
+            1,
+            key,
+          );
+          
+          if (!value) continue;
+          const count = Number(value);
+          if (!Number.isFinite(count) || count <= 0) continue;
 
-        if (metric === 'c') {
-          await prisma.referralEntity.update({
-            where: { id: referralId },
-            data: { clicksCount: { increment: count }, lastClickAt: new Date() },
-          });
-        } else if (metric === 'h') {
-          await prisma.referralEntity.update({
-            where: { id: referralId },
-            data: {
-              humanClicksCount: { increment: count },
-              lastClickAt: new Date(),
-            },
-          });
-        } else if (metric === 'reg') {
-          await prisma.referralEntity.update({
-            where: { id: referralId },
-            data: {
-              registrationsCount: { increment: count },
-              lastRegistrationAt: new Date(),
-            },
-          });
+          try {
+            if (metric === 'c') {
+              await prisma.referralEntity.update({
+                where: { id: referralId },
+                data: { clicksCount: { increment: count }, lastClickAt: new Date() },
+              });
+            } else if (metric === 'h') {
+              await prisma.referralEntity.update({
+                where: { id: referralId },
+                data: {
+                  humanClicksCount: { increment: count },
+                  lastClickAt: new Date(),
+                },
+              });
+            } else if (metric === 'reg') {
+              await prisma.referralEntity.update({
+                where: { id: referralId },
+                data: {
+                  registrationsCount: { increment: count },
+                  lastRegistrationAt: new Date(),
+                },
+              });
+            }
+          } catch (err) {
+            this.logger.error(`Failed to update referral stats for ${referralId}`, err);
+          }
         }
       }
     }
