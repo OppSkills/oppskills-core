@@ -166,7 +166,15 @@ export class AnalyticsService {
         // If a new increment comes during this op, Redis blocks effectively,
         // or if it comes after, it creates a new key (safe).
         const value = await this.redis.eval(
-          "local v = redis.call('GET', KEYS[1]); redis.call('DEL', KEYS[1]); return v",
+          `
+          local t = redis.call('TYPE', KEYS[1]).ok
+          if t == 'string' then
+            local v = redis.call('GET', KEYS[1])
+            redis.call('DEL', KEYS[1])
+            return v
+          end
+          return nil
+          `,
           1,
           key,
         );

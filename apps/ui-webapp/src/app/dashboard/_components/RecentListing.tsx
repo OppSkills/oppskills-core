@@ -65,13 +65,8 @@ export default function RecentListing({ data }: { data: RecentListingItem[] }) {
                     <p className="text-xl text-neutral-800 line-clamp-1 group-hover:text-primary-600 transition-colors">
                       {item.title}
                     </p>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-muted-foreground font-medium">
-                      <span>{item.organization}</span>
-                      <span className="w-1 h-1 rounded-full bg-border" />
-                      <span>{item.location}</span>
-                    </div>
                     {item.description && (
-                      <p className="text-xs text-muted-foreground/80 mt-2 line-clamp-2 italic">
+                      <p className="text-xs text-muted-foreground/80 mt-2 line-clamp-2 italic wrap-break-word">
                         {item.description}
                       </p>
                     )}
@@ -79,12 +74,12 @@ export default function RecentListing({ data }: { data: RecentListingItem[] }) {
 
                   {/* Stats Badges */}
                   <div className="flex flex-row sm:flex-col gap-2 shrink-0 sm:min-w-30">
-                    <div className="flex items-center justify-between gap-4 px-4 py-2 rounded-xl bg-primary-200 text-primary-900">
+                    <div className="flex items-center justify-between gap-4 px-4 py-1 rounded-lg bg-primary-200 text-primary-900">
                       <span className="text-sm ">Applied</span>
                       <span className="text-base tabular-nums">{(item.applied ?? (item as any).tregistrations ?? 0).toLocaleString()}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-4 px-4 py-2 rounded-xl bg-primary-200 text-primary-900">
-                      <span className="text-sm ">Finalized</span>
+                    <div className="flex items-center justify-between gap-4 px-4 py-1 rounded-lg bg-primary-200 text-primary-900">
+                      <span className="text-sm">Finalized</span>
                       <span className="text-base tabular-nums">{(item.finalized ?? 0).toLocaleString()}</span>
                     </div>
                   </div>

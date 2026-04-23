@@ -6,6 +6,7 @@ import AnalyticCard from "./_components/AnalyticCard";
 import RegistrationLineChart from "./_components/RegistrationChart";
 import Alerts from "./_components/Alerts";
 import RecentListing from "./_components/RecentListing";
+import { CommunityJoinCard } from "./_components/CommunityJoinCard";
 import { Plus, Loader2 } from "lucide-react";
 
 import { useAuth, useUser } from "@clerk/nextjs";
@@ -286,7 +287,7 @@ export default function Page() {
 
         {/* Bottom Row: Recent Listings and Alerts */}
         <MotionContainer className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full pb-10">
-          <MotionItem className={cn("w-full", !showAlerts ? "lg:col-span-2" : "")}>
+          <MotionItem>
             <RecentListing data={topListingsRaw as ListingItem[] || []} />
           </MotionItem>
           {/* {showAlerts && (
@@ -294,6 +295,9 @@ export default function Page() {
               <Alerts data={highestPerforming} />
             </MotionItem>
           )} */}
+          <MotionItem>
+            <CommunityJoinCard />
+          </MotionItem>
         </MotionContainer>
       </div>
     </div>
