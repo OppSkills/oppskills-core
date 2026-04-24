@@ -3,6 +3,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, OrganizerSidebarDrawer, type OrganizerSidebarItem } from '../../../../shared/ui';
+import { OrganizerDashboardHome } from './OrganizerDashboardHome';
 import { OrganizerFestivalsPanel } from './OrganizerFestivalsPanel';
 import { SendNotificationsPanel } from './SendNotificationsPanel';
 import { styles } from './OrganizerDashboardScreen.styles';
@@ -164,46 +165,42 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
   );
 
   const activeSection = organizerSections[activeSectionKey];
+  const showingHome = activeSectionKey === 'home';
   const showingFestivals = activeSectionKey === 'events';
   const showingNotifications = activeSectionKey === 'notifications';
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
-      {showingFestivals ? (
+      <View style={styles.topBar}>
+        <Pressable accessibilityLabel="Open organizer sidebar" onPress={() => setDrawerVisible(true)} style={styles.topBarLeft}>
+          <View style={styles.sidebarIcon}>
+            <View style={styles.sidebarLine} />
+            <View style={[styles.sidebarLine, styles.sidebarLineMid]} />
+            <View style={styles.sidebarLine} />
+          </View>
+          <AppText style={styles.topBarTitle} variant="body">
+            Organizer Dashboard
+          </AppText>
+        </Pressable>
+        <View style={styles.topBarRight}>
+          <Pressable accessibilityLabel="Notifications" style={styles.notifButton}>
+            <View style={styles.notifBell} />
+          </Pressable>
+          <Pressable accessibilityLabel="Back to home" onPress={onBack} style={styles.avatarPill}>
+            <View style={styles.avatarCircle} />
+            <View style={styles.chevronDown} />
+          </Pressable>
+        </View>
+      </View>
+
+      {showingHome ? (
+        <OrganizerDashboardHome />
+      ) : showingFestivals ? (
         <OrganizerFestivalsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : showingNotifications ? (
         <SendNotificationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <View style={styles.headerActions}>
-              <Pressable accessibilityLabel="Back to home" onPress={onBack} style={styles.backButton}>
-                <View style={styles.backButtonTipPrimary} />
-                <View style={styles.backButtonShaft} />
-                <View style={styles.backButtonTipSecondary} />
-              </Pressable>
-
-              <View style={styles.headerText}>
-                <AppText style={styles.title} variant="sectionHeading">
-                  Organizer Dashboard
-                </AppText>
-                <AppText style={styles.subtitle} variant="caption">
-                  Open the sidebar to switch between organizer tools.
-                </AppText>
-              </View>
-            </View>
-
-            <Pressable
-              accessibilityLabel="Open organizer sidebar"
-              onPress={() => setDrawerVisible(true)}
-              style={styles.menuButton}
-            >
-              <View style={styles.menuLine} />
-              <View style={styles.menuLine} />
-              <View style={styles.menuLine} />
-            </Pressable>
-          </View>
-
           <View style={styles.sectionCard}>
             <View style={styles.badge}>
               <AppText style={styles.badgeLabel} variant="caption">

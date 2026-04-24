@@ -126,6 +126,43 @@ export const styles = StyleSheet.create({
     color: '#100013',
     marginTop: 10,
   },
+  avatarCircle: {
+    backgroundColor: '#1D2633',
+    borderRadius: 16,
+    height: 32,
+    width: 32,
+  },
+  avatarPill: {
+    alignItems: 'center',
+    backgroundColor: '#E8E6E8',
+    borderRadius: lightTheme.radius.pill,
+    flexDirection: 'row',
+    gap: 4,
+    height: 40,
+    paddingHorizontal: 4,
+  },
+  chevronDown: {
+    borderLeftColor: 'transparent',
+    borderLeftWidth: 4,
+    borderRightColor: 'transparent',
+    borderRightWidth: 4,
+    borderTopColor: '#1C274C',
+    borderTopWidth: 5,
+    height: 0,
+    width: 0,
+  },
+  notifBell: {
+    backgroundColor: '#342636',
+    borderRadius: 2,
+    height: 18,
+    width: 14,
+  },
+  notifButton: {
+    alignItems: 'center',
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
   screen: {
     backgroundColor: lightTheme.colors.backgroundPrimary,
     flex: 1,
@@ -133,6 +170,44 @@ export const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 120,
     paddingHorizontal: appDimensions.screenHorizontalPadding,
+  },
+  sidebarIcon: {
+    gap: 3,
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
+  sidebarLine: {
+    backgroundColor: '#342636',
+    borderRadius: 1.5,
+    height: 2,
+    width: 18,
+  },
+  sidebarLineMid: {
+    width: 12,
+  },
+  topBar: {
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+    borderBottomColor: '#E8E6E8',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    height: 56,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
+  topBarLeft: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  topBarRight: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 16,
+  },
+  topBarTitle: {
+    color: '#100013',
   },
   sectionBody: {
     color: '#584D5A',
