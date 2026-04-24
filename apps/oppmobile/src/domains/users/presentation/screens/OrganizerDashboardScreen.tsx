@@ -6,6 +6,7 @@ import { AppText, OrganizerSidebarDrawer, type OrganizerSidebarItem } from '../.
 import { OrganizerDashboardHome } from './OrganizerDashboardHome';
 import { OrganizerFestivalsPanel } from './OrganizerFestivalsPanel';
 import { SendNotificationsPanel } from './SendNotificationsPanel';
+import { TalentPipelinePanel } from './TalentPipelinePanel';
 import { styles } from './OrganizerDashboardScreen.styles';
 
 const organizerSidebarItems = [
@@ -168,6 +169,7 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
   const showingHome = activeSectionKey === 'home';
   const showingFestivals = activeSectionKey === 'events';
   const showingNotifications = activeSectionKey === 'notifications';
+  const showingTalentPipeline = activeSectionKey === 'participants';
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
@@ -199,6 +201,8 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
         <OrganizerFestivalsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : showingNotifications ? (
         <SendNotificationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
+      ) : showingTalentPipeline ? (
+        <TalentPipelinePanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.sectionCard}>
