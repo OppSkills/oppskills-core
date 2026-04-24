@@ -913,15 +913,19 @@ function MainTabNavigator() {
           />
         );
       }}
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarHideOnKeyboard: true,
-        tabBarShowLabel: false,
-        tabBarStyle: [
-          tabStyles.tabBar,
-          { bottom: bottomOffset, left: horizontalInset, right: horizontalInset },
-        ],
-      })}
+      screenOptions={({ route }) => {
+        const focusedRouteName = getFocusedRouteNameFromRoute(route);
+        const hideTabBar = focusedRouteName === appRoutes.organizerDashboard;
+
+        return {
+          headerShown: false,
+          tabBarHideOnKeyboard: true,
+          tabBarShowLabel: false,
+          tabBarStyle: hideTabBar
+            ? { display: 'none' }
+            : [tabStyles.tabBar, { bottom: bottomOffset, left: horizontalInset, right: horizontalInset }],
+        };
+      }}
     >
       <MainTabs.Screen component={HomeStackNavigator} name={appRoutes.homeTab} options={{ title: 'Home' }} />
       <MainTabs.Screen
