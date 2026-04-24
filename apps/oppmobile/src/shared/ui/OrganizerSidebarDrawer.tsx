@@ -28,6 +28,9 @@ export type OrganizerSidebarIconName =
   | 'payments'
   | 'referrals';
 
+const MINI_WIDTH = 66;
+const CHILD_WIDTH = 330;
+
 const HOME_CHILD_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: 'dashboard' as OrganizerSidebarIconName },
   { key: 'manage-registrations', label: 'Manage Registrations', icon: 'registrations' as OrganizerSidebarIconName },
@@ -60,42 +63,68 @@ export function OrganizerSidebarDrawer({
   onSelect,
 }: OrganizerSidebarDrawerProps) {
   const { width } = useWindowDimensions();
-  const drawerWidth = Math.min(299, Math.max(260, width * 0.82));
-  const translateX = useRef(new Animated.Value(-drawerWidth)).current;
+  const fullDrawerWidth = Math.min(299, Math.max(260, width * 0.82));
+
+  const drawerSlideX = useRef(new Animated.Value(-fullDrawerWidth)).current;
+  const mainWidthAnim = useRef(new Animated.Value(fullDrawerWidth)).current;
+  const childSlideX = useRef(new Animated.Value(CHILD_WIDTH)).current;
+  const labelOpacity = useRef(new Animated.Value(1)).current;
+
   const [childVisible, setChildVisible] = useState(false);
-  const childTranslateX = useRef(new Animated.Value(drawerWidth)).current;
 
   useEffect(() => {
     if (!visible) {
       setChildVisible(false);
+      drawerSlideX.setValue(-fullDrawerWidth);
+      mainWidthAnim.setValue(fullDrawerWidth);
+      labelOpacity.setValue(1);
+      childSlideX.setValue(CHILD_WIDTH);
       return;
     }
 
-    translateX.setValue(-drawerWidth);
-
-    Animated.timing(translateX, {
+    drawerSlideX.setValue(-fullDrawerWidth);
+    Animated.timing(drawerSlideX, {
       duration: 220,
       toValue: 0,
       useNativeDriver: true,
     }).start();
-  }, [drawerWidth, translateX, visible]);
+  }, [drawerSlideX, fullDrawerWidth, labelOpacity, mainWidthAnim, childSlideX, visible]);
 
   useEffect(() => {
     if (childVisible) {
-      childTranslateX.setValue(drawerWidth);
-      Animated.timing(childTranslateX, {
-        duration: 200,
-        toValue: 0,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(mainWidthAnim, {
+          duration: 200,
+          toValue: MINI_WIDTH,
+          useNativeDriver: false,
+        }),
+        Animated.timing(labelOpacity, {
+          duration: 120,
+          toValue: 0,
+          useNativeDriver: false,
+        }),
+        Animated.timing(childSlideX, {
+          duration: 220,
+          toValue: 0,
+          useNativeDriver: false,
+        }),
+      ]).start();
     } else {
-      Animated.timing(childTranslateX, {
-        duration: 180,
-        toValue: drawerWidth,
-        useNativeDriver: true,
-      }).start();
+      childSlideX.setValue(CHILD_WIDTH);
+      Animated.parallel([
+        Animated.timing(mainWidthAnim, {
+          duration: 200,
+          toValue: fullDrawerWidth,
+          useNativeDriver: false,
+        }),
+        Animated.timing(labelOpacity, {
+          duration: 200,
+          toValue: 1,
+          useNativeDriver: false,
+        }),
+      ]).start();
     }
-  }, [childVisible, childTranslateX, drawerWidth]);
+  }, [childVisible, childSlideX, fullDrawerWidth, labelOpacity, mainWidthAnim]);
 
   if (!visible) {
     return null;
@@ -106,70 +135,92 @@ export function OrganizerSidebarDrawer({
       <View style={styles.modalRoot}>
         <Pressable accessibilityLabel="Close sidebar" onPress={onClose} style={styles.backdrop} />
 
-        <Animated.View style={[styles.drawer, { transform: [{ translateX }], width: drawerWidth }]}>
-          <SafeAreaView edges={['top', 'bottom', 'left']} style={styles.drawerSafeArea}>
-            <View style={styles.logoBar}>
-              <Image resizeMode="contain" source={oppskillsLogo} style={styles.logoImage} />
+        <Animated.View style={[styles.container, { transform: [{ translateX: drawerSlideX }] }]}>
+          {/* Main / mini sidebar */}
+          <Animated.View style={[styles.drawer, { width: mainWidthAnim }]}>
+            <SafeAreaView edges={['top', 'bottom', 'left']} style={styles.drawerSafeArea}>
+              {/* Logo bar — shows full logo or just logo mark depending on width */}
+              <View style={styles.logoBar}>
+                <Animated.View style={[styles.logoFull, { opacity: labelOpacity }]}>
+                  <Image resizeMode="contain" source={oppskillsLogo} style={styles.logoImage} />
+                </Animated.View>
+                <Animated.View style={[styles.logoMini, { opacity: labelOpacity.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}>
+                  <View style={styles.logoMiniMark} />
+                </Animated.View>
 
-              <Pressable accessibilityLabel="Close sidebar" hitSlop={8} onPress={onClose} style={styles.closeButton}>
-                <View style={[styles.closeStroke, styles.closeStrokePrimary]} />
-                <View style={[styles.closeStroke, styles.closeStrokeSecondary]} />
-              </Pressable>
-            </View>
-
-            <View style={styles.menuContainer}>
-              {items.map((item) => {
-                const isActive = item.key === activeItemKey;
-                const isHome = item.key === 'home';
-
-                return (
-                  <Pressable
-                    key={item.key}
-                    onPress={() => {
-                      if (isHome) {
-                        setChildVisible((prev) => !prev);
-                      } else {
-                        setChildVisible(false);
-                        onSelect(item.key);
-                      }
-                    }}
-                    style={[styles.menuItem, isActive ? styles.menuItemActive : null]}
-                  >
-                    <View style={[styles.menuItemIndicator, isActive ? styles.menuItemIndicatorActive : null]} />
-                    <SidebarIcon active={isActive} name={item.icon} />
-                    <AppText style={[styles.menuItemLabel, isActive ? styles.menuItemLabelActive : null]} variant="body">
-                      {item.label}
-                    </AppText>
-                    {isHome ? (
-                      <View style={[styles.chevron, childVisible ? styles.chevronOpen : null]} />
-                    ) : null}
+                <Animated.View style={[styles.closeButtonWrap, { opacity: labelOpacity }]}>
+                  <Pressable accessibilityLabel="Close sidebar" hitSlop={8} onPress={onClose} style={styles.closeButton}>
+                    <View style={[styles.closeStroke, styles.closeStrokePrimary]} />
+                    <View style={[styles.closeStroke, styles.closeStrokeSecondary]} />
                   </Pressable>
-                );
-              })}
-            </View>
-          </SafeAreaView>
+                </Animated.View>
+              </View>
 
+              <View style={styles.menuContainer}>
+                {items.map((item) => {
+                  const isActive = item.key === activeItemKey;
+                  const isHome = item.key === 'home';
+
+                  return (
+                    <Pressable
+                      key={item.key}
+                      onPress={() => {
+                        if (isHome) {
+                          setChildVisible((prev) => !prev);
+                        } else {
+                          setChildVisible(false);
+                          onSelect(item.key);
+                        }
+                      }}
+                      style={[styles.menuItem, isActive ? styles.menuItemActive : null]}
+                    >
+                      <View style={[styles.menuItemIndicator, isActive ? styles.menuItemIndicatorActive : null]} />
+                      <SidebarIcon active={isActive} name={item.icon} />
+                      <Animated.Text
+                        numberOfLines={1}
+                        style={[
+                          styles.menuItemLabel,
+                          isActive ? styles.menuItemLabelActive : null,
+                          { opacity: labelOpacity },
+                        ]}
+                      >
+                        {item.label}
+                      </Animated.Text>
+                      {isHome ? (
+                        <Animated.View
+                          style={[
+                            styles.chevron,
+                            childVisible ? styles.chevronOpen : null,
+                            { opacity: labelOpacity },
+                          ]}
+                        />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </SafeAreaView>
+          </Animated.View>
+
+          {/* Child sidebar — slides in to the right of mini bar */}
           <Animated.View
             style={[
               styles.childDrawer,
-              { transform: [{ translateX: childTranslateX }], width: drawerWidth },
+              { transform: [{ translateX: childSlideX }], width: CHILD_WIDTH },
             ]}
           >
             <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.drawerSafeArea}>
-              <View style={styles.logoBar}>
+              <View style={styles.childLogoBar}>
+                <Image resizeMode="contain" source={oppskillsLogo} style={styles.logoImage} />
                 <Pressable
                   accessibilityLabel="Back to main sidebar"
                   hitSlop={8}
                   onPress={() => setChildVisible(false)}
                   style={styles.closeButton}
                 >
-                  <View style={[styles.backChevronShaft]} />
-                  <View style={[styles.backChevronTipTop]} />
-                  <View style={[styles.backChevronTipBottom]} />
+                  <View style={[styles.closeStroke, styles.closeStrokePrimary]} />
+                  <View style={[styles.closeStroke, styles.closeStrokeSecondary]} />
                 </Pressable>
-                <AppText style={styles.childDrawerTitle} variant="label">
-                  Home
-                </AppText>
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} style={styles.childMenuContainer}>
@@ -180,10 +231,10 @@ export function OrganizerSidebarDrawer({
                       setChildVisible(false);
                       onSelect(item.key);
                     }}
-                    style={styles.menuItem}
+                    style={styles.childMenuItem}
                   >
                     <SidebarIcon active={false} name={item.icon} />
-                    <AppText style={styles.menuItemLabel} variant="body">
+                    <AppText style={styles.childMenuItemLabel} variant="body">
                       {item.label}
                     </AppText>
                   </Pressable>
@@ -330,6 +381,179 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(12, 1, 20, 0.2)',
   },
+  container: {
+    bottom: 0,
+    flexDirection: 'row',
+    left: 0,
+    position: 'absolute',
+    top: 0,
+  },
+  drawer: {
+    backgroundColor: '#FAFAFA',
+    borderColor: '#E8E6E8',
+    borderRightWidth: 1,
+    bottom: 0,
+    overflow: 'hidden',
+    top: 0,
+  },
+  drawerSafeArea: {
+    flex: 1,
+    paddingTop: 14,
+  },
+  logoBar: {
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+    borderBottomColor: '#E8E6E8',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 56,
+    overflow: 'hidden',
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+  },
+  logoFull: {
+    flex: 1,
+  },
+  logoMini: {
+    alignItems: 'center',
+    bottom: 0,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  logoMiniMark: {
+    backgroundColor: '#835BD5',
+    borderRadius: 6,
+    height: 28,
+    width: 28,
+  },
+  closeButtonWrap: {
+    marginLeft: 8,
+  },
+  logoImage: {
+    height: 24,
+    width: 142,
+  },
+  closeButton: {
+    alignItems: 'center',
+    borderRadius: lightTheme.radius.pill,
+    height: 28,
+    justifyContent: 'center',
+    width: 28,
+  },
+  closeStroke: {
+    backgroundColor: '#584D5A',
+    borderRadius: 2,
+    height: 2,
+    position: 'absolute',
+    width: 14,
+  },
+  closeStrokePrimary: {
+    transform: [{ rotate: '45deg' }],
+  },
+  closeStrokeSecondary: {
+    transform: [{ rotate: '-45deg' }],
+  },
+  menuContainer: {
+    backgroundColor: '#FAFAFA',
+    flex: 1,
+    gap: 12,
+    paddingTop: 33,
+  },
+  menuItem: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 18,
+    minHeight: 48,
+    overflow: 'hidden',
+    paddingHorizontal: 17,
+    paddingVertical: 8,
+    position: 'relative',
+  },
+  menuItemActive: {
+    backgroundColor: '#F3EEFF',
+  },
+  menuItemIndicator: {
+    backgroundColor: 'transparent',
+    borderRadius: 6,
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    top: 0,
+    width: 4,
+  },
+  menuItemIndicatorActive: {
+    backgroundColor: '#8359D5',
+  },
+  menuItemLabel: {
+    color: '#584D5A',
+    flexShrink: 1,
+    fontFamily: 'Aeonik Pro',
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 20,
+  },
+  menuItemLabelActive: {
+    color: '#42007A',
+  },
+  chevron: {
+    borderBottomColor: '#584D5A',
+    borderBottomWidth: 1.5,
+    borderRightColor: '#584D5A',
+    borderRightWidth: 1.5,
+    height: 7,
+    marginLeft: 'auto',
+    transform: [{ rotate: '-45deg' }],
+    width: 7,
+  },
+  chevronOpen: {
+    transform: [{ rotate: '45deg' }],
+  },
+  childDrawer: {
+    backgroundColor: '#FAFAFA',
+    borderColor: '#E8E6E8',
+    borderLeftWidth: 1,
+    bottom: 0,
+    overflow: 'hidden',
+    top: 0,
+  },
+  childLogoBar: {
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+    borderBottomColor: '#E8E6E8',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 56,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  childMenuContainer: {
+    backgroundColor: '#FAFAFA',
+    flex: 1,
+    paddingTop: 33,
+  },
+  childMenuItem: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 18,
+    minHeight: 48,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  childMenuItemLabel: {
+    color: '#584D5A',
+    fontFamily: 'Aeonik Pro',
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 20,
+  },
+  modalRoot: {
+    flex: 1,
+  },
   bellBody: {
     borderColor: '#584D5A',
     borderRadius: 6,
@@ -359,26 +583,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     width: 8,
-  },
-  closeButton: {
-    alignItems: 'center',
-    borderRadius: lightTheme.radius.pill,
-    height: 28,
-    justifyContent: 'center',
-    width: 28,
-  },
-  closeStroke: {
-    backgroundColor: '#584D5A',
-    borderRadius: 2,
-    height: 2,
-    position: 'absolute',
-    width: 14,
-  },
-  closeStrokePrimary: {
-    transform: [{ rotate: '45deg' }],
-  },
-  closeStrokeSecondary: {
-    transform: [{ rotate: '-45deg' }],
   },
   confettiBurstLarge: {
     backgroundColor: '#584D5A',
@@ -428,19 +632,6 @@ const styles = StyleSheet.create({
     top: 13,
     transform: [{ rotate: '35deg' }],
     width: 1,
-  },
-  drawer: {
-    backgroundColor: '#FAFAFA',
-    borderColor: '#E8E6E8',
-    borderRightWidth: 1,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 0,
-  },
-  drawerSafeArea: {
-    flex: 1,
-    paddingTop: 14,
   },
   gridCell: {
     borderColor: '#584D5A',
@@ -528,6 +719,7 @@ const styles = StyleSheet.create({
   },
   iconFrame: {
     alignItems: 'center',
+    flexShrink: 0,
     height: 32,
     justifyContent: 'center',
     position: 'relative',
@@ -587,66 +779,6 @@ const styles = StyleSheet.create({
     top: 18,
     width: 5,
   },
-  logoBar: {
-    alignItems: 'center',
-    backgroundColor: '#FAFAFA',
-    borderBottomColor: '#E8E6E8',
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 56,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  logoImage: {
-    height: 24,
-    width: 142,
-  },
-  menuContainer: {
-    backgroundColor: '#FAFAFA',
-    flex: 1,
-    gap: 12,
-    paddingTop: 33,
-  },
-  menuItem: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 18,
-    minHeight: 48,
-    overflow: 'hidden',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    position: 'relative',
-  },
-  menuItemActive: {
-    backgroundColor: '#F3EEFF',
-  },
-  menuItemIndicator: {
-    backgroundColor: 'transparent',
-    borderRadius: 6,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 0,
-    width: 4,
-  },
-  menuItemIndicatorActive: {
-    backgroundColor: '#8359D5',
-  },
-  menuItemLabel: {
-    color: '#584D5A',
-    flexShrink: 1,
-    fontFamily: 'Aeonik Pro',
-    fontSize: 16,
-    fontWeight: '400',
-    lineHeight: 20,
-  },
-  menuItemLabelActive: {
-    color: '#42007A',
-  },
-  modalRoot: {
-    flex: 1,
-  },
   notificationDot: {
     borderRadius: 4,
     height: 6,
@@ -700,67 +832,6 @@ const styles = StyleSheet.create({
     top: 12,
     transform: [{ rotate: '-25deg' }],
     width: 1,
-  },
-  chevron: {
-    borderBottomColor: '#584D5A',
-    borderBottomWidth: 1.5,
-    borderRightColor: '#584D5A',
-    borderRightWidth: 1.5,
-    height: 7,
-    marginLeft: 'auto',
-    transform: [{ rotate: '-45deg' }],
-    width: 7,
-  },
-  chevronOpen: {
-    transform: [{ rotate: '45deg' }],
-  },
-  childDrawer: {
-    backgroundColor: '#FAFAFA',
-    borderColor: '#E8E6E8',
-    borderLeftWidth: 1,
-    bottom: 0,
-    position: 'absolute',
-    top: 0,
-  },
-  childDrawerTitle: {
-    color: '#100013',
-    flex: 1,
-    fontFamily: 'Aeonik Pro',
-    fontSize: 16,
-    fontWeight: '500',
-    paddingLeft: 8,
-  },
-  childMenuContainer: {
-    backgroundColor: '#FAFAFA',
-    flex: 1,
-    paddingTop: 33,
-  },
-  backChevronShaft: {
-    backgroundColor: '#584D5A',
-    borderRadius: 2,
-    height: 2,
-    position: 'absolute',
-    width: 12,
-  },
-  backChevronTipTop: {
-    backgroundColor: '#584D5A',
-    borderRadius: 2,
-    height: 2,
-    position: 'absolute',
-    transform: [{ rotate: '45deg' }],
-    left: 2,
-    top: 10,
-    width: 7,
-  },
-  backChevronTipBottom: {
-    backgroundColor: '#584D5A',
-    borderRadius: 2,
-    height: 2,
-    position: 'absolute',
-    transform: [{ rotate: '-45deg' }],
-    left: 2,
-    bottom: 10,
-    width: 7,
   },
   regOutline: {
     borderColor: '#584D5A',

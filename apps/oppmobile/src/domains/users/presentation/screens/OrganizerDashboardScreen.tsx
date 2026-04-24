@@ -3,6 +3,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, OrganizerSidebarDrawer, type OrganizerSidebarItem } from '../../../../shared/ui';
+import { OrganizerFestivalsPanel } from './OrganizerFestivalsPanel';
 import { styles } from './OrganizerDashboardScreen.styles';
 
 const organizerSidebarItems = [
@@ -162,85 +163,94 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
   );
 
   const activeSection = organizerSections[activeSectionKey];
+  const showingFestivals = activeSectionKey === 'events';
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View style={styles.headerActions}>
-            <Pressable accessibilityLabel="Back to home" onPress={onBack} style={styles.backButton}>
-              <View style={styles.backButtonTipPrimary} />
-              <View style={styles.backButtonShaft} />
-              <View style={styles.backButtonTipSecondary} />
-            </Pressable>
+      {showingFestivals ? (
+        <OrganizerFestivalsPanel onOpenSidebar={() => setDrawerVisible(true)} />
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <View style={styles.headerActions}>
+              <Pressable accessibilityLabel="Back to home" onPress={onBack} style={styles.backButton}>
+                <View style={styles.backButtonTipPrimary} />
+                <View style={styles.backButtonShaft} />
+                <View style={styles.backButtonTipSecondary} />
+              </Pressable>
 
-            <View style={styles.headerText}>
-              <AppText style={styles.title} variant="sectionHeading">
-                Organizer Dashboard
+              <View style={styles.headerText}>
+                <AppText style={styles.title} variant="sectionHeading">
+                  Organizer Dashboard
+                </AppText>
+                <AppText style={styles.subtitle} variant="caption">
+                  Open the sidebar to switch between organizer tools.
+                </AppText>
+              </View>
+            </View>
+
+            <Pressable
+              accessibilityLabel="Open organizer sidebar"
+              onPress={() => setDrawerVisible(true)}
+              style={styles.menuButton}
+            >
+              <View style={styles.menuLine} />
+              <View style={styles.menuLine} />
+              <View style={styles.menuLine} />
+            </Pressable>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <View style={styles.badge}>
+              <AppText style={styles.badgeLabel} variant="caption">
+                {activeSection.badge}
               </AppText>
-              <AppText style={styles.subtitle} variant="caption">
-                Open the sidebar to switch between organizer tools.
-              </AppText>
+            </View>
+
+            <AppText style={styles.sectionTitle} variant="sectionHeading">
+              {activeSection.title}
+            </AppText>
+            <AppText style={styles.sectionBody} variant="body">
+              {activeSection.body}
+            </AppText>
+
+            <View style={styles.metricGrid}>
+              {activeSection.metrics.map((metric) => (
+                <View key={metric.label} style={styles.metricCard}>
+                  <AppText style={styles.metricLabel} variant="caption">
+                    {metric.label}
+                  </AppText>
+                  <AppText style={styles.metricValue} variant="title">
+                    {metric.value}
+                  </AppText>
+                </View>
+              ))}
             </View>
           </View>
 
-          <Pressable accessibilityLabel="Open organizer sidebar" onPress={() => setDrawerVisible(true)} style={styles.menuButton}>
-            <View style={styles.menuLine} />
-            <View style={styles.menuLine} />
-            <View style={styles.menuLine} />
-          </Pressable>
-        </View>
+          <View style={styles.cardList}>
+            {activeSection.cards.map((card, index) => (
+              <View key={card.title} style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <AppText style={styles.cardIndex} variant="caption">
+                    0{index + 1}
+                  </AppText>
+                  <AppText colorToken="brandPrimaryStrong" variant="caption">
+                    Active
+                  </AppText>
+                </View>
 
-        <View style={styles.sectionCard}>
-          <View style={styles.badge}>
-            <AppText style={styles.badgeLabel} variant="caption">
-              {activeSection.badge}
-            </AppText>
-          </View>
-
-          <AppText style={styles.sectionTitle} variant="sectionHeading">
-            {activeSection.title}
-          </AppText>
-          <AppText style={styles.sectionBody} variant="body">
-            {activeSection.body}
-          </AppText>
-
-          <View style={styles.metricGrid}>
-            {activeSection.metrics.map((metric) => (
-              <View key={metric.label} style={styles.metricCard}>
-                <AppText style={styles.metricLabel} variant="caption">
-                  {metric.label}
+                <AppText style={styles.cardTitle} variant="title">
+                  {card.title}
                 </AppText>
-                <AppText style={styles.metricValue} variant="title">
-                  {metric.value}
+                <AppText style={styles.cardDescription} variant="body">
+                  {card.description}
                 </AppText>
               </View>
             ))}
           </View>
-        </View>
-
-        <View style={styles.cardList}>
-          {activeSection.cards.map((card, index) => (
-            <View key={card.title} style={styles.card}>
-              <View style={styles.cardHeader}>
-                <AppText style={styles.cardIndex} variant="caption">
-                  0{index + 1}
-                </AppText>
-                <AppText colorToken="brandPrimaryStrong" variant="caption">
-                  Active
-                </AppText>
-              </View>
-
-              <AppText style={styles.cardTitle} variant="title">
-                {card.title}
-              </AppText>
-              <AppText style={styles.cardDescription} variant="body">
-                {card.description}
-              </AppText>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
 
       <OrganizerSidebarDrawer
         activeItemKey={activeSectionKey}
