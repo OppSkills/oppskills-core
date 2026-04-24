@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, OrganizerSidebarDrawer, type OrganizerSidebarItem } from '../../../../shared/ui';
 import { OrganizerFestivalsPanel } from './OrganizerFestivalsPanel';
+import { SendNotificationsPanel } from './SendNotificationsPanel';
 import { styles } from './OrganizerDashboardScreen.styles';
 
 const organizerSidebarItems = [
@@ -164,11 +165,14 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
 
   const activeSection = organizerSections[activeSectionKey];
   const showingFestivals = activeSectionKey === 'events';
+  const showingNotifications = activeSectionKey === 'notifications';
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
       {showingFestivals ? (
         <OrganizerFestivalsPanel onOpenSidebar={() => setDrawerVisible(true)} />
+      ) : showingNotifications ? (
+        <SendNotificationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
