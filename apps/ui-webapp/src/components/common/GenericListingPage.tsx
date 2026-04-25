@@ -39,8 +39,7 @@ interface GenericListingPageProps {
     perPage: number
     curPage: number
     totalPages: number
-    setGoToPage: (value: number) => void
-    setCurPage: (value: number) => void
+    onPageChange: (value: number) => void
   }
 }
 

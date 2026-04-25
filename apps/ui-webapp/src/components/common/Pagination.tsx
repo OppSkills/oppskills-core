@@ -10,13 +10,12 @@ import { Input } from '../ui/input'
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export default function Pagination({ setPerPage, perPage = 10, curPage, totalPages, setGoToPage, setCurPage }: {
+export default function Pagination({ setPerPage, perPage = 10, curPage, totalPages, onPageChange }: {
     setPerPage: (value: number) => void
     perPage: number
     curPage: number
     totalPages: number
-    setGoToPage: (value: number) => void
-    setCurPage: (value: number) => void
+    onPageChange: (value: number) => void
 }) {
     const [inputValue, setInputValue] = useState(curPage.toString())
 
@@ -26,8 +25,7 @@ export default function Pagination({ setPerPage, perPage = 10, curPage, totalPag
 
     const handlePageChange = (page: number) => {
         if (page >= 1 && page <= totalPages) {
-            setGoToPage(page)
-            setCurPage(page)
+            onPageChange(page)
         }
     }
 
