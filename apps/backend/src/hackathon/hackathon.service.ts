@@ -561,79 +561,82 @@ export class HackathonService {
     const skip = (page - 1) * take;
 
     // We fetch take + 1 to determine if there are more results
-    const hackathons = await prisma.hackathonEntity.findMany({
-      where: baseWhere,
-      skip,
-      take: take + 1,
-      orderBy,
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        description: true,
-        bannerImageUrl: true,
-        startDate: true,
-        endDate: true,
-        status: true,
-        approvalStatus: true,
-        mode: true,
-        locationType: true,
-        locationCity: true,
-        locationAddress: true,
-        locationVirtualLink: true,
-        isFree: true,
-        entryFeeAmount: true,
-        currency: true,
-        prizeTotalWorthAmount: true,
-        prizeDescription: true,
-        prizeCertificate: true,
-        visibility: true,
-        hackathonType: true,
-        participantType: true,
-        registrationCount: true,
-        maxTeams: true,
-        registrationDeadline: true,
-        isRegistrationPaused: true,
-        organizationName: true,
-        organizationLogoUrl: true,
-        attendeeEligibility: true,
-        views: true,
-        impressions: true,
-        createdAt: true,
-        // Owner info (public: name only)
-        owner: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            imageUrl: true,
+    const [hackathons, total] = await Promise.all([
+      prisma.hackathonEntity.findMany({
+        where: baseWhere,
+        skip,
+        take: take + 1,
+        orderBy,
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          description: true,
+          bannerImageUrl: true,
+          startDate: true,
+          endDate: true,
+          status: true,
+          approvalStatus: true,
+          mode: true,
+          locationType: true,
+          locationCity: true,
+          locationAddress: true,
+          locationVirtualLink: true,
+          isFree: true,
+          entryFeeAmount: true,
+          currency: true,
+          prizeTotalWorthAmount: true,
+          prizeDescription: true,
+          prizeCertificate: true,
+          visibility: true,
+          hackathonType: true,
+          participantType: true,
+          registrationCount: true,
+          maxTeams: true,
+          registrationDeadline: true,
+          isRegistrationPaused: true,
+          organizationName: true,
+          organizationLogoUrl: true,
+          attendeeEligibility: true,
+          views: true,
+          impressions: true,
+          createdAt: true,
+          // Owner info (public: name only)
+          owner: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              imageUrl: true,
+            },
+          },
+          festival: {
+            select: { id: true, name: true, slug: true },
+          },
+          // Rounds are public
+          rounds: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              startsAt: true,
+              endsAt: true,
+              order: true,
+              roundType: true,
+              status: true,
+              submissionConfig: true,
+            },
+            orderBy: { order: 'asc' },
+          },
+          // Prize breakdown is public
+          prizeBreakdown: {
+            select: { id: true, position: true, amount: true, description: true },
+            orderBy: { amount: 'desc' },
           },
         },
-        festival: {
-          select: { id: true, name: true, slug: true },
-        },
-        // Rounds are public
-        rounds: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            startsAt: true,
-            endsAt: true,
-            order: true,
-            roundType: true,
-            status: true,
-            submissionConfig: true,
-          },
-          orderBy: { order: 'asc' },
-        },
-        // Prize breakdown is public
-        prizeBreakdown: {
-          select: { id: true, position: true, amount: true, description: true },
-          orderBy: { amount: 'desc' },
-        },
-      },
-    });
+      }),
+      prisma.hackathonEntity.count({ where: baseWhere }),
+    ]);
 
     // Determine if there's further results
     const further = hackathons.length > take;
@@ -651,7 +654,7 @@ export class HackathonService {
       this.logger.error('Failed to track impressions', err);
     });
 
-    return { items, further };
+    return { items, further, total };
   }
 
   /**
