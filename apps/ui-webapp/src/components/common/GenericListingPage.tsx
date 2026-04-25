@@ -241,7 +241,7 @@ export function GenericListingPage({
                     </div>
                   )}
                 </div>
-                <div className="grid gap-6 grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                <div className="grid gap-2 md:gap-4 grid-cols-1 min-[500px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                   {items.map((item) => (
                     <div key={item.id} className="w-full">
                       <ListingCard item={item} />
