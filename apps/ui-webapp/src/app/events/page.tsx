@@ -60,7 +60,6 @@ export default function EventsPage() {
       items={items}
       isLoading={isLoading}
       error={error}
-      routePrefix="events"
       showPagination={true}
       pagination={{
         setPerPage: (val) => {

@@ -25,7 +25,6 @@ interface GenericListingPageProps {
   items: ListingItem[];
   isLoading: boolean;
   error?: unknown;
-  routePrefix: string;
   onLoadMore?: () => void;
   hasMore?: boolean;
   isFetchingNextPage?: boolean;
@@ -47,7 +46,6 @@ export function GenericListingPage({
   items,
   isLoading,
   error,
-  routePrefix,
   onLoadMore,
   hasMore,
   isFetchingNextPage,
@@ -246,7 +244,7 @@ export function GenericListingPage({
                 <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-4">
                   {items.map((item) => (
                     <div key={item.id} className="w-full">
-                      <ListingCard item={{ routePrefix, ...item }} />
+                      <ListingCard item={item} />
                     </div>
                   ))}
                 </div>

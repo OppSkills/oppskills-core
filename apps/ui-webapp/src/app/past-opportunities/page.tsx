@@ -92,7 +92,6 @@ export default function PastEventsPage() {
         items={items}
         isLoading={isLoading}
         error={error}
-        routePrefix="past-opportunities"
         filters={filters}
         setFilters={setFilters}
         title="Past Opportunities"

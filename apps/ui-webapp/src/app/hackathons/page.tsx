@@ -62,7 +62,6 @@ export default function CompetitionsPage() {
       items={items}
       isLoading={isLoading}
       error={error}
-      routePrefix="hackathons"
       showPagination={true}
       pagination={{
         setPerPage: (val) => {

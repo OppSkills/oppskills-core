@@ -39,9 +39,8 @@ export class OpportunityService {
     take?: number;
     search?: string;
   }) {
-    const ALLOWED_TAKES = [10, 20, 30, 40];
     const requestedTake = params.take != null ? Number(params.take) : 10;
-    const PAGE_SIZE = ALLOWED_TAKES.includes(requestedTake) ? requestedTake : 10;
+    const PAGE_SIZE = [10, 20, 30, 40].includes(requestedTake) ? requestedTake : 10;
 
     const pageNum = params.page ? Math.max(1, Number(params.page)) : 1;
 
@@ -54,6 +53,7 @@ export class OpportunityService {
         take: takeNeeded + 1,
         search: params.search,
         filterMode: 'PAST',
+        bypassValidation: true,
       }),
       this.hackathonService.listPublicHackathons({
         festivalId: params.festivalId,
@@ -61,6 +61,7 @@ export class OpportunityService {
         take: takeNeeded + 1,
         search: params.search,
         filterMode: 'PAST',
+        bypassValidation: true,
       }),
     ]);
 
