@@ -81,10 +81,10 @@ export class HackathonPublicController {
     description: 'Page number (default 1)',
   })
   @ApiQuery({
-    name: 'appendResults',
+    name: 'take',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
-    type: Boolean,
+    description: 'Number of results to return (10, 20, 30, 40)',
+    type: Number,
   })
   @ApiQuery({
     name: 'q',
@@ -104,7 +104,7 @@ export class HackathonPublicController {
   async listPublicHackathons(
     @Query('festival_id') festivalId?: string,
     @Query('page') page?: number,
-    @Query('appendResults') appendResults?: boolean,
+    @Query('take') take?: number,
     @Query('q') search?: string,
     @Query('modes', new ParseArrayPipe({ items: String, optional: true }))
     modes?: string[],
@@ -120,7 +120,7 @@ export class HackathonPublicController {
     return this.hackathonService.listPublicHackathons({
       festivalId,
       page,
-      appendResults,
+      take,
       search,
       modes,
       status,
@@ -151,10 +151,10 @@ export class HackathonPublicController {
     type: Number,
   })
   @ApiQuery({
-    name: 'appendResults',
+    name: 'take',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
-    type: Boolean,
+    description: 'Number of results to return (10, 20, 30, 40)',
+    type: Number,
   })
   @ApiQuery({
     name: 'q',
@@ -169,8 +169,7 @@ export class HackathonPublicController {
   async listPublicUpcomingHackathons(
     @Query('festival_id') festivalId?: string,
     @Query('page') page?: number,
-    @Query('appendResults', new ParseBoolPipe({ optional: true }))
-    appendResults: boolean = false,
+    @Query('take') take?: number,
     @Query('q') search?: string,
     @Query('sort') sort?: string,
     @Query('sortOrder') sortOrder?: 'asc' | 'desc',
@@ -178,7 +177,7 @@ export class HackathonPublicController {
     return this.hackathonService.listPublicHackathons({
       festivalId,
       page,
-      appendResults,
+      take,
       search,
       sort,
       sortOrder,

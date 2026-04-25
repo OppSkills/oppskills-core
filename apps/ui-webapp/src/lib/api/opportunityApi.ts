@@ -9,7 +9,6 @@ export async function getPublicPastOpportunities(params: {
   festival_id?: string;
   page?: number;
   take?: number;
-  appendResults?: boolean;
   q?: string;
 }) {
   const res = await API.get("/public/past", { params });

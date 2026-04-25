@@ -246,7 +246,7 @@ export function GenericListingPage({
                 <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-4">
                   {items.map((item) => (
                     <div key={item.id} className="w-full">
-                      <ListingCard item={{ ...item, routePrefix }} />
+                      <ListingCard item={{ routePrefix, ...item }} />
                     </div>
                   ))}
                 </div>

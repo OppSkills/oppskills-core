@@ -359,7 +359,6 @@ export class HackathonService {
     input: {
       festivalId?: string;
       page?: number;
-      appendResults?: boolean;
       take?: number;
       search?: string;
       filterMode?: 'UPCOMING' | 'PAST';
@@ -548,24 +547,18 @@ export class HackathonService {
       }
     }
 
-    // Pagination logic
-    // Callers can pass `take` directly to override the default (e.g. for merged pagination).
-    const take =
-      input.take != null
-        ? input.take
-        : input.appendResults
-          ? 20
-          : 10;
+    const ALLOWED_TAKES = [10, 20, 30, 40];
+    const requestedTake = input.take != null ? Number(input.take) : 10;
+    const take = ALLOWED_TAKES.includes(requestedTake) ? requestedTake : 10;
 
     const page = input.page ? Math.max(1, input.page) : 1;
     const skip = (page - 1) * take;
 
-    // We fetch take + 1 to determine if there are more results
-    const [hackathons, total] = await Promise.all([
+    const [items, total] = await Promise.all([
       prisma.hackathonEntity.findMany({
         where: baseWhere,
         skip,
-        take: take + 1,
+        take,
         orderBy,
         select: {
           id: true,
@@ -638,10 +631,6 @@ export class HackathonService {
       prisma.hackathonEntity.count({ where: baseWhere }),
     ]);
 
-    // Determine if there's further results
-    const further = hackathons.length > take;
-    const items = further ? hackathons.slice(0, take) : hackathons;
-
     // Track impressions for all returned hackathons (type 'opportunity')
     Promise.all(
       items.map((hackathon) =>
@@ -654,7 +643,8 @@ export class HackathonService {
       this.logger.error('Failed to track impressions', err);
     });
 
-    return { items, further, total };
+    const totalPages = Math.ceil(total / take);
+    return { items, totalPages, total, page };
   }
 
   /**

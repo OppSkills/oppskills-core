@@ -2,12 +2,17 @@
 
 import { useState } from "react";
 
-import { usePublicHackathons } from "@/hooks/usePublicHackathons";
+import {
+  usePublicHackathonsPaged,
+} from "@/hooks/usePublicHackathons";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import { FilterState } from "@/components/common/GenericFilterSidebar";
 import { ListingItem } from "@/components/common/ListingCard";
 
 export default function CompetitionsPage() {
+  const [curPage, setCurPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     modes: [],
@@ -18,16 +23,17 @@ export default function CompetitionsPage() {
     sortOrder: "desc",
   });
 
-  const {
-    data,
-    isLoading,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = usePublicHackathons(undefined, filters);
+  const { data, isLoading, error } = usePublicHackathonsPaged(
+    {
+      ...filters,
+      page: curPage,
+      perPage,
+    },
+    { enabled: true }
+  );
 
-  const hackathons = data?.pages.flatMap((page: any) => page.items || []) ?? [];
+  const hackathons = data?.items ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   const items: ListingItem[] = hackathons.map((h) => ({
     id: h.id,
@@ -51,18 +57,28 @@ export default function CompetitionsPage() {
     routePrefix: "hackathons",
   }));
 
-
   return (
     <GenericListingPage
       items={items}
       isLoading={isLoading}
       error={error}
       routePrefix="hackathons"
-      onLoadMore={fetchNextPage}
-      hasMore={hasNextPage}
-      isFetchingNextPage={isFetchingNextPage}
+      showPagination={true}
+      pagination={{
+        setPerPage: (val) => {
+          setPerPage(val);
+          setCurPage(1);
+        },
+        perPage,
+        curPage,
+        totalPages,
+        onPageChange: (page) => setCurPage(page),
+      }}
       filters={filters}
-      setFilters={setFilters}
+      setFilters={(f) => {
+        setFilters(f);
+        setCurPage(1);
+      }}
       title="Hackathons"
       description="Browse and participate in the world's best hackathons."
     />

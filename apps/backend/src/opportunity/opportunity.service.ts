@@ -36,12 +36,14 @@ export class OpportunityService {
   async listPublicPastOpportunities(params: {
     festivalId?: string;
     page?: number;
-    appendResults?: boolean;
+    take?: number;
     search?: string;
   }) {
+    const ALLOWED_TAKES = [10, 20, 30, 40];
+    const requestedTake = params.take != null ? Number(params.take) : 10;
+    const PAGE_SIZE = ALLOWED_TAKES.includes(requestedTake) ? requestedTake : 10;
+
     const pageNum = params.page ? Math.max(1, Number(params.page)) : 1;
-    const isAppended = String(params.appendResults) === 'true';
-    const PAGE_SIZE = isAppended ? 20 : 10;
 
     const takeNeeded = pageNum * PAGE_SIZE;
 

@@ -44,7 +44,7 @@ export class EventService {
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
     private readonly referralService: ReferralService,
-  ) {}
+  ) { }
 
   /**
    * Create an event as a user.
@@ -120,7 +120,6 @@ export class EventService {
     input: {
       festivalId?: string;
       page?: number;
-      appendResults?: boolean;
       take?: number;
       search?: string;
       filterMode?: 'UPCOMING' | 'PAST';
@@ -311,14 +310,13 @@ export class EventService {
     // Pagination logic
     // Default 10 results. If appendResults=true, then 20 results.
     // Callers can pass `take` directly to override the default (e.g. for merged pagination).
-    const isAppended = String(input.appendResults) === 'true';
-
-    const take = input.take != null ? input.take : isAppended ? 20 : 10;
+    const ALLOWED_TAKES = [10, 20, 30, 40];
+    const requestedTake = input.take != null ? Number(input.take) : 10;
+    const take = ALLOWED_TAKES.includes(requestedTake) ? requestedTake : 10;
     const page = input.page ? Math.max(1, Number(input.page)) : 1;
     const skip = (page - 1) * take;
 
     // Query events with sanitized fields - no participants or registrant PII
-    // We fetch take + 1 to determine if there are more results
     const [events, total] = await Promise.all([
       prisma.eventEntity.findMany({
         where: baseWhere,
@@ -379,7 +377,6 @@ export class EventService {
     ]);
 
     // Determine if there's further results
-    const further = events.length > take;
     const items = events.slice(0, take);
 
     // Track impressions for all returned events
@@ -391,7 +388,8 @@ export class EventService {
       this.logger.error('Failed to track impressions', err);
     });
 
-    return { items, further, total };
+    const totalPages = Math.ceil(total / take);
+    return { items, totalPages, total, page };
   }
 
   /**
@@ -2209,14 +2207,14 @@ export class EventService {
       existingSubmission && existingSubmission._count.answers === 0
         ? existingSubmission.id
         : (
-            await prisma.eventRegistrationSubmissionEntity.create({
-              data: {
-                eventId,
-                userId,
-                participantId: participant.id,
-              },
-            })
-          ).id;
+          await prisma.eventRegistrationSubmissionEntity.create({
+            data: {
+              eventId,
+              userId,
+              participantId: participant.id,
+            },
+          })
+        ).id;
 
     if (mappedAnswers.length > 0) {
       const answerData = mappedAnswers.map((a) => ({

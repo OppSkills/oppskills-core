@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 
-import { useEvents } from "@/hooks/useEvents";
+import { usePublicEventsPaged } from "@/hooks/useEvents";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import { ListingItem } from "@/components/common/ListingCard";
 
 import { FilterState } from "@/components/common/GenericFilterSidebar";
 
 export default function EventsPage() {
+  const [curPage, setCurPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     modes: [],
@@ -19,16 +22,17 @@ export default function EventsPage() {
     sortOrder: "desc",
   });
 
-  const {
-    data,
-    isLoading,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useEvents(undefined, filters);
+  const { data, isLoading, error } = usePublicEventsPaged(
+    {
+      ...filters,
+      page: curPage,
+      perPage,
+    },
+    { enabled: true }
+  );
 
-  const events = data?.pages.flatMap((page: any) => page.items || []) ?? [];
+  const events = data?.items ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   const items: ListingItem[] = events.map((e) => ({
     id: e.id,
@@ -47,10 +51,9 @@ export default function EventsPage() {
     registrationCount: e.registrationCount,
     eventType: e.eventType || "Event",
     attendeeEligibility: e.attendeeEligibility,
-    tags: [e.status], // Add more tags if available
+    tags: [e.status],
     routePrefix: "events",
   }));
-
 
   return (
     <GenericListingPage
@@ -58,15 +61,24 @@ export default function EventsPage() {
       isLoading={isLoading}
       error={error}
       routePrefix="events"
-      onLoadMore={fetchNextPage}
-      hasMore={hasNextPage}
-      isFetchingNextPage={isFetchingNextPage}
+      showPagination={true}
+      pagination={{
+        setPerPage: (val) => {
+          setPerPage(val);
+          setCurPage(1);
+        },
+        perPage,
+        curPage,
+        totalPages,
+        onPageChange: (page) => setCurPage(page),
+      }}
       filters={filters}
-      setFilters={setFilters}
+      setFilters={(f) => {
+        setFilters(f);
+        setCurPage(1);
+      }}
       title="Events"
       description="Discover amazing workshops, conferences, and meetups."
     />
   );
-
-
 }

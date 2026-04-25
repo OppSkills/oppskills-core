@@ -110,10 +110,10 @@ export class EventController {
     description: 'Page number (default 1)',
   })
   @ApiQuery({
-    name: 'appendResults',
+    name: 'take',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
-    type: Boolean,
+    description: 'Number of results to return (10, 20, 30, 40)',
+    type: Number,
   })
   @ApiQuery({
     name: 'q',
@@ -133,7 +133,7 @@ export class EventController {
   async listPublicEvents(
     @Query('festival_id') festivalId?: string,
     @Query('page') page?: number,
-    @Query('appendResults') appendResults?: boolean,
+    @Query('take') take?: number,
     @Query('q') search?: string,
     @Query('modes', new ParseArrayPipe({ items: String, optional: true }))
     modes?: string[],
@@ -149,7 +149,7 @@ export class EventController {
     return this.eventService.listPublicEvents({
       festivalId,
       page,
-      appendResults,
+      take,
       search,
       modes,
       status,
@@ -180,10 +180,10 @@ export class EventController {
     type: Number,
   })
   @ApiQuery({
-    name: 'appendResults',
+    name: 'take',
     required: false,
-    description: 'If true, returns 20 results instead of 10',
-    type: Boolean,
+    description: 'Number of results to return (10, 20, 30, 40)',
+    type: Number,
   })
   @ApiQuery({
     name: 'q',
@@ -195,13 +195,13 @@ export class EventController {
   async listPublicUpcomingEvents(
     @Query('festival_id') festivalId?: string,
     @Query('page') page?: number,
-    @Query('appendResults') appendResults?: boolean,
+    @Query('take') take?: number,
     @Query('q') search?: string,
   ) {
     return this.eventService.listPublicEvents({
       festivalId,
       page,
-      appendResults,
+      take,
       search,
       filterMode: 'UPCOMING',
     });
