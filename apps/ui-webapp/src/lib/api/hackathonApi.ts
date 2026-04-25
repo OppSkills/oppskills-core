@@ -71,7 +71,6 @@ export async function getPublicHackathons(
   params: {
     festival_id?: string;
     page?: number;
-    appendResults?: boolean;
     q?: string;
     modes?: string[];
     status?: string[];
@@ -79,13 +78,18 @@ export async function getPublicHackathons(
     eligibility?: string[];
     sort?: string;
     sortOrder?: "asc" | "desc";
+    take?: number;
   } = {},
-): Promise<{ items: PublicHackathonListItem[]; further: boolean }> {
+): Promise<{
+  items: PublicHackathonListItem[];
+  totalPages: number;
+  total: number;
+  page: number;
+}> {
   const res = await API.get("/public", {
     params: {
       festival_id: params.festival_id,
       page: params.page,
-      appendResults: params.appendResults,
       q: params.q,
       modes: params.modes,
       status: params.status,
@@ -93,9 +97,10 @@ export async function getPublicHackathons(
       eligibility: params.eligibility,
       sort: params.sort,
       sortOrder: params.sortOrder,
+      take: params.take,
     },
   });
-  return res.data as { items: PublicHackathonListItem[]; further: boolean };
+  return res.data;
 }
 
 /**
@@ -113,13 +118,18 @@ export async function getPublicUpcomingHackathons(
     eligibility?: string[];
     sort?: string;
     sortOrder?: "asc" | "desc";
+    take?: number;
   } = {},
-): Promise<{ items: PublicHackathonListItem[]; further: boolean }> {
+): Promise<{
+  items: PublicHackathonListItem[];
+  totalPages: number;
+  total: number;
+  page: number;
+}> {
   const res = await API.get("/public/upcoming", {
     params: {
       festival_id: params.festival_id,
       page: params.page,
-      appendResults: params.appendResults,
       q: params.q,
       modes: params.modes,
       status: params.status,
@@ -127,9 +137,10 @@ export async function getPublicUpcomingHackathons(
       eligibility: params.eligibility,
       sort: params.sort,
       sortOrder: params.sortOrder,
+      take: params.take,
     },
   });
-  return res.data as { items: PublicHackathonListItem[]; further: boolean };
+  return res.data;
 }
 
 /**

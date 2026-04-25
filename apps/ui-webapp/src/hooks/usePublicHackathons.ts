@@ -23,7 +23,15 @@ export function usePublicHackathons(
   filters?: FilterState,
   options?: { enabled?: boolean }
 ) {
-  return useInfiniteQuery<{ items: PublicHackathonListItem[]; further: boolean }, Error>({
+  return useInfiniteQuery<
+    {
+      items: PublicHackathonListItem[];
+      totalPages: number;
+      total: number;
+      page: number;
+    },
+    Error
+  >({
     queryKey: ["public-hackathons", festivalId, filters] as const,
     queryFn: async ({ pageParam = 1 }) => {
       return getPublicHackathons({
@@ -36,12 +44,11 @@ export function usePublicHackathons(
         eligibility: filters?.eligibility,
         sort: filters?.sort,
         sortOrder: filters?.sortOrder,
-        appendResults: true,
       });
     },
     initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage.further ? allPages.length + 1 : undefined;
+    getNextPageParam: (lastPage) => {
+      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
     },
     enabled: options?.enabled,
   });
@@ -55,11 +62,21 @@ export function useUpcomingHackathons(
   filters?: FilterState,
   options?: { enabled?: boolean }
 ) {
-  return useInfiniteQuery<{ items: PublicHackathonListItem[]; further: boolean }, Error>({
+  return useInfiniteQuery<
+    {
+      items: PublicHackathonListItem[];
+      totalPages: number;
+      total: number;
+      page: number;
+    },
+    Error
+  >({
     queryKey: ["public-hackathons", "upcoming", festivalId, filters] as const,
     queryFn: async ({ pageParam = 1 }) => {
       // Import dynamically to avoid circular dependencies if any, or just ensure import is at top
-      const { getPublicUpcomingHackathons } = await import("@/lib/api/hackathonApi");
+      const { getPublicUpcomingHackathons } = await import(
+        "@/lib/api/hackathonApi"
+      );
       return getPublicUpcomingHackathons({
         festival_id: festivalId,
         page: pageParam as number,
@@ -73,8 +90,44 @@ export function useUpcomingHackathons(
       });
     },
     initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage.further ? allPages.length + 1 : undefined;
+    getNextPageParam: (lastPage) => {
+      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
+    },
+    enabled: options?.enabled,
+  });
+}
+
+import { useQuery } from "@tanstack/react-query";
+
+/**
+ * Standard query for public hackathons (not infinite).
+ */
+export function usePublicHackathonsPaged(
+  filters: FilterState & { page?: number; perPage?: number },
+  options?: { enabled?: boolean }
+) {
+  return useQuery<
+    {
+      items: PublicHackathonListItem[];
+      totalPages: number;
+      total: number;
+      page: number;
+    },
+    Error
+  >({
+    queryKey: ["public-hackathons", "paged", filters] as const,
+    queryFn: async () => {
+      return await getPublicHackathons({
+        page: filters.page,
+        q: filters.search,
+        modes: filters.modes,
+        status: filters.status,
+        eventDates: filters.eventDates,
+        eligibility: filters.eligibility,
+        sort: filters.sort,
+        sortOrder: filters.sortOrder,
+        take: filters.perPage,
+      });
     },
     enabled: options?.enabled,
   });

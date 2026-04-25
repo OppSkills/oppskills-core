@@ -18,13 +18,13 @@ export class OpportunityController {
   async listPublicPastOpportunities(
     @Query('festival_id') festivalId?: string,
     @Query('page') page?: number,
-    @Query('appendResults') appendResults?: boolean,
+    @Query('take') take?: number,
     @Query('q') search?: string,
   ) {
     return this.opportunityService.listPublicPastOpportunities({
       festivalId,
       page,
-      appendResults,
+      take,
       search,
     });
   }

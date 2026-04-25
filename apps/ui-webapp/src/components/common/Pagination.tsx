@@ -126,9 +126,8 @@ export default function Pagination({ setPerPage, perPage = 10, curPage, totalPag
                 </Button>
             </div>
 
-            {/* Right: Pagination Buttons */}
             <div className='flex items-center gap-3 text-sm'>
-                <span className="font-medium opacity-80">Go to page</span>
+                <span className="font-medium opacity-80 text-black">Go to page</span>
                 <div className="flex items-center gap-4">
                     <Input
                         type="number"

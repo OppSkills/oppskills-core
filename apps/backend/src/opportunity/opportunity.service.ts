@@ -36,12 +36,13 @@ export class OpportunityService {
   async listPublicPastOpportunities(params: {
     festivalId?: string;
     page?: number;
-    appendResults?: boolean;
+    take?: number;
     search?: string;
   }) {
-    const pageNum = params.page ? Math.max(1, Number(params.page)) : 1;
-    const isAppended = String(params.appendResults) === 'true';
-    const PAGE_SIZE = isAppended ? 20 : 10;
+    const requestedTake = Number(params.take) || 10;
+    const PAGE_SIZE = [10, 20, 30, 40].includes(requestedTake) ? requestedTake : 10;
+
+    const pageNum = Math.max(1, Number(params.page) || 1);
 
     const takeNeeded = pageNum * PAGE_SIZE;
 
@@ -49,16 +50,18 @@ export class OpportunityService {
       this.eventService.listPublicEvents({
         festivalId: params.festivalId,
         page: 1,
-        take: takeNeeded + 1,
+        take: takeNeeded,
         search: params.search,
         filterMode: 'PAST',
+        bypassValidation: true,
       }),
       this.hackathonService.listPublicHackathons({
         festivalId: params.festivalId,
         page: 1,
-        take: takeNeeded + 1,
+        take: takeNeeded,
         search: params.search,
         filterMode: 'PAST',
+        bypassValidation: true,
       }),
     ]);
 

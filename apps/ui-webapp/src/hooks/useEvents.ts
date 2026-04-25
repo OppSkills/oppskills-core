@@ -73,7 +73,10 @@ export function useEvents(
   filters?: FilterState,
   options?: { enabled?: boolean }
 ) {
-  return useInfiniteQuery<{ items: EventListItem[]; further: boolean }, Error>({
+  return useInfiniteQuery<
+    { items: EventListItem[]; totalPages: number; total: number; page: number },
+    Error
+  >({
     queryKey: ["events", festivalId, filters] as const,
     queryFn: async ({ pageParam = 1 }) => {
       return await getPublicEvents({
@@ -89,8 +92,8 @@ export function useEvents(
       });
     },
     initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage.further ? allPages.length + 1 : undefined;
+    getNextPageParam: (lastPage) => {
+      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
     },
     enabled: options?.enabled,
   });
@@ -104,7 +107,10 @@ export function useUpcomingEvents(
   filters?: FilterState,
   options?: { enabled?: boolean }
 ) {
-  return useInfiniteQuery<{ items: EventListItem[]; further: boolean }, Error>({
+  return useInfiniteQuery<
+    { items: EventListItem[]; totalPages: number; total: number; page: number },
+    Error
+  >({
     queryKey: ["events", "upcoming", festivalId, filters] as const,
     queryFn: async ({ pageParam = 1 }) => {
       return await getPublicUpcomingEvents({
@@ -120,8 +126,8 @@ export function useUpcomingEvents(
       });
     },
     initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage.further ? allPages.length + 1 : undefined;
+    getNextPageParam: (lastPage) => {
+      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
     },
     enabled: options?.enabled,
   });
@@ -190,6 +196,35 @@ export function usePastOpportunities(
         take: filters.perPage,
       });
       return data as PastOpportunitiesPage;
+    },
+    enabled: options?.enabled,
+  });
+}
+
+/**
+ * Standard query for public events (not infinite).
+ */
+export function usePublicEventsPaged(
+  filters: FilterState & { page?: number; perPage?: number },
+  options?: { enabled?: boolean }
+) {
+  return useQuery<
+    { items: EventListItem[]; totalPages: number; total: number; page: number },
+    Error
+  >({
+    queryKey: ["events", "paged", filters] as const,
+    queryFn: async () => {
+      return await getPublicEvents({
+        page: filters.page,
+        q: filters.search,
+        modes: filters.modes,
+        status: filters.status,
+        eventDates: filters.eventDates,
+        eligibility: filters.eligibility,
+        sort: filters.sort,
+        sortOrder: filters.sortOrder,
+        take: filters.perPage,
+      });
     },
     enabled: options?.enabled,
   });

@@ -30,7 +30,6 @@ function getReferralCodeFromCookie(): string | undefined {
 export async function getPublicEvents(
   params: {
     page?: number;
-    appendResults?: boolean;
     q?: string;
     festival_id?: string;
     modes?: string[];
@@ -39,10 +38,11 @@ export async function getPublicEvents(
     eligibility?: string[];
     sort?: string;
     sortOrder?: "asc" | "desc";
+    take?: number;
   } = {},
-): Promise<{ items: any[]; further: boolean }> {
+): Promise<{ items: any[]; totalPages: number; total: number; page: number }> {
   const res = await API.get("/public", { params });
-  return res.data as { items: any[]; further: boolean };
+  return res.data;
 }
 
 /**
@@ -78,7 +78,6 @@ export async function getPublicEventById(id: string): Promise<unknown> {
 export async function getPublicUpcomingEvents(
   params: {
     page?: number;
-    appendResults?: boolean;
     q?: string;
     festival_id?: string;
     modes?: string[];
@@ -87,10 +86,11 @@ export async function getPublicUpcomingEvents(
     eligibility?: string[];
     sort?: string;
     sortOrder?: "asc" | "desc";
+    take?: number;
   } = {},
-): Promise<{ items: any[]; further: boolean }> {
+): Promise<{ items: any[]; totalPages: number; total: number; page: number }> {
   const res = await API.get("/public/upcoming", { params });
-  return res.data as { items: any[]; further: boolean };
+  return res.data;
 }
 
 

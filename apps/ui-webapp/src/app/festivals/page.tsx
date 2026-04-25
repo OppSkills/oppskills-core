@@ -63,7 +63,6 @@ export default function FestivalsPage() {
       description="Explore college festivals and cultural events."
       items={items}
       isLoading={isLoading}
-      routePrefix="festivals"
     />
   );
 }
