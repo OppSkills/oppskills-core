@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { usePastEvents } from "@/hooks/useEvents";
+import { usePastOpportunities } from "@/hooks/useEvents";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import type { ListingItem } from "@/components/common/ListingCard";
 import type { PastOpportunityItem } from "@/hooks/useEvents";
@@ -70,30 +70,42 @@ export default function PastEventsPage() {
     sortOrder: "desc",
   });
 
+  const [perPage, setPerPage] = useState(10);
+  const [curPage, setCurPage] = useState(1);
+
   const {
     data,
     isLoading,
     error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = usePastEvents(undefined, filters);
+  } = usePastOpportunities({
+    ...filters,
+    page: curPage,
+    perPage,
+  });
 
-  const items = (data?.pages.flatMap((p) => p.items) ?? []).map(toListingItem);
-
+  const items = (data?.items ?? []).map(toListingItem);
+  const totalPages = data?.totalPages ?? 1;
   return (
-    <GenericListingPage
-      items={items}
-      isLoading={isLoading}
-      error={error}
-      routePrefix="past-opportunities"
-      onLoadMore={fetchNextPage}
-      hasMore={hasNextPage}
-      isFetchingNextPage={isFetchingNextPage}
-      filters={filters}
-      setFilters={setFilters}
-      title="Past Opportunities"
-      description="Relive incredible hackathons and events from our community."
-    />
+    <div>
+
+      <GenericListingPage
+        items={items}
+        isLoading={isLoading}
+        error={error}
+        routePrefix="past-opportunities"
+        filters={filters}
+        setFilters={setFilters}
+        title="Past Opportunities"
+        description="Relive incredible hackathons and events from our community."
+        showPagination={true}
+        pagination={{
+          setPerPage,
+          perPage,
+          curPage,
+          totalPages,
+          onPageChange: setCurPage,
+        }}
+      />
+    </div>
   );
 }

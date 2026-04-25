@@ -82,9 +82,11 @@ export class OpportunityService {
 
     const start = (pageNum - 1) * PAGE_SIZE;
     const items = merged.slice(start, start + PAGE_SIZE);
-    const further = merged.length > start + PAGE_SIZE;
 
-    return { items, further, total: merged.length, page: pageNum };
+    const totalCount = (eventsRes.total ?? 0) + (hackathonsRes.total ?? 0);
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+    return { items, totalPages, total: totalCount, page: pageNum };
   }
 
   /**
