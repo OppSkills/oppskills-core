@@ -39,10 +39,10 @@ export class OpportunityService {
     take?: number;
     search?: string;
   }) {
-    const requestedTake = params.take != null ? Number(params.take) : 10;
+    const requestedTake = Number(params.take) || 10;
     const PAGE_SIZE = [10, 20, 30, 40].includes(requestedTake) ? requestedTake : 10;
 
-    const pageNum = params.page ? Math.max(1, Number(params.page)) : 1;
+    const pageNum = Math.max(1, Number(params.page) || 1);
 
     const takeNeeded = pageNum * PAGE_SIZE;
 
