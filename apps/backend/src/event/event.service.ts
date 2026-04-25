@@ -319,61 +319,64 @@ export class EventService {
 
     // Query events with sanitized fields - no participants or registrant PII
     // We fetch take + 1 to determine if there are more results
-    const events = await prisma.eventEntity.findMany({
-      where: baseWhere,
-      skip,
-      take: take + 1,
-      orderBy,
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        description: true,
-        bannerImageUrl: true,
-        startDate: true,
-        endDate: true,
-        status: true,
-        approvalStatus: true,
-        locationType: true,
-        locationCity: true,
-        locationAddress: true,
-        locationVirtualLink: true,
-        isFree: true,
-        entryFeeAmount: true,
-        currency: true,
-        feeBearer: true,
-        visibility: true,
-        eventType: true,
-        registrationCount: true,
-        maxUsers: true,
-        registrationDeadline: true,
-        isRegistrationPaused: true,
-        organizationName: true,
-        organizationLogoUrl: true,
-        contactName: true,
-        contactEmail: true,
-        contactPhone: true,
-        attendeeEligibility: true,
-        createdAt: true,
-        // Owner info (public: name only, no email exposed in list)
-        owner: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            imageUrl: true,
+    const [events, total] = await Promise.all([
+      prisma.eventEntity.findMany({
+        where: baseWhere,
+        skip,
+        take: take + 1,
+        orderBy,
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          description: true,
+          bannerImageUrl: true,
+          startDate: true,
+          endDate: true,
+          status: true,
+          approvalStatus: true,
+          locationType: true,
+          locationCity: true,
+          locationAddress: true,
+          locationVirtualLink: true,
+          isFree: true,
+          entryFeeAmount: true,
+          currency: true,
+          feeBearer: true,
+          visibility: true,
+          eventType: true,
+          registrationCount: true,
+          maxUsers: true,
+          registrationDeadline: true,
+          isRegistrationPaused: true,
+          organizationName: true,
+          organizationLogoUrl: true,
+          contactName: true,
+          contactEmail: true,
+          contactPhone: true,
+          attendeeEligibility: true,
+          createdAt: true,
+          // Owner info (public: name only, no email exposed in list)
+          owner: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              imageUrl: true,
+            },
+          },
+          festival: {
+            select: { id: true, name: true, slug: true },
+          },
+          // Prize breakdown is public
+          prizeBreakdown: {
+            select: { id: true, position: true, amount: true, description: true },
+            orderBy: { amount: 'desc' },
           },
         },
-        festival: {
-          select: { id: true, name: true, slug: true },
-        },
-        // Prize breakdown is public
-        prizeBreakdown: {
-          select: { id: true, position: true, amount: true, description: true },
-          orderBy: { amount: 'desc' },
-        },
-      },
-    });
+      }),
+      prisma.eventEntity.count({ where: baseWhere }),
+    ]);
 
     // Determine if there's further results
     const further = events.length > take;
@@ -388,7 +391,7 @@ export class EventService {
       this.logger.error('Failed to track impressions', err);
     });
 
-    return { items, further };
+    return { items, further, total };
   }
 
   /**

@@ -141,7 +141,7 @@ export type PastOpportunityItem =
  */
 export interface PastOpportunitiesPage {
   items: PastOpportunityItem[];
-  hasMore: boolean;
+  totalPages: number;
   total: number;
   page: number;
 }
@@ -166,7 +166,30 @@ export function usePastEvents(
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      return lastPage.hasMore ? lastPage.page + 1 : undefined;
+      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
+    },
+    enabled: options?.enabled,
+  });
+}
+
+/**
+ * Standard query for past opportunities (not infinite).
+ */
+import { useQuery } from "@tanstack/react-query";
+
+export function usePastOpportunities(
+  filters: FilterState & { page?: number; perPage?: number },
+  options?: { enabled?: boolean }
+) {
+  return useQuery<PastOpportunitiesPage, Error>({
+    queryKey: ["events", "past", "paged", filters] as const,
+    queryFn: async () => {
+      const data = await getPublicPastOpportunities({
+        page: filters.page,
+        q: filters.search,
+        limit: filters.perPage,
+      });
+      return data as PastOpportunitiesPage;
     },
     enabled: options?.enabled,
   });
