@@ -50,7 +50,7 @@ export class OpportunityService {
       this.eventService.listPublicEvents({
         festivalId: params.festivalId,
         page: 1,
-        take: takeNeeded + 1,
+        take: takeNeeded,
         search: params.search,
         filterMode: 'PAST',
         bypassValidation: true,
@@ -58,7 +58,7 @@ export class OpportunityService {
       this.hackathonService.listPublicHackathons({
         festivalId: params.festivalId,
         page: 1,
-        take: takeNeeded + 1,
+        take: takeNeeded,
         search: params.search,
         filterMode: 'PAST',
         bypassValidation: true,
