@@ -188,9 +188,21 @@ export async function getHackathons(token: string): Promise<unknown> {
  *
  * Note: Evaluator-only hackathons are intentionally excluded for now.
  */
-export async function getMyHackathons(token: string): Promise<unknown> {
-  const res = await API.get("/my", { headers: buildAuthHeaders(token) });
-  return res.data as unknown;
+export async function getMyHackathons(
+  token: string,
+  params: { page?: number; take?: number } = {}
+): Promise<{
+  items: any[];
+  total: number;
+  page: number;
+  take: number;
+  totalPages: number;
+}> {
+  const res = await API.get("/my", { 
+    headers: buildAuthHeaders(token),
+    params 
+  });
+  return res.data;
 }
 
 /**
