@@ -99,7 +99,10 @@ export default function PastEventsPage() {
         description="Relive incredible hackathons and events from our community."
         showPagination={true}
         pagination={{
-          setPerPage,
+          setPerPage: (val) => {
+            setPerPage(val);
+            setCurPage(1);
+          },
           perPage,
           curPage,
           totalPages,

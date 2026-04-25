@@ -8,7 +8,7 @@ const API = createApiClient("/opportunity");
 export async function getPublicPastOpportunities(params: {
   festival_id?: string;
   page?: number;
-  limit?: number;
+  take?: number;
   appendResults?: boolean;
   q?: string;
 }) {

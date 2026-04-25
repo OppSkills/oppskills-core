@@ -26,6 +26,7 @@ export default function Pagination({ setPerPage, perPage = 10, curPage, totalPag
     const handlePageChange = (page: number) => {
         if (page >= 1 && page <= totalPages) {
             onPageChange(page)
+            window.scrollTo({ top: 0, behavior: 'instant' })
         }
     }
 

@@ -187,7 +187,7 @@ export function usePastOpportunities(
       const data = await getPublicPastOpportunities({
         page: filters.page,
         q: filters.search,
-        limit: filters.perPage,
+        take: filters.perPage,
       });
       return data as PastOpportunitiesPage;
     },
