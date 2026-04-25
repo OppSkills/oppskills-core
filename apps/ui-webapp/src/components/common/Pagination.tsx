@@ -60,10 +60,12 @@ export default function Pagination({ setPerPage, perPage = 10, curPage, totalPag
     }
 
     return (
-        <div className='flex flex-wrap items-center justify-between gap-6 w-full py-4 text-[#2D2D2D]'>
-            {/* Left side: Showing per page */}
+        <div className='flex flex-wrap items-center justify-between gap-6 w-full py-4 text-neutral-800'>
+
             <div className='flex items-center gap-3 text-sm'>
-                <span className="font-medium text-base">Showing per page</span>
+                <span className="font-medium text-base hidden md:block">Showing per page</span>
+                <span className="font-medium text-base block md:hidden">Per page</span>
+
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="min-w-15 rounded-sm border-neutral-500 px-4 flex justify-between items-center font-semibold text-neutral-700 shadow-sm hover:bg-neutral-100 hover:text-primary-600">
@@ -81,12 +83,11 @@ export default function Pagination({ setPerPage, perPage = 10, curPage, totalPag
                 </DropdownMenu>
             </div>
 
-            {/* Middle: Go to page */}
             <div className="flex items-center gap-2">
                 <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 rounded-sm border-primary-400 bg-primary-100 text-neutral-800 hover:bg-primary-500 hover:text-neutral-200 disabled:opacity-30 shadow-sm transition-all"
+                    className="h-6 w-6 md:h-8 md:w-8 rounded-sm border-primary-400 bg-primary-100 text-neutral-800 hover:bg-primary-500 hover:text-neutral-200 disabled:opacity-30 shadow-sm transition-all"
                     onClick={() => handlePageChange(curPage - 1)}
                     disabled={curPage === 1}
                 >
@@ -102,7 +103,7 @@ export default function Pagination({ setPerPage, perPage = 10, curPage, totalPag
                                 <Button
                                     variant={curPage === page ? "default" : "outline"}
                                     size="sm"
-                                    className={`h-8 w-8 p-0 rounded-sm font-bold text-sm transition-all ${curPage === page
+                                    className={`h-6 w-6 md:h-8 md:w-8 p-0 rounded-sm font-bold text-sm transition-all ${curPage === page
                                         ? 'bg-primary-600 text-neutral-100 shadow-md'
                                         : 'border-primary-400 bg-primary-100 text-neutral-800 hover:bg-primary-500 hover:text-neutral-200 shadow-sm'
                                         }`}
@@ -118,7 +119,7 @@ export default function Pagination({ setPerPage, perPage = 10, curPage, totalPag
                 <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 rounded-sm border-primary-400 bg-primary-100 text-neutral-800 hover:bg-primary-500 hover:text-neutral-200 disabled:opacity-30 shadow-sm transition-all"
+                    className="h-6 w-6 md:h-8 md:w-8 rounded-sm border-primary-400 bg-primary-100 text-neutral-800 hover:bg-primary-500 hover:text-neutral-200 disabled:opacity-30 shadow-sm transition-all"
                     onClick={() => handlePageChange(curPage + 1)}
                     disabled={curPage === totalPages}
                 >
@@ -126,8 +127,8 @@ export default function Pagination({ setPerPage, perPage = 10, curPage, totalPag
                 </Button>
             </div>
 
-            <div className='flex items-center gap-3 text-sm'>
-                <span className="font-medium opacity-80 text-black">Go to page</span>
+            <div className='hidden sm:flex items-center gap-3 text-sm'>
+                <span className="font-medium opacity-80 text-black hidden md:block">Go to page</span>
                 <div className="flex items-center gap-4">
                     <Input
                         type="number"

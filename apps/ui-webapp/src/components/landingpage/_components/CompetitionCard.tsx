@@ -41,7 +41,7 @@ export function CompetitionCard({ hackathon }: CompetitionCardProps) {
     const entryFee = formatCurrency(hackathon.entryFeeAmount, hackathon.currency);
 
     const footerContent = (
-        <div className="flex items-center justify-between mt-auto pt-2 w-full">
+        <div className="flex items-between justify-between mt-auto pt-2 w-full">
             <div className="flex flex-col gap-2 ">
                 <span className="text-xs text-neutral-600">Attendees</span>
                 <div className="flex gap-1">
