@@ -323,7 +323,7 @@ export class EventService {
       prisma.eventEntity.findMany({
         where: baseWhere,
         skip,
-        take: take + 1,
+        take,
         orderBy,
         select: {
           id: true,
