@@ -548,14 +548,14 @@ export class HackathonService {
       }
     }
 
-    const requestedTake = input.take != null ? Number(input.take) : 10;
+    const requestedTake = Number(input.take) || 10;
     const take = input.bypassValidation
       ? Math.min(Math.max(1, requestedTake), 200) // Allow up to 200 for internal calls
       : [10, 20, 30, 40].includes(requestedTake)
         ? requestedTake
         : 10;
 
-    const page = input.page ? Math.max(1, input.page) : 1;
+    const page = Math.max(1, Number(input.page) || 1);
     const skip = (page - 1) * take;
 
     const [items, total] = await Promise.all([
