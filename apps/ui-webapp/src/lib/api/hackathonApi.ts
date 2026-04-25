@@ -61,6 +61,7 @@ export interface PublicHackathonListItem {
     name: string;
     slug: string;
   } | null;
+  attendeeEligibility: string[];
 }
 
 /**

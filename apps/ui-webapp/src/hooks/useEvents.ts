@@ -45,6 +45,7 @@ export interface EventListItem {
     name: string;
     slug: string;
   } | null;
+  attendeeEligibility: string[];
 }
 
 /**
