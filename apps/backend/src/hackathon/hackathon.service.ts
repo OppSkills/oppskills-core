@@ -2530,7 +2530,7 @@ export class HackathonService {
       },
     });
 
-    const skip = (page - 1) * take;
+    const skip = (Math.max(1, page) - 1) * take;
 
     // Query teams with pagination
     const [teams, total] = await Promise.all([
