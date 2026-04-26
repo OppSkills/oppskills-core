@@ -906,52 +906,77 @@ export class HackathonService {
    *
    * This method returns a lightweight shape suitable for dashboard listing.
    */
-  async listMyHackathons(userId: string) {
+  async listMyHackathons(userId: string, params: { page?: number; take?: number } = {}) {
     const safeUserId = userId.trim();
     if (safeUserId.length === 0) {
       throw new BadRequestException('userId is required.');
     }
 
-    return prisma.hackathonEntity.findMany({
-      where: {
-        isDeleted: false,
-        OR: [
-          { ownerId: safeUserId },
-          {
-            userRoles: {
-              some: {
-                userId: safeUserId,
-                role: 'MANAGER',
-              },
+    const requestedTake = Number(params.take) || 10;
+    const take = [10, 20, 30, 40].includes(requestedTake) ? requestedTake : 10;
+    const page = Math.max(1, Number(params.page) || 1);
+    const skip = (page - 1) * take;
+
+    const where: Prisma.HackathonEntityWhereInput = {
+      isDeleted: false,
+      OR: [
+        { ownerId: safeUserId },
+        {
+          userRoles: {
+            some: {
+              userId: safeUserId,
+              role: 'MANAGER',
             },
           },
-        ],
-      },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        description: true,
-        status: true,
-        mode: true,
-        startDate: true,
-        endDate: true,
-        registrationDeadline: true,
-        bannerImageUrl: true,
-        festivalId: true,
-        ownerId: true,
-        owner: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            imageUrl: true,
+        },
+      ],
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.hackathonEntity.findMany({
+        where,
+        skip,
+        take,
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          description: true,
+          status: true,
+          mode: true,
+          startDate: true,
+          endDate: true,
+          registrationDeadline: true,
+          bannerImageUrl: true,
+          festivalId: true,
+          approvalStatus: true,
+          isRegistrationPaused: true,
+          registrationCount: true,
+          ownerId: true,
+          owner: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              imageUrl: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.hackathonEntity.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / take);
+
+    return {
+      items,
+      total,
+      page,
+      take,
+      totalPages,
+    };
   }
 
   /**

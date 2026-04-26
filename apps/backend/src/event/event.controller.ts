@@ -285,12 +285,16 @@ export class EventController {
   @ApiOperation({ summary: 'List events where user is owner or manager' })
   @ApiResponse({ status: 200, description: 'List of user events' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async listMyEvents(@Req() req: Request) {
+  async listMyEvents(
+    @Req() req: Request,
+    @Query('page') page?: number,
+    @Query('take') take?: number,
+  ) {
     const userId = req.user?.id;
     if (!userId) {
       throw new BadRequestException('User ID is required.');
     }
-    return this.eventService.listMyEvents(userId);
+    return this.eventService.listMyEvents(userId, { page, take });
   }
 
   /**
