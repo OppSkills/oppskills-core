@@ -1,444 +1,122 @@
 "use client";
 
-import { Search, Plus, MoreVertical } from "lucide-react";
-import * as React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { getMyHackathons } from "@/lib/api/hackathonApi";
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  type SortingState,
-  useReactTable,
-} from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import ActionDropdown from "../_components/ActionDropdown";
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Plus, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@clerk/nextjs';
+import { toast } from 'sonner';
+import Link from 'next/link';
 
-/**
- * Converts stored rich-text HTML into a human-friendly plain-text snippet.
- *
- * We intentionally do NOT render HTML here (security + table UX).
- */
-function stripHtmlToText(input: string): string {
-  const value = input.trim();
-  if (value.length === 0) return "";
+import { OpportunitiesTable } from '../_components/opportunities-table/OpportunitiesTable';
+import { mapBackendToOpportunity, Opportunity } from '../_components/opportunities-table/types';
+import { getMyHackathons, updateHackathonRegistrationPaused } from '@/lib/api/hackathonApi';
+import ActionDropdown from '../_components/ActionDropdown';
 
-  // In the browser we can reliably parse HTML.
-  if (typeof window !== "undefined" && typeof document !== "undefined") {
-    const el = document.createElement("div");
-    el.innerHTML = value;
-    return (el.textContent ?? el.innerText ?? "").replace(/\s+/g, " ").trim();
-  }
+export default function HackathonPage() {
+    const { getToken, isLoaded } = useAuth();
+    const [searchQuery, setSearchQuery] = useState('');
+    const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const take = 10;
 
-  // Fallback for non-browser contexts (shouldn't run for this client page, but safe).
-  return value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+    const fetchData = async (page = currentPage) => {
+        if (!isLoaded) return;
+        setIsLoading(true);
+        try {
+            const token = await getToken();
+            if (!token) return;
 
-/**
- * Row model for the dashboard table.
- *
- * Note: This is an adapter around the backend hackathon entity.
- */
-type HackathonRow = {
-  id: string;
-  ownerId?: string;
-  dashboardSlug: string;
-  name: string;
-  description: string;
-  type: "Hackathon";
-  status: string;
-  startDate: string;
-  startTime: string;
-  endDate: string;
-  endTime: string;
-  candidates: string;
-  isOpen: boolean;
-  registrationLabel: "Open" | "Closed";
-};
-
-const columnHelper = createColumnHelper<HackathonRow>();
-
-const columns = [
-  columnHelper.display({
-    id: "sno",
-    header: () => <div className="text-center">S. No.</div>,
-    cell: (info) => (
-      <div className="text-center font-medium text-lg">
-        <Link
-          href={`/dashboard/hackathon/${info.row.original.dashboardSlug}`}
-          aria-label={`Open ${info.row.original.name}`}
-          className="inline-flex w-full justify-center hover:underline"
-        >
-          {info.row.index + 1}
-        </Link>
-      </div>
-    ),
-  }),
-  columnHelper.accessor("name", {
-    header: "Name",
-    cell: (info) => (
-      <Link
-        href={`/dashboard/hackathon/${info.row.original.dashboardSlug}`}
-        aria-label={`Open ${info.row.original.name}`}
-        className="flex flex-col gap-1 hover:underline"
-      >
-        <div className="flex gap-2 items-start">
-          <span className="font-semibold text-base lg:text-lg">
-            {info.getValue()}
-          </span>
-          <div>
-            <Badge className="bg-muted text-muted-foreground text-[10px] px-1">
-              {info.row.original.type}
-            </Badge>
-          </div>
-        </div>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {stripHtmlToText(info.row.original.description)}
-        </p>
-      </Link>
-    ),
-  }),
-  columnHelper.accessor("status", {
-    header: "Status",
-    cell: (info) => (
-      <Badge
-        variant="secondary"
-        className="bg-secondary/50 text-secondary-foreground font-normal"
-      >
-        {info.getValue()}
-      </Badge>
-    ),
-  }),
-  columnHelper.accessor("startDate", {
-    header: "Start Date",
-    cell: (info) => (
-      <div className="flex flex-col text-sm">
-        <span className="font-medium text-base">{info.getValue()}</span>
-        <span className="text-xs text-muted-foreground">
-          {info.row.original.startTime}
-        </span>
-      </div>
-    ),
-  }),
-  columnHelper.accessor("endDate", {
-    header: "End Date",
-    cell: (info) => (
-      <div className="flex flex-col text-sm">
-        <span className="font-medium text-base">{info.getValue()}</span>
-        <span className="text-xs text-muted-foreground">
-          {info.row.original.endTime}
-        </span>
-      </div>
-    ),
-  }),
-  columnHelper.accessor("candidates", {
-    header: "Candidates",
-    cell: (info) => (
-      <div className="text-base font-medium">{info.getValue()}</div>
-    ),
-  }),
-  columnHelper.accessor("isOpen", {
-    header: () => <div className="text-center">Registration</div>,
-    cell: (info) => (
-      <div className="flex items-center justify-center gap-3">
-        <Switch checked={info.getValue()} />
-
-        <span
-          className={cn(
-            "px-3 py-1 rounded text-xs font-medium w-16 text-center shadow-sm",
-            info.getValue()
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          )}
-        >
-          {info.row.original.registrationLabel}
-        </span>
-      </div>
-    ),
-  }),
-  columnHelper.display({
-    id: "actions",
-    header: () => <div className="text-center">Edit</div>,
-    cell: (info) => (
-      <div className="flex justify-center">
-        <ActionDropdown
-          editHref={`/dashboard/hackathon/${info.row.original.dashboardSlug}/edit-opportunity`}
-        />
-      </div>
-    ),
-  }),
-];
-
-/**
- * Type guard: checks if a value is a non-null object.
- */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function getString(
-  obj: Record<string, unknown>,
-  key: string
-): string | undefined {
-  const value = obj[key];
-  return typeof value === "string" && value.trim().length > 0
-    ? value
-    : undefined;
-}
-
-function formatDate(value: string | undefined): string {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-  return format(d, "dd MMM yy");
-}
-
-function isRegistrationOpen(input: {
-  status?: string;
-  registrationDeadline?: string;
-}): boolean {
-  const status = (input.status ?? "").toUpperCase();
-  if (status === "CANCELLED" || status === "COMPLETED") return false;
-
-  const deadlineStr = input.registrationDeadline;
-  if (!deadlineStr) return false;
-  const deadline = new Date(deadlineStr);
-  if (Number.isNaN(deadline.getTime())) return false;
-
-  return Date.now() <= deadline.getTime();
-}
-
-function extractHackathonRows(input: unknown): HackathonRow[] {
-  const raw = Array.isArray(input)
-    ? input
-    : isRecord(input) && Array.isArray(input["data"])
-      ? input["data"]
-      : [];
-
-  return raw
-    .map((row): HackathonRow | null => {
-      if (!isRecord(row)) return null;
-
-      const id = getString(row, "id");
-      const name = getString(row, "name");
-      if (!id || !name) return null;
-
-      const slug = getString(row, "slug");
-      const ownerId =
-        getString(row, "ownerId") ??
-        (isRecord(row["owner"]) ? getString(row["owner"], "id") : undefined);
-      const status = getString(row, "status") ?? "DRAFT";
-      const registrationDeadline = getString(row, "registrationDeadline");
-      const open = isRegistrationOpen({ status, registrationDeadline });
-
-      return {
-        id,
-        ownerId,
-        dashboardSlug: slug ?? id,
-        name,
-        description: getString(row, "description") ?? "",
-        type: "Hackathon",
-        status,
-        startDate: formatDate(getString(row, "startDate")),
-        startTime: "—",
-        endDate: formatDate(getString(row, "endDate")),
-        endTime: "—",
-        candidates: "—",
-        isOpen: open,
-        registrationLabel: open ? "Open" : "Closed",
-      };
-    })
-    .filter((v): v is HackathonRow => v !== null);
-}
-
-export default function OpportunityPage() {
-  const { getToken, userId, isLoaded } = useAuth();
-  const router = useRouter();
-
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [allRows, setAllRows] = React.useState<HackathonRow[]>([]);
-  const [tableData, setTableData] = React.useState<HackathonRow[]>([]);
-  const [searchTerm, setSearchTerm] = React.useState<string>("");
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
-
-  /**
-   * Clerk's `getToken` reference can change across renders, which would re-trigger our
-   * data-fetching effect and make the page feel slow. Keep the latest function in a ref
-   * and only re-run the fetch when auth/user identity is actually ready/changed.
-   */
-  const getTokenRef = React.useRef(getToken);
-  React.useEffect(() => {
-    getTokenRef.current = getToken;
-  }, [getToken]);
-
-  React.useEffect(() => {
-    if (!isLoaded) return;
-
-    let cancelled = false;
-
-    const run = async (): Promise<void> => {
-      setIsLoading(true);
-      try {
-        const token = await getTokenRef.current();
-        if (typeof token !== "string" || token.trim().length === 0) {
-          if (!cancelled) {
-            setAllRows([]);
-            setTableData([]);
-          }
-          return;
+            const res = await getMyHackathons(token, { page, take });
+            const mapped = res.items.map((h: any) => mapBackendToOpportunity(h, 'Competition'));
+            setOpportunities(mapped);
+            setTotalPages(res.totalPages);
+            setCurrentPage(res.page);
+        } catch (error) {
+            console.error('Error fetching hackathons:', error);
+            toast.error('Failed to load hackathons');
+        } finally {
+            setIsLoading(false);
         }
-
-        const res = await getMyHackathons(token);
-        const rows = extractHackathonRows(res);
-
-        const filtered =
-          typeof userId === "string"
-            ? rows.filter(
-              (r) => typeof r.ownerId === "string" && r.ownerId === userId
-            )
-            : rows;
-
-        if (!cancelled) {
-          setAllRows(rows);
-          setTableData(rows);
-        }
-      } catch (err: unknown) {
-        toast.error("Failed to load hackathons.");
-        if (!cancelled) {
-          setAllRows([]);
-          setTableData([]);
-        }
-        console.error(err);
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
     };
 
-    void run();
-    return () => {
-      cancelled = true;
+    useEffect(() => {
+        fetchData(currentPage);
+    }, [isLoaded, getToken, currentPage]);
+
+    const filteredOpportunities = useMemo(() => {
+        return opportunities.filter((opp) => 
+            opp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            opp.description.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [opportunities, searchQuery]);
+
+    const handleToggleRegistration = async (id: string, isOpen: boolean) => {
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            // Optimistic update
+            setOpportunities(prev => prev.map(opp => 
+                opp.id === id ? { ...opp, registrationsOpen: isOpen } : opp
+            ));
+
+            await updateHackathonRegistrationPaused(token, id, { isRegistrationPaused: !isOpen });
+            toast.success(`Registration ${isOpen ? 'opened' : 'closed'} successfully`);
+        } catch (error) {
+            console.error('Error toggling registration:', error);
+            toast.error('Failed to update registration status');
+            // Rollback
+            fetchData();
+        }
     };
-  }, [isLoaded, userId]);
 
-  React.useEffect(() => {
-    const q = searchTerm.trim().toLowerCase();
-    if (q.length === 0) {
-      setTableData(allRows);
-      return;
-    }
-    setTableData(allRows.filter((item) => item.name.toLowerCase().includes(q)));
-  }, [searchTerm, allRows]);
+    return (
+        <div className="flex flex-col gap-6 p-6 min-h-screen bg-neutral-100 w-full overflow-x-hidden">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h1 className="text-2xl font-bold text-neutral-900">Hackathons ({opportunities.length})</h1>
 
-  const table = useReactTable({
-    data: tableData,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    state: {
-      sorting,
-    },
-    onSortingChange: setSorting,
-  });
-
-  return (
-    <div className="w-full min-h-screen bg-background p-6 flex flex-col items-center">
-      <div className="w-full max-w-[1150px] space-y-6">
-        {/* Top Search Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
-          <div className="relative w-full sm:max-w-md">
-            <input
-              type="text"
-              placeholder="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-4 pr-12 rounded-full border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring shadow-sm"
-            />
-            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-          </div>
-          <Link href={"/organize/hackathon"} className="w-full sm:w-auto">
-            <Button className="rounded-full" size={"lg"}>
-              <Plus className="h-5 w-5" />
-              Host
-            </Button>
-          </Link>
-        </div>
-
-        {/* List Container */}
-        <div className="bg-muted/30 rounded-[20px] border border-border p-2 overflow-x-auto shadow-sm">
-          <div className="min-w-[1200px]">
-            {/* Header Row */}
-            <div className="grid grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 items-center bg-secondary/30 p-4 rounded-t-xl text-sm font-semibold text-foreground border-b border-border/50">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <React.Fragment key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <div key={header.id} className="whitespace-nowrap">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                <div className="flex items-center gap-3">
+                    <div className="relative w-full md:w-80">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                        <Input
+                            placeholder="Search hackathons"
+                            className="pl-10 h-11 border-neutral-200 bg-white rounded-full shadow-sm focus-visible:ring-primary-500"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
-                  ))}
-                </React.Fragment>
-              ))}
+                    <Link href="/organize/hackathon">
+                        <Button className="h-11 px-6 rounded-full bg-primary-800 hover:bg-primary-900 text-white flex items-center gap-2 shadow-md">
+                            <div className="flex items-center justify-center h-6 w-6 rounded-full border border-white/30">
+                                <Plus className="h-4 w-4" />
+                            </div>
+                            <span>Host</span>
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
-            {/* Data Rows */}
-            <div className="flex flex-col bg-background rounded-b-xl">
-              {isLoading ? (
-                <div className="h-24 flex items-center justify-center text-muted-foreground">
-                  Loading hackathons...
-                </div>
-              ) : table.getRowModel().rows.length === 0 ? (
-                <div className="h-24 flex items-center justify-center text-muted-foreground">
-                  No results found.
-                </div>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <div
-                    key={row.id}
-                    className={cn(
-                      "grid grid-cols-[60px_2fr_1fr_1fr_1fr_1fr_1.5fr_60px] gap-4 p-6 items-center border-b border-border last:border-0 hover:bg-muted/10 transition-colors"
-                    )}
-                  >
-                    {row.getVisibleCells().map((cell, index) => {
-                      const isSno = index === 0;
-                      return (
-                        <div
-                          key={cell.id}
-                          className={cn(
-                            "whitespace-nowrap overflow-hidden text-ellipsis",
-                            isSno && "text-center"
-                          )}
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))
-              )}
+            {/* Table Section */}
+            <div className="flex-1 min-w-0">
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center h-64 gap-2">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+                        <p className="text-neutral-500">Loading your hackathons...</p>
+                    </div>
+                ) : (
+                    <OpportunitiesTable 
+                        data={filteredOpportunities} 
+                        onToggleRegistration={handleToggleRegistration}
+                        page={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                )}
             </div>
-          </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }

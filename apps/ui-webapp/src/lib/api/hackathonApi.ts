@@ -188,9 +188,21 @@ export async function getHackathons(token: string): Promise<unknown> {
  *
  * Note: Evaluator-only hackathons are intentionally excluded for now.
  */
-export async function getMyHackathons(token: string): Promise<unknown> {
-  const res = await API.get("/my", { headers: buildAuthHeaders(token) });
-  return res.data as unknown;
+export async function getMyHackathons(
+  token: string,
+  params: { page?: number; take?: number } = {}
+): Promise<{
+  items: any[];
+  total: number;
+  page: number;
+  take: number;
+  totalPages: number;
+}> {
+  const res = await API.get("/my", { 
+    headers: buildAuthHeaders(token),
+    params 
+  });
+  return res.data;
 }
 
 /**
@@ -469,7 +481,13 @@ export interface HackathonRegistrationsBySlugResponse {
   hackathonId: string;
   name: string;
   rounds: HackathonRoundInfo[];
-  teams: HackathonTeamRegistration[];
+  teams: {
+    items: HackathonTeamRegistration[];
+    total: number;
+    page: number;
+    take: number;
+    totalPages: number;
+  };
 }
 
 /**
@@ -478,6 +496,7 @@ export interface HackathonRegistrationsBySlugResponse {
 export async function getHackathonRegistrationsBySlug(
   token: string,
   slug: string,
+  params: { page?: number; take?: number } = {},
 ): Promise<HackathonRegistrationsBySlugResponse> {
   const safeSlug = slug.trim();
   if (safeSlug.length === 0) {
@@ -487,6 +506,7 @@ export async function getHackathonRegistrationsBySlug(
     `/by-slug/${encodeURIComponent(safeSlug)}/registrations`,
     {
       headers: buildAuthHeaders(token),
+      params,
     },
   );
   return res.data as HackathonRegistrationsBySlugResponse;

@@ -237,10 +237,14 @@ export class HackathonController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  async listMyHackathons(@Req() req: Request) {
+  async listMyHackathons(
+    @Req() req: Request,
+    @Query('page') page?: number,
+    @Query('take') take?: number,
+  ) {
     const userId = req.user?.id;
     if (!userId) throw new UnauthorizedException('User not found');
-    return this.hackathonService.listMyHackathons(userId);
+    return this.hackathonService.listMyHackathons(userId, { page, take });
   }
 
   @Get('by-slug/:slug')
@@ -358,6 +362,8 @@ export class HackathonController {
   @ApiResponse({ status: 404, description: 'Hackathon not found' })
   async getHackathonRegistrationsBySlug(
     @Param('slug') slug: string,
+    @Query('page') page: string,
+    @Query('take') take: string,
     @Req() req: Request,
   ) {
     const userId = req.user?.id;
@@ -366,6 +372,8 @@ export class HackathonController {
     return this.hackathonService.listHackathonRegistrationsBySlug(
       safeSlug,
       userId,
+      page ? parseInt(page, 10) : 1,
+      take ? parseInt(take, 10) : 10,
     );
   }
 

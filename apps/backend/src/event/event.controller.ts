@@ -285,12 +285,16 @@ export class EventController {
   @ApiOperation({ summary: 'List events where user is owner or manager' })
   @ApiResponse({ status: 200, description: 'List of user events' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async listMyEvents(@Req() req: Request) {
+  async listMyEvents(
+    @Req() req: Request,
+    @Query('page') page?: number,
+    @Query('take') take?: number,
+  ) {
     const userId = req.user?.id;
     if (!userId) {
       throw new BadRequestException('User ID is required.');
     }
-    return this.eventService.listMyEvents(userId);
+    return this.eventService.listMyEvents(userId, { page, take });
   }
 
   /**
@@ -328,6 +332,8 @@ export class EventController {
   @ApiResponse({ status: 404, description: 'Event not found' })
   async getEventRegistrationsBySlug(
     @Param('slug') slug: string,
+    @Query('page') page: string,
+    @Query('take') take: string,
     @Req() req: Request,
   ) {
     const userId = req.user?.id;
@@ -336,7 +342,12 @@ export class EventController {
     }
 
     const validSlug = assertNonEmptyId(slug, 'slug');
-    return this.eventService.listEventRegistrationsBySlug(validSlug, userId);
+    return this.eventService.listEventRegistrationsBySlug(
+      validSlug,
+      userId,
+      page ? parseInt(page, 10) : 1,
+      take ? parseInt(take, 10) : 10,
+    );
   }
 
   @Get('by-slug/:slug/registrations/:participantId')

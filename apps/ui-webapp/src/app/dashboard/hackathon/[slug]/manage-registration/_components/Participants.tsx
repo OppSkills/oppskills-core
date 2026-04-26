@@ -29,6 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import Pagination from "@/components/common/Pagination";
 import {
   Select,
   SelectContent,
@@ -86,6 +87,11 @@ interface ParticipantsProps {
   nextRoundId?: string | null;
   hackathonId: string;
   hackathonName: string;
+  page: number;
+  totalPages: number;
+  take: number;
+  onPageChange: (page: number) => void;
+  onTakeChange: (take: number) => void;
 }
 
 export default function Participants({
@@ -94,6 +100,11 @@ export default function Participants({
   nextRoundId,
   hackathonId,
   hackathonName,
+  page,
+  totalPages,
+  take,
+  onPageChange,
+  onTakeChange,
 }: ParticipantsProps) {
   const params = useParams();
   const slug = params.slug as string;
@@ -408,6 +419,8 @@ export default function Participants({
     state: {
       globalFilter,
     },
+    manualPagination: true,
+    pageCount: totalPages,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -483,56 +496,71 @@ export default function Participants({
         </div>
       </div>
 
-      <div className="w-full overflow-x-auto rounded-xl border border-surface bg-primary-foreground shadow-sm">
-        <Table className="min-w-[800px]">
-          <TableHeader className="sticky top-0 z-10 bg-primary">
-            {table.getHeaderGroups().map((group) => (
-              <TableRow key={group.id} className="border-none">
-                {group.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="h-12 text-primary-foreground first:rounded-tl-xl last:rounded-tr-xl"
-                  >
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-gray-50"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-4">
+      <div className="w-full bg-white rounded-xl shadow-sm border border-neutral-300 overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[1000px] w-full border border-neutral-300">
+            <TableHeader className="bg-primary-800">
+              {table.getHeaderGroups().map((group) => (
+                <TableRow key={group.id} className="hover:bg-transparent border-none">
+                  {group.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className="text-neutral-100 font-normal text-sm whitespace-nowrap py-3 border-r border-white/30 last:border-r-0"
+                    >
                       {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
+                        header.column.columnDef.header,
+                        header.getContext(),
                       )}
-                    </TableCell>
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="border-b border-neutral-300 hover:bg-neutral-50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      router.push(
+                        `/dashboard/hackathon/${slug}/manage-registration/${row.original.id}`,
+                      );
+                    }}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="py-4 px-4 border-r border-neutral-300 last:border-r-0">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="px-4">
+          <Pagination
+            curPage={page}
+            totalPages={totalPages}
+            perPage={take}
+            setPerPage={(size) => onTakeChange(Number(size))}
+            onPageChange={onPageChange}
+          />
+        </div>
       </div>
 
       {selectedTeamForEmail && (

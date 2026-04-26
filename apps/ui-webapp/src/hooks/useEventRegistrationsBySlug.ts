@@ -31,19 +31,22 @@ export function getEventRegistrationsBySlugQueryKey(slug: string | null) {
 /**
  * Fetches event registrations by slug (owner/manager/admin only).
  */
-export function useEventRegistrationsBySlug(slug: string | null | undefined) {
+export function useEventRegistrationsBySlug(
+  slug: string | null | undefined,
+  params: { page?: number; take?: number } = {},
+) {
   const { getToken } = useAuth();
   const safeSlug = normalizeSlug(slug);
 
   return useQuery({
-    queryKey: getEventRegistrationsBySlugQueryKey(safeSlug),
+    queryKey: [...getEventRegistrationsBySlugQueryKey(safeSlug), params],
     enabled: safeSlug !== null,
     queryFn: async () => {
       if (safeSlug === null) {
         throw new Error("Event slug is required.");
       }
       const token = requireToken(await getToken());
-      return getEventRegistrationsBySlug(token, safeSlug);
+      return getEventRegistrationsBySlug(token, safeSlug, params);
     },
   });
 }

@@ -23,6 +23,8 @@ import {
   Download,
   Check,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -50,6 +52,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { exportToExcel } from "@/lib/exportToExcel";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import Pagination from "@/components/common/Pagination";
 
 /**
  * Profile columns written before merging custom registration form answers.
@@ -117,11 +128,18 @@ export default function ManageRegistrationPage() {
   const router = useRouter();
   const slug = typeof params.slug === "string" ? params.slug : null;
 
+  const [page, setPage] = useState(1);
+  const [take, setTake] = useState(20);
+
   const {
-    data: registrations,
+    data: paginatedData,
     isLoading,
     error,
-  } = useEventRegistrationsBySlug(slug);
+  } = useEventRegistrationsBySlug(slug, { page, take });
+
+  const registrations = paginatedData?.items || [];
+  const total = paginatedData?.total || 0;
+  const totalPages = paginatedData?.totalPages || 0;
 
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
@@ -388,17 +406,13 @@ export default function ManageRegistrationPage() {
       rowSelection,
       globalFilter,
     },
-    initialState: {
-      pagination: {
-        pageSize: 20,
-      },
-    },
+    manualPagination: true,
+    pageCount: totalPages,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
 
   const selectedRows = table.getSelectedRowModel().rows;
@@ -674,179 +688,71 @@ export default function ManageRegistrationPage() {
       </div>
 
       {/* Table Container */}
-      <div className="w-full max-w-5xl rounded-xl overflow-x-auto border border-border/50 shadow-sm">
-        <div className="min-w-[800px]">
-          {/* Custom Header with Purple Background */}
-          <div className="bg-primary-600 text-background px-4 py-3 grid grid-cols-[50px_80px_1fr_150px_150px_200px] items-center text-sm font-medium">
-            <div className="flex justify-center">
-              <Checkbox
-                className="border-background data-[state=checked]:bg-background data-[state=checked]:text-primary-600"
-                checked={table.getIsAllPageRowsSelected()}
-                onCheckedChange={(value) =>
-                  table.toggleAllPageRowsSelected(!!value)
-                }
-              />
-            </div>
-            <div>S. No.</div>
-            <div className="flex items-center gap-2">
-              {data.length} Participated{" "}
-              <SlidersHorizontal className="w-4 h-4" />
-            </div>
-            <div className="flex items-center justify-end gap-2 text-right">
-              <Filter className="w-4 h-4" /> Reg. Status{" "}
-              <SlidersHorizontal className="w-4 h-4" />
-            </div>
-            <div className="text-center">Pass Status</div>
-            <div className="text-center">Actions</div>
-          </div>
-
-          {/* Table Body */}
-          <div className="bg-background">
-            {table.getRowModel().rows.length === 0 ? (
-              <div className="flex items-center justify-center py-12 text-muted-foreground">
-                No registrations found
-              </div>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <div
-                  key={row.id}
-                  className="grid grid-cols-[50px_80px_1fr_150px_150px_200px] items-center px-4 py-4 border-b border-border/40 hover:bg-muted/5 transition-colors"
-                >
-                  <div
-                    className="flex justify-center"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Checkbox
-                      checked={row.getIsSelected()}
-                      onCheckedChange={(value) => row.toggleSelected(!!value)}
-                      className="border-muted-foreground/30 data-[state=checked]:bg-primary-600 data-[state=checked]:text-background"
-                    />
-                  </div>
-                  <div className="text-muted-foreground text-sm font-medium pl-2">
-                    {row.index + 1}
-                  </div>
-                  <div className="flex items-center gap-4 cursor-pointer" onClick={() => router.push(`/dashboard/events/${slug}/manage-registration/${row.original.id}`)}>
-                    <Avatar className="w-10 h-10 border border-border/50">
-                      <AvatarImage
-                        src={ensureAbsoluteUrl(row.original.avatarUrl) || undefined}
-                        className="object-cover"
-                      />
-                      <AvatarFallback>
-                        {row.original.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-bold text-foreground">
-                        {row.original.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {row.original.email}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground/70">
-                        {row.original.university || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <StatusBadge status={row.original.status} />
-                  </div>
-                  <div className="flex justify-center">
-                    {(() => {
-                      const sent = row.original.passEmailSent;
-                      const approved = row.original.approved;
-
-                      if (sent) {
-                        return (
-                          <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
-                            ✓ Pass Sent
-                          </Badge>
-                        );
-                      } else if (approved) {
-                        return (
-                          <Badge variant="secondary">
-                            Approved (Sending...)
-                          </Badge>
-                        );
-                      } else {
-                        return (
-                          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">
-                            Pending Approval
-                          </Badge>
-                        );
-                      }
-                    })()}
-                  </div>
-                  <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    {!row.original.approved && (
-                      <Button
-                        size="sm"
-                        variant="default"
-                        onClick={() => handleApprove(row.original.id)}
-                        disabled={approvingId === row.original.id}
-                      >
-                        {approvingId === row.original.id ? (
-                          <>
-                            <Loader2 className="w-3 h-3 animate-spin mr-1" /> Approving...
-                          </>
-                        ) : (
-                          'Approve'
-                        )}
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => router.push(`/dashboard/events/${slug}/manage-registration/${row.original.id}`)}
+      <div className="w-full max-w-5xl bg-white rounded-xl shadow-sm border border-neutral-300 overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[1000px] w-full border border-neutral-300">
+            <TableHeader className="bg-primary-800">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className="text-neutral-100 font-normal text-sm whitespace-nowrap py-3 border-r border-white/30 last:border-r-0"
                     >
-                      View
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEmailRecipient(row.original)}>
-                          <MailIcon className="w-4 h-4 mr-2" />
-                          Send Email
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                      <div className={header.id === 'name' ? 'text-left' : 'text-center'}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                      </div>
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="border-b border-neutral-300 hover:bg-neutral-50 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/dashboard/events/${slug}/manage-registration/${row.original.id}`)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="py-4 px-4 border-r border-neutral-300 last:border-r-0"
+                      >
+                        <div className={cell.column.id === 'name' ? 'text-left' : 'text-center'}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </div>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
-      </div>
-
-      {/* Pagination Controls */}
-      <div className="w-full max-w-5xl flex items-center justify-between py-4">
-        <div className="text-sm text-muted-foreground">
-          Showing {table.getFilteredRowModel().rows.length} entries
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <span className="text-sm text-foreground">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount() || 1}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+        <div className="px-4">
+          <Pagination
+            curPage={page}
+            totalPages={totalPages}
+            setPerPage={(size) => {
+              setTake(Number(size));
+              setPage(1);
+            }}
+            perPage={take}
+            onPageChange={(p) => setPage(p)}
+          />
         </div>
       </div>
     </div>

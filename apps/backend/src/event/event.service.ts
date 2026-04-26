@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { prisma } from '@oppskills/db';
+import { Prisma, prisma } from '@oppskills/db';
 import type {
   CreateEventDto,
   UpdateEventDto,
@@ -585,75 +585,70 @@ export class EventService {
    * - Owner can see their events
    * - Managers can see events they manage
    */
-  async listMyEvents(userId: string) {
-    // Get events where user is owner
-    const ownedEvents = await prisma.eventEntity.findMany({
-      where: { ownerId: userId, isDeleted: false },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        status: true,
-        approvalStatus: true,
-        startDate: true,
-        endDate: true,
-        registrationCount: true,
-        maxUsers: true,
-        registrationDeadline: true,
-        isRegistrationPaused: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // Get events where user has a manager role
-    const managedRoles = await prisma.eventUserRoleEntity.findMany({
-      where: {
-        userId,
-        role: 'MANAGER',
-      },
-      select: {
-        event: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            status: true,
-            approvalStatus: true,
-            startDate: true,
-            endDate: true,
-            registrationCount: true,
-            maxUsers: true,
-            registrationDeadline: true,
-            isRegistrationPaused: true,
-          },
-        },
-      },
-    });
-
-    const ownedSet = new Set(ownedEvents.map((e) => e.id));
-
-    const result: Array<{
-      id: string;
-      name: string;
-      slug: string;
-      status: string;
-      approvalStatus: string | null;
-      startDate: Date;
-      endDate: Date;
-      registrationCount: number;
-      maxUsers: number | null;
-      registrationDeadline: Date | null;
-      isRegistrationPaused: boolean;
-      role: 'OWNER' | 'MANAGER';
-    }> = ownedEvents.map((e) => ({ ...e, role: 'OWNER' as const }));
-
-    for (const { event } of managedRoles) {
-      if (!ownedSet.has(event.id)) {
-        result.push({ ...event, role: 'MANAGER' as const });
-      }
+  async listMyEvents(userId: string, params: { page?: number; take?: number } = {}) {
+    const safeUserId = userId.trim();
+    if (safeUserId.length === 0) {
+      throw new BadRequestException('userId is required.');
     }
 
-    return result;
+    const requestedTake = Number(params.take) || 10;
+    const take = [10, 20, 30, 40].includes(requestedTake) ? requestedTake : 10;
+    const page = Math.max(1, Number(params.page) || 1);
+    const skip = (page - 1) * take;
+
+    const where: Prisma.EventEntityWhereInput = {
+      isDeleted: false,
+      OR: [
+        { ownerId: safeUserId },
+        {
+          userRoles: {
+            some: {
+              userId: safeUserId,
+              role: 'MANAGER',
+            },
+          },
+        },
+      ],
+    };
+
+    const [events, total] = await Promise.all([
+      prisma.eventEntity.findMany({
+        where,
+        skip,
+        take,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          status: true,
+          approvalStatus: true,
+          startDate: true,
+          endDate: true,
+          registrationCount: true,
+          maxUsers: true,
+          registrationDeadline: true,
+          isRegistrationPaused: true,
+          ownerId: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.eventEntity.count({ where }),
+    ]);
+
+    const items = events.map((event) => ({
+      ...event,
+      role: event.ownerId === safeUserId ? ('OWNER' as const) : ('MANAGER' as const),
+    }));
+
+    const totalPages = Math.ceil(total / take);
+
+    return {
+      items,
+      total,
+      page,
+      take,
+      totalPages,
+    };
   }
 
   /**
@@ -2337,7 +2332,12 @@ export class EventService {
    * List all registrations for an event by slug (owner/manager/admin only).
    * Returns participant data enriched with onboarding profile information.
    */
-  async listEventRegistrationsBySlug(slug: string, requesterUserId: string) {
+  async listEventRegistrationsBySlug(
+    slug: string,
+    requesterUserId: string,
+    page = 1,
+    take = 10,
+  ) {
     // Find event by slug
     const event = await prisma.eventEntity.findUnique({
       where: { slug, isDeleted: false },
@@ -2368,64 +2368,74 @@ export class EventService {
       );
     }
 
-    // Query all participants with onboarding data
-    const participants = await prisma.eventParticipantEntity.findMany({
-      where: { eventId: event.id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            imageUrl: true,
-            onboardingProfile: {
-              select: {
-                id: true,
-                userCategory: true,
-                gender: true,
-                schoolName: true,
-                schoolClass: true,
-                companyName: true,
-                jobTitle: true,
-                collegeCurrentYear: true,
-                locationCity: true,
-                locationState: true,
-                locationCountry: true,
-                college: {
-                  select: {
-                    id: true,
-                    name: true,
-                    city: true,
-                    state: true,
-                    country: true,
+    const skip = (Math.max(1, page) - 1) * take;
+
+    // Query participants with pagination
+    const [participants, total] = await Promise.all([
+      prisma.eventParticipantEntity.findMany({
+        where: { eventId: event.id },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              imageUrl: true,
+              onboardingProfile: {
+                select: {
+                  id: true,
+                  userCategory: true,
+                  gender: true,
+                  schoolName: true,
+                  schoolClass: true,
+                  companyName: true,
+                  jobTitle: true,
+                  collegeCurrentYear: true,
+                  locationCity: true,
+                  locationState: true,
+                  locationCountry: true,
+                  college: {
+                    select: {
+                      id: true,
+                      name: true,
+                      city: true,
+                      state: true,
+                      country: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        submission: {
-          select: {
-            id: true,
-            submittedAt: true,
-            answers: {
-              select: {
-                fieldId: true,
-                valueText: true,
-                valueJson: true,
+          submission: {
+            select: {
+              id: true,
+              submittedAt: true,
+              answers: {
+                select: {
+                  fieldId: true,
+                  valueText: true,
+                  valueJson: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: { joinedAt: 'desc' },
-    });
+        orderBy: { joinedAt: 'desc' },
+        skip,
+        take,
+      }),
+      prisma.eventParticipantEntity.count({
+        where: { eventId: event.id },
+      }),
+    ]);
 
+    const totalPages = Math.ceil(total / take);
     const formFields = event.registrationForm?.fields ?? [];
 
     // Map to dashboard-friendly format
-    return participants.map((p) => {
+    const items = participants.map((p) => {
       const user = p.user;
       const profile = user.onboardingProfile;
 
@@ -2502,6 +2512,14 @@ export class EventService {
         approvedAt: p.approvedAt?.toISOString(),
       };
     });
+
+    return {
+      items,
+      total,
+      page,
+      take,
+      totalPages,
+    };
   }
 
   /**
