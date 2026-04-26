@@ -2368,7 +2368,7 @@ export class EventService {
       );
     }
 
-    const skip = (page - 1) * take;
+    const skip = (Math.max(1, page) - 1) * take;
 
     // Query participants with pagination
     const [participants, total] = await Promise.all([
