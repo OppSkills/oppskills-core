@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, OrganizerSidebarDrawer, type OrganizerSidebarItem } from '../../../../shared/ui';
 import { OrganizerDashboardHome } from './OrganizerDashboardHome';
+import { OrganizerEventsPanel } from '../../../events/presentation/screens/OrganizerEventsPanel';
 import { SendNotificationsPanel } from './SendNotificationsPanel';
 import { TalentPipelinePanel } from './TalentPipelinePanel';
 import { styles } from './OrganizerDashboardScreen.styles';
@@ -180,12 +181,15 @@ interface OrganizerDashboardScreenProps {
 
 export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenProps) {
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey>('dashboard');
+  const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey | 'event' | 'hackathon' | 'festival' | 'home'>('dashboard');
 
-  const activeSection = organizerSections[activeSectionKey];
+  const activeSection = activeSectionKey in organizerSections
+    ? organizerSections[activeSectionKey as OrganizerSectionKey]
+    : undefined;
   const showingHome = activeSectionKey === 'dashboard';
   const showingNotifications = activeSectionKey === 'send-notifications';
   const showingTalentPipeline = activeSectionKey === 'talent-pipeline';
+  const showingEvents = activeSectionKey === 'event';
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
@@ -213,11 +217,13 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
 
       {showingHome ? (
         <OrganizerDashboardHome />
+      ) : showingEvents ? (
+        <OrganizerEventsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : showingNotifications ? (
         <SendNotificationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : showingTalentPipeline ? (
         <TalentPipelinePanel onOpenSidebar={() => setDrawerVisible(true)} />
-      ) : (
+      ) : activeSection ? (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.sectionCard}>
             <View style={styles.badge}>
@@ -269,7 +275,7 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
             ))}
           </View>
         </ScrollView>
-      )}
+      ) : null}
 
       <OrganizerSidebarDrawer
         activeItemKey={activeSectionKey}

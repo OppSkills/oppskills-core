@@ -169,7 +169,12 @@ export function OrganizerSidebarDrawer({
                     <Pressable
                       key={item.key}
                       onPress={() => {
-                        setChildVisible((prev) => !prev);
+                        if (isHome) {
+                          setChildVisible((prev) => !prev);
+                        } else {
+                          setChildVisible(false);
+                          onSelect(item.key);
+                        }
                       }}
                       style={[styles.menuItem, isActive ? styles.menuItemActive : null]}
                     >
