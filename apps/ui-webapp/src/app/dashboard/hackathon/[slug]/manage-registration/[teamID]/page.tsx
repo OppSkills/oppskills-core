@@ -168,7 +168,7 @@ export default function TeamManagementPage() {
   // Find submission for selected round
   const selectedRoundSubmission = useMemo(() => {
     if (!registrationsData || activeTab === "members") return null;
-    const team = registrationsData.teams.find((t) => t.teamId === teamId);
+    const team = registrationsData.teams.items.find((t) => t.teamId === teamId);
     if (!team) return null;
     return team.roundSubmissions[activeTab] || null;
   }, [registrationsData, activeTab, teamId]);
