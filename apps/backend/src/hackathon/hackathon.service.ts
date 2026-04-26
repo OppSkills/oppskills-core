@@ -2490,6 +2490,258 @@ export class HackathonService {
    * List all team registrations for a hackathon by slug (owner/manager/admin only).
    * Returns team data enriched with leader profile information and round submission statuses.
    */
+  async getHackathonRegistrationByTeamId(
+    slug: string,
+    teamId: string,
+    requesterUserId: string,
+  ) {
+    // Find hackathon by slug
+    const hackathon = await prisma.hackathonEntity.findFirst({
+      where: { slug, isDeleted: false },
+      select: { id: true, name: true, ownerId: true, participantType: true },
+    });
+    if (!hackathon) throw new NotFoundException('Hackathon not found');
+
+    // Check permission
+    const hasPermission = await this.hasViewRegistrationsPermission(
+      hackathon.ownerId,
+      requesterUserId,
+      hackathon.id,
+    );
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have permission to view registrations for this hackathon.',
+      );
+    }
+
+    // Get all rounds for this hackathon
+    const rounds = await prisma.roundEntity.findMany({
+      where: { hackathonId: hackathon.id },
+      orderBy: { order: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        order: true,
+        roundType: true,
+        startsAt: true,
+        endsAt: true,
+        status: true,
+      },
+    });
+
+    // Query specific team
+    const team = await prisma.teamEntity.findFirst({
+      where: { id: teamId, hackathonId: hackathon.id },
+      include: {
+        leader: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+            onboardingProfile: {
+              include: {
+                college: {
+                  select: {
+                    id: true,
+                    name: true,
+                    city: true,
+                    state: true,
+                    country: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        members: {
+          select: {
+            id: true,
+            joinedAt: true,
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                imageUrl: true,
+                onboardingProfile: {
+                  select: {
+                    collegeCurrentYear: true,
+                    skills: true,
+                    college: {
+                      select: {
+                        id: true,
+                        name: true,
+                        city: true,
+                        state: true,
+                        country: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        roundSubmissions: {
+          select: {
+            id: true,
+            roundId: true,
+            submittedAt: true,
+            payload: true,
+          },
+        },
+        roundQualifications: {
+          select: {
+            roundId: true,
+            qualified: true,
+            qualifiedAt: true,
+          },
+        },
+      },
+    });
+
+    if (!team) throw new NotFoundException('Team not found');
+
+    const registrationSubmissions =
+      await prisma.hackathonRegistrationSubmissionEntity.findMany({
+        where: {
+          hackathonId: hackathon.id,
+          teamId: team.id,
+        },
+        include: {
+          answers: {
+            include: {
+              field: { select: { type: true, label: true } },
+            },
+          },
+        },
+      });
+
+    const mobileFromRegistrationByUserId = new Map<string, string>();
+    for (const sub of registrationSubmissions) {
+      const mobile = this.extractMobileFromRegistrationAnswers(sub.answers);
+      mobileFromRegistrationByUserId.set(sub.userId, mobile);
+    }
+
+    const leader = team.leader;
+    const profile = leader.onboardingProfile;
+
+    // Derive university/institution from leader
+    let university = '';
+    if (profile) {
+      if (profile.college) {
+        university = profile.college.name;
+      } else if (profile.schoolName) {
+        university = profile.schoolName;
+      } else if (profile.companyName) {
+        university = profile.companyName;
+      }
+    }
+
+    // Derive location from leader
+    let location = '';
+    if (profile) {
+      const parts: string[] = [];
+      if (profile.locationCity) parts.push(profile.locationCity);
+      if (profile.locationState) parts.push(profile.locationState);
+      if (profile.locationCountry) parts.push(profile.locationCountry);
+      location = parts.join(', ');
+    }
+
+    // Build round submission status map
+    const roundSubmissions = team.roundSubmissions.reduce(
+      (acc, sub) => {
+        acc[sub.roundId] = {
+          submissionId: sub.id,
+          submittedAt: sub.submittedAt,
+          payload: sub.payload,
+        };
+        return acc;
+      },
+      {} as Record<
+        string,
+        { submissionId: string; submittedAt: Date | null; payload: unknown }
+      >,
+    );
+
+    // Build round qualification status map
+    const roundQualifications = team.roundQualifications.reduce(
+      (acc, qual) => {
+        acc[qual.roundId] = {
+          qualified: qual.qualified,
+          qualifiedAt: qual.qualifiedAt,
+        };
+        return acc;
+      },
+      {} as Record<
+        string,
+        { qualified: boolean; qualifiedAt: Date | null }
+      >,
+    );
+
+    // Calculate minSize based on hackathon participantType
+    const minSize = getMinSizeFromParticipantType(
+      hackathon.participantType,
+    );
+
+    const membersSorted = [...team.members].sort(
+      (a, b) => a.joinedAt.getTime() - b.joinedAt.getTime(),
+    );
+    const memberRows = membersSorted.map((m) => ({
+      email: m.user.email,
+      firstName: m.user.firstName,
+      lastName: m.user.lastName,
+      phone:
+        mobileFromRegistrationByUserId.get(m.user.id) ?? '',
+    }));
+
+    const teamItem = {
+      teamId: team.id,
+      teamName: team.name,
+      memberCount: team.members.length + 1, // +1 for leader
+      maxSize: team.maxSize,
+      minSize,
+      createdAt: team.createdAt,
+      isOpen: team.isOpen,
+      invitationCode: team.invitationCode ?? null,
+      members: memberRows,
+      leader: {
+        id: leader.id,
+        email: leader.email,
+        firstName: leader.firstName,
+        lastName: leader.lastName,
+        imageUrl: leader.imageUrl,
+        university,
+        location,
+        phone:
+          mobileFromRegistrationByUserId.get(leader.id) ?? '',
+      },
+      roundSubmissions,
+      roundQualifications,
+    };
+
+    return {
+      hackathonId: hackathon.id,
+      name: hackathon.name,
+      rounds: rounds.map((r) => ({
+        id: r.id,
+        name: r.name,
+        order: r.order,
+        roundType: r.roundType,
+        startsAt: r.startsAt,
+        endsAt: r.endsAt,
+        status: r.status,
+      })),
+      team: teamItem,
+    };
+  }
+
+   /**
+   * List all team registrations for a hackathon by slug (owner/manager/admin only).
+   */
   async listHackathonRegistrationsBySlug(
     slug: string,
     requesterUserId: string,

@@ -15,7 +15,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useTeams } from "@/hooks/useTeams";
-import { useHackathonRegistrationsBySlug } from "@/hooks/useHackathonRegistrations";
+import {
+  useHackathonRegistrationsBySlug,
+  useHackathonTeamRegistration,
+} from "@/hooks/useHackathonRegistrations";
 import type { TeamDetailResponse } from "@/lib/api/teamApi";
 import { getTeamRegistrationAnswers } from "@/lib/api/hackathonApi";
 import { useAuth } from "@clerk/nextjs";
@@ -46,6 +49,10 @@ export function TeamRegistrationDetailsSheet({
   } = teamById(teamId || "");
 
   const { data: registrationsData } = useHackathonRegistrationsBySlug(slug);
+  const { data: teamRegistrationData } = useHackathonTeamRegistration(
+    slug,
+    teamId,
+  );
   const [activeTab, setActiveTab] = useState<string>("");
 
 
@@ -194,11 +201,11 @@ export function TeamRegistrationDetailsSheet({
 
   // Find submission for selected round
   const selectedRoundSubmission = useMemo(() => {
-    if (!registrationsData || activeTab === "members" || !teamId) return null;
-    const team = registrationsData.teams.items.find((t) => t.teamId === teamId);
-    if (!team) return null;
+    if (!teamRegistrationData || activeTab === "members" || !teamId) return null;
+    const team = teamRegistrationData.team;
+    if (!team || team.teamId !== teamId) return null;
     return team.roundSubmissions[activeTab] || null;
-  }, [registrationsData, activeTab, teamId]);
+  }, [teamRegistrationData, activeTab, teamId]);
 
   const team = teamData as TeamDetailResponse | null;
   const teamInitials = team?.name?.slice(0, 2).toUpperCase() || "??";

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import {
   getHackathonRegistrationsBySlug,
+  getHackathonTeamRegistration,
   type HackathonRegistrationsBySlugResponse,
 } from "@/lib/api/hackathonApi";
 
@@ -46,6 +47,29 @@ export function useHackathonRegistrationsBySlug(
       }
       const token = requireToken(await getSafeToken(getToken));
       return getHackathonRegistrationsBySlug(token, safeSlug, params);
+    },
+  });
+}
+
+/**
+ * Fetches a specific team's registration for a hackathon by slug.
+ */
+export function useHackathonTeamRegistration(
+  slug: string | null | undefined,
+  teamId: string | null | undefined,
+) {
+  const { getToken } = useAuth();
+  const safeSlug = normalizeSlug(slug);
+
+  return useQuery({
+    queryKey: ["hackathon-team-registration", safeSlug, teamId],
+    enabled: safeSlug !== null && !!teamId,
+    queryFn: async () => {
+      if (safeSlug === null || !teamId) {
+        throw new Error("Hackathon slug and team ID are required.");
+      }
+      const token = requireToken(await getSafeToken(getToken));
+      return getHackathonTeamRegistration(token, safeSlug, teamId);
     },
   });
 }
