@@ -51,25 +51,6 @@ export default function Page() {
   const stages = useMemo(() => {
     if (!data) return [];
 
-    // helper that returns filtered teams for a stage (same logic used later for participants)
-    const getFilteredForRound = (roundId: string | null) => {
-      if (!roundId) return data.teams.items;
-
-      const selectedRound = data.rounds.find((r) => r.id === roundId);
-      if (!selectedRound) return [];
-
-      if (selectedRound.order === 0) {
-        return data.teams.items.filter((team) => {
-          const submission = team.roundSubmissions[roundId];
-          return !!submission?.submittedAt;
-        });
-      }
-
-      return data.teams.items.filter((team) => {
-        return team.roundQualifications?.[roundId]?.qualified === true;
-      });
-    };
-
     const stagesList: Array<{ name: string; description: string; displayName?: string }> = [
       { name: "All registrations", description: "All registered teams" },
     ];
@@ -83,7 +64,7 @@ export default function Page() {
       });
     }
 
-  return stagesList;
+    return stagesList;
   }, [data]);
 
   // Map teams to Participant format for the selected stage
@@ -205,47 +186,47 @@ export default function Page() {
       fallback={<TableBlockFallback className="min-h-screen bg-background p-8" />}
     >
       {!isLoading && (!data || data.teams.total === 0) ? (
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-7xl p-4 sm:p-6 md:p-8 flex flex-col gap-6">
-          <Stages
-            stages={stages}
-            selectedStage={currentStage}
-            onSelectStage={setCurrentStage}
-          />
-          <div className="h-px my-4 w-full bg-foreground/10" />
-          <div className="flex flex-col items-center justify-center py-20">
-            <p className="text-muted-foreground text-lg font-medium">
-              No team registrations yet
-            </p>
-            <p className="text-muted-foreground text-sm mt-1">
-              Teams will appear here once participants register
-            </p>
+        <div className="w-full flex justify-center">
+          <div className="w-full max-w-7xl p-4 sm:p-6 md:p-8 flex flex-col gap-6">
+            <Stages
+              stages={stages}
+              selectedStage={currentStage}
+              onSelectStage={setCurrentStage}
+            />
+            <div className="h-px my-4 w-full bg-foreground/10" />
+            <div className="flex flex-col items-center justify-center py-20">
+              <p className="text-muted-foreground text-lg font-medium">
+                No team registrations yet
+              </p>
+              <p className="text-muted-foreground text-sm mt-1">
+                Teams will appear here once participants register
+              </p>
+            </div>
           </div>
         </div>
-      </div>
       ) : !isLoading && data ? (
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-7xl p-4 sm:p-6 md:p-8 flex flex-col gap-6">
-          <Stages
-            stages={stages}
-            selectedStage={currentStage}
-            onSelectStage={setCurrentStage}
-          />
-          <div className="h-px my-4 w-full bg-foreground/10" />
-          <Participants
-            data={participants}
-            selectedRoundId={selectedRoundId}
-            nextRoundId={nextRoundId}
-            hackathonId={data.hackathonId}
-            hackathonName={data.name}
-            page={page}
-            totalPages={data.teams.totalPages}
-            take={take}
-            onPageChange={setPage}
-            onTakeChange={setTake}
-          />
+        <div className="w-full flex justify-center">
+          <div className="w-full max-w-7xl p-4 sm:p-6 md:p-8 flex flex-col gap-6">
+            <Stages
+              stages={stages}
+              selectedStage={currentStage}
+              onSelectStage={setCurrentStage}
+            />
+            <div className="h-px my-4 w-full bg-foreground/10" />
+            <Participants
+              data={participants}
+              selectedRoundId={selectedRoundId}
+              nextRoundId={nextRoundId}
+              hackathonId={data.hackathonId}
+              hackathonName={data.name}
+              page={page}
+              totalPages={data.teams.totalPages}
+              take={take}
+              onPageChange={setPage}
+              onTakeChange={setTake}
+            />
+          </div>
         </div>
-      </div>
       ) : null}
     </BoneyardSkeleton>
   );
