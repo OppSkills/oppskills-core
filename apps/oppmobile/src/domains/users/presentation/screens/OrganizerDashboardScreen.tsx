@@ -179,7 +179,7 @@ interface OrganizerDashboardScreenProps {
 }
 
 export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenProps) {
-  const [drawerVisible, setDrawerVisible] = useState(true);
+  const [drawerVisible, setDrawerVisible] = useState(false);
   const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey>('dashboard');
 
   const activeSection = organizerSections[activeSectionKey];
