@@ -53,19 +53,19 @@ export default function Page() {
 
     // helper that returns filtered teams for a stage (same logic used later for participants)
     const getFilteredForRound = (roundId: string | null) => {
-      if (!roundId) return data.teams;
+      if (!roundId) return data.teams.items;
 
       const selectedRound = data.rounds.find((r) => r.id === roundId);
       if (!selectedRound) return [];
 
       if (selectedRound.order === 0) {
-        return data.teams.filter((team) => {
+        return data.teams.items.filter((team) => {
           const submission = team.roundSubmissions[roundId];
           return !!submission?.submittedAt;
         });
       }
 
-      return data.teams.filter((team) => {
+      return data.teams.items.filter((team) => {
         return team.roundQualifications?.[roundId]?.qualified === true;
       });
     };
