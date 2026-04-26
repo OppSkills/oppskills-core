@@ -41,7 +41,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { FloatingInput } from "@/components/ui/derived/FloatingInput";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -92,6 +92,7 @@ interface ParticipantsProps {
   take: number;
   onPageChange: (page: number) => void;
   onTakeChange: (take: number) => void;
+  onSelectTeam: (teamId: string) => void;
 }
 
 export default function Participants({
@@ -105,10 +106,10 @@ export default function Participants({
   take,
   onPageChange,
   onTakeChange,
+  onSelectTeam,
 }: ParticipantsProps) {
   const params = useParams();
   const slug = params.slug as string;
-  const router = useRouter();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
@@ -260,9 +261,7 @@ export default function Participants({
                   <span
                     className="font-semibold hover:text-primary-500 cursor-pointer wrap-break-words"
                     onClick={() => {
-                      router.push(
-                        `/dashboard/hackathon/${slug}/manage-registration/${row.original.id}`,
-                      );
+                      onSelectTeam(row.original.id);
                     }}
                   >
                     {teamName}
@@ -405,7 +404,7 @@ export default function Participants({
       data.length,
       isPending,
       nextRoundId,
-      router,
+      onSelectTeam,
       selectedRoundId,
       slug,
     ],
@@ -524,9 +523,7 @@ export default function Participants({
                     key={row.id}
                     className="border-b border-neutral-300 hover:bg-neutral-50 transition-colors cursor-pointer"
                     onClick={() => {
-                      router.push(
-                        `/dashboard/hackathon/${slug}/manage-registration/${row.original.id}`,
-                      );
+                      onSelectTeam(row.original.id);
                     }}
                   >
                     {row.getVisibleCells().map((cell) => (
