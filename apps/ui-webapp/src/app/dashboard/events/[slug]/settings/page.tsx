@@ -53,6 +53,8 @@ import Link from "next/link";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
 
+import { Container } from "../edit-event/_components/Container";
+
 // Type for event data with approval fields
 interface EventData {
   id: string;
@@ -267,378 +269,359 @@ export default function EventSettingsPage({
       className="flex min-h-screen w-full justify-center"
       fallback={<ProfileLikeFallback className="max-w-4xl py-8" />}
     >
-    <div className="flex justify-center w-full min-h-screen">
-      <div className="w-full max-w-4xl bg-background p-4 sm:p-6 flex flex-col gap-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.back()}
-            className="shrink-0"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="font-semibold text-2xl md:text-3xl">{event.name}</h1>
-            <p className="text-sm text-muted-foreground">Event Settings</p>
-          </div>
-        </div>
-
-        {/* Status Overview */}
-        <Card className="py-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Status Overview</CardTitle>
-            <CardDescription>
-              Current lifecycle and approval status of your event
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  Lifecycle:
-                </span>
-                {getStatusBadge(event.status)}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Approval:</span>
-                {getApprovalBadge(event.approvalStatus)}
-              </div>
+      <div className="flex justify-center w-full min-h-screen">
+        <div className="w-full max-w-4xl bg-background p-4 sm:p-6 flex flex-col gap-8">
+          {/* Header */}
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
+              className="shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="font-black text-2xl md:text-3xl poppins">{event.name}</h1>
+              <p className="text-sm text-muted-foreground inter">Event Settings</p>
             </div>
+          </div>
 
-            {event.approvalNote && event.approvalStatus === "REJECTED" && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm font-medium text-red-800">
-                  Rejection Note:
-                </p>
-                <p className="text-sm text-red-700 mt-1">
-                  {event.approvalNote}
-                </p>
+          <div className="flex flex-col gap-6">
+            {/* Status Overview */}
+            <Container
+              heading="Status Overview"
+              description="Current lifecycle and approval status of your event"
+            >
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-neutral-500 font-medium">
+                      Lifecycle:
+                    </span>
+                    {getStatusBadge(event.status)}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-neutral-500 font-medium">Approval:</span>
+                    {getApprovalBadge(event.approvalStatus)}
+                  </div>
+                </div>
+
+                {event.approvalNote && event.approvalStatus === "REJECTED" && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-sm font-bold text-red-800">
+                      Rejection Note:
+                    </p>
+                    <p className="text-sm text-red-700 mt-1 inter">
+                      {event.approvalNote}
+                    </p>
+                  </div>
+                )}
+
+                {isLive && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-xl">
+                    <p className="text-sm text-green-800 flex items-center gap-2 inter font-medium">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Your event is live and visible to the public!
+                    </p>
+                  </div>
+                )}
+
+                {isPendingApproval && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+                    <p className="text-sm text-yellow-800 flex items-center gap-2 inter font-medium">
+                      <Clock className="w-4 h-4" />
+                      Published — awaiting admin approval. Registrations stay closed
+                      until an admin approves.
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
+            </Container>
 
-            {isLive && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-sm text-green-800 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Your event is live and visible to the public!
-                </p>
+            {/* Publishing */}
+            <Container
+              heading="Publishing & Approval"
+              description="Control visibility and re-submit for review if rejected."
+            >
+              <div className="space-y-4">
+                {canPublish && (
+                  <Button
+                    onClick={() => publishMutation.mutate()}
+                    disabled={publishMutation.isPending}
+                    className="w-full sm:w-auto rounded-full font-bold bg-primary-500 hover:bg-primary-600"
+                  >
+                    <Rocket className="w-4 h-4 mr-2" />
+                    {publishMutation.isPending
+                      ? "Publishing..."
+                      : event.approvalStatus === "REJECTED"
+                        ? "Publish again"
+                        : "Publish event"}
+                  </Button>
+                )}
+
+                {isPendingApproval && (
+                  <p className="text-sm text-neutral-500 inter">
+                    Published — waiting for an admin to approve. Registrations open
+                    after approval.
+                  </p>
+                )}
+
+                {isLive && (
+                  <p className="text-sm text-neutral-500 inter">
+                    Your event is live and accepting registrations.
+                  </p>
+                )}
               </div>
-            )}
+            </Container>
 
-            {isPendingApproval && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                <p className="text-sm text-yellow-800 flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Published — awaiting admin approval. Registrations stay closed
-                  until an admin approves. You will be notified when reviewed.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Publishing */}
-        <Card className="py-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Publishing & Approval</CardTitle>
-            <CardDescription>
-              Publish controls visibility (Draft vs Published). Admin approval
-              is separate and only needed once; moving back to draft does not
-              undo approval. After rejection, use Publish again to re-submit for
-              review.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {canPublish && (
-              <Button
-                onClick={() => publishMutation.mutate()}
-                disabled={publishMutation.isPending}
-                className="w-full sm:w-auto"
+            {/* Registration Control */}
+            {(event.status === "PUBLISHED" || event.status === "ONGOING") && (
+              <Container
+                heading="Registration Control"
+                description="Pause registrations while keeping the event publicly visible"
               >
-                <Rocket className="w-4 h-4 mr-2" />
-                {publishMutation.isPending
-                  ? "Publishing..."
-                  : event.approvalStatus === "REJECTED"
-                    ? "Publish again"
-                    : "Publish event"}
-              </Button>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between bg-primary-50/20 p-4 rounded-xl border border-primary-100">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="pause-registrations" className="text-base font-bold poppins">
+                        Pause Registrations
+                      </Label>
+                      <p className="text-sm text-neutral-500 inter">
+                        {event.isRegistrationPaused
+                          ? "Registrations are currently paused"
+                          : "Registrations are open"}
+                      </p>
+                    </div>
+                    <Switch
+                      id="pause-registrations"
+                      checked={event.isRegistrationPaused ?? false}
+                      onCheckedChange={(checked) =>
+                        toggleRegistrationPauseMutation.mutate(checked)
+                      }
+                      disabled={toggleRegistrationPauseMutation.isPending}
+                    />
+                  </div>
+
+                  {event.isRegistrationPaused && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-2">
+                      <Pause className="w-4 h-4 text-yellow-700" />
+                      <p className="text-sm text-yellow-800 inter font-medium">
+                        New registrations are blocked. Toggle off to resume.
+                      </p>
+                    </div>
+                  )}
+
+                  {!event.isRegistrationPaused && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+                      <Play className="w-4 h-4 text-green-700" />
+                      <p className="text-sm text-green-800 inter font-medium">
+                        Registrations are open and accepting participants.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Container>
             )}
 
-            {isPendingApproval && (
-              <p className="text-sm text-muted-foreground">
-                Published — waiting for an admin to approve. Registrations open
-                after approval.
-              </p>
-            )}
+            {/* Status Actions */}
+            {!isTerminal && (
+              <Container
+                heading="Event Actions"
+                description="Change the lifecycle status of your event"
+              >
+                <div className="flex flex-wrap gap-3 pt-2">
+                  {(event.status === "PUBLISHED" || event.status === "ONGOING") && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="rounded-full font-bold border-primary-100 text-primary-600 hover:bg-primary-50"
+                        >
+                          <Undo2 className="w-4 h-4 mr-2" />
+                          Move to Draft
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-2xl border-primary-100">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="poppins font-black text-2xl">Move to Draft?</AlertDialogTitle>
+                          <AlertDialogDescription className="inter">
+                            This will unpublish your event and move it back to draft
+                            status. The event will no longer be visible to the public.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="rounded-full">Keep Published</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => updateStatusMutation.mutate("DRAFT")}
+                            className="rounded-full bg-primary-500 hover:bg-primary-600"
+                          >
+                            Move to Draft
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
 
-            {isLive && (
-              <p className="text-sm text-muted-foreground">
-                Your event is live and accepting registrations.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+                  {event.status === "PUBLISHED" &&
+                    event.approvalStatus === "APPROVED" && (
+                      <Button
+                        variant="outline"
+                        onClick={() => updateStatusMutation.mutate("ONGOING")}
+                        disabled={updateStatusMutation.isPending}
+                        className="rounded-full font-bold bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Start Event (Go Live)
+                      </Button>
+                    )}
 
-        {/* Registration Control */}
-        {(event.status === "PUBLISHED" || event.status === "ONGOING") && (
-          <Card className="py-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Registration Control</CardTitle>
-              <CardDescription>
-                Pause registrations while keeping the event publicly visible
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="pause-registrations" className="text-base">
-                    Pause Registrations
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    {event.isRegistrationPaused
-                      ? "Registrations are currently paused"
-                      : "Registrations are open"}
-                  </p>
-                </div>
-                <Switch
-                  id="pause-registrations"
-                  checked={event.isRegistrationPaused ?? false}
-                  onCheckedChange={(checked) =>
-                    toggleRegistrationPauseMutation.mutate(checked)
-                  }
-                  disabled={toggleRegistrationPauseMutation.isPending}
-                />
-              </div>
-
-              {event.isRegistrationPaused && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-center gap-2">
-                  <Pause className="w-4 h-4 text-yellow-700" />
-                  <p className="text-sm text-yellow-800">
-                    New registrations are blocked. Toggle off to resume.
-                  </p>
-                </div>
-              )}
-
-              {!event.isRegistrationPaused && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-md flex items-center gap-2">
-                  <Play className="w-4 h-4 text-green-700" />
-                  <p className="text-sm text-green-800">
-                    Registrations are open and accepting participants.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Status Actions */}
-        {!isTerminal && (
-          <Card className="py-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Event Actions</CardTitle>
-              <CardDescription>
-                Change the lifecycle status of your event
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-3">
-              {(event.status === "PUBLISHED" || event.status === "ONGOING") && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
+                  {event.status === "ONGOING" && (
                     <Button
                       variant="outline"
-                      className="text-gray-600 border-gray-200 hover:bg-gray-50"
+                      onClick={() => updateStatusMutation.mutate("COMPLETED")}
+                      disabled={updateStatusMutation.isPending}
+                      className="rounded-full font-bold border-primary-100 text-primary-700 hover:bg-primary-50"
                     >
-                      <Undo2 className="w-4 h-4 mr-2" />
-                      Move to Draft
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Mark as Completed
+                    </Button>
+                  )}
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="rounded-full font-bold text-amber-600 border-amber-200 hover:bg-amber-50"
+                      >
+                        <Ban className="w-4 h-4 mr-2" />
+                        Cancel Event
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-2xl border-amber-100">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="poppins font-black text-2xl">Cancel Event?</AlertDialogTitle>
+                        <AlertDialogDescription className="inter">
+                          This will mark the event as cancelled. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-full">Keep Event</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => updateStatusMutation.mutate("CANCELLED")}
+                          className="rounded-full bg-amber-600 hover:bg-amber-700"
+                        >
+                          Cancel Event
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </Container>
+            )}
+
+            {/* Danger Zone */}
+            <Container
+              heading="Danger Zone"
+              description="Irreversible actions. Please be extremely careful."
+              className="border-red-100"
+            >
+              <div className="space-y-4 pt-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="rounded-full font-bold px-8">
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Event
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent>
+                  <AlertDialogContent className="rounded-2xl border-red-100">
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Move to Draft?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will unpublish your event and move it back to draft
-                        status. The event will no longer be visible to the
-                        public. Admin approval (if you already have it) is kept,
-                        so you will not need a new review when you publish
-                        again.
+                      <AlertDialogTitle className="poppins font-black text-2xl text-red-600">Delete Event?</AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-4 inter">
+                        <p>
+                          This action is permanent and cannot be undone. All
+                          data will be permanently deleted.
+                        </p>
+                        <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                          <Label htmlFor="confirm-delete" className="text-sm font-bold text-red-800 mb-2 block">
+                            Type <strong>{event.name}</strong> to confirm:
+                          </Label>
+                          <Input
+                            id="confirm-delete"
+                            value={deleteConfirmation}
+                            onChange={(e) => setDeleteConfirmation(e.target.value)}
+                            placeholder={event.name}
+                            className="mt-2 bg-white rounded-xl border-red-200 focus:ring-red-500"
+                          />
+                        </div>
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Keep Published</AlertDialogCancel>
+                      <AlertDialogCancel onClick={() => setDeleteConfirmation("")} className="rounded-full">
+                        Cancel
+                      </AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => updateStatusMutation.mutate("DRAFT")}
+                        onClick={handleDelete}
+                        disabled={
+                          deleteConfirmation !== event.name ||
+                          isDeleting ||
+                          deleteEventMutation.isPending
+                        }
+                        className="rounded-full bg-red-600 hover:bg-red-700 font-bold px-8"
                       >
-                        Move to Draft
+                        {deleteEventMutation.isPending
+                          ? "Deleting..."
+                          : "Delete Permanently"}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              )}
 
-              {event.status === "PUBLISHED" &&
-                event.approvalStatus === "APPROVED" && (
-                  <Button
-                    variant="outline"
-                    onClick={() => updateStatusMutation.mutate("ONGOING")}
-                    disabled={updateStatusMutation.isPending}
-                    className="bg-green-50 hover:bg-green-100 border-green-200"
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Start Event (Go Live)
-                  </Button>
-                )}
+                <p className="text-xs text-neutral-400 inter">
+                  Deleting this event will permanently remove all associated records and data.
+                </p>
+              </div>
+            </Container>
 
-              {event.status === "ONGOING" && (
-                <Button
-                  variant="outline"
-                  onClick={() => updateStatusMutation.mutate("COMPLETED")}
-                  disabled={updateStatusMutation.isPending}
+            {/* Quick Links */}
+            <Container
+              heading="Quick Links"
+              description="Useful links for managing your event"
+            >
+              <div className="flex flex-wrap gap-4 pt-2">
+                <Link
+                  href={`/dashboard/events/${slug}/edit-event`}
+                  className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-bold inter text-sm"
                 >
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Mark as Completed
-                </Button>
-              )}
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="text-amber-600 border-amber-200 hover:bg-amber-50"
-                  >
-                    <Ban className="w-4 h-4 mr-2" />
-                    Cancel Event
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Cancel Event?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will mark the event as cancelled. Participants will
-                      be notified. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Keep Event</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => updateStatusMutation.mutate("CANCELLED")}
-                      className="bg-amber-600 hover:bg-amber-700"
-                    >
-                      Cancel Event
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Danger Zone */}
-        <Card className="border-red-200 py-6">
-          <CardHeader>
-            <CardTitle className="text-lg text-red-600">Danger Zone</CardTitle>
-            <CardDescription>
-              Irreversible actions. Please be careful.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Event
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Event?</AlertDialogTitle>
-                  <AlertDialogDescription className="space-y-4">
-                    <p>
-                      This action is permanent and cannot be undone. All event
-                      data, registrations, and associated content will be
-                      permanently deleted.
-                    </p>
-                    <div>
-                      <Label htmlFor="confirm-delete" className="text-sm mb-2">
-                        Type <strong>{event.name}</strong> to confirm:
-                      </Label>
-                      <Input
-                        id="confirm-delete"
-                        value={deleteConfirmation}
-                        onChange={(e) => setDeleteConfirmation(e.target.value)}
-                        placeholder={event.name}
-                        className="mt-2"
-                      />
-                    </div>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setDeleteConfirmation("")}>
-                    Cancel
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    disabled={
-                      deleteConfirmation !== event.name ||
-                      isDeleting ||
-                      deleteEventMutation.isPending
-                    }
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    {deleteEventMutation.isPending
-                      ? "Deleting..."
-                      : "Delete Permanently"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
-            <p className="text-xs text-muted-foreground">
-              This will permanently delete &quot;{event.name}&quot; and all
-              associated data.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Quick Links */}
-        <Card className="py-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Links</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-3">
-            <Link
-              href={`/dashboard/events/${slug}/edit-event`}
-              className="text-primary-500 hover:underline text-sm"
-            >
-              Edit Event Details
-            </Link>
-            <span className="text-muted-foreground">•</span>
-            <Link
-              href={`/dashboard/events/${slug}/manage-roles`}
-              className="text-primary-500 hover:underline text-sm"
-            >
-              Manage Team
-            </Link>
-            <span className="text-muted-foreground">•</span>
-            <Link
-              href={`/dashboard/events/${slug}/manage-registration`}
-              className="text-primary-500 hover:underline text-sm"
-            >
-              View Registrations
-            </Link>
-            <span className="text-muted-foreground">•</span>
-            <Link
-              href={`/events/${slug}`}
-              className="text-primary-500 hover:underline text-sm"
-              target="_blank"
-            >
-              View Public Page
-            </Link>
-          </CardContent>
-        </Card>
+                  Edit Details
+                </Link>
+                <div className="w-1 h-1 bg-neutral-300 rounded-full my-auto" />
+                <Link
+                  href={`/dashboard/events/${slug}/manage-roles`}
+                  className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-bold inter text-sm"
+                >
+                  Manage Team
+                </Link>
+                <div className="w-1 h-1 bg-neutral-300 rounded-full my-auto" />
+                <Link
+                  href={`/dashboard/events/${slug}/manage-registration`}
+                  className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-bold inter text-sm"
+                >
+                  View Registrations
+                </Link>
+                <div className="w-1 h-1 bg-neutral-300 rounded-full my-auto" />
+                <Link
+                  href={`/events/${slug}`}
+                  className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-bold inter text-sm"
+                  target="_blank"
+                >
+                  View Public Page
+                </Link>
+              </div>
+            </Container>
+          </div>
+        </div>
       </div>
-    </div>
     </BoneyardSkeleton>
   );
 }

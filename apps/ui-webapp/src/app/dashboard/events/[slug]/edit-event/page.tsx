@@ -63,6 +63,7 @@ import {
 import { EventPreview } from "./_components/EventPreview";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
+import { CheckCircle, ClockCircle, Cup, DocumentText, MapPoint, Pen, UserCircle } from "@solar-icons/react";
 
 // Types
 export interface RegistrationSettingsData {
@@ -326,7 +327,7 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
       .map((p) => ({
         id: getString(p, "id") ?? crypto.randomUUID(),
         name: getString(p, "position") ?? "Winner",
-        amount: getString(p, "amount") ?? "₹ 0",
+        amount: getString(p, "amount") ?? "0",
         description: getString(p, "description") ?? "",
       }))
     : [];
@@ -478,31 +479,31 @@ export default function EditEventPage() {
     {
       id: "preview",
       label: "Preview",
-      icon: <CheckCircle2 className="w-4 h-4" />,
+      icon: <CheckCircle className="w-4 h-4" />,
       draftOnly: false,
     },
     {
       id: "basic-details",
       label: "Basic Details",
-      icon: <FileEdit className="w-4 h-4" />,
+      icon: <Pen className="w-4 h-4" />,
       draftOnly: false,
     },
     {
       id: "registration-settings",
       label: "Registration Settings",
-      icon: <Users className="w-4 h-4" />,
+      icon: <UserCircle className="w-4 h-4" />,
       draftOnly: false,
     },
     {
       id: "prizes",
       label: "Prizes",
-      icon: <Trophy className="w-4 h-4" />,
+      icon: <Cup className="w-4 h-4" />,
       draftOnly: false,
     },
     {
       id: "additional-info",
       label: "Additional Info",
-      icon: <FileText className="w-4 h-4" />,
+      icon: <DocumentText className="w-4 h-4" />,
       draftOnly: false,
     },
     {
@@ -652,9 +653,9 @@ export default function EditEventPage() {
             formData.registrationSettings.endDate ?? formData.eventRegisterBy;
           return deadlineDate
             ? combineDateAndTimeToIso(
-                deadlineDate,
-                formData.registrationSettings.endTime,
-              )
+              deadlineDate,
+              formData.registrationSettings.endTime,
+            )
             : undefined;
         })(),
         startDate: (() => {
@@ -756,7 +757,7 @@ export default function EditEventPage() {
         await updateEventPrizeBreakdown(token, eventId, {
           prizeBreakdown: formData.prizes.list.map((p) => ({
             position: p.name,
-            amount: p.amount,
+            amount: p.amount.replace(/[^0-9.]/g, "") || "0",
             description: p.description,
           })),
         });
@@ -1045,10 +1046,10 @@ export default function EditEventPage() {
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "flex shrink-0 items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all whitespace-nowrap",
+                    "flex shrink-0 items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all whitespace-nowrap",
                     activeTab === tab.id
-                      ? "bg-secondary text-secondary-foreground border-primary"
-                      : "bg-background border-border text-muted-foreground hover:bg-muted",
+                      ? "bg-primary-100 text-primary-600 border-primary-500"
+                      : "border-neutral-500 text-neutral-800 hover:bg-neutral-100 cursor-pointer",
                   )}
                 >
                   {tab.icon}
@@ -1161,7 +1162,7 @@ export default function EditEventPage() {
                 </Popover>
 
                 <InputBlock
-                  icon={<Clock className="w-6 h-6" />}
+                  icon={<ClockCircle className="w-6 h-6" />}
                   label={
                     <input
                       type="time"
@@ -1189,16 +1190,7 @@ export default function EditEventPage() {
                 <DialogTrigger asChild>
                   <div className="h-full">
                     <InputBlock
-                      icon={<Trophy className="w-6 h-6" />} // Using MapPin ideally but Trophy was in import. Wait, I should use MapPin.
-                      // Checking imports: I didn't import MapPin in the previous step, I imported CalendarIcon etc.
-                      // I need to make sure MapPin is imported.
-                      // Let me check imports again.
-                      // I will use FileEdit as a fallback or assume MapPin if I add it.
-                      // I'll stick to what I have or standard icons.
-                      // Actually, I should use standard icons.
-                      // checking imports... I added CalendarIcon, Clock, AlignLeft.
-                      // I missed MapPin. I will use Trophy for now as placeholder to avoid error, or just text.
-                      // Actually, better to just use FileEdit which is safe.
+                      icon={<MapPoint className="w-6 h-6" />}
                       label={formData.eventLocation || "Add Event Location"}
                       subLabel="Offline location or virtual link"
                     />
@@ -1238,7 +1230,7 @@ export default function EditEventPage() {
                 <DialogTrigger asChild>
                   <div className="h-full">
                     <InputBlock
-                      icon={<AlignLeft className="w-6 h-6" />}
+                      icon={<DocumentText className="w-6 h-6" />}
                       label={
                         formData.eventDescription &&
                           formData.eventDescription.replace(/<[^>]*>?/gm, "")

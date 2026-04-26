@@ -21,6 +21,7 @@ import { AlertTriangle } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { searchColleges, getCollegesByIds } from "@/lib/api/collegesApi";
+import { Container } from "./Container";
 
 interface PassSettingsProps {
   formData: FormData;
@@ -160,18 +161,14 @@ export default function PassSettings({
   ].includes(formData.passSettings.collegeMatchMode);
 
   return (
-    <div className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-5 duration-500">
-      <div>
-        <h2 className="text-2xl font-bold">Event Pass Settings</h2>
-        <p className="text-muted-foreground text-sm mt-1">
-          Configure how event passes are sent to participants
-        </p>
-      </div>
-
-      <div className="w-full border rounded-2xl p-6 bg-card shadow-sm">
+    <Container
+      heading="Event Pass Settings"
+      description="Configure how event passes are sent to participants and restrict registrations by college or email domain."
+    >
+      <div className="space-y-6 py-2">
         {/* Pass Sending Mode */}
-        <div className="space-y-4 mb-6">
-          <Label className="text-base font-semibold">Pass Sending Mode</Label>
+        <div className="space-y-4">
+          <Label className="text-base font-bold poppins text-neutral-800">Pass Sending Mode</Label>
           <RadioGroup
             value={formData.passSettings.passSendingMode}
             onValueChange={(value) =>
@@ -179,27 +176,38 @@ export default function PassSettings({
                 passSendingMode: value as "IMMEDIATE" | "APPROVAL",
               })
             }
+            className="flex flex-col gap-3"
           >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="IMMEDIATE" id="immediate" />
-              <Label htmlFor="immediate" className="font-normal cursor-pointer">
+            <div className={cn(
+              "flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
+              formData.passSettings.passSendingMode === "IMMEDIATE"
+                ? "bg-primary-50/30 border-primary-200"
+                : "border-transparent hover:bg-neutral-50"
+            )}>
+              <RadioGroupItem value="IMMEDIATE" id="immediate" className="border-primary-500 text-primary-600" />
+              <Label htmlFor="immediate" className="font-medium text-neutral-700 cursor-pointer inter">
                 Send pass immediately after registration
               </Label>
             </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="APPROVAL" id="approval" />
-              <Label htmlFor="approval" className="font-normal cursor-pointer">
+            <div className={cn(
+              "flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
+              formData.passSettings.passSendingMode === "APPROVAL"
+                ? "bg-primary-50/30 border-primary-200"
+                : "border-transparent hover:bg-neutral-50"
+            )}>
+              <RadioGroupItem value="APPROVAL" id="approval" className="border-primary-500 text-primary-600" />
+              <Label htmlFor="approval" className="font-medium text-neutral-700 cursor-pointer inter">
                 Send pass after organizer approval
               </Label>
             </div>
           </RadioGroup>
         </div>
 
-        <Separator className="my-6" />
+        <Separator className="bg-primary-50" />
 
         {/* College Restrictions */}
         <div className="space-y-4">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3 p-3 bg-neutral-50 rounded-xl border border-neutral-100">
             <Checkbox
               id="collegeRestrictions"
               checked={formData.passSettings.collegeRestrictionEnabled}
@@ -208,17 +216,18 @@ export default function PassSettings({
                   collegeRestrictionEnabled: !!checked,
                 })
               }
+              className="border-neutral-400 data-[state=checked]:bg-primary-600 data-[state=checked]:border-primary-600"
             />
             <Label
               htmlFor="collegeRestrictions"
-              className="font-normal cursor-pointer"
+              className="font-bold text-neutral-800 cursor-pointer inter"
             >
               Restrict registration to specific colleges
             </Label>
           </div>
 
           {formData.passSettings.collegeRestrictionEnabled && (
-            <>
+            <div className="space-y-6 pl-4 border-l-2 border-primary-100 mt-4 animate-in slide-in-from-left-2 duration-300">
               {(() => {
                 const {
                   allowedCollegeIds,
@@ -264,9 +273,9 @@ export default function PassSettings({
 
                 if (isMissingCriteria) {
                   return (
-                    <div className="flex items-center gap-2 p-3 text-sm rounded-lg bg-destructive/10 text-destructive border border-destructive/20 animate-in fade-in zoom-in duration-300">
+                    <div className="flex items-center gap-2 p-3 text-sm rounded-lg bg-amber-50 text-amber-700 border border-amber-200 animate-in fade-in zoom-in duration-300">
                       <AlertTriangle className="w-4 h-4 shrink-0" />
-                      <span>{message}</span>
+                      <span className="inter font-medium">{message}</span>
                     </div>
                   );
                 }
@@ -275,7 +284,7 @@ export default function PassSettings({
 
               {/* Match Mode */}
               <div className="space-y-2">
-                <Label>Verification Method</Label>
+                <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">Verification Method</Label>
                 <Select
                   value={formData.passSettings.collegeMatchMode}
                   onValueChange={(value) =>
@@ -284,20 +293,20 @@ export default function PassSettings({
                     })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-xl border-neutral-200 bg-white poppins font-medium">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="EITHER_OR">
+                  <SelectContent className="rounded-xl border-neutral-200 shadow-xl">
+                    <SelectItem value="EITHER_OR" className="inter">
                       Either college profile OR email domain
                     </SelectItem>
-                    <SelectItem value="PROFILE_ONLY">
+                    <SelectItem value="PROFILE_ONLY" className="inter">
                       College profile only
                     </SelectItem>
-                    <SelectItem value="EMAIL_ONLY">
+                    <SelectItem value="EMAIL_ONLY" className="inter">
                       Email domain only
                     </SelectItem>
-                    <SelectItem value="BOTH_REQUIRED">
+                    <SelectItem value="BOTH_REQUIRED" className="inter">
                       Both profile AND email must match
                     </SelectItem>
                   </SelectContent>
@@ -307,36 +316,37 @@ export default function PassSettings({
               {/* Allowed Colleges */}
               {profileMatchingEnabled && (
                 <div className="space-y-2">
-                  <Label>Allowed Colleges</Label>
+                  <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">Allowed Colleges</Label>
                   <Input
                     placeholder="Search colleges..."
                     value={collegeSearch}
                     onChange={(e) => setCollegeSearch(e.target.value)}
+                    className="rounded-xl border-neutral-200 focus:border-primary-500 transition-all inter"
                   />
                   {colleges && colleges.length > 0 && (
-                    <div className="border rounded-md max-h-40 overflow-y-auto">
+                    <div className="border border-neutral-100 rounded-xl max-h-40 overflow-y-auto bg-white shadow-lg mt-2 p-1">
                       {colleges.map((college) => (
                         <div
                           key={college.id}
-                          className="p-2 hover:bg-accent cursor-pointer"
+                          className="p-3 hover:bg-primary-50 rounded-lg cursor-pointer transition-colors text-sm inter font-medium text-neutral-700"
                           onClick={() => addCollege(college.id, college.name)}
                         >
-                          {college.name} - {college.city}, {college.state}
+                          {college.name} • <span className="text-neutral-400 font-normal">{college.city}, {college.state}</span>
                         </div>
                       ))}
                     </div>
                   )}
                   {/* Selected Colleges */}
                   {formData.passSettings.allowedCollegeIds.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="flex flex-wrap gap-2 mt-3">
                       {formData.passSettings.allowedCollegeIds.map((collegeId) => {
                         const collegeName = collegeNamesMap[collegeId] || collegeId;
                         return (
-                          <Badge key={collegeId} variant="secondary">
+                          <Badge key={collegeId} variant="secondary" className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all">
                             {collegeName}
                             <button
                               onClick={() => removeCollege(collegeId)}
-                              className="ml-2 hover:text-destructive"
+                              className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
                             >
                               ×
                             </button>
@@ -350,14 +360,15 @@ export default function PassSettings({
 
               {/* Email Domains */}
               {emailMatchingEnabled && (
-                <div className="space-y-2">
-                  <Label>Allowed Email Domains</Label>
-                  <div className="text-sm text-muted-foreground mb-2">
+                <div className="space-y-3">
+                  <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">Allowed Email Domains</Label>
+                  <div className="text-xs text-neutral-400 inter italic">
                     Enter email domains (e.g., galgotiascollege.edu)
                   </div>
                   <div className="flex gap-2">
                     <Input
                       placeholder="e.g., iitd.ac.in"
+                      className="rounded-xl border-neutral-200 focus:border-primary-500 inter"
                       onKeyPress={(e) => {
                         if (e.key === "Enter") {
                           const value = e.currentTarget.value.trim();
@@ -371,6 +382,7 @@ export default function PassSettings({
                     <Button
                       type="button"
                       variant="outline"
+                      className="rounded-xl border-primary-500 text-primary-600 hover:bg-primary-50 font-bold px-6"
                       onClick={(e) => {
                         const input = e.currentTarget
                           .previousSibling as HTMLInputElement;
@@ -388,11 +400,11 @@ export default function PassSettings({
                   {formData.passSettings.allowedEmailDomains.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {formData.passSettings.allowedEmailDomains.map((domain) => (
-                        <Badge key={domain} variant="secondary">
+                        <Badge key={domain} variant="secondary" className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all">
                           @{domain}
                           <button
                             onClick={() => removeEmailDomain(domain)}
-                            className="ml-2 hover:text-destructive"
+                            className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
                           >
                             ×
                           </button>
@@ -402,11 +414,11 @@ export default function PassSettings({
                   )}
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>
-    </div>
+    </Container>
   );
 }
 
