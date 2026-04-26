@@ -63,7 +63,7 @@ export default function RegistrationSettings({
         registrationSettings: nextRegs,
       };
       // Keep canonical fields in sync so autosave snapshot + basic-details match registration tab.
-      if (updates.endDate !== undefined || updates.endTime !== undefined) {
+      if ("endDate" in updates || "endTime" in updates) {
         if (nextRegs.endDate) {
           next.eventRegisterBy = applyTimeToDate(
             nextRegs.endDate,
@@ -73,10 +73,10 @@ export default function RegistrationSettings({
           next.eventRegisterBy = undefined;
         }
       }
-      if (updates.eventDate !== undefined) {
+      if ("eventDate" in updates) {
         next.eventDate = nextRegs.eventDate;
       }
-      if (updates.eventTime !== undefined) {
+      if ("eventTime" in updates) {
         next.eventTimeFrom = nextRegs.eventTime;
       }
       return next;

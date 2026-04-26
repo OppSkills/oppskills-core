@@ -301,7 +301,14 @@ export default function BasicDetails({
                   mode="single"
                   selected={formData.eventDate}
                   onSelect={(date) =>
-                    setFormData({ ...formData, eventDate: date })
+                    setFormData((prev) => ({
+                      ...prev,
+                      eventDate: date,
+                      registrationSettings: {
+                        ...prev.registrationSettings,
+                        eventDate: date,
+                      },
+                    }))
                   }
                 />
               </PopoverContent>
@@ -314,9 +321,17 @@ export default function BasicDetails({
                 <input
                   type="time"
                   value={formData.eventTimeFrom}
-                  onChange={(e) =>
-                    setFormData({ ...formData, eventTimeFrom: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const time = e.target.value;
+                    setFormData((prev) => ({
+                      ...prev,
+                      eventTimeFrom: time,
+                      registrationSettings: {
+                        ...prev.registrationSettings,
+                        eventTime: time,
+                      },
+                    }));
+                  }}
                   className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
                 />
               }

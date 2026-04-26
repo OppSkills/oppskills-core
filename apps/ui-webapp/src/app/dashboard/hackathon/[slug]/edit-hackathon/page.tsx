@@ -1566,7 +1566,14 @@ export default function EditHackathonPage() {
                       mode="single"
                       selected={formData.eventEndDate}
                       onSelect={(date) =>
-                        setFormData({ ...formData, eventEndDate: date })
+                        setFormData({
+                          ...formData,
+                          eventEndDate: date,
+                          registrationSettings: {
+                            ...formData.registrationSettings,
+                            endDate: date,
+                          },
+                        })
                       }
                     />
                   </PopoverContent>
@@ -1580,10 +1587,14 @@ export default function EditHackathonPage() {
                       value={formData.eventTimeTo ?? ""}
                       onChange={(e) => {
                         const next = e.target.value;
+                        const time = next.trim().length > 0 ? next : undefined;
                         setFormData({
                           ...formData,
-                          eventTimeTo:
-                            next.trim().length > 0 ? next : undefined,
+                          eventTimeTo: time,
+                          registrationSettings: {
+                            ...formData.registrationSettings,
+                            endTime: time ?? "00:00",
+                          },
                         });
                       }}
                       className="bg-transparent border-none p-0 text-lg font-bold poppins focus:ring-0 outline-none text-neutral-800 w-full cursor-pointer"
@@ -1824,7 +1835,7 @@ export default function EditHackathonPage() {
             </div>
           )
         }
-      </div >
-    </div >
+      </div>
+    </div>
   );
 }

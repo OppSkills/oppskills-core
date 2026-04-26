@@ -292,6 +292,7 @@ export class HackathonController {
   }
 
   @Get('by-slug/:slug/registrations')
+  @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Get hackathon team registrations by slug',
     description:
@@ -378,6 +379,7 @@ export class HackathonController {
   }
 
   @Get('by-slug/:slug/teams/:teamId/registration')
+  @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Get specific team registration for a hackathon by slug',
     description:
@@ -549,6 +551,7 @@ export class HackathonController {
   }
 
   @Get('by-slug/:slug/teams/:teamId/registration-answers')
+  @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Get team registration answers',
     description:
