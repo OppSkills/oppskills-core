@@ -332,6 +332,8 @@ export class EventController {
   @ApiResponse({ status: 404, description: 'Event not found' })
   async getEventRegistrationsBySlug(
     @Param('slug') slug: string,
+    @Query('page') page: string,
+    @Query('take') take: string,
     @Req() req: Request,
   ) {
     const userId = req.user?.id;
@@ -340,7 +342,12 @@ export class EventController {
     }
 
     const validSlug = assertNonEmptyId(slug, 'slug');
-    return this.eventService.listEventRegistrationsBySlug(validSlug, userId);
+    return this.eventService.listEventRegistrationsBySlug(
+      validSlug,
+      userId,
+      page ? parseInt(page, 10) : 1,
+      take ? parseInt(take, 10) : 10,
+    );
   }
 
   @Get('by-slug/:slug/registrations/:participantId')

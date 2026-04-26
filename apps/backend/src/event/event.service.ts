@@ -2332,7 +2332,12 @@ export class EventService {
    * List all registrations for an event by slug (owner/manager/admin only).
    * Returns participant data enriched with onboarding profile information.
    */
-  async listEventRegistrationsBySlug(slug: string, requesterUserId: string) {
+  async listEventRegistrationsBySlug(
+    slug: string,
+    requesterUserId: string,
+    page = 1,
+    take = 10,
+  ) {
     // Find event by slug
     const event = await prisma.eventEntity.findUnique({
       where: { slug, isDeleted: false },
@@ -2363,64 +2368,74 @@ export class EventService {
       );
     }
 
-    // Query all participants with onboarding data
-    const participants = await prisma.eventParticipantEntity.findMany({
-      where: { eventId: event.id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            imageUrl: true,
-            onboardingProfile: {
-              select: {
-                id: true,
-                userCategory: true,
-                gender: true,
-                schoolName: true,
-                schoolClass: true,
-                companyName: true,
-                jobTitle: true,
-                collegeCurrentYear: true,
-                locationCity: true,
-                locationState: true,
-                locationCountry: true,
-                college: {
-                  select: {
-                    id: true,
-                    name: true,
-                    city: true,
-                    state: true,
-                    country: true,
+    const skip = (page - 1) * take;
+
+    // Query participants with pagination
+    const [participants, total] = await Promise.all([
+      prisma.eventParticipantEntity.findMany({
+        where: { eventId: event.id },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              imageUrl: true,
+              onboardingProfile: {
+                select: {
+                  id: true,
+                  userCategory: true,
+                  gender: true,
+                  schoolName: true,
+                  schoolClass: true,
+                  companyName: true,
+                  jobTitle: true,
+                  collegeCurrentYear: true,
+                  locationCity: true,
+                  locationState: true,
+                  locationCountry: true,
+                  college: {
+                    select: {
+                      id: true,
+                      name: true,
+                      city: true,
+                      state: true,
+                      country: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        submission: {
-          select: {
-            id: true,
-            submittedAt: true,
-            answers: {
-              select: {
-                fieldId: true,
-                valueText: true,
-                valueJson: true,
+          submission: {
+            select: {
+              id: true,
+              submittedAt: true,
+              answers: {
+                select: {
+                  fieldId: true,
+                  valueText: true,
+                  valueJson: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: { joinedAt: 'desc' },
-    });
+        orderBy: { joinedAt: 'desc' },
+        skip,
+        take,
+      }),
+      prisma.eventParticipantEntity.count({
+        where: { eventId: event.id },
+      }),
+    ]);
 
+    const totalPages = Math.ceil(total / take);
     const formFields = event.registrationForm?.fields ?? [];
 
     // Map to dashboard-friendly format
-    return participants.map((p) => {
+    const items = participants.map((p) => {
       const user = p.user;
       const profile = user.onboardingProfile;
 
@@ -2497,6 +2512,14 @@ export class EventService {
         approvedAt: p.approvedAt?.toISOString(),
       };
     });
+
+    return {
+      items,
+      total,
+      page,
+      take,
+      totalPages,
+    };
   }
 
   /**

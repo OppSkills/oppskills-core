@@ -30,19 +30,20 @@ function normalizeSlug(slug: string | null | undefined): string | null {
  */
 export function useHackathonRegistrationsBySlug(
   slug: string | null | undefined,
+  params: { page?: number; take?: number } = {},
 ) {
   const { getToken } = useAuth();
   const safeSlug = normalizeSlug(slug);
 
   return useQuery<HackathonRegistrationsBySlugResponse>({
-    queryKey: ["hackathon-registrations-by-slug", safeSlug],
+    queryKey: ["hackathon-registrations-by-slug", safeSlug, params],
     enabled: safeSlug !== null,
     queryFn: async () => {
       if (safeSlug === null) {
         throw new Error("Hackathon slug is required.");
       }
       const token = requireToken(await getToken());
-      return getHackathonRegistrationsBySlug(token, safeSlug);
+      return getHackathonRegistrationsBySlug(token, safeSlug, params);
     },
   });
 }

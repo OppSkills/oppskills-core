@@ -493,11 +493,19 @@ export interface EventRegistration {
 export async function getEventRegistrationsBySlug(
   token: string,
   slug: string,
-): Promise<EventRegistration[]> {
+  params: { page?: number; take?: number } = {},
+): Promise<{
+  items: EventRegistration[];
+  total: number;
+  page: number;
+  take: number;
+  totalPages: number;
+}> {
   const res = await API.get(`/by-slug/${slug}/registrations`, {
     headers: buildAuthHeaders(token),
+    params,
   });
-  return res.data as EventRegistration[];
+  return res.data;
 }
 
 export interface RegistrationField {

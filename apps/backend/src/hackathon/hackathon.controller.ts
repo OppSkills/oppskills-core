@@ -362,6 +362,8 @@ export class HackathonController {
   @ApiResponse({ status: 404, description: 'Hackathon not found' })
   async getHackathonRegistrationsBySlug(
     @Param('slug') slug: string,
+    @Query('page') page: string,
+    @Query('take') take: string,
     @Req() req: Request,
   ) {
     const userId = req.user?.id;
@@ -370,6 +372,8 @@ export class HackathonController {
     return this.hackathonService.listHackathonRegistrationsBySlug(
       safeSlug,
       userId,
+      page ? parseInt(page, 10) : 1,
+      take ? parseInt(take, 10) : 10,
     );
   }
 

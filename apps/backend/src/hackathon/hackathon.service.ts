@@ -2493,6 +2493,8 @@ export class HackathonService {
   async listHackathonRegistrationsBySlug(
     slug: string,
     requesterUserId: string,
+    page = 1,
+    take = 10,
   ) {
     // Find hackathon by slug
     const hackathon = await prisma.hackathonEntity.findFirst({
@@ -2528,54 +2530,58 @@ export class HackathonService {
       },
     });
 
-    // Query all teams with leader onboarding data and round submissions
-    const teams = await prisma.teamEntity.findMany({
-      where: { hackathonId: hackathon.id },
-      include: {
-        leader: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            imageUrl: true,
-            onboardingProfile: {
-              include: {
-                college: {
-                  select: {
-                    id: true,
-                    name: true,
-                    city: true,
-                    state: true,
-                    country: true,
+    const skip = (page - 1) * take;
+
+    // Query teams with pagination
+    const [teams, total] = await Promise.all([
+      prisma.teamEntity.findMany({
+        where: { hackathonId: hackathon.id },
+        include: {
+          leader: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              imageUrl: true,
+              onboardingProfile: {
+                include: {
+                  college: {
+                    select: {
+                      id: true,
+                      name: true,
+                      city: true,
+                      state: true,
+                      country: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        members: {
-          select: {
-            id: true,
-            joinedAt: true,
-            user: {
-              select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-                imageUrl: true,
-                onboardingProfile: {
-                  select: {
-                    collegeCurrentYear: true,
-                    skills: true,
-                    college: {
-                      select: {
-                        id: true,
-                        name: true,
-                        city: true,
-                        state: true,
-                        country: true,
+          members: {
+            select: {
+              id: true,
+              joinedAt: true,
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  firstName: true,
+                  lastName: true,
+                  imageUrl: true,
+                  onboardingProfile: {
+                    select: {
+                      collegeCurrentYear: true,
+                      skills: true,
+                      college: {
+                        select: {
+                          id: true,
+                          name: true,
+                          city: true,
+                          state: true,
+                          country: true,
+                        },
                       },
                     },
                   },
@@ -2583,25 +2589,32 @@ export class HackathonService {
               },
             },
           },
-        },
-        roundSubmissions: {
-          select: {
-            id: true,
-            roundId: true,
-            submittedAt: true,
-            payload: true,
+          roundSubmissions: {
+            select: {
+              id: true,
+              roundId: true,
+              submittedAt: true,
+              payload: true,
+            },
+          },
+          roundQualifications: {
+            select: {
+              roundId: true,
+              qualified: true,
+              qualifiedAt: true,
+            },
           },
         },
-        roundQualifications: {
-          select: {
-            roundId: true,
-            qualified: true,
-            qualifiedAt: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      prisma.teamEntity.count({
+        where: { hackathonId: hackathon.id },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / take);
 
     const registrationSubmissions =
       await prisma.hackathonRegistrationSubmissionEntity.findMany({
@@ -2625,6 +2638,105 @@ export class HackathonService {
     }
 
     // Map to dashboard-friendly format
+    const teamItems = teams.map((team) => {
+      const leader = team.leader;
+      const profile = leader.onboardingProfile;
+
+      // Derive university/institution from leader
+      let university = '';
+      if (profile) {
+        if (profile.college) {
+          university = profile.college.name;
+        } else if (profile.schoolName) {
+          university = profile.schoolName;
+        } else if (profile.companyName) {
+          university = profile.companyName;
+        }
+      }
+
+      // Derive location from leader
+      let location = '';
+      if (profile) {
+        const parts: string[] = [];
+        if (profile.locationCity) parts.push(profile.locationCity);
+        if (profile.locationState) parts.push(profile.locationState);
+        if (profile.locationCountry) parts.push(profile.locationCountry);
+        location = parts.join(', ');
+      }
+
+      // Build round submission status map
+      const roundSubmissions = team.roundSubmissions.reduce(
+        (acc, sub) => {
+          acc[sub.roundId] = {
+            submissionId: sub.id,
+            submittedAt: sub.submittedAt,
+            payload: sub.payload,
+          };
+          return acc;
+        },
+        {} as Record<
+          string,
+          { submissionId: string; submittedAt: Date | null; payload: unknown }
+        >,
+      );
+
+      // Build round qualification status map
+      const roundQualifications = team.roundQualifications.reduce(
+        (acc, qual) => {
+          acc[qual.roundId] = {
+            qualified: qual.qualified,
+            qualifiedAt: qual.qualifiedAt,
+          };
+          return acc;
+        },
+        {} as Record<
+          string,
+          { qualified: boolean; qualifiedAt: Date | null }
+        >,
+      );
+
+      // Calculate minSize based on hackathon participantType
+      const minSize = getMinSizeFromParticipantType(
+        hackathon.participantType,
+      );
+
+      const membersSorted = [...team.members].sort(
+        (a, b) => a.joinedAt.getTime() - b.joinedAt.getTime(),
+      );
+      const memberRows = membersSorted.map((m) => ({
+        email: m.user.email,
+        firstName: m.user.firstName,
+        lastName: m.user.lastName,
+        phone:
+          mobileFromRegistrationByUserId.get(m.user.id) ?? '',
+      }));
+
+      return {
+        teamId: team.id,
+        teamName: team.name,
+        memberCount: team.members.length + 1, // +1 for leader
+        maxSize: team.maxSize,
+        minSize,
+        createdAt: team.createdAt,
+        isOpen: team.isOpen,
+        invitationCode: team.invitationCode ?? null,
+        members: memberRows,
+        leader: {
+          id: leader.id,
+          email: leader.email,
+          firstName: leader.firstName,
+          lastName: leader.lastName,
+          imageUrl: leader.imageUrl,
+          university,
+          location,
+          phone:
+            mobileFromRegistrationByUserId.get(leader.id) ?? '',
+        },
+        roundSubmissions,
+        roundQualifications,
+      };
+    })
+
     return {
       hackathonId: hackathon.id,
       name: hackathon.name,
@@ -2637,104 +2749,13 @@ export class HackathonService {
         endsAt: r.endsAt,
         status: r.status,
       })),
-      teams: teams.map((team) => {
-        const leader = team.leader;
-        const profile = leader.onboardingProfile;
-
-        // Derive university/institution from leader
-        let university = '';
-        if (profile) {
-          if (profile.college) {
-            university = profile.college.name;
-          } else if (profile.schoolName) {
-            university = profile.schoolName;
-          } else if (profile.companyName) {
-            university = profile.companyName;
-          }
-        }
-
-        // Derive location from leader
-        let location = '';
-        if (profile) {
-          const parts: string[] = [];
-          if (profile.locationCity) parts.push(profile.locationCity);
-          if (profile.locationState) parts.push(profile.locationState);
-          if (profile.locationCountry) parts.push(profile.locationCountry);
-          location = parts.join(', ');
-        }
-
-        // Build round submission status map
-        const roundSubmissions = team.roundSubmissions.reduce(
-          (acc, sub) => {
-            acc[sub.roundId] = {
-              submissionId: sub.id,
-              submittedAt: sub.submittedAt,
-              payload: sub.payload,
-            };
-            return acc;
-          },
-          {} as Record<
-            string,
-            { submissionId: string; submittedAt: Date | null; payload: unknown }
-          >,
-        );
-
-        // Build round qualification status map
-        const roundQualifications = team.roundQualifications.reduce(
-          (acc, qual) => {
-            acc[qual.roundId] = {
-              qualified: qual.qualified,
-              qualifiedAt: qual.qualifiedAt,
-            };
-            return acc;
-          },
-          {} as Record<
-            string,
-            { qualified: boolean; qualifiedAt: Date | null }
-          >,
-        );
-
-        // Calculate minSize based on hackathon participantType
-        const minSize = getMinSizeFromParticipantType(
-          hackathon.participantType,
-        );
-
-        const membersSorted = [...team.members].sort(
-          (a, b) => a.joinedAt.getTime() - b.joinedAt.getTime(),
-        );
-        const memberRows = membersSorted.map((m) => ({
-          email: m.user.email,
-          firstName: m.user.firstName,
-          lastName: m.user.lastName,
-          phone:
-            mobileFromRegistrationByUserId.get(m.user.id) ?? '',
-        }));
-
-        return {
-          teamId: team.id,
-          teamName: team.name,
-          memberCount: team.members.length + 1, // +1 for leader
-          maxSize: team.maxSize,
-          minSize,
-          createdAt: team.createdAt,
-          isOpen: team.isOpen,
-          invitationCode: team.invitationCode ?? null,
-          members: memberRows,
-          leader: {
-            id: leader.id,
-            email: leader.email,
-            firstName: leader.firstName,
-            lastName: leader.lastName,
-            imageUrl: leader.imageUrl,
-            university,
-            location,
-            phone:
-              mobileFromRegistrationByUserId.get(leader.id) ?? '',
-          },
-          roundSubmissions,
-          roundQualifications,
-        };
-      }),
+      teams: {
+        items: teamItems,
+        total,
+        page,
+        take,
+        totalPages,
+      },
     };
   }
 
