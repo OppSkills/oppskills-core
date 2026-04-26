@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   ChevronLeft,
   UserCircle2,
@@ -9,6 +9,8 @@ import {
   FileText,
   Download,
   ExternalLink,
+  Users,
+  Trophy,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,7 +46,26 @@ export function TeamRegistrationDetailsSheet({
   } = teamById(teamId || "");
 
   const { data: registrationsData } = useHackathonRegistrationsBySlug(slug);
-  const [activeTab, setActiveTab] = useState<string>("members");
+  const [activeTab, setActiveTab] = useState<string>("");
+
+
+  // Build round tabs from registrations data
+  const roundTabs = useMemo(() => {
+    if (!registrationsData || registrationsData.rounds.length === 0) return [];
+    return registrationsData.rounds.map((round) => ({
+      id: round.id,
+      name: round.name,
+      order: round.order,
+    }));
+  }, [registrationsData]);
+
+  // Set default tab to first round when data is available
+  useEffect(() => {
+    if (roundTabs.length > 0 && activeTab === "") {
+      setActiveTab(roundTabs[0].id);
+    }
+  }, [roundTabs, activeTab]);
+
   const { getToken } = useAuth();
 
   const { data: registrationAnswersData, isLoading: isLoadingAnswers } =
@@ -171,16 +192,6 @@ export function TeamRegistrationDetailsSheet({
     return result;
   }, [teamData, registrationAnswersData]);
 
-  // Build round tabs from registrations data
-  const roundTabs = useMemo(() => {
-    if (!registrationsData || registrationsData.rounds.length === 0) return [];
-    return registrationsData.rounds.map((round) => ({
-      id: round.id,
-      name: round.name,
-      order: round.order,
-    }));
-  }, [registrationsData]);
-
   // Find submission for selected round
   const selectedRoundSubmission = useMemo(() => {
     if (!registrationsData || activeTab === "members" || !teamId) return null;
@@ -221,280 +232,232 @@ export function TeamRegistrationDetailsSheet({
           </div>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar p-4 flex flex-col gap-6">
-          {/* Custom Tabs Navigation */}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setActiveTab("members")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold transition-all ${activeTab === "members"
-                ? "bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/20"
-                : "bg-white border-neutral-200 text-neutral-500 hover:bg-neutral-50"
-                }`}
-            >
-              <UserCircle2 className="h-4 w-4" />
-              Members
-            </button>
+        <div className="flex-1 overflow-y-auto no-scrollbar p-4 sm:p-6 flex flex-col gap-8">
+          {/* Team Members Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 px-1">
+              <Users className="h-4 w-4 text-primary-500" />
+              <h4 className="text-sm font-black font-poppins text-neutral-900 uppercase tracking-wider">
+                Team Members
+              </h4>
+            </div>
 
-            <button
-              onClick={() => setActiveTab("registration-answers")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold transition-all ${activeTab === "registration-answers"
-                ? "bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/20"
-                : "bg-white border-neutral-200 text-neutral-500 hover:bg-neutral-50"
-                }`}
-            >
-              <ClipboardList className="h-4 w-4" />
-              Answers
-            </button>
-
-            {roundTabs.map((round) => (
-              <button
-                key={round.id}
-                onClick={() => setActiveTab(round.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold transition-all ${activeTab === round.id
-                  ? "bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/20"
-                  : "bg-white border-neutral-200 text-neutral-500 hover:bg-neutral-50"
-                  }`}
-              >
-                <div
-                  className={`flex items-center justify-center w-4 h-4 rounded-full text-[10px] border ${activeTab === round.id
-                    ? "border-white"
-                    : "border-neutral-300"
-                    }`}
-                >
-                  {round.order + 1}
-                </div>
-                {round.name}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex-1">
             {teamLoading ? (
-              <div className="flex justify-center items-center py-20">
+              <div className="flex justify-center items-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
               </div>
-            ) : teamError ? (
-              <div className="text-center py-20">
-                <p className="text-destructive font-bold poppins">Failed to load team</p>
-                <p className="text-neutral-500 text-sm mt-1 inter">
-                  {getApiErrorMessage(teamError) || "Team not found"}
-                </p>
-              </div>
             ) : (
-              <>
-                {activeTab === "members" && (
-                  <div className="flex flex-col gap-4">
-                    {members.map((member) => (
-                      <RegistrationInfoCard key={member.id} participant={member} />
-                    ))}
-                  </div>
-                )}
-
-                {activeTab === "registration-answers" && (
-                  <div className="bg-white rounded-3xl p-6 border border-neutral-200 shadow-sm">
-                    {isLoadingAnswers && (
-                      <div className="flex justify-center items-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-                      </div>
-                    )}
-
-                    {!isLoadingAnswers &&
-                      registrationAnswersData &&
-                      registrationAnswersData.fields.length > 0 && (
-                        <RegistrationAnswersView
-                          fields={registrationAnswersData.fields}
-                          respondents={registrationAnswersData.respondents.map((r: any) => ({
-                            userId: r.userId,
-                            name: [r.firstName, r.lastName].filter(Boolean).join(" ") || r.email,
-                            email: r.email,
-                            avatarUrl: r.imageUrl || undefined,
-                            isLeader: r.isLeader,
-                            answers: r.answers,
-                          }))}
-                        />
-                      )}
-
-                    {!isLoadingAnswers &&
-                      (!registrationAnswersData ||
-                        registrationAnswersData.fields.length === 0) && (
-                        <EmptyState
-                          title="No registration form"
-                          description="This hackathon does not have a registration form configured"
-                          className="py-12"
-                        />
-                      )}
-                  </div>
-                )}
-
-                {activeTab !== "members" && activeTab !== "registration-answers" && (
-                  <div className="bg-white rounded-3xl p-6 border border-neutral-200 shadow-sm">
-                    {selectedRoundSubmission ? (
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none px-3 py-1 rounded-full font-bold inter text-xs">
-                            Submitted
-                          </Badge>
-                          <span className="text-xs text-neutral-400 inter font-medium">
-                            {selectedRoundSubmission.submittedAt
-                              ? new Date(
-                                selectedRoundSubmission.submittedAt,
-                              ).toLocaleString("en-IN", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                              : "—"}
-                          </span>
-                        </div>
-
-                        {selectedRoundSubmission.payload
-                          ? (() => {
-                            const payload = selectedRoundSubmission.payload as Record<
-                              string,
-                              unknown
-                            >;
-                            const files = payload.files as
-                              | Array<{
-                                url?: string;
-                                publicUrl?: string;
-                                fileName?: string;
-                                name?: string;
-                                mimeType?: string;
-                                size?: number;
-                              }>
-                              | undefined;
-                            const fileUrl = (payload.fileUrl || payload.url) as
-                              | string
-                              | undefined;
-                            const fileName = payload.fileName as string | undefined;
-
-                            return (
-                              <div className="space-y-6">
-                                {Array.isArray(files) && files.length > 0 && (
-                                  <div className="space-y-3">
-                                    <h3 className="font-bold text-neutral-800 poppins text-sm">
-                                      Submitted Files
-                                    </h3>
-                                    <div className="grid gap-3">
-                                      {files.map((file, index) => {
-                                        const url = file.url || file.publicUrl;
-                                        const name =
-                                          file.fileName ||
-                                          file.name ||
-                                          `File ${index + 1}`;
-                                        return (
-                                          <a
-                                            key={index}
-                                            href={url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-100 hover:border-primary-200 hover:bg-primary-50/30 transition-all group"
-                                          >
-                                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-sm border border-neutral-100">
-                                              <FileText className="h-5 w-5 text-primary-500" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <p className="font-bold text-neutral-800 truncate text-sm inter">
-                                                {name}
-                                              </p>
-                                              {file.mimeType && (
-                                                <p className="text-[10px] text-neutral-400 font-medium inter">
-                                                  {file.mimeType}
-                                                </p>
-                                              )}
-                                            </div>
-                                            <ExternalLink className="h-4 w-4 text-neutral-300 group-hover:text-primary-500 transition-colors" />
-                                          </a>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {!Array.isArray(files) && fileUrl && (
-                                  <div className="space-y-3">
-                                    <h3 className="font-bold text-neutral-800 poppins text-sm">
-                                      Submitted File
-                                    </h3>
-                                    <a
-                                      href={fileUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-100 hover:border-primary-200 hover:bg-primary-50/30 transition-all group"
-                                    >
-                                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-sm border border-neutral-100">
-                                        <FileText className="h-5 w-5 text-primary-500" />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-neutral-800 truncate text-sm inter">
-                                          {fileName || "Submission File"}
-                                        </p>
-                                      </div>
-                                      <Download className="h-4 w-4 text-neutral-300 group-hover:text-primary-500 transition-colors" />
-                                    </a>
-                                  </div>
-                                )}
-
-                                {Object.entries(payload).filter(
-                                  ([key]) =>
-                                    !["files", "fileUrl", "url", "fileName"].includes(
-                                      key,
-                                    ),
-                                ).length > 0 && (
-                                    <div className="space-y-3">
-                                      <h3 className="font-bold text-neutral-800 poppins text-sm">
-                                        Additional Information
-                                      </h3>
-                                      <div className="grid gap-3">
-                                        {Object.entries(payload)
-                                          .filter(
-                                            ([key]) =>
-                                              ![
-                                                "files",
-                                                "fileUrl",
-                                                "url",
-                                                "fileName",
-                                              ].includes(key),
-                                          )
-                                          .map(([key, value]) => (
-                                            <div
-                                              key={key}
-                                              className="p-3 bg-neutral-50 rounded-2xl border border-neutral-100"
-                                            >
-                                              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider inter">
-                                                {key.replace(/([A-Z])/g, " $1").trim()}
-                                              </p>
-                                              <p className="text-neutral-800 mt-1 inter text-sm font-medium">
-                                                {typeof value === "string"
-                                                  ? value
-                                                  : JSON.stringify(value)}
-                                              </p>
-                                            </div>
-                                          ))}
-                                      </div>
-                                    </div>
-                                  )}
-                              </div>
-                            );
-                          })()
-                          : null}
-                      </div>
-                    ) : (
-                      <EmptyState
-                        title="No submission yet"
-                        description="This team has not submitted for this round"
-                        className="py-12"
-                      />
-                    )}
-                  </div>
-                )}
-              </>
+              <div className="flex flex-col gap-4">
+                {members.map((member) => (
+                  <RegistrationInfoCard key={member.id} participant={member} />
+                ))}
+              </div>
             )}
           </div>
+
+          {/* Rounds Section */}
+          {roundTabs.length > 0 && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-primary-500" />
+                  <h4 className="text-sm font-black font-poppins text-neutral-900 uppercase tracking-wider">
+                    Rounds & Submissions
+                  </h4>
+                </div>
+              </div>
+
+              {/* Rounds Tabs Navigation */}
+              <div className="flex flex-wrap gap-2">
+                {roundTabs.map((round) => (
+                  <button
+                    key={round.id}
+                    onClick={() => setActiveTab(round.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold transition-all ${activeTab === round.id
+                      ? "bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/20"
+                      : "bg-white border-neutral-200 text-neutral-500 hover:bg-neutral-50"
+                      }`}
+                  >
+                    <div
+                      className={`flex items-center justify-center w-4 h-4 rounded-full text-[10px] border ${activeTab === round.id
+                        ? "border-white"
+                        : "border-neutral-300"
+                        }`}
+                    >
+                      {round.order + 1}
+                    </div>
+                    {round.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Round Content */}
+              <div className="bg-white rounded-3xl p-6 border border-neutral-200 shadow-sm">
+                {selectedRoundSubmission ? (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
+                      <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none px-3 py-1 rounded-full font-bold inter text-xs">
+                        Submitted
+                      </Badge>
+                      <span className="text-xs text-neutral-400 inter font-medium">
+                        {selectedRoundSubmission.submittedAt
+                          ? new Date(
+                            selectedRoundSubmission.submittedAt,
+                          ).toLocaleString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                          : "—"}
+                      </span>
+                    </div>
+
+                    {selectedRoundSubmission.payload
+                      ? (() => {
+                        const payload = selectedRoundSubmission.payload as Record<
+                          string,
+                          unknown
+                        >;
+                        const files = payload.files as
+                          | Array<{
+                            url?: string;
+                            publicUrl?: string;
+                            fileName?: string;
+                            name?: string;
+                            mimeType?: string;
+                            size?: number;
+                          }>
+                          | undefined;
+                        const fileUrl = (payload.fileUrl || payload.url) as
+                          | string
+                          | undefined;
+                        const fileName = payload.fileName as string | undefined;
+
+                        return (
+                          <div className="space-y-6">
+                            {Array.isArray(files) && files.length > 0 && (
+                              <div className="space-y-3">
+                                <h3 className="font-bold text-neutral-800 poppins text-sm">
+                                  Submitted Files
+                                </h3>
+                                <div className="grid gap-3">
+                                  {files.map((file, index) => {
+                                    const url = file.url || file.publicUrl;
+                                    const name =
+                                      file.fileName ||
+                                      file.name ||
+                                      `File ${index + 1}`;
+                                    return (
+                                      <a
+                                        key={index}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-100 hover:border-primary-200 hover:bg-primary-50/30 transition-all group"
+                                      >
+                                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-sm border border-neutral-100">
+                                          <FileText className="h-5 w-5 text-primary-500" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-bold text-neutral-800 truncate text-sm inter">
+                                            {name}
+                                          </p>
+                                          {file.mimeType && (
+                                            <p className="text-[10px] text-neutral-400 font-medium inter">
+                                              {file.mimeType}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <ExternalLink className="h-4 w-4 text-neutral-300 group-hover:text-primary-500 transition-colors" />
+                                      </a>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {!Array.isArray(files) && fileUrl && (
+                              <div className="space-y-3">
+                                <h3 className="font-bold text-neutral-800 poppins text-sm">
+                                  Submitted File
+                                </h3>
+                                <a
+                                  href={fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-100 hover:border-primary-200 hover:bg-primary-50/30 transition-all group"
+                                >
+                                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-sm border border-neutral-100">
+                                    <FileText className="h-5 w-5 text-primary-500" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-neutral-800 truncate text-sm inter">
+                                      {fileName || "Submission File"}
+                                    </p>
+                                  </div>
+                                  <Download className="h-4 w-4 text-neutral-300 group-hover:text-primary-500 transition-colors" />
+                                </a>
+                              </div>
+                            )}
+
+                            {Object.entries(payload).filter(
+                              ([key]) =>
+                                !["files", "fileUrl", "url", "fileName"].includes(
+                                  key,
+                                ),
+                            ).length > 0 && (
+                                <div className="space-y-3">
+                                  <h3 className="font-bold text-neutral-800 poppins text-sm">
+                                    Additional Information
+                                  </h3>
+                                  <div className="grid gap-3">
+                                    {Object.entries(payload)
+                                      .filter(
+                                        ([key]) =>
+                                          ![
+                                            "files",
+                                            "fileUrl",
+                                            "url",
+                                            "fileName",
+                                          ].includes(key),
+                                      )
+                                      .map(([key, value]) => (
+                                        <div
+                                          key={key}
+                                          className="p-3 bg-neutral-50 rounded-2xl border border-neutral-100"
+                                        >
+                                          <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider inter">
+                                            {key.replace(/([A-Z])/g, " $1").trim()}
+                                          </p>
+                                          <p className="text-neutral-800 mt-1 inter text-sm font-medium">
+                                            {typeof value === "string"
+                                              ? value
+                                              : JSON.stringify(value)}
+                                          </p>
+                                        </div>
+                                      ))}
+                                  </div>
+                                </div>
+                              )}
+                          </div>
+                        );
+                      })()
+                      : null}
+                  </div>
+                ) : (
+                  <EmptyState
+                    title="No submission yet"
+                    description="This team has not submitted for this round"
+                    className="py-12"
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </SheetContent>
-    </Sheet>
+    </Sheet >
   );
 }
