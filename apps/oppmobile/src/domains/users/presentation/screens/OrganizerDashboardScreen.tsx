@@ -4,23 +4,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, OrganizerSidebarDrawer, type OrganizerSidebarItem } from '../../../../shared/ui';
 import { OrganizerDashboardHome } from './OrganizerDashboardHome';
-import { OrganizerFestivalsPanel } from './OrganizerFestivalsPanel';
 import { SendNotificationsPanel } from './SendNotificationsPanel';
 import { TalentPipelinePanel } from './TalentPipelinePanel';
 import { styles } from './OrganizerDashboardScreen.styles';
 
 const organizerSidebarItems = [
   { key: 'home', label: 'Home', icon: 'home' },
-  { key: 'launchpad', label: 'All Opportunities', icon: 'launchpad' },
-  { key: 'events', label: 'Festivals', icon: 'events' },
-  { key: 'participants', label: 'Talent Pipeline', icon: 'participants' },
-  { key: 'organizer-id', label: 'Manage Roles', icon: 'organizer-id' },
-  { key: 'notifications', label: 'Send Notifications', icon: 'notifications' },
+  { key: 'hackathon', label: 'Hackathon', icon: 'hackathon' },
+  { key: 'event', label: 'Event', icon: 'events' },
+  { key: 'festival', label: 'Festival', icon: 'festival' },
 ] as const satisfies readonly OrganizerSidebarItem[];
 
 const organizerSections = {
-  home: {
-    badge: 'Dashboard Home',
+  dashboard: {
+    badge: 'Dashboard',
     body:
       'See the full health of your organizer workspace in one place, from active listings to event-day readiness.',
     cards: [
@@ -40,70 +37,49 @@ const organizerSections = {
     ],
     title: 'Organizer command center',
   },
-  launchpad: {
-    badge: 'All Opportunities',
-    body:
-      'Start new competitions, hackathons, and campus campaigns from a single launch flow built for organizers.',
+  'manage-registrations': {
+    badge: 'Manage Registrations',
+    body: 'Review and manage all registrations across your active opportunities.',
     cards: [
-      {
-        description: 'Draft the opportunity basics, add visibility rules, and prep launch messaging.',
-        title: 'Create a new listing',
-      },
-      {
-        description: 'Reuse your strongest past templates so every new opportunity ships faster.',
-        title: 'Saved launch templates',
-      },
+      { description: 'View and filter all incoming registration requests.', title: 'Registration queue' },
+      { description: 'Approve, reject, or waitlist applicants in bulk.', title: 'Bulk actions' },
+    ],
+    metrics: [
+      { label: 'Total registrations', value: '328' },
+      { label: 'Pending review', value: '41' },
+      { label: 'Approved', value: '287' },
+    ],
+    title: 'Registration management',
+  },
+  'edit-opportunity': {
+    badge: 'Edit Opportunity',
+    body: 'Update your opportunity details, visibility settings, and deadlines.',
+    cards: [
+      { description: 'Modify listing details, tags, and media assets.', title: 'Listing editor' },
+      { description: 'Adjust registration windows and capacity limits.', title: 'Deadline controls' },
     ],
     metrics: [
       { label: 'Drafts in progress', value: '06' },
       { label: 'Ready to publish', value: '03' },
       { label: 'Avg. setup time', value: '12m' },
     ],
-    title: 'Launch opportunities faster',
+    title: 'Opportunity editor',
   },
-  events: {
-    badge: 'Festivals',
-    body:
-      'Manage timelines, venue readiness, and speaker checkpoints without leaving the organizer workspace.',
+  payments: {
+    badge: 'Payments',
+    body: 'Track revenue, payouts, and payment status across all your opportunities.',
     cards: [
-      {
-        description: 'Keep event-day sequences visible so volunteers and leads stay aligned.',
-        title: 'Run-of-show planning',
-      },
-      {
-        description: 'Monitor logistics, reminders, and last-minute updates before gates open.',
-        title: 'Operations checklist',
-      },
+      { description: 'See collected fees, pending settlements, and refund requests.', title: 'Revenue overview' },
+      { description: 'Review individual transactions and export for reconciliation.', title: 'Transaction log' },
     ],
     metrics: [
-      { label: 'Upcoming events', value: '08' },
-      { label: 'Venue locks', value: '05' },
-      { label: 'Reminder batches', value: '17' },
+      { label: 'Total collected', value: '₹84K' },
+      { label: 'Pending payout', value: '₹12K' },
+      { label: 'Refunds', value: '03' },
     ],
-    title: 'Event operations workspace',
+    title: 'Payments dashboard',
   },
-  participants: {
-    badge: 'Talent Pipeline',
-    body:
-      'Review registrations, shortlist cohorts, and keep student communication organized from the same hub.',
-    cards: [
-      {
-        description: 'Segment registered students by campus, status, or shortlist stage in a few taps.',
-        title: 'Audience management',
-      },
-      {
-        description: 'Pull the next set of participants into review without losing context across teams.',
-        title: 'Screening workflow',
-      },
-    ],
-    metrics: [
-      { label: 'Total registrations', value: '328' },
-      { label: 'Shortlisted', value: '74' },
-      { label: 'Waitlisted', value: '19' },
-    ],
-    title: 'Participant review desk',
-  },
-  'organizer-id': {
+  'manage-roles': {
     badge: 'Manage Roles',
     body:
       'Keep organizer identity details, campus proofing, and access-level checks ready for every campaign.',
@@ -124,7 +100,7 @@ const organizerSections = {
     ],
     title: 'Identity and access center',
   },
-  notifications: {
+  'send-notifications': {
     badge: 'Send Notifications',
     body:
       'Send alerts, reminders, and last-minute updates so participants never miss a milestone or venue change.',
@@ -145,13 +121,56 @@ const organizerSections = {
     ],
     title: 'Notification control room',
   },
+  referrals: {
+    badge: 'Referrals',
+    body: 'Track referral campaigns and reward students who bring in new participants.',
+    cards: [
+      { description: 'View active referral codes and their conversion rates.', title: 'Referral codes' },
+      { description: 'See which students are driving the most referrals.', title: 'Top referrers' },
+    ],
+    metrics: [
+      { label: 'Total referrals', value: '142' },
+      { label: 'Converted', value: '89' },
+      { label: 'Rewards issued', value: '74' },
+    ],
+    title: 'Referral program',
+  },
+  'talent-pipeline': {
+    badge: 'Talent Pipeline',
+    body:
+      'Review registrations, shortlist cohorts, and keep student communication organized from the same hub.',
+    cards: [
+      {
+        description: 'Segment registered students by campus, status, or shortlist stage in a few taps.',
+        title: 'Audience management',
+      },
+      {
+        description: 'Pull the next set of participants into review without losing context across teams.',
+        title: 'Screening workflow',
+      },
+    ],
+    metrics: [
+      { label: 'Total registrations', value: '328' },
+      { label: 'Shortlisted', value: '74' },
+      { label: 'Waitlisted', value: '19' },
+    ],
+    title: 'Participant review desk',
+  },
+  settings: {
+    badge: 'Settings',
+    body: 'Configure your organizer account, integrations, and notification preferences.',
+    cards: [
+      { description: 'Update your organizer profile, branding, and contact details.', title: 'Account settings' },
+      { description: 'Manage connected tools, webhooks, and API access.', title: 'Integrations' },
+    ],
+    metrics: [
+      { label: 'Active integrations', value: '02' },
+      { label: 'Team members', value: '07' },
+      { label: 'Last updated', value: '2d ago' },
+    ],
+    title: 'Organizer settings',
+  },
 } as const;
-
-const defaultOrganizerSectionKey = organizerSidebarItems[0]?.key;
-
-if (!defaultOrganizerSectionKey) {
-  throw new Error('Organizer dashboard sections are not configured.');
-}
 
 type OrganizerSectionKey = keyof typeof organizerSections;
 
@@ -161,15 +180,12 @@ interface OrganizerDashboardScreenProps {
 
 export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenProps) {
   const [drawerVisible, setDrawerVisible] = useState(true);
-  const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey>(
-    defaultOrganizerSectionKey as OrganizerSectionKey,
-  );
+  const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey>('dashboard');
 
   const activeSection = organizerSections[activeSectionKey];
-  const showingHome = activeSectionKey === 'home';
-  const showingFestivals = activeSectionKey === 'events';
-  const showingNotifications = activeSectionKey === 'notifications';
-  const showingTalentPipeline = activeSectionKey === 'participants';
+  const showingHome = activeSectionKey === 'dashboard';
+  const showingNotifications = activeSectionKey === 'send-notifications';
+  const showingTalentPipeline = activeSectionKey === 'talent-pipeline';
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
@@ -197,8 +213,6 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
 
       {showingHome ? (
         <OrganizerDashboardHome />
-      ) : showingFestivals ? (
-        <OrganizerFestivalsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : showingNotifications ? (
         <SendNotificationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : showingTalentPipeline ? (

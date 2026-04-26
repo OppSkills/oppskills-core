@@ -18,15 +18,17 @@ import { AppText } from './AppText';
 export type OrganizerSidebarIconName =
   | 'dashboard'
   | 'home'
-  | 'launchpad'
+  | 'hackathon'
   | 'events'
-  | 'participants'
+  | 'festival'
   | 'organizer-id'
   | 'notifications'
   | 'registrations'
   | 'edit-opportunity'
   | 'payments'
-  | 'referrals';
+  | 'referrals'
+  | 'talent-pipeline'
+  | 'settings';
 
 const MINI_WIDTH = 66;
 const CHILD_WIDTH = 330;
@@ -39,6 +41,8 @@ const HOME_CHILD_ITEMS = [
   { key: 'manage-roles', label: 'Manage Roles', icon: 'organizer-id' as OrganizerSidebarIconName },
   { key: 'send-notifications', label: 'Send Notifications', icon: 'notifications' as OrganizerSidebarIconName },
   { key: 'referrals', label: 'Referrals', icon: 'referrals' as OrganizerSidebarIconName },
+  { key: 'talent-pipeline', label: 'Talent Pipeline', icon: 'talent-pipeline' as OrganizerSidebarIconName },
+  { key: 'settings', label: 'Settings', icon: 'settings' as OrganizerSidebarIconName },
 ] as const;
 
 export interface OrganizerSidebarItem {
@@ -165,12 +169,7 @@ export function OrganizerSidebarDrawer({
                     <Pressable
                       key={item.key}
                       onPress={() => {
-                        if (isHome) {
-                          setChildVisible((prev) => !prev);
-                        } else {
-                          setChildVisible(false);
-                          onSelect(item.key);
-                        }
+                        setChildVisible((prev) => !prev);
                       }}
                       style={[styles.menuItem, isActive ? styles.menuItemActive : null]}
                     >
@@ -281,7 +280,7 @@ function SidebarIcon({
     );
   }
 
-  if (name === 'launchpad') {
+  if (name === 'hackathon') {
     return (
       <View style={styles.iconFrame}>
         <View style={[styles.rocketBody, tintStyle]} />
@@ -304,13 +303,34 @@ function SidebarIcon({
     );
   }
 
-  if (name === 'participants') {
+  if (name === 'festival') {
+    return (
+      <View style={styles.iconFrame}>
+        <View style={[styles.confettiStem, tintStyle]} />
+        <View style={[styles.confettiBurstLarge, active ? styles.iconFillActive : styles.iconFill]} />
+        <View style={[styles.confettiBurstSmall, active ? styles.iconFillActive : styles.iconFill]} />
+        <View style={[styles.confettiSparkLeft, tintStyle]} />
+        <View style={[styles.confettiSparkRight, tintStyle]} />
+      </View>
+    );
+  }
+
+  if (name === 'talent-pipeline') {
     return (
       <View style={styles.iconFrame}>
         <View style={[styles.groupHeadLeft, tintStyle]} />
         <View style={[styles.groupHeadRight, tintStyle]} />
         <View style={[styles.groupBodyPrimary, tintStyle]} />
         <View style={[styles.groupBodySecondary, tintStyle]} />
+      </View>
+    );
+  }
+
+  if (name === 'settings') {
+    return (
+      <View style={styles.iconFrame}>
+        <View style={[styles.settingsGear, tintStyle]} />
+        <View style={[styles.settingsCenter, tintStyle]} />
       </View>
     );
   }
@@ -936,5 +956,25 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 19,
     width: 14,
+  },
+  settingsGear: {
+    borderColor: '#584D5A',
+    borderRadius: 9,
+    borderWidth: 1.5,
+    height: 18,
+    left: 7,
+    position: 'absolute',
+    top: 7,
+    width: 18,
+  },
+  settingsCenter: {
+    borderColor: '#584D5A',
+    borderRadius: 4,
+    borderWidth: 1.5,
+    height: 6,
+    left: 13,
+    position: 'absolute',
+    top: 13,
+    width: 6,
   },
 });
