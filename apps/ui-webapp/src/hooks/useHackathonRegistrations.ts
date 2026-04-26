@@ -5,6 +5,8 @@ import {
   type HackathonRegistrationsBySlugResponse,
 } from "@/lib/api/hackathonApi";
 
+import { getSafeToken } from "@/lib/auth-utils";
+
 /**
  * Ensures we have a token for authenticated API calls.
  */
@@ -42,7 +44,7 @@ export function useHackathonRegistrationsBySlug(
       if (safeSlug === null) {
         throw new Error("Hackathon slug is required.");
       }
-      const token = requireToken(await getToken());
+      const token = requireToken(await getSafeToken(getToken));
       return getHackathonRegistrationsBySlug(token, safeSlug, params);
     },
   });

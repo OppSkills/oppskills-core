@@ -53,7 +53,7 @@ export default function OpportunitiesPage() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <Button className="h-11 px-6 rounded-full bg-primary-800 hover:bg-primary-900 text-white flex items-center gap-2 shadow-md">
+                    <Button className="h-11 px-4 rounded-full bg-primary-800 hover:bg-primary-900 text-white flex items-center gap-2 shadow-md">
                         <div className="flex items-center justify-center h-6 w-6 rounded-full border border-white/30">
                             <Plus className="h-4 w-4" />
                         </div>

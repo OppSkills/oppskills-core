@@ -20,7 +20,7 @@ import {
   Download,
   Mail,
 } from "lucide-react";
-
+import { EmptyState } from "@/components/common/EmptyState";
 import {
   Table,
   TableBody,
@@ -497,29 +497,29 @@ export default function Participants({
       </div>
 
       <div className="w-full bg-white rounded-xl shadow-sm border border-neutral-300 overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table className="min-w-[1000px] w-full border border-neutral-300">
-            <TableHeader className="bg-primary-800">
-              {table.getHeaderGroups().map((group) => (
-                <TableRow key={group.id} className="hover:bg-transparent border-none">
-                  {group.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      className="text-neutral-100 font-normal text-sm whitespace-nowrap py-3 border-r border-white/30 last:border-r-0"
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
+        {table.getRowModel().rows.length > 0 ? (
+          <div className="overflow-x-auto">
+            <Table className="min-w-[1000px] w-full border border-neutral-300">
+              <TableHeader className="bg-primary-800">
+                {table.getHeaderGroups().map((group) => (
+                  <TableRow key={group.id} className="hover:bg-transparent border-none">
+                    {group.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className="text-neutral-100 font-normal text-sm whitespace-nowrap py-3 border-r border-white/30 last:border-r-0"
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
 
-            <TableBody>
-              {table.getRowModel().rows.length ? (
-                table.getRowModel().rows.map((row) => (
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
                     className="border-b border-neutral-300 hover:bg-neutral-50 transition-colors cursor-pointer"
@@ -538,29 +538,28 @@ export default function Participants({
                       </TableCell>
                     ))}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="px-4">
-          <Pagination
-            curPage={page}
-            totalPages={totalPages}
-            perPage={take}
-            setPerPage={(size) => onTakeChange(Number(size))}
-            onPageChange={onPageChange}
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <EmptyState
+            title="No registrations found"
+            description={globalFilter ? `No teams matching "${globalFilter}" found.` : "No team registrations to display for this criteria."}
+            className="py-20"
           />
-        </div>
+        )}
+        {table.getRowModel().rows.length > 0 && (
+          <div className="px-4 border-t border-neutral-300">
+            <Pagination
+              curPage={page}
+              totalPages={totalPages}
+              perPage={take}
+              setPerPage={(size) => onTakeChange(Number(size))}
+              onPageChange={onPageChange}
+            />
+          </div>
+        )}
       </div>
 
       {selectedTeamForEmail && (

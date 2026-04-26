@@ -11,6 +11,7 @@ import {
 import Image from 'next/image';
 import { SortFromTopToBottom } from '@solar-icons/react';
 import { useRouter } from 'next/navigation';
+import { EmptyState } from '@/components/common/EmptyState';
 
 import {
   Table,
@@ -34,8 +35,8 @@ interface OpportunitiesTableProps {
   onPageChange?: (page: number) => void;
 }
 
-export const OpportunitiesTable: React.FC<OpportunitiesTableProps> = ({ 
-  data, 
+export const OpportunitiesTable: React.FC<OpportunitiesTableProps> = ({
+  data,
   onToggleRegistration,
   page,
   totalPages,
@@ -162,73 +163,74 @@ export const OpportunitiesTable: React.FC<OpportunitiesTableProps> = ({
 
   return (
     <div className="w-full max-w-full bg-white rounded-xl shadow-sm border border-neutral-300 overflow-hidden">
-      <div className="overflow-x-auto overflow-y-hidden">
-        <Table className="min-w-[1000px] w-full border border-neutral-300">
-          <TableHeader className="bg-primary-800">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="text-neutral-100 font-normal text-sm whitespace-nowrap py-2 border-r border-white/30 last:border-r-0"
-                    style={{ width: header.getSize() }}
-                  >
-                    <div className={header.id === 'name' ? 'text-left' : 'text-center'}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </div>
-                  </TableHead>
+      {table.getRowModel().rows?.length > 0 ? (
+        <>
+          <div className="overflow-x-auto overflow-y-hidden">
+            <Table className="min-w-[1000px] w-full border border-neutral-300">
+              <TableHeader className="bg-primary-800">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className="text-neutral-100 font-normal text-sm whitespace-nowrap py-2 border-r border-white/30 last:border-r-0"
+                        style={{ width: header.getSize() }}
+                      >
+                        <div className={header.id === 'name' ? 'text-left' : 'text-center'}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                        </div>
+                      </TableHead>
+                    ))}
+                  </TableRow>
                 ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="border-b border-neutral-300 hover:bg-neutral-50 transition-colors cursor-pointer"
-                  onClick={() => {
-                    const opp = row.original;
-                    const basePath = opp.type === 'Competition' ? 'hackathon' : 'events';
-                    router.push(`/dashboard/${basePath}/${opp.slug}`);
-                  }}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="py-3 px-4 border-r border-neutral-300 last:border-r-0"
-                      style={{ width: cell.column.getSize() }}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <div className='px-4'>
-        <Pagination
-          curPage={page || table.getState().pagination.pageIndex + 1}
-          totalPages={totalPages || table.getPageCount()}
-          setPerPage={(size) => table.setPageSize(Number(size))}
-          perPage={table.getState().pagination.pageSize}
-          onPageChange={(p) => onPageChange ? onPageChange(p) : table.setPageIndex(p - 1)}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className="border-b border-neutral-300 hover:bg-neutral-50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      const opp = row.original;
+                      const basePath = opp.type === 'Competition' ? 'hackathon' : 'events';
+                      router.push(`/dashboard/${basePath}/${opp.slug}`);
+                    }}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="py-3 px-4 border-r border-neutral-300 last:border-r-0"
+                        style={{ width: cell.column.getSize() }}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className='px-4'>
+            <Pagination
+              curPage={page || table.getState().pagination.pageIndex + 1}
+              totalPages={totalPages || table.getPageCount()}
+              setPerPage={(size) => table.setPageSize(Number(size))}
+              perPage={table.getState().pagination.pageSize}
+              onPageChange={(p) => onPageChange ? onPageChange(p) : table.setPageIndex(p - 1)}
+            />
+          </div>
+        </>
+      ) : (
+        <EmptyState
+          title="No opportunities found"
+          description="There are no opportunities matching your current filters."
         />
-      </div>
+      )}
     </div>
   );
 };

@@ -8,6 +8,7 @@ import { useHackathonRegistrationsBySlug } from "@/hooks/useHackathonRegistratio
 import { getApiErrorMessage } from "@/lib/utils";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { TableBlockFallback } from "@/components/boneyard/loading-fallbacks";
+import { EmptyState } from "@/components/common/EmptyState";
 
 export default function Page() {
   const params = useParams();
@@ -194,14 +195,11 @@ export default function Page() {
               onSelectStage={setCurrentStage}
             />
             <div className="h-px my-4 w-full bg-foreground/10" />
-            <div className="flex flex-col items-center justify-center py-20">
-              <p className="text-muted-foreground text-lg font-medium">
-                No team registrations yet
-              </p>
-              <p className="text-muted-foreground text-sm mt-1">
-                Teams will appear here once participants register
-              </p>
-            </div>
+            <EmptyState
+              title="No team registrations yet"
+              description="Teams will appear here once participants register for this hackathon."
+              className="py-20"
+            />
           </div>
         </div>
       ) : !isLoading && data ? (

@@ -20,9 +20,11 @@ import type { TeamDetailResponse } from "@/lib/api/teamApi";
 import { getTeamRegistrationAnswers } from "@/lib/api/hackathonApi";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getApiErrorMessage } from "@/lib/utils";
-import { RegistrationAnswersView, Respondent } from "../../../../_components/registration/RegistrationAnswersView";
+import { RegistrationAnswersView } from "../../../../_components/registration/RegistrationAnswersView";
+
+import { getSafeToken } from "@/lib/auth-utils";
+import { EmptyState } from "@/components/common/EmptyState";
 
 export default function TeamManagementPage() {
   const router = useRouter();
@@ -47,7 +49,7 @@ export default function TeamManagementPage() {
     useQuery({
       queryKey: ["team-registration-answers", slug, teamId],
       queryFn: async () => {
-        const token = await getToken();
+        const token = await getSafeToken(getToken);
         if (!token) return null;
         return getTeamRegistrationAnswers(token, slug, teamId);
       },
@@ -234,8 +236,8 @@ export default function TeamManagementPage() {
         <button
           onClick={() => setActiveTab("members")}
           className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${activeTab === "members"
-              ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
-              : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
+            ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
+            : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
             }`}
         >
           <UserCircle2 className="h-5 w-5" />
@@ -246,8 +248,8 @@ export default function TeamManagementPage() {
         <button
           onClick={() => setActiveTab("registration-answers")}
           className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${activeTab === "registration-answers"
-              ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
-              : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
+            ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
+            : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
             }`}
         >
           <ClipboardList className="h-5 w-5" />
@@ -260,14 +262,14 @@ export default function TeamManagementPage() {
             key={round.id}
             onClick={() => setActiveTab(round.id)}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg border text-sm font-semibold transition-all ${activeTab === round.id
-                ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
-                : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
+              ? "bg-secondary/50 border-primary/30 text-primary-500 shadow-sm"
+              : "bg-background border-border text-muted-foreground hover:bg-secondary/20"
               }`}
           >
             <div
               className={`flex items-center justify-center w-6 h-6 rounded-full text-xs border ${activeTab === round.id
-                  ? "border-primary"
-                  : "border-muted-foreground"
+                ? "border-primary"
+                : "border-muted-foreground"
                 }`}
             >
               {round.order}
@@ -308,14 +310,11 @@ export default function TeamManagementPage() {
             {!isLoadingAnswers &&
               (!registrationAnswersData ||
                 registrationAnswersData.fields.length === 0) && (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <p className="text-muted-foreground text-lg">
-                    No registration form
-                  </p>
-                  <p className="text-muted-foreground text-sm mt-1">
-                    This hackathon does not have a registration form configured
-                  </p>
-                </div>
+                <EmptyState
+                  title="No registration form"
+                  description="This hackathon does not have a registration form configured"
+                  className="py-16"
+                />
               )}
           </div>
         )}
@@ -470,14 +469,11 @@ export default function TeamManagementPage() {
                   : null}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-16">
-                <p className="text-muted-foreground text-lg">
-                  No submission yet
-                </p>
-                <p className="text-muted-foreground text-sm mt-1">
-                  This team has not submitted for this round
-                </p>
-              </div>
+              <EmptyState
+                title="No submission yet"
+                description="This team has not submitted for this round"
+                className="py-16"
+              />
             )}
           </div>
         )}
