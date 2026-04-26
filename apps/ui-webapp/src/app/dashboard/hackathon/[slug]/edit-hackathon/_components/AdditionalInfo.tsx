@@ -77,7 +77,8 @@ const getFileType = (fileName: string, mimeType?: string): string => {
   return extension ? `${extension} File` : "Document";
 };
 
-import { Container } from "./Container";
+import { Container } from "@/app/dashboard/_components/Container";
+
 
 export default function AdditionalInfo({
   formData,

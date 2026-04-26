@@ -56,7 +56,7 @@ import Link from "next/link";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
 
-import { Container } from "../edit-hackathon/_components/Container";
+import { Container } from "@/app/dashboard/_components/Container";
 
 // Type for hackathon data with approval fields
 interface HackathonData {

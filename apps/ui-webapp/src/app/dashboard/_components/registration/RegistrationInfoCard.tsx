@@ -50,19 +50,11 @@ const formatAnswerValue = (
 };
 
 export function RegistrationInfoCard({ participant }: RegistrationInfoCardProps) {
-  const borderColors = [
-    "border-green-500",
-    "border-blue-500",
-    "border-purple-500",
-    "border-orange-500",
-    "border-pink-500",
-  ];
-
   return (
     <div className="w-full bg-white rounded-[16px] p-4 sm:p-5 shadow-sm border border-neutral-200">
       <div className="flex gap-4 sm:gap-6">
         {/* Avatar Section */}
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <Avatar className="h-16 w-16 sm:h-20 sm:w-20 border-2 border-white shadow-lg ring-1 ring-neutral-100">
             <AvatarImage
               src={ensureAbsoluteUrl(participant.avatarUrl)}

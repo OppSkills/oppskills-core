@@ -20,7 +20,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { formatToIST } from "@/lib/date-utils";
 import { format } from "date-fns";
 
-import { Container } from "./Container";
+import { Container } from "@/app/dashboard/_components/Container";
+
 
 interface RegistrationSettingsProps {
   formData: FormData;

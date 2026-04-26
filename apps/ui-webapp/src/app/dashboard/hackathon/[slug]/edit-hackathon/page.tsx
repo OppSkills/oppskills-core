@@ -54,7 +54,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
-import { Container } from "./_components/Container";
+import { Container } from "@/app/dashboard/_components/Container";
 
 const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
@@ -1592,7 +1592,8 @@ export default function EditHackathonPage() {
                   subLabel="End Time (Optional)"
                   className="h-full bg-primary-50/20 border-primary-100 hover:bg-primary-50/40"
                 />
-              </Container>              {/* Location & Format Section */}
+              </Container>
+              {/* Location & Format Section */}
               <Container
                 heading="Location & Format"
                 description="Where and how the hackathon will take place."

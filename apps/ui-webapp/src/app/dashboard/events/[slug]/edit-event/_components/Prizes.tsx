@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 import { FormData, Prize } from "../page";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Container } from "./Container";
+import { Container } from "@/app/dashboard/_components/Container";
+
 
 interface PrizesProps {
   formData: FormData;

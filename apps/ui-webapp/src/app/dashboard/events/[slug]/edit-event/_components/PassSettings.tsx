@@ -21,7 +21,8 @@ import { AlertTriangle } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { searchColleges, getCollegesByIds } from "@/lib/api/collegesApi";
-import { Container } from "./Container";
+import { Container } from "@/app/dashboard/_components/Container";
+
 
 interface PassSettingsProps {
   formData: FormData;

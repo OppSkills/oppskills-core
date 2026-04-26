@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
-import { Container } from "./Container";
+import { Container } from "@/app/dashboard/_components/Container";
+
 
 interface PrizesProps {
   formData: FormData;

@@ -27,7 +27,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@clerk/nextjs";
 import { presignDocumentUpload } from "@/lib/api/mediaApi";
 import { uploadDocumentToS3PresignedPost } from "@/lib/uploads/uploadDocumentToS3";
-import { Container } from "./Container";
+import { Container } from "@/app/dashboard/_components/Container";
+
 
 interface AdditionalInfoProps {
   formData: FormData;
@@ -349,7 +350,7 @@ export default function AdditionalInfo({
         heading="Contact Details"
         description="Add Contact details of key persons related to event."
       >
-        <div className="flex justify-end mt-[-48px] mb-4">
+        <div className="flex justify-end">
           <Button
             variant="outline"
             size="sm"

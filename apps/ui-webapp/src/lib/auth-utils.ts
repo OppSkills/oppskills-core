@@ -46,7 +46,12 @@ function isTokenExpired(token: string): boolean {
     const parts = token.split(".");
     if (parts.length !== 3) return true;
 
-    const payload = JSON.parse(atob(parts[1]));
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    // Standard atob() may fail if the string is not correctly padded
+    const padding = base64.length % 4;
+    const paddedBase64 = padding ? base64 + "=".repeat(4 - padding) : base64;
+
+    const payload = JSON.parse(atob(paddedBase64));
     const now = Math.floor(Date.now() / 1000);
 
     // If 'exp' is missing or in the past (with a 10s buffer), it's expired.

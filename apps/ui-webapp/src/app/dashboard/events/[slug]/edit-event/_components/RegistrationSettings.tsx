@@ -19,7 +19,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle } from "@solar-icons/react";
-import { Container } from "./Container";
+import { Container } from "@/app/dashboard/_components/Container";
+
 
 interface RegistrationSettingsProps {
   formData: FormData;
