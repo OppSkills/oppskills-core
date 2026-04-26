@@ -47,7 +47,7 @@ export default function HackathonPage() {
     }, [isLoaded, getToken, currentPage]);
 
     const filteredOpportunities = useMemo(() => {
-        return opportunities.filter((opp) => 
+        return opportunities.filter((opp) =>
             opp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             opp.description.toLowerCase().includes(searchQuery.toLowerCase())
         );
@@ -59,7 +59,7 @@ export default function HackathonPage() {
             if (!token) return;
 
             // Optimistic update
-            setOpportunities(prev => prev.map(opp => 
+            setOpportunities(prev => prev.map(opp =>
                 opp.id === id ? { ...opp, registrationsOpen: isOpen } : opp
             ));
 
@@ -90,7 +90,7 @@ export default function HackathonPage() {
                         />
                     </div>
                     <Link href="/organize/hackathon">
-                        <Button className="h-11 px-6 rounded-full bg-primary-800 hover:bg-primary-900 text-white flex items-center gap-2 shadow-md">
+                        <Button className="h-11 px-4 rounded-full bg-primary-800 hover:bg-primary-900 text-white flex items-center gap-2 shadow-md">
                             <div className="flex items-center justify-center h-6 w-6 rounded-full border border-white/30">
                                 <Plus className="h-4 w-4" />
                             </div>
@@ -108,8 +108,8 @@ export default function HackathonPage() {
                         <p className="text-neutral-500">Loading your hackathons...</p>
                     </div>
                 ) : (
-                    <OpportunitiesTable 
-                        data={filteredOpportunities} 
+                    <OpportunitiesTable
+                        data={filteredOpportunities}
                         onToggleRegistration={handleToggleRegistration}
                         page={currentPage}
                         totalPages={totalPages}

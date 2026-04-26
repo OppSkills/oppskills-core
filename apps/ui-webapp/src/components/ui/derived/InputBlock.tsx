@@ -26,9 +26,9 @@ export default function InputBlock({
                 className
             )}
         >
-            <div className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
-                {icon && <div className="min-w-4 flex-shrink-0">{icon}</div>}
-                <span className="font-medium text-lg truncate w-full">{label}</span>
+            <div className="flex items-center gap-3 text-neutral-700 group-hover:text-foreground transition-colors">
+                {icon && <div className="min-w-4 shrink-0">{icon}</div>}
+                <span className="font-medium text-xl truncate w-full text-neutral-700">{label}</span>
             </div>
             {subLabel && (
                 <p className="text-muted-foreground/60 text-sm pl-9 truncate">{subLabel}</p>

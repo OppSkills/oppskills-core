@@ -27,6 +27,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@clerk/nextjs";
 import { presignDocumentUpload } from "@/lib/api/mediaApi";
 import { uploadDocumentToS3PresignedPost } from "@/lib/uploads/uploadDocumentToS3";
+import { Container } from "@/app/dashboard/_components/Container";
+
 
 interface AdditionalInfoProps {
   formData: FormData;
@@ -344,39 +346,37 @@ export default function AdditionalInfo({
       </div>
 
       {/* Contact Details Card */}
-      <div className="w-full border rounded-2xl p-6 bg-card shadow-sm">
-        <div className="flex justify-between items-start mb-2">
-          <div>
-            <h3 className="text-lg font-bold">Contact Details</h3>
-            <p className="text-muted-foreground text-sm">
-              Add Contact details of key persons related to event.
-            </p>
-          </div>
+      <Container
+        heading="Contact Details"
+        description="Add Contact details of key persons related to event."
+      >
+        <div className="flex justify-end">
           <Button
             variant="outline"
-            size="icon"
+            size="sm"
             onClick={handleAddContact}
-            className="rounded-full h-8 w-8 border-dashed border-2 hover:bg-secondary/20"
+            className="rounded-full border-primary-500 text-primary-600 hover:bg-primary-50 gap-2 font-bold px-6"
           >
             <Plus className="w-4 h-4" />
+            <span>Add Contact</span>
           </Button>
         </div>
 
-        <div className="flex flex-col gap-3 mt-4">
+        <div className="flex flex-col gap-3">
           {contacts.map((contact) => (
             <div
               key={contact.id}
-              className="flex items-center justify-between p-4 rounded-xl bg-secondary/20 border border-secondary/30"
+              className="flex items-center justify-between p-4 rounded-xl bg-primary-50/30 border border-primary-100 transition-all hover:border-primary-300"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary-500 font-bold text-lg">
+                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-lg poppins">
                   {contact.name.substring(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <h4 className="font-semibold text-base">{contact.name}</h4>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <h4 className="font-bold text-base text-neutral-800 poppins">{contact.name}</h4>
+                  <div className="flex items-center gap-3 text-sm text-neutral-600 inter">
                     <span>{contact.phone || "No Phone"}</span>
-                    <span className="text-border">|</span>
+                    <span className="text-neutral-300">•</span>
                     <span>{contact.email || "No Email"}</span>
                   </div>
                 </div>
@@ -386,7 +386,7 @@ export default function AdditionalInfo({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleEditContact(contact)}
-                  className="text-primary-500 hover:text-primary-500 hover:bg-primary/10 gap-1 h-8"
+                  className="text-primary-600 hover:text-primary-700 hover:bg-primary-100 gap-1 h-8 font-bold"
                 >
                   <Edit2 className="w-3 h-3" />
                   <span className="text-xs">Edit</span>
@@ -395,7 +395,7 @@ export default function AdditionalInfo({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDeleteContact(contact.id)}
-                  className="text-primary-500 hover:text-destructive-foreground hover:bg-destructive/10 gap-1 h-8"
+                  className="text-neutral-400 hover:text-destructive hover:bg-destructive/10 gap-1 h-8 font-bold"
                 >
                   <Trash2 className="w-3 h-3" />
                   <span className="text-xs">Delete</span>
@@ -404,45 +404,43 @@ export default function AdditionalInfo({
             </div>
           ))}
           {contacts.length === 0 && (
-            <div className="text-center text-muted-foreground text-sm italic py-4">
+            <div className="text-center text-neutral-500 text-sm italic py-8 border border-dashed border-neutral-200 rounded-xl">
               No contact details added yet.
             </div>
           )}
         </div>
-      </div>
+      </Container>
 
       {/* Attachments Card */}
-      <div className="w-full border rounded-2xl p-6 bg-card shadow-sm">
-        <div className="flex justify-between items-start mb-2">
-          <div>
-            <h3 className="text-lg font-bold">Attachments</h3>
-            <p className="text-muted-foreground text-sm">
-              Upload documents relevant to the event (Rules, Brochure, etc.)
-            </p>
-          </div>
+      <Container
+        heading="Attachments"
+        description="Upload documents relevant to the event (Rules, Brochure, etc.)"
+      >
+        <div className="flex justify-end mt-[-48px] mb-4">
           <Button
             variant="outline"
-            size="icon"
+            size="sm"
             onClick={handleAddAttachment}
-            className="rounded-full h-8 w-8 border-dashed border-2 hover:bg-secondary/20"
+            className="rounded-full border-primary-500 text-primary-600 hover:bg-primary-50 gap-2 font-bold px-6"
           >
             <Plus className="w-4 h-4" />
+            <span>Upload Document</span>
           </Button>
         </div>
 
-        <div className="flex flex-col gap-3 mt-4">
+        <div className="flex flex-col gap-3">
           {attachments.map((file) => (
             <div
               key={file.id}
-              className="flex items-center justify-between p-4 rounded-xl bg-secondary/20 border border-secondary/30"
+              className="flex items-center justify-between p-4 rounded-xl bg-primary-50/30 border border-primary-100 transition-all hover:border-primary-300"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600">
                   <FileText className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-base">{file.title}</h4>
-                  <p className="text-sm text-muted-foreground">{file.type}</p>
+                  <h4 className="font-bold text-base text-neutral-800 poppins">{file.title}</h4>
+                  <p className="text-sm text-neutral-600 inter">{file.type}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -450,7 +448,7 @@ export default function AdditionalInfo({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDeleteAttachment(file.id)}
-                  className="text-primary-500 hover:text-destructive-foreground hover:bg-destructive/10 gap-1 h-8"
+                  className="text-neutral-400 hover:text-destructive hover:bg-destructive/10 gap-1 h-8 font-bold"
                 >
                   <Trash2 className="w-3 h-3" />
                   <span className="text-xs">Delete</span>
@@ -459,12 +457,12 @@ export default function AdditionalInfo({
             </div>
           ))}
           {attachments.length === 0 && (
-            <div className="text-center text-muted-foreground text-sm italic py-4">
+            <div className="text-center text-neutral-500 text-sm italic py-8 border border-dashed border-neutral-200 rounded-xl">
               No attachments added yet.
             </div>
           )}
         </div>
-      </div>
+      </Container>
 
       {/* Contact Edit/Add Dialog */}
       <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>

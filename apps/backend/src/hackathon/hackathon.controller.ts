@@ -292,6 +292,7 @@ export class HackathonController {
   }
 
   @Get('by-slug/:slug/registrations')
+  @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Get hackathon team registrations by slug',
     description:
@@ -374,6 +375,51 @@ export class HackathonController {
       userId,
       page ? parseInt(page, 10) : 1,
       take ? parseInt(take, 10) : 10,
+    );
+  }
+
+  @Get('by-slug/:slug/teams/:teamId/registration')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Get specific team registration for a hackathon by slug',
+    description:
+      'Retrieve registration details for a specific team including submissions. Owner/Manager/Admin only.',
+  })
+  @ApiParam({
+    name: 'slug',
+    description: 'Hackathon slug',
+    type: 'string',
+    example: 'tech-innovation-2025',
+  })
+  @ApiParam({
+    name: 'teamId',
+    description: 'Team ID',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Team registration retrieved successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Owner/Manager/Admin only',
+  })
+  @ApiResponse({ status: 404, description: 'Hackathon or team not found' })
+  async getHackathonTeamRegistrationByTeamId(
+    @Param('slug') slug: string,
+    @Param('teamId') teamId: string,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('User not found');
+    const safeSlug = assertNonEmptyId(slug, 'slug');
+    const safeTeamId = assertNonEmptyId(teamId, 'teamId');
+    return this.hackathonService.getHackathonRegistrationByTeamId(
+      safeSlug,
+      safeTeamId,
+      userId,
     );
   }
 
@@ -505,6 +551,7 @@ export class HackathonController {
   }
 
   @Get('by-slug/:slug/teams/:teamId/registration-answers')
+  @UseGuards(ClerkAuthGuard)
   @ApiOperation({
     summary: 'Get team registration answers',
     description:

@@ -39,6 +39,10 @@ interface RoundsAndStagesProps {
   setFormData: (data: React.SetStateAction<FormData>) => void;
 }
 
+import { Container } from "@/app/dashboard/_components/Container";
+
+import { SolarCheckCircleBold } from "@/components/ui/icons/solar"; // If available, else CheckCircle from lucide-react
+
 export default function RoundsAndStages({
   formData,
   setFormData,
@@ -117,34 +121,30 @@ export default function RoundsAndStages({
 
   return (
     <div className="flex flex-col w-full animate-in fade-in slide-in-from-bottom-5 duration-500">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold">Rounds And Stages</h2>
-          <p className="text-muted-foreground text-sm mt-1 max-w-2xl">
-            Create different rounds which will represent each stage of
-            opportunity. Add rounds in order.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <Container
+        heading="Rounds And Stages"
+        description="Create different rounds which will represent each stage of opportunity. Add rounds in order."
+      >
+        <div className="flex justify-end gap-2 mb-4">
           {formData.rounds.length > 0 && (
             <Button
               type="button"
               variant="outline"
               onClick={handleClearAllRounds}
-              className="rounded-full"
+              className="rounded-full border-neutral-300 text-neutral-600 hover:bg-neutral-50 font-bold px-6"
             >
               Clear all
             </Button>
           )}
           <Button
             onClick={handleAddRound}
-            className="bg-primary-500 text-background hover:bg-primary/90 font-semibold gap-2 rounded-full shadow-lg shadow-primary/20"
+            className="bg-primary-500 text-background hover:bg-primary-600 font-bold gap-2 rounded-full shadow-lg shadow-primary-500/20 px-6"
           >
             <Plus className="w-4 h-4" />
             Add Round
           </Button>
         </div>
-      </div>
+      </Container>
 
       <div className="flex flex-col gap-0 w-full">
         {formData.rounds.length === 0 && (
@@ -258,7 +258,7 @@ export default function RoundsAndStages({
                                 className={cn(
                                   "w-full justify-start text-left font-normal",
                                   !tempRoundData.startDate &&
-                                    "text-muted-foreground",
+                                  "text-muted-foreground",
                                 )}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -309,7 +309,7 @@ export default function RoundsAndStages({
                                 className={cn(
                                   "w-full justify-start text-left font-normal",
                                   !tempRoundData.endDate &&
-                                    "text-muted-foreground",
+                                  "text-muted-foreground",
                                 )}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />

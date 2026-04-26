@@ -8,9 +8,8 @@ import {
   getPaginationRowModel,
   ColumnDef,
 } from "@tanstack/react-table";
-import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/common/EmptyState";
 import {
   Table,
   TableBody,
@@ -97,30 +96,24 @@ export const ReferredUsersTable = memo(function ReferredUsersTable({ referralId 
 
   return (
     <div className="w-full rounded-2xl overflow-hidden border border-neutral-200 bg-white shadow-sm">
-      <Table className="min-w-[800px] border-collapse!">
-        <TableHeader className="bg-primary-800 hover:bg-primary-800!">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="hover:bg-transparent! border-b-primary-900 border-b!">
-              {headerGroup.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  className="text-white font-semibold py-5 px-6 whitespace-nowrap"
-                >
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center text-neutral-500">
-                No users found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            table.getRowModel().rows.map((row) => (
+      {table.getRowModel().rows.length > 0 ? (
+        <Table className="min-w-[800px] border-collapse!">
+          <TableHeader className="bg-primary-800 hover:bg-primary-800!">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="hover:bg-transparent! border-b-primary-900 border-b!">
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className="text-white font-semibold py-5 px-6 whitespace-nowrap"
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
                 className="hover:bg-neutral-50/50 border-neutral-100 transition-colors"
@@ -134,10 +127,15 @@ export const ReferredUsersTable = memo(function ReferredUsersTable({ referralId 
                   </TableCell>
                 ))}
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <EmptyState
+          title="No registered users found"
+          description="There are no users registered using this referral link yet."
+        />
+      )}
     </div>
   );
 });

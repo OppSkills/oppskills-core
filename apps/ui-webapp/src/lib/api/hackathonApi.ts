@@ -512,6 +512,32 @@ export async function getHackathonRegistrationsBySlug(
   return res.data as HackathonRegistrationsBySlugResponse;
 }
 
+/**
+ * Get a specific team's registration for a hackathon by slug (owner/manager/admin only).
+ */
+export async function getHackathonTeamRegistration(
+  token: string,
+  slug: string,
+  teamId: string,
+): Promise<{
+  hackathonId: string;
+  name: string;
+  rounds: HackathonRoundInfo[];
+  team: HackathonTeamRegistration;
+}> {
+  const safeSlug = slug.trim();
+  if (safeSlug.length === 0) {
+    throw new Error("Hackathon slug is required.");
+  }
+  const res = await API.get(
+    `/by-slug/${encodeURIComponent(safeSlug)}/teams/${encodeURIComponent(teamId)}/registration`,
+    {
+      headers: buildAuthHeaders(token),
+    },
+  );
+  return res.data;
+}
+
 // =====================
 // Team Round Qualification (Organizer)
 // =====================

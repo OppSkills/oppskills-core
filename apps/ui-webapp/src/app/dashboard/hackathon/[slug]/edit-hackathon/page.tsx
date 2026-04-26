@@ -1,21 +1,20 @@
 "use client";
 
 import {
-  FileEdit,
-  Trophy,
-  LayoutTemplate,
-  CheckCircle2,
+  Pen as FileEdit,
+  Cup as Trophy,
+  CheckCircle,
   FileText,
   Settings,
   Calendar as CalendarIcon,
-  Clock,
+  ClockCircle as Clock,
   AlignLeft,
-  MapPin,
-  ChevronDown,
-  Wand2,
-  Users,
-  Globe,
-} from "lucide-react";
+  MapPoint as MapPin,
+  AltArrowDown as ChevronDown,
+  UserSpeak as Users,
+
+} from "@solar-icons/react";
+
 import InputBlock from "@/components/ui/derived/InputBlock";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
 import RegistrationQuestionsModal, { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
@@ -55,6 +54,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
+import { Container } from "@/app/dashboard/_components/Container";
 
 const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
@@ -90,6 +90,9 @@ import Prizes from "./_components/Prizes";
 import RegistrationSettings from "./_components/RegistrationSettings";
 import { CompetitionDetailsClient } from "@/app/hackathons/[slug]/CompetitionDetailsClient";
 import { presignImageUpload } from "@/lib/api/mediaApi";
+import { Globe, LayoutGrid, Wand2 } from "lucide-react";
+import Layout from "@/app/profile/layout";
+import { Button } from "@/components/ui/button";
 
 /**
  * Shared Types
@@ -810,7 +813,7 @@ export default function EditHackathonPage() {
     {
       id: "preview",
       label: "Preview",
-      icon: <CheckCircle2 className="w-4 h-4" />,
+      icon: <CheckCircle className="w-4 h-4" />,
     },
     {
       id: "basic-details",
@@ -825,7 +828,7 @@ export default function EditHackathonPage() {
     {
       id: "rounds-stages",
       label: "Rounds and Stages",
-      icon: <LayoutTemplate className="w-4 h-4" />,
+      icon: <LayoutGrid className="w-4 h-4" />,
     },
     { id: "prizes", label: "Prizes", icon: <Trophy className="w-4 h-4" /> },
     {
@@ -1388,23 +1391,24 @@ export default function EditHackathonPage() {
             </div>
 
             {/* Main Content - Form Grid */}
-            <div className="flex-1 flex flex-col gap-4">
+            <div className="flex-1 flex flex-col gap-6">
               {/* Context & Visibility Dropdowns */}
-              <div className="flex w-full justify-between items-center bg-transparent">
+              <div className="flex w-full justify-between items-center bg-transparent px-1">
                 {/* Event Context Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <div className="cursor-pointer">
-                      <div className="flex items-center gap-2 bg-neutral-200 px-4 py-2 rounded-lg text-sm font-medium">
+                      <div className="flex items-center gap-2 bg-primary-50/50 border border-primary-100 px-4 py-2 rounded-xl text-sm font-bold text-primary-700 poppins">
                         {formData.eventFestName || "Individual Hackathon"}
-                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                        <ChevronDown className="w-4 h-4 text-primary-400" />
                       </div>
                     </div>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[300px]">
-                    <DropdownMenuLabel>Type</DropdownMenuLabel>
+                  <DropdownMenuContent className="w-[300px] rounded-xl border-primary-100 shadow-xl">
+                    <DropdownMenuLabel className="poppins text-primary-800">Hackathon Context</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
+                      className="rounded-lg m-1 inter font-medium focus:bg-primary-50 focus:text-primary-700"
                       onClick={() =>
                         setFormData({
                           ...formData,
@@ -1414,7 +1418,6 @@ export default function EditHackathonPage() {
                     >
                       Individual Hackathon
                     </DropdownMenuItem>
-                    {/* Add more items/loading logic here */}
                   </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -1422,15 +1425,16 @@ export default function EditHackathonPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <div className="cursor-pointer">
-                      <div className="flex items-center gap-2 bg-neutral-200 px-4 py-2 rounded-lg text-sm font-medium">
-                        <Globe className="w-4 h-4 text-muted-foreground" />
+                      <div className="flex items-center gap-2 bg-primary-50/50 border border-primary-100 px-4 py-2 rounded-xl text-sm font-bold text-primary-700 poppins">
+                        <Globe className="w-4 h-4 text-primary-400" />
                         {formData.eventFestVisibility || "Public"}
-                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                        <ChevronDown className="w-4 h-4 text-primary-400" />
                       </div>
                     </div>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[200px]">
+                  <DropdownMenuContent className="w-[200px] rounded-xl border-primary-100 shadow-xl">
                     <DropdownMenuItem
+                      className="rounded-lg m-1 inter font-medium focus:bg-primary-50 focus:text-primary-700"
                       onClick={() =>
                         setFormData({
                           ...formData,
@@ -1441,6 +1445,7 @@ export default function EditHackathonPage() {
                       Public
                     </DropdownMenuItem>
                     <DropdownMenuItem
+                      className="rounded-lg m-1 inter font-medium focus:bg-primary-50 focus:text-primary-700"
                       onClick={() =>
                         setFormData({
                           ...formData,
@@ -1454,91 +1459,86 @@ export default function EditHackathonPage() {
                 </DropdownMenu>
               </div>
 
-              {/* Hackathon Name InputBlock */}
-              <div className="w-full">
-                <InputBlock
-                  icon={null}
-                  label={
-                    <input
-                      value={formData.eventName}
-                      onChange={(e) =>
-                        setFormData({ ...formData, eventName: e.target.value })
-                      }
-                      className="text-2xl md:text-3xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50 w-full text-foreground"
-                      placeholder="Hackathon Name"
-                    />
+              {/* Hackathon Name Input */}
+              <div className="w-full px-1">
+                <input
+                  value={formData.eventName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, eventName: e.target.value })
                   }
-                  subLabel="Enter the name of your hackathon"
-                  className="bg-transparent hover:bg-transparent p-0 border-none cursor-text"
+                  className="text-3xl md:text-5xl font-black bg-transparent border-none outline-none placeholder:text-neutral-300 w-full text-neutral-900 poppins"
+                  placeholder="Untitled Hackathon"
                 />
               </div>
 
-              {/* Date & Time Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <div className="h-full">
-                      <InputBlock
-                        icon={<CalendarIcon className="w-6 h-6" />}
-                        label={
-                          formData.eventDate
-                            ? formData.eventDate.toLocaleDateString("en-GB", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
-                            : "Select Date"
-                        }
-                        subLabel="Hackathon Date"
-                        className="h-full"
-                      />
-                    </div>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.eventDate}
-                      onSelect={(date) =>
-                        setFormData({
-                          ...formData,
-                          eventDate: date,
-                          registrationSettings: {
-                            ...formData.registrationSettings,
+              {/* Schedule Section */}
+              <Container
+                heading="Schedule"
+                description="Set the date and time for your hackathon."
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div className="h-full">
+                        <InputBlock
+                          icon={<CalendarIcon className="w-6 h-6" />}
+                          label={
+                            formData.eventDate
+                              ? formData.eventDate.toLocaleDateString("en-GB", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })
+                              : "Select Date"
+                          }
+                          subLabel="Hackathon Date"
+                          className="h-full"
+                        />
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formData.eventDate}
+                        onSelect={(date) =>
+                          setFormData({
+                            ...formData,
                             eventDate: date,
-                          },
-                        })
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                            registrationSettings: {
+                              ...formData.registrationSettings,
+                              eventDate: date,
+                            },
+                          })
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
 
-                <InputBlock
-                  icon={<Clock className="w-6 h-6" />}
-                  label={
-                    <input
-                      type="time"
-                      value={formData.eventTimeFrom}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          eventTimeFrom: e.target.value,
-                          registrationSettings: {
-                            ...formData.registrationSettings,
-                            eventTime: e.target.value,
-                          },
-                        })
-                      }
-                      className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
-                    />
-                  }
-                  subLabel="Hackathon Time"
-                  className="h-full"
-                />
-              </div>
+                  <InputBlock
+                    icon={<Clock className="w-6 h-6" />}
+                    label={
+                      <input
+                        type="time"
+                        value={formData.eventTimeFrom}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            eventTimeFrom: e.target.value,
+                            registrationSettings: {
+                              ...formData.registrationSettings,
+                              eventTime: e.target.value,
+                            },
+                          })
+                        }
+                        className="bg-transparent border-none p-0 text-lg font-bold poppins focus:ring-0 outline-none text-neutral-800 w-full cursor-pointer"
+                      />
+                    }
+                    subLabel="Start Time"
+                    className="h-full bg-primary-50/20 border-primary-100 hover:bg-primary-50/40"
+                  />
+                </div>
 
-              {/* End Date & End Time Row (optional) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Popover>
                   <PopoverTrigger asChild>
                     <div className="h-full">
@@ -1556,8 +1556,8 @@ export default function EditHackathonPage() {
                             )
                             : "Select End Date"
                         }
-                        subLabel="Hackathon End Date (optional)"
-                        className="h-full"
+                        subLabel="End Date (Optional)"
+                        className="h-full bg-primary-50/20 border-primary-100 hover:bg-primary-50/40"
                       />
                     </div>
                   </PopoverTrigger>
@@ -1566,7 +1566,14 @@ export default function EditHackathonPage() {
                       mode="single"
                       selected={formData.eventEndDate}
                       onSelect={(date) =>
-                        setFormData({ ...formData, eventEndDate: date })
+                        setFormData({
+                          ...formData,
+                          eventEndDate: date,
+                          registrationSettings: {
+                            ...formData.registrationSettings,
+                            endDate: date,
+                          },
+                        })
                       }
                     />
                   </PopoverContent>
@@ -1580,183 +1587,205 @@ export default function EditHackathonPage() {
                       value={formData.eventTimeTo ?? ""}
                       onChange={(e) => {
                         const next = e.target.value;
+                        const time = next.trim().length > 0 ? next : undefined;
                         setFormData({
                           ...formData,
-                          eventTimeTo:
-                            next.trim().length > 0 ? next : undefined,
+                          eventTimeTo: time,
+                          registrationSettings: {
+                            ...formData.registrationSettings,
+                            endTime: time ?? "00:00",
+                          },
                         });
                       }}
-                      className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
+                      className="bg-transparent border-none p-0 text-lg font-bold poppins focus:ring-0 outline-none text-neutral-800 w-full cursor-pointer"
                     />
                   }
-                  subLabel="Hackathon End Time (optional)"
-                  className="h-full"
+                  subLabel="End Time (Optional)"
+                  className="h-full bg-primary-50/20 border-primary-100 hover:bg-primary-50/40"
                 />
-              </div>
+              </Container>
+              {/* Location & Format Section */}
+              <Container
+                heading="Location & Format"
+                description="Where and how the hackathon will take place."
+              >
+                <div className="flex flex-col gap-4">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <div className="h-full">
+                        <InputBlock
+                          icon={<MapPin className="w-6 h-6" />}
+                          label={formData.eventLocation || "Add Location"}
+                          subLabel="Online link or physical address"
+                          className="bg-primary-50/20 border-primary-100 hover:bg-primary-50/40"
+                        />
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="rounded-2xl border-primary-100">
+                      <DialogHeader>
+                        <DialogTitle className="poppins font-black text-2xl">Event Location</DialogTitle>
+                        <DialogDescription className="inter">
+                          Enter the location where the event will take place.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label className="inter font-bold">Location</Label>
+                          <Input
+                            value={formData.eventLocation}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                eventLocation: e.target.value,
+                              })
+                            }
+                            placeholder="e.g. San Francisco, CA or https://zoom.us/..."
+                            className="rounded-xl border-primary-100 focus:ring-primary-500"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button type="button" className="rounded-full bg-primary-500 hover:bg-primary-600 font-bold px-8">Done</Button>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
 
-              {/* Location */}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <div className="h-full">
-                    <InputBlock
-                      icon={<MapPin className="w-6 h-6" />}
-                      label={
-                        formData.eventLocation || "Add Hackathon Location"
-                      }
-                      subLabel="Offline location or virtual link"
-                    />
-                  </div>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Event Location</DialogTitle>
-                    <DialogDescription>
-                      Enter the location where the event will take place.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <label htmlFor="location" className="text-sm font-medium">
-                        Location
-                      </label>
-                      <input
-                        id="location"
-                        value={formData.eventLocation}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            eventLocation: e.target.value,
-                          })
-                        }
-                        placeholder="e.g. San Francisco, CA"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      />
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <div className="h-full">
+                          <InputBlock
+                            icon={<Wand2 className="w-6 h-6" />}
+                            label={formData.hackathonType || "Select Type"}
+                            subLabel="Hackathon format"
+                            className="bg-primary-50/20 border-primary-100 hover:bg-primary-50/40"
+                          />
+                        </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="rounded-xl border-primary-100 shadow-xl">
+                        {["Coding Hackathon", "Idea Hackathon", "Open Hackathon"].map(
+                          (t) => (
+                            <DropdownMenuItem
+                              key={t}
+                              className="rounded-lg m-1 inter font-medium focus:bg-primary-50 focus:text-primary-700"
+                              onClick={() =>
+                                setFormData({ ...formData, hackathonType: t })
+                              }
+                            >
+                              {t}
+                            </DropdownMenuItem>
+                          )
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
-              {/* Description */}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <div className="h-full">
-                    <InputBlock
-                      icon={<AlignLeft className="w-6 h-6" />}
-                      label={
-                        formData.eventDescription &&
-                          formData.eventDescription.replace(/<[^>]*>?/gm, "")
-                            .length > 0
-                          ? "Description"
-                          : "Add Description"
-                      }
-                      subLabel={
-                        formData.eventDescription
-                          ? formData.eventDescription
-                            .replace(/<[^>]*>?/gm, "")
-                            .substring(0, 50) + "..."
-                          : "Everything you need to know about..."
-                      }
-                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <div className="h-full">
+                          <InputBlock
+                            icon={<Users className="w-6 h-6" />}
+                            label={formData.participantType || "Select Participation"}
+                            subLabel="Team size configuration"
+                            className="bg-primary-50/20 border-primary-100 hover:bg-primary-50/40"
+                          />
+                        </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="max-h-[300px] overflow-y-auto rounded-xl border-primary-100 shadow-xl no-scrollbar">
+                        {[
+                          "Individual",
+                          "Team of 2",
+                          "Team of 3",
+                          "Team of 4",
+                          "Team of 5",
+                          "Team of 6",
+                          "More than 6",
+                          "Team of 2-3",
+                          "Team of 2-4",
+                          "Team of 3-4",
+                          "Team of 3-5",
+                          "Team of 4-5",
+                          "Team of 4-6",
+                          "Team of 5-6",
+                        ].map((t) => (
+                          <DropdownMenuItem
+                            key={t}
+                            className="rounded-lg m-1 inter font-medium focus:bg-primary-50 focus:text-primary-700"
+                            onClick={() =>
+                              setFormData({ ...formData, participantType: t })
+                            }
+                          >
+                            {t}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-                  <DialogHeader>
-                    <DialogTitle>Event Description</DialogTitle>
-                  </DialogHeader>
-                  <div className="flex-1 overflow-hidden border rounded-md">
-                    <RichTextEditor
-                      value={formData.eventDescription}
-                      onChange={(content: string) =>
-                        setFormData({
-                          ...formData,
-                          eventDescription: content,
-                        })
-                      }
-                    />
-                  </div>
-                </DialogContent>
-              </Dialog>
+                </div>
+              </Container>
 
-              {/* Hackathon Type & Participant Type Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+              {/* Description Section */}
+              <Container
+                heading="Description"
+                description="Everything participants need to know about the hackathon."
+              >
+                <Dialog>
+                  <DialogTrigger asChild>
                     <div className="h-full">
                       <InputBlock
-                        icon={<Wand2 className="w-6 h-6" />}
-                        label={formData.hackathonType || "Hackathon Type"}
-                        subLabel="Select hackathon format"
-                      />
-                    </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {[
-                      "Coding Hackathon",
-                      "Idea Hackathon",
-                      "Open Hackathon",
-                    ].map((t) => (
-                      <DropdownMenuItem
-                        key={t}
-                        onClick={() =>
-                          setFormData({ ...formData, hackathonType: t })
-                        }
-                      >
-                        {t}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <div className="h-full">
-                      <InputBlock
-                        icon={<Users className="w-6 h-6" />}
+                        icon={<AlignLeft className="w-6 h-6" />}
                         label={
-                          formData.participantType || "Participant Type"
+                          formData.eventDescription
+                            ? "View/Edit Description"
+                            : "Add Description"
                         }
-                        subLabel="Who can attend?"
+                        subLabel={
+                          formData.eventDescription
+                            ? formData.eventDescription
+                              .replace(/<[^>]*>?/gm, "")
+                              .substring(0, 80) + "..."
+                            : "Provide a detailed overview..."
+                        }
+                        className="bg-primary-50/20 border-primary-100 hover:bg-primary-50/40"
                       />
                     </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {[
-                      "Individual",
-                      "Team of 2",
-                      "Team of 3",
-                      "Team of 4",
-                      "Team of 5",
-                      "Team of 6",
-                      "More than 6",
-                      "Team of 2-3",
-                      "Team of 2-4",
-                      "Team of 3-4",
-                      "Team of 3-5",
-                      "Team of 4-5",
-                      "Team of 4-6",
-                      "Team of 5-6",
-                    ].map((t) => (
-                      <DropdownMenuItem
-                        key={t}
-                        onClick={() =>
-                          setFormData({ ...formData, participantType: t })
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl rounded-2xl border-primary-100">
+                    <DialogHeader>
+                      <DialogTitle className="poppins font-black text-2xl">Hackathon Description</DialogTitle>
+                    </DialogHeader>
+                    <div className="min-h-[400px] py-4">
+                      <RichTextEditor
+                        value={formData.eventDescription}
+                        onChange={(content: string) =>
+                          setFormData({ ...formData, eventDescription: content })
                         }
-                      >
-                        {t}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                      />
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button type="button" className="rounded-full bg-primary-500 hover:bg-primary-600 font-bold px-8">Done</Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </Container>
 
-              {/* Registration Form */}
-              <div onClick={() => setShowRegistrationModal(true)}>
-                <InputBlock
-                  icon={<FileEdit className="w-6 h-6" />}
-                  label="Registration Form"
-                  subLabel="Customize registration questions"
-                />
-              </div>
+              {/* Registration Form Section */}
+              <Container
+                heading="Registration Form"
+                description="Configure the questions participants must answer to register."
+              >
+                <div onClick={() => setShowRegistrationModal(true)}>
+                  <InputBlock
+                    icon={<FileEdit className="w-6 h-6" />}
+                    label="Customize Registration Form"
+                    subLabel="Add custom questions, file uploads, etc."
+                    className="bg-primary-50/20 border-primary-100 hover:bg-primary-50/40"
+                  />
+                </div>
+              </Container>
             </div>
 
             <RegistrationQuestionsModal
@@ -1768,33 +1797,44 @@ export default function EditHackathonPage() {
               }
             />
           </div>
-        )}
+        )
+        }
 
-        {activeTab === "registration-settings" && (
-          <RegistrationSettings
-            formData={formData}
-            setFormData={setFormData}
-            savedMaxTeams={lastSavedMaxTeamsRef.current}
-          />
-        )}
+        {
+          activeTab === "registration-settings" && (
+            <RegistrationSettings
+              formData={formData}
+              setFormData={setFormData}
+              savedMaxTeams={lastSavedMaxTeamsRef.current}
+            />
+          )
+        }
 
-        {activeTab === "rounds-stages" && (
-          <RoundsAndStages formData={formData} setFormData={setFormData} />
-        )}
+        {
+          activeTab === "rounds-stages" && (
+            <RoundsAndStages formData={formData} setFormData={setFormData} />
+          )
+        }
 
-        {activeTab === "prizes" && (
-          <Prizes formData={formData} setFormData={setFormData} />
-        )}
+        {
+          activeTab === "prizes" && (
+            <Prizes formData={formData} setFormData={setFormData} />
+          )
+        }
 
-        {activeTab === "additional-info" && (
-          <AdditionalInfo formData={formData} setFormData={setFormData} />
-        )}
+        {
+          activeTab === "additional-info" && (
+            <AdditionalInfo formData={formData} setFormData={setFormData} />
+          )
+        }
 
-        {activeTab === "preview" && (
-          <div className="w-full flex flex-col gap-4">
-            <CompetitionDetailsClient />
-          </div>
-        )}
+        {
+          activeTab === "preview" && (
+            <div className="w-full flex flex-col gap-4">
+              <CompetitionDetailsClient />
+            </div>
+          )
+        }
       </div>
     </div>
   );

@@ -83,7 +83,7 @@ export default function RegistrationsPage() {
             </div>
           )}
         </div>
-      </div >
+      </div>
     </BoneyardSkeleton >
   );
 }

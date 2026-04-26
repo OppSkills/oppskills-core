@@ -3,12 +3,13 @@
 import { Button } from "@/components/ui/button";
 import {
   Calendar as CalendarIcon,
-  Clock,
+  ClockCircle as Clock,
   Infinity as InfinityIcon,
-} from "lucide-react";
+  CheckCircle,
+} from "@solar-icons/react";
 import React from "react";
 import { cn } from "@/lib/utils";
-import { FormData } from "../page"; // Importing types from page.tsx
+import { FormData } from "../page";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -17,6 +18,10 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { formatToIST } from "@/lib/date-utils";
+import { format } from "date-fns";
+
+import { Container } from "@/app/dashboard/_components/Container";
+
 
 interface RegistrationSettingsProps {
   formData: FormData;
@@ -58,7 +63,7 @@ export default function RegistrationSettings({
         registrationSettings: nextRegs,
       };
       // Keep canonical fields in sync so autosave snapshot + basic-details match registration tab.
-      if (updates.endDate !== undefined || updates.endTime !== undefined) {
+      if ("endDate" in updates || "endTime" in updates) {
         if (nextRegs.endDate) {
           next.eventRegisterBy = applyTimeToDate(
             nextRegs.endDate,
@@ -68,32 +73,93 @@ export default function RegistrationSettings({
           next.eventRegisterBy = undefined;
         }
       }
-      if (updates.eventDate !== undefined) {
+      if ("eventDate" in updates) {
         next.eventDate = nextRegs.eventDate;
       }
-      if (updates.eventTime !== undefined) {
+      if ("eventTime" in updates) {
         next.eventTimeFrom = nextRegs.eventTime;
       }
       return next;
     });
   };
 
-  const toggleCandidate = (type: string) => {
+  const toggleCandidate = (title: string) => {
     const current = formData.registrationSettings.candidateTypes;
-    if (current.includes(type)) {
-      updateSettings({ candidateTypes: current.filter((t) => t !== type) });
+    const isEveryone = title === "Everyone can apply";
+
+    if (current.includes(title)) {
+      if (current.length <= 1) return;
+      updateSettings({ candidateTypes: current.filter((t) => t !== title) });
     } else {
-      updateSettings({ candidateTypes: [...current, type] });
+      if (isEveryone) {
+        updateSettings({ candidateTypes: ["Everyone can apply"] });
+      } else {
+        const filtered = current.filter((t) => t !== "Everyone can apply");
+        updateSettings({ candidateTypes: [...filtered, title] });
+      }
     }
   };
 
   const candidateTypes = [
-    "Everyone can apply",
-    "School students",
-    "College students",
-    "Freshers",
-    "Professionals",
+    { title: "Everyone can apply", value: "All Applicants" },
+    { title: "School students", value: "Up to grade 12" },
+    { title: "College students", value: "UG / PG Students" },
+    { title: "Freshers", value: "0-1 Year Experience" },
+    { title: "Professionals", value: "1+ Year Experience" },
   ];
+
+  const DateTimeBlock = ({
+    label,
+    date,
+    time,
+    onDateSelect,
+    onTimeChange,
+  }: {
+    label: string;
+    date: Date | undefined;
+    time: string;
+    onDateSelect: (date: Date | undefined) => void;
+    onTimeChange: (time: string) => void;
+  }) => {
+    return (
+      <div className="w-fit bg-primary-100 border border-primary-200 rounded-2xl p-4 transition-all hover:border-primary-300">
+        <p className="text-sm font-medium text-primary-600/70 mb-2">{label}</p>
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="text-xl font-semibold text-neutral-800 outline-none w-fit whitespace-nowrap">
+                {date ? format(date, "dd MMM yyyy") : "Select Date"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={onDateSelect}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
+          <div className="h-8 w-px bg-neutral-300" />
+
+          <div className="relative flex items-center group">
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => onTimeChange(e.target.value)}
+              className="text-base text-primary-600 bg-transparent border-none outline-none font-medium poppins cursor-pointer"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const [isEditingMaxTeams, setIsEditingMaxTeams] = React.useState(false);
+  const [localMaxTeams, setLocalMaxTeams] = React.useState<string>(
+    formData.registrationSettings.maxTeams?.toString() || "100"
+  );
 
   return (
     <div className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-5 duration-500">
@@ -102,266 +168,194 @@ export default function RegistrationSettings({
       </div>
 
       {/* Who Can Register */}
-      <div className="w-full border rounded-2xl p-6 bg-card shadow-sm">
-        <h3 className="text-lg font-bold mb-1">Who Can Register</h3>
-        <p className="text-muted-foreground text-sm mb-6">
-          Select the type(s) of eligible candidates
-        </p>
-
-        <div className="flex flex-wrap gap-3">
-          {candidateTypes.map((type) => {
+      <Container heading="Who Can Register" description="Select the type(s) of eligible candidates">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          {candidateTypes.map((type, index) => {
             const isSelected =
-              formData.registrationSettings.candidateTypes.includes(type);
+              formData.registrationSettings.candidateTypes.includes(type.title);
             return (
-              <button
-                key={type}
-                onClick={() => toggleCandidate(type)}
+              <div
+                key={index}
                 className={cn(
-                  "px-6 py-2 rounded-full text-sm font-medium transition-all",
+                  "p-2 flex gap-2 border rounded-lg transition-all",
                   isSelected
-                    ? "bg-[#F3E8FF] text-[#9333EA] ring-1 ring-[#9333EA]"
-                    : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
+                    ? "bg-primary-100 border-primary-500 text-primary-600 cursor-normal"
+                    : "border-neutral-500 text-primary-800 cursor-pointer hover:bg-primary-100"
                 )}
+                onClick={() => toggleCandidate(type.title)}
               >
-                {type}
-              </button>
+                <div className="w-6 h-6">
+                  <CheckCircle size={"24px"} />
+                </div>
+                <div className="flex flex-1 flex-col overflow-hidden">
+                  <p className={cn("text-base font-medium text-neutral-800 truncate", isSelected && "text-primary-600")}>{type.title}</p>
+                  <p className={cn("text-xs text-neutral-700")}>{type.value}</p>
+                </div>
+              </div>
             );
           })}
         </div>
-      </div>
+      </Container>
 
       {/* Registration Timeline */}
-      <div className="w-full border rounded-2xl p-6 bg-card shadow-sm">
-        <h3 className="text-lg font-bold mb-1">Registration Timeline</h3>
-        <p className="text-muted-foreground text-sm mb-6">
-          Start and end date of registration can be changed
-        </p>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Start Date Block */}
-          <div className="bg-muted/30 p-4 rounded-xl flex flex-col gap-3">
-            <span className="text-xs font-semibold text-muted-foreground">
-              Registration Start Date & Time
-            </span>
-            <div className="flex gap-2 flex-col">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full bg-background border-none shadow-sm text-foreground justify-start px-3"
-                  >
-                    <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
-                    {formData.registrationSettings.startDate
-                      ? formatToIST(formData.registrationSettings.startDate, { formatType: "full_date", showSuffix: false })
-                      : "Date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.registrationSettings.startDate}
-                    onSelect={(date) => updateSettings({ startDate: date })}
-                  />
-                </PopoverContent>
-              </Popover>
-              <div className="bg-background rounded-md flex items-center p-3 shadow-sm w-[130px]">
-                <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
-                <input
-                  type="time"
-                  className="bg-transparent border-none text-sm outline-none w-full font-medium"
-                  value={formData.registrationSettings.startTime}
-                  onChange={(e) =>
-                    updateSettings({ startTime: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Deadline Block */}
-          <div className="bg-muted/30 p-4 rounded-xl flex flex-col gap-3">
-            <span className="text-xs font-semibold text-muted-foreground">
-              Registration Deadline
-            </span>
-            <div className="flex gap-2 flex-col">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full bg-background border-none shadow-sm text-foreground justify-start px-3"
-                  >
-                    <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
-                    {formData.registrationSettings.endDate
-                      ? formatToIST(formData.registrationSettings.endDate, { formatType: "full_date", showSuffix: false })
-                      : "Date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.registrationSettings.endDate}
-                    onSelect={(date) => updateSettings({ endDate: date })}
-                  />
-                </PopoverContent>
-              </Popover>
-              <div className="bg-background rounded-md flex items-center p-3 shadow-sm w-[130px]">
-                <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
-                <input
-                  type="time"
-                  className="bg-transparent border-none text-sm outline-none w-full font-medium"
-                  value={formData.registrationSettings.endTime}
-                  onChange={(e) => updateSettings({ endTime: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Event Date Block */}
-          <div className="bg-muted/30 p-4 rounded-xl flex flex-col gap-3">
-            <span className="text-xs font-semibold text-muted-foreground">
-              Event Date & Time
-            </span>
-            <div className="flex gap-2 flex-col">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full bg-background border-none shadow-sm text-foreground justify-start px-3"
-                  >
-                    <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
-                    {formData.registrationSettings.eventDate
-                      ? formatToIST(formData.registrationSettings.eventDate, { formatType: "full_date", showSuffix: false })
-                      : "Date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.registrationSettings.eventDate}
-                    onSelect={(date) => updateSettings({ eventDate: date })}
-                  />
-                </PopoverContent>
-              </Popover>
-              <div className="bg-background rounded-md flex items-center p-3 shadow-sm w-[130px]">
-                <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
-                <input
-                  type="time"
-                  className="bg-transparent border-none text-sm outline-none w-full font-medium"
-                  value={formData.registrationSettings.eventTime}
-                  onChange={(e) =>
-                    updateSettings({ eventTime: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-          </div>
+      <Container
+        heading="Registration Timeline"
+        description="Set the start and end dates for registrations"
+      >
+        <div className="flex flex-col md:flex-row gap-4">
+          <DateTimeBlock
+            label="Registration Starts"
+            date={formData.eventDate}
+            time={formData.eventTimeFrom}
+            onDateSelect={(d) => updateSettings({ eventDate: d })}
+            onTimeChange={(t) => updateSettings({ eventTime: t })}
+          />
+          <DateTimeBlock
+            label="Registration Ends"
+            date={formData.registrationSettings.endDate}
+            time={formData.registrationSettings.endTime}
+            onDateSelect={(d) => updateSettings({ endDate: d })}
+            onTimeChange={(t) => updateSettings({ endTime: t })}
+          />
         </div>
-      </div>
+      </Container>
 
-      {/* Max Number of Teams */}
-      <div className="w-full border rounded-2xl p-6 bg-card shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-bold mb-1">Max Number Of Teams</h3>
-          <p className="text-muted-foreground text-sm">
-            Restrict the number of teams registering for event
-          </p>
-        </div>
-        <div>
-          <button
-            onClick={() => {
-              const next = !formData.registrationSettings.maxTeamsNoLimit;
-              updateSettings({
-                maxTeamsNoLimit: next,
-                maxTeams: next
-                  ? undefined
-                  : typeof formData.registrationSettings.maxTeams === "number"
-                    ? formData.registrationSettings.maxTeams
-                    : 1,
-              });
-            }}
-            className={cn(
-              "flex items-center gap-2 px-6 py-2.5 rounded-full border transition-all",
-              formData.registrationSettings.maxTeamsNoLimit
-                ? "border-[#F3E8FF] bg-background shadow-sm"
-                : "border-border bg-background text-muted-foreground"
-            )}
-          >
-            <InfinityIcon
-              className={cn(
-                "w-5 h-5",
-                formData.registrationSettings.maxTeamsNoLimit
-                  ? "text-purple-600"
-                  : "text-muted-foreground"
+      {/* Maximum Number Of Teams */}
+      <Container
+        heading="Max Number Of Users"
+        description='Choose "No Limit" to allow unlimited registrations.'
+      >
+        <div className="flex flex-row items-center gap-4 bg-primary-50/30 p-6 rounded-2xl border border-primary-100 w-full lg:w-fit">
+          {!isEditingMaxTeams ? (
+            <>
+              {formData.registrationSettings.maxTeams === null ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                    <InfinityIcon className="w-6 h-6 text-primary-600" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-neutral-800">No Limit</p>
+                    <p className="text-sm text-neutral-500 inter">Unlimited registrations allowed</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                    <UsersGroup className="w-6 h-6 text-primary-600" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-neutral-800">
+                      {formData.registrationSettings.maxTeams} Teams
+                    </p>
+                    <p className="text-sm text-neutral-500 inter">Registration limit set</p>
+                  </div>
+                </div>
               )}
-            />
-            <span
-              className={cn(
-                "text-sm font-semibold",
-                formData.registrationSettings.maxTeamsNoLimit
-                  ? "text-purple-600"
-                  : "text-muted-foreground"
-              )}
-            >
-              {formData.registrationSettings.maxTeamsNoLimit
-                ? "No Limit"
-                : "Limit set"}
-            </span>
-          </button>
-        </div>
-      </div>
 
-      {!formData.registrationSettings.maxTeamsNoLimit && (
-        <div className="w-full border rounded-2xl p-6 bg-card shadow-sm">
-          <div className="flex flex-col gap-2 max-w-sm">
-            <span className="text-sm font-semibold text-foreground">
-              Set max teams
-            </span>
-            <Input
-              type="number"
-              min={1}
-              step={1}
-              value={
-                typeof formData.registrationSettings.maxTeams === "number"
-                  ? String(formData.registrationSettings.maxTeams)
-                  : ""
-              }
-              onChange={(e) => {
-                const raw = e.target.value;
-                if (raw.trim().length === 0) {
-                  updateSettings({ maxTeams: undefined });
-                  return;
-                }
-                const parsed = Number(raw);
-                if (!Number.isInteger(parsed) || parsed < 1) {
-                  updateSettings({ maxTeams: undefined });
-                  return;
-                }
-                updateSettings({ maxTeams: parsed });
-              }}
-              placeholder="e.g. 200"
-              className="bg-background"
-            />
-            <div className="text-xs">
-              <span className="text-muted-foreground">Saved: </span>
-              <span className="font-medium text-foreground">
-                {savedMaxTeams === null
-                  ? "Unlimited"
-                  : typeof savedMaxTeams === "number"
-                    ? String(savedMaxTeams)
-                    : "—"}
-              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditingMaxTeams(true)}
+                className="ml-4 rounded-full hover:bg-primary-100 text-primary-600"
+              >
+                <Pen className="w-4 h-4 mr-2" />
+                Edit
+              </Button>
+            </>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full animate-in fade-in zoom-in-95 duration-200">
+              <div className="relative w-full sm:w-48">
+                <Input
+                  type="number"
+                  value={localMaxTeams}
+                  onChange={(e) => setLocalMaxTeams(e.target.value)}
+                  className="rounded-xl border-primary-200 focus:ring-primary-500 pr-10 poppins font-bold text-lg"
+                  placeholder="Enter limit"
+                  autoFocus
+                />
+                <UsersGroup className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-300" />
+              </div>
+
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button
+                  onClick={() => {
+                    const val = parseInt(localMaxTeams);
+                    if (!isNaN(val) && val > 0) {
+                      updateSettings({ maxTeams: val });
+                      setIsEditingMaxTeams(false);
+                    }
+                  }}
+                  className="rounded-full bg-primary-500 hover:bg-primary-600 font-bold px-6 flex-1 sm:flex-none"
+                >
+                  Update
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    updateSettings({ maxTeams: null });
+                    setIsEditingMaxTeams(false);
+                  }}
+                  className="rounded-full border-primary-200 text-primary-600 font-bold px-6 flex-1 sm:flex-none"
+                >
+                  Set No Limit
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setLocalMaxTeams(formData.registrationSettings.maxTeams?.toString() || "100");
+                    setIsEditingMaxTeams(false);
+                  }}
+                  className="rounded-full text-neutral-400 hover:text-neutral-600 flex-1 sm:flex-none"
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
-            {typeof formData.registrationSettings.maxTeams !== "number" && (
-              <p className="text-xs text-amber-600">
-                Please enter a whole number (minimum 1) to save.
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Must be at least 1. Choose “No Limit” for infinite teams.
-            </p>
-          </div>
+          )}
         </div>
-      )}
+      </Container>
     </div>
+  );
+}
+
+function UsersGroup(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function Pen(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+      <path d="m15 5 4 4" />
+    </svg>
   );
 }

@@ -20,7 +20,7 @@ import {
   Download,
   Mail,
 } from "lucide-react";
-
+import { EmptyState } from "@/components/common/EmptyState";
 import {
   Table,
   TableBody,
@@ -41,7 +41,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { FloatingInput } from "@/components/ui/derived/FloatingInput";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -92,6 +92,7 @@ interface ParticipantsProps {
   take: number;
   onPageChange: (page: number) => void;
   onTakeChange: (take: number) => void;
+  onSelectTeam: (teamId: string) => void;
 }
 
 export default function Participants({
@@ -105,10 +106,10 @@ export default function Participants({
   take,
   onPageChange,
   onTakeChange,
+  onSelectTeam,
 }: ParticipantsProps) {
   const params = useParams();
   const slug = params.slug as string;
-  const router = useRouter();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
@@ -260,9 +261,7 @@ export default function Participants({
                   <span
                     className="font-semibold hover:text-primary-500 cursor-pointer wrap-break-words"
                     onClick={() => {
-                      router.push(
-                        `/dashboard/hackathon/${slug}/manage-registration/${row.original.id}`,
-                      );
+                      onSelectTeam(row.original.id);
                     }}
                   >
                     {teamName}
@@ -405,7 +404,7 @@ export default function Participants({
       data.length,
       isPending,
       nextRoundId,
-      router,
+      onSelectTeam,
       selectedRoundId,
       slug,
     ],
@@ -497,36 +496,34 @@ export default function Participants({
       </div>
 
       <div className="w-full bg-white rounded-xl shadow-sm border border-neutral-300 overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table className="min-w-[1000px] w-full border border-neutral-300">
-            <TableHeader className="bg-primary-800">
-              {table.getHeaderGroups().map((group) => (
-                <TableRow key={group.id} className="hover:bg-transparent border-none">
-                  {group.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      className="text-neutral-100 font-normal text-sm whitespace-nowrap py-3 border-r border-white/30 last:border-r-0"
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
+        {table.getRowModel().rows.length > 0 ? (
+          <div className="overflow-x-auto">
+            <Table className="min-w-[1000px] w-full border border-neutral-300">
+              <TableHeader className="bg-primary-800">
+                {table.getHeaderGroups().map((group) => (
+                  <TableRow key={group.id} className="hover:bg-transparent border-none">
+                    {group.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className="text-neutral-100 font-normal text-sm whitespace-nowrap py-3 border-r border-white/30 last:border-r-0"
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
 
-            <TableBody>
-              {table.getRowModel().rows.length ? (
-                table.getRowModel().rows.map((row) => (
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
                     className="border-b border-neutral-300 hover:bg-neutral-50 transition-colors cursor-pointer"
                     onClick={() => {
-                      router.push(
-                        `/dashboard/hackathon/${slug}/manage-registration/${row.original.id}`,
-                      );
+                      onSelectTeam(row.original.id);
                     }}
                   >
                     {row.getVisibleCells().map((cell) => (
@@ -538,29 +535,28 @@ export default function Participants({
                       </TableCell>
                     ))}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="px-4">
-          <Pagination
-            curPage={page}
-            totalPages={totalPages}
-            perPage={take}
-            setPerPage={(size) => onTakeChange(Number(size))}
-            onPageChange={onPageChange}
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <EmptyState
+            title="No registrations found"
+            description={globalFilter ? `No teams matching "${globalFilter}" found.` : "No team registrations to display for this criteria."}
+            className="py-20"
           />
-        </div>
+        )}
+        {table.getRowModel().rows.length > 0 && (
+          <div className="px-4 border-t border-neutral-300">
+            <Pagination
+              curPage={page}
+              totalPages={totalPages}
+              perPage={take}
+              setPerPage={(size) => onTakeChange(Number(size))}
+              onPageChange={onPageChange}
+            />
+          </div>
+        )}
       </div>
 
       {selectedTeamForEmail && (

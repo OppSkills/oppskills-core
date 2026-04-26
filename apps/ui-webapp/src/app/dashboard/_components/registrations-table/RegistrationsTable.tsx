@@ -12,6 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/common/EmptyState";
+
 import {
   MoreVertical,
   MailIcon,
@@ -216,7 +218,7 @@ export function RegistrationsTable({
                 size="sm"
                 className={cn(
                   "h-8 px-4 rounded-md text-[11px] font-bold transition-all",
-                  isPresent 
+                  isPresent
                     ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
                     : "border-purple-600 text-purple-600 hover:bg-purple-50"
                 )}
@@ -242,21 +244,21 @@ export function RegistrationsTable({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-xl border-neutral-100">
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => onView?.(reg.id)}
                       className="rounded-lg gap-2 text-neutral-600 focus:text-primary-600 focus:bg-primary-50"
                     >
                       <User className="w-4 h-4" /> View Details
                     </DropdownMenuItem>
                     {onApprove && !reg.approved && (
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={() => onApprove(reg.id)}
                         className="rounded-lg gap-2 text-neutral-600 focus:text-green-600 focus:bg-green-50"
                       >
                         <Check className="w-4 h-4" /> Approve
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => onSendEmail?.(reg)}
                       className="rounded-lg gap-2 text-neutral-600 focus:text-primary-600 focus:bg-primary-50"
                     >
@@ -290,10 +292,11 @@ export function RegistrationsTable({
 
   if (data.length === 0) {
     return (
-      <div className="w-full h-64 flex flex-col items-center justify-center gap-3 bg-neutral-50 rounded-2xl border border-neutral-100">
-        <Users className="w-10 h-10 text-neutral-300" />
-        <p className="text-sm text-neutral-500 font-medium">No registrations found</p>
-      </div>
+      <EmptyState
+        title="No registrations found"
+        description={`There are no ${type.toLowerCase()} registrations to display at the moment.`}
+        className="bg-white rounded-2xl border border-neutral-200 shadow-sm py-20"
+      />
     );
   }
 
@@ -312,9 +315,9 @@ export function RegistrationsTable({
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </th>
                 ))}
               </tr>

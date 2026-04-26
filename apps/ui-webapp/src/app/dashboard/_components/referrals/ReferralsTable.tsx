@@ -9,6 +9,8 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { EmptyState } from "@/components/common/EmptyState";
+
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -252,45 +254,38 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
-
   return (
     <div className="w-full rounded-2xl overflow-hidden border border-neutral-200 bg-white shadow-sm">
-      <Table className="min-w-[1000px] border-collapse!">
-        <TableHeader className="bg-primary-800 hover:bg-primary-800!">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="hover:bg-transparent! border-b-primary-900 border-b!">
-              {headerGroup.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  className={cn(
-                    "text-white font-semibold py-5 px-6 whitespace-nowrap",
-                    (header.id === "clicks" ||
-                      header.id === "registrations" ||
-                      header.id === "view" ||
-                      header.id === "delete") &&
-                    "text-center"
-                  )}
-                  style={{
-                    width: header.id === "select" ? "60px" : header.id === "sno" ? "80px" : "auto",
-                  }}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center text-neutral-500">
-                No referrers found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            table.getRowModel().rows.map((row) => (
+      {table.getRowModel().rows.length > 0 ? (
+        <Table className="min-w-[1000px] border-collapse!">
+          <TableHeader className="bg-primary-800 hover:bg-primary-800!">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="hover:bg-transparent! border-b-primary-900 border-b!">
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className={cn(
+                      "text-white font-semibold py-5 px-6 whitespace-nowrap",
+                      (header.id === "clicks" ||
+                        header.id === "registrations" ||
+                        header.id === "view" ||
+                        header.id === "delete") &&
+                      "text-center"
+                    )}
+                    style={{
+                      width: header.id === "select" ? "60px" : header.id === "sno" ? "80px" : "auto",
+                    }}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
                 className="hover:bg-neutral-50/50 border-neutral-100 group transition-colors"
@@ -311,10 +306,15 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
                   </TableCell>
                 ))}
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <EmptyState
+          title="No referrals found"
+          description="There are no referral links generated for this opportunity yet."
+        />
+      )}
     </div>
   );
 });
