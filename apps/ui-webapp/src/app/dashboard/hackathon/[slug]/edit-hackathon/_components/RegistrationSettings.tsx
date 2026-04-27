@@ -158,7 +158,7 @@ export default function RegistrationSettings({
 
   const [isEditingMaxTeams, setIsEditingMaxTeams] = React.useState(false);
   const [localMaxTeams, setLocalMaxTeams] = React.useState<string>(
-    formData.registrationSettings.maxTeams?.toString() || "100"
+    formData.registrationSettings.maxTeams?.toString() || ""
   );
 
   return (
@@ -228,7 +228,7 @@ export default function RegistrationSettings({
         <div className="flex flex-row items-center gap-4 bg-primary-50/30 p-6 rounded-2xl border border-primary-100 w-full lg:w-fit">
           {!isEditingMaxTeams ? (
             <>
-              {formData.registrationSettings.maxTeams === null ? (
+              {formData.registrationSettings.maxTeamsNoLimit || formData.registrationSettings.maxTeams === null || formData.registrationSettings.maxTeams === undefined ? (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                     <InfinityIcon className="w-6 h-6 text-primary-600" />
@@ -281,7 +281,7 @@ export default function RegistrationSettings({
                   onClick={() => {
                     const val = parseInt(localMaxTeams);
                     if (!isNaN(val) && val > 0) {
-                      updateSettings({ maxTeams: val });
+                      updateSettings({ maxTeams: val, maxTeamsNoLimit: false });
                       setIsEditingMaxTeams(false);
                     }
                   }}
@@ -292,7 +292,7 @@ export default function RegistrationSettings({
                 <Button
                   variant="outline"
                   onClick={() => {
-                    updateSettings({ maxTeams: null });
+                    updateSettings({ maxTeams: null, maxTeamsNoLimit: true });
                     setIsEditingMaxTeams(false);
                   }}
                   className="rounded-full border-primary-200 text-primary-600 font-bold px-6 flex-1 sm:flex-none"
@@ -302,7 +302,7 @@ export default function RegistrationSettings({
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    setLocalMaxTeams(formData.registrationSettings.maxTeams?.toString() || "100");
+                    setLocalMaxTeams(formData.registrationSettings.maxTeams?.toString() || "");
                     setIsEditingMaxTeams(false);
                   }}
                   className="rounded-full text-neutral-400 hover:text-neutral-600 flex-1 sm:flex-none"
