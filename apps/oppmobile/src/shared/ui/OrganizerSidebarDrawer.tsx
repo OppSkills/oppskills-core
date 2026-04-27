@@ -45,6 +45,13 @@ const HOME_CHILD_ITEMS = [
   { key: 'settings', label: 'Settings', icon: 'settings' as OrganizerSidebarIconName },
 ] as const;
 
+const EVENT_CHILD_ITEMS = [
+  { key: 'event', label: 'Events List', icon: 'events' as OrganizerSidebarIconName },
+  { key: 'event-registrations', label: 'Event Registrations', icon: 'registrations' as OrganizerSidebarIconName },
+] as const;
+
+type ExpandableKey = 'home' | 'event';
+
 export interface OrganizerSidebarItem {
   readonly key: string;
   readonly label: string;
@@ -74,11 +81,12 @@ export function OrganizerSidebarDrawer({
   const childSlideX = useRef(new Animated.Value(CHILD_WIDTH)).current;
   const labelOpacity = useRef(new Animated.Value(1)).current;
 
-  const [childVisible, setChildVisible] = useState(false);
+  const [childExpandedFor, setChildExpandedFor] = useState<ExpandableKey | null>(null);
+  const childVisible = childExpandedFor !== null;
 
   useEffect(() => {
     if (!visible) {
-      setChildVisible(false);
+      setChildExpandedFor(null);
       drawerSlideX.setValue(-fullDrawerWidth);
       mainWidthAnim.setValue(fullDrawerWidth);
       labelOpacity.setValue(1);
@@ -163,16 +171,17 @@ export function OrganizerSidebarDrawer({
               <View style={styles.menuContainer}>
                 {items.map((item) => {
                   const isActive = item.key === activeItemKey;
-                  const isHome = item.key === 'home';
+                  const isExpandable = item.key === 'home' || item.key === 'event';
+                  const isExpanded = childExpandedFor === item.key;
 
                   return (
                     <Pressable
                       key={item.key}
                       onPress={() => {
-                        if (isHome) {
-                          setChildVisible((prev) => !prev);
+                        if (isExpandable) {
+                          setChildExpandedFor((prev) => prev === item.key ? null : item.key as ExpandableKey);
                         } else {
-                          setChildVisible(false);
+                          setChildExpandedFor(null);
                           onSelect(item.key);
                         }
                       }}
@@ -190,11 +199,11 @@ export function OrganizerSidebarDrawer({
                       >
                         {item.label}
                       </Animated.Text>
-                      {isHome ? (
+                      {isExpandable ? (
                         <Animated.View
                           style={[
                             styles.chevron,
-                            childVisible ? styles.chevronOpen : null,
+                            isExpanded ? styles.chevronOpen : null,
                             { opacity: labelOpacity },
                           ]}
                         />
@@ -219,7 +228,7 @@ export function OrganizerSidebarDrawer({
                 <Pressable
                   accessibilityLabel="Back to main sidebar"
                   hitSlop={8}
-                  onPress={() => setChildVisible(false)}
+                  onPress={() => setChildExpandedFor(null)}
                   style={styles.closeButton}
                 >
                   <View style={[styles.closeStroke, styles.closeStrokePrimary]} />
@@ -228,11 +237,11 @@ export function OrganizerSidebarDrawer({
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} style={styles.childMenuContainer}>
-                {HOME_CHILD_ITEMS.map((item) => (
+                {(childExpandedFor === 'event' ? EVENT_CHILD_ITEMS : HOME_CHILD_ITEMS).map((item) => (
                   <Pressable
                     key={item.key}
                     onPress={() => {
-                      setChildVisible(false);
+                      setChildExpandedFor(null);
                       onSelect(item.key);
                     }}
                     style={styles.childMenuItem}

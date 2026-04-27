@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, OrganizerSidebarDrawer, type OrganizerSidebarItem } from '../../../../shared/ui';
 import { OrganizerDashboardHome } from './OrganizerDashboardHome';
+import { EventRegistrationsPanel } from '../../../events/presentation/screens/EventRegistrationsPanel';
 import { OrganizerEventsPanel } from '../../../events/presentation/screens/OrganizerEventsPanel';
 import { SendNotificationsPanel } from './SendNotificationsPanel';
 import { TalentPipelinePanel } from './TalentPipelinePanel';
@@ -181,7 +182,7 @@ interface OrganizerDashboardScreenProps {
 
 export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenProps) {
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey | 'event' | 'hackathon' | 'festival' | 'home'>('dashboard');
+  const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey | 'event' | 'event-registrations' | 'hackathon' | 'festival' | 'home'>('dashboard');
 
   const activeSection = activeSectionKey in organizerSections
     ? organizerSections[activeSectionKey as OrganizerSectionKey]
@@ -190,6 +191,7 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
   const showingNotifications = activeSectionKey === 'send-notifications';
   const showingTalentPipeline = activeSectionKey === 'talent-pipeline';
   const showingEvents = activeSectionKey === 'event';
+  const showingEventRegistrations = activeSectionKey === 'event-registrations';
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
@@ -219,6 +221,8 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
         <OrganizerDashboardHome />
       ) : showingEvents ? (
         <OrganizerEventsPanel onOpenSidebar={() => setDrawerVisible(true)} />
+      ) : showingEventRegistrations ? (
+        <EventRegistrationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : showingNotifications ? (
         <SendNotificationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : showingTalentPipeline ? (

@@ -17,6 +17,20 @@ import {
 } from './EventFormModals';
 import { styles } from './OrganizerCreateEventScreen.styles';
 
+export interface LiveEvent {
+  readonly id: string;
+  readonly title: string;
+  readonly candidates: number;
+  readonly startDate: string;
+  readonly startTime: string;
+  readonly organizerName: string;
+  readonly locationMode: LocationMode;
+  readonly locationValue: string;
+  readonly description: string;
+  readonly maxAttendees: string;
+  readonly ticketType: TicketType;
+}
+
 type ActiveModal =
   | 'date'
   | 'location'
@@ -27,13 +41,25 @@ type ActiveModal =
   | 'ticketing'
   | null;
 
+// Which fields are required and their display labels
+const REQUIRED: Array<{ key: string; label: string }> = [
+  { key: 'eventName', label: 'Event Name' },
+  { key: 'eventDate', label: 'Event Date' },
+  { key: 'locationValue', label: 'Event Location' },
+  { key: 'description', label: 'Description' },
+  { key: 'organizerName', label: 'Organization Name' },
+];
+
 export interface OrganizerCreateEventScreenProps {
   readonly onBack: () => void;
+  readonly onHostEvent: (event: LiveEvent) => void;
 }
 
-export function OrganizerCreateEventScreen({ onBack }: OrganizerCreateEventScreenProps) {
+export function OrganizerCreateEventScreen({ onBack, onHostEvent }: OrganizerCreateEventScreenProps) {
   const [eventName, setEventName] = useState('');
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
 
   // Field state
   const [eventDate, setEventDate] = useState<Date | null>(null);
@@ -51,15 +77,46 @@ export function OrganizerCreateEventScreen({ onBack }: OrganizerCreateEventScree
 
   const formattedTime = `${eventTime.hour}:${eventTime.minute} ${eventTime.period}`;
 
-  const locationLabel = locationValue.trim()
-    ? locationValue
-    : locationMode === 'online'
-    ? 'Add Event Location'
-    : 'Add Event Location';
+  function validate() {
+    const values: Record<string, string | null> = {
+      eventName: eventName.trim() || null,
+      eventDate: eventDate ? 'ok' : null,
+      locationValue: locationValue.trim() || null,
+      description: description.trim() || null,
+      organizerName: organizerName.trim() || null,
+    };
 
-  const locationSubtitle = locationValue.trim()
-    ? locationMode === 'online' ? 'Online' : 'Offline'
-    : 'Offline location or virtual link';
+    const newErrors: Record<string, string> = {};
+    for (const { key, label } of REQUIRED) {
+      if (!values[key]) newErrors[key] = `${label} is required`;
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
+
+  function handleListEvent() {
+    setSubmitted(true);
+    if (!validate()) return;
+
+    const event: LiveEvent = {
+      id: String(Date.now()),
+      title: eventName.trim(),
+      candidates: 0,
+      startDate: formattedDate!,
+      startTime: formattedTime,
+      organizerName: organizerName.trim(),
+      locationMode,
+      locationValue: locationValue.trim(),
+      description: description.trim(),
+      maxAttendees: maxAttendees.trim(),
+      ticketType,
+    };
+    onHostEvent(event);
+  }
+
+  function fieldError(key: string) {
+    return submitted && errors[key] ? errors[key] : null;
+  }
 
   return (
     <View style={styles.screen}>
@@ -102,7 +159,7 @@ export function OrganizerCreateEventScreen({ onBack }: OrganizerCreateEventScree
                 ))}
               </View>
               <AppText style={styles.previewMeta}>
-                {formattedDate ? `Register by ${formattedDate}` : 'Register by —'}
+                {formattedDate ? `By ${formattedDate}` : 'Register by —'}
               </AppText>
               <View style={styles.previewPill}>
                 <AppText style={styles.previewPillText}>
@@ -122,12 +179,16 @@ export function OrganizerCreateEventScreen({ onBack }: OrganizerCreateEventScree
 
         {/* Event name */}
         <TextInput
-          onChangeText={setEventName}
+          onChangeText={(v) => {
+            setEventName(v);
+            if (submitted && v.trim()) setErrors((p) => { const n = { ...p }; delete n.eventName; return n; });
+          }}
           placeholder="Event Name"
           placeholderTextColor="#D1CCD7"
-          style={styles.eventNameInput}
+          style={[styles.eventNameInput, fieldError('eventName') ? { borderBottomColor: '#EF4444', borderBottomWidth: 1 } : undefined]}
           value={eventName}
         />
+        {fieldError('eventName') && <AppText style={errorStyle}>{fieldError('eventName')}</AppText>}
 
         {/* Details form cards */}
         <AppText style={styles.sectionLabel}>Details</AppText>
@@ -135,17 +196,21 @@ export function OrganizerCreateEventScreen({ onBack }: OrganizerCreateEventScree
           <FormCard
             isFirst
             chevron
+            error={fieldError('eventDate')}
             iconSlot={<CalendarIcon />}
             onPress={() => setActiveModal('date')}
             subtitle="Event Date"
             title={formattedDate ?? 'Select Date'}
+            valueSet={!!eventDate}
           />
           <FormCard
             chevron
+            error={fieldError('locationValue')}
             iconSlot={<LocationIcon />}
             onPress={() => setActiveModal('location')}
-            subtitle={locationSubtitle}
-            title={locationLabel}
+            subtitle={locationValue.trim() ? (locationMode === 'online' ? 'Online' : 'Offline') : 'Offline location or virtual link'}
+            title={locationValue.trim() || 'Add Event Location'}
+            valueSet={!!locationValue.trim()}
           />
           <FormCard
             chevron
@@ -153,13 +218,16 @@ export function OrganizerCreateEventScreen({ onBack }: OrganizerCreateEventScree
             onPress={() => setActiveModal('time')}
             subtitle="Event Time"
             title={formattedTime}
+            valueSet
           />
           <FormCard
             chevron
+            error={fieldError('description')}
             iconSlot={<TextIcon />}
             onPress={() => setActiveModal('description')}
             subtitle={description.trim() ? description.slice(0, 40) + (description.length > 40 ? '…' : '') : 'About this event'}
             title="Add Description"
+            valueSet={!!description.trim()}
           />
           <FormCard
             chevron
@@ -167,14 +235,17 @@ export function OrganizerCreateEventScreen({ onBack }: OrganizerCreateEventScree
             onPress={() => setActiveModal('attendees')}
             subtitle="Max Attendees"
             title={maxAttendees.trim() ? `${maxAttendees} Users` : 'Unlimited Users'}
+            valueSet
           />
           <FormCard
             isLast
             chevron
+            error={fieldError('organizerName')}
             iconSlot={<BuildingIcon />}
             onPress={() => setActiveModal('organizer')}
             subtitle="Who is organizing?"
             title={organizerName.trim() || 'Organization Name'}
+            valueSet={!!organizerName.trim()}
           />
         </View>
 
@@ -189,27 +260,43 @@ export function OrganizerCreateEventScreen({ onBack }: OrganizerCreateEventScree
             onPress={() => setActiveModal('ticketing')}
             subtitle={ticketType === 'free' ? 'No registration fee' : 'Paid entry'}
             title={ticketType === 'free' ? 'Free Event' : 'Paid Event'}
+            valueSet
           />
         </View>
 
         {/* Submit */}
-        <Pressable style={styles.submitButton}>
+        {submitted && Object.keys(errors).length > 0 && (
+          <View style={validationBannerStyle}>
+            <AppText style={validationBannerText}>
+              Please fill in all required fields before listing.
+            </AppText>
+          </View>
+        )}
+
+        <Pressable onPress={handleListEvent} style={styles.submitButton}>
           <AppText style={styles.submitButtonText}>List Event</AppText>
         </Pressable>
       </ScrollView>
 
       {/* Modals */}
       <DatePickerModal
-        label="Select date"
+        label="Select event date"
         onClose={() => setActiveModal(null)}
-        onConfirm={(d) => setEventDate(d)}
+        onConfirm={(d) => {
+          setEventDate(d);
+          if (submitted) setErrors((p) => { const n = { ...p }; delete n.eventDate; return n; });
+        }}
         value={eventDate}
         visible={activeModal === 'date'}
       />
       <LocationModal
         mode={locationMode}
         onClose={() => setActiveModal(null)}
-        onConfirm={(m, v) => { setLocationMode(m); setLocationValue(v); }}
+        onConfirm={(m, v) => {
+          setLocationMode(m);
+          setLocationValue(v);
+          if (submitted && v.trim()) setErrors((p) => { const n = { ...p }; delete n.locationValue; return n; });
+        }}
         value={locationValue}
         visible={activeModal === 'location'}
       />
@@ -221,7 +308,10 @@ export function OrganizerCreateEventScreen({ onBack }: OrganizerCreateEventScree
       />
       <DescriptionModal
         onClose={() => setActiveModal(null)}
-        onConfirm={(v) => setDescription(v)}
+        onConfirm={(v) => {
+          setDescription(v);
+          if (submitted && v.trim()) setErrors((p) => { const n = { ...p }; delete n.description; return n; });
+        }}
         value={description}
         visible={activeModal === 'description'}
       />
@@ -233,7 +323,10 @@ export function OrganizerCreateEventScreen({ onBack }: OrganizerCreateEventScree
       />
       <OrganizerNameModal
         onClose={() => setActiveModal(null)}
-        onConfirm={(v) => setOrganizerName(v)}
+        onConfirm={(v) => {
+          setOrganizerName(v);
+          if (submitted && v.trim()) setErrors((p) => { const n = { ...p }; delete n.organizerName; return n; });
+        }}
         value={organizerName}
         visible={activeModal === 'organizer'}
       />
@@ -247,6 +340,35 @@ export function OrganizerCreateEventScreen({ onBack }: OrganizerCreateEventScree
   );
 }
 
+// ── Inline styles (one-off, no stylesheet needed) ─────────────────────────────
+
+const errorStyle = {
+  color: '#EF4444',
+  fontFamily: 'Urbanist',
+  fontSize: 11,
+  lineHeight: 16,
+  marginBottom: 4,
+  marginTop: 2,
+} as const;
+
+const validationBannerStyle = {
+  backgroundColor: '#FEF2F2',
+  borderColor: '#FECACA',
+  borderRadius: 8,
+  borderWidth: 1,
+  marginTop: 16,
+  paddingHorizontal: 14,
+  paddingVertical: 10,
+} as const;
+
+const validationBannerText = {
+  color: '#EF4444',
+  fontFamily: 'Urbanist',
+  fontSize: 13,
+  fontWeight: '500' as const,
+  lineHeight: 18,
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -259,25 +381,33 @@ interface FormCardProps {
   readonly isFirst?: boolean;
   readonly isLast?: boolean;
   readonly onPress?: () => void;
+  readonly valueSet?: boolean;
+  readonly error?: string | null;
 }
 
-function FormCard({ iconSlot, title, subtitle, chevron, isFirst, isLast, onPress }: FormCardProps) {
+function FormCard({ iconSlot, title, subtitle, chevron, isFirst, isLast, onPress, valueSet, error }: FormCardProps) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        styles.formCard,
-        isFirst && styles.formCardFirst,
-        isLast && styles.formCardLast,
-      ]}
-    >
-      <View style={styles.formCardIconWrap}>{iconSlot}</View>
-      <View style={styles.formCardContent}>
-        <AppText style={styles.formCardTitle}>{title}</AppText>
-        <AppText style={styles.formCardSubtitle}>{subtitle}</AppText>
-      </View>
-      {chevron && <View style={styles.formCardChevron} />}
-    </Pressable>
+    <>
+      <Pressable
+        onPress={onPress}
+        style={[
+          styles.formCard,
+          isFirst && styles.formCardFirst,
+          isLast && styles.formCardLast,
+          error ? { borderLeftColor: '#EF4444', borderLeftWidth: 3 } : undefined,
+        ]}
+      >
+        <View style={[styles.formCardIconWrap, valueSet && { backgroundColor: '#EDE9F5' }]}>
+          {iconSlot}
+        </View>
+        <View style={styles.formCardContent}>
+          <AppText style={[styles.formCardTitle, valueSet && { color: '#1C1340' }]}>{title}</AppText>
+          <AppText style={styles.formCardSubtitle}>{subtitle}</AppText>
+        </View>
+        {chevron && <View style={styles.formCardChevron} />}
+      </Pressable>
+      {error && <AppText style={{ ...errorStyle, marginHorizontal: 4, marginBottom: 0 }}>{error}</AppText>}
+    </>
   );
 }
 
