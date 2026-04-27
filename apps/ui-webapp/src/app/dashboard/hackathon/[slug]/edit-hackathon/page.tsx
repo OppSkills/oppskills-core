@@ -127,7 +127,7 @@ export interface RegistrationSettingsData {
   eventDate: Date | undefined;
   eventTime: string;
   maxTeamsNoLimit: boolean;
-  maxTeams?: number;
+  maxTeams?: number | null;
   minTeamSize?: number;
   maxTeamSize?: number;
 }

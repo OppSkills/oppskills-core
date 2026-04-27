@@ -33,15 +33,13 @@ import React, { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FormData, Round } from "../page";
+import { CheckCircle } from "@solar-icons/react";
+import { Container } from "./Container";
 
 interface RoundsAndStagesProps {
   formData: FormData;
   setFormData: (data: React.SetStateAction<FormData>) => void;
 }
-
-import { Container } from "@/app/dashboard/_components/Container";
-
-import { SolarCheckCircleBold } from "@/components/ui/icons/solar"; // If available, else CheckCircle from lucide-react
 
 export default function RoundsAndStages({
   formData,
