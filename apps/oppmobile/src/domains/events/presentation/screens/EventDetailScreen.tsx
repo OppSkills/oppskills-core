@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '../../../../shared/ui';
 import { type LiveEvent } from './OrganizerCreateEventScreen';
 import { EventDashboardScreen } from './EventDashboardScreen';
+import { ManageRegistrationScreen } from './ManageRegistrationScreen';
 
 interface EventDetailScreenProps {
   readonly event: LiveEvent;
@@ -66,6 +67,8 @@ export function EventDetailScreen({ event, onBack, onOpenMainSidebar }: EventDet
 
       {activeContextSection === 'dashboard' ? (
         <EventDashboardScreen event={event} />
+      ) : activeContextSection === 'manage-registration' ? (
+        <ManageRegistrationScreen />
       ) : (
         <View style={styles.placeholderWrap}>
           <AppText style={styles.placeholderText}>Coming soon</AppText>
