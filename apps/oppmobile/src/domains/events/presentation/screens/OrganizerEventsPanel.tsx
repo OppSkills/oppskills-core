@@ -19,6 +19,10 @@ const tableWidth =
 let _persistedEvents: LiveEvent[] = [];
 let _persistedRegsOpen: Record<string, boolean> = {};
 
+export function updatePersistedEvent(updated: LiveEvent) {
+  _persistedEvents = _persistedEvents.map((e) => (e.id === updated.id ? updated : e));
+}
+
 interface OrganizerEventsPanelProps {
   readonly onSelectEvent: (event: LiveEvent) => void;
 }

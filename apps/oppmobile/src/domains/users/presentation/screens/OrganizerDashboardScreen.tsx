@@ -6,7 +6,7 @@ import { AppText, OrganizerSidebarDrawer, type OrganizerSidebarItem } from '../.
 import { type LiveEvent } from '../../../events/presentation/screens/OrganizerCreateEventScreen';
 import { EventDetailScreen } from '../../../events/presentation/screens/EventDetailScreen';
 import { OrganizerDashboardHome } from './OrganizerDashboardHome';
-import { OrganizerEventsPanel } from '../../../events/presentation/screens/OrganizerEventsPanel';
+import { OrganizerEventsPanel, updatePersistedEvent } from '../../../events/presentation/screens/OrganizerEventsPanel';
 import { SendNotificationsPanel } from './SendNotificationsPanel';
 import { TalentPipelinePanel } from './TalentPipelinePanel';
 import { styles } from './OrganizerDashboardScreen.styles';
@@ -225,6 +225,10 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
           event={selectedEvent}
           onBack={() => setSelectedEvent(null)}
           onOpenMainSidebar={() => setDrawerVisible(true)}
+          onUpdateEvent={(updated) => {
+            updatePersistedEvent(updated);
+            setSelectedEvent(updated);
+          }}
         />
       ) : showingEvents ? (
         <OrganizerEventsPanel onSelectEvent={(e) => setSelectedEvent(e)} />

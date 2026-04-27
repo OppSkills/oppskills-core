@@ -14,11 +14,13 @@ import { AppText } from '../../../../shared/ui';
 import { type LiveEvent } from './OrganizerCreateEventScreen';
 import { EventDashboardScreen } from './EventDashboardScreen';
 import { ManageRegistrationScreen } from './ManageRegistrationScreen';
+import { EditEventScreen } from './EditEventScreen';
 
 interface EventDetailScreenProps {
   readonly event: LiveEvent;
   readonly onBack: () => void;
   readonly onOpenMainSidebar: () => void;
+  readonly onUpdateEvent: (event: LiveEvent) => void;
 }
 
 type ContextSectionKey =
@@ -42,9 +44,15 @@ const CONTEXT_ITEMS: { key: ContextSectionKey; label: string }[] = [
   { key: 'settings', label: 'Settings' },
 ];
 
-export function EventDetailScreen({ event, onBack, onOpenMainSidebar }: EventDetailScreenProps) {
+export function EventDetailScreen({ event: initialEvent, onBack, onOpenMainSidebar, onUpdateEvent }: EventDetailScreenProps) {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [activeContextSection, setActiveContextSection] = useState<ContextSectionKey>('dashboard');
+  const [event, setEvent] = useState(initialEvent);
+
+  function handleUpdateEvent(updated: LiveEvent) {
+    setEvent(updated);
+    onUpdateEvent(updated);
+  }
 
   return (
     <View style={styles.screen}>
@@ -69,6 +77,8 @@ export function EventDetailScreen({ event, onBack, onOpenMainSidebar }: EventDet
         <EventDashboardScreen event={event} />
       ) : activeContextSection === 'manage-registration' ? (
         <ManageRegistrationScreen />
+      ) : activeContextSection === 'edit-event' ? (
+        <EditEventScreen event={event} onUpdateEvent={handleUpdateEvent} />
       ) : (
         <View style={styles.placeholderWrap}>
           <AppText style={styles.placeholderText}>Coming soon</AppText>

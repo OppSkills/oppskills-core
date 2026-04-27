@@ -17,6 +17,22 @@ import {
 } from './EventFormModals';
 import { styles } from './OrganizerCreateEventScreen.styles';
 
+export type EligibilityKey = 'everyone' | 'school' | 'college' | 'freshers' | 'professionals';
+export type PassSendingMode = 'immediate' | 'after-approval';
+
+export interface EventPrize {
+  readonly id: string;
+  readonly title: string;
+  readonly amount: string;
+}
+
+export interface EventContact {
+  readonly id: string;
+  readonly name: string;
+  readonly phone: string;
+  readonly email: string;
+}
+
 export interface LiveEvent {
   readonly id: string;
   readonly title: string;
@@ -29,6 +45,19 @@ export interface LiveEvent {
   readonly description: string;
   readonly maxAttendees: string;
   readonly ticketType: TicketType;
+  // Registration Settings
+  readonly eligibleCandidates?: readonly EligibilityKey[];
+  readonly registrationDeadlineDate?: string;
+  readonly registrationDeadlineTime?: string;
+  // Prizes
+  readonly prizeDescription?: string;
+  readonly participationCertificate?: boolean;
+  readonly prizes?: readonly EventPrize[];
+  // Additional Info
+  readonly contacts?: readonly EventContact[];
+  // Pass Settings
+  readonly passSendingMode?: PassSendingMode;
+  readonly restrictToColleges?: boolean;
 }
 
 type ActiveModal =
