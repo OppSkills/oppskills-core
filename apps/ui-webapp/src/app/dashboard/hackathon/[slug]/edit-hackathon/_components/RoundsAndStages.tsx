@@ -19,7 +19,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import RichTextEditor from "@/components/ui/editor/RichtextEditor";
 import {
   Select,
@@ -33,8 +32,7 @@ import React, { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FormData, Round } from "../page";
-import { CheckCircle } from "@solar-icons/react";
-import { Container } from "./Container";
+import { Container } from "@/app/dashboard/_components/Container";
 
 interface RoundsAndStagesProps {
   formData: FormData;
