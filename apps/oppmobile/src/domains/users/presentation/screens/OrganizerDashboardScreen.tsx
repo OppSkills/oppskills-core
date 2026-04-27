@@ -3,8 +3,9 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, OrganizerSidebarDrawer, type OrganizerSidebarItem } from '../../../../shared/ui';
+import { type LiveEvent } from '../../../events/presentation/screens/OrganizerCreateEventScreen';
+import { EventDetailScreen } from '../../../events/presentation/screens/EventDetailScreen';
 import { OrganizerDashboardHome } from './OrganizerDashboardHome';
-import { EventRegistrationsPanel } from '../../../events/presentation/screens/EventRegistrationsPanel';
 import { OrganizerEventsPanel } from '../../../events/presentation/screens/OrganizerEventsPanel';
 import { SendNotificationsPanel } from './SendNotificationsPanel';
 import { TalentPipelinePanel } from './TalentPipelinePanel';
@@ -182,7 +183,8 @@ interface OrganizerDashboardScreenProps {
 
 export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenProps) {
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey | 'event' | 'event-registrations' | 'hackathon' | 'festival' | 'home'>('dashboard');
+  const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey | 'event' | 'hackathon' | 'festival' | 'home'>('dashboard');
+  const [selectedEvent, setSelectedEvent] = useState<LiveEvent | null>(null);
 
   const activeSection = activeSectionKey in organizerSections
     ? organizerSections[activeSectionKey as OrganizerSectionKey]
@@ -191,7 +193,6 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
   const showingNotifications = activeSectionKey === 'send-notifications';
   const showingTalentPipeline = activeSectionKey === 'talent-pipeline';
   const showingEvents = activeSectionKey === 'event';
-  const showingEventRegistrations = activeSectionKey === 'event-registrations';
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
@@ -219,10 +220,14 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
 
       {showingHome ? (
         <OrganizerDashboardHome />
+      ) : showingEvents && selectedEvent !== null ? (
+        <EventDetailScreen
+          event={selectedEvent}
+          onBack={() => setSelectedEvent(null)}
+          onOpenMainSidebar={() => setDrawerVisible(true)}
+        />
       ) : showingEvents ? (
-        <OrganizerEventsPanel onOpenSidebar={() => setDrawerVisible(true)} />
-      ) : showingEventRegistrations ? (
-        <EventRegistrationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
+        <OrganizerEventsPanel onSelectEvent={(e) => setSelectedEvent(e)} />
       ) : showingNotifications ? (
         <SendNotificationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : showingTalentPipeline ? (

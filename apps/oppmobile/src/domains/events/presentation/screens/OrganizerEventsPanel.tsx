@@ -16,18 +16,28 @@ const COL_REGISTRATIONS = 130;
 const tableWidth =
   COL_SERIAL + COL_OPPORTUNITY + COL_CANDIDATES + COL_STATUS + COL_DATE + COL_DATE + COL_REGISTRATIONS;
 
-export interface OrganizerEventsPanelProps {
-  readonly onOpenSidebar: () => void;
+let _persistedEvents: LiveEvent[] = [];
+let _persistedRegsOpen: Record<string, boolean> = {};
+
+interface OrganizerEventsPanelProps {
+  readonly onSelectEvent: (event: LiveEvent) => void;
 }
 
-export function OrganizerEventsPanel({ onOpenSidebar: _onOpenSidebar }: OrganizerEventsPanelProps) {
-  const [events, setEvents] = useState<LiveEvent[]>([]);
+export function OrganizerEventsPanel({ onSelectEvent }: OrganizerEventsPanelProps) {
+  const [events, setEvents] = useState<LiveEvent[]>(_persistedEvents);
+  const [regsOpen, setRegsOpen] = useState<Record<string, boolean>>(_persistedRegsOpen);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
   function handleHostEvent(event: LiveEvent) {
-    setEvents((prev) => [...prev, event]);
+    _persistedEvents = [..._persistedEvents, event];
+    setEvents(_persistedEvents);
     setShowCreate(false);
+  }
+
+  function handleToggleRegs(id: string) {
+    _persistedRegsOpen = { ..._persistedRegsOpen, [id]: !_persistedRegsOpen[id] };
+    setRegsOpen({ ...regsOpen, [id]: !regsOpen[id] });
   }
 
   if (showCreate) {
@@ -105,50 +115,55 @@ export function OrganizerEventsPanel({ onOpenSidebar: _onOpenSidebar }: Organize
               </View>
 
               {/* Rows */}
-              {filtered.map((item, index) => (
-                <Pressable key={item.id} style={styles.row}>
-                  <View style={[styles.td, { width: COL_SERIAL }]}>
-                    <AppText style={styles.serialText}>{index + 1}</AppText>
-                  </View>
-                  <View style={[styles.td, { width: COL_OPPORTUNITY, alignItems: 'flex-start' }]}>
-                    <View style={styles.opportunityCell}>
-                      <Image resizeMode="cover" source={subtractPlaceholder} style={styles.thumbnail} />
-                      <View style={styles.opportunityInfo}>
-                        <AppText numberOfLines={2} style={styles.opportunityTitle}>{item.title}</AppText>
-                        <AppText style={styles.eventBadge}>EVENT</AppText>
+              {filtered.map((item, index) => {
+                const isOpen = !!regsOpen[item.id];
+                return (
+                  <Pressable key={item.id} onPress={() => onSelectEvent(item)} style={styles.row}>
+                    <View style={[styles.td, { width: COL_SERIAL }]}>
+                      <AppText style={styles.serialText}>{index + 1}</AppText>
+                    </View>
+                    <View style={[styles.td, { width: COL_OPPORTUNITY, alignItems: 'flex-start' }]}>
+                      <View style={styles.opportunityCell}>
+                        <Image resizeMode="cover" source={subtractPlaceholder} style={styles.thumbnail} />
+                        <View style={styles.opportunityInfo}>
+                          <AppText numberOfLines={2} style={styles.opportunityTitle}>{item.title}</AppText>
+                          <AppText style={styles.eventBadge}>EVENT</AppText>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                  <View style={[styles.td, { width: COL_CANDIDATES }]}>
-                    <AppText style={styles.candidatesText}>{item.candidates}</AppText>
-                  </View>
-                  <View style={[styles.td, { width: COL_STATUS }]}>
-                    <View style={styles.statusChip}>
-                      <AppText style={styles.statusChipText}>In Progress</AppText>
+                    <View style={[styles.td, { width: COL_CANDIDATES }]}>
+                      <AppText style={styles.candidatesText}>{item.candidates}</AppText>
                     </View>
-                  </View>
-                  <View style={[styles.td, { width: COL_DATE }]}>
-                    <View style={styles.dateBlock}>
-                      <AppText style={styles.dateText}>{item.startDate}</AppText>
-                      <AppText style={styles.timeText}>{item.startTime}</AppText>
-                    </View>
-                  </View>
-                  <View style={[styles.td, { width: COL_DATE }]}>
-                    <View style={styles.dateBlock}>
-                      <AppText style={styles.dateText}>{item.startDate}</AppText>
-                      <AppText style={styles.timeText}>{item.startTime}</AppText>
-                    </View>
-                  </View>
-                  <View style={[styles.td, styles.tdLast, { width: COL_REGISTRATIONS }]}>
-                    <View style={styles.registrationsCell}>
-                      <View style={[styles.toggleTrack, { backgroundColor: '#6366F1' }]}>
-                        <View style={[styles.toggleThumb, { alignSelf: 'flex-end' }]} />
+                    <View style={[styles.td, { width: COL_STATUS }]}>
+                      <View style={styles.statusChip}>
+                        <AppText style={styles.statusChipText}>In Progress</AppText>
                       </View>
-                      <AppText style={[styles.closedText, { color: '#6366F1' }]}>Open</AppText>
                     </View>
-                  </View>
-                </Pressable>
-              ))}
+                    <View style={[styles.td, { width: COL_DATE }]}>
+                      <View style={styles.dateBlock}>
+                        <AppText style={styles.dateText}>{item.startDate}</AppText>
+                        <AppText style={styles.timeText}>{item.startTime}</AppText>
+                      </View>
+                    </View>
+                    <View style={[styles.td, { width: COL_DATE }]}>
+                      <View style={styles.dateBlock}>
+                        <AppText style={styles.dateText}>{item.startDate}</AppText>
+                        <AppText style={styles.timeText}>{item.startTime}</AppText>
+                      </View>
+                    </View>
+                    <View style={[styles.td, styles.tdLast, { width: COL_REGISTRATIONS }]}>
+                      <Pressable onPress={() => handleToggleRegs(item.id)} style={styles.registrationsCell}>
+                        <View style={[styles.toggleTrack, { backgroundColor: isOpen ? '#6366F1' : '#C3BFC4' }]}>
+                          <View style={[styles.toggleThumb, { alignSelf: isOpen ? 'flex-end' : 'flex-start' }]} />
+                        </View>
+                        <AppText style={[styles.closedText, { color: isOpen ? '#6366F1' : '#7C737E' }]}>
+                          {isOpen ? 'Open' : 'Closed'}
+                        </AppText>
+                      </Pressable>
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
           </ScrollView>
         )}

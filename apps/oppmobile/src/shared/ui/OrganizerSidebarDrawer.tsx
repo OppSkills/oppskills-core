@@ -45,12 +45,7 @@ const HOME_CHILD_ITEMS = [
   { key: 'settings', label: 'Settings', icon: 'settings' as OrganizerSidebarIconName },
 ] as const;
 
-const EVENT_CHILD_ITEMS = [
-  { key: 'event', label: 'Events List', icon: 'events' as OrganizerSidebarIconName },
-  { key: 'event-registrations', label: 'Event Registrations', icon: 'registrations' as OrganizerSidebarIconName },
-] as const;
-
-type ExpandableKey = 'home' | 'event';
+type ExpandableKey = 'home';
 
 export interface OrganizerSidebarItem {
   readonly key: string;
@@ -171,7 +166,7 @@ export function OrganizerSidebarDrawer({
               <View style={styles.menuContainer}>
                 {items.map((item) => {
                   const isActive = item.key === activeItemKey;
-                  const isExpandable = item.key === 'home' || item.key === 'event';
+                  const isExpandable = item.key === 'home';
                   const isExpanded = childExpandedFor === item.key;
 
                   return (
@@ -237,7 +232,7 @@ export function OrganizerSidebarDrawer({
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} style={styles.childMenuContainer}>
-                {(childExpandedFor === 'event' ? EVENT_CHILD_ITEMS : HOME_CHILD_ITEMS).map((item) => (
+                {HOME_CHILD_ITEMS.map((item) => (
                   <Pressable
                     key={item.key}
                     onPress={() => {
