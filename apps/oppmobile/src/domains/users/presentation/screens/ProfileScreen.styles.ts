@@ -18,17 +18,9 @@ export const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: 'center',
-    borderRadius: 30,
-    height: 40,
+    height: 28,
     justifyContent: 'center',
-    width: 40,
-  },
-  backButtonText: {
-    color: '#342636',
-    fontSize: 24,
-    fontWeight: '500',
-    lineHeight: 24,
-    marginTop: -2,
+    width: 28,
   },
   cardTitle: {
     color: '#FAFAFA',
@@ -64,13 +56,12 @@ export const styles = StyleSheet.create({
   headerRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    marginTop: 6,
+    gap: 16,
   },
   headerTitle: {
-    color: '#0C0114',
-    fontSize: 20,
-    lineHeight: 25,
-    marginLeft: 12,
+    color: '#100013',
+    fontSize: 16,
+    lineHeight: 20,
   },
   iconCalendarBody: {
     borderColor: '#FAFAFA',
@@ -195,6 +186,7 @@ export const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 170,
     paddingHorizontal: 20,
+    paddingTop: 12,
   },
   sectionCard: {
     alignItems: 'center',

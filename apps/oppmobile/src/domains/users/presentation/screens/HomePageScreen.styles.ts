@@ -388,6 +388,27 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 32,
   },
+  headerActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerMenuButton: {
+    alignItems: 'center',
+    borderColor: '#E8E6E8',
+    borderRadius: lightTheme.radius.pill,
+    borderWidth: 1,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
+  headerMenuLine: {
+    backgroundColor: '#584D5A',
+    borderRadius: 1,
+    height: 2,
+    marginVertical: 1.5,
+    width: 14,
+  },
   highlightCard: {
     borderRadius: lightTheme.radius.md,
     padding: lightTheme.spacing[16],

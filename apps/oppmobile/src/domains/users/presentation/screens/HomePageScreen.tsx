@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, ImageBackground, Pressable, ScrollView, SectionList, View } from 'react-native';
+import { Image, ImageBackground, Modal, Pressable, ScrollView, SectionList, StyleSheet, View } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -27,7 +27,7 @@ import {
   type HomeTrackItemEntity,
 } from '../../domain/entities/HomeFeed';
 import { useHomeFeed } from '../hooks/useHomeFeed';
-import { AppText, FooterSignatureBlock } from '../../../../shared/ui';
+import { AppText, FooterSignatureBlock, OrganizerSidebarDrawer } from '../../../../shared/ui';
 import { styles } from './HomePageScreen.styles';
 
 interface HomePageScreenProps {
@@ -35,6 +35,7 @@ interface HomePageScreenProps {
   readonly onOpenEvent: () => void;
   readonly onOpenHackathon: () => void;
   readonly onOpenProfile: () => void;
+  readonly onOpenOrganizerDashboard: () => void;
 }
 
 export function HomePageScreen({
@@ -42,7 +43,9 @@ export function HomePageScreen({
   onOpenEvent,
   onOpenHackathon,
   onOpenProfile,
+  onOpenOrganizerDashboard,
 }: HomePageScreenProps) {
+  const [homeSidebarOpen, setHomeSidebarOpen] = useState(false);
   const { data: homeFeed } = useHomeFeed();
   const [activeCategoryId, setActiveCategoryId] = useState('');
   const [loadingSections, setLoadingSections] = useState(true);
@@ -118,9 +121,23 @@ export function HomePageScreen({
                   </AppText>
                 </View>
               </Pressable>
-              <View style={styles.headerSearchIcon}>
-                <View style={styles.headerSearchCircle} />
-                <View style={styles.headerSearchHandle} />
+
+              <View style={styles.headerActions}>
+                <View style={styles.headerSearchIcon}>
+                  <View style={styles.headerSearchCircle} />
+                  <View style={styles.headerSearchHandle} />
+                </View>
+
+                <Pressable
+                  accessibilityLabel="Open organizer sidebar"
+                  hitSlop={8}
+                  onPress={() => setHomeSidebarOpen(true)}
+                  style={styles.headerMenuButton}
+                >
+                  <View style={styles.headerMenuLine} />
+                  <View style={styles.headerMenuLine} />
+                  <View style={styles.headerMenuLine} />
+                </Pressable>
               </View>
             </View>
 
@@ -289,9 +306,107 @@ export function HomePageScreen({
         stickySectionHeadersEnabled={false}
         windowSize={7}
       />
+
+      <OrganizerSidebarDrawer
+        activeItemKey="organizer-dashboard"
+        items={[{ icon: 'dashboard', key: 'organizer-dashboard', label: 'Organizer Dashboard' }]}
+        onClose={() => setHomeSidebarOpen(false)}
+        onSelect={() => {
+          setHomeSidebarOpen(false);
+          onOpenOrganizerDashboard();
+        }}
+        visible={homeSidebarOpen}
+      />
+
+      {/* Home Sidebar */}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={false}
+        onRequestClose={() => setHomeSidebarOpen(false)}
+      >
+        <Pressable style={homeSidebarStyles.overlay} onPress={() => setHomeSidebarOpen(false)}>
+          <Pressable style={homeSidebarStyles.sidebar} onPress={() => {}}>
+            <View style={homeSidebarStyles.sidebarLogo}>
+              <AppText variant="bodyStrong">OppSkills</AppText>
+            </View>
+            <View style={homeSidebarStyles.menuContainer}>
+              <Pressable
+                style={homeSidebarStyles.menuItem}
+                onPress={() => {
+                  setHomeSidebarOpen(false);
+                  onOpenOrganizerDashboard();
+                }}
+              >
+                <AppText style={homeSidebarStyles.menuIcon}>📊</AppText>
+                <AppText variant="label" style={homeSidebarStyles.menuLabel}>
+                  Organizer Dashboard
+                </AppText>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
+
+const homeSidebarStyles = StyleSheet.create({
+  hamburger: {
+    position: 'absolute',
+    top: 16,
+    left: 20,
+    zIndex: 10,
+    gap: 4,
+    paddingVertical: 4,
+  },
+  menuLine: {
+    width: 20,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#584D5A',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    flexDirection: 'row',
+  },
+  sidebar: {
+    width: 299,
+    height: '100%',
+    backgroundColor: '#FAFAFA',
+    paddingTop: 54,
+    borderRightWidth: 1,
+    borderRightColor: '#E8E6E8',
+  },
+  sidebarLogo: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E6E8',
+    marginBottom: 8,
+  },
+  menuContainer: {
+    paddingTop: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 12,
+    height: 48,
+  },
+  menuIcon: {
+    fontSize: 18,
+    width: 28,
+    textAlign: 'center',
+  },
+  menuLabel: {
+    color: '#584D5A',
+    fontSize: 16,
+  },
+});
 
 interface SectionBlockProps {
   readonly title: string;

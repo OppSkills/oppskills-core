@@ -87,9 +87,7 @@ export function ProfileScreen({ onBack, onEdit }: ProfileScreenProps) {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <Pressable accessibilityLabel="Go back" hitSlop={8} onPress={onBack} style={styles.backButton}>
-            <AppText style={styles.backButtonText} variant="title">
-              {'<'}
-            </AppText>
+            <Feather color="#271B40" name="arrow-left" size={24} />
           </Pressable>
           <AppText style={styles.headerTitle} variant="title">
             My Profile
