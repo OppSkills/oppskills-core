@@ -53,6 +53,11 @@ export class ReferralController {
     return this.referralService.lookupUser(dto, req.user!.id);
   }
 
+  @Get(':id/referrer-details')
+  getReferrerDetails(@Param('id') id: string, @Req() req: Request) {
+    return this.referralService.getReferrerDetailsForOrganizer(id, req.user!.id);
+  }
+
   @Get(':id')
   getReferral(@Param('id') id: string, @Req() req: Request) {
     return this.referralService.getReferralById(id, req.user!.id);

@@ -46,6 +46,7 @@ import {
 import Link from "next/link";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
+import { Container } from "@/app/dashboard/_components/Container";
 
 // Type for festival data
 interface FestivalData {
@@ -192,33 +193,24 @@ export default function FestivalSettingsPage({
             className="flex min-h-screen w-full justify-center"
             fallback={<ProfileLikeFallback className="max-w-4xl py-8" />}
         >
-        <div className="flex justify-center w-full min-h-screen">
-            <div className="w-full max-w-4xl bg-background p-4 sm:p-6 flex flex-col gap-6">
-                {/* Header */}
-                <div className="flex items-center gap-4">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => router.back()}
-                        className="shrink-0"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                    <div>
-                        <h1 className="font-semibold text-2xl md:text-3xl">{festival.name}</h1>
-                        <p className="text-sm text-muted-foreground">Festival Settings</p>
+            <div className="flex justify-center w-full min-h-screen">
+                <div className="w-full bg-background p-4 sm:p-6 flex flex-col gap-6">
+                    {/* Header */}
+                    <div className="flex items-center gap-4">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => router.back()}
+                            className="shrink-0"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </Button>
+                        <div>
+                            <h1 className="font-semibold text-2xl md:text-3xl">{festival.name}</h1>
+                            <p className="text-sm text-muted-foreground">Festival Settings</p>
+                        </div>
                     </div>
-                </div>
-
-                {/* Status Overview */}
-                <Card className="py-6">
-                    <CardHeader>
-                        <CardTitle className="text-lg">Status Overview</CardTitle>
-                        <CardDescription>
-                            Current lifecycle status of your festival
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                    <Container heading="Status Overview" description="Current lifecycle status of your festival">
                         <div className="flex flex-wrap gap-4">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm text-muted-foreground">
@@ -268,21 +260,11 @@ export default function FestivalSettingsPage({
                                 </p>
                             </div>
                         )}
-                    </CardContent>
-                </Card>
+                    </Container>
 
-                {/* Status Actions */}
-                {!isTerminal && (
-                    <Card className="py-6">
-                        <CardHeader>
-                            <CardTitle className="text-lg">Actions</CardTitle>
-                            <CardDescription>
-                                Change the lifecycle status of your festival
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex flex-wrap gap-3">
-
-                            {/* Publish Button (Only if DRAFT) */}
+                    {/* Status Actions */}
+                    {!isTerminal && (
+                        <Container heading="Actions" description="Change the lifecycle status of your festival">
                             {festival.status === "DRAFT" && (
                                 <Button
                                     onClick={() => updateStatusMutation.mutate("PUBLISHED")}
@@ -380,102 +362,93 @@ export default function FestivalSettingsPage({
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
-                        </CardContent>
-                    </Card>
-                )}
 
-                {/* Danger Zone */}
-                <Card className="border-red-200">
-                    <CardHeader>
-                        <CardTitle className="text-lg text-red-600">Danger Zone</CardTitle>
-                        <CardDescription>
-                            Irreversible actions. Please be careful.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive">
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete Festival
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Festival?</AlertDialogTitle>
-                                    <AlertDialogDescription className="space-y-4">
-                                        <p>
-                                            This action is permanent and cannot be undone. All festival
-                                            data, associated events/hackathons links, and content will be
-                                            permanently deleted.
-                                        </p>
-                                        <div>
-                                            <Label htmlFor="confirm-delete" className="text-sm mb-2">
-                                                Type <strong>{festival.name}</strong> to confirm:
-                                            </Label>
-                                            <Input
-                                                id="confirm-delete"
-                                                value={deleteConfirmation}
-                                                onChange={(e) => setDeleteConfirmation(e.target.value)}
-                                                placeholder={festival.name}
-                                                className="mt-2"
-                                            />
-                                        </div>
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel onClick={() => setDeleteConfirmation("")}>
-                                        Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                        onClick={handleDelete}
-                                        disabled={
-                                            deleteConfirmation !== festival.name ||
-                                            isDeleting ||
-                                            deleteFestivalMutation.isPending
-                                        }
-                                        className="bg-red-600 hover:bg-red-700"
-                                    >
-                                        {deleteFestivalMutation.isPending
-                                            ? "Deleting..."
-                                            : "Delete Permanently"}
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                        </Container>
+                    )}
 
-                        <p className="text-xs text-muted-foreground">
-                            This will permanently delete &quot;{festival.name}&quot; and all
-                            associated data.
-                        </p>
-                    </CardContent>
-                </Card>
+                    {/* Danger Zone */}
+                    <Container heading="Danger Zone" description="Irreversible actions. Please be careful." className="border-red-200">
+                        <div className="space-y-4">
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive">
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Delete Festival
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Festival?</AlertDialogTitle>
+                                        <AlertDialogDescription className="space-y-4">
+                                            <p>
+                                                This action is permanent and cannot be undone. All festival
+                                                data, associated events/hackathons links, and content will be
+                                                permanently deleted.
+                                            </p>
+                                            <div>
+                                                <Label htmlFor="confirm-delete" className="text-sm mb-2">
+                                                    Type <strong>{festival.name}</strong> to confirm:
+                                                </Label>
+                                                <Input
+                                                    id="confirm-delete"
+                                                    value={deleteConfirmation}
+                                                    onChange={(e) => setDeleteConfirmation(e.target.value)}
+                                                    placeholder={festival.name}
+                                                    className="mt-2"
+                                                />
+                                            </div>
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel onClick={() => setDeleteConfirmation("")}>
+                                            Cancel
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={handleDelete}
+                                            disabled={
+                                                deleteConfirmation !== festival.name ||
+                                                isDeleting ||
+                                                deleteFestivalMutation.isPending
+                                            }
+                                            className="bg-red-600 hover:bg-red-700"
+                                        >
+                                            {deleteFestivalMutation.isPending
+                                                ? "Deleting..."
+                                                : "Delete Permanently"}
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
 
-                {/* Quick Links */}
-                <Card className="py-6">
-                    <CardHeader>
-                        <CardTitle className="text-lg">Quick Links</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-wrap gap-3">
-                        <Link
-                            href={`/dashboard/festivals/${slug}/edit-festival`}
-                            className="text-primary-500 hover:underline text-sm"
-                        >
-                            Edit Festival Details
-                        </Link>
-                        <span className="text-muted-foreground">•</span>
-                        {/* Add more links if needed */}
-                        <Link
-                            href={`/festivals/${slug}`}
-                            className="text-primary-500 hover:underline text-sm"
-                            target="_blank"
-                        >
-                            View Public Page
-                        </Link>
-                    </CardContent>
-                </Card>
+                            <p className="text-xs text-muted-foreground">
+                                This will permanently delete &quot;{festival.name}&quot; and all
+                                associated data.
+                            </p>
+                        </div>
+                    </Container>
+
+                    {/* Quick Links */}
+                    <Container heading="Quick Links" className="py-6">
+                        <div className="flex flex-wrap gap-3">
+                            <Link
+                                href={`/dashboard/festivals/${slug}/edit-festival`}
+                                className="text-primary-500 hover:underline text-sm"
+                            >
+                                Edit Festival Details
+                            </Link>
+                            <span className="text-muted-foreground">•</span>
+                            {/* Add more links if needed */}
+                            <Link
+                                href={`/festivals/${slug}`}
+                                className="text-primary-500 hover:underline text-sm"
+                                target="_blank"
+                            >
+                                View Public Page
+                            </Link>
+                        </div>
+                    </Container>
+                </div>
             </div>
-        </div>
         </BoneyardSkeleton>
     );
 }

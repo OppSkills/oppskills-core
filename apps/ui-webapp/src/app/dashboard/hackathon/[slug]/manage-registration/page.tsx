@@ -183,12 +183,12 @@ export default function Page() {
 
   return (
     <BoneyardSkeleton
-      loading={isLoading}
+      loading={isLoading || !data}
       name="dashboard-hackathon-manage-registration"
       className="w-full min-h-screen bg-background"
       fallback={<TableBlockFallback className="min-h-screen bg-background p-8" />}
     >
-      {!isLoading && (!data || data.teams.total === 0) ? (
+      {data ? (
         <div className="w-full flex justify-center">
           <div className="w-full max-w-7xl p-4 sm:p-6 md:p-8 flex flex-col gap-6">
             <Stages
@@ -197,35 +197,28 @@ export default function Page() {
               onSelectStage={setCurrentStage}
             />
             <div className="h-px my-4 w-full bg-foreground/10" />
-            <EmptyState
-              title="No team registrations yet"
-              description="Teams will appear here once participants register for this hackathon."
-              className="py-20"
-            />
-          </div>
-        </div>
-      ) : !isLoading && data ? (
-        <div className="w-full flex justify-center">
-          <div className="w-full max-w-7xl p-4 sm:p-6 md:p-8 flex flex-col gap-6">
-            <Stages
-              stages={stages}
-              selectedStage={currentStage}
-              onSelectStage={setCurrentStage}
-            />
-            <div className="h-px my-4 w-full bg-foreground/10" />
-            <Participants
-              data={participants}
-              selectedRoundId={selectedRoundId}
-              nextRoundId={nextRoundId}
-              hackathonId={data.hackathonId}
-              hackathonName={data.name}
-              page={page}
-              totalPages={data.teams.totalPages}
-              take={take}
-              onPageChange={setPage}
-              onTakeChange={setTake}
-              onSelectTeam={setSelectedTeamId}
-            />
+            {data.teams.total === 0 ? (
+              <EmptyState
+                title="No team registrations yet"
+                description="Teams will appear here once participants register for this hackathon."
+                className="py-20"
+              />
+            ) : (
+              <Participants
+                data={participants}
+                selectedRoundId={selectedRoundId}
+                nextRoundId={nextRoundId}
+                hackathonId={data.hackathonId}
+                hackathonName={data.name}
+                page={page}
+                totalPages={data.teams.totalPages}
+                take={take}
+                onPageChange={setPage}
+                onTakeChange={setTake}
+                onSelectTeam={setSelectedTeamId}
+                isLoading={isLoading}
+              />
+            )}
           </div>
         </div>
       ) : null}

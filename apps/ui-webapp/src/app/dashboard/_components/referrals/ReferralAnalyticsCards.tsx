@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/derived/MotionWrapper";
 import { useReferralAnalytics } from "@/hooks/useReferrals";
 import type { ReferralEntityType } from "@/lib/api/referralApi";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { StatsGridFallback } from "@/components/boneyard/loading-fallbacks";
 
 export const ReferralAnalyticsCards = memo(function ReferralAnalyticsCards({
   entityType,
@@ -20,7 +22,7 @@ export const ReferralAnalyticsCards = memo(function ReferralAnalyticsCards({
     console.count("[render] ReferralAnalyticsCards");
   }
 
-  const { data } = useReferralAnalytics(entityType, entityId);
+  const { data, isLoading } = useReferralAnalytics(entityType, entityId);
   const metrics = useMemo(
     () =>
       data ?? {
@@ -69,19 +71,26 @@ export const ReferralAnalyticsCards = memo(function ReferralAnalyticsCards({
   );
 
   return (
-    <MotionContainer className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-      {referralData.map((item, index) => (
-        <MotionItem key={index}>
-          <AnalyticCard
-            type={item.type}
-            title={item.title}
-            value={item.value}
-            badge={item.badge}
-            badgeValue={item.badgeValue}
-            className="h-full"
-          />
-        </MotionItem>
-      ))}
-    </MotionContainer>
+    <BoneyardSkeleton
+      loading={isLoading || !data}
+      name="referral-analytics-cards"
+      fallback={<StatsGridFallback />}
+      className="w-full"
+    >
+      <MotionContainer className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {referralData.map((item, index) => (
+          <MotionItem key={index}>
+            <AnalyticCard
+              type={item.type}
+              title={item.title}
+              value={item.value}
+              badge={item.badge}
+              badgeValue={item.badgeValue}
+              className="h-full"
+            />
+          </MotionItem>
+        ))}
+      </MotionContainer>
+    </BoneyardSkeleton>
   );
 });

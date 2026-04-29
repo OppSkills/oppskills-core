@@ -10,6 +10,7 @@ import {
   getReferralRegistrations,
   listReferrals,
   lookupReferrerUser,
+  getReferrerDetails,
   type ReferralEntityType,
 } from "@/lib/api/referralApi";
 
@@ -89,13 +90,13 @@ export function useReferrerLookup(
   });
 }
 
-export function useReferralRegistrations(referralId: string) {
+export function useReferralRegistrations(referralId: string | null, page = 1, pageSize = 10) {
   const { getToken } = useAuth();
   return useQuery({
-    queryKey: ["referral-registrations", referralId],
+    queryKey: ["referral-registrations", referralId, page, pageSize],
     enabled: Boolean(referralId),
     queryFn: async () =>
-      getReferralRegistrations(await tokenOrThrow(getToken), referralId, 1, 50),
+      getReferralRegistrations(await tokenOrThrow(getToken), referralId!, page, pageSize),
   });
 }
 
@@ -105,5 +106,14 @@ export function useReferralById(referralId: string) {
     queryKey: ["referral", referralId],
     enabled: Boolean(referralId),
     queryFn: async () => getReferralById(await tokenOrThrow(getToken), referralId),
+  });
+}
+
+export function useReferrerDetailsForOrganizer(referralId: string | null) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["referrer-details", referralId],
+    enabled: Boolean(referralId),
+    queryFn: async () => getReferrerDetails(await tokenOrThrow(getToken), referralId!),
   });
 }
