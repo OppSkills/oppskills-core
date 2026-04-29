@@ -15,6 +15,7 @@ import { type LiveHackathon } from './OrganizerCreateHackathonScreen';
 import { HackathonDashboardScreen } from './HackathonDashboardScreen';
 import { ManageHackathonRegistrationScreen } from './ManageHackathonRegistrationScreen';
 import { EditHackathonScreen } from './EditHackathonScreen';
+import { HackathonReferralsPanel } from './HackathonReferralsPanel';
 
 interface HackathonDetailScreenProps {
   readonly hackathon: LiveHackathon;
@@ -79,6 +80,8 @@ export function HackathonDetailScreen({ hackathon: initialHackathon, onBack, onO
         <ManageHackathonRegistrationScreen />
       ) : activeContextSection === 'edit-hackathon' ? (
         <EditHackathonScreen hackathon={hackathon} onUpdateHackathon={handleUpdateHackathon} />
+      ) : activeContextSection === 'referrals' ? (
+        <HackathonReferralsPanel hackathon={hackathon} />
       ) : (
         <View style={styles.placeholderWrap}>
           <AppText style={styles.placeholderText}>Coming soon</AppText>

@@ -15,6 +15,7 @@ import { FestivalDashboardScreen } from './FestivalDashboardScreen';
 import { ManageFestivalRegistrationScreen } from './ManageFestivalRegistrationScreen';
 import { EditFestivalScreen } from './EditFestivalScreen';
 import { SendFestivalNotificationsPanel } from './SendFestivalNotificationsPanel';
+import { FestivalReferralsPanel } from './FestivalReferralsPanel';
 
 export interface LiveFestival {
   readonly id: string;
@@ -94,6 +95,8 @@ export function FestivalDetailScreen({
         <ManageFestivalRegistrationScreen />
       ) : activeContextSection === 'edit-festival' ? (
         <EditFestivalScreen festival={festival} onUpdateFestival={handleUpdateFestival} />
+      ) : activeContextSection === 'referrals' ? (
+        <FestivalReferralsPanel festival={festival} />
       ) : activeContextSection === 'send-notifications' ? (
         <SendFestivalNotificationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : (
