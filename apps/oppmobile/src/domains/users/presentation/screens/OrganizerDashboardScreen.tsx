@@ -11,6 +11,9 @@ import { SendNotificationsPanel } from './SendNotificationsPanel';
 import { TalentPipelinePanel } from './TalentPipelinePanel';
 import { OrganizerFestivalsPanel } from './OrganizerFestivalsPanel';
 import { FestivalDetailScreen, type LiveFestival } from './FestivalDetailScreen';
+import { type LiveHackathon } from '../../../hackathons/presentation/screens/organizer/OrganizerCreateHackathonScreen';
+import { OrganizerHackathonsPanel, updatePersistedHackathon } from '../../../hackathons/presentation/screens/organizer/OrganizerHackathonsPanel';
+import { HackathonDetailScreen } from '../../../hackathons/presentation/screens/organizer/HackathonDetailScreen';
 import { styles } from './OrganizerDashboardScreen.styles';
 
 const organizerSidebarItems = [
@@ -188,6 +191,7 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
   const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey | 'event' | 'hackathon' | 'festival' | 'home'>('dashboard');
   const [selectedEvent, setSelectedEvent] = useState<LiveEvent | null>(null);
   const [selectedFestival, setSelectedFestival] = useState<LiveFestival | null>(null);
+  const [selectedHackathon, setSelectedHackathon] = useState<LiveHackathon | null>(null);
 
   const activeSection = activeSectionKey in organizerSections
     ? organizerSections[activeSectionKey as OrganizerSectionKey]
@@ -197,6 +201,7 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
   const showingTalentPipeline = activeSectionKey === 'talent-pipeline';
   const showingEvents = activeSectionKey === 'event';
   const showingFestivals = activeSectionKey === 'festival';
+  const showingHackathons = activeSectionKey === 'hackathon';
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
@@ -224,6 +229,18 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
 
       {showingHome ? (
         <OrganizerDashboardHome />
+      ) : showingHackathons && selectedHackathon !== null ? (
+        <HackathonDetailScreen
+          hackathon={selectedHackathon}
+          onBack={() => setSelectedHackathon(null)}
+          onOpenMainSidebar={() => setDrawerVisible(true)}
+          onUpdateHackathon={(updated) => {
+            updatePersistedHackathon(updated);
+            setSelectedHackathon(updated);
+          }}
+        />
+      ) : showingHackathons ? (
+        <OrganizerHackathonsPanel onSelectHackathon={(h) => setSelectedHackathon(h)} />
       ) : showingEvents && selectedEvent !== null ? (
         <EventDetailScreen
           event={selectedEvent}
