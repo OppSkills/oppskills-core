@@ -79,8 +79,8 @@ export async function GET(
     const isPrefetch =
       request.headers.get("purpose") === "prefetch" ||
       request.headers.get("sec-purpose") === "prefetch" ||
-      request.headers.get("x-nextjs-data") ||
-      request.headers.get("x-middleware-prefetch");
+      request.headers.get("next-router-prefetch") !== null ||
+      request.headers.get("x-middleware-prefetch") !== null;
 
     if (!isLikelySocialPreviewBot(ua) && !isPrefetch) {
       void trackReferralClick({
