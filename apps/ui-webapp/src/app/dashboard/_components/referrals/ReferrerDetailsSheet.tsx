@@ -165,97 +165,99 @@ export function ReferrerDetailsSheet({
                 fallback={<ProfileLikeFallback className="px-0 py-0" />}
                 className="w-full"
               >
-                {data ? (
-                  <>
-                    {/* User Profile Card */}
-                    <UserProfileCard user={data.referrer} />
+                <div className="flex flex-col gap-4">
+                  {data ? (
+                    <>
+                      {/* User Profile Card */}
+                      <UserProfileCard user={data.referrer} />
 
-                    {/* Analytics Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-primary-900 text-white rounded-xl p-5 flex flex-col justify-between h-36">
-                        <span className="text-primary-100 font-medium">All Events Referrals</span>
-                        <span className="text-5xl font-normal">{data.summary.totalRegistrations}</span>
-                        <div className="flex items-center justify-between mt-auto">
-                          <span className="text-sm text-primary-200">Last 24 Hrs</span>
-                          <span className="bg-primary-800 text-primary-50 text-xs px-3 py-1 rounded-full border border-primary-700">
-                            {data.summary.registrationsLast24h}
-                          </span>
+                      {/* Analytics Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-primary-900 text-white rounded-xl p-5 flex flex-col justify-between h-36">
+                          <span className="text-primary-100 font-medium">All Events Referrals</span>
+                          <span className="text-5xl font-normal">{data.summary.totalRegistrations}</span>
+                          <div className="flex items-center justify-between mt-auto">
+                            <span className="text-sm text-primary-200">Last 24 Hrs</span>
+                            <span className="bg-primary-800 text-primary-50 text-xs px-3 py-1 rounded-full border border-primary-700">
+                              {data.summary.registrationsLast24h}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="bg-primary-50 text-neutral-900 rounded-xl p-5 flex flex-col justify-between h-36 border border-primary-100">
+                          <span className="text-neutral-700 font-medium">No. Of Links Generated</span>
+                          <span className="text-5xl font-normal text-primary-900">{data.summary.totalReferrals}</span>
+                          <div className="flex items-center justify-between mt-auto">
+                            <span className="text-sm text-primary-600">Active Links</span>
+                            <span className="bg-primary-900 text-white text-xs px-3 py-1 rounded-full">
+                              {data.summary.activeLinks}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="bg-primary-50 text-neutral-900 rounded-xl p-5 flex flex-col justify-between h-36 border border-primary-100">
+                          <span className="text-neutral-700 font-medium">No. Of Impressions</span>
+                          <span className="text-5xl font-normal text-primary-900">{data.summary.totalClicks}</span>
+                          <div className="flex items-center justify-between mt-auto">
+                            <span className="text-sm text-primary-600">Impression last 24 hrs</span>
+                            <span className="bg-primary-900 text-white text-xs px-3 py-1 rounded-full">
+                              {data.summary.clicksLast24h}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <div className="bg-primary-50 text-neutral-900 rounded-xl p-5 flex flex-col justify-between h-36 border border-primary-100">
-                        <span className="text-neutral-700 font-medium">No. Of Links Generated</span>
-                        <span className="text-5xl font-normal text-primary-900">{data.summary.totalReferrals}</span>
-                        <div className="flex items-center justify-between mt-auto">
-                          <span className="text-sm text-primary-600">Active Links</span>
-                          <span className="bg-primary-900 text-white text-xs px-3 py-1 rounded-full">
-                            {data.summary.activeLinks}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="bg-primary-50 text-neutral-900 rounded-xl p-5 flex flex-col justify-between h-36 border border-primary-100">
-                        <span className="text-neutral-700 font-medium">No. Of Impressions</span>
-                        <span className="text-5xl font-normal text-primary-900">{data.summary.totalClicks}</span>
-                        <div className="flex items-center justify-between mt-auto">
-                          <span className="text-sm text-primary-600">Impression last 24 hrs</span>
-                          <span className="bg-primary-900 text-white text-xs px-3 py-1 rounded-full">
-                            {data.summary.clicksLast24h}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Table */}
-                    <div className="w-full rounded-2xl overflow-hidden border border-neutral-200 bg-white shadow-sm">
-                      <Table className="min-w-full border-collapse!">
-                        <TableHeader className="bg-primary-800 hover:bg-primary-800!">
-                          {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id} className="hover:bg-transparent! border-b-0!">
-                              {headerGroup.headers.map((header) => (
-                                <TableHead
-                                  key={header.id}
-                                  className={cn(
-                                    "text-white font-normal py-4 px-6 whitespace-nowrap border-r border-primary-700 last:border-r-0",
-                                    (header.id === "clicks" || header.id === "registrations") && "text-center"
-                                  )}
-                                  style={{ width: header.id === "sno" ? "80px" : "auto" }}
-                                >
-                                  {header.isPlaceholder
-                                    ? null
-                                    : flexRender(header.column.columnDef.header, header.getContext())}
-                                </TableHead>
-                              ))}
-                            </TableRow>
-                          ))}
-                        </TableHeader>
-                        <TableBody>
-                          {table.getRowModel().rows.map((row) => (
-                            <TableRow
-                              key={row.id}
-                              onClick={() => {
-                                setSelectedOppId(row.original.id);
-                              }}
-                              className="hover:bg-neutral-50/50 border-neutral-200 transition-colors cursor-pointer"
-                            >
-                              {row.getVisibleCells().map((cell) => (
-                                <TableCell
-                                  key={cell.id}
-                                  className={cn(
-                                    "py-3 px-6 border-r border-neutral-200 last:border-r-0",
-                                    (cell.column.id === "clicks" || cell.column.id === "registrations") && "text-center"
-                                  )}
-                                >
-                                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                </TableCell>
-                              ))}
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center text-neutral-500 py-12">Failed to load details.</div>
-                )}
+                      {/* Table */}
+                      <div className="w-full rounded-2xl overflow-hidden border border-neutral-200 bg-white shadow-sm">
+                        <Table className="min-w-full border-collapse!">
+                          <TableHeader className="bg-primary-800 hover:bg-primary-800!">
+                            {table.getHeaderGroups().map((headerGroup) => (
+                              <TableRow key={headerGroup.id} className="hover:bg-transparent! border-b-0!">
+                                {headerGroup.headers.map((header) => (
+                                  <TableHead
+                                    key={header.id}
+                                    className={cn(
+                                      "text-white font-normal py-4 px-6 whitespace-nowrap border-r border-primary-700 last:border-r-0",
+                                      (header.id === "clicks" || header.id === "registrations") && "text-center"
+                                    )}
+                                    style={{ width: header.id === "sno" ? "80px" : "auto" }}
+                                  >
+                                    {header.isPlaceholder
+                                      ? null
+                                      : flexRender(header.column.columnDef.header, header.getContext())}
+                                  </TableHead>
+                                ))}
+                              </TableRow>
+                            ))}
+                          </TableHeader>
+                          <TableBody>
+                            {table.getRowModel().rows.map((row) => (
+                              <TableRow
+                                key={row.id}
+                                onClick={() => {
+                                  setSelectedOppId(row.original.id);
+                                }}
+                                className="hover:bg-neutral-50/50 border-neutral-200 transition-colors cursor-pointer"
+                              >
+                                {row.getVisibleCells().map((cell) => (
+                                  <TableCell
+                                    key={cell.id}
+                                    className={cn(
+                                      "py-3 px-6 border-r border-neutral-200 last:border-r-0",
+                                      (cell.column.id === "clicks" || cell.column.id === "registrations") && "text-center"
+                                    )}
+                                  >
+                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                  </TableCell>
+                                ))}
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center text-neutral-500 py-12">Failed to load details.</div>
+                  )}
+                </div>
               </BoneyardSkeleton>
             </div>
           </>
