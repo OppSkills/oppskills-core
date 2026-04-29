@@ -15,6 +15,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Cup,
+  Pen as EditSolar,
+  TrashBinMinimalistic as TrashSolar,
+  CheckCircle as CheckSolar,
+  Routing2 as PrizeIcon
+} from "@solar-icons/react";
 
 import { Container } from "@/app/dashboard/_components/Container";
 
@@ -185,46 +192,51 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                     </div>
                     <div className="flex justify-end gap-2 mt-2">
                       <Button
-                        variant="ghost"
-                        size="sm"
                         onClick={() => handleSaveEdit()}
-                        className="text-primary-600 font-bold hover:bg-primary-50"
+                        className="bg-primary-600 text-white font-bold hover:bg-primary-700 rounded-full px-6 gap-2"
                       >
-                        Done
+                        <CheckSolar className="w-4 h-4" />
+                        Save Changes
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between group">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600">
-                        <Trophy className="w-6 h-6" />
+                      <div className="w-12 h-12 rounded-2xl bg-primary-100 flex items-center justify-center text-primary-600 shadow-inner">
+                        <Cup className="w-7 h-7" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-base text-neutral-800 poppins">{prize.name}</h4>
-                        <p className="text-sm text-neutral-600 inter">
-                          ₹ {prize.amount} • {prize.description}
-                        </p>
+                        <h4 className="font-bold text-base text-neutral-800 poppins group-hover:text-primary-600 transition-colors">
+                          {prize.name}
+                        </h4>
+                        <div className="flex items-center gap-2 text-sm text-neutral-600 inter">
+                          <span className="font-bold text-primary-600">
+                            ₹{prize.amount.replace(/^₹\s?/, "")}
+                          </span>
+                          <span className="text-neutral-300">•</span>
+                          <span>{prize.description}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
                         onClick={() => handleEditPrize(prize.id)}
-                        className="text-primary-600 hover:text-primary-700 hover:bg-primary-100 gap-1 h-8 font-bold"
+                        className="text-primary-600 hover:text-primary-700 hover:bg-primary-100 rounded-full w-9 h-9"
+                        title="Edit"
                       >
-                        <Edit2 className="w-3 h-3" />
-                        <span className="text-xs">Edit</span>
+                        <EditSolar className="w-5 h-5" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
                         onClick={() => handleDeletePrize(prize.id)}
-                        className="text-neutral-400 hover:text-destructive hover:bg-destructive/10 gap-1 h-8 font-bold"
+                        className="text-neutral-400 hover:text-destructive hover:bg-destructive/10 rounded-full w-9 h-9"
+                        title="Delete"
                       >
-                        <Trash2 className="w-3 h-3" />
-                        <span className="text-xs">Delete</span>
+                        <TrashSolar className="w-5 h-5" />
                       </Button>
                     </div>
                   </div>

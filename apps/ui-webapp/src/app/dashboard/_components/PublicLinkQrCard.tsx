@@ -18,7 +18,8 @@ type Props = {
   watermarkSrc?: string;
   downloadFileName?: string;
   itemName?: string;
-  type?: "event" | "hackathon";
+  type?: "event" | "hackathon" | "festival";
+  referralCode?: string;
 };
 
 function clampFileName(name: string) {
@@ -38,6 +39,7 @@ export default function PublicLinkQrCard({
   downloadFileName,
   itemName = "",
   type = "event",
+  referralCode,
 }: Props) {
   const qrRef = useRef<{
     update: (options: Record<string, unknown>) => void;
@@ -49,6 +51,14 @@ export default function PublicLinkQrCard({
   } | null>(null);
   const qrContainerRef = useRef<HTMLDivElement | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const finalUrl = useMemo(() => {
+    if (referralCode) {
+      const origin = typeof window !== "undefined" ? window.location.origin : "https://www.oppskills.com";
+      return `${origin}/r/${referralCode}?source=op_qr`;
+    }
+    return url;
+  }, [url, referralCode]);
 
   const fileName = useMemo(() => {
     if (downloadFileName) return clampFileName(downloadFileName);
@@ -68,7 +78,7 @@ export default function PublicLinkQrCard({
       if (!qrRef.current) {
         qrRef.current = new QRCodeStyling(
           getOppSkillsStyledQrOptions({
-            data: url,
+            data: finalUrl,
             size: OPPSKILLS_STYLED_QR_SIZES.publicLinkDisplay,
             image: watermarkSrc,
           }),
@@ -77,7 +87,7 @@ export default function PublicLinkQrCard({
         qrRef.current.append(container);
       } else {
         qrRef.current.update({
-          data: url,
+          data: finalUrl,
           image: watermarkSrc,
         });
       }
@@ -85,14 +95,14 @@ export default function PublicLinkQrCard({
       if (!qrDownloadRef.current) {
         qrDownloadRef.current = new QRCodeStyling(
           getOppSkillsStyledQrOptions({
-            data: url,
+            data: finalUrl,
             size: OPPSKILLS_STYLED_QR_SIZES.publicLinkDownload,
             image: watermarkSrc,
           }),
         );
       } else {
         qrDownloadRef.current.update({
-          data: url,
+          data: finalUrl,
           image: watermarkSrc,
         });
       }
@@ -103,7 +113,7 @@ export default function PublicLinkQrCard({
     return () => {
       mounted = false;
     };
-  }, [url, watermarkSrc]);
+  }, [finalUrl, watermarkSrc]);
 
   const handleDownload = useCallback(async () => {
     if (isDownloading || !qrDownloadRef.current) return;
@@ -130,7 +140,7 @@ export default function PublicLinkQrCard({
         className="max-w-[200px] text-center"
         content={
           <p className="text-xs">
-            Download shareable QR code for your {type}: <span className="font-bold">{itemName}</span>
+            Download shareable QR code for: <span className="font-bold">{title || itemName}</span>
           </p>
         }
       >

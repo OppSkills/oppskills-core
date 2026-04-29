@@ -229,7 +229,7 @@ export default function Page() {
 
   return (
     <div className="flex justify-center w-full min-h-screen bg-[#FAFAFA]">
-      <div className="w-full max-w-[1600px] p-6 lg:p-10 flex flex-col gap-8">
+      <div className="w-full p-4 lg:p-6 flex flex-col gap-8">
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start md:items-center gap-4 w-full">
           <div className="left space-y-2">

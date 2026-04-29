@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Pen, CheckCircle, UserCircle, Settings, Trophy, FileText, AlertCircle } from "lucide-react";
 import BasicDetails from "./_components/BasicDetails";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -13,6 +13,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UpdateFestivalDto } from "@oppskills/types/frontend";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
+import { useQueryState } from "nuqs";
+import { cn } from "@/lib/utils";
+import { Container } from "@/app/dashboard/_components/Container";
 
 // Types
 export interface FestivalFormData {
@@ -25,9 +28,12 @@ export interface FestivalFormData {
     location: string;
     bannerUrl: string;
     visibility: "PUBLIC" | "PRIVATE";
-    status: "DRAFT" | "PUBLISHED" | "ARCHIVED" | "ONGOING" | "COMPLETED" | "CANCELLED";
+    status: "DRAFT" | "PUBLISHED" | "ONGOING" | "COMPLETED" | "CANCELLED";
     contactEmail: string;
     contactPhone: string;
+    websiteUrl: string;
+    organizationName: string;
+    organizationLogoUrl: string;
 }
 
 // Helper: Check if val is object
@@ -82,9 +88,11 @@ function mapFestivalToFormData(festival: unknown): FestivalFormData {
         bannerUrl: getString(festival, "posterImageUrl") ?? "",
         visibility, // Inferred
         status,
-        // Fields not yet in backend festival entity
         contactEmail: "",
         contactPhone: "",
+        websiteUrl: getString(festival, "websiteUrl") ?? "",
+        organizationName: getString(festival, "organizationName") ?? "",
+        organizationLogoUrl: getString(festival, "organizationLogoUrl") ?? "",
     };
 }
 
@@ -99,6 +107,10 @@ export default function EditFestivalPage() {
         if (Array.isArray(raw) && typeof raw[0] === "string") return raw[0];
         return null;
     }, [params]);
+
+    const [activeTab, setActiveTab] = useQueryState("tab", {
+        defaultValue: "basic-details",
+    });
 
     const { data: festivalRaw, isLoading, error } = useFestivalBySlug(slugParam);
     const [hasHydrated, setHasHydrated] = useState(false);
@@ -119,6 +131,9 @@ export default function EditFestivalPage() {
         status: "DRAFT",
         contactEmail: "",
         contactPhone: "",
+        websiteUrl: "",
+        organizationName: "",
+        organizationLogoUrl: "",
     });
 
     useEffect(() => {
@@ -152,11 +167,13 @@ export default function EditFestivalPage() {
                 startDate: formData.startDate ? formData.startDate.toISOString() : undefined,
                 endDate: formData.endDate ? formData.endDate.toISOString() : undefined,
                 posterImageUrl: formData.bannerUrl,
+                websiteUrl: formData.websiteUrl,
+                organizationName: formData.organizationName,
+                organizationLogoUrl: formData.organizationLogoUrl,
                 location: {
-                    type: "PHYSICAL", // Assuming Physical for now based on simplicity of current UI
+                    type: "PHYSICAL", // Assuming Physical for now
                     address: formData.location
                 }
-                // Note: visibility/status updates might need separate handling or specific mapping if supported by update DTO
             };
 
             await updateFestival(token, formData.id, updateDto);
@@ -179,6 +196,15 @@ export default function EditFestivalPage() {
         }
     };
 
+    const tabs = [
+        { id: "preview", label: "Preview", icon: <CheckCircle className="w-4 h-4" /> },
+        { id: "basic-details", label: "Basic Details", icon: <Pen className="w-4 h-4" /> },
+        { id: "registration-settings", label: "Registration Settings", icon: <UserCircle className="w-4 h-4" /> },
+        { id: "prizes", label: "Prizes", icon: <Trophy className="w-4 h-4" /> },
+        { id: "additional-info", label: "Additional Info", icon: <FileText className="w-4 h-4" /> },
+        { id: "pass-settings", label: "Pass Settings", icon: <Settings className="w-4 h-4" /> },
+    ];
+
     if (!isLoading && error) {
         return (
             <div className="flex h-full w-full items-center justify-center flex-col gap-4">
@@ -197,8 +223,11 @@ export default function EditFestivalPage() {
         >
         <div className="flex flex-col h-full bg-neutral-50/50 w-full">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 bg-background border-b sticky top-0 z-10 transition-all duration-200">
-                <h1 className="text-xl font-bold">Edit Festival</h1>
+            <div className="flex items-center justify-between px-6 py-4 bg-background border-b sticky top-0 z-20 transition-all duration-200">
+                <div className="flex flex-col">
+                    <h1 className="text-xl font-bold">Edit Festival</h1>
+                    <p className="text-xs text-muted-foreground">{formData.name}</p>
+                </div>
                 <div className={`flex gap-2 transition-opacity duration-200 ${isDirty ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                     <Button variant="outline" onClick={handleDiscard} disabled={saveMutation.isPending}>Discard</Button>
                     <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
@@ -214,9 +243,57 @@ export default function EditFestivalPage() {
                 </div>
             </div>
 
-            {/* Content */}
+            {/* Sticky Tabs Bar */}
+            <div className="sticky top-[69px] z-10 w-full border-b border-border bg-background/95 backdrop-blur-md">
+                <div className="w-full max-w-7xl mx-auto flex items-center gap-2 px-6 py-3 overflow-x-auto no-scrollbar">
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setActiveTab(tab.id)}
+                            className={cn(
+                                "flex shrink-0 items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all whitespace-nowrap",
+                                activeTab === tab.id
+                                    ? "bg-primary-100 text-primary-600 border-primary-500"
+                                    : "border-neutral-500 text-neutral-800 hover:bg-neutral-100 cursor-pointer",
+                            )}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Content Area */}
             <div className="flex-1 p-6 max-w-7xl mx-auto w-full">
-                <BasicDetails formData={formData} setFormData={setFormData} />
+                {activeTab === "basic-details" && (
+                    <BasicDetails formData={formData} setFormData={setFormData} />
+                )}
+
+                {activeTab === "preview" && (
+                    <Container heading="Preview" description="Festival preview is currently under development.">
+                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
+                            <CheckCircle className="w-12 h-12 opacity-20" />
+                            <p>Premium preview coming soon.</p>
+                        </div>
+                    </Container>
+                )}
+
+                {(activeTab === "registration-settings" || activeTab === "prizes" || activeTab === "additional-info" || activeTab === "pass-settings") && (
+                    <Container 
+                        heading={tabs.find(t => t.id === activeTab)?.label || "Section"} 
+                        description="This feature is not yet supported for Festivals in the current backend version."
+                    >
+                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
+                            <AlertCircle className="w-12 h-12 text-amber-500 opacity-50" />
+                            <div className="text-center">
+                                <p className="font-medium text-neutral-800">Section Unavailable</p>
+                                <p className="text-sm">Please contact the backend team to enable {tabs.find(t => t.id === activeTab)?.label} for Festivals.</p>
+                            </div>
+                        </div>
+                    </Container>
+                )}
             </div>
         </div>
         </BoneyardSkeleton>

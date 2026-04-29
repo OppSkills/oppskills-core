@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, CheckCircle, XCircle, Save, Calendar, MapPin, Users, Globe, Info, Undo, Shield, DollarSign, Settings, Hash, Link as LinkIcon, Image as ImageIcon } from "lucide-react"
+import { ArrowLeft, CheckCircle, XCircle, Save, Calendar, MapPin, Users, Earth, Info, Undo, Shield, DollarSign, Settings, Hash, Link as LinkIcon, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
