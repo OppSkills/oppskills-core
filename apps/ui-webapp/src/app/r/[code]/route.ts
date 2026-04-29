@@ -76,7 +76,13 @@ export async function GET(
     });
 
     const ua = request.headers.get("user-agent");
-    if (!isLikelySocialPreviewBot(ua)) {
+    const isPrefetch =
+      request.headers.get("purpose") === "prefetch" ||
+      request.headers.get("sec-purpose") === "prefetch" ||
+      request.headers.get("next-router-prefetch") !== null ||
+      request.headers.get("x-middleware-prefetch") !== null;
+
+    if (!isLikelySocialPreviewBot(ua) && !isPrefetch) {
       void trackReferralClick({
         code,
         source: request.headers.get("referer") ?? undefined,

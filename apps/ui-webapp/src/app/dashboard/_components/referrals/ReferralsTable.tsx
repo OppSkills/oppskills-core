@@ -166,6 +166,7 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
                 <Link
                   href={row.referralLink}
                   target="_blank"
+                  prefetch={false}
                   className="p-1 hover:text-primary-600 transition-colors"
                 >
                   <ExternalLink size={14} />
