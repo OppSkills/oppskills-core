@@ -144,7 +144,7 @@ export default function FestivalsTable({
       cell: ({ row }) => (
         <div className="flex justify-center">
           <ActionDropdown
-            onView={() => router.push(`/dashboard/festivals/${row.original.slug}`)}
+            viewHref={`/dashboard/festivals/${row.original.slug}`}
             onEdit={() => onEdit?.(row.original.id)}
           />
         </div>
