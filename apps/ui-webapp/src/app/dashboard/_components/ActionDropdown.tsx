@@ -13,6 +13,8 @@ import {
 import { cn } from "@/lib/utils";
 
 interface ActionDropdownProps {
+  onView?: () => void;
+  viewHref?: string;
   onEdit?: () => void;
   onDelete?: () => void;
   editHref?: string;
@@ -21,6 +23,8 @@ interface ActionDropdownProps {
 }
 
 export default function ActionDropdown({
+  onView,
+  viewHref,
   onEdit,
   onDelete,
   editHref,
@@ -40,6 +44,17 @@ export default function ActionDropdown({
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {viewHref ? (
+          <DropdownMenuItem asChild>
+            <Link href={viewHref} className="w-full cursor-pointer">
+              View
+            </Link>
+          </DropdownMenuItem>
+        ) : onView ? (
+          <DropdownMenuItem onClick={onView} className="cursor-pointer">
+            View
+          </DropdownMenuItem>
+        ) : null}
         {editHref ? (
           <DropdownMenuItem asChild>
             <Link href={editHref} className="w-full cursor-pointer">

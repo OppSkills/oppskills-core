@@ -97,7 +97,7 @@ const PassBadge = ({ status }: { status: string }) => {
 export function RegistrationsTable({
   data,
   type,
-  isLoading,
+  isLoading = false,
   onMarkAttendance,
   onApprove,
   onView,
