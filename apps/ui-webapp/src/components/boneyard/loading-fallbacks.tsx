@@ -153,3 +153,14 @@ export function StackedFieldsFallback({
     </div>
   );
 }
+
+/** 4-column analytics / stats cards placeholder */
+export function StatsGridFallback({ className }: { className?: string }) {
+  return (
+    <div className={cn("grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 w-full", className)}>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} className="h-40 w-full rounded-3xl" />
+      ))}
+    </div>
+  );
+}

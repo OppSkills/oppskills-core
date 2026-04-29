@@ -2,6 +2,8 @@ import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Building2, Mail, MapPin, GraduationCap, PencilLine } from "lucide-react";
 
+import { formatDateTime } from "@/lib/utils/date";
+
 interface UserProfileCardProps {
   user: {
     name: string;
@@ -15,19 +17,6 @@ interface UserProfileCardProps {
 }
 
 export function UserProfileCard({ user }: UserProfileCardProps) {
-  const formatDate = (dateString?: Date | string | null) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "N/A";
-    return new Intl.DateTimeFormat("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    }).format(date);
-  };
 
   return (
     <div className="flex flex-col gap-4 p-5 sm:p-6 rounded-2xl bg-white border border-neutral-200 shadow-sm">
@@ -72,7 +61,7 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
             <div className="flex items-center gap-3 text-neutral-500">
               <PencilLine className="size-4 shrink-0" />
               <span className="text-sm font-medium">
-                Registered on: {formatDate(user.registrationDate)}
+                Registered on: {formatDateTime(user.registrationDate)}
               </span>
             </div>
           </div>

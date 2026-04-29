@@ -90,13 +90,13 @@ export function useReferrerLookup(
   });
 }
 
-export function useReferralRegistrations(referralId: string) {
+export function useReferralRegistrations(referralId: string | null, page = 1, pageSize = 10) {
   const { getToken } = useAuth();
   return useQuery({
-    queryKey: ["referral-registrations", referralId],
+    queryKey: ["referral-registrations", referralId, page, pageSize],
     enabled: Boolean(referralId),
     queryFn: async () =>
-      getReferralRegistrations(await tokenOrThrow(getToken), referralId, 1, 50),
+      getReferralRegistrations(await tokenOrThrow(getToken), referralId!, page, pageSize),
   });
 }
 

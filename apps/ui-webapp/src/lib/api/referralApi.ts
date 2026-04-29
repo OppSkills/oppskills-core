@@ -18,6 +18,10 @@ export interface ReferralListItem {
     firstName?: string | null;
     lastName?: string | null;
     imageUrl?: string | null;
+    institution?: string;
+    location?: string;
+    profession?: string;
+    registrationDate?: string;
   };
 }
 

@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/common/EmptyState";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { TableBlockFallback } from "@/components/boneyard/loading-fallbacks";
 
 import {
   MoreVertical,
@@ -209,7 +211,7 @@ export function RegistrationsTable({
         cell: ({ row }) => {
           const reg = row.original;
           const isPresent = reg.attendanceStatus === "Present";
-          const isLoading = actionLoadingId === reg.id;
+          const isRowLoading = actionLoadingId === reg.id;
 
           return (
             <div className="flex items-center justify-center gap-3 h-full px-4">
@@ -226,9 +228,9 @@ export function RegistrationsTable({
                   e.stopPropagation();
                   onMarkAttendance(reg.id, !isPresent);
                 }}
-                disabled={isLoading}
+                disabled={isRowLoading}
               >
-                {isLoading ? (
+                {isRowLoading ? (
                   <Loader2 className="w-3 h-3 animate-spin mr-1.5" />
                 ) : isPresent ? (
                   <Check className="w-3 h-3 mr-1.5" />
@@ -281,65 +283,61 @@ export function RegistrationsTable({
     getCoreRowModel: getCoreRowModel(),
   });
 
-  if (isLoading) {
-    return (
-      <div className="w-full h-64 flex flex-col items-center justify-center gap-3 bg-neutral-50 rounded-2xl border border-neutral-100">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-        <p className="text-sm text-neutral-500 font-medium">Loading registrations...</p>
-      </div>
-    );
-  }
-
-  if (data.length === 0) {
-    return (
-      <EmptyState
-        title="No registrations found"
-        description={`There are no ${type.toLowerCase()} registrations to display at the moment.`}
-        className="bg-white rounded-2xl border border-neutral-200 shadow-sm py-20"
-      />
-    );
-  }
-
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-neutral-200 shadow-sm bg-white">
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="bg-primary-800 text-white h-12">
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="p-0 text-left text-[11px] font-bold uppercase tracking-wider"
+    <BoneyardSkeleton
+      loading={isLoading}
+      name="registrations-table"
+      fallback={<TableBlockFallback className="px-0 py-0" />}
+      className="w-full"
+    >
+      {data.length === 0 ? (
+        <EmptyState
+          title="No registrations found"
+          description={`There are no ${type.toLowerCase()} registrations to display at the moment.`}
+          className="bg-white rounded-2xl border border-neutral-200 shadow-sm py-20"
+        />
+      ) : (
+        <div className="w-full overflow-hidden rounded-2xl border border-neutral-200 shadow-sm bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id} className="bg-primary-800 text-white h-12">
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className="p-0 text-left text-[11px] font-bold uppercase tracking-wider"
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors cursor-pointer group h-16"
+                    onClick={() => onView?.(row.original.id)}
                   >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </th>
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="p-0 h-full">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors cursor-pointer group h-16"
-                onClick={() => onView?.(row.original.id)}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="p-0 h-full">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </BoneyardSkeleton>
   );
 }

@@ -46,10 +46,12 @@ import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { bulkSetTeamRoundQualification } from "@/lib/api/hackathonApi";
-import { getApiErrorMessage } from "@/lib/utils";
+import { getApiErrorMessage, ensureAbsoluteUrl } from "@/lib/utils";
 import { exportToExcel } from "@/lib/exportToExcel";
 import type { HackathonTeamMemberExport } from "@/lib/api/hackathonApi";
 import SendTeamEmailModal from "./SendTeamEmailModal";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { TableBlockFallback } from "@/components/boneyard/loading-fallbacks";
 
 export type Participant = {
   id: string;
@@ -75,8 +77,6 @@ export type Participant = {
   teamMembers: HackathonTeamMemberExport[];
 };
 
-/* -------------------------- COLUMNS --------------------------- */
-
 interface ParticipantsProps {
   data: Participant[];
   selectedRoundId?: string | null;
@@ -93,6 +93,7 @@ interface ParticipantsProps {
   onPageChange: (page: number) => void;
   onTakeChange: (take: number) => void;
   onSelectTeam: (teamId: string) => void;
+  isLoading?: boolean;
 }
 
 export default function Participants({
@@ -107,6 +108,7 @@ export default function Participants({
   onPageChange,
   onTakeChange,
   onSelectTeam,
+  isLoading = false,
 }: ParticipantsProps) {
   const params = useParams();
   const slug = params.slug as string;
@@ -250,7 +252,7 @@ export default function Participants({
           return (
             <div className="flex gap-4 py-2">
               <Avatar className="h-12 w-12">
-                <AvatarImage src={avatarUrl} alt={teamName} />
+                <AvatarImage src={ensureAbsoluteUrl(avatarUrl) || undefined} alt={teamName} />
                 <AvatarFallback>
                   {teamName.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
@@ -410,8 +412,6 @@ export default function Participants({
     ],
   );
 
-
-
   const table = useReactTable({
     data: filteredByStatus,
     columns,
@@ -495,69 +495,76 @@ export default function Participants({
         </div>
       </div>
 
-      <div className="w-full bg-white rounded-xl shadow-sm border border-neutral-300 overflow-hidden">
-        {table.getRowModel().rows.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table className="min-w-[1000px] w-full border border-neutral-300">
-              <TableHeader className="bg-primary-800">
-                {table.getHeaderGroups().map((group) => (
-                  <TableRow key={group.id} className="hover:bg-transparent border-none">
-                    {group.headers.map((header) => (
-                      <TableHead
-                        key={header.id}
-                        className="text-neutral-100 font-normal text-sm whitespace-nowrap py-3 border-r border-white/30 last:border-r-0"
-                      >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                      </TableHead>
+      <BoneyardSkeleton
+        loading={isLoading}
+        name="hackathon-participants-table"
+        fallback={<TableBlockFallback className="px-0 py-0" />}
+        className="w-full"
+      >
+        <div className="w-full bg-white rounded-xl shadow-sm border border-neutral-300 overflow-hidden">
+          {table.getRowModel().rows.length > 0 ? (
+            <>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[1000px] w-full border border-neutral-300">
+                  <TableHeader className="bg-primary-800">
+                    {table.getHeaderGroups().map((group) => (
+                      <TableRow key={group.id} className="hover:bg-transparent border-none">
+                        {group.headers.map((header) => (
+                          <TableHead
+                            key={header.id}
+                            className="text-neutral-100 font-normal text-sm whitespace-nowrap py-3 border-r border-white/30 last:border-r-0"
+                          >
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                          </TableHead>
+                        ))}
+                      </TableRow>
                     ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
+                  </TableHeader>
 
-              <TableBody>
-                {table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className="border-b border-neutral-300 hover:bg-neutral-50 transition-colors cursor-pointer"
-                    onClick={() => {
-                      onSelectTeam(row.original.id);
-                    }}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="py-4 px-4 border-r border-neutral-300 last:border-r-0">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
+                  <TableBody>
+                    {table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        className="border-b border-neutral-300 hover:bg-neutral-50 transition-colors cursor-pointer"
+                        onClick={() => {
+                          onSelectTeam(row.original.id);
+                        }}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} className="py-4 px-4 border-r border-neutral-300 last:border-r-0">
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
                     ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
-          <EmptyState
-            title="No registrations found"
-            description={globalFilter ? `No teams matching "${globalFilter}" found.` : "No team registrations to display for this criteria."}
-            className="py-20"
-          />
-        )}
-        {table.getRowModel().rows.length > 0 && (
-          <div className="px-4 border-t border-neutral-300">
-            <Pagination
-              curPage={page}
-              totalPages={totalPages}
-              perPage={take}
-              setPerPage={(size) => onTakeChange(Number(size))}
-              onPageChange={onPageChange}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="px-4 border-t border-neutral-300">
+                <Pagination
+                  curPage={page}
+                  totalPages={totalPages}
+                  perPage={take}
+                  setPerPage={(size) => onTakeChange(Number(size))}
+                  onPageChange={onPageChange}
+                />
+              </div>
+            </>
+          ) : (
+            <EmptyState
+              title="No registrations found"
+              description={globalFilter ? `No teams matching "${globalFilter}" found.` : "No team registrations to display for this criteria."}
+              className="py-20"
             />
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </BoneyardSkeleton>
 
       {selectedTeamForEmail && (
         <SendTeamEmailModal

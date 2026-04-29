@@ -184,48 +184,14 @@ export class ReferralService {
       }),
     ]);
 
-    const formatProfession = (profile: any) => {
-      if (!profile) return 'Other';
-      const categoryMap: any = {
-        SCHOOL_STUDENT: 'School Student',
-        COLLEGE_STUDENT: 'College Student',
-        WORKING_PROFESSIONAL: 'Working Professional',
-        FRESHER: 'Fresher',
-        PROFESSIONAL_SCHOOL_STUDENT: 'Professional Student',
-      };
-
-      const parts = [categoryMap[profile.userCategory] || 'User'];
-
-      if (profile.courseSpecialization) parts.push(profile.courseSpecialization);
-      if (profile.course) parts.push(profile.course);
-      if (profile.collegeCurrentYear) parts.push(profile.collegeCurrentYear);
-
-      if (profile.userCategory === 'WORKING_PROFESSIONAL') {
-        if (profile.jobTitle) parts.push(profile.jobTitle);
-        if (profile.companyName) parts.push(profile.companyName);
-      }
-
-      return parts.join(' | ');
-    };
-
-    const formatLocation = (profile: any) => {
-      if (!profile) return 'Unknown';
-      const parts = [
-        profile.locationCity,
-        profile.locationState,
-        profile.locationCountry,
-      ].filter(Boolean);
-      return parts.join(', ') || 'Unknown';
-    };
-
     const withDeltas = await Promise.all(
       rows.map(async (row) => ({
         ...row,
         referrer: {
           ...row.referrer,
           institution: row.referrer.onboardingProfile?.college?.name || row.referrer.onboardingProfile?.schoolName || 'N/A',
-          location: formatLocation(row.referrer.onboardingProfile),
-          profession: formatProfession(row.referrer.onboardingProfile),
+          location: this.formatLocation(row.referrer.onboardingProfile),
+          profession: this.formatProfession(row.referrer.onboardingProfile),
           registrationDate: row.referrer.createdAt,
         },
         clicksRecent: await this.counter.getClicksLast24h(row.id),
@@ -274,20 +240,20 @@ export class ReferralService {
     const eventMap = new Map(myEvents.map((e) => [e.id, e]));
     const festivalMap = new Map(myFestivals.map((f) => [f.id, f]));
 
-    // 4. Fetch all referrals for this referrer
-    const allReferrals = await prisma.referralEntity.findMany({
-      where: { referrerId: referral.referrerId, isDeleted: false },
+    // 4. Fetch referrals for this referrer filtered by managed entities
+    const organizerReferrals = await prisma.referralEntity.findMany({
+      where: { 
+        referrerId: referral.referrerId, 
+        isDeleted: false,
+        OR: [
+          { entityType: 'HACKATHON', entityId: { in: Array.from(hackathonMap.keys()) } },
+          { entityType: 'EVENT', entityId: { in: Array.from(eventMap.keys()) } },
+          { entityType: 'FESTIVAL', entityId: { in: Array.from(festivalMap.keys()) } },
+        ]
+      },
     });
 
-    // 5. Filter to only include entities managed by the caller
-    const organizerReferrals = allReferrals.filter((r) => {
-      if (r.entityType === 'HACKATHON') return hackathonMap.has(r.entityId);
-      if (r.entityType === 'EVENT') return eventMap.has(r.entityId);
-      if (r.entityType === 'FESTIVAL') return festivalMap.has(r.entityId);
-      return false;
-    });
-
-    // 6. Get stats
+    // 5. Get stats
     const stats = await this.getReferralsWithStats(organizerReferrals);
 
     // Combine stats with entity details (name, slug, image)
@@ -317,32 +283,6 @@ export class ReferralService {
       };
     });
 
-    const formatProfession = (profile: any) => {
-      if (!profile) return 'Other';
-      const categoryMap: any = {
-        SCHOOL_STUDENT: 'School Student',
-        COLLEGE_STUDENT: 'College Student',
-        WORKING_PROFESSIONAL: 'Working Professional',
-        FRESHER: 'Fresher',
-        PROFESSIONAL_SCHOOL_STUDENT: 'Professional Student',
-      };
-      const parts = [categoryMap[profile.userCategory] || 'User'];
-      if (profile.courseSpecialization) parts.push(profile.courseSpecialization);
-      if (profile.course) parts.push(profile.course);
-      if (profile.collegeCurrentYear) parts.push(profile.collegeCurrentYear);
-      if (profile.userCategory === 'WORKING_PROFESSIONAL') {
-        if (profile.jobTitle) parts.push(profile.jobTitle);
-        if (profile.companyName) parts.push(profile.companyName);
-      }
-      return parts.join(' | ');
-    };
-
-    const formatLocation = (profile: any) => {
-      if (!profile) return 'Unknown';
-      const parts = [profile.locationCity, profile.locationState, profile.locationCountry].filter(Boolean);
-      return parts.join(', ') || 'Unknown';
-    };
-
     return {
       referrer: {
         id: referrer.id,
@@ -350,8 +290,8 @@ export class ReferralService {
         email: referrer.email,
         avatarUrl: referrer.imageUrl,
         institution: referrer.onboardingProfile?.college?.name || referrer.onboardingProfile?.schoolName || 'N/A',
-        location: formatLocation(referrer.onboardingProfile),
-        profession: formatProfession(referrer.onboardingProfile),
+        location: this.formatLocation(referrer.onboardingProfile),
+        profession: this.formatProfession(referrer.onboardingProfile),
         registrationDate: referrer.createdAt.toISOString(),
       },
       opportunities,
@@ -510,8 +450,8 @@ export class ReferralService {
         avatarUrl: t.leader.imageUrl,
         registrationDate: t.createdAt.toISOString(),
         institution: t.leader.onboardingProfile?.college?.name || t.leader.onboardingProfile?.schoolName || 'N/A',
-        location: formatLocation(t.leader.onboardingProfile),
-        profession: formatProfession(t.leader.onboardingProfile),
+        location: this.formatLocation(t.leader.onboardingProfile),
+        profession: this.formatProfession(t.leader.onboardingProfile),
       })),
       ...eventParticipants.map((ep) => ({
         id: ep.id,
@@ -520,8 +460,8 @@ export class ReferralService {
         avatarUrl: ep.user.imageUrl,
         registrationDate: ep.joinedAt.toISOString(),
         institution: ep.user.onboardingProfile?.college?.name || ep.user.onboardingProfile?.schoolName || 'N/A',
-        location: formatLocation(ep.user.onboardingProfile),
-        profession: formatProfession(ep.user.onboardingProfile),
+        location: this.formatLocation(ep.user.onboardingProfile),
+        profession: this.formatProfession(ep.user.onboardingProfile),
       })),
     ].sort(
       (a, b) =>
@@ -864,5 +804,39 @@ export class ReferralService {
         isActive: ref.isActive,
       };
     });
+  }
+
+  private formatProfession(profile: any): string {
+    if (!profile) return 'Other';
+    const categoryMap: any = {
+      SCHOOL_STUDENT: 'School Student',
+      COLLEGE_STUDENT: 'College Student',
+      WORKING_PROFESSIONAL: 'Working Professional',
+      FRESHER: 'Fresher',
+      PROFESSIONAL_SCHOOL_STUDENT: 'Professional Student',
+    };
+
+    const parts = [categoryMap[profile.userCategory] || 'User'];
+
+    if (profile.courseSpecialization) parts.push(profile.courseSpecialization);
+    if (profile.course) parts.push(profile.course);
+    if (profile.collegeCurrentYear) parts.push(profile.collegeCurrentYear);
+
+    if (profile.userCategory === 'WORKING_PROFESSIONAL') {
+      if (profile.jobTitle) parts.push(profile.jobTitle);
+      if (profile.companyName) parts.push(profile.companyName);
+    }
+
+    return parts.join(' | ');
+  }
+
+  private formatLocation(profile: any): string {
+    if (!profile) return 'Unknown';
+    const parts = [
+      profile.locationCity,
+      profile.locationState,
+      profile.locationCountry,
+    ].filter(Boolean);
+    return parts.join(', ') || 'Unknown';
   }
 }

@@ -102,20 +102,14 @@ export default function HackathonPage() {
 
             {/* Table Section */}
             <div className="flex-1 min-w-0">
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center h-64 gap-2">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-                        <p className="text-neutral-500">Loading your hackathons...</p>
-                    </div>
-                ) : (
-                    <OpportunitiesTable
-                        data={filteredOpportunities}
-                        onToggleRegistration={handleToggleRegistration}
-                        page={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                    />
-                )}
+                <OpportunitiesTable
+                    data={filteredOpportunities}
+                    onToggleRegistration={handleToggleRegistration}
+                    page={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    isLoading={isLoading}
+                />
             </div>
         </div>
     );

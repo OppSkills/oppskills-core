@@ -10,7 +10,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { EmptyState } from "@/components/common/EmptyState";
-
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,6 +30,8 @@ import Link from "next/link";
 import { useDeleteReferral, useReferrals } from "@/hooks/useReferrals";
 import type { ReferralEntityType } from "@/lib/api/referralApi";
 import { ReferrerDetailsSheet } from "./ReferrerDetailsSheet";
+import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
+import { TableBlockFallback } from "@/components/boneyard/loading-fallbacks";
 
 interface ReferrerData {
   id: string;
@@ -42,6 +43,10 @@ interface ReferrerData {
   clicksRecent: number;
   registrations: number;
   registrationsRecent: number;
+  institution?: string;
+  location?: string;
+  profession?: string;
+  registrationDate?: string;
 }
 
 interface ReferralsTableProps {
@@ -49,33 +54,31 @@ interface ReferralsTableProps {
   entityType: ReferralEntityType;
   entityId: string;
 }
+
 export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
   baseUrl,
   entityType,
   entityId,
 }) => {
-  if (process.env.NODE_ENV === "development") {
-    console.count("[render] ReferralsTable");
-  }
-
   const [rowSelection, setRowSelection] = useState({});
-  const { data } = useReferrals(entityType, entityId);
+  const { data, isLoading } = useReferrals(entityType, entityId);
   const deleteMutation = useDeleteReferral(entityType, entityId);
+  
   const handleDelete = useCallback(
     (id: string) => deleteMutation.mutate(id),
-    [deleteMutation.mutate],
+    [deleteMutation],
   );
+
   const appOrigin =
     typeof window !== "undefined" ? window.location.origin : "https://www.oppskills.com";
+
   const rows: ReferrerData[] = useMemo(
     () =>
       (data?.data ?? []).map((row) => ({
         id: row.id,
-        name:
-          [row.referrer.firstName, row.referrer.lastName].filter(Boolean).join(" ") ||
-          "Referrer",
+        name: `${row.referrer.firstName ?? ""} ${row.referrer.lastName ?? ""}`.trim() || "User",
         email: row.referrer.email,
-        avatarUrl: row.referrer.imageUrl ?? "",
+        avatarUrl: row.referrer.imageUrl || "",
         referralLink: `${appOrigin}/r/${row.code}`,
         clicks: row.clicksCount,
         clicksRecent: row.clicksRecent ?? 0,
@@ -139,36 +142,34 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
                   <AvatarImage src={row.avatarUrl} className="object-cover" />
                   <AvatarFallback>{row.name.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="font-bold text-neutral-900 text-base group-hover/name:text-primary-800 transition-colors">
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-neutral-900 group-hover/name:text-primary-800 transition-colors truncate">
                     {row.name}
                   </span>
-                  <span className="text-xs text-neutral-500 font-medium">{row.email}</span>
+                  <span className="text-xs text-neutral-500 font-medium truncate">{row.email}</span>
                 </div>
               </button>
-              <div className="flex min-w-0 flex-1 flex-col gap-1 sm:justify-center">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="break-all text-xs font-medium text-blue-600">{row.referralLink}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(row.referralLink);
-                      toast.success("Link copied!");
-                    }}
-                    className="text-neutral-400 hover:text-neutral-600"
-                    aria-label="Copy referral link"
-                  >
-                    <Copy size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => window.open(row.referralLink, "_blank", "noopener,noreferrer")}
-                    className="text-neutral-400 hover:text-neutral-600"
-                    aria-label="Open referral link in new tab"
-                  >
-                    <ExternalLink size={14} />
-                  </button>
-                </div>
+              <div className="flex items-center gap-2 text-neutral-500 px-2 py-1 bg-neutral-50 rounded-lg border border-neutral-100 w-fit">
+                <span className="text-xs font-mono truncate max-w-[120px]">
+                  {row.referralLink.replace(/^https?:\/\//, "")}
+                </span>
+                <button
+                  type="button"
+                  className="p-1 hover:text-primary-600 transition-colors"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(row.referralLink);
+                    toast.success("Link copied!");
+                  }}
+                >
+                  <Copy size={14} />
+                </button>
+                <Link
+                  href={row.referralLink}
+                  target="_blank"
+                  className="p-1 hover:text-primary-600 transition-colors"
+                >
+                  <ExternalLink size={14} />
+                </Link>
               </div>
             </div>
           );
@@ -185,11 +186,11 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
           const row = info.row.original;
           return (
             <div className="flex flex-col items-center gap-1">
-              <Badge className="bg-accent-yellow-100 text-accent-yellow-500 px-3 py-1 rounded text-base">
-                {row.clicks} Clicks
+              <Badge className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-sm hover:bg-yellow-100">
+                {row.clicks.toString().padStart(2, "0")} Clicks
               </Badge>
-              <span className="text-xs text-neutral-600 font-medium">
-                {row.clicksRecent} in last 24 hrs
+              <span className="text-xs text-neutral-500">
+                {row.clicksRecent.toString().padStart(2, "0")} in last 24 hrs
               </span>
             </div>
           );
@@ -206,10 +207,10 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
           const row = info.row.original;
           return (
             <div className="flex flex-col items-center gap-1">
-              <Badge className="bg-accent-pink-100 text-accent-pink-500 px-3 py-1 rounded text-base">
-                {row.registrations} Registrations
+              <Badge className="bg-pink-100 text-pink-600 px-3 py-1 rounded text-sm hover:bg-pink-100">
+                {row.registrations.toString().padStart(2, "0")} Registrations
               </Badge>
-              <span className="text-xs text-neutral-600 font-medium">
+              <span className="text-xs text-neutral-500">
                 {row.registrationsRecent.toString().padStart(2, "0")} in last 24 hrs
               </span>
             </div>
@@ -218,17 +219,16 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
       },
       {
         id: "view",
-        header: "View Referrals",
+        header: "View",
         cell: (info) => (
           <div className="flex justify-center">
-            <Button
-              variant="outline"
+            <button
+              type="button"
+              className="text-primary-600 hover:text-primary-800 transition-colors p-2"
               onClick={() => setSelectedReferrerId(info.row.original.id)}
-              className="rounded-xl h-10 px-4 flex items-center gap-2 bg-[#342636] hover:bg-[#271B40] text-white border-none shadow-sm transition-all active:scale-95 cursor-pointer"
             >
-              <Maximize2 size={16} />
-              <span className="text-xs font-semibold">View list</span>
-            </Button>
+              <Maximize2 size={20} />
+            </button>
           </div>
         ),
       },
@@ -247,88 +247,90 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
         ),
       },
     ],
-    [handleDelete],
+    [handleDelete, appOrigin],
   );
 
   const table = useReactTable({
     data: rows,
     columns,
-    state: {
-      rowSelection,
-    },
-    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
+
   return (
     <div className="w-full rounded-2xl overflow-hidden border border-neutral-200 bg-white shadow-sm">
-      {table.getRowModel().rows.length > 0 ? (
-        <Table className="min-w-[1000px] border-collapse!">
-          <TableHeader className="bg-primary-800 hover:bg-primary-800!">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent! border-b-primary-900 border-b!">
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className={cn(
-                      "text-white font-semibold py-5 px-6 whitespace-nowrap",
-                      (header.id === "clicks" ||
-                        header.id === "registrations" ||
-                        header.id === "view" ||
-                        header.id === "delete") &&
-                      "text-center"
-                    )}
-                    style={{
-                      width: header.id === "select" ? "60px" : header.id === "sno" ? "80px" : "auto",
-                    }}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className="hover:bg-neutral-50/50 border-neutral-100 group transition-colors"
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className={cn(
-                      "py-3 px-6",
-                      (cell.column.id === "clicks" ||
-                        cell.column.id === "registrations" ||
-                        cell.column.id === "view" ||
-                        cell.column.id === "delete") &&
-                      "text-center"
-                    )}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      ) : (
-        <EmptyState
-          title="No referrals found"
-          description="There are no referral links generated for this opportunity yet."
-        />
-      )}
+      <BoneyardSkeleton
+        loading={isLoading || !data}
+        name={`referrals-table-${entityId}`}
+        fallback={<TableBlockFallback className="px-0 py-0" />}
+        className="w-full"
+      >
+        {rows.length > 0 ? (
+          <Table className="min-w-[1000px] border-collapse!">
+            <TableHeader className="bg-primary-800 hover:bg-primary-800!">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent! border-b-primary-900 border-b!">
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className={cn(
+                        "text-white font-semibold py-5 px-6 whitespace-nowrap",
+                        (header.id === "clicks" ||
+                          header.id === "registrations" ||
+                          header.id === "view" ||
+                          header.id === "delete") &&
+                        "text-center"
+                      )}
+                      style={{
+                        width: header.id === "select" ? "60px" : header.id === "sno" ? "80px" : "auto",
+                      }}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className="hover:bg-neutral-50/50 border-neutral-100 group transition-colors"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        "py-3 px-6",
+                        (cell.column.id === "clicks" ||
+                          cell.column.id === "registrations" ||
+                          cell.column.id === "view" ||
+                          cell.column.id === "delete") &&
+                        "text-center"
+                      )}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <EmptyState
+            title="No Referrals Found"
+            description="No one has generated a referral link for this opportunity yet."
+          />
+        )}
+      </BoneyardSkeleton>
 
-      {selectedReferrerId && (
-        <ReferrerDetailsSheet
-          referralId={selectedReferrerId}
-          onClose={() => setSelectedReferrerId(null)}
-        />
-      )}
+      <ReferrerDetailsSheet
+        referralId={selectedReferrerId}
+        onClose={() => setSelectedReferrerId(null)}
+      />
     </div>
   );
 });
