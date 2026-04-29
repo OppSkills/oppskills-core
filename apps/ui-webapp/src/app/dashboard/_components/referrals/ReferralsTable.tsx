@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { useDeleteReferral, useReferrals } from "@/hooks/useReferrals";
 import type { ReferralEntityType } from "@/lib/api/referralApi";
+import { ReferrerDetailsSheet } from "./ReferrerDetailsSheet";
 
 interface ReferrerData {
   id: string;
@@ -80,9 +81,15 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
         clicksRecent: row.clicksRecent ?? 0,
         registrations: row.registrationsCount,
         registrationsRecent: row.registrationsRecent ?? 0,
+        institution: row.referrer.institution,
+        location: row.referrer.location,
+        profession: row.referrer.profession,
+        registrationDate: row.referrer.registrationDate,
       })),
     [appOrigin, data?.data],
   );
+
+  const [selectedReferrerId, setSelectedReferrerId] = useState<string | null>(null);
 
   const columns = useMemo<ColumnDef<ReferrerData>[]>(
     () => [
@@ -123,9 +130,10 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
           const row = info.row.original;
           return (
             <div className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:gap-4">
-              <Link
-                href={`${baseUrl}/${row.id}`}
-                className="flex min-w-0 shrink-0 items-center gap-4 group/name cursor-pointer"
+              <button
+                type="button"
+                onClick={() => setSelectedReferrerId(row.id)}
+                className="flex min-w-0 shrink-0 items-center gap-4 group/name cursor-pointer text-left focus:outline-none"
               >
                 <Avatar className="w-12 h-12 shrink-0 rounded-full border border-neutral-100 group-hover/name:border-primary-200 transition-colors">
                   <AvatarImage src={row.avatarUrl} className="object-cover" />
@@ -137,7 +145,7 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
                   </span>
                   <span className="text-xs text-neutral-500 font-medium">{row.email}</span>
                 </div>
-              </Link>
+              </button>
               <div className="flex min-w-0 flex-1 flex-col gap-1 sm:justify-center">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="break-all text-xs font-medium text-blue-600">{row.referralLink}</span>
@@ -213,15 +221,14 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
         header: "View Referrals",
         cell: (info) => (
           <div className="flex justify-center">
-            <Link href={`${baseUrl}/${info.row.original.id}`}>
-              <Button
-                variant="outline"
-                className="rounded-xl h-10 px-4 flex items-center gap-2 bg-[#342636] hover:bg-[#271B40] text-white border-none shadow-sm transition-all active:scale-95"
-              >
-                <Maximize2 size={16} />
-                <span className="text-xs font-semibold">View list</span>
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              onClick={() => setSelectedReferrerId(info.row.original.id)}
+              className="rounded-xl h-10 px-4 flex items-center gap-2 bg-[#342636] hover:bg-[#271B40] text-white border-none shadow-sm transition-all active:scale-95 cursor-pointer"
+            >
+              <Maximize2 size={16} />
+              <span className="text-xs font-semibold">View list</span>
+            </Button>
           </div>
         ),
       },
@@ -240,7 +247,7 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
         ),
       },
     ],
-    [baseUrl, handleDelete]
+    [handleDelete],
   );
 
   const table = useReactTable({
@@ -313,6 +320,13 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
         <EmptyState
           title="No referrals found"
           description="There are no referral links generated for this opportunity yet."
+        />
+      )}
+
+      {selectedReferrerId && (
+        <ReferrerDetailsSheet
+          referralId={selectedReferrerId}
+          onClose={() => setSelectedReferrerId(null)}
         />
       )}
     </div>

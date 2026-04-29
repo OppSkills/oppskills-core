@@ -88,7 +88,7 @@ export function HackathonSidebar({
             <div className="h-14 flex items-center justify-center">
               {state === "expanded" && (
                 <p className="text-sm font-medium truncate">
-                  {slug.toLocaleUpperCase() || "Details"}
+                  {slug?.toLocaleUpperCase() || "Details"}
                 </p>
               )}
             </div>

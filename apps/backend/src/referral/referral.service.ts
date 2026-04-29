@@ -169,6 +169,8 @@ export class ReferralService {
               lastName: true,
               email: true,
               imageUrl: true,
+              createdAt: true,
+              onboardingProfile: ONBOARDING_PROFILE_SELECT,
             },
           },
         },
@@ -182,14 +184,186 @@ export class ReferralService {
       }),
     ]);
 
+    const formatProfession = (profile: any) => {
+      if (!profile) return 'Other';
+      const categoryMap: any = {
+        SCHOOL_STUDENT: 'School Student',
+        COLLEGE_STUDENT: 'College Student',
+        WORKING_PROFESSIONAL: 'Working Professional',
+        FRESHER: 'Fresher',
+        PROFESSIONAL_SCHOOL_STUDENT: 'Professional Student',
+      };
+
+      const parts = [categoryMap[profile.userCategory] || 'User'];
+
+      if (profile.courseSpecialization) parts.push(profile.courseSpecialization);
+      if (profile.course) parts.push(profile.course);
+      if (profile.collegeCurrentYear) parts.push(profile.collegeCurrentYear);
+
+      if (profile.userCategory === 'WORKING_PROFESSIONAL') {
+        if (profile.jobTitle) parts.push(profile.jobTitle);
+        if (profile.companyName) parts.push(profile.companyName);
+      }
+
+      return parts.join(' | ');
+    };
+
+    const formatLocation = (profile: any) => {
+      if (!profile) return 'Unknown';
+      const parts = [
+        profile.locationCity,
+        profile.locationState,
+        profile.locationCountry,
+      ].filter(Boolean);
+      return parts.join(', ') || 'Unknown';
+    };
+
     const withDeltas = await Promise.all(
       rows.map(async (row) => ({
         ...row,
+        referrer: {
+          ...row.referrer,
+          institution: row.referrer.onboardingProfile?.college?.name || row.referrer.onboardingProfile?.schoolName || 'N/A',
+          location: formatLocation(row.referrer.onboardingProfile),
+          profession: formatProfession(row.referrer.onboardingProfile),
+          registrationDate: row.referrer.createdAt,
+        },
         clicksRecent: await this.counter.getClicksLast24h(row.id),
         registrationsRecent: 0,
       })),
     );
     return { data: withDeltas, total, page, pageSize };
+  }
+
+  async getReferrerDetailsForOrganizer(referralId: string, userId: string) {
+    // 1. Assert rights by fetching the primary referral
+    const referral = await this.getReferralById(referralId, userId);
+
+    // 2. Fetch Referrer profile safely
+    const referrer = await prisma.userEntity.findUnique({
+      where: { id: referral.referrerId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        imageUrl: true,
+        createdAt: true,
+        onboardingProfile: ONBOARDING_PROFILE_SELECT,
+      },
+    });
+    if (!referrer) throw new NotFoundException('Referrer not found');
+
+    // 3. Find all entities this organizer manages
+    const [myHackathons, myEvents, myFestivals] = await Promise.all([
+      prisma.hackathonEntity.findMany({
+        where: { OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }] },
+        select: { id: true, slug: true, name: true, bannerImageUrl: true },
+      }),
+      prisma.eventEntity.findMany({
+        where: { OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }] },
+        select: { id: true, slug: true, name: true, bannerImageUrl: true },
+      }),
+      prisma.festivalEntity.findMany({
+        where: { organizerId: userId },
+        select: { id: true, slug: true, name: true, posterImageUrl: true },
+      }),
+    ]);
+
+    const hackathonMap = new Map(myHackathons.map((h) => [h.id, h]));
+    const eventMap = new Map(myEvents.map((e) => [e.id, e]));
+    const festivalMap = new Map(myFestivals.map((f) => [f.id, f]));
+
+    // 4. Fetch all referrals for this referrer
+    const allReferrals = await prisma.referralEntity.findMany({
+      where: { referrerId: referral.referrerId, isDeleted: false },
+    });
+
+    // 5. Filter to only include entities managed by the caller
+    const organizerReferrals = allReferrals.filter((r) => {
+      if (r.entityType === 'HACKATHON') return hackathonMap.has(r.entityId);
+      if (r.entityType === 'EVENT') return eventMap.has(r.entityId);
+      if (r.entityType === 'FESTIVAL') return festivalMap.has(r.entityId);
+      return false;
+    });
+
+    // 6. Get stats
+    const stats = await this.getReferralsWithStats(organizerReferrals);
+
+    // Combine stats with entity details (name, slug, image)
+    const opportunities = stats.map(s => {
+      let entityName = 'Unknown';
+      let slug = '';
+      let image: string | null = null;
+      let baseUrl = '';
+
+      if (s.entityType === 'HACKATHON') {
+        const h = hackathonMap.get(s.entityId);
+        if (h) { entityName = h.name; slug = h.slug; image = h.bannerImageUrl; baseUrl = `/dashboard/hackathon/${h.slug}/referrals`; }
+      } else if (s.entityType === 'EVENT') {
+        const e = eventMap.get(s.entityId);
+        if (e) { entityName = e.name; slug = e.slug; image = e.bannerImageUrl; baseUrl = `/dashboard/events/${e.slug}/referrals`; }
+      } else if (s.entityType === 'FESTIVAL') {
+        const f = festivalMap.get(s.entityId);
+        if (f) { entityName = f.name; slug = f.slug; image = f.posterImageUrl; baseUrl = `/dashboard/festivals/${f.slug}/referrals`; }
+      }
+
+      return {
+        ...s,
+        entityName,
+        slug,
+        image,
+        dashboardUrl: baseUrl,
+      };
+    });
+
+    const formatProfession = (profile: any) => {
+      if (!profile) return 'Other';
+      const categoryMap: any = {
+        SCHOOL_STUDENT: 'School Student',
+        COLLEGE_STUDENT: 'College Student',
+        WORKING_PROFESSIONAL: 'Working Professional',
+        FRESHER: 'Fresher',
+        PROFESSIONAL_SCHOOL_STUDENT: 'Professional Student',
+      };
+      const parts = [categoryMap[profile.userCategory] || 'User'];
+      if (profile.courseSpecialization) parts.push(profile.courseSpecialization);
+      if (profile.course) parts.push(profile.course);
+      if (profile.collegeCurrentYear) parts.push(profile.collegeCurrentYear);
+      if (profile.userCategory === 'WORKING_PROFESSIONAL') {
+        if (profile.jobTitle) parts.push(profile.jobTitle);
+        if (profile.companyName) parts.push(profile.companyName);
+      }
+      return parts.join(' | ');
+    };
+
+    const formatLocation = (profile: any) => {
+      if (!profile) return 'Unknown';
+      const parts = [profile.locationCity, profile.locationState, profile.locationCountry].filter(Boolean);
+      return parts.join(', ') || 'Unknown';
+    };
+
+    return {
+      referrer: {
+        id: referrer.id,
+        name: `${referrer.firstName || ''} ${referrer.lastName || ''}`.trim() || 'User',
+        email: referrer.email,
+        avatarUrl: referrer.imageUrl,
+        institution: referrer.onboardingProfile?.college?.name || referrer.onboardingProfile?.schoolName || 'N/A',
+        location: formatLocation(referrer.onboardingProfile),
+        profession: formatProfession(referrer.onboardingProfile),
+        registrationDate: referrer.createdAt.toISOString(),
+      },
+      opportunities,
+      summary: {
+        totalReferrals: opportunities.length,
+        totalClicks: opportunities.reduce((acc, s) => acc + s.clicks, 0),
+        clicksLast24h: opportunities.reduce((acc, s) => acc + s.clicksLast24h, 0),
+        totalRegistrations: opportunities.reduce((acc, s) => acc + s.registrations, 0),
+        registrationsLast24h: opportunities.reduce((acc, s) => acc + s.registrationsLast24h, 0),
+        activeLinks: opportunities.filter((s) => s.isActive).length,
+      },
+    };
   }
 
   async getReferralById(id: string, userId: string) {
@@ -493,7 +667,13 @@ export class ReferralService {
   }
 
   async markRegistrationAttributed(referralId: string): Promise<void> {
-    await this.counter.incrementRegistration(referralId);
+    await prisma.referralEntity.update({
+      where: { id: referralId },
+      data: {
+        registrationsCount: { increment: 1 },
+        lastRegistrationAt: new Date(),
+      },
+    });
   }
 
 

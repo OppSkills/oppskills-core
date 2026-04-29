@@ -2004,6 +2004,13 @@ export class EventService {
         data: { registrationCount: { decrement: 1 } },
       });
 
+      if (participant.referralId) {
+        await tx.referralEntity.update({
+          where: { id: participant.referralId },
+          data: { registrationsCount: { decrement: 1 } },
+        });
+      }
+
       return { message: 'Successfully left the event.' };
     });
   }

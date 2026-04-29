@@ -119,19 +119,41 @@ export class FestivalService {
     });
   }
 
-  async listUserFestivals(userId: string) {
-    return prisma.festivalEntity.findMany({
-      where: { organizerId: userId, isDeleted: false },
-      include: {
-        hackathons: {
-          select: { id: true, slug: true, name: true },
+  async listUserFestivals(userId: string, params: { page?: number; take?: number } = {}) {
+    const requestedTake = Number(params.take) || 10;
+    const take = [10, 20, 30, 40].includes(requestedTake) ? requestedTake : 10;
+    const page = Math.max(1, Number(params.page) || 1);
+    const skip = (page - 1) * take;
+
+    const where = { organizerId: userId, isDeleted: false };
+
+    const [items, total] = await Promise.all([
+      prisma.festivalEntity.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          hackathons: {
+            select: { id: true, slug: true, name: true, registrationCount: true },
+          },
+          events: {
+            select: { id: true, slug: true, name: true, registrationCount: true },
+          },
         },
-        events: {
-          select: { id: true, slug: true, name: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.festivalEntity.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / take);
+
+    return {
+      items,
+      total,
+      page,
+      take,
+      totalPages,
+    };
   }
 
   async getFestivalById(id: string) {

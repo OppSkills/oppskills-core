@@ -239,16 +239,9 @@ export function TeamRegistrationDetailsSheet({
           </div>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar p-4 sm:p-6 flex flex-col gap-8">
+        <div className="flex-1 overflow-y-auto no-scrollbar p-2 flex flex-col gap-4">
           {/* Team Members Section */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2 px-1">
-              <Users className="h-4 w-4 text-primary-500" />
-              <h4 className="text-sm font-black font-poppins text-neutral-900 uppercase tracking-wider">
-                Team Members
-              </h4>
-            </div>
-
             {teamLoading ? (
               <div className="flex justify-center items-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin text-primary-500" />

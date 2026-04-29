@@ -89,6 +89,46 @@ export async function deleteReferral(token: string, id: string) {
   return res.data as { success: boolean };
 }
 
+export interface OrganizerReferrerDetails {
+  referrer: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    institution: string;
+    location: string;
+    profession: string;
+    registrationDate: string;
+  };
+  opportunities: {
+    id: string;
+    entityType: ReferralEntityType;
+    entityId: string;
+    entityName: string;
+    slug: string;
+    image: string | null;
+    dashboardUrl: string;
+    clicks: number;
+    clicksLast24h: number;
+    registrations: number;
+    registrationsLast24h: number;
+    isActive: boolean;
+  }[];
+  summary: {
+    totalReferrals: number;
+    totalClicks: number;
+    clicksLast24h: number;
+    totalRegistrations: number;
+    registrationsLast24h: number;
+    activeLinks: number;
+  };
+}
+
+export async function getReferrerDetails(token: string, id: string) {
+  const res = await API.get(`/${id}/referrer-details`, { headers: buildAuthHeaders(token) });
+  return res.data as OrganizerReferrerDetails;
+}
+
 export async function lookupReferrerUser(
   token: string,
   params: { email: string; entityType: ReferralEntityType; entityId: string },

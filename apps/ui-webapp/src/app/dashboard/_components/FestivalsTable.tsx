@@ -1,19 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import React from 'react';
 import {
-  useReactTable,
-  getCoreRowModel,
+  ColumnDef,
   flexRender,
-  createColumnHelper,
+  getCoreRowModel,
+  useReactTable,
   getPaginationRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  SortingState,
-} from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+} from '@tanstack/react-table';
+import Image from 'next/image';
+import { SortFromTopToBottom } from '@solar-icons/react';
+import { useRouter } from 'next/navigation';
+import { EmptyState } from '@/components/common/EmptyState';
+import ActionDropdown from './ActionDropdown';
+
 import {
   Table,
   TableBody,
@@ -21,209 +21,141 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import ActionDropdown from "./ActionDropdown";
-import Link from "next/link";
-import { SortFromTopToBottom } from "@solar-icons/react";
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import Pagination from '@/components/common/Pagination';
 
 export interface FestivalItem {
   id: string;
   name: string;
-  description?: string;
-  tag: string;
-  status: "Completed" | "In Progress" | "Upcoming" | string;
-  startDate: string | Date;
-  endDate: string | Date;
-  candidates: number;
-  registrationOpen: boolean;
   slug: string;
-}
-
-function stripHtmlToText(input: string): string {
-  const value = input.trim();
-  if (value.length === 0) return "";
-  if (typeof window !== "undefined" && typeof document !== "undefined") {
-    const el = document.createElement("div");
-    el.innerHTML = value;
-    return (el.textContent ?? el.innerText ?? "").replace(/\s+/g, " ").trim();
-  }
-  return value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  description: string;
+  image: string;
+  candidates: number;
+  numberOfEvents: number;
+  eventCandidates: number;
+  numberOfCompetitions: number;
+  competitionCandidates: number;
 }
 
 interface FestivalsTableProps {
   data: FestivalItem[];
-  onToggleRegistration?: (id: string, isOpen: boolean) => void;
+  page?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
   onEdit?: (id: string) => void;
 }
 
-const columnHelper = createColumnHelper<FestivalItem>();
-
 export default function FestivalsTable({
   data,
-  onToggleRegistration,
+  page,
+  totalPages,
+  onPageChange,
   onEdit,
 }: FestivalsTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-
-  const columns = [
-    columnHelper.display({
-      id: "index",
-      header: "S. No.",
-      cell: (info) => (
-        <span className="font-medium text-muted-foreground pl-4">
-          {info.row.index + 1}
-        </span>
-      ),
-    }),
-    columnHelper.accessor("name", {
+  const router = useRouter();
+  
+  const columns: ColumnDef<FestivalItem>[] = [
+    {
+      id: 'serialNumber',
+      header: 'S. No.',
+      cell: (info) => <div className="text-neutral-600 text-center">{info.row.index + 1}</div>,
+      size: 60,
+    },
+    {
+      accessorKey: 'name',
       header: ({ column }) => {
         return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
-          >
-            Name
-            <SortFromTopToBottom className="ml-2 h-4 w-4" />
-          </Button>
-        );
+          <div className="flex items-center gap-2 text-left">
+            Festival Name
+            <Button
+              variant="ghost"
+              size="sm"
+              className="-ml-3 h-8 w-8 hover:bg-transparent"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              <SortFromTopToBottom className="h-3 w-3" />
+            </Button>
+          </div>
+        )
       },
-      cell: (info) => {
-        const item = info.row.original;
+      cell: ({ row }) => {
+        const item = row.original;
         return (
-          <Link
-            href={`/dashboard/festivals/${item.slug || item.id}`}
-            className="flex flex-col gap-1 py-2 hover:underline"
-          >
-            <span className="font-semibold text-base">{item.name}</span>
-            {item.description && (
-              <span className="text-muted-foreground text-xs line-clamp-1 max-w-[200px]">
-                {stripHtmlToText(item.description)}
-              </span>
-            )}
-            <div className="mt-1">
-              <span className="bg-muted text-muted-foreground text-[10px] px-2 py-0.5 rounded-sm font-medium border">
-                {item.tag}
+          <div className="flex items-center gap-4 py-2">
+            <div className="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg">
+              <Image
+                src={item.image}
+                alt={item.name}
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div className="flex flex-col min-w-0 text-left w-[300px]">
+              <h4 className="font-semibold text-neutral-900 break-words whitespace-normal leading-snug">
+                {item.name}
+              </h4>
+              <p className="text-xs text-neutral-500 line-clamp-2 mt-1 break-words whitespace-normal">
+                {item.description.replace(/<[^>]*>?/gm, '')}
+              </p>
+              <span className="text-[10px] uppercase font-bold text-neutral-400 bg-neutral-100 w-fit px-1.5 py-0.5 rounded mt-1">
+                FESTIVAL
               </span>
             </div>
-          </Link>
-        );
-      },
-    }),
-    columnHelper.accessor("status", {
-      header: "Status",
-      cell: (info) => {
-        const status = info.getValue();
-        return (
-          <Badge
-            variant="secondary"
-            className={cn(
-              "font-normal pointer-events-none whitespace-nowrap",
-              status === "Completed" &&
-              "bg-purple-100 text-purple-700 hover:bg-purple-100",
-              status === "ONGOING" && // Backend uses ONGOING
-              "bg-purple-100 text-purple-700 hover:bg-purple-100",
-              status === "PUBLISHED" && // Backend uses PUBLISHED
-              "bg-blue-100 text-blue-700 hover:bg-blue-100",
-              status === "Upcoming" &&
-              "bg-blue-100 text-blue-700 hover:bg-blue-100",
-              status === "DRAFT" &&
-              "bg-gray-100 text-gray-700 hover:bg-gray-100"
-            )}
-          >
-            {status}
-          </Badge>
-        );
-      },
-    }),
-    columnHelper.accessor("startDate", {
-      header: "Start Date",
-      cell: (info) => {
-        const date = new Date(info.getValue());
-        return (
-          <div className="flex flex-col text-sm">
-            <span className="font-medium text-foreground">
-              {format(date, "dd MMM yy")}
-            </span>
-            <span className="text-muted-foreground text-xs">
-              {format(date, "hh:mm a")} IST
-            </span>
           </div>
         );
       },
-    }),
-    columnHelper.accessor("endDate", {
-      header: "End Date",
-      cell: (info) => {
-        const date = new Date(info.getValue());
-        return (
-          <div className="flex flex-col text-sm">
-            <span className="font-medium text-foreground">
-              {format(date, "dd MMM yy")}
-            </span>
-            <span className="text-muted-foreground text-xs">
-              {format(date, "hh:mm a")} IST
-            </span>
-          </div>
-        );
-      },
-    }),
-    columnHelper.accessor("candidates", {
-      header: "Candidates",
-      cell: (info) => (
-        <span className="font-medium text-lg">
-          {info.getValue().toLocaleString()}
-        </span>
+      size: 350,
+    },
+    {
+      accessorKey: 'candidates',
+      header: 'Candidates',
+      cell: ({ getValue }) => (
+        <div className="text-center font-medium text-neutral-700">
+          {(getValue() as number).toLocaleString()}
+        </div>
       ),
-    }),
-    columnHelper.accessor("registrationOpen", {
-      header: "Registration",
-      cell: (info) => {
-        const isOpen = info.getValue();
-        const id = info.row.original.id;
-        return (
-          <div className="flex items-center gap-3">
-            <Switch
-              checked={isOpen}
-              onCheckedChange={(checked) => onToggleRegistration?.(id, checked)}
-              className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-red-500"
-            />
-            <Badge
-              variant={isOpen ? "default" : "destructive"}
-              className={cn(
-                "font-normal text-[10px] px-1.5 py-0 h-5 pointer-events-none",
-                isOpen
-                  ? "bg-green-100 text-green-700 hover:bg-green-100 border-none"
-                  : "bg-red-100 text-red-700 hover:bg-red-100 border-none"
-              )}
-            >
-              {isOpen ? "Open" : "Closed"}
-            </Badge>
-          </div>
-        );
-      },
-    }),
-    columnHelper.display({
+      size: 100,
+    },
+    {
+      id: 'numberOfEvents',
+      header: 'No. of Events',
+      cell: ({ row }) => (
+        <div className="flex flex-col items-center justify-center">
+          <span className="text-sm text-neutral-900">{row.original.numberOfEvents} Events</span>
+          <span className="text-xs text-neutral-500 mt-0.5">{row.original.eventCandidates} Candidates</span>
+        </div>
+      ),
+      size: 150,
+    },
+    {
+      id: 'numberOfCompetitions',
+      header: 'No. of Competitions',
+      cell: ({ row }) => (
+        <div className="flex flex-col items-center justify-center">
+          <span className="text-sm text-neutral-900">{row.original.numberOfCompetitions} Competitions</span>
+          <span className="text-xs text-neutral-500 mt-0.5">{row.original.competitionCandidates} Teams</span>
+        </div>
+      ),
+      size: 150,
+    },
+    {
       id: "actions",
-      header: "Actions",
-      cell: (info) => {
+      header: "Edit",
+      cell: ({ row }) => {
         return (
-          <div className="text-right pr-4">
+          <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
             <ActionDropdown
-              onEdit={() => onEdit?.(info.row.original.id)}
+              onEdit={() => onEdit?.(row.original.id)}
               className="border-none hover:bg-muted"
-              editHref={`/dashboard/festivals/${info.row.original.slug}/edit-festival`}
-              settingsHref={`/dashboard/festivals/${info.row.original.slug}/settings`}
+              editHref={`/dashboard/festivals/${row.original.slug}/edit-festival`}
+              settingsHref={`/dashboard/festivals/${row.original.slug}/settings`}
             />
           </div>
         );
       },
-    }),
+      size: 80,
+    },
   ];
 
   const table = useReactTable({
@@ -231,91 +163,81 @@ export default function FestivalsTable({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
-    state: {
-      sorting,
+    initialState: {
+      pagination: {
+        pageSize: 10,
+      },
     },
   });
 
   return (
-    <div className="w-full space-y-4">
-      <div className="rounded-xl border bg-background overflow-hidden">
-        <Table>
-          <TableHeader className="bg-primary-500 hover:bg-primary/95">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow
-                key={headerGroup.id}
-                className="hover:bg-transparent border-none"
-              >
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead
-                      key={header.id}
-                      className="text-primary-foreground/90 font-medium h-12"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="group"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-3">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  No festivals found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Next
-        </Button>
-      </div>
+    <div className="w-full max-w-full bg-white rounded-xl shadow-sm border border-neutral-300 overflow-hidden">
+      {table.getRowModel().rows?.length > 0 ? (
+        <>
+          <div className="overflow-x-auto overflow-y-hidden">
+            <Table className="min-w-[1000px] w-full border border-neutral-300">
+              <TableHeader className="bg-primary-800">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className="text-neutral-100 font-normal text-sm whitespace-nowrap py-2 border-r border-white/30 last:border-r-0"
+                        style={{ width: header.getSize() }}
+                      >
+                        <div className={header.id === 'name' ? 'text-left' : 'text-center'}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                        </div>
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className="border-b border-neutral-300 hover:bg-neutral-50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      router.push(`/dashboard/festivals/${row.original.slug}`);
+                    }}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="py-3 px-4 border-r border-neutral-300 last:border-r-0"
+                        style={{ width: cell.column.getSize() }}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className='px-4'>
+            <Pagination
+              curPage={page || table.getState().pagination.pageIndex + 1}
+              totalPages={totalPages || table.getPageCount()}
+              setPerPage={(size) => table.setPageSize(Number(size))}
+              perPage={table.getState().pagination.pageSize}
+              onPageChange={(p) => onPageChange ? onPageChange(p) : table.setPageIndex(p - 1)}
+            />
+          </div>
+        </>
+      ) : (
+        <EmptyState
+          title="No festivals found"
+          description="You haven't created any festivals yet."
+        />
+      )}
     </div>
   );
 }

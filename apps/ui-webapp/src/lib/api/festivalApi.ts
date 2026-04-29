@@ -15,9 +15,12 @@ export async function getFestivals(token: string | null): Promise<unknown> {
 /**
  * Lists festivals organized by the current user.
  */
-export async function getMyFestivals(token: string): Promise<unknown> {
-  const res = await API.get("/my", { headers: buildAuthHeaders(token) });
-  return res.data as unknown;
+export async function getMyFestivals(token: string, params?: { page?: number; take?: number }): Promise<any> {
+  const res = await API.get("/my", { 
+    headers: buildAuthHeaders(token),
+    params
+  });
+  return res.data;
 }
 
 /**

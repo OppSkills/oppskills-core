@@ -9,6 +9,7 @@ import {
   Patch,
   Put,
   Req,
+  Query,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -159,10 +160,17 @@ export class FestivalController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  async listUserFestivals(@Req() req: Request) {
+  async listUserFestivals(
+    @Req() req: Request,
+    @Query('page') page?: string,
+    @Query('take') take?: string,
+  ) {
     const userId = req.user?.id;
     if (!userId) throw new UnauthorizedException('User not found');
-    return this.festivalService.listUserFestivals(userId);
+    return this.festivalService.listUserFestivals(userId, {
+      page: page ? parseInt(page, 10) : undefined,
+      take: take ? parseInt(take, 10) : undefined,
+    });
   }
 
   @Get(':id')

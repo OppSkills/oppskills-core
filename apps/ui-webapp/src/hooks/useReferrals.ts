@@ -10,6 +10,7 @@ import {
   getReferralRegistrations,
   listReferrals,
   lookupReferrerUser,
+  getReferrerDetails,
   type ReferralEntityType,
 } from "@/lib/api/referralApi";
 
@@ -105,5 +106,14 @@ export function useReferralById(referralId: string) {
     queryKey: ["referral", referralId],
     enabled: Boolean(referralId),
     queryFn: async () => getReferralById(await tokenOrThrow(getToken), referralId),
+  });
+}
+
+export function useReferrerDetailsForOrganizer(referralId: string | null) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["referrer-details", referralId],
+    enabled: Boolean(referralId),
+    queryFn: async () => getReferrerDetails(await tokenOrThrow(getToken), referralId!),
   });
 }
