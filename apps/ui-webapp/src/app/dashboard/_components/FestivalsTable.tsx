@@ -58,7 +58,7 @@ export default function FestivalsTable({
   isLoading = false,
 }: FestivalsTableProps) {
   const router = useRouter();
-  
+
   const columns: ColumnDef<FestivalItem>[] = [
     {
       id: 'serialNumber',
@@ -144,7 +144,7 @@ export default function FestivalsTable({
       cell: ({ row }) => (
         <div className="flex justify-center">
           <ActionDropdown
-            onView={() => router.push(`/dashboard/festival/${row.original.slug}`)}
+            onView={() => router.push(`/dashboard/festivals/${row.original.slug}`)}
             onEdit={() => onEdit?.(row.original.id)}
           />
         </div>
@@ -188,9 +188,9 @@ export default function FestivalsTable({
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                         </TableHead>
                       ))}
                     </TableRow>
@@ -201,7 +201,7 @@ export default function FestivalsTable({
                     <TableRow
                       key={row.id}
                       className="h-16 cursor-pointer border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors"
-                      onClick={() => router.push(`/dashboard/festival/${row.original.slug}`)}
+                      onClick={() => router.push(`/dashboard/festivals/${row.original.slug}`)}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id} className="py-2">
@@ -224,7 +224,7 @@ export default function FestivalsTable({
                 totalPages={totalPages}
                 onPageChange={onPageChange}
                 perPage={10}
-                setPerPage={() => {}}
+                setPerPage={() => { }}
               />
             </div>
           )}

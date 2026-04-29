@@ -147,8 +147,8 @@ export const OpportunitiesTable: React.FC<OpportunitiesTableProps> = ({
       cell: ({ row }) => (
         <div className="flex justify-center">
           <RegistrationToggle
-            isOpen={row.original.registrationOpen}
-            onToggle={(isOpen) => onToggleRegistration?.(row.original.id, isOpen)}
+            isOpen={row.original.registrationsOpen}
+            onChange={(isOpen) => onToggleRegistration?.(row.original.id, isOpen)}
           />
         </div>
       ),
@@ -162,7 +162,12 @@ export const OpportunitiesTable: React.FC<OpportunitiesTableProps> = ({
             variant="outline"
             size="sm"
             className="h-8 rounded-lg border-primary-600 text-[10px] font-bold text-primary-600 hover:bg-primary-50"
-            onClick={() => router.push(`/dashboard/${row.original.type.toLowerCase()}/${row.original.slug}`)}
+            onClick={(e) => {
+              e.stopPropagation();
+              const type = row.original.type.toLowerCase();
+              const route = type === 'event' ? 'events' : type === 'competition' ? 'hackathon' : 'festivals';
+              router.push(`/dashboard/${route}/${row.original.slug}`);
+            }}
           >
             Manage
           </Button>
@@ -207,9 +212,9 @@ export const OpportunitiesTable: React.FC<OpportunitiesTableProps> = ({
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                         </TableHead>
                       ))}
                     </TableRow>
@@ -220,7 +225,11 @@ export const OpportunitiesTable: React.FC<OpportunitiesTableProps> = ({
                     <TableRow
                       key={row.id}
                       className="h-16 cursor-pointer border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors"
-                      onClick={() => router.push(`/dashboard/${row.original.type.toLowerCase()}/${row.original.slug}`)}
+                      onClick={() => {
+                        const type = row.original.type.toLowerCase();
+                        const route = type === 'event' ? 'events' : type === 'competition' ? 'hackathon' : 'festivals';
+                        router.push(`/dashboard/${route}/${row.original.slug}`);
+                      }}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id} className="py-2">
@@ -243,7 +252,7 @@ export const OpportunitiesTable: React.FC<OpportunitiesTableProps> = ({
                 totalPages={totalPages}
                 onPageChange={onPageChange}
                 perPage={10}
-                setPerPage={() => {}}
+                setPerPage={() => { }}
               />
             </div>
           )}

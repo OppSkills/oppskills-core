@@ -184,20 +184,25 @@ export class ReferralService {
       }),
     ]);
 
-    const withDeltas = await Promise.all(
-      rows.map(async (row) => ({
-        ...row,
-        referrer: {
-          ...row.referrer,
-          institution: row.referrer.onboardingProfile?.college?.name || row.referrer.onboardingProfile?.schoolName || 'N/A',
-          location: this.formatLocation(row.referrer.onboardingProfile),
-          profession: this.formatProfession(row.referrer.onboardingProfile),
-          registrationDate: row.referrer.createdAt,
-        },
-        clicksRecent: await this.counter.getClicksLast24h(row.id),
-        registrationsRecent: 0,
-      })),
-    );
+    const referralIds = rows.map((r) => r.id);
+    const { clicks: clicksRecentMap, registrations: registrationsRecentMap } =
+      await this.getRecentStatsBatch(referralIds);
+
+    const withDeltas = rows.map((row) => ({
+      ...row,
+      referrer: {
+        ...row.referrer,
+        institution:
+          row.referrer.onboardingProfile?.college?.name ||
+          row.referrer.onboardingProfile?.schoolName ||
+          'N/A',
+        location: this.formatLocation(row.referrer.onboardingProfile),
+        profession: this.formatProfession(row.referrer.onboardingProfile),
+        registrationDate: row.referrer.createdAt,
+      },
+      clicksRecent: clicksRecentMap[row.id] || 0,
+      registrationsRecent: registrationsRecentMap[row.id] || 0,
+    }));
     return { data: withDeltas, total, page, pageSize };
   }
 
@@ -668,39 +673,9 @@ export class ReferralService {
   }
 
   private async getReferralsWithStats(referrals: ReferralEntity[]) {
-    const now = new Date();
-    const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const referralIds = referrals.map((r) => r.id);
-
-    // 1. Batch fetch clicks from Redis
-    const clicksLast24hMap =
-      await this.counter.getBatchClicksLast24h(referralIds);
-
-    // 2. Batch fetch registrations from DB
-    const [eventRegs24h, teamRegs24h, teamMemberRegs24h] = await Promise.all([
-      prisma.eventParticipantEntity.groupBy({
-        by: ['referralId'],
-        where: { referralId: { in: referralIds }, joinedAt: { gte: start24h } },
-        _count: { _all: true },
-      }),
-      prisma.teamEntity.groupBy({
-        by: ['referralId'],
-        where: { referralId: { in: referralIds }, createdAt: { gte: start24h } },
-        _count: { _all: true },
-      }),
-      prisma.teamMemberEntity.groupBy({
-        by: ['referralId'],
-        where: { referralId: { in: referralIds }, joinedAt: { gte: start24h } },
-        _count: { _all: true },
-      }),
-    ]);
-
-    const regMap: Record<string, number> = {};
-    [...eventRegs24h, ...teamRegs24h, ...teamMemberRegs24h].forEach((r) => {
-      if (r.referralId) {
-        regMap[r.referralId] = (regMap[r.referralId] || 0) + r._count._all;
-      }
-    });
+    const { clicks: clicksLast24hMap, registrations: regMap } =
+      await this.getRecentStatsBatch(referralIds);
 
     // 3. Batch fetch entity details
     const hackathonIds = [
@@ -838,5 +813,42 @@ export class ReferralService {
       profile.locationCountry,
     ].filter(Boolean);
     return parts.join(', ') || 'Unknown';
+  }
+
+  private async getRecentStatsBatch(referralIds: string[]) {
+    const now = new Date();
+    const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // 1. Batch fetch clicks from Redis
+    const clicksLast24hMap =
+      await this.counter.getBatchClicksLast24h(referralIds);
+
+    // 2. Batch fetch registrations from DB
+    const [eventRegs24h, teamRegs24h, teamMemberRegs24h] = await Promise.all([
+      prisma.eventParticipantEntity.groupBy({
+        by: ['referralId'],
+        where: { referralId: { in: referralIds }, joinedAt: { gte: start24h } },
+        _count: { _all: true },
+      }),
+      prisma.teamEntity.groupBy({
+        by: ['referralId'],
+        where: { referralId: { in: referralIds }, createdAt: { gte: start24h } },
+        _count: { _all: true },
+      }),
+      prisma.teamMemberEntity.groupBy({
+        by: ['referralId'],
+        where: { referralId: { in: referralIds }, joinedAt: { gte: start24h } },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const regMap: Record<string, number> = {};
+    [...eventRegs24h, ...teamRegs24h, ...teamMemberRegs24h].forEach((r) => {
+      if (r.referralId) {
+        regMap[r.referralId] = (regMap[r.referralId] || 0) + r._count._all;
+      }
+    });
+
+    return { clicks: clicksLast24hMap, registrations: regMap };
   }
 }

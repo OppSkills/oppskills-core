@@ -26,11 +26,11 @@ export default function FestivalsDashboardPage() {
       const res: any = await getMyFestivals(token, { page, take });
 
       const items = Array.isArray(res.items) ? res.items : (Array.isArray(res) ? res : []);
-      
+
       const rows: FestivalItem[] = items.map((item: any) => {
         const events = item.events || [];
         const hackathons = item.hackathons || [];
-        
+
         const eventCandidates = events.reduce((sum: number, e: any) => sum + (e.registrationCount || 0), 0);
         const competitionCandidates = hackathons.reduce((sum: number, h: any) => sum + (h.registrationCount || 0), 0);
         const totalCandidates = eventCandidates + competitionCandidates;
@@ -40,7 +40,7 @@ export default function FestivalsDashboardPage() {
           name: item.name,
           slug: item.slug,
           description: item.description || "",
-          image: item.posterImageUrl || "https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?q=80&w=2070&auto=format&fit=crop",
+          image: item.posterImageUrl || "",
           candidates: totalCandidates,
           numberOfEvents: events.length,
           eventCandidates: eventCandidates,
