@@ -9,6 +9,8 @@ import { OrganizerDashboardHome } from './OrganizerDashboardHome';
 import { OrganizerEventsPanel, updatePersistedEvent } from '../../../events/presentation/screens/OrganizerEventsPanel';
 import { SendNotificationsPanel } from './SendNotificationsPanel';
 import { TalentPipelinePanel } from './TalentPipelinePanel';
+import { OrganizerFestivalsPanel } from './OrganizerFestivalsPanel';
+import { FestivalDetailScreen, type LiveFestival } from './FestivalDetailScreen';
 import { styles } from './OrganizerDashboardScreen.styles';
 
 const organizerSidebarItems = [
@@ -185,6 +187,7 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey | 'event' | 'hackathon' | 'festival' | 'home'>('dashboard');
   const [selectedEvent, setSelectedEvent] = useState<LiveEvent | null>(null);
+  const [selectedFestival, setSelectedFestival] = useState<LiveFestival | null>(null);
 
   const activeSection = activeSectionKey in organizerSections
     ? organizerSections[activeSectionKey as OrganizerSectionKey]
@@ -193,6 +196,7 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
   const showingNotifications = activeSectionKey === 'send-notifications';
   const showingTalentPipeline = activeSectionKey === 'talent-pipeline';
   const showingEvents = activeSectionKey === 'event';
+  const showingFestivals = activeSectionKey === 'festival';
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
@@ -232,6 +236,15 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
         />
       ) : showingEvents ? (
         <OrganizerEventsPanel onSelectEvent={(e) => setSelectedEvent(e)} />
+      ) : showingFestivals && selectedFestival !== null ? (
+        <FestivalDetailScreen
+          festival={selectedFestival}
+          onBack={() => setSelectedFestival(null)}
+          onOpenMainSidebar={() => setDrawerVisible(true)}
+          onUpdateFestival={(updated) => setSelectedFestival(updated)}
+        />
+      ) : showingFestivals ? (
+        <OrganizerFestivalsPanel onSelectFestival={(f) => setSelectedFestival(f)} />
       ) : showingNotifications ? (
         <SendNotificationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : showingTalentPipeline ? (
