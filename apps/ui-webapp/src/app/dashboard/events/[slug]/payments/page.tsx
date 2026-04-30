@@ -115,7 +115,7 @@ export default function Page() {
       setIsPaid(!eventData.isFree);
       setFeeBearer((eventData.feeBearer as FeeBearer) || "ORGANISER");
       setEntryFeeAmount(eventData.entryFeeAmount?.toString() || "0");
- 
+
       const initialState = {
         isFree: eventData.isFree,
         feeBearer: (eventData.feeBearer as FeeBearer) || "ORGANISER",
@@ -252,6 +252,7 @@ export default function Page() {
         canEditPricing={canEditPricing}
         earnings={earnings}
         payoutDetails={payoutDetails}
+        payoutLoading={payoutLoading}
         isPayoutFormOpen={isPayoutFormOpen}
         setIsPayoutFormOpen={setIsPayoutFormOpen}
         onPayoutDetailsSave={handlePayoutDetailsSave}

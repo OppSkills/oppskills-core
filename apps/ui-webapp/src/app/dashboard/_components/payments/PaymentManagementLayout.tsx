@@ -6,15 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
-  Trash2,
-  Ticket as TicketIcon,
-  Plus,
-  Pencil,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
   Banknote,
   IndianRupee,
+  Pencil,
+  Plus,
+  CheckCircle,
+  Loader2,
 } from "lucide-react";
 import { Container } from "../Container";
 import PayoutDetailsForm from "@/components/ui/payment-side/PayoutDetailsForm";
@@ -111,7 +108,7 @@ export function PaymentManagementLayout({
   return (
     <div className="flex flex-col items-start gap-8 w-full">
       {/* Auto-save status indicator */}
-      <div className="w-full flex items-center gap-4 py-2">
+      <div className="w-full flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 py-2">
         <div className="text-sm font-bold poppins text-neutral-400 shrink-0">
           {autoSaveStatus === "saving" ? (
             <span className="flex items-center gap-2">
@@ -120,13 +117,13 @@ export function PaymentManagementLayout({
           ) : autoSaveStatus === "error" ? (
             <span className="text-red-500">Save failed</span>
           ) : (
-            "Last Saved"
+            "Status"
           )}
         </div>
-        <div className="flex-1 h-px bg-neutral-200" />
-        <div className="text-sm font-medium poppins text-neutral-500 shrink-0">
+        <div className="hidden sm:block flex-1 h-px bg-neutral-200" />
+        <div className="text-xs sm:text-sm font-medium poppins text-neutral-500 shrink-0">
           {lastSavedAt
-            ? format(new Date(lastSavedAt), "do MMMM yyyy, hh:mm a")
+            ? `Last saved: ${format(new Date(lastSavedAt), "do MMM, hh:mm a")}`
             : "Awaiting changes..."}
         </div>
       </div>
@@ -137,18 +134,18 @@ export function PaymentManagementLayout({
         <div className="flex-1 flex items-center">
           <p className="text-neutral-900 text-xl font-bold poppins">Is the {opportunityType} Paid?</p>
         </div>
-        <div className="flex items-center gap-4 flex-1 justify-end">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <Button
             onClick={() => setIsPaid(true)}
             className={cn(
-              "px-8 transition-all",
+              "flex-1 sm:px-8 h-12 transition-all font-bold",
               isPaid ? "bg-primary-600 text-white" : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
             )}
           >Yes</Button>
           <Button
             onClick={() => setIsPaid(false)}
             className={cn(
-              "px-8 transition-all",
+              "flex-1 sm:px-8 h-12 transition-all font-bold",
               !isPaid ? "bg-primary-600 text-white" : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
             )}
           >No</Button>
@@ -198,20 +195,21 @@ export function PaymentManagementLayout({
                 key={ticket.id}
                 className="flex w-full flex-col sm:flex-row justify-between bg-primary-100 border-[0.5px] border-primary-500 p-4 rounded-xl"
               >
-                <div className="flex flex-col gap-2">
-                  <p className="text-xl text-neutral-900">{ticket.name}</p>
-                  <div className="flex items-center gap-4">
-                    <p className="text-base text-neutral-700">₹ {ticket.price} per team</p> |
-                    <p className="text-base text-neutral-700">Limit: {ticket.limit}</p>
+                <div className="flex flex-col gap-2 flex-1">
+                  <p className="text-lg sm:text-xl font-bold text-neutral-900 poppins">{ticket.name}</p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm sm:text-base">
+                    <p className="text-neutral-700 font-medium">₹ {ticket.price} per {opportunityType === "Hackathon" ? "team" : "user"}</p>
+                    <span className="hidden sm:inline text-neutral-300">|</span>
+                    <p className="text-neutral-500">Limit: {ticket.limit}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <p className="text-primary-700 text-xs flex items-center gap-2">
+                <div className="flex items-center gap-6 mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-primary-200/50">
+                  <button className="text-primary-700 text-sm font-bold flex items-center gap-2 hover:text-primary-800 transition-colors">
                     <Pencil className="w-4 h-4" /> Edit
-                  </p>
-                  <p className="text-primary-700 text-xs flex items-center gap-2">
+                  </button>
+                  <button className="text-red-600 text-sm font-bold flex items-center gap-2 hover:text-red-700 transition-colors">
                     <TrashBinTrash className="w-4 h-4" /> Delete
-                  </p>
+                  </button>
                 </div>
               </div>
             ))
@@ -225,23 +223,6 @@ export function PaymentManagementLayout({
       {/* PAID CONFIGURATION */}
       {isPaid && (
         <div className="flex flex-col gap-8 w-full animate-in fade-in slide-in-from-top-4 duration-500">
-          <PayoutDetailsForm
-            onSave={onPayoutDetailsSave}
-            isOpen={isPayoutFormOpen}
-            onClose={() => setIsPayoutFormOpen(false)}
-            initialData={
-              payoutDetails
-                ? {
-                  accountHolderName: payoutDetails.accountHolderName,
-                  accountNumber: "",
-                  ifsc: payoutDetails.ifsc,
-                  upiId: payoutDetails.upiId || "",
-                }
-                : undefined
-            }
-            isLoading={upsertPayoutLoading}
-          />
-
           {/* EARNINGS OVERVIEW */}
           {earnings && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
@@ -327,7 +308,7 @@ export function PaymentManagementLayout({
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
               {/* Participant Card */}
-                <div
+              <div
                 onClick={() => setFeeBearer("PARTICIPANT")}
                 className={cn(
                   "p-6 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col gap-6",
@@ -448,28 +429,32 @@ export function PaymentManagementLayout({
               </button>
             }
           >
-            <div className="flex flex-col gap-4 py-2">
+            <div className="flex flex-col py-2">
               {[
                 { label: "Account Holder Name", value: payoutDetails?.accountHolderName },
-                { label: "Phone Number", value: "--" },
-                { label: "Email", value: "--" },
-                { label: "Bank Name", value: "--" },
                 { label: "Bank Account Number", value: payoutDetails?.accountNumberLast4 ? `•••• •••• ${payoutDetails.accountNumberLast4}` : undefined },
                 { label: "IFSC Code", value: payoutDetails?.ifsc },
-                { label: "Pan Number", value: "--" },
-                { label: "GST Tin Number", value: "--" },
-                { label: "Address 1", value: "--" },
-                { label: "Address 2", value: "--" },
-                { label: "State", value: "--" },
-                { label: "City", value: "--" },
-                { label: "Pincode", value: "--" },
-              ].map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center group">
-                  <span className="text-sm text-neutral-500 inter">{item.label}</span>
-                  <span className="text-sm text-neutral-900 font-medium poppins">{item.value || "--"}</span>
+                { label: "UPI ID", value: payoutDetails?.upiId },
+              ].map((item, index) => (
+                <div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 border-b border-neutral-100 last:border-0 gap-1 sm:gap-0">
+                  <span className="text-neutral-500 font-medium inter text-xs sm:text-sm">{item.label}</span>
+                  <span className={cn(
+                    "font-bold poppins text-sm sm:text-base",
+                    item.value ? "text-neutral-900" : "text-neutral-300 italic font-normal"
+                  )}>
+                    {item.value || "Not set"}
+                  </span>
                 </div>
               ))}
             </div>
+
+            <PayoutDetailsForm
+              isOpen={isPayoutFormOpen}
+              onClose={() => setIsPayoutFormOpen(false)}
+              initialData={payoutDetails}
+              onSave={onPayoutDetailsSave}
+              isLoading={upsertPayoutLoading}
+            />
           </Container>
         </div>
       )}
