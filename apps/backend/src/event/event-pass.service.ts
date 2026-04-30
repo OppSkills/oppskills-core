@@ -482,6 +482,127 @@ export class EventPassService {
   }
 
   /**
+   * Mark attendance manually for a participant
+   * Creates a pass if it doesn't exist, and marks it as used
+   */
+  async markAttendanceManually(
+    participantId: string,
+    scannerId: string,
+    eventId: string,
+  ): Promise<ScanResultDto> {
+    // 1. Check if pass exists
+    let pass = await prisma.eventPassEntity.findUnique({
+      where: { participantId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            imageUrl: true,
+          },
+        },
+        event: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            startDate: true,
+          },
+        },
+        scannedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    // 2. If not, generate one
+    if (!pass) {
+      await this.generateEventPass(participantId);
+      pass = await prisma.eventPassEntity.findUnique({
+        where: { participantId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              imageUrl: true,
+            },
+          },
+          event: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              startDate: true,
+            },
+          },
+          scannedBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+    }
+
+    if (!pass) {
+      throw new NotFoundException('Failed to create or find event pass');
+    }
+
+    // 3. Verify eventId
+    if (pass.eventId !== eventId) {
+      throw new BadRequestException(
+        'Participant does not belong to this event',
+      );
+    }
+
+    const wasAlreadyUsed = pass.isUsed;
+
+    // 4. Mark as used
+    if (!pass.isUsed) {
+      await prisma.eventPassEntity.update({
+        where: { id: pass.id },
+        data: {
+          isUsed: true,
+          scannedAt: new Date(),
+          scannedById: scannerId,
+        },
+      });
+
+      // Update object for response mapping
+      pass.isUsed = true;
+      pass.scannedAt = new Date();
+      pass.scannedById = scannerId;
+      
+      // Fetch scannedBy info for the DTO
+      const scanner = await prisma.userEntity.findUnique({
+        where: { id: scannerId },
+        select: { id: true, firstName: true, lastName: true },
+      });
+      pass.scannedBy = scanner;
+    }
+
+    return {
+      success: true,
+      pass: this.mapToDto(pass),
+      message: wasAlreadyUsed
+        ? 'Already marked present'
+        : 'Marked present successfully',
+      wasAlreadyUsed,
+    };
+  }
+
+  /**
    * Get all scanned passes for an event
    * Only event owners/managers should call this
    */

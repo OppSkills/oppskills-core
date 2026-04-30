@@ -1658,6 +1658,8 @@ export class EventPaymentService {
         ownerId: true,
         status: true,
         registrationCount: true,
+        isFree: true,
+        entryFeeAmount: true,
       },
     });
 
@@ -1669,10 +1671,20 @@ export class EventPaymentService {
       throw new ForbiddenException('Only the organizer can update pricing');
     }
 
-    // Only allow pricing changes in DRAFT status or if no registrations
-    if (event.status !== 'DRAFT' && event.registrationCount > 0) {
+    // Only allow base pricing changes (free vs paid, amount) in DRAFT status or if no registrations.
+    // However, feeBearer can be toggled as it only affects the checkout calculation.
+    const isBasePricingChanging =
+      (params.isFree !== undefined && params.isFree !== event.isFree) ||
+      (params.entryFeeAmount !== undefined &&
+        params.entryFeeAmount !== event.entryFeeAmount?.toString());
+
+    if (
+      isBasePricingChanging &&
+      event.status !== 'DRAFT' &&
+      event.registrationCount > 0
+    ) {
       throw new BadRequestException(
-        'Cannot change pricing after registration has started',
+        'Cannot change base ticket price after registration has started. You can still toggle who bears the service charge.',
       );
     }
 

@@ -953,6 +953,7 @@ export class EventService {
       allowedCollegeIds: dto.allowedCollegeIds,
       allowedEmailDomains: dto.allowedEmailDomains,
       collegeMatchMode: dto.collegeMatchMode,
+      feeBearer: dto.feeBearer,
     };
 
     return prisma.eventEntity.update({
@@ -2428,6 +2429,11 @@ export class EventService {
               },
             },
           },
+          eventPass: {
+            select: {
+              isUsed: true,
+            },
+          },
         },
         orderBy: { joinedAt: 'desc' },
         skip,
@@ -2514,6 +2520,7 @@ export class EventService {
         }),
         registeredOn: p.joinedAt.toISOString(),
         approved: p.approved,
+        isAttended: p.eventPass?.isUsed ?? false,
         passEmailSent: p.passEmailSent,
         passEmailSentAt: p.passEmailSentAt?.toISOString(),
         approvedAt: p.approvedAt?.toISOString(),

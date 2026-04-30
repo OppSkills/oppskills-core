@@ -25,7 +25,8 @@ import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { format } from "date-fns";
 
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 
@@ -1350,24 +1351,23 @@ export default function EditHackathonPage() {
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-2">
-            <div className="text-xs font-medium">
+          <div className="flex items-center gap-4 py-2 border-t border-border/60 mt-1">
+            <div className="text-sm font-bold poppins text-neutral-400 shrink-0">
               {autoSaveStatus === "saving" ? (
-                <span className="text-primary">Saving…</span>
-              ) : autoSaveStatus === "dirty" ? (
-                <span className="text-amber-600">Unsaved changes</span>
-              ) : autoSaveStatus === "error" ? (
-                <span className="text-destructive-foreground">
-                  Autosave error
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary-600" /> Saving...
                 </span>
+              ) : autoSaveStatus === "error" ? (
+                <span className="text-red-500">Save failed</span>
               ) : (
-                <span className="text-emerald-600">Saved</span>
+                "Last Saved"
               )}
             </div>
-            <div className="text-[11px] text-muted-foreground text-right tabular-nums">
+            <div className="flex-1 h-px bg-neutral-200" />
+            <div className="text-sm font-medium poppins text-neutral-500 shrink-0">
               {typeof lastSavedAtRef.current === "number"
-                ? `Last saved: ${new Date(lastSavedAtRef.current).toLocaleTimeString()}`
-                : ""}
+                ? format(new Date(lastSavedAtRef.current), "do MMMM yyyy, hh:mm a")
+                : "Awaiting changes..."}
             </div>
           </div>
         </div>

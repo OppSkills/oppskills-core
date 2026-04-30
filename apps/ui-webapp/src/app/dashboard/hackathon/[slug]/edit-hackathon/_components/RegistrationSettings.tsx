@@ -294,7 +294,7 @@ export default function RegistrationSettings({
           <Badge variant="secondary" className="bg-neutral-100 text-neutral-700 border-neutral-100 font-normal px-2 py-1 h-auto text-sm rounded-lg">
             Required
           </Badge>
-          <div className="w-6 h-6 rounded-full bg-[#008204] flex items-center justify-center">
+          <div className="w-6 h-6 rounded-full bg-UI-success flex items-center justify-center">
             <Check className="w-3 h-3 text-white" />
           </div>
         </div>

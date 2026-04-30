@@ -483,6 +483,7 @@ export interface EventRegistration {
   registeredOn: string;
   approved: boolean;
   passEmailSent: boolean;
+  isAttended: boolean;
   passEmailSentAt?: string;
   approvedAt?: string;
 }
@@ -573,6 +574,22 @@ export async function bulkApproveParticipants(
     { participantIds },
     { headers: buildAuthHeaders(token) },
   );
+}
+
+/**
+ * Mark attendance manually for a participant (owner/manager/admin only).
+ */
+export async function markParticipantAttendance(
+  token: string,
+  eventId: string,
+  participantId: string,
+): Promise<any> {
+  const res = await API.post(
+    `/${encodeURIComponent(eventId)}/participants/${encodeURIComponent(participantId)}/attendance`,
+    {},
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data;
 }
 
 // =====================
