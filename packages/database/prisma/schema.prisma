@@ -1562,6 +1562,9 @@ model OrganizerPayoutDetailsEntity {
   id                String     @id @default(cuid())
   userId            String     @unique @map("user_id")
   user              UserEntity @relation("UserPayoutDetails", fields: [userId], references: [id], onDelete: Cascade)
+  bankName          String     @map("bank_name")
+  panNumber         String?    @map("pan_number")
+  gstNumber         String?    @map("gst_number")
   accountHolderName String     @map("account_holder_name")
   accountNumber     String     @map("account_number")
   ifsc              String
