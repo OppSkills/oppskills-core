@@ -554,9 +554,9 @@ export default function ManageRegistrationPage() {
             if (EVENT_REGISTRATION_EXPORT_BASE_KEYS.has(label)) {
               continue;
             }
-            const field = ans.fields.find((f) => f.label === label);
+            const field = ans.fields.find((f: any) => f.label === label);
             if (field) {
-              const answer = ans.answers.find((a) => a.fieldId === field.id);
+              const answer = ans.answers.find((a: any) => a.fieldId === field.id);
               const val = answer?.value;
               base[label] = Array.isArray(val)
                 ? val.join(", ")

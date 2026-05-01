@@ -15,7 +15,6 @@ import {
   University,
   Upload,
   Users,
-  MagicStick2,
 } from "lucide-react";
 import InputBlock from "@/components/ui/derived/InputBlock";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
@@ -82,6 +81,7 @@ import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 import { DialogClose } from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
+import { MagicStick2 } from "@solar-icons/react";
 
 /**
  * Organizer page: creates festivals and hackathons.

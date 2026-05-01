@@ -25,8 +25,8 @@ import { Container } from "./Container";
 
 
 interface PassSettingsProps {
-  formData: FormData;
-  setFormData: (data: React.SetStateAction<FormData>) => void;
+  formData: any;
+  setFormData: (data: React.SetStateAction<any>) => void;
 }
 
 export default function PassSettings({
@@ -56,9 +56,9 @@ export default function PassSettings({
       const selectedIds = formData.passSettings.allowedCollegeIds;
       if (selectedIds.length === 0) return;
 
-      // Find IDs that don't have names and aren't currently being fetched
+       // Find IDs that don't have names and aren't currently being fetched
       const missingIds = selectedIds.filter(
-        (id) => !collegeNamesMap[id] && !fetchingRef.current.has(id)
+        (id: string) => !collegeNamesMap[id] && !fetchingRef.current.has(id)
       );
       if (missingIds.length === 0) return;
 
@@ -66,7 +66,7 @@ export default function PassSettings({
       if (!token) return;
 
       // Mark as fetching
-      missingIds.forEach((id) => fetchingRef.current.add(id));
+      missingIds.forEach((id: string) => fetchingRef.current.add(id));
 
       try {
         const colleges = await getCollegesByIds(token, missingIds);
@@ -79,7 +79,7 @@ export default function PassSettings({
       } catch (error) {
         console.error("Failed to fetch college names:", error);
         // Remove from fetching set on error
-        missingIds.forEach((id) => fetchingRef.current.delete(id));
+        missingIds.forEach((id: string) => fetchingRef.current.delete(id));
       }
     };
 
@@ -88,9 +88,9 @@ export default function PassSettings({
   }, [formData.passSettings.allowedCollegeIds]); // Only depend on selected IDs
 
   const updatePassSettings = (
-    updates: Partial<FormData["passSettings"]>
+    updates: any
   ) => {
-    setFormData((prev) => ({
+    setFormData((prev: any) => ({
       ...prev,
       passSettings: {
         ...prev.passSettings,
@@ -118,7 +118,7 @@ export default function PassSettings({
   const removeCollege = (collegeId: string) => {
     updatePassSettings({
       allowedCollegeIds: formData.passSettings.allowedCollegeIds.filter(
-        (id) => id !== collegeId
+        (id: string) => id !== collegeId
       ),
     });
     // Remove the college name from the mapping
@@ -144,7 +144,7 @@ export default function PassSettings({
   const removeEmailDomain = (domain: string) => {
     updatePassSettings({
       allowedEmailDomains: formData.passSettings.allowedEmailDomains.filter(
-        (d) => d !== domain
+        (d: string) => d !== domain
       ),
     });
   };
@@ -340,7 +340,7 @@ export default function PassSettings({
                   {/* Selected Colleges */}
                   {formData.passSettings.allowedCollegeIds.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
-                      {formData.passSettings.allowedCollegeIds.map((collegeId) => {
+                      {formData.passSettings.allowedCollegeIds.map((collegeId: string) => {
                         const collegeName = collegeNamesMap[collegeId] || collegeId;
                         return (
                           <Badge key={collegeId} variant="secondary" className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all">
@@ -400,7 +400,7 @@ export default function PassSettings({
                   {/* Selected Domains */}
                   {formData.passSettings.allowedEmailDomains.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {formData.passSettings.allowedEmailDomains.map((domain) => (
+                      {formData.passSettings.allowedEmailDomains.map((domain: string) => (
                         <Badge key={domain} variant="secondary" className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all">
                           @{domain}
                           <button
