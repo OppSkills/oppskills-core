@@ -27,6 +27,7 @@ import {
   type HomeTrackItemEntity,
 } from '../../domain/entities/HomeFeed';
 import { useHomeFeed } from '../hooks/useHomeFeed';
+import Svg, { Path } from 'react-native-svg';
 import { AppText, FooterSignatureBlock, OrganizerSidebarDrawer } from '../../../../shared/ui';
 import { styles } from './HomePageScreen.styles';
 
@@ -854,12 +855,11 @@ function TrackCards({ items }: { readonly items: readonly HomeTrackItemEntity[] 
             </View>
 
             <Pressable style={styles.upcomingTrackNotifyButton}>
-              <View style={styles.upcomingTrackNotifyBell}>
-                <View style={styles.upcomingTrackNotifyBellBody} />
-                <View style={styles.upcomingTrackNotifyBellTop} />
-              </View>
+              <Svg width={10.08} height={10.08} viewBox="0 0 9 10" fill="none">
+                <Path fillRule="evenodd" clipRule="evenodd" d="M4.23701 0C2.43876 0 0.981002 1.45776 0.981002 3.256V3.55182C0.981002 3.84461 0.894334 4.13086 0.73192 4.37448L0.249357 5.09833C-0.310715 5.93843 0.116853 7.08035 1.09096 7.34602C1.40842 7.4326 1.72855 7.50583 2.05054 7.56572L2.05134 7.56788C2.37442 8.42993 3.23791 9.03278 4.23698 9.03278C5.23604 9.03278 6.09954 8.42993 6.42262 7.56788L6.42341 7.56574C6.74542 7.50584 7.06558 7.4326 7.38305 7.34602C8.35716 7.08035 8.78473 5.93844 8.22465 5.09833L7.74209 4.37448C7.57968 4.13086 7.49301 3.84461 7.49301 3.55182V3.256C7.49301 1.45776 6.03525 0 4.23701 0ZM5.65553 7.68289C4.7132 7.79548 3.76075 7.79548 2.81842 7.68289C3.11711 8.11206 3.63663 8.40259 4.23698 8.40259C4.83732 8.40259 5.35684 8.11206 5.65553 7.68289ZM1.6112 3.256C1.6112 1.80581 2.78681 0.630194 4.23701 0.630194C5.6872 0.630194 6.86281 1.80581 6.86281 3.256V3.55182C6.86281 3.96903 6.98631 4.37691 7.21774 4.72405L7.7003 5.44789C8.02177 5.9301 7.77636 6.58554 7.21723 6.73803C5.26605 7.27017 3.20796 7.27017 1.25678 6.73803C0.697656 6.58554 0.452239 5.9301 0.773711 5.44789L1.25627 4.72405C1.4877 4.37691 1.6112 3.96903 1.6112 3.55182V3.256Z" fill="#FAFAFA" />
+              </Svg>
               <AppText style={styles.upcomingTrackNotifyLabel} variant="micro">
-                Notify Me
+                Be First to Try
               </AppText>
             </Pressable>
           </View>
