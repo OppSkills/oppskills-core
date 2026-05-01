@@ -15,7 +15,11 @@ import { type LiveEvent } from './OrganizerCreateEventScreen';
 import { EventDashboardScreen } from './EventDashboardScreen';
 import { ManageRegistrationScreen } from './ManageRegistrationScreen';
 import { EditEventScreen } from './EditEventScreen';
+import { ManageRolesPanel } from './ManageRolesPanel';
+import { NotificationsPanel } from './NotificationsPanel';
+import { PaymentsPanel } from './PaymentsPanel';
 import { ReferralsPanel } from './ReferralsPanel';
+import { SettingsPanel } from './SettingsPanel';
 
 interface EventDetailScreenProps {
   readonly event: LiveEvent;
@@ -82,6 +86,14 @@ export function EventDetailScreen({ event: initialEvent, onBack, onOpenMainSideb
         <EditEventScreen event={event} onUpdateEvent={handleUpdateEvent} />
       ) : activeContextSection === 'referrals' ? (
         <ReferralsPanel event={event} />
+      ) : activeContextSection === 'manage-roles' ? (
+        <ManageRolesPanel />
+      ) : activeContextSection === 'payments' ? (
+        <PaymentsPanel event={event} />
+      ) : activeContextSection === 'send-notifications' ? (
+        <NotificationsPanel />
+      ) : activeContextSection === 'settings' ? (
+        <SettingsPanel event={event} />
       ) : (
         <View style={styles.placeholderWrap}>
           <AppText style={styles.placeholderText}>Coming soon</AppText>
