@@ -1676,7 +1676,7 @@ export class EventPaymentService {
     const isBasePricingChanging =
       (params.isFree !== undefined && params.isFree !== event.isFree) ||
       (params.entryFeeAmount !== undefined &&
-        params.entryFeeAmount !== event.entryFeeAmount?.toString());
+        Number(params.entryFeeAmount) !== Number(event.entryFeeAmount || 0));
 
     if (
       isBasePricingChanging &&

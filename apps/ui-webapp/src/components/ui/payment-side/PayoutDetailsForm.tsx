@@ -40,6 +40,7 @@ export default function PayoutDetailsForm({
   >({});
   const [bankInfo, setBankInfo] = useState<string | null>(null);
   const [isFetchingBank, setIsFetchingBank] = useState(false);
+  const [ifscNotFound, setIfscNotFound] = useState<boolean>(false);
   const [upiVerified, setUpiVerified] = useState<boolean>(false);
 
   // Track if we've initialized for this "open" session
@@ -68,6 +69,7 @@ export default function PayoutDetailsForm({
     if (!isOpen) {
       hasInitializedRef.current = false;
       setBankInfo(null);
+      setIfscNotFound(false);
       setUpiVerified(false);
     }
   }, [isOpen, initialData]);
@@ -78,21 +80,26 @@ export default function PayoutDetailsForm({
       const ifsc = formData.ifsc;
       if (ifsc.length === 11 && IFSC_REGEX.test(ifsc)) {
         setIsFetchingBank(true);
+        setIfscNotFound(false);
         try {
           const res = await fetch(`https://ifsc.razorpay.com/${ifsc}`);
           if (res.ok) {
             const data = await res.json();
             setBankInfo(`${data.BANK}, ${data.BRANCH}`);
+            setIfscNotFound(false);
           } else {
             setBankInfo(null);
+            setIfscNotFound(true);
           }
         } catch (err) {
           setBankInfo(null);
+          setIfscNotFound(true);
         } finally {
           setIsFetchingBank(false);
         }
       } else {
         setBankInfo(null);
+        setIfscNotFound(false);
       }
     };
 
@@ -147,17 +154,8 @@ export default function PayoutDetailsForm({
 
   const isFormValid = useMemo(() => {
     const currentErrors = getFormErrors(formData);
-    const hasErrors = Object.keys(currentErrors).length > 0;
-    
-    // Stricter check: If IFSC is 11 chars, must have bankInfo
-    const ifscValid = formData.ifsc.length === 11 && IFSC_REGEX.test(formData.ifsc);
-    const ifscVerified = ifscValid && !!bankInfo;
-    
-    // If they typed 11 chars but it's not verified yet, it's invalid
-    if (ifscValid && !bankInfo) return false;
-
-    return !hasErrors;
-  }, [formData, bankInfo]);
+    return Object.keys(currentErrors).length === 0;
+  }, [formData]);
 
   const handleChange = (field: keyof PayoutDetailsInput, value: string) => {
     const newData = { ...formData, [field]: value };
@@ -247,6 +245,11 @@ export default function PayoutDetailsForm({
               {bankInfo && (
                 <div className="text-xs text-emerald-600 font-medium px-4 -mt-2 animate-in fade-in slide-in-from-top-1">
                   {bankInfo}
+                </div>
+              )}
+              {ifscNotFound && (
+                <div className="text-xs text-amber-600 font-medium px-4 -mt-2 animate-in fade-in slide-in-from-top-1">
+                  IFSC details not found, wanna proceed?
                 </div>
               )}
 

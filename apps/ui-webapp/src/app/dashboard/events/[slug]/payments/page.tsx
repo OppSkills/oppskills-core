@@ -168,10 +168,10 @@ export default function Page() {
             setTimeout(() => runSaveMutation(), 0);
           }
         },
-        onError: () => {
+        onError: (err) => {
           setAutoSaveStatus("error");
           savingSnapshotRef.current = null;
-          toast.error("Failed to save pricing settings");
+          toast.error(getApiErrorMessage(err, "Failed to save pricing settings"));
         },
       },
     );

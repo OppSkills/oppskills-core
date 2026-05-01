@@ -14,6 +14,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Container } from "../Container";
+import AnalyticCard from "../AnalyticCard";
 import PayoutDetailsForm from "@/components/ui/payment-side/PayoutDetailsForm";
 import type { PayoutDetailsInput } from "@/lib/api/paymentsApi";
 import { Ticket, TrashBinTrash } from "@solar-icons/react";
@@ -91,7 +92,7 @@ export function PaymentManagementLayout({
 
   const addTicket = () => {
     const newTicket = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9),
       name: "New Ticket",
       price: "0",
       limit: "100"
@@ -226,40 +227,29 @@ export function PaymentManagementLayout({
           {/* EARNINGS OVERVIEW */}
           {earnings && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-              <div className="bg-primary-50 border border-primary-100 p-6 rounded-2xl flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-primary-700 font-bold poppins text-sm uppercase tracking-wider">
-                  <Banknote className="w-4 h-4" /> Collected
-                </div>
-                <div className="text-3xl font-black text-primary-900 poppins">
-                  ₹{parseFloat(String(earnings.totalGross)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </div>
-                <div className="text-xs text-primary-600 font-medium">
-                  From {earnings.capturedPaymentsCount} successful registration{earnings.capturedPaymentsCount !== 1 ? "s" : ""}
-                </div>
-              </div>
+              <AnalyticCard
+                title="Collected"
+                value={`₹${parseFloat(String(earnings.totalGross)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                badge="Registrations"
+                badgeValue={`${earnings.capturedPaymentsCount} successful`}
+                type="highlight"
+              />
 
-              <div className="bg-neutral-50 border border-neutral-100 p-6 rounded-2xl flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-neutral-600 font-bold poppins text-sm uppercase tracking-wider">
-                  <IndianRupee className="w-4 h-4" /> Pending Payout
-                </div>
-                <div className="text-3xl font-black text-neutral-900 poppins">
-                  ₹{parseFloat(String(earnings.pendingPayout)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </div>
-                {!earnings.isEligibleNow && earnings.eligibleAt && (
-                  <div className="text-xs text-amber-700 font-bold bg-amber-100 px-3 py-1 rounded-full w-fit">
-                    Release on {format(new Date(earnings.eligibleAt), "MMM d, yyyy")}
-                  </div>
-                )}
-              </div>
+              <AnalyticCard
+                title="Pending Payout"
+                value={`₹${parseFloat(String(earnings.pendingPayout)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                badge={!earnings.isEligibleNow && earnings.eligibleAt ? "Payout Date" : "Status"}
+                badgeValue={!earnings.isEligibleNow && earnings.eligibleAt ? format(new Date(earnings.eligibleAt), "MMM d, yyyy") : "Available"}
+                type="normal"
+              />
 
-              <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-2xl flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-emerald-700 font-bold poppins text-sm uppercase tracking-wider">
-                  <CheckCircle className="w-4 h-4" /> Paid Out
-                </div>
-                <div className="text-3xl font-black text-emerald-900 poppins">
-                  ₹{parseFloat(String(earnings.paidOut)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </div>
-              </div>
+              <AnalyticCard
+                title="Paid Out"
+                value={`₹${parseFloat(String(earnings.paidOut)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                badge="Status"
+                badgeValue="Settled"
+                type="normal"
+              />
             </div>
           )}
 

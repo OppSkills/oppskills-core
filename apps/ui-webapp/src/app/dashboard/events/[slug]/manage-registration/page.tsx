@@ -488,15 +488,21 @@ export default function ManageRegistrationPage() {
         return;
       }
 
-      // Fetch per-participant answers in parallel — only for Completed registrations.
-      const answersResults = await Promise.all(
-        data.map((p) => {
-          if (p.status !== "Completed") return Promise.resolve(null);
-          return getParticipantRegistrationAnswers(token, slug, p.id).catch(
-            () => null
-          );
-        })
-      );
+      // Fetch per-participant answers in chunks (concurrency: 10) — only for Completed registrations.
+      const answersResults: any[] = [];
+      const chunkSize = 10;
+      for (let i = 0; i < data.length; i += chunkSize) {
+        const chunk = data.slice(i, i + chunkSize);
+        const chunkResults = await Promise.all(
+          chunk.map((p) => {
+            if (p.status !== "Completed") return Promise.resolve(null);
+            return getParticipantRegistrationAnswers(token, slug, p.id).catch(
+              () => null
+            );
+          })
+        );
+        answersResults.push(...chunkResults);
+      }
 
       // Collect all unique field labels in insertion order
       const allLabels = new Set<string>();
