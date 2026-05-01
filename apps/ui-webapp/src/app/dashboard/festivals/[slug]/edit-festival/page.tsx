@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Pen, CheckCircle, UserCircle, Settings, Trophy, FileText, AlertCircle } from "lucide-react";
+import { Loader2, Pen, CheckCircle, FileText } from "lucide-react";
 import BasicDetails from "./_components/BasicDetails";
+import FestivalPreview from "./_components/FestivalPreview";
+import AdditionalInfo from "./_components/AdditionalInfo";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useFestivalBySlug } from "@/hooks/useFestivalBySlug";
-import { updateFestival } from "@/lib/api/festivalApi";
+import { updateFestival, updateFestivalStatus } from "@/lib/api/festivalApi";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UpdateFestivalDto } from "@oppskills/types/frontend";
@@ -15,7 +17,7 @@ import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
 import { useQueryState } from "nuqs";
 import { cn } from "@/lib/utils";
-import { Container } from "@/app/dashboard/_components/Container";
+import { format } from "date-fns";
 
 // Types
 export interface FestivalFormData {
@@ -34,6 +36,9 @@ export interface FestivalFormData {
     websiteUrl: string;
     organizationName: string;
     organizationLogoUrl: string;
+    locationType: "PHYSICAL" | "VIRTUAL";
+    locationCity: string;
+    locationVirtualLink: string;
 }
 
 // Helper: Check if val is object
@@ -61,16 +66,14 @@ function mapFestivalToFormData(festival: unknown): FestivalFormData {
     const endDate = getDate(festival["endDate"]);
 
     // Map Location
-    const locType = getString(festival, "locationType");
-    const locAddress = getString(festival, "locationAddress");
-    const locCity = getString(festival, "locationCity");
-    const locVirtualLink = getString(festival, "locationVirtualLink");
+    const locType = (getString(festival, "locationType") as "PHYSICAL" | "VIRTUAL") ?? "PHYSICAL";
+    const locAddress = getString(festival, "locationAddress") ?? "";
+    const locCity = getString(festival, "locationCity") ?? "";
+    const locVirtualLink = getString(festival, "locationVirtualLink") ?? "";
 
-    let location = "";
+    let location = locAddress;
     if (locType === "VIRTUAL") {
-        location = locVirtualLink ?? "Virtual Event";
-    } else {
-        location = [locAddress, locCity].filter(Boolean).join(", ");
+        location = locVirtualLink || "Virtual Event";
     }
 
     // Map Visibility/Status
@@ -93,6 +96,9 @@ function mapFestivalToFormData(festival: unknown): FestivalFormData {
         websiteUrl: getString(festival, "websiteUrl") ?? "",
         organizationName: getString(festival, "organizationName") ?? "",
         organizationLogoUrl: getString(festival, "organizationLogoUrl") ?? "",
+        locationType: locType,
+        locationCity: locCity,
+        locationVirtualLink: locVirtualLink,
     };
 }
 
@@ -109,7 +115,7 @@ export default function EditFestivalPage() {
     }, [params]);
 
     const [activeTab, setActiveTab] = useQueryState("tab", {
-        defaultValue: "basic-details",
+        defaultValue: "preview",
     });
 
     const { data: festivalRaw, isLoading, error } = useFestivalBySlug(slugParam);
@@ -117,6 +123,7 @@ export default function EditFestivalPage() {
 
     // Initial state to compare against for dirty check
     const [initialState, setInitialState] = useState<FestivalFormData | null>(null);
+    const lastSavedAtRef = useRef<number | null>(null);
 
     const [formData, setFormData] = useState<FestivalFormData>({
         id: "",
@@ -134,7 +141,21 @@ export default function EditFestivalPage() {
         websiteUrl: "",
         organizationName: "",
         organizationLogoUrl: "",
+        locationType: "PHYSICAL",
+        locationCity: "",
+        locationVirtualLink: "",
     });
+
+    const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "dirty" | "saving" | "saved" | "error">("idle");
+    const lastSavedSnapshotRef = useRef<string | null>(null);
+    const savingSnapshotRef = useRef<string | null>(null);
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const saveQueuedRef = useRef<boolean>(false);
+    const latestFormDataRef = useRef<FestivalFormData>(formData);
+
+    useEffect(() => {
+        latestFormDataRef.current = formData;
+    }, [formData]);
 
     useEffect(() => {
         if (festivalRaw && !hasHydrated) {
@@ -142,6 +163,8 @@ export default function EditFestivalPage() {
                 const mapped = mapFestivalToFormData(festivalRaw);
                 setFormData(mapped);
                 setInitialState(mapped); // Set baseline for dirty check
+                const updatedAt = festivalRaw["updatedAt"] ? new Date(festivalRaw["updatedAt"] as string).getTime() : Date.now();
+                lastSavedAtRef.current = Number.isNaN(updatedAt) ? Date.now() : updatedAt;
                 setHasHydrated(true);
             } catch (err) {
                 console.error("Failed to map festival data", err);
@@ -150,59 +173,121 @@ export default function EditFestivalPage() {
         }
     }, [festivalRaw, hasHydrated]);
 
-    // Check if form is dirty
-    const isDirty = useMemo(() => {
-        if (!initialState) return false;
-        return JSON.stringify(formData) !== JSON.stringify(initialState);
-    }, [formData, initialState]);
-
     const saveMutation = useMutation({
         mutationFn: async () => {
             const token = await getToken();
             if (!token) throw new Error("Not authenticated");
 
+            const currentFormData = latestFormDataRef.current;
+
             const updateDto: UpdateFestivalDto = {
-                name: formData.name,
-                description: formData.description,
-                startDate: formData.startDate ? formData.startDate.toISOString() : undefined,
-                endDate: formData.endDate ? formData.endDate.toISOString() : undefined,
-                posterImageUrl: formData.bannerUrl,
-                websiteUrl: formData.websiteUrl,
-                organizationName: formData.organizationName,
-                organizationLogoUrl: formData.organizationLogoUrl,
+                name: currentFormData.name,
+                slug: currentFormData.slug || undefined,
+                description: currentFormData.description,
+                startDate: currentFormData.startDate ? currentFormData.startDate.toISOString() : undefined,
+                endDate: currentFormData.endDate ? currentFormData.endDate.toISOString() : undefined,
+                posterImageUrl: currentFormData.bannerUrl,
+                websiteUrl: currentFormData.websiteUrl,
+                organizationName: currentFormData.organizationName,
+                organizationLogoUrl: currentFormData.organizationLogoUrl,
                 location: {
-                    type: "PHYSICAL", // Assuming Physical for now
-                    address: formData.location
+                    type: currentFormData.locationType || "PHYSICAL",
+                    address: currentFormData.locationType === "PHYSICAL" ? currentFormData.location : undefined,
+                    city: currentFormData.locationType === "PHYSICAL" ? currentFormData.locationCity : undefined,
+                    virtualLink: currentFormData.locationType === "VIRTUAL" ? currentFormData.locationVirtualLink : undefined,
                 }
             };
 
-            await updateFestival(token, formData.id, updateDto);
+            await updateFestival(token, currentFormData.id, updateDto);
+
+            // Update status via the patch endpoint if it changed
+            if (currentFormData.status !== initialState?.status) {
+                await updateFestivalStatus(token, currentFormData.id, currentFormData.status);
+            }
         },
         onSuccess: () => {
-            toast.success("Festival details saved successfully");
-            setInitialState(formData); // Reset dirty state
+            if (typeof savingSnapshotRef.current === "string") {
+                lastSavedSnapshotRef.current = savingSnapshotRef.current;
+            }
+            savingSnapshotRef.current = null;
+
+            const nowSnapshot = JSON.stringify(latestFormDataRef.current);
+            if (nowSnapshot === lastSavedSnapshotRef.current) {
+                lastSavedAtRef.current = Date.now();
+                setAutoSaveStatus("saved");
+            } else {
+                setAutoSaveStatus("dirty");
+            }
+
+            setInitialState(latestFormDataRef.current); // Reset baseline
             queryClient.invalidateQueries({ queryKey: ["festival-by-slug", slugParam] });
+
+            if (saveQueuedRef.current) {
+                saveQueuedRef.current = false;
+                setTimeout(() => {
+                    runSaveMutation();
+                }, 0);
+            }
         },
         onError: (err) => {
             console.error(err);
-            toast.error("Failed to save changes");
+            setAutoSaveStatus("error");
+            savingSnapshotRef.current = null;
         }
     });
 
-    const handleDiscard = () => {
-        if (initialState) {
-            setFormData(initialState);
-            toast.info("Changes discarded");
+    const runSaveMutation = useCallback((): void => {
+        if (saveMutation.isPending) {
+            saveQueuedRef.current = true;
+            return;
         }
-    };
+
+        setAutoSaveStatus("saving");
+        savingSnapshotRef.current = JSON.stringify(latestFormDataRef.current);
+        saveMutation.mutate();
+    }, [saveMutation]);
+
+    // Initialize the snapshot baseline
+    useEffect(() => {
+        if (!hasHydrated) return;
+        if (lastSavedSnapshotRef.current !== null) return;
+        lastSavedSnapshotRef.current = JSON.stringify(formData);
+        lastSavedAtRef.current = Date.now();
+        setAutoSaveStatus("saved");
+    }, [hasHydrated, formData]);
+
+    // Handle autosave effect
+    useEffect(() => {
+        if (!hasHydrated) return;
+
+        const snapshot = JSON.stringify(formData);
+        if (snapshot === lastSavedSnapshotRef.current) {
+            if (autoSaveStatus !== "saving") setAutoSaveStatus("saved");
+            return;
+        }
+
+        setAutoSaveStatus("dirty");
+
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+
+        debounceTimerRef.current = setTimeout(() => {
+            runSaveMutation();
+        }, 900);
+
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+                debounceTimerRef.current = null;
+            }
+        };
+    }, [formData, hasHydrated, autoSaveStatus, runSaveMutation]);
 
     const tabs = [
         { id: "preview", label: "Preview", icon: <CheckCircle className="w-4 h-4" /> },
         { id: "basic-details", label: "Basic Details", icon: <Pen className="w-4 h-4" /> },
-        { id: "registration-settings", label: "Registration Settings", icon: <UserCircle className="w-4 h-4" /> },
-        { id: "prizes", label: "Prizes", icon: <Trophy className="w-4 h-4" /> },
         { id: "additional-info", label: "Additional Info", icon: <FileText className="w-4 h-4" /> },
-        { id: "pass-settings", label: "Pass Settings", icon: <Settings className="w-4 h-4" /> },
     ];
 
     if (!isLoading && error) {
@@ -221,81 +306,75 @@ export default function EditFestivalPage() {
             className="flex h-full w-full flex-col bg-neutral-50/50"
             fallback={<ProfileLikeFallback className="py-10" />}
         >
-        <div className="flex flex-col h-full bg-neutral-50/50 w-full">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 bg-background border-b sticky top-0 z-20 transition-all duration-200">
-                <div className="flex flex-col">
-                    <h1 className="text-xl font-bold">Edit Festival</h1>
-                    <p className="text-xs text-muted-foreground">{formData.name}</p>
+            <div className="flex flex-col h-full bg-neutral-50/50 w-full">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 bg-background border-b sticky top-0 z-20 transition-all duration-200">
+                    <div className="flex flex-col">
+                        <h1 className="text-xl font-bold">Edit Festival</h1>
+                        <p className="text-xs text-muted-foreground">{formData.name}</p>
+                    </div>
                 </div>
-                <div className={`flex gap-2 transition-opacity duration-200 ${isDirty ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                    <Button variant="outline" onClick={handleDiscard} disabled={saveMutation.isPending}>Discard</Button>
-                    <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-                        {saveMutation.isPending ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Saving...
-                            </>
-                        ) : (
-                            "Save Changes"
-                        )}
-                    </Button>
-                </div>
-            </div>
 
-            {/* Sticky Tabs Bar */}
-            <div className="sticky top-[69px] z-10 w-full border-b border-border bg-background/95 backdrop-blur-md">
-                <div className="w-full max-w-7xl mx-auto flex items-center gap-2 px-6 py-3 overflow-x-auto no-scrollbar">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => setActiveTab(tab.id)}
-                            className={cn(
-                                "flex shrink-0 items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all whitespace-nowrap",
-                                activeTab === tab.id
-                                    ? "bg-primary-100 text-primary-600 border-primary-500"
-                                    : "border-neutral-500 text-neutral-800 hover:bg-neutral-100 cursor-pointer",
-                            )}
-                        >
-                            {tab.icon}
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Content Area */}
-            <div className="flex-1 p-6 max-w-7xl mx-auto w-full">
-                {activeTab === "basic-details" && (
-                    <BasicDetails formData={formData} setFormData={setFormData} />
-                )}
-
-                {activeTab === "preview" && (
-                    <Container heading="Preview" description="Festival preview is currently under development.">
-                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
-                            <CheckCircle className="w-12 h-12 opacity-20" />
-                            <p>Premium preview coming soon.</p>
+                {/* Sticky Tabs Bar */}
+                <div className="sticky top-[70px] z-10 w-full bg-neutral-100">
+                    <div className="w-full max-w-7xl mx-auto flex flex-col gap-2 px-6 py-3">
+                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={cn(
+                                        "flex shrink-0 items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+                                        activeTab === tab.id
+                                            ? "bg-primary-100 text-primary-600 border border-primary-500"
+                                            : "text-neutral-800 hover:bg-neutral-100 cursor-pointer",
+                                    )}
+                                >
+                                    {tab.icon}
+                                    {tab.label}
+                                </button>
+                            ))}
                         </div>
-                    </Container>
-                )}
 
-                {(activeTab === "registration-settings" || activeTab === "prizes" || activeTab === "additional-info" || activeTab === "pass-settings") && (
-                    <Container 
-                        heading={tabs.find(t => t.id === activeTab)?.label || "Section"} 
-                        description="This feature is not yet supported for Festivals in the current backend version."
-                    >
-                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
-                            <AlertCircle className="w-12 h-12 text-amber-500 opacity-50" />
-                            <div className="text-center">
-                                <p className="font-medium text-neutral-800">Section Unavailable</p>
-                                <p className="text-sm">Please contact the backend team to enable {tabs.find(t => t.id === activeTab)?.label} for Festivals.</p>
+                        {/* Last saved row */}
+                        <div className="flex items-center gap-4 py-2 mt-1">
+                            <div className="text-sm font-bold poppins text-neutral-400 shrink-0">
+                                {autoSaveStatus === "saving" ? (
+                                    <span className="flex items-center gap-2">
+                                        <Loader2 className="w-4 h-4 animate-spin text-primary-600" /> Saving...
+                                    </span>
+                                ) : autoSaveStatus === "error" ? (
+                                    <span className="text-red-500">Save failed</span>
+                                ) : (
+                                    "Last Saved"
+                                )}
+                            </div>
+                            <div className="flex-1 h-px bg-neutral-200" />
+                            <div className="text-sm font-medium poppins text-neutral-500 shrink-0">
+                                {typeof lastSavedAtRef.current === "number"
+                                    ? format(new Date(lastSavedAtRef.current), "do MMMM yyyy, hh:mm a")
+                                    : "Awaiting changes..."}
                             </div>
                         </div>
-                    </Container>
-                )}
+                    </div>
+                </div>
+
+                {/* Content Area */}
+                <div className="flex-1 p-6 max-w-7xl mx-auto w-full">
+                    {activeTab === "basic-details" && (
+                        <BasicDetails formData={formData} setFormData={setFormData} />
+                    )}
+
+                    {activeTab === "preview" && (
+                        <FestivalPreview formData={formData} />
+                    )}
+
+                    {activeTab === "additional-info" && (
+                        <AdditionalInfo formData={formData} setFormData={setFormData} />
+                    )}
+                </div>
             </div>
-        </div>
         </BoneyardSkeleton>
     );
 }

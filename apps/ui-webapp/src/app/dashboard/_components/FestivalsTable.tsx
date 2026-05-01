@@ -105,7 +105,9 @@ export default function FestivalsTable({
               <span className="truncate text-sm font-bold text-neutral-900">
                 {item.name}
               </span>
-              <span className="text-xs text-neutral-500 truncate max-w-[200px]">{item.description}</span>
+              <span className="text-xs text-neutral-500 truncate max-w-[200px]">
+                {item.description ? item.description.replace(/<[^>]*>?/gm, "") : ""}
+              </span>
             </div>
           </div>
         );

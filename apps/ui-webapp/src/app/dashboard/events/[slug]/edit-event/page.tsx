@@ -1002,7 +1002,7 @@ export default function EditEventPage() {
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-4 py-2 border-t border-border/60 mt-1">
+          <div className="flex items-center gap-4 py-2 border-border/60 mt-1">
             <div className="text-sm font-bold poppins text-neutral-400 shrink-0">
               {autoSaveStatus === "saving" ? (
                 <span className="flex items-center gap-2">

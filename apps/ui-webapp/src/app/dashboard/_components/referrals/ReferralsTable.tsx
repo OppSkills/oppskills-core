@@ -132,7 +132,7 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
         cell: (info) => {
           const row = info.row.original;
           return (
-            <div className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex items-center gap-4 py-2">
               <button
                 type="button"
                 onClick={() => setSelectedReferrerId(row.id)}
@@ -147,31 +147,33 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(({
                     {row.name}
                   </span>
                   <span className="text-xs text-neutral-500 font-medium truncate">{row.email}</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] text-primary-600 underline truncate max-w-[120px]">
+                      {row.referralLink}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void navigator.clipboard.writeText(row.referralLink);
+                        toast.success("Link copied!");
+                      }}
+                      className="text-neutral-400 hover:text-primary-600 transition-colors cursor-pointer"
+                    >
+                      <Copy size={12} />
+                    </button>
+                    <Link
+                      href={row.referralLink}
+                      target="_blank"
+                      prefetch={false}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-neutral-400 hover:text-primary-600 transition-colors"
+                    >
+                      <ExternalLink size={12} />
+                    </Link>
+                  </div>
                 </div>
               </button>
-              <div className="flex items-center gap-2 text-neutral-500 px-2 py-1 bg-neutral-50 rounded-lg border border-neutral-100 w-fit">
-                <span className="text-xs font-mono truncate max-w-[120px]">
-                  {row.referralLink.replace(/^https?:\/\//, "")}
-                </span>
-                <button
-                  type="button"
-                  className="p-1 hover:text-primary-600 transition-colors"
-                  onClick={() => {
-                    void navigator.clipboard.writeText(row.referralLink);
-                    toast.success("Link copied!");
-                  }}
-                >
-                  <Copy size={14} />
-                </button>
-                <Link
-                  href={row.referralLink}
-                  target="_blank"
-                  prefetch={false}
-                  className="p-1 hover:text-primary-600 transition-colors"
-                >
-                  <ExternalLink size={14} />
-                </Link>
-              </div>
             </div>
           );
         },

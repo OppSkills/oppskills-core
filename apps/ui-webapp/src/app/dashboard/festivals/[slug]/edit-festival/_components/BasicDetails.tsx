@@ -42,6 +42,7 @@ import { DialogClose } from "@radix-ui/react-dialog";
 import { useAuth } from "@clerk/nextjs";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
+import { updateFestival } from "@/lib/api/festivalApi";
 import { ClockCircle, DocumentText, MapPoint, Pen, UserCircle, MagicStick2, Earth } from "@solar-icons/react";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
 import InputBlock from "@/components/ui/derived/InputBlock";
@@ -93,10 +94,16 @@ export default function BasicDetails({
 
             await uploadImageToS3PresignedPost({ presign, file });
 
+            const newUrl = presign.publicUrl;
             setFormData((prev) => ({
                 ...prev,
-                bannerUrl: presign.publicUrl,
+                bannerUrl: newUrl,
             }));
+
+            await updateFestival(token, formData.id, {
+                name: formData.name,
+                posterImageUrl: newUrl,
+            });
 
             toast.success("Banner uploaded.");
         } catch (err: unknown) {
@@ -124,10 +131,16 @@ export default function BasicDetails({
 
             await uploadImageToS3PresignedPost({ presign, file });
 
+            const newUrl = presign.publicUrl;
             setFormData((prev) => ({
                 ...prev,
-                organizationLogoUrl: presign.publicUrl,
+                organizationLogoUrl: newUrl,
             }));
+
+            await updateFestival(token, formData.id, {
+                name: formData.name,
+                organizationLogoUrl: newUrl,
+            });
 
             toast.success("Logo uploaded.");
         } catch (err: unknown) {
@@ -138,12 +151,22 @@ export default function BasicDetails({
         }
     }
 
+    const normalizeUrl = (url: string | undefined): string | undefined => {
+        if (!url) return undefined;
+        const trimmed = url.trim();
+        if (trimmed.length === 0) return undefined;
+        if (trimmed.startsWith("http") || trimmed.startsWith("/")) {
+            return trimmed;
+        }
+        return `https://${trimmed}`;
+    };
+
     return (
         <div className="flex flex-col lg:flex-row gap-6 animate-in fade-in duration-500">
             {/* Left Sidebar - Assets */}
             <div className="w-full lg:max-w-[371px] flex flex-col gap-6">
                 <BannerUploader
-                    imageUrl={formData.bannerUrl}
+                    imageUrl={normalizeUrl(formData.bannerUrl)}
                     onUpload={(file) => void handleBannerSelected(file)}
                     isUploading={isUploadingBanner}
                     inputId={bannerInputId}
@@ -156,12 +179,10 @@ export default function BasicDetails({
                     </p>
                     <div className="flex items-center gap-4">
                         <div className="w-20 h-20 rounded-xl bg-neutral-100 border border-dashed border-neutral-300 flex items-center justify-center overflow-hidden relative group">
-                            {formData.organizationLogoUrl ? (
-                                <Image
-                                    src={formData.organizationLogoUrl}
+                            {formData.organizationLogoUrl && normalizeUrl(formData.organizationLogoUrl) ? (
+                                <img
+                                    src={normalizeUrl(formData.organizationLogoUrl)}
                                     alt="Org Logo"
-                                    width={80}
-                                    height={80}
                                     className="w-full h-full object-contain"
                                 />
                             ) : (
@@ -219,8 +240,8 @@ export default function BasicDetails({
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 text-yellow-700 rounded-full border border-yellow-200 text-xs font-bold uppercase tracking-wider">
-                        <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-200 text-primary-700 rounded-full border border-primary-400 text-xs font-bold uppercase tracking-wider">
+                        <span className="w-2 h-2 rounded-full bg-primary-700 animate-pulse"></span>
                         {formData.status}
                     </div>
                 </div>
