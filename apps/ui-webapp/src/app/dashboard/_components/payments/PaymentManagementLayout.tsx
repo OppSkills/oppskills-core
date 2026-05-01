@@ -435,9 +435,9 @@ export function PaymentManagementLayout({
             <div className="flex flex-col py-2">
               {[
                 { label: "Account Holder Name", value: payoutDetails?.accountHolderName },
+                { label: "Bank Name", value: payoutDetails?.bankName },
                 { label: "Bank Account Number", value: payoutDetails?.accountNumberLast4 ? `•••• •••• ${payoutDetails.accountNumberLast4}` : undefined },
                 { label: "IFSC Code", value: payoutDetails?.ifsc },
-                { label: "UPI ID", value: payoutDetails?.upiId },
               ].map((item, index) => (
                 <div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 border-b border-neutral-100 last:border-0 gap-1 sm:gap-0">
                   <span className="text-neutral-500 font-medium inter text-xs sm:text-sm">{item.label}</span>

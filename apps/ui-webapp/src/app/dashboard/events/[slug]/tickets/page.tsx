@@ -29,9 +29,16 @@ export default function TicketsPage() {
 
   const [payoutDetails, setPayoutDetails] = useState<PayoutDetailsInput>({
     accountHolderName: "",
+    bankName: "",
     accountNumber: "",
     ifsc: "",
-    upiId: "",
+    panNumber: "",
+    gstNumber: "",
+    pinCode: "",
+    state: "",
+    city: "",
+    address1: "",
+    address2: "",
   });
 
   const handleCreateTicket = (newTicket: TicketData) => {
@@ -45,9 +52,9 @@ export default function TicketsPage() {
 
   const payoutFields = [
     { label: "Account Holder Name", value: payoutDetails.accountHolderName },
+    { label: "Bank Name", value: payoutDetails.bankName },
     { label: "Account Number", value: payoutDetails.accountNumber },
     { label: "IFSC Code", value: payoutDetails.ifsc },
-    { label: "UPI ID", value: payoutDetails.upiId },
   ];
 
   return (
