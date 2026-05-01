@@ -8,14 +8,14 @@ import {
   ChevronDown,
   Clock,
   FileEdit,
-  Globe,
+  Earth,
   Lock,
   MapPin,
   Plus,
   University,
   Upload,
   Users,
-  Wand2,
+  MagicStick2,
 } from "lucide-react";
 import InputBlock from "@/components/ui/derived/InputBlock";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
@@ -606,7 +606,7 @@ export default function Page() {
                 <div className="cursor-pointer">
                   <HackathonInput>
                     {formData.eventFestVisibility === "Public" ? (
-                      <Globe className="w-4 h-4" />
+                      <Earth className="w-4 h-4" />
                     ) : formData.eventFestVisibility === "Private" ? (
                       <Lock className="w-4 h-4" />
                     ) : (
@@ -884,7 +884,7 @@ export default function Page() {
                 <DropdownMenuTrigger asChild>
                   <div className="h-full min-w-0">
                     <InputBlock
-                      icon={<Wand2 className="w-5 h-5" />}
+                      icon={<MagicStick2 className="w-5 h-5" />}
                       label="Hackathon Type"
                       subLabel={formData.hackathonType}
                       className="h-full"

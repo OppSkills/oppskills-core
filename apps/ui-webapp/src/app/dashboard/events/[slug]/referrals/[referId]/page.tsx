@@ -23,7 +23,7 @@ export default async function ReferrerDetailsPage(props: {
     const event = await getEventData(token, slug);
     return (
         <div className="flex justify-center w-full min-h-screen bg-[#FAFAFA]">
-            <div className="w-full max-w-[1600px] p-6 lg:p-10 flex flex-col gap-8">
+            <div className="w-full p-4 lg:p-6 flex flex-col gap-8">
                 {/* Header */}
                 <div className="flex flex-col gap-2">
                     <h1 className="font-bold text-3xl md:text-4xl text-foreground">

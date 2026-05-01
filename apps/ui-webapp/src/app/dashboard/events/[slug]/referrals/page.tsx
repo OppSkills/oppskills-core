@@ -27,7 +27,7 @@ export default async function ReferralsPage(props: {
 
     return (
         <div className="flex justify-center w-full min-h-screen bg-[#FAFAFA]">
-            <div className="w-full max-w-[1600px] p-6 lg:p-10 flex flex-col gap-8">
+            <div className="w-full p-4 lg:p-6 flex flex-col gap-8">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
                     <div className="left space-y-2">
@@ -45,7 +45,12 @@ export default async function ReferralsPage(props: {
 
                 {/* Analytics Cards */}
                 <Suspense fallback={<ReferralsAnalyticsLoader />}>
-                    <ReferralAnalyticsCards entityType="EVENT" entityId={event.id} />
+                    <ReferralAnalyticsCards
+                        entityType="EVENT"
+                        entityId={event.id}
+                        slug={slug}
+                        itemName={event.name}
+                    />
                 </Suspense>
 
                 {/* Referrals Table */}

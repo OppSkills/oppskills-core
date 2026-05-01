@@ -210,6 +210,37 @@ export class EventPassScanController {
   }
 
   /**
+   * POST /events/:eventId/participants/:participantId/attendance
+   * Mark attendance manually for a participant
+   * Authorization: Only event owner/managers
+   */
+  @Post(':eventId/participants/:participantId/attendance')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary: 'Mark attendance manually for a participant',
+    description:
+      'Marks a participant as present. Only event owners and managers can do this.',
+  })
+  @ApiParam({ name: 'eventId', description: 'Event ID' })
+  @ApiParam({ name: 'participantId', description: 'Participant ID' })
+  async markAttendance(
+    @Param('eventId') eventId: string,
+    @Param('participantId') participantId: string,
+    @Req() req: Request,
+  ): Promise<ScanResultDto> {
+    const scannerId = (req as any).user.id;
+
+    // Verify user has permission (owner/manager)
+    await this.eventService.getEventByIdForDashboard(eventId, scannerId);
+
+    return this.eventPassService.markAttendanceManually(
+      participantId,
+      scannerId,
+      eventId,
+    );
+  }
+
+  /**
    * GET /events/:eventId/passes/scanned
    * Get all scanned passes for event (for organizer dashboard)
    */

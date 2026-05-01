@@ -28,11 +28,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatToIST } from "@/lib/date-utils";
-import React, { useState } from "react";
+import { format } from "date-fns";
+import React, { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FormData, Round } from "../page";
 import { Container } from "@/app/dashboard/_components/Container";
+import { Textarea } from "@/components/ui/textarea";
 
 interface RoundsAndStagesProps {
   formData: FormData;
@@ -45,6 +47,14 @@ export default function RoundsAndStages({
 }: RoundsAndStagesProps) {
   const [editingRoundId, setEditingRoundId] = useState<string | null>(null);
   const [tempRoundData, setTempRoundData] = useState<Round | null>(null);
+  const editCardRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to edit card when editing starts
+  useEffect(() => {
+    if (editingRoundId && editCardRef.current) {
+      editCardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [editingRoundId]);
 
   const handleAddRound = () => {
     const newRound: Round = {
@@ -65,11 +75,7 @@ export default function RoundsAndStages({
         instructions: "",
       },
     };
-    setFormData((prev) => ({
-      ...prev,
-      rounds: [...prev.rounds, newRound],
-    }));
-    // Automatically enter edit mode for new round
+    // Automatically enter edit mode for new round WITHOUT updating formData yet
     setEditingRoundId(newRound.id);
     setTempRoundData(newRound);
   };
@@ -86,15 +92,37 @@ export default function RoundsAndStages({
 
   const handleSaveRound = () => {
     if (!tempRoundData) return;
-    setFormData((prev) => ({
-      ...prev,
-      rounds: prev.rounds.map((r) =>
-        r.id === tempRoundData.id ? tempRoundData : r,
-      ),
-    }));
+
+    if (!tempRoundData.name || tempRoundData.name.trim() === "") {
+      toast.error("Round name cannot be empty");
+      return;
+    }
+
+    // Ensure dates are valid Date objects
+    const validatedRound: Round = {
+      ...tempRoundData,
+      startDate: tempRoundData.startDate instanceof Date ? tempRoundData.startDate : new Date(tempRoundData.startDate),
+      endDate: tempRoundData.endDate instanceof Date ? tempRoundData.endDate : new Date(tempRoundData.endDate),
+    };
+
+    setFormData((prev) => {
+      const roundExists = prev.rounds.some((r) => r.id === validatedRound.id);
+      if (roundExists) {
+        return {
+          ...prev,
+          rounds: prev.rounds.map((r) =>
+            r.id === validatedRound.id ? validatedRound : r,
+          ),
+        };
+      } else {
+        return {
+          ...prev,
+          rounds: [...prev.rounds, validatedRound],
+        };
+      }
+    });
     setEditingRoundId(null);
     setTempRoundData(null);
-    toast.success("Round updated successfully");
   };
 
   const handleDeleteRound = (id: string) => {
@@ -116,7 +144,7 @@ export default function RoundsAndStages({
   };
 
   return (
-    <div className="flex flex-col w-full animate-in fade-in slide-in-from-bottom-5 duration-500">
+    <div className="flex flex-col w-full animate-in fade-in slide-in-from-bottom-5 duration-500 gap-4 sm:gap-6 md:gap-8 lg:gap-10">
       <Container
         heading="Rounds And Stages"
         description="Create different rounds which will represent each stage of opportunity. Add rounds in order."
@@ -176,6 +204,7 @@ export default function RoundsAndStages({
 
               {/* Round Card */}
               <div
+                ref={isEditing ? editCardRef : null}
                 className={cn(
                   "flex-1 border rounded-xl p-6 mb-6 shadow-sm transition-all relative overflow-hidden",
                   isEditing
@@ -599,10 +628,307 @@ export default function RoundsAndStages({
             </div>
           );
         })}
+
+        {/* Render a new round being created but not yet saved */}
+        {editingRoundId &&
+          !formData.rounds.find((r) => r.id === editingRoundId) &&
+          tempRoundData && (
+            <div className="flex gap-4 relative">
+              {/* Round Badge */}
+              <div className="flex-shrink-0 z-10 pt-1">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center border font-bold text-lg transition-colors bg-primary-500 text-background border-primary">
+                  R{formData.rounds.length + 1}
+                </div>
+              </div>
+
+              {/* Round Card (Edit Form) */}
+              <div
+                ref={editCardRef}
+                className="flex-1 border rounded-xl p-6 mb-6 shadow-sm transition-all relative overflow-hidden bg-card ring-2 ring-primary-500 border-transparent"
+              >
+                <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <div className="text-sm font-semibold text-primary">
+                      Creating New Round
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive-foreground"
+                      onClick={() => handleCancelEdit()}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-2">
+                      <Label>Round Name</Label>
+                      <Input
+                        value={tempRoundData.name}
+                        onChange={(e) =>
+                          setTempRoundData({
+                            ...tempRoundData,
+                            name: e.target.value,
+                          })
+                        }
+                        placeholder="e.g. Qualification Round"
+                        className="font-semibold text-lg"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label>Round Type</Label>
+                      <Select
+                        value={tempRoundData.roundType}
+                        onValueChange={(
+                          value: "ONLINE" | "OFFLINE" | "PRESENTATION",
+                        ) =>
+                          setTempRoundData({
+                            ...tempRoundData,
+                            roundType: value,
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select round type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ONLINE">Online</SelectItem>
+                          <SelectItem value="OFFLINE">Offline</SelectItem>
+                          <SelectItem value="PRESENTATION">
+                            Presentation
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-2">
+                      <Label>Starts At</Label>
+                      <div className="flex gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !tempRoundData.startDate &&
+                                "text-muted-foreground",
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {tempRoundData.startDate ? (
+                                format(tempRoundData.startDate, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={tempRoundData.startDate}
+                              onSelect={(date) =>
+                                date &&
+                                setTempRoundData({
+                                  ...tempRoundData,
+                                  startDate: date,
+                                })
+                              }
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <Input
+                          type="time"
+                          className="w-[120px]"
+                          value={tempRoundData.startTime}
+                          onChange={(e) =>
+                            setTempRoundData({
+                              ...tempRoundData,
+                              startTime: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label>Ends At</Label>
+                      <div className="flex gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !tempRoundData.endDate &&
+                                "text-muted-foreground",
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {tempRoundData.endDate ? (
+                                format(tempRoundData.endDate, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={tempRoundData.endDate}
+                              onSelect={(date) =>
+                                date &&
+                                setTempRoundData({
+                                  ...tempRoundData,
+                                  endDate: date,
+                                })
+                              }
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <Input
+                          type="time"
+                          className="w-[120px]"
+                          value={tempRoundData.endTime}
+                          onChange={(e) =>
+                            setTempRoundData({
+                              ...tempRoundData,
+                              endTime: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Label>Description</Label>
+                    <Textarea
+                      value={tempRoundData.description}
+                      onChange={(e) =>
+                        setTempRoundData({
+                          ...tempRoundData,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="Describe what happens in this round..."
+                      className="min-h-[100px]"
+                    />
+                  </div>
+
+                  {/* Submission Configuration */}
+                  <div className="mt-4 p-4 rounded-lg bg-secondary/30 border border-secondary/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-sm">
+                          Submissions
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Enable participants to upload files for this round.
+                        </span>
+                      </div>
+                      <Switch
+                        checked={tempRoundData.submissionConfig?.enabled ?? false}
+                        onCheckedChange={(checked) =>
+                          setTempRoundData({
+                            ...tempRoundData,
+                            submissionConfig: {
+                              allowedFileTypes: [],
+                              maxFiles: 3,
+                              maxFileSizeBytes: 50 * 1024 * 1024,
+                              allowResubmission: true,
+                              instructions: "",
+                              ...tempRoundData.submissionConfig,
+                              enabled: checked,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+
+                    {tempRoundData.submissionConfig?.enabled && (
+                      <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex flex-col gap-2">
+                          <Label className="text-xs">Allowed File Types</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {(["pdf", "ppt", "image"] as const).map((type) => (
+                              <Button
+                                key={type}
+                                type="button"
+                                variant={
+                                  tempRoundData.submissionConfig?.allowedFileTypes.includes(
+                                    type,
+                                  )
+                                    ? "default"
+                                    : "outline"
+                                }
+                                size="sm"
+                                className="h-7 text-[10px] uppercase tracking-wider"
+                                onClick={() => {
+                                  const currentTypes =
+                                    tempRoundData.submissionConfig
+                                      ?.allowedFileTypes || [];
+                                  const nextTypes = currentTypes.includes(type)
+                                    ? currentTypes.filter((t) => t !== type)
+                                    : [...currentTypes, type];
+                                  setTempRoundData({
+                                    ...tempRoundData,
+                                    submissionConfig: {
+                                      ...tempRoundData.submissionConfig!,
+                                      allowedFileTypes: nextTypes,
+                                    },
+                                  });
+                                }}
+                              >
+                                {type}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <Label className="text-xs">Instructions</Label>
+                          <Textarea
+                            value={tempRoundData.submissionConfig?.instructions}
+                            onChange={(e) =>
+                              setTempRoundData({
+                                ...tempRoundData,
+                                submissionConfig: {
+                                  ...tempRoundData.submissionConfig!,
+                                  instructions: e.target.value,
+                                },
+                              })
+                            }
+                            placeholder="e.g. Upload your project PDF here..."
+                            className="min-h-[60px] text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleCancelEdit()}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onClick={() => handleSaveRound()}>
+                      Save Round
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
       </div>
 
-      <div className="mt-8 text-center text-xs text-muted-foreground">
-        Changes are saved automatically.
+      <div className="mt-8 text-center text-xs text-muted-foreground flex flex-col gap-2">
+        <p>Changes are saved automatically.</p>
       </div>
     </div>
   );

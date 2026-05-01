@@ -6,6 +6,7 @@ import {
   IsDefined,
   IsEmail,
   IsIn,
+  IsEnum,
   IsInt,
   IsObject,
   IsOptional,
@@ -18,6 +19,7 @@ import {
 } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { FeeBearer } from "../../../enums/index";
 
 /**
  * NOTE:
@@ -785,6 +787,10 @@ export class UpdateEventDto {
   @IsString()
   @IsIn(COLLEGE_MATCH_MODE_VALUES)
   collegeMatchMode?: CollegeMatchModeValue;
+
+  @IsOptional()
+  @IsEnum(FeeBearer)
+  feeBearer?: FeeBearer;
 }
 
 /**

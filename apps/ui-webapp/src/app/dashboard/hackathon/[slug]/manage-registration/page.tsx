@@ -190,13 +190,13 @@ export default function Page() {
     >
       {data ? (
         <div className="w-full flex justify-center">
-          <div className="w-full max-w-7xl p-4 sm:p-6 md:p-8 flex flex-col gap-6">
+          <div className="w-full max-w-7xl p-4 sm:p-6 md:p-8 flex flex-col gap-2">
             <Stages
               stages={stages}
               selectedStage={currentStage}
               onSelectStage={setCurrentStage}
             />
-            <div className="h-px my-4 w-full bg-foreground/10" />
+            <div className="h-px w-full bg-neutral-300" />
             {data.teams.total === 0 ? (
               <EmptyState
                 title="No team registrations yet"

@@ -185,88 +185,88 @@ export function CompetitionDetailsClient({
     <BoneyardSkeleton
       loading={isLoading}
       name="hackathon-competition-detail"
-      className="min-h-screen w-full bg-transparent px-0 sm:px-6 lg:px-8 pb-8 sm:pt-12 xl:px-25"
+      className="min-h-screen w-full bg-transparent pb-8 sm:pt-12"
       fallback={<HackathonDetailFallback />}
     >
-    {competition ? (
-      <div className="container mx-auto max-w-7xl p-4">
-        {isDraft && (
-          <div className="mb-6 flex items-center gap-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
-            <AlertTriangle className="h-5 w-5 text-yellow-600" />
-            <div>
-              <p className="font-semibold text-yellow-700">Draft Preview</p>
-              <p className="text-sm text-yellow-600">
-                This competition is not published yet. Only you and your team
-                can see this page.
-              </p>
+      {competition ? (
+        <div className="container mx-auto max-w-7xl p-4">
+          {isDraft && (
+            <div className="mb-6 flex items-center gap-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <div>
+                <p className="font-semibold text-yellow-700">Draft Preview</p>
+                <p className="text-sm text-yellow-600">
+                  This competition is not published yet. Only you and your team
+                  can see this page.
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative items-start">
-          <div className="lg:col-span-1 lg:sticky lg:top-24">
-            <CompetitionSidebar competition={competition} />
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative items-start">
+            <div className="lg:col-span-1 lg:sticky lg:top-24">
+              <CompetitionSidebar competition={competition} />
+            </div>
 
-          <div className="lg:col-span-2">
-            <h1 className="hidden lg:block text-4xl font-semibold text-neutral-900 leading-tight mb-6">
-              {competition.title}
-            </h1>
+            <div className="lg:col-span-2">
+              <h1 className="hidden lg:block text-4xl font-semibold text-neutral-900 leading-tight mb-6">
+                {competition.title}
+              </h1>
 
-            <CompetitionTabs
-              setCurTab={setCurTab}
-              hasRounds={competition.rounds.length > 0}
-              hasAttachments={
-                !!competition.attachments && competition.attachments.length > 0
-              }
-              title={competition.title}
-              slug={competition.slug}
-            />
+              <CompetitionTabs
+                setCurTab={setCurTab}
+                hasRounds={competition.rounds.length > 0}
+                hasAttachments={
+                  !!competition.attachments && competition.attachments.length > 0
+                }
+                title={competition.title}
+                slug={competition.slug}
+              />
 
-            <div className="space-y-12">
-              {competition.rounds.length > 0 && (
-                <section id="rounds" className="scroll-mt-24">
-                  <RoundsTimeline
-                    rounds={competition.rounds}
-                    myTeam={myTeam}
-                    submissionsByRoundId={submissionsByRoundId}
-                    qualificationsByRoundId={qualificationsByRoundId}
-                    competitionSlug={
-                      typeof slug === "string" ? slug : undefined
-                    }
-                    currentUserId={userId || undefined}
-                  />
-                </section>
-              )}
-
-              <section id="details" className="scroll-mt-24">
-                <AboutSection content={competition.about} />
-              </section>
-
-
-
-              <section className="scroll-mt-24">
-                <Organizers
-                  organizers={competition.organizers}
-                  contact={competition.contact}
-                />
-              </section>
-
-              {competition.attachments &&
-                competition.attachments.length > 0 && (
-                  <section id="attachments" className="scroll-mt-24">
-                    <Attachments attachments={competition.attachments} />
+              <div className="space-y-12">
+                {competition.rounds.length > 0 && (
+                  <section id="rounds" className="scroll-mt-24">
+                    <RoundsTimeline
+                      rounds={competition.rounds}
+                      myTeam={myTeam}
+                      submissionsByRoundId={submissionsByRoundId}
+                      qualificationsByRoundId={qualificationsByRoundId}
+                      competitionSlug={
+                        typeof slug === "string" ? slug : undefined
+                      }
+                      currentUserId={userId || undefined}
+                    />
                   </section>
                 )}
 
-              <section id="prizes" className="scroll-mt-24">
-                <Prizes prizes={competition.prizes} />
-              </section>
+                <section id="details" className="scroll-mt-24">
+                  <AboutSection content={competition.about} />
+                </section>
+
+
+
+                <section className="scroll-mt-24">
+                  <Organizers
+                    organizers={competition.organizers}
+                    contact={competition.contact}
+                  />
+                </section>
+
+                {competition.attachments &&
+                  competition.attachments.length > 0 && (
+                    <section id="attachments" className="scroll-mt-24">
+                      <Attachments attachments={competition.attachments} />
+                    </section>
+                  )}
+
+                <section id="prizes" className="scroll-mt-24">
+                  <Prizes prizes={competition.prizes} />
+                </section>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    ) : null}
+      ) : null}
     </BoneyardSkeleton>
   );
 }

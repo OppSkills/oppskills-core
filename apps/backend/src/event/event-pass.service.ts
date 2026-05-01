@@ -407,7 +407,7 @@ export class EventPassService {
     eventId: string,
   ): Promise<ScanResultDto> {
     // Find pass by token
-    const pass = await prisma.eventPassEntity.findUnique({
+    let pass = await prisma.eventPassEntity.findUnique({
       where: { token },
       include: {
         user: {
@@ -454,19 +454,44 @@ export class EventPassService {
 
     // If not already used, mark as scanned
     if (!pass.isUsed) {
-      await prisma.eventPassEntity.update({
+      pass = await prisma.eventPassEntity.update({
         where: { id: pass.id },
         data: {
           isUsed: true,
           scannedAt: new Date(),
           scannedById: scannerId,
         },
+        include: {
+          user: {
+            include: {
+              onboardingProfile: {
+                include: {
+                  college: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          event: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              startDate: true,
+            },
+          },
+          scannedBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
       });
-
-      // Update the pass object for response
-      pass.isUsed = true;
-      pass.scannedAt = new Date();
-      pass.scannedById = scannerId;
     }
 
     const message = wasAlreadyUsed
@@ -477,6 +502,93 @@ export class EventPassService {
       success: true,
       pass: this.mapToDto(pass),
       message,
+      wasAlreadyUsed,
+    };
+  }
+
+  /**
+   * Mark attendance manually for a participant
+   * Creates a pass if it doesn't exist, and marks it as used
+   */
+  async markAttendanceManually(
+    participantId: string,
+    scannerId: string,
+    eventId: string,
+  ): Promise<ScanResultDto> {
+    const passInclusions = {
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          imageUrl: true,
+        },
+      },
+      event: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          startDate: true,
+        },
+      },
+      scannedBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+    };
+
+    // 1. Check if pass exists
+    let pass = await prisma.eventPassEntity.findUnique({
+      where: { participantId },
+      include: passInclusions,
+    });
+
+    // 2. If not, generate one
+    if (!pass) {
+      await this.generateEventPass(participantId);
+      pass = await prisma.eventPassEntity.findUnique({
+        where: { participantId },
+        include: passInclusions,
+      });
+    }
+
+    if (!pass) {
+      throw new NotFoundException('Failed to create or find event pass');
+    }
+
+    // 3. Verify eventId
+    if (pass.eventId !== eventId) {
+      throw new BadRequestException(
+        'Participant does not belong to this event',
+      );
+    }
+
+    const wasAlreadyUsed = pass.isUsed;
+
+    // 4. Mark as used
+    if (!pass.isUsed) {
+      pass = await prisma.eventPassEntity.update({
+        where: { id: pass.id },
+        data: {
+          isUsed: true,
+          scannedAt: new Date(),
+          scannedById: scannerId,
+        },
+        include: passInclusions,
+      });
+    }
+
+    return {
+      success: true,
+      pass: this.mapToDto(pass),
+      message: wasAlreadyUsed
+        ? 'Already marked present'
+        : 'Marked present successfully',
       wasAlreadyUsed,
     };
   }

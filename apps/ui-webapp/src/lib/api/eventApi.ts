@@ -483,6 +483,7 @@ export interface EventRegistration {
   registeredOn: string;
   approved: boolean;
   passEmailSent: boolean;
+  isAttended: boolean;
   passEmailSentAt?: string;
   approvedAt?: string;
 }
@@ -545,6 +546,17 @@ export async function getParticipantRegistrationAnswers(
   return res.data as ParticipantRegistrationAnswersResponse;
 }
 
+export async function getBulkParticipantRegistrationAnswers(
+  token: string,
+  slug: string,
+): Promise<ParticipantRegistrationAnswersResponse[]> {
+  const res = await API.get(
+    `/by-slug/${encodeURIComponent(slug)}/registrations-answers`,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as ParticipantRegistrationAnswersResponse[];
+}
+
 /**
  * Approve a participant for an event (owner/manager/admin only).
  */
@@ -573,6 +585,22 @@ export async function bulkApproveParticipants(
     { participantIds },
     { headers: buildAuthHeaders(token) },
   );
+}
+
+/**
+ * Mark attendance manually for a participant (owner/manager/admin only).
+ */
+export async function markParticipantAttendance(
+  token: string,
+  eventId: string,
+  participantId: string,
+): Promise<any> {
+  const res = await API.post(
+    `/${encodeURIComponent(eventId)}/participants/${encodeURIComponent(participantId)}/attendance`,
+    {},
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data;
 }
 
 // =====================

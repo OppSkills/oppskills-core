@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +38,10 @@ export default function PayoutDetailsForm({
   const [errors, setErrors] = useState<
     Partial<Record<keyof PayoutDetailsInput, string>>
   >({});
+  const [bankInfo, setBankInfo] = useState<string | null>(null);
+  const [isFetchingBank, setIsFetchingBank] = useState(false);
+  const [ifscNotFound, setIfscNotFound] = useState<boolean>(false);
+  const [upiVerified, setUpiVerified] = useState<boolean>(false);
 
   // Track if we've initialized for this "open" session
   const hasInitializedRef = useRef(false);
@@ -64,8 +68,55 @@ export default function PayoutDetailsForm({
     // Reset the flag when modal closes
     if (!isOpen) {
       hasInitializedRef.current = false;
+      setBankInfo(null);
+      setIfscNotFound(false);
+      setUpiVerified(false);
     }
   }, [isOpen, initialData]);
+
+  // IFSC Lookup Logic
+  useEffect(() => {
+    const fetchBankInfo = async () => {
+      const ifsc = formData.ifsc;
+      if (ifsc.length === 11 && IFSC_REGEX.test(ifsc)) {
+        setIsFetchingBank(true);
+        setIfscNotFound(false);
+        try {
+          const res = await fetch(`https://ifsc.razorpay.com/${ifsc}`);
+          if (res.ok) {
+            const data = await res.json();
+            setBankInfo(`${data.BANK}, ${data.BRANCH}`);
+            setIfscNotFound(false);
+          } else {
+            setBankInfo(null);
+            setIfscNotFound(true);
+          }
+        } catch (err) {
+          setBankInfo(null);
+          setIfscNotFound(true);
+        } finally {
+          setIsFetchingBank(false);
+        }
+      } else {
+        setBankInfo(null);
+        setIfscNotFound(false);
+      }
+    };
+
+    const timer = setTimeout(fetchBankInfo, 500);
+    return () => clearTimeout(timer);
+  }, [formData.ifsc]);
+
+  // UPI Validation Logic
+  useEffect(() => {
+    const upi = formData.upiId || "";
+    const UPI_REGEX = /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/;
+    if (upi && UPI_REGEX.test(upi)) {
+      setUpiVerified(true);
+    } else {
+      setUpiVerified(false);
+    }
+  }, [formData.upiId]);
 
   const validateField = (
     name: keyof PayoutDetailsInput,
@@ -81,6 +132,9 @@ export default function PayoutDetailsForm({
         if (!IFSC_REGEX.test(value)) return "Invalid IFSC format";
         return "";
       case "upiId":
+        if (value && !/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(value)) {
+          return "Invalid UPI ID format";
+        }
         return "";
       default:
         return "";
@@ -183,13 +237,27 @@ export default function PayoutDetailsForm({
                 onBlur={() => handleBlur("ifsc")}
                 error={errors.ifsc}
               />
+              {isFetchingBank && (
+                <div className="flex items-center gap-2 text-xs text-primary-600 animate-pulse px-4 -mt-2">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Verifying IFSC...
+                </div>
+              )}
+              {bankInfo && (
+                <div className="text-xs text-emerald-600 font-medium px-4 -mt-2 animate-in fade-in slide-in-from-top-1">
+                  {bankInfo}
+                </div>
+              )}
+              {ifscNotFound && (
+                <div className="text-xs text-amber-600 font-medium px-4 -mt-2 animate-in fade-in slide-in-from-top-1">
+                  IFSC details not found, wanna proceed?
+                </div>
+              )}
 
               <CustomInput
                 label="UPI ID (Optional)"
                 placeholder="e.g. username@upi"
                 value={formData.upiId || ""}
                 onChange={(v) => handleChange("upiId", v)}
-                onBlur={() => handleBlur("upiId")}
                 error={errors.upiId}
               />
             </div>
@@ -244,11 +312,10 @@ const CustomInput = ({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onBlur={onBlur}
-      className={`flex h-12 px-4 items-center self-stretch rounded-[24px] border ${
-        error
+      className={`flex h-12 px-4 items-center self-stretch rounded-[24px] border ${error
           ? "border-red-500 focus-visible:ring-red-500"
           : "border-border bg-background text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-primary-500"
-      } focus-visible:ring-offset-0`}
+        } focus-visible:ring-offset-0`}
     />
     {error && (
       <span className="text-red-500 text-xs px-1 animate-in fade-in slide-in-from-top-1">

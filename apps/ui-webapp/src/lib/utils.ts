@@ -67,9 +67,22 @@ export function getApiErrorMessage(
       }
     }
 
+    const dataDirect = error["data"];
+    if (isRecord(dataDirect)) {
+      const message = dataDirect["message"];
+      if (typeof message === "string" && message.trim().length > 0) {
+        return message;
+      }
+    }
+
     const message = error["message"];
     if (typeof message === "string" && message.trim().length > 0) {
-      return message;
+      if (
+        !message.includes("Request failed with status code") &&
+        !message.includes("Network Error")
+      ) {
+        return message;
+      }
     }
   }
 
