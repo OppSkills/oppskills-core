@@ -407,7 +407,7 @@ export class EventPassService {
     eventId: string,
   ): Promise<ScanResultDto> {
     // Find pass by token
-    const pass = await prisma.eventPassEntity.findUnique({
+    let pass = await prisma.eventPassEntity.findUnique({
       where: { token },
       include: {
         user: {
@@ -454,19 +454,44 @@ export class EventPassService {
 
     // If not already used, mark as scanned
     if (!pass.isUsed) {
-      await prisma.eventPassEntity.update({
+      pass = await prisma.eventPassEntity.update({
         where: { id: pass.id },
         data: {
           isUsed: true,
           scannedAt: new Date(),
           scannedById: scannerId,
         },
+        include: {
+          user: {
+            include: {
+              onboardingProfile: {
+                include: {
+                  college: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          event: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              startDate: true,
+            },
+          },
+          scannedBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
       });
-
-      // Update the pass object for response
-      pass.isUsed = true;
-      pass.scannedAt = new Date();
-      pass.scannedById = scannerId;
     }
 
     const message = wasAlreadyUsed
@@ -547,26 +572,15 @@ export class EventPassService {
 
     // 4. Mark as used
     if (!pass.isUsed) {
-      await prisma.eventPassEntity.update({
+      pass = await prisma.eventPassEntity.update({
         where: { id: pass.id },
         data: {
           isUsed: true,
           scannedAt: new Date(),
           scannedById: scannerId,
         },
+        include: passInclusions,
       });
-
-      // Update object for response mapping
-      pass.isUsed = true;
-      pass.scannedAt = new Date();
-      pass.scannedById = scannerId;
-      
-      // Fetch scannedBy info for the DTO
-      const scanner = await prisma.userEntity.findUnique({
-        where: { id: scannerId },
-        select: { id: true, firstName: true, lastName: true },
-      });
-      pass.scannedBy = scanner;
     }
 
     return {
