@@ -163,7 +163,8 @@ export default function EditFestivalPage() {
                 const mapped = mapFestivalToFormData(festivalRaw);
                 setFormData(mapped);
                 setInitialState(mapped); // Set baseline for dirty check
-                const updatedAt = festivalRaw["updatedAt"] ? new Date(festivalRaw["updatedAt"] as string).getTime() : Date.now();
+                const rawObj = festivalRaw as any;
+                const updatedAt = rawObj?.updatedAt ? new Date(rawObj.updatedAt).getTime() : Date.now();
                 lastSavedAtRef.current = Number.isNaN(updatedAt) ? Date.now() : updatedAt;
                 setHasHydrated(true);
             } catch (err) {
