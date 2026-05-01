@@ -138,16 +138,20 @@ export function PaymentManagementLayout({
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <Button
             onClick={() => setIsPaid(true)}
+            disabled={!canEditPricing}
             className={cn(
               "flex-1 sm:px-8 h-12 transition-all font-bold",
-              isPaid ? "bg-primary-600 text-white" : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
+              isPaid ? "bg-primary-600 text-white" : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200",
+              !canEditPricing && "opacity-60 cursor-not-allowed bg-neutral-200 hover:bg-neutral-200"
             )}
           >Yes</Button>
           <Button
             onClick={() => setIsPaid(false)}
+            disabled={!canEditPricing}
             className={cn(
               "flex-1 sm:px-8 h-12 transition-all font-bold",
-              !isPaid ? "bg-primary-600 text-white" : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
+              !isPaid ? "bg-primary-600 text-white" : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200",
+              !canEditPricing && "opacity-60 cursor-not-allowed bg-neutral-200 hover:bg-neutral-200"
             )}
           >No</Button>
         </div>
@@ -164,12 +168,21 @@ export function PaymentManagementLayout({
             <input
               type="number"
               value={entryFeeAmount || ""}
+              disabled={!canEditPricing}
               onChange={(e) => setEntryFeeAmount && setEntryFeeAmount(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-white border-2 border-neutral-200 rounded-xl focus:border-primary-500 focus:ring-0 transition-all text-xl font-bold text-neutral-900 poppins"
+              className={cn(
+                "w-full pl-10 pr-4 py-3 bg-white border-2 border-neutral-200 rounded-xl focus:border-primary-500 focus:ring-0 transition-all text-xl font-bold text-neutral-900 poppins",
+                !canEditPricing && "bg-neutral-100 border-neutral-100 cursor-not-allowed text-neutral-400"
+              )}
               placeholder="0.00"
             />
           </div>
           <p className="text-sm text-neutral-500">This is the base price participants will see before any service charges or taxes.</p>
+          {!canEditPricing && (
+            <p className="text-sm text-amber-600 font-medium animate-in fade-in">
+              The entry fee cannot be modified after registration has started.
+            </p>
+          )}
         </div>
       )}
 

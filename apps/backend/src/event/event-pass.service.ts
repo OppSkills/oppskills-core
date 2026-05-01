@@ -490,35 +490,37 @@ export class EventPassService {
     scannerId: string,
     eventId: string,
   ): Promise<ScanResultDto> {
+    const passInclusions = {
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          imageUrl: true,
+        },
+      },
+      event: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          startDate: true,
+        },
+      },
+      scannedBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+    };
+
     // 1. Check if pass exists
     let pass = await prisma.eventPassEntity.findUnique({
       where: { participantId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            imageUrl: true,
-          },
-        },
-        event: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            startDate: true,
-          },
-        },
-        scannedBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
+      include: passInclusions,
     });
 
     // 2. If not, generate one
@@ -526,32 +528,7 @@ export class EventPassService {
       await this.generateEventPass(participantId);
       pass = await prisma.eventPassEntity.findUnique({
         where: { participantId },
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              imageUrl: true,
-            },
-          },
-          event: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              startDate: true,
-            },
-          },
-          scannedBy: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-        },
+        include: passInclusions,
       });
     }
 

@@ -93,6 +93,11 @@ export default function RoundsAndStages({
   const handleSaveRound = () => {
     if (!tempRoundData) return;
 
+    if (!tempRoundData.name || tempRoundData.name.trim() === "") {
+      toast.error("Round name cannot be empty");
+      return;
+    }
+
     // Ensure dates are valid Date objects
     const validatedRound: Round = {
       ...tempRoundData,

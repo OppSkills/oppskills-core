@@ -508,12 +508,6 @@ export default function EditEventPage() {
       icon: <DocumentText className="w-4 h-4" />,
       draftOnly: false,
     },
-    {
-      id: "pass-settings",
-      label: "Pass Settings",
-      icon: <Settings className="w-4 h-4" />,
-      draftOnly: false,
-    },
   ];
 
   const availableTabs = tabs;
@@ -1050,10 +1044,6 @@ export default function EditEventPage() {
 
         {activeTab === "additional-info" && (
           <AdditionalInfo formData={formData} setFormData={setFormData} />
-        )}
-
-        {activeTab === "pass-settings" && (
-          <PassSettings formData={formData} setFormData={setFormData} />
         )}
 
         {activeTab === "preview" && slugParam && (
