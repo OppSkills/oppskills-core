@@ -877,7 +877,7 @@ export default function RoundsAndStages({
                                   setTempRoundData({
                                     ...tempRoundData,
                                     submissionConfig: {
-                                      ...tempRoundData.submissionConfig,
+                                      ...tempRoundData.submissionConfig!,
                                       allowedFileTypes: nextTypes,
                                     },
                                   });
@@ -897,7 +897,7 @@ export default function RoundsAndStages({
                               setTempRoundData({
                                 ...tempRoundData,
                                 submissionConfig: {
-                                  ...tempRoundData.submissionConfig,
+                                  ...tempRoundData.submissionConfig!,
                                   instructions: e.target.value,
                                 },
                               })

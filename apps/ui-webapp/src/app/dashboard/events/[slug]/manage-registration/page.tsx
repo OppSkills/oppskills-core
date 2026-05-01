@@ -27,7 +27,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEventRegistrationsBySlug } from "@/hooks/useEventRegistrationsBySlug";
-import { getParticipantRegistrationAnswers, getEventBySlug, approveParticipant, bulkApproveParticipants, markParticipantAttendance } from "@/lib/api/eventApi";
+import { getParticipantRegistrationAnswers, getBulkParticipantRegistrationAnswers, getEventBySlug, approveParticipant, bulkApproveParticipants, markParticipantAttendance } from "@/lib/api/eventApi";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import SendParticipantEmailModal from "./_components/SendParticipantEmailModal";
@@ -488,29 +488,24 @@ export default function ManageRegistrationPage() {
         return;
       }
 
-      // Fetch per-participant answers in chunks (concurrency: 10) — only for Completed registrations.
-      const answersResults: any[] = [];
-      const chunkSize = 10;
-      for (let i = 0; i < data.length; i += chunkSize) {
-        const chunk = data.slice(i, i + chunkSize);
-        const chunkResults = await Promise.all(
-          chunk.map((p) => {
-            if (p.status !== "Completed") return Promise.resolve(null);
-            return getParticipantRegistrationAnswers(token, slug, p.id).catch(
-              () => null
-            );
-          })
-        );
-        answersResults.push(...chunkResults);
-      }
+      // Fetch per-participant answers in bulk for performance
+      const allAnswersResults = await getBulkParticipantRegistrationAnswers(token, slug);
+
+      // Create a map by participant ID for quick lookup
+      const answersByParticipantId = new Map<string, any>();
+      allAnswersResults.forEach((ans) => {
+        if (ans && ans.participant && ans.participant.id) {
+          answersByParticipantId.set(ans.participant.id, ans);
+        }
+      });
 
       // Collect all unique field labels in insertion order
       const allLabels = new Set<string>();
-      answersResults.forEach((ans) => {
-        if (ans) ans.fields.forEach((f) => allLabels.add(f.label));
+      allAnswersResults.forEach((ans) => {
+        if (ans) ans.fields.forEach((f: any) => allLabels.add(f.label));
       });
 
-      const rows = data.map((p, idx) => {
+      const rows = data.map((p) => {
         const base: Record<string, string | number | boolean | null | undefined> = {
           "Name": p.name,
           "Email": p.email,
@@ -553,7 +548,7 @@ export default function ManageRegistrationPage() {
             : "",
         };
 
-        const ans = answersResults[idx];
+        const ans = answersByParticipantId.get(p.id);
         if (ans) {
           for (const label of allLabels) {
             if (EVENT_REGISTRATION_EXPORT_BASE_KEYS.has(label)) {

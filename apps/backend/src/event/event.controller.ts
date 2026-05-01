@@ -350,6 +350,36 @@ export class EventController {
     );
   }
 
+  @Get('by-slug/:slug/registrations-answers')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary:
+      'Get registration answers for all participants (owner/manager/admin only)',
+  })
+  @ApiParam({ name: 'slug', description: 'Event slug' })
+  @ApiResponse({ status: 200, description: 'All participant registration answers' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Owner/Manager/Admin only',
+  })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async getBulkParticipantRegistrationAnswers(
+    @Param('slug') slug: string,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+
+    const validSlug = assertNonEmptyId(slug, 'slug');
+    return this.eventService.getBulkParticipantRegistrationAnswers(
+      validSlug,
+      userId,
+    );
+  }
+
   @Get('by-slug/:slug/registrations/:participantId')
   @UseGuards(ClerkAuthGuard)
   @ApiOperation({

@@ -3335,6 +3335,112 @@ export class EventService {
   }
 
   /**
+   * Get registration answers for all participants in the event (owner/manager/admin only).
+   */
+  async getBulkParticipantRegistrationAnswers(
+    slug: string,
+    requesterUserId: string,
+  ) {
+    const event = await prisma.eventEntity.findUnique({
+      where: { slug, isDeleted: false },
+      select: { id: true, ownerId: true },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    const hasPermission = await this.hasEditPermission(
+      event.ownerId,
+      requesterUserId,
+      event.id,
+    );
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have permission to view registration answers for this event.',
+      );
+    }
+
+    const participants = await prisma.eventParticipantEntity.findMany({
+      where: { eventId: event.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+        submission: {
+          include: {
+            answers: {
+              include: {
+                field: {
+                  select: {
+                    id: true,
+                    label: true,
+                    type: true,
+                    order: true,
+                    options: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return participants.map((participant) => {
+      const user = participant.user;
+      const submission = participant.submission;
+      const answers = submission?.answers ?? [];
+
+      const fieldsMap = new Map<
+        string,
+        {
+          id: string;
+          label: string;
+          type: string;
+          order: number;
+          options: string[];
+        }
+      >();
+      for (const answer of answers) {
+        if (answer.field && !fieldsMap.has(answer.field.id)) {
+          fieldsMap.set(answer.field.id, {
+            id: answer.field.id,
+            label: answer.field.label,
+            type: answer.field.type,
+            order: answer.field.order,
+            options: answer.field.options,
+          });
+        }
+      }
+      const fields = Array.from(fieldsMap.values()).sort(
+        (a, b) => a.order - b.order,
+      );
+
+      const formattedAnswers = answers.map((a) => ({
+        fieldId: a.fieldId,
+        value: a.valueJson ?? a.valueText,
+      }));
+
+      return {
+        participant: {
+          id: participant.id,
+          name:
+            [user.firstName, user.lastName].filter(Boolean).join(' ') || 'N/A',
+          email: user.email,
+          avatarUrl: user.imageUrl || null,
+          registeredAt: participant.joinedAt.toISOString(),
+        },
+        fields,
+        answers: formattedAnswers,
+      };
+    });
+  }
+
+  /**
    * Get registration answers for a specific participant (owner/manager/admin only).
    */
   async getParticipantRegistrationAnswers(

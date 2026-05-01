@@ -546,6 +546,17 @@ export async function getParticipantRegistrationAnswers(
   return res.data as ParticipantRegistrationAnswersResponse;
 }
 
+export async function getBulkParticipantRegistrationAnswers(
+  token: string,
+  slug: string,
+): Promise<ParticipantRegistrationAnswersResponse[]> {
+  const res = await API.get(
+    `/by-slug/${encodeURIComponent(slug)}/registrations-answers`,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as ParticipantRegistrationAnswersResponse[];
+}
+
 /**
  * Approve a participant for an event (owner/manager/admin only).
  */
