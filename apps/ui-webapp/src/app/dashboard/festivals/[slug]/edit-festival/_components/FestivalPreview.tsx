@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { format, isSameDay, isSameYear } from "date-fns";
 import { MapPin, Users, Sparkles, Link as LinkIcon } from "lucide-react";
+import DOMPurify from "isomorphic-dompurify";
 import { FestivalFormData } from "../page";
 import { EventTabs } from "@/app/events/[slug]/_components/EventTabs";
 
@@ -148,7 +149,9 @@ export default function FestivalPreview({ formData }: FestivalPreviewProps) {
                                         {formData.description ? (
                                             <div
                                                 className="html-content whitespace-pre-line wrap-break-word"
-                                                dangerouslySetInnerHTML={{ __html: formData.description }}
+                                                dangerouslySetInnerHTML={{
+                                                    __html: DOMPurify.sanitize(formData.description),
+                                                }}
                                             />
                                         ) : (
                                             <p className="italic text-muted-foreground">No description available.</p>

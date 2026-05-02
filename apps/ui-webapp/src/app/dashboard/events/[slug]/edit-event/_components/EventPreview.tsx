@@ -9,6 +9,7 @@ import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { HackathonDetailFallback } from "@/components/boneyard/loading-fallbacks";
 import { format } from "date-fns";
 import { useEventBySlug } from "@/hooks/useEventBySlug";
+import DOMPurify from "isomorphic-dompurify";
 
 // Re-export of internal types for mapping
 interface EventData {
@@ -252,7 +253,7 @@ export function EventPreview({ slug }: EventPreviewProps) {
                 <div className="prose  max-w-none text-neutral-600  inter whitespace-pre-line">
                   {event.description ? (
                     <div
-                      dangerouslySetInnerHTML={{ __html: event.description }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(event.description) }}
                     />
                   ) : (
                     <p>No description available.</p>

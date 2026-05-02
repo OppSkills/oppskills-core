@@ -91,12 +91,26 @@ export class PayoutDetailsService {
     return details;
   }
 
-  private maskPayoutDetails(details: any) {
+  private maskPayoutDetails(details: {
+    userId: string;
+    accountHolderName: string;
+    accountNumber: string;
+    ifsc: string;
+    bankName: string;
+    panNumber: string | null;
+    gstNumber: string | null;
+    upiId: string | null;
+    pinCode: string | null;
+    city: string | null;
+    state: string | null;
+    address1: string | null;
+    address2: string | null;
+    updatedAt: Date;
+  }) {
     return {
       userId: details.userId,
       accountHolderName: details.accountHolderName,
       accountNumberLast4: details.accountNumber.slice(-4),
-      accountNumber: details.accountNumber,
       ifsc: details.ifsc,
       bankName: details.bankName,
       panNumber: details.panNumber,

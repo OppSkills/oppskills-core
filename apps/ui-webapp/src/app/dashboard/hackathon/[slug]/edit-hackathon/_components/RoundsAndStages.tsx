@@ -34,6 +34,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FormData, Round } from "../page";
 import { Container } from "@/app/dashboard/_components/Container";
+import DOMPurify from "isomorphic-dompurify";
+
 import { Textarea } from "@/components/ui/textarea";
 
 interface RoundsAndStagesProps {
@@ -607,7 +609,7 @@ export default function RoundsAndStages({
                       {/* Safe render of HTML description for preview */}
                       <div
                         dangerouslySetInnerHTML={{
-                          __html: round.description,
+                          __html: DOMPurify.sanitize(round.description),
                         }}
                       />
                     </div>

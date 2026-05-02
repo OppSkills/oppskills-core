@@ -75,7 +75,7 @@ export const OpportunitiesTable: React.FC<OpportunitiesTableProps> = ({
         const opp = row.original;
         return (
           <div className="flex items-center gap-4 py-2">
-            <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-lg border border-neutral-100 bg-neutral-50">
+            <div className="relative h-12 w-20 overflow-hidden rounded-lg border border-neutral-100 bg-muted shrink-0">
               {opp.image ? (
                 <Image
                   src={opp.image}
@@ -84,8 +84,10 @@ export const OpportunitiesTable: React.FC<OpportunitiesTableProps> = ({
                   className="object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-neutral-300 font-bold">
-                  {opp.name.charAt(0)}
+                <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-slate-900 to-slate-800">
+                  <span className="text-white font-bold opacity-20 text-xl">
+                    {opp.name.charAt(0).toUpperCase()}
+                  </span>
                 </div>
               )}
             </div>
