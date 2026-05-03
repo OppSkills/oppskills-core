@@ -898,7 +898,7 @@ export class EventService {
     const isPricingFieldChanging =
       (dto.isFree !== undefined && dto.isFree !== event.isFree) ||
       (dto.entryFeeAmount !== undefined &&
-        String(dto.entryFeeAmount) !== String(event.entryFeeAmount));
+        Number(dto.entryFeeAmount) !== Number(event.entryFeeAmount));
 
     if (isPricingFieldChanging) {
       const existingParticipant = await prisma.eventParticipantEntity.findFirst({
