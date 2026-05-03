@@ -19,7 +19,7 @@ import {
 import { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
 import React, { useEffect, useMemo, useState } from "react";
 import { useQueryState } from "nuqs";
-import { cn } from "@/lib/utils";
+import { cn, normalizeUrl, isValidUrl } from "@/lib/utils";
 import { useParams } from "next/navigation";
 import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
 import { useAuth } from "@clerk/nextjs";
@@ -207,18 +207,6 @@ function requireToken(token: string | null): string {
   return token;
 }
 
-function isValidUrl(value: string): boolean {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) return false;
-  try {
-    // eslint-disable-next-line no-new
-    new URL(trimmed);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function toVisibilityValue(
   label: string
 ): "PUBLIC" | "PRIVATE" | "UNIVERSITY_ONLY" | undefined {
@@ -283,12 +271,25 @@ function toParticipantTypeValue(
 function toLocationDto(input: string): HackathonLocationDto | undefined {
   const trimmed = input.trim();
   if (trimmed.length === 0) return undefined;
-  if (isValidUrl(trimmed)) return { type: "VIRTUAL", virtualLink: trimmed };
+
+  if (trimmed.startsWith("OFFLINE:")) {
+    return { type: "PHYSICAL", address: trimmed.substring(8).trim() };
+  }
+  if (trimmed.startsWith("VIRTUAL:")) {
+    return { type: "VIRTUAL", virtualLink: trimmed.substring(8).trim() };
+  }
+
+  if (isValidUrl(trimmed)) {
+    return { type: "VIRTUAL", virtualLink: normalizeUrl(trimmed) };
+  }
   return { type: "PHYSICAL", address: trimmed };
 }
 
 function toModeValue(locationInput: string): HackathonModeValue {
-  return isValidUrl(locationInput.trim()) ? "ONLINE" : "OFFLINE";
+  const trimmed = locationInput.trim();
+  if (trimmed.startsWith("OFFLINE:")) return "OFFLINE";
+  if (trimmed.startsWith("VIRTUAL:")) return "ONLINE";
+  return isValidUrl(trimmed) ? "ONLINE" : "OFFLINE";
 }
 
 function combineDateAndTimeToIso(date: Date, timeHHmm: string): string {
@@ -893,7 +894,15 @@ export default function EditHackathonPage() {
             : undefined,
         festivalId: formData.festivalId,
         bannerImageUrl: isValidUrl(formData.eventThumbnail)
-          ? formData.eventThumbnail.trim()
+          ? (() => {
+              let url = formData.eventThumbnail.trim();
+              if (url.startsWith("//")) {
+                url = `https:${url}`;
+              } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+                url = `https://${url}`;
+              }
+              return url;
+            })()
           : undefined,
         mode: toModeValue(formData.eventLocation),
         visibility: toVisibilityValue(formData.eventFestVisibility),
@@ -1311,6 +1320,9 @@ export default function EditHackathonPage() {
     );
   }
 
+  const registrationCount = hackathon && typeof (hackathon as any).registrationCount === "number" ? (hackathon as any).registrationCount : 0;
+  const isRegistrationStarted = registrationCount > 0;
+
   return (
     <div className="w-full flex flex-col items-center p-2 sm:p-4 md:p-6 lg:p-10 gap-6 bg-background">
       {isCompletedOrCancelled && (
@@ -1323,6 +1335,20 @@ export default function EditHackathonPage() {
             <span className="text-xs text-amber-600">
               This hackathon is {hackathon?.status?.toString().toLowerCase()}. Content can no longer be
               edited.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {isRegistrationStarted && (
+        <div className="w-full max-w-4xl flex items-start gap-3 p-4 rounded-lg border border-blue-500/30 bg-blue-500/10 mb-4">
+          <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-blue-700">
+              Registration has started ({registrationCount} registered)
+            </span>
+            <span className="text-xs text-blue-600">
+              Certain fields cannot be edited once registration has started.
             </span>
           </div>
         </div>
@@ -1379,7 +1405,8 @@ export default function EditHackathonPage() {
           <BasicDetails
             formData={formData}
             setFormData={setFormData}
-            registrationFormLocked={isCompletedOrCancelled}
+            registrationFormLocked={isCompletedOrCancelled || isRegistrationStarted}
+            triggerSave={runSaveMutation}
           />
         )}
 

@@ -212,9 +212,15 @@ export default function Page() {
   function isValidUrl(value: string): boolean {
     const trimmed = value.trim();
     if (trimmed.length === 0) return false;
+    let url = trimmed;
+    if (url.startsWith("//")) {
+      url = `https:${url}`;
+    } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+      url = `https://${url}`;
+    }
     try {
       // eslint-disable-next-line no-new
-      new URL(trimmed);
+      new URL(url);
       return true;
     } catch {
       return false;
@@ -349,7 +355,13 @@ export default function Page() {
     if (trimmed.length === 0) return undefined;
 
     if (isValidUrl(trimmed)) {
-      return { type: "VIRTUAL", virtualLink: trimmed };
+      let url = trimmed;
+      if (url.startsWith("//")) {
+        url = `https:${url}`;
+      } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+        url = `https://${url}`;
+      }
+      return { type: "VIRTUAL", virtualLink: url };
     }
     return { type: "PHYSICAL", address: trimmed };
   }
@@ -1063,7 +1075,15 @@ export default function Page() {
                         : undefined,
                     festivalId: selectedFestivalId,
                     bannerImageUrl: isValidUrl(formData.eventThumbnail)
-                      ? formData.eventThumbnail.trim()
+                      ? (() => {
+                          let url = formData.eventThumbnail.trim();
+                          if (url.startsWith("//")) {
+                            url = `https:${url}`;
+                          } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+                            url = `https://${url}`;
+                          }
+                          return url;
+                        })()
                       : undefined,
                     startDate: toIsoDateOnly(formData.eventStartDate),
                     endDate: toIsoDateOnly(formData.eventEndDate),

@@ -4,7 +4,10 @@ import { createElement } from 'react';
 import { render } from '@react-email/components';
 import { EmailService } from './email.service';
 import { EMAIL_EVENTS } from './email.events';
-import { EventNotificationEmail, HackathonNotificationEmail } from '@oppskills/emails';
+import {
+  EventNotificationEmail,
+  HackathonNotificationEmail,
+} from '@oppskills/emails';
 import type { AdminWelcomeEmailProps } from '@oppskills/emails';
 import type {
   UserCreatedEventPayload,
@@ -52,7 +55,7 @@ export class EmailListener {
     private readonly emailService: EmailService,
     @Inject(forwardRef(() => EventPassService))
     private readonly eventPassService: EventPassService,
-  ) { }
+  ) {}
 
   @OnEvent(EMAIL_EVENTS.USER_CREATED)
   async handleUserCreated(payload: UserCreatedEventPayload): Promise<void> {
@@ -333,14 +336,15 @@ export class EmailListener {
 
     try {
       if (eventPass.token) {
-        const frontendUrl = (process.env.FRONTEND_URL || 'https://oppskills.com').replace(
-          /\/$/,
-          '',
-        );
-        const styledPngUrl = `${frontendUrl}/api/qr/styled-png?${new URLSearchParams({
-          token: eventPass.token,
-          size: '1024',
-        })}`;
+        const frontendUrl = (
+          process.env.FRONTEND_URL || 'https://oppskills.com'
+        ).replace(/\/$/, '');
+        const styledPngUrl = `${frontendUrl}/api/qr/styled-png?${new URLSearchParams(
+          {
+            token: eventPass.token,
+            size: '1024',
+          },
+        )}`;
         const qrResp = await fetch(styledPngUrl);
         if (qrResp.ok) {
           const qrBuf = Buffer.from(await qrResp.arrayBuffer());
@@ -349,7 +353,9 @@ export class EmailListener {
             content: qrBuf.toString('base64'),
           });
         } else {
-          this.logger.warn(`Styled pass QR fetch failed: HTTP ${qrResp.status}`);
+          this.logger.warn(
+            `Styled pass QR fetch failed: HTTP ${qrResp.status}`,
+          );
         }
       }
     } catch (err) {
@@ -435,7 +441,7 @@ export class EmailListener {
             eventSlug: event.slug,
             htmlBody,
             baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
-          })
+          }),
         );
 
         emailBatch.push({
@@ -495,17 +501,18 @@ export class EmailListener {
     }
 
     // Fetch all unique users registered for this hackathon
-    const participants = await prisma.hackathonRegistrationSubmissionEntity.findMany({
-      where: { hackathonId },
-      include: {
-        user: {
-          select: {
-            email: true,
-            firstName: true,
+    const participants =
+      await prisma.hackathonRegistrationSubmissionEntity.findMany({
+        where: { hackathonId },
+        include: {
+          user: {
+            select: {
+              email: true,
+              firstName: true,
+            },
           },
         },
-      },
-    });
+      });
 
     const BATCH_SIZE = 100;
     let sentCount = 0;

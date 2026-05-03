@@ -27,14 +27,13 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import dynamic from "next/dynamic";
 import React, { useState, useMemo } from "react";
-import { cn } from "@/lib/utils";
+import { cn, isValidUrl } from "@/lib/utils";
 import { FormData } from "../page";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
@@ -54,17 +53,23 @@ interface BasicDetailsProps {
   setFormData: (data: React.SetStateAction<FormData>) => void;
   /** When true, registration questions UI is read-only (e.g. completed/cancelled). */
   registrationFormLocked?: boolean;
+  triggerSave?: () => void;
 }
 
 export default function BasicDetails({
   formData,
   setFormData,
   registrationFormLocked = false,
+  triggerSave,
 }: BasicDetailsProps) {
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const { getToken } = useAuth();
   const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
   const bannerInputId = useMemo(() => `edit-event-banner-upload-${crypto.randomUUID()}`, []);
+
+  const [isLocationOpen, setIsLocationOpen] = useState(false);
+  const [tempLocationMode, setTempLocationMode] = useState<"OFFLINE" | "VIRTUAL">("OFFLINE");
+  const [tempLocationValue, setTempLocationValue] = useState("");
 
   async function handleBannerSelected(file: File | null): Promise<void> {
     if (!file) return;
@@ -102,8 +107,8 @@ export default function BasicDetails({
         eventThumbnail: presign.publicUrl.startsWith("http")
           ? presign.publicUrl
           : presign.publicUrl.startsWith("//")
-          ? `https:${presign.publicUrl}`
-          : `https://${presign.publicUrl}`,
+            ? `https:${presign.publicUrl}`
+            : `https://${presign.publicUrl}`,
       }));
 
       toast.success("Banner uploaded.");
@@ -286,41 +291,96 @@ export default function BasicDetails({
         </div>
 
         {/* Location */}
-        <Dialog>
+        <Dialog open={isLocationOpen} onOpenChange={setIsLocationOpen}>
           <DialogTrigger asChild>
-            <div className="h-full">
+            <div className="h-full cursor-pointer" onClick={() => {
+              const loc = formData.eventLocation || "";
+              const isVirtual = loc.startsWith("VIRTUAL:") || (!loc.startsWith("OFFLINE:") && isValidUrl(loc));
+              setTempLocationMode(isVirtual ? "VIRTUAL" : "OFFLINE");
+              setTempLocationValue(
+                loc.startsWith("VIRTUAL:") ? loc.substring(8) : loc.startsWith("OFFLINE:") ? loc.substring(8) : loc
+              );
+              setIsLocationOpen(true);
+            }}>
               <InputBlock
                 icon={<MapPoint className="w-6 h-6" />}
-                label={formData.eventLocation || "Add Event Location"}
+                label={
+                  formData.eventLocation
+                    ? formData.eventLocation.startsWith("OFFLINE:")
+                      ? formData.eventLocation.substring(8)
+                      : formData.eventLocation.startsWith("VIRTUAL:")
+                        ? formData.eventLocation.substring(8)
+                        : formData.eventLocation
+                    : "Add Event Location"
+                }
                 subLabel="Offline location or virtual link"
               />
             </div>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md bg-white border border-border rounded-xl p-6 shadow-lg animate-in fade-in zoom-in duration-200">
             <DialogHeader>
-              <DialogTitle>Event Location</DialogTitle>
-              <DialogDescription>
-                Enter the location where the event will take place.
-              </DialogDescription>
+              <DialogTitle className="text-xl font-bold text-foreground">Update Location</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <label htmlFor="location" className="text-sm font-medium">
-                  Location
+            <div className="flex flex-col gap-5 py-2">
+              <div className="flex bg-muted p-1 rounded-lg gap-1 border border-border/40">
+                <button
+                  type="button"
+                  onClick={() => setTempLocationMode("OFFLINE")}
+                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${tempLocationMode === "OFFLINE"
+                    ? "bg-white text-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-white/40"
+                    }`}
+                >
+                  Offline
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTempLocationMode("VIRTUAL")}
+                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${tempLocationMode === "VIRTUAL"
+                    ? "bg-white text-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-white/40"
+                    }`}
+                >
+                  Virtual
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-foreground">
+                  {tempLocationMode === "VIRTUAL" ? "Virtual Meeting Link" : "Offline Venue Address"}
                 </label>
                 <input
-                  id="location"
-                  value={formData.eventLocation}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      eventLocation: e.target.value,
-                    })
-                  }
-                  placeholder="e.g. San Francisco, CA"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  type="text"
+                  value={tempLocationValue}
+                  onChange={(e) => setTempLocationValue(e.target.value)}
+                  className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder={tempLocationMode === "VIRTUAL" ? "e.g. https://zoom.us/j/..." : "e.g. Science City Auditorium, NY"}
                 />
               </div>
+
+              <Button
+                type="button"
+                onClick={() => {
+                  const val = tempLocationValue.trim();
+                  if (tempLocationMode === "VIRTUAL") {
+                    if (val.length === 0) {
+                      toast.error("Virtual link cannot be empty.");
+                      return;
+                    }
+                    if (!isValidUrl(val)) {
+                      toast.error("Please enter a valid URL for the virtual link.");
+                      return;
+                    }
+                  }
+                  const prefix = tempLocationMode === "VIRTUAL" ? "VIRTUAL:" : "OFFLINE:";
+                  setFormData(prev => ({ ...prev, eventLocation: prefix + val }));
+                  setIsLocationOpen(false);
+                  toast.success("Location updated successfully.");
+                }}
+                className="w-full h-11 font-bold rounded-lg mt-2 transition-all bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+              >
+                Save Changes
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

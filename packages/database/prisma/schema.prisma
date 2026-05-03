@@ -60,7 +60,7 @@ model UserEntity {
   hackathonRegistrationSubmissions HackathonRegistrationSubmissionEntity[] @relation("UserHackathonSubmissions")
   hackathonRolesCreated            HackathonUserRoleEntity[]               @relation("HackathonRoleCreator")
   hackathonRoles                   HackathonUserRoleEntity[]               @relation("UserHackathonRoles")
-  payoutDetails                    OrganizerPayoutDetailsEntity?           @relation("UserPayoutDetails")
+  payoutDetails                    OrganizerPayoutDetailsEntity[]          @relation("UserPayoutDetails")
   paymentRegistrationEscrows       PaymentRegistrationEscrowEntity[]
   razorpayRouteAccount             RazorpayRouteAccountEntity?             @relation("UserRazorpayRouteAccount")
   approvedReferrals                ReferralEntity[]                        @relation("ReferralApprover")
@@ -159,6 +159,7 @@ model HackathonEntity {
   registrationForm         RegistrationFormEntity?
   rounds                   RoundEntity[]
   teams                    TeamEntity[]
+  payoutDetails            OrganizerPayoutDetailsEntity?
 
   @@index([festivalId])
   @@map("hackathon")
@@ -265,6 +266,7 @@ model EventEntity {
   registrationForm          EventRegistrationFormEntity?
   registrationSubmissions   EventRegistrationSubmissionEntity[]
   userRoles                 EventUserRoleEntity[]
+  payoutDetails             OrganizerPayoutDetailsEntity?
 
   @@index([festivalId])
   @@index([ownerId])
@@ -935,26 +937,33 @@ model RazorpayWebhookEventEntity {
 
 /// Organizer's bank account details for manual payouts.
 model OrganizerPayoutDetailsEntity {
-  id                String     @id @default(cuid())
-  userId            String     @unique @map("user_id")
-  accountHolderName String     @map("account_holder_name")
-  accountNumber     String     @map("account_number")
+  id                String           @id @default(cuid())
+  userId            String           @map("user_id")
+  eventId           String?          @unique @map("event_id")
+  hackathonId       String?          @unique @map("hackathon_id")
+  accountHolderName String           @map("account_holder_name")
+  accountNumber     String           @map("account_number")
   ifsc              String
-  bankName          String     @map("bank_name")
-  panNumber         String?    @map("pan_number")
-  gstNumber         String?    @map("gst_number")
-  upiId             String     @map("upi_id")
-  pinCode           String     @map("pin_code")
-  city              String     @map("city")
-  state             String     @map("state")
-  address1          String     @map("address1")
-  address2          String     @map("address2")
-  createdAt         DateTime   @default(now()) @map("created_at")
-  updatedAt         DateTime   @updatedAt @map("updated_at")
-  phone             String     @map("phone")
-  email             String     @map("email")
-  user              UserEntity @relation("UserPayoutDetails", fields: [userId], references: [id], onDelete: Cascade)
+  bankName          String           @map("bank_name")
+  panNumber         String?          @map("pan_number")
+  gstNumber         String?          @map("gst_number")
+  upiId             String           @map("upi_id")
+  pinCode           String           @map("pin_code")
+  city              String           @map("city")
+  state             String           @map("state")
+  address1          String           @map("address1")
+  address2          String           @map("address2")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  phone             String           @map("phone")
+  email             String           @map("email")
+  user              UserEntity       @relation("UserPayoutDetails", fields: [userId], references: [id], onDelete: Cascade)
+  event             EventEntity?     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  hackathon         HackathonEntity? @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([eventId])
+  @@index([hackathonId])
   @@map("organizer_payout_details")
   @@schema("oppskills")
 }

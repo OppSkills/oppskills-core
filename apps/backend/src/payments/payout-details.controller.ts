@@ -1,4 +1,12 @@
-import { Controller, Get, Put, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Body,
+  UseGuards,
+  Req,
+  Query,
+} from '@nestjs/common';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { PayoutDetailsService } from './payout-details.service';
 import { UpsertPayoutDetailsDto } from './dto/payout-details.dto';
@@ -10,9 +18,17 @@ export class PayoutDetailsController {
   constructor(private readonly payoutDetailsService: PayoutDetailsService) {}
 
   @Get()
-  async getPayoutDetails(@Req() req: Request) {
+  async getPayoutDetails(
+    @Req() req: Request,
+    @Query('eventId') eventId?: string,
+    @Query('hackathonId') hackathonId?: string,
+  ) {
     const userId = req.user!.id;
-    return this.payoutDetailsService.getPayoutDetails(userId);
+    return this.payoutDetailsService.getPayoutDetails(
+      userId,
+      eventId,
+      hackathonId,
+    );
   }
 
   @Put()

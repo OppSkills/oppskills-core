@@ -22,11 +22,8 @@ export class AdminPayoutsService {
         ...(filters?.organizerId && { ownerId: filters.organizerId }),
       },
       include: {
-        owner: {
-          include: {
-            payoutDetails: true,
-          },
-        },
+        owner: true,
+        payoutDetails: true,
         payments: {
           where: {
             paymentStatus: 'CAPTURED',
@@ -69,13 +66,12 @@ export class AdminPayoutsService {
           netEarnings: netEarnings.toString(),
           paidOut: paidOut.toString(),
           pendingPayout: pendingPayout.toString(),
-          payoutDetails: hackathon.owner.payoutDetails
+          payoutDetails: hackathon.payoutDetails
             ? {
-                accountHolderName:
-                  hackathon.owner.payoutDetails.accountHolderName,
-                accountNumber: hackathon.owner.payoutDetails.accountNumber,
-                ifsc: hackathon.owner.payoutDetails.ifsc,
-                upiId: hackathon.owner.payoutDetails.upiId,
+                accountHolderName: hackathon.payoutDetails.accountHolderName,
+                accountNumber: hackathon.payoutDetails.accountNumber,
+                ifsc: hackathon.payoutDetails.ifsc,
+                upiId: hackathon.payoutDetails.upiId,
               }
             : null,
           existingPayouts: hackathon.payouts,

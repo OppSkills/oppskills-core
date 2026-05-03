@@ -6,7 +6,7 @@ import {
   ParseArrayPipe,
   Query,
   ParseBoolPipe,
-  ParseIntPipe
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -94,7 +94,8 @@ export class HackathonPublicController {
   @ApiQuery({
     name: 'sort',
     required: false,
-    description: 'Sort by (most_relevant, recently_added, price_amount, submission_date)',
+    description:
+      'Sort by (most_relevant, recently_added, price_amount, submission_date)',
     type: String,
   })
   @ApiResponse({

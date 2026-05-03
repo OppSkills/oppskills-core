@@ -44,7 +44,7 @@ export class EventService {
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
     private readonly referralService: ReferralService,
-  ) { }
+  ) {}
 
   /**
    * Create an event as a user.
@@ -372,7 +372,12 @@ export class EventService {
           },
           // Prize breakdown is public
           prizeBreakdown: {
-            select: { id: true, position: true, amount: true, description: true },
+            select: {
+              id: true,
+              position: true,
+              amount: true,
+              description: true,
+            },
             orderBy: { amount: 'desc' },
           },
         },
@@ -585,7 +590,10 @@ export class EventService {
    * - Owner can see their events
    * - Managers can see events they manage
    */
-  async listMyEvents(userId: string, params: { page?: number; take?: number } = {}) {
+  async listMyEvents(
+    userId: string,
+    params: { page?: number; take?: number } = {},
+  ) {
     const safeUserId = userId.trim();
     if (safeUserId.length === 0) {
       throw new BadRequestException('userId is required.');
@@ -629,6 +637,7 @@ export class EventService {
           registrationDeadline: true,
           isRegistrationPaused: true,
           ownerId: true,
+          bannerImageUrl: true,
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -637,7 +646,10 @@ export class EventService {
 
     const items = events.map((event) => ({
       ...event,
-      role: event.ownerId === safeUserId ? ('OWNER' as const) : ('MANAGER' as const),
+      role:
+        event.ownerId === safeUserId
+          ? ('OWNER' as const)
+          : ('MANAGER' as const),
     }));
 
     const totalPages = Math.ceil(total / take);
@@ -877,6 +889,8 @@ export class EventService {
         bannerImageUrl: true,
         startDate: true,
         endDate: true,
+        isFree: true,
+        entryFeeAmount: true,
       },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -891,6 +905,25 @@ export class EventService {
     }
 
     this.assertEventLifecycleAllowsContentEdit(event.status as LifecycleStatus);
+
+    const isPricingFieldChanging =
+      (dto.isFree !== undefined && dto.isFree !== event.isFree) ||
+      (dto.entryFeeAmount !== undefined &&
+        Number(dto.entryFeeAmount) !== Number(event.entryFeeAmount));
+
+    if (isPricingFieldChanging) {
+      const existingParticipant = await prisma.eventParticipantEntity.findFirst(
+        {
+          where: { eventId: id },
+          select: { id: true },
+        },
+      );
+      if (existingParticipant) {
+        throw new BadRequestException(
+          'Cannot change pricing fields (isFree, entryFeeAmount) after registration has started.',
+        );
+      }
+    }
 
     // Parse dates if provided
     const startDate = dto.startDate
@@ -1517,7 +1550,7 @@ export class EventService {
             // Use field options, or default gender options for Gender field
             const effectiveOptions =
               field.label.toLowerCase() === 'gender' &&
-                (!field.options || field.options.length === 0)
+              (!field.options || field.options.length === 0)
                 ? DEFAULT_GENDER_OPTIONS
                 : field.options;
 
@@ -2051,8 +2084,7 @@ export class EventService {
         },
       });
     const hasRegistrationAnswers =
-      !!registrationSubmission &&
-      registrationSubmission._count.answers > 0;
+      !!registrationSubmission && registrationSubmission._count.answers > 0;
 
     // Check if payment exists and is captured (for paid events)
     let paymentCompleted = false;
@@ -2214,14 +2246,14 @@ export class EventService {
       existingSubmission && existingSubmission._count.answers === 0
         ? existingSubmission.id
         : (
-          await prisma.eventRegistrationSubmissionEntity.create({
-            data: {
-              eventId,
-              userId,
-              participantId: participant.id,
-            },
-          })
-        ).id;
+            await prisma.eventRegistrationSubmissionEntity.create({
+              data: {
+                eventId,
+                userId,
+                participantId: participant.id,
+              },
+            })
+          ).id;
 
     if (mappedAnswers.length > 0) {
       const answerData = mappedAnswers.map((a) => ({

@@ -29,7 +29,7 @@ export class EventPaymentService {
     private readonly eventEmitter: EventEmitter2,
     private readonly paymentEscrowService: PaymentRegistrationEscrowService,
     private readonly referralService: ReferralService,
-  ) { }
+  ) {}
 
   /**
    * Create a payment order for event registration.
@@ -233,9 +233,7 @@ export class EventPaymentService {
           orderStatus: EventPaymentOrderStatus.PAID,
           paymentStatus: EventPaymentStatus.CAPTURED,
           discountCodeId,
-          discountAmount: discountAmount.greaterThan(0)
-            ? discountAmount
-            : null,
+          discountAmount: discountAmount.greaterThan(0) ? discountAmount : null,
           capturedAt: new Date(),
         },
       });

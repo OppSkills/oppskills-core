@@ -74,8 +74,8 @@ export default function Page() {
   const { data: hackathonData } = useHackathonBySlug(slug ?? "");
   const hackathon = hackathonData as HackathonData | undefined;
 
-  const { data: payoutDetails, isLoading: payoutLoading } = usePayoutDetails();
-  const upsertPayoutDetails = useUpsertPayoutDetails();
+  const { data: payoutDetails, isLoading: payoutLoading } = usePayoutDetails(undefined, hackathon?.id);
+  const upsertPayoutDetails = useUpsertPayoutDetails(undefined, hackathon?.id);
   const { data: earnings } = useHackathonEarnings(slug ?? "");
 
   const currentPricing = useMemo(
@@ -127,6 +127,7 @@ export default function Page() {
         isFree: pricing.isFree,
         chargeMode: pricing.isFree ? undefined : pricing.chargeMode,
         feeBearer: pricing.isFree ? undefined : pricing.feeBearer,
+        entryFeeAmount: pricing.isFree ? "0" : pricing.entryFeeAmount,
       });
     },
   });
@@ -175,7 +176,6 @@ export default function Page() {
 
     const snapshot = serializePricing(currentPricing);
     if (snapshot === lastSavedSnapshotRef.current) {
-      if (autoSaveStatus !== "saving") setAutoSaveStatus("saved");
       return;
     }
 
@@ -195,13 +195,7 @@ export default function Page() {
         debounceTimerRef.current = null;
       }
     };
-  }, [
-    currentPricing,
-    hasHydrated,
-    hackathonId,
-    autoSaveStatus,
-    runSaveMutation,
-  ]);
+  }, [currentPricing, hasHydrated, hackathonId]);
 
   if (!slug) {
     return (
@@ -213,7 +207,7 @@ export default function Page() {
 
   const handlePayoutDetailsSave = async (data: PayoutDetailsInput) => {
     try {
-      await upsertPayoutDetails.mutateAsync(data);
+      await upsertPayoutDetails.mutateAsync({ ...data, hackathonId: hackathon?.id });
       toast.success("Payout details saved successfully");
       setIsPayoutFormOpen(false);
     } catch (error) {

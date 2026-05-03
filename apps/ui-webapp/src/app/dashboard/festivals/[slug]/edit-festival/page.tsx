@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Pen, CheckCircle, FileText } from "lucide-react";
+import { Loader2, Pen, CheckCircle, FileText, AlertTriangle } from "lucide-react";
 import BasicDetails from "./_components/BasicDetails";
 import FestivalPreview from "./_components/FestivalPreview";
 import AdditionalInfo from "./_components/AdditionalInfo";
@@ -315,6 +315,25 @@ export default function EditFestivalPage() {
                         <p className="text-xs text-muted-foreground">{formData.name}</p>
                     </div>
                 </div>
+
+                {(() => {
+                    const registrationCount = festivalRaw && typeof (festivalRaw as any).registrationCount === "number" ? (festivalRaw as any).registrationCount : 0;
+                    const isRegistrationStarted = registrationCount > 0;
+                    if (!isRegistrationStarted) return null;
+                    return (
+                        <div className="w-full max-w-7xl mx-auto flex items-start gap-3 p-4 rounded-lg border border-blue-500/30 bg-blue-500/10 mt-4 px-6">
+                            <AlertTriangle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex flex-col gap-1">
+                                <span className="text-sm font-medium text-blue-700">
+                                    Registration has started ({registrationCount} registered)
+                                </span>
+                                <span className="text-xs text-blue-600">
+                                    Certain fields cannot be edited once registration has started.
+                                </span>
+                            </div>
+                        </div>
+                    );
+                })()}
 
                 {/* Sticky Tabs Bar */}
                 <div className="sticky top-[70px] z-10 w-full bg-neutral-100">

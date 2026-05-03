@@ -268,8 +268,7 @@ export class TeamService {
       });
 
       if (providedAnswers.length === 0) {
-        const formFieldCount =
-          hackathon.registrationForm?.fields?.length ?? 0;
+        const formFieldCount = hackathon.registrationForm?.fields?.length ?? 0;
         if (formFieldCount > 0) {
           this.logger.warn(
             `createTeam: registration submission for hackathon ${dto.hackathonId} / user ${leaderId} has 0 answers but form has ${formFieldCount} field(s)`,
@@ -613,8 +612,7 @@ export class TeamService {
       });
 
       if (providedAnswers.length === 0) {
-        const formFieldCount =
-          hackathon.registrationForm?.fields?.length ?? 0;
+        const formFieldCount = hackathon.registrationForm?.fields?.length ?? 0;
         if (formFieldCount > 0) {
           this.logger.warn(
             `joinTeam: registration submission for hackathon ${team.hackathonId} / user ${userId} has 0 answers but form has ${formFieldCount} field(s)`,

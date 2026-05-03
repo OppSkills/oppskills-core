@@ -62,7 +62,9 @@ describe('IncompleteRegistrationReminderService.run', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
-    (prisma.incompleteRegistrationReminderLogEntity.upsert as jest.Mock).mockClear();
+    (
+      prisma.incompleteRegistrationReminderLogEntity.upsert as jest.Mock
+    ).mockClear();
     mockSend.mockResolvedValue({ success: true });
   });
 
@@ -93,9 +95,9 @@ describe('IncompleteRegistrationReminderService.run', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
 
-    const service = new IncompleteRegistrationReminderService(
-      { send: mockSend } as unknown as EmailService,
-    );
+    const service = new IncompleteRegistrationReminderService({
+      send: mockSend,
+    } as unknown as EmailService);
 
     const result = await service.run();
 
@@ -112,7 +114,9 @@ describe('IncompleteRegistrationReminderService.run', () => {
         }),
       }),
     );
-    expect(prisma.incompleteRegistrationReminderLogEntity.upsert).toHaveBeenCalledWith(
+    expect(
+      prisma.incompleteRegistrationReminderLogEntity.upsert,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { hackathonPaymentId: 'pay-h1' },
       }),
@@ -144,13 +148,15 @@ describe('IncompleteRegistrationReminderService.run', () => {
 
     mockSend.mockResolvedValue({ success: false, error: 'bounce' });
 
-    const service = new IncompleteRegistrationReminderService(
-      { send: mockSend } as unknown as EmailService,
-    );
+    const service = new IncompleteRegistrationReminderService({
+      send: mockSend,
+    } as unknown as EmailService);
 
     await service.run();
 
-    expect(prisma.incompleteRegistrationReminderLogEntity.upsert).not.toHaveBeenCalled();
+    expect(
+      prisma.incompleteRegistrationReminderLogEntity.upsert,
+    ).not.toHaveBeenCalled();
   });
 });
 

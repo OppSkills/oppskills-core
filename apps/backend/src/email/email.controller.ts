@@ -131,7 +131,9 @@ export class EmailController {
     const { eventId, hackathonId, htmlBody } = dto;
 
     if (!eventId && !hackathonId) {
-      throw new BadRequestException('Either eventId or hackathonId must be provided.');
+      throw new BadRequestException(
+        'Either eventId or hackathonId must be provided.',
+      );
     }
 
     if (eventId) {
@@ -162,7 +164,9 @@ export class EmailController {
       }
 
       if (hackathon.ownerId !== senderId) {
-        throw new ForbiddenException('Only the owner can send bulk emails for this hackathon.');
+        throw new ForbiddenException(
+          'Only the owner can send bulk emails for this hackathon.',
+        );
       }
 
       const payload: HackathonBulkEmailPayload = {

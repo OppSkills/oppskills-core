@@ -33,7 +33,7 @@ export class HackathonCheckoutService {
     private readonly registrationSubmitService: RegistrationSubmitService,
     private readonly paymentEscrowService: PaymentRegistrationEscrowService,
     private readonly referralService: ReferralService,
-  ) { }
+  ) {}
 
   async createPaymentOrder(params: {
     hackathonSlug: string;
@@ -158,9 +158,9 @@ export class HackathonCheckoutService {
         if (existingTeamPayment) {
           if (
             existingTeamPayment.paymentStatus ===
-            HackathonPaymentStatus.CAPTURED ||
+              HackathonPaymentStatus.CAPTURED ||
             existingTeamPayment.paymentStatus ===
-            HackathonPaymentStatus.AUTHORIZED
+              HackathonPaymentStatus.AUTHORIZED
           ) {
             return {
               paymentId: existingTeamPayment.id,
@@ -354,9 +354,7 @@ export class HackathonCheckoutService {
           orderStatus: HackathonPaymentOrderStatus.PAID,
           paymentStatus: HackathonPaymentStatus.CAPTURED,
           discountCodeId,
-          discountAmount: discountAmount.greaterThan(0)
-            ? discountAmount
-            : null,
+          discountAmount: discountAmount.greaterThan(0) ? discountAmount : null,
         },
       });
 
@@ -530,11 +528,10 @@ export class HackathonCheckoutService {
 
     const chargeMode = hackathon.chargeMode || HackathonChargeMode.PER_TEAM;
 
-    const status =
-      await this.registrationSubmitService.getRegistrationStatus(
-        hackathonSlug,
-        userId,
-      );
+    const status = await this.registrationSubmitService.getRegistrationStatus(
+      hackathonSlug,
+      userId,
+    );
 
     if (chargeMode === HackathonChargeMode.PER_USER) {
       const hasTeam =
@@ -554,9 +551,7 @@ export class HackathonCheckoutService {
         const joinTeamId = notes.joinTeamId?.trim();
         const invitationRaw = notes.invitationCode?.trim();
         const teamName = notes.teamName?.trim();
-        const maxSize = notes.maxSize
-          ? parseInt(notes.maxSize, 10)
-          : undefined;
+        const maxSize = notes.maxSize ? parseInt(notes.maxSize, 10) : undefined;
 
         if (joinTeamId) {
           try {
@@ -620,7 +615,9 @@ export class HackathonCheckoutService {
         err instanceof BadRequestException &&
         err.message.includes('already submitted')
       ) {
-        await this.paymentEscrowService.deleteByRazorpayOrderId(razorpayOrderId);
+        await this.paymentEscrowService.deleteByRazorpayOrderId(
+          razorpayOrderId,
+        );
         return;
       }
       throw err;
@@ -657,15 +654,14 @@ export class HackathonCheckoutService {
         const order = await this.razorpayService.fetchOrder(razorpayOrderId);
         const code = order?.notes?.referralCode;
         if (code) {
-          resolvedReferralId = await this.referralService.resolveForRegistration(
-            {
+          resolvedReferralId =
+            await this.referralService.resolveForRegistration({
               code,
               userId: payment.payerUserId,
               expectedEntityType: ReferralEntityTypeDto.HACKATHON,
               expectedEntityId: payment.hackathon.id,
               parentFestivalId: payment.hackathon.festivalId,
-            },
-          );
+            });
         }
       } catch {
         // best-effort only

@@ -90,7 +90,9 @@ export const INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS = 6;
 
 @Injectable()
 export class IncompleteRegistrationReminderService {
-  private readonly logger = new Logger(IncompleteRegistrationReminderService.name);
+  private readonly logger = new Logger(
+    IncompleteRegistrationReminderService.name,
+  );
 
   /** ISO timestamp of the last cron `run()` completion (success or failure). */
   lastRunFinishedAt: string | null = null;
@@ -134,8 +136,7 @@ export class IncompleteRegistrationReminderService {
 
   private async runInternal(): Promise<IncompleteRegistrationReminderRunResult> {
     const cutoff = new Date(
-      Date.now() -
-        INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS * 60 * 60 * 1000,
+      Date.now() - INCOMPLETE_REGISTRATION_REMINDER_MIN_HOURS * 60 * 60 * 1000,
     );
 
     const now = new Date();

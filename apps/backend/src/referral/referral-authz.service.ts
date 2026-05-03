@@ -30,7 +30,8 @@ export class ReferralAuthzService {
         },
       });
       if (!hackathon) throw new NotFoundException('Hackathon not found');
-      if (hackathon.ownerId === userId || hackathon.userRoles.length > 0) return;
+      if (hackathon.ownerId === userId || hackathon.userRoles.length > 0)
+        return;
       if (await this.isAdmin(userId)) return;
       throw new ForbiddenException('You are not allowed to manage referrals.');
     }

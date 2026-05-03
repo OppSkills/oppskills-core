@@ -18,7 +18,7 @@ import {
 import { format } from "date-fns";
 import InputBlock from "@/components/ui/derived/InputBlock";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
-import { cn } from "@/lib/utils";
+import { cn, normalizeUrl, isValidUrl } from "@/lib/utils";
 import RegistrationQuestionsModal, { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
 import BasicDetails from "./_components/BasicDetails";
 import RegistrationSettings from "./_components/RegistrationSettings";
@@ -184,34 +184,20 @@ function requireToken(token: string | null): string {
   return token;
 }
 
-function normalizeBannerUrl(url: string | undefined): string {
-  if (!url) return "";
-  const trimmed = url.trim();
-  if (trimmed.length === 0) return "";
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    return trimmed;
-  }
-  if (trimmed.startsWith("//")) {
-    return `https:${trimmed}`;
-  }
-  return `https://${trimmed}`;
-}
-
-function isValidUrl(value: string): boolean {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) return false;
-  try {
-    new URL(trimmed);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function toLocationDto(input: string): EventLocationDto | undefined {
   const trimmed = input.trim();
   if (trimmed.length === 0) return undefined;
-  if (isValidUrl(trimmed)) return { type: "VIRTUAL", virtualLink: trimmed };
+
+  if (trimmed.startsWith("OFFLINE:")) {
+    return { type: "PHYSICAL", address: trimmed.substring(8).trim() };
+  }
+  if (trimmed.startsWith("VIRTUAL:")) {
+    return { type: "VIRTUAL", virtualLink: trimmed.substring(8).trim() };
+  }
+
+  if (isValidUrl(trimmed)) {
+    return { type: "VIRTUAL", virtualLink: normalizeUrl(trimmed) };
+  }
   return { type: "PHYSICAL", address: trimmed };
 }
 
@@ -411,7 +397,7 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
     eventLocation: location,
     eventTimeFrom: startDate ? toTimeHHmm(startDate) : "09:00",
     eventDescription: getString(event, "description") ?? "",
-    eventThumbnail: normalizeBannerUrl(getString(event, "bannerImageUrl")),
+    eventThumbnail: normalizeUrl(getString(event, "bannerImageUrl")),
     eventRegisterBy: registrationDeadline,
     eventType,
     participantType: "Individual",
@@ -978,6 +964,9 @@ export default function EditEventPage() {
   const isCompletedOrCancelled =
     eventStatus === "COMPLETED" || eventStatus === "CANCELLED";
 
+  const registrationCount = eventRaw && typeof (eventRaw as any).registrationCount === "number" ? (eventRaw as any).registrationCount : 0;
+  const isRegistrationStarted = registrationCount > 0;
+
   return (
     <div className="w-full flex flex-col items-center p-2 sm:p-4 md:p-6 lg:p-10 gap-6 bg-background">
       {isCompletedOrCancelled && (
@@ -990,6 +979,20 @@ export default function EditEventPage() {
             <span className="text-xs text-amber-600">
               This event is {eventStatus.toLowerCase()}. Content can no longer be
               edited.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {isRegistrationStarted && (
+        <div className="w-full max-w-4xl flex items-start gap-3 p-4 rounded-lg border border-blue-500/30 bg-blue-500/10">
+          <AlertTriangle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-blue-700">
+              Registration has started ({registrationCount} registered)
+            </span>
+            <span className="text-xs text-blue-600">
+              Certain fields cannot be edited once registration has started.
             </span>
           </div>
         </div>
@@ -1046,7 +1049,8 @@ export default function EditEventPage() {
           <BasicDetails
             formData={formData}
             setFormData={setFormData}
-            registrationFormLocked={isCompletedOrCancelled}
+            registrationFormLocked={isCompletedOrCancelled || isRegistrationStarted}
+            triggerSave={runSaveMutation}
           />
         )}
 

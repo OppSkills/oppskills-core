@@ -21,8 +21,7 @@ export class IncompleteRegistrationReminderCron {
     try {
       await this.reminderService.run();
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : JSON.stringify(err);
+      const message = err instanceof Error ? err.message : JSON.stringify(err);
       this.logger.error(
         `Incomplete registration reminder run failed: ${message}`,
       );

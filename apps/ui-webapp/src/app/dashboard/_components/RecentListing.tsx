@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import NoDataPlaceholder from "./NoDataPlaceholder";
-import { cn } from "@/lib/utils";
+import { cn, normalizeUrl, isValidUrl } from "@/lib/utils";
 import {
   MotionContainer,
   MotionItem
@@ -33,8 +33,11 @@ export default function RecentListing({ data }: { data: RecentListingItem[] }) {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {data.map((item, index) => {
+           {data.map((item, index) => {
             const href = `/dashboard/${item.type.toLowerCase() === "event" ? "events" : "hackathon"}/${item.slug}`;
+
+            const thumbSrc = normalizeUrl(item.thumbnail);
+            const isValidThumbnail = isValidUrl(thumbSrc);
 
             return (
               <MotionItem key={index}>
@@ -44,9 +47,9 @@ export default function RecentListing({ data }: { data: RecentListingItem[] }) {
                 >
                   {/* Thumbnail */}
                   <div className="relative w-full sm:w-32 aspect-video sm:aspect-4/3 rounded-2xl overflow-hidden shrink-0 shadow-sm">
-                    {item.thumbnail ? (
+                    {isValidThumbnail && thumbSrc ? (
                       <Image
-                        src={item.thumbnail}
+                        src={thumbSrc}
                         alt={item.title}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
