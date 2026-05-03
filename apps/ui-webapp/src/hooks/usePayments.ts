@@ -193,20 +193,20 @@ export function useRequestRefund(hackathonSlug: string) {
   });
 }
 
-export function usePayoutDetails() {
+export function usePayoutDetails(eventId?: string, hackathonId?: string) {
   const { getToken } = useAuth();
 
   return useQuery({
-    queryKey: ["payout-details"],
+    queryKey: ["payout-details", eventId, hackathonId],
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
-      return getPayoutDetails(token);
+      return getPayoutDetails(token, eventId, hackathonId);
     },
   });
 }
 
-export function useUpsertPayoutDetails() {
+export function useUpsertPayoutDetails(eventId?: string, hackathonId?: string) {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
@@ -218,6 +218,7 @@ export function useUpsertPayoutDetails() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payout-details"] });
+      queryClient.invalidateQueries({ queryKey: ["payout-details", eventId, hackathonId] });
     },
   });
 }

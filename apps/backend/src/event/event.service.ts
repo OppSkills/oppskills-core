@@ -878,6 +878,8 @@ export class EventService {
         bannerImageUrl: true,
         startDate: true,
         endDate: true,
+        isFree: true,
+        entryFeeAmount: true,
       },
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -892,6 +894,23 @@ export class EventService {
     }
 
     this.assertEventLifecycleAllowsContentEdit(event.status as LifecycleStatus);
+
+    const isPricingFieldChanging =
+      (dto.isFree !== undefined && dto.isFree !== event.isFree) ||
+      (dto.entryFeeAmount !== undefined &&
+        String(dto.entryFeeAmount) !== String(event.entryFeeAmount));
+
+    if (isPricingFieldChanging) {
+      const existingParticipant = await prisma.eventParticipantEntity.findFirst({
+        where: { eventId: id },
+        select: { id: true },
+      });
+      if (existingParticipant) {
+        throw new BadRequestException(
+          'Cannot change pricing fields (isFree, entryFeeAmount) after registration has started.',
+        );
+      }
+    }
 
     // Parse dates if provided
     const startDate = dto.startDate

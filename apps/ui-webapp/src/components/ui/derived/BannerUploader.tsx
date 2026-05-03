@@ -19,7 +19,17 @@ export default function BannerUploader({
     className,
     emptyState,
 }: BannerUploaderProps) {
-    const isValid = typeof imageUrl === "string" && imageUrl.trim().length > 0 && (imageUrl.startsWith("http") || imageUrl.startsWith("/"));
+    let normalizedUrl = imageUrl;
+    if (normalizedUrl && typeof normalizedUrl === "string") {
+        normalizedUrl = normalizedUrl.trim();
+        if (normalizedUrl.startsWith("//")) {
+            normalizedUrl = `https:${normalizedUrl}`;
+        } else if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://") && !normalizedUrl.startsWith("/")) {
+            normalizedUrl = `https://${normalizedUrl}`;
+        }
+    }
+
+    const isValid = typeof normalizedUrl === "string" && normalizedUrl.length > 0 && (normalizedUrl.startsWith("http") || normalizedUrl.startsWith("/"));
 
     return (
         <div
@@ -30,7 +40,7 @@ export default function BannerUploader({
         >
             {isValid ? (
                 <img
-                    src={imageUrl!.trim()}
+                    src={normalizedUrl!}
                     alt="Banner"
                     className="w-full h-full object-cover"
                 />

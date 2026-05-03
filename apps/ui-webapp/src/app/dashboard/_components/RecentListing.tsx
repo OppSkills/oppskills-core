@@ -33,8 +33,26 @@ export default function RecentListing({ data }: { data: RecentListingItem[] }) {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {data.map((item, index) => {
+           {data.map((item, index) => {
             const href = `/dashboard/${item.type.toLowerCase() === "event" ? "events" : "hackathon"}/${item.slug}`;
+
+            let thumbSrc = item.thumbnail;
+            let isValidThumbnail = false;
+            if (thumbSrc && typeof thumbSrc === "string") {
+              thumbSrc = thumbSrc.trim();
+              if (thumbSrc.startsWith("//")) {
+                thumbSrc = `https:${thumbSrc}`;
+              } else if (!thumbSrc.startsWith("http://") && !thumbSrc.startsWith("https://") && !thumbSrc.startsWith("/")) {
+                thumbSrc = `https://${thumbSrc}`;
+              }
+              try {
+                if (thumbSrc.startsWith("/") || new URL(thumbSrc)) {
+                  isValidThumbnail = true;
+                }
+              } catch {
+                isValidThumbnail = false;
+              }
+            }
 
             return (
               <MotionItem key={index}>
@@ -44,9 +62,9 @@ export default function RecentListing({ data }: { data: RecentListingItem[] }) {
                 >
                   {/* Thumbnail */}
                   <div className="relative w-full sm:w-32 aspect-video sm:aspect-4/3 rounded-2xl overflow-hidden shrink-0 shadow-sm">
-                    {item.thumbnail ? (
+                    {isValidThumbnail && thumbSrc ? (
                       <Image
-                        src={item.thumbnail}
+                        src={thumbSrc}
                         alt={item.title}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-105"

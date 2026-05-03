@@ -167,6 +167,8 @@ export type PayoutDetailsApiResponse =
   | ({ exists: true } & PayoutDetails);
 
 export interface PayoutDetailsInput {
+  eventId?: string;
+  hackathonId?: string;
   accountHolderName: string;
   accountNumber: string;
   ifsc: string;
@@ -419,9 +421,16 @@ export async function getHackathonRegistrationStatus(
 
 export async function getPayoutDetails(
   token: string,
+  eventId?: string,
+  hackathonId?: string,
 ): Promise<PayoutDetails | null> {
+  const params: Record<string, string> = {};
+  if (eventId) params.eventId = eventId;
+  if (hackathonId) params.hackathonId = hackathonId;
+
   const res = await PaymentsAPI.get("/payout-details", {
     headers: buildAuthHeaders(token),
+    params,
   });
   const data = res.data as PayoutDetailsApiResponse;
   if (data && typeof data === "object" && "exists" in data && data.exists === false) {

@@ -8,6 +8,14 @@ import {
 } from 'class-validator';
 
 export class UpsertPayoutDetailsDto {
+  @IsOptional()
+  @IsString()
+  eventId?: string;
+
+  @IsOptional()
+  @IsString()
+  hackathonId?: string;
+
   @IsString()
   @IsNotEmpty()
   @Length(2, 100)

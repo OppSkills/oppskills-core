@@ -90,8 +90,8 @@ export default function Page() {
     enabled: !!slug,
   });
 
-  const { data: payoutDetails, isLoading: payoutLoading } = usePayoutDetails();
-  const upsertPayoutDetails = useUpsertPayoutDetails();
+  const { data: payoutDetails, isLoading: payoutLoading } = usePayoutDetails(eventData?.id);
+  const upsertPayoutDetails = useUpsertPayoutDetails(eventData?.id);
   const { data: earnings } = useEventEarnings(slug ?? "");
   const updatePricing = useUpdateEventPricing(slug ?? "");
 
@@ -182,7 +182,6 @@ export default function Page() {
 
     const snapshot = serializePricing(currentPricing);
     if (snapshot === lastSavedSnapshotRef.current) {
-      if (autoSaveStatus !== "saving") setAutoSaveStatus("saved");
       return;
     }
 
@@ -202,13 +201,7 @@ export default function Page() {
         debounceTimerRef.current = null;
       }
     };
-  }, [
-    currentPricing,
-    hasHydrated,
-    eventId,
-    autoSaveStatus,
-    runSaveMutation,
-  ]);
+  }, [currentPricing, hasHydrated, eventId]);
 
   if (!slug) {
     return (
@@ -220,7 +213,7 @@ export default function Page() {
 
   const handlePayoutDetailsSave = async (data: PayoutDetailsInput) => {
     try {
-      await upsertPayoutDetails.mutateAsync(data);
+      await upsertPayoutDetails.mutateAsync({ ...data, eventId: eventData?.id });
       toast.success("Payout details saved successfully");
       setIsPayoutFormOpen(false);
     } catch (error) {

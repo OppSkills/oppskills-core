@@ -244,7 +244,7 @@ export function PaymentManagementLayout({
                 title="Collected"
                 value={`₹${parseFloat(String(earnings.totalGross)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
                 badge="Registrations"
-                badgeValue={`${earnings.capturedPaymentsCount} successful`}
+                badgeValue={`${earnings.capturedPaymentsCount || 0} successful`}
                 type="highlight"
               />
 
