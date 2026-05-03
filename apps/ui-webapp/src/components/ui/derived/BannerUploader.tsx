@@ -1,5 +1,4 @@
 import React from "react";
-import Image from "next/image";
 import { Upload, FileEdit, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +19,8 @@ export default function BannerUploader({
     className,
     emptyState,
 }: BannerUploaderProps) {
+    const isValid = typeof imageUrl === "string" && imageUrl.trim().length > 0 && (imageUrl.startsWith("http") || imageUrl.startsWith("/"));
+
     return (
         <div
             className={cn(
@@ -27,11 +28,9 @@ export default function BannerUploader({
                 className
             )}
         >
-            {imageUrl && imageUrl.trim().length > 0 ? (
-                <Image
-                    width={371}
-                    height={371}
-                    src={imageUrl.trim()}
+            {isValid ? (
+                <img
+                    src={imageUrl!.trim()}
                     alt="Banner"
                     className="w-full h-full object-cover"
                 />

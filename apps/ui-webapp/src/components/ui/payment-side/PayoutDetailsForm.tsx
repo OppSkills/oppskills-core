@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { X, Loader2, CheckCircle } from "lucide-react";
+import { Loader2, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { motion, AnimatePresence } from "framer-motion";
 import { PayoutDetailsInput } from "@/lib/api/paymentsApi";
+import GeneralModal from "@/components/ui/derived/GeneralModal";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface PayoutDetailsFormProps {
   isOpen: boolean;
@@ -25,23 +26,35 @@ export default function PayoutDetailsForm({
   initialData,
   isLoading = false,
 }: PayoutDetailsFormProps) {
-  const [formData, setFormData] = useState<PayoutDetailsInput>({
+  const [formData, setFormData] = useState({
     accountHolderName: "",
+    bankName: "",
     accountNumber: "",
+    confirmAccountNumber: "",
+    panNumber: "",
     ifsc: "",
+    gstNumber: "",
     upiId: "",
+    pinCode: "",
+    state: "",
+    city: "",
+    address1: "",
+    address2: "",
+    phone: "",
+    email: "",
+    razorpayBankName: false,
   });
 
-  const [touched, setTouched] = useState<
-    Partial<Record<keyof PayoutDetailsInput, boolean>>
-  >({});
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof PayoutDetailsInput, string>>
-  >({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [bankInfo, setBankInfo] = useState<string | null>(null);
   const [isFetchingBank, setIsFetchingBank] = useState(false);
   const [ifscNotFound, setIfscNotFound] = useState<boolean>(false);
-  const [upiVerified, setUpiVerified] = useState<boolean>(false);
+
+  const [isFetchingPincode, setIsFetchingPincode] = useState(false);
+  const [pincodeNotFound, setPincodeNotFound] = useState(false);
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [showCustomCity, setShowCustomCity] = useState(false);
 
   // Track if we've initialized for this "open" session
   const hasInitializedRef = useRef(false);
@@ -55,12 +68,29 @@ export default function PayoutDetailsForm({
     // Only initialize when modal just opened, not on every render
     if (justOpened) {
       hasInitializedRef.current = true;
+      let phone = initialData?.phone || "";
+      if (phone.startsWith("+91")) {
+        phone = phone.slice(3);
+      }
       setFormData({
         accountHolderName: initialData?.accountHolderName || "",
+        bankName: initialData?.bankName || "",
         accountNumber: initialData?.accountNumber || "",
+        confirmAccountNumber: initialData?.accountNumber || "",
+        panNumber: initialData?.panNumber || "",
         ifsc: initialData?.ifsc || "",
+        gstNumber: initialData?.gstNumber || "",
         upiId: initialData?.upiId || "",
+        pinCode: initialData?.pinCode || "",
+        state: initialData?.state || "",
+        city: initialData?.city || "",
+        address1: initialData?.address1 || "",
+        address2: initialData?.address2 || "",
+        phone,
+        email: initialData?.email || "",
+        razorpayBankName: initialData?.razorpayBankName || false,
       });
+      setShowCustomCity(false);
       setErrors({});
       setTouched({});
     }
@@ -70,7 +100,9 @@ export default function PayoutDetailsForm({
       hasInitializedRef.current = false;
       setBankInfo(null);
       setIfscNotFound(false);
-      setUpiVerified(false);
+      setAvailableCities([]);
+      setPincodeNotFound(false);
+      setShowCustomCity(false);
     }
   }, [isOpen, initialData]);
 
@@ -86,20 +118,28 @@ export default function PayoutDetailsForm({
           if (res.ok) {
             const data = await res.json();
             setBankInfo(`${data.BANK}, ${data.BRANCH}`);
+            setFormData((prev) => ({
+              ...prev,
+              bankName: data.BANK || prev.bankName,
+              razorpayBankName: true,
+            }));
             setIfscNotFound(false);
           } else {
             setBankInfo(null);
             setIfscNotFound(true);
+            setFormData((prev) => ({ ...prev, razorpayBankName: false }));
           }
         } catch (err) {
           setBankInfo(null);
           setIfscNotFound(true);
+          setFormData((prev) => ({ ...prev, razorpayBankName: false }));
         } finally {
           setIsFetchingBank(false);
         }
       } else {
         setBankInfo(null);
         setIfscNotFound(false);
+        setFormData((prev) => ({ ...prev, razorpayBankName: false }));
       }
     };
 
@@ -107,33 +147,103 @@ export default function PayoutDetailsForm({
     return () => clearTimeout(timer);
   }, [formData.ifsc]);
 
-  // UPI Validation Logic
+  // Pincode Lookup Logic
   useEffect(() => {
-    const upi = formData.upiId || "";
-    const UPI_REGEX = /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/;
-    if (upi && UPI_REGEX.test(upi)) {
-      setUpiVerified(true);
-    } else {
-      setUpiVerified(false);
-    }
-  }, [formData.upiId]);
+    const fetchPincodeInfo = async () => {
+      const pin = formData.pinCode;
+      if (pin.length === 6 && /^\d{6}$/.test(pin)) {
+        setIsFetchingPincode(true);
+        setPincodeNotFound(false);
+        try {
+          const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data[0] && data[0].Status === "Success" && data[0].PostOffice) {
+              const firstPO = data[0].PostOffice;
+              if (firstPO && firstPO.length > 0) {
+                const cities = Array.from(new Set(firstPO.map((po: any) => po.Name)));
+                setAvailableCities(cities as string[]);
+                setFormData((prev) => ({
+                  ...prev,
+                  state: firstPO[0].State || "",
+                  city: (cities[0] as string) || "",
+                }));
+                setPincodeNotFound(false);
+                return;
+              }
+            }
+          }
+          setAvailableCities([]);
+          setPincodeNotFound(true);
+        } catch (err) {
+          setAvailableCities([]);
+          setPincodeNotFound(true);
+        } finally {
+          setIsFetchingPincode(false);
+        }
+      } else {
+        setPincodeNotFound(false);
+      }
+    };
 
-  const validateField = (
-    name: keyof PayoutDetailsInput,
-    value: string,
-  ): string => {
+    const timer = setTimeout(fetchPincodeInfo, 500);
+    return () => clearTimeout(timer);
+  }, [formData.pinCode]);
+
+  const validateField = (name: string, value: string): string => {
     switch (name) {
       case "accountHolderName":
         return !value.trim() ? "Account holder name is required" : "";
+      case "bankName":
+        return !value.trim() ? "Bank name is required" : "";
       case "accountNumber":
-        return !value.trim() ? "Account number is required" : "";
+        if (!value.trim()) return "Account number is required";
+        if (!/^\d{9,18}$/.test(value)) return "Account number must be 9-18 digits";
+        return "";
+      case "confirmAccountNumber":
+        if (!value.trim()) return "Confirm account number is required";
+        if (value !== formData.accountNumber) return "Account numbers must match";
+        return "";
       case "ifsc":
         if (!value.trim()) return "IFSC is required";
         if (!IFSC_REGEX.test(value)) return "Invalid IFSC format";
         return "";
+      case "pinCode":
+        if (!value.trim()) return "Pincode is required";
+        if (!/^\d{6}$/.test(value)) return "Invalid pincode format";
+        return "";
+      case "state":
+        return !value.trim() ? "State is required" : "";
+      case "city":
+        return !value.trim() ? "City is required" : "";
+      case "address1":
+        return !value.trim() ? "Address 1 is required" : "";
+      case "panNumber":
+        if (value.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value)) {
+          return "Invalid PAN format (e.g., ABCDE1234F)";
+        }
+        return "";
+      case "gstNumber":
+        if (value.trim() && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(value)) {
+          return "Invalid GSTIN format (e.g., 22AAAAA0000A1Z5)";
+        }
+        return "";
+       case "address2":
+        return !value.trim() ? "Address 2 is required" : "";
+      case "phone": {
+        if (!value.trim()) return "Phone Number is required";
+        const rawNum = value.replace(/\s+/g, "").replace("+91", "");
+        if (!/^\d{10}$/.test(rawNum)) return "Phone number must be exactly 10 digits";
+        return "";
+      }
+      case "email":
+        if (!value.trim()) return "Email is required";
+        if (!/^[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(value)) return "Invalid email format";
+        return "";
       case "upiId":
-        if (value && !/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/.test(value)) {
-          return "Invalid UPI ID format";
+        if (!value.trim()) return "UPI ID is required";
+        if (!/^[\w.-]+@[\w.-]+$/.test(value)) {
+          return "Invalid UPI ID format (e.g., name@bank)";
         }
         return "";
       default:
@@ -141,10 +251,10 @@ export default function PayoutDetailsForm({
     }
   };
 
-  const getFormErrors = (data: PayoutDetailsInput) => {
-    const newErrors: Partial<Record<keyof PayoutDetailsInput, string>> = {};
-    (Object.keys(data) as Array<keyof PayoutDetailsInput>).forEach((key) => {
-      const error = validateField(key, data[key] as string);
+  const getFormErrors = (data: typeof formData) => {
+    const newErrors: Record<string, string> = {};
+    Object.keys(data).forEach((key) => {
+      const error = validateField(key, data[key as keyof typeof formData] as string);
       if (error) {
         newErrors[key] = error;
       }
@@ -157,7 +267,7 @@ export default function PayoutDetailsForm({
     return Object.keys(currentErrors).length === 0;
   }, [formData]);
 
-  const handleChange = (field: keyof PayoutDetailsInput, value: string) => {
+  const handleChange = (field: keyof typeof formData, value: any) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
 
@@ -167,7 +277,7 @@ export default function PayoutDetailsForm({
     }
   };
 
-  const handleBlur = (field: keyof PayoutDetailsInput) => {
+  const handleBlur = (field: keyof typeof formData) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
     const error = validateField(field, formData[field] as string);
     setErrors((prev) => ({ ...prev, [field]: error }));
@@ -181,107 +291,265 @@ export default function PayoutDetailsForm({
     );
 
     if (Object.keys(newErrors).length === 0) {
-      onSave(formData);
+      // Exclude confirmAccountNumber before sending
+      const { confirmAccountNumber: _, ...submitPayload } = formData;
+      const cleanedPhone = submitPayload.phone.replace(/\s+/g, "").replace("+91", "");
+      onSave({ ...submitPayload, phone: cleanedPhone });
     }
   };
 
-  if (!isOpen) return null;
+  const footerActions = (
+    <Button
+      onClick={handleSave}
+      disabled={!isFormValid || isLoading}
+      className="rounded-full bg-[#3b0764] hover:bg-[#2e0452] active:bg-[#1e0237] text-white font-inter text-base font-semibold px-8 py-3.5 h-auto transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+    >
+      {isLoading ? (
+        <>
+          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+          Saving...
+        </>
+      ) : (
+        "Save Account Details"
+      )}
+    </Button>
+  );
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-foreground/80 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="relative w-full max-w-[600px] flex flex-col bg-background rounded-2xl shadow-2xl overflow-hidden"
-          >
-            <div className="flex items-center justify-between px-6 py-5 bg-muted border-b border-border/10">
-              <h5 className="font-poppins text-foreground text-2xl font-semibold leading-[125%] capitalize">
-                Payout Details
-              </h5>
-              <div
-                onClick={onClose}
-                className="flex items-center justify-center w-8 h-8 cursor-pointer rounded-full hover:bg-foreground/5 transition-colors"
-              >
-                <X className="w-6 h-6 text-muted-foreground" strokeWidth={2} />
-              </div>
+    <GeneralModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Payment Form"
+      footerActions={footerActions}
+      maxWidth="max-w-[1200px]"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
+        <CustomInput
+          label="Account Holder Name"
+          placeholder="Enter Account Holder Name"
+          value={formData.accountHolderName}
+          onChange={(v) => handleChange("accountHolderName", v)}
+          onBlur={() => handleBlur("accountHolderName")}
+          error={errors.accountHolderName}
+        />
+
+        <CustomInput
+          label="Phone Number"
+          placeholder="Enter Phone Number"
+          value={formData.phone}
+          onChange={(v) => handleChange("phone", v)}
+          onBlur={() => handleBlur("phone")}
+          error={errors.phone}
+        />
+
+        <CustomInput
+          label="Email"
+          placeholder="Enter Email"
+          value={formData.email}
+          onChange={(v) => handleChange("email", v)}
+          onBlur={() => handleBlur("email")}
+          error={errors.email}
+        />
+
+        <div className="flex flex-col gap-1">
+          <CustomInput
+            label="IFSC Code"
+            placeholder="Enter IFSC Code"
+            value={formData.ifsc}
+            onChange={(v) => handleChange("ifsc", v.toUpperCase())}
+            onBlur={() => handleBlur("ifsc")}
+            error={errors.ifsc}
+          />
+          {isFetchingBank && (
+            <div className="flex items-center gap-1.5 text-xs text-primary animate-pulse px-1">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying IFSC...
             </div>
-
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 bg-background">
-              <CustomInput
-                label="Account Holder Name *"
-                placeholder="Enter Name"
-                value={formData.accountHolderName}
-                onChange={(v) => handleChange("accountHolderName", v)}
-                onBlur={() => handleBlur("accountHolderName")}
-                error={errors.accountHolderName}
-              />
-
-              <CustomInput
-                label="Account Number *"
-                placeholder="Enter Account Number"
-                value={formData.accountNumber}
-                onChange={(v) => handleChange("accountNumber", v)}
-                onBlur={() => handleBlur("accountNumber")}
-                error={errors.accountNumber}
-              />
-
-              <CustomInput
-                label="IFSC Code *"
-                placeholder="Enter IFSC Code"
-                value={formData.ifsc}
-                onChange={(v) => handleChange("ifsc", v.toUpperCase())}
-                onBlur={() => handleBlur("ifsc")}
-                error={errors.ifsc}
-              />
-              {isFetchingBank && (
-                <div className="flex items-center gap-2 text-xs text-primary-600 animate-pulse px-4 -mt-2">
-                  <Loader2 className="w-3 h-3 animate-spin" /> Verifying IFSC...
-                </div>
-              )}
-              {bankInfo && (
-                <div className="text-xs text-emerald-600 font-medium px-4 -mt-2 animate-in fade-in slide-in-from-top-1">
-                  {bankInfo}
-                </div>
-              )}
-              {ifscNotFound && (
-                <div className="text-xs text-amber-600 font-medium px-4 -mt-2 animate-in fade-in slide-in-from-top-1">
-                  IFSC details not found, wanna proceed?
-                </div>
-              )}
-
-              <CustomInput
-                label="UPI ID (Optional)"
-                placeholder="e.g. username@upi"
-                value={formData.upiId || ""}
-                onChange={(v) => handleChange("upiId", v)}
-                error={errors.upiId}
-              />
+          )}
+          {bankInfo && (
+            <div className="text-xs text-emerald-600 font-medium px-1">
+              {bankInfo}
             </div>
-
-            <div className="flex items-center justify-end px-5 py-4 bg-muted gap-2">
-              <Button
-                onClick={handleSave}
-                disabled={!isFormValid || isLoading}
-                className="rounded-full bg-primary-500 hover:bg-primary/90 text-primary-foreground font-inter text-base font-medium leading-[150%] px-6 py-2.5 h-auto disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Details"
-                )}
-              </Button>
+          )}
+          {ifscNotFound && (
+            <div className="text-xs text-amber-600 font-medium px-1">
+              IFSC not found
             </div>
-          </motion.div>
+          )}
         </div>
-      )}
-    </AnimatePresence>
+
+        <CustomInput
+          label="Bank Name"
+          placeholder="Enter Bank Name"
+          value={formData.bankName}
+          onChange={(v) => handleChange("bankName", v)}
+          onBlur={() => handleBlur("bankName")}
+          error={errors.bankName}
+        />
+
+        <CustomInput
+          label="Account Number"
+          placeholder="Enter Account Number"
+          value={formData.accountNumber}
+          onChange={(v) => handleChange("accountNumber", v)}
+          onBlur={() => handleBlur("accountNumber")}
+          error={errors.accountNumber}
+        />
+
+        <CustomInput
+          label="Confirm Account Number"
+          placeholder="Enter Confirm Account Number"
+          value={formData.confirmAccountNumber}
+          onChange={(v) => handleChange("confirmAccountNumber", v)}
+          onBlur={() => handleBlur("confirmAccountNumber")}
+          error={errors.confirmAccountNumber}
+        />
+
+        <CustomInput
+          label="Pan Number"
+          placeholder="Enter Pan Number"
+          isOptional
+          tooltip="Format: 5 letters, 4 digits, 1 letter. e.g. ABCDE1234F"
+          value={formData.panNumber}
+          onChange={(v) => handleChange("panNumber", v.toUpperCase())}
+          onBlur={() => handleBlur("panNumber")}
+          error={errors.panNumber}
+        />
+
+        <CustomInput
+          label="GST TIN"
+          placeholder="Enter GST TIN"
+          isOptional
+          tooltip="Format: 15 alphanumeric characters. e.g. 22AAAAA0000A1Z5"
+          value={formData.gstNumber}
+          onChange={(v) => handleChange("gstNumber", v.toUpperCase())}
+          onBlur={() => handleBlur("gstNumber")}
+          error={errors.gstNumber}
+        />
+
+        <CustomInput
+          label="UPI ID"
+          placeholder="Enter UPI ID"
+          tooltip="Format: alphanumeric characters and dot/dash. e.g. name@okbank"
+          value={formData.upiId}
+          onChange={(v) => handleChange("upiId", v)}
+          onBlur={() => handleBlur("upiId")}
+          error={errors.upiId}
+        />
+
+        <div className="flex flex-col gap-1">
+          <CustomInput
+            label="Pincode"
+            placeholder="Enter Pincode"
+            value={formData.pinCode}
+            onChange={(v) => handleChange("pinCode", v)}
+            onBlur={() => handleBlur("pinCode")}
+            error={errors.pinCode}
+          />
+          {isFetchingPincode && (
+            <div className="flex items-center gap-1.5 text-xs text-primary animate-pulse px-1">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying Pincode...
+            </div>
+          )}
+          {pincodeNotFound && (
+            <div className="text-xs text-amber-600 font-medium px-1">
+              Pincode not found
+            </div>
+          )}
+        </div>
+
+        <CustomInput
+          label="State"
+          placeholder="State (Autofilled)"
+          readOnly
+          value={formData.state}
+          onChange={(v) => handleChange("state", v)}
+          onBlur={() => handleBlur("state")}
+          error={errors.state}
+        />
+
+        {showCustomCity ? (
+          <CustomInput
+            label="City"
+            placeholder="Enter your city"
+            value={formData.city}
+            onChange={(v) => handleChange("city", v)}
+            onBlur={() => handleBlur("city")}
+            error={errors.city}
+          />
+        ) : availableCities.length > 0 ? (
+          <div className="flex flex-col items-start gap-1 w-full">
+            <div className="flex items-center justify-between w-full">
+              <Label className="font-inter text-foreground text-sm font-semibold leading-[140%] select-none flex items-center gap-1.5">
+                City <span className="text-red-500">*</span>
+              </Label>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCustomCity(true);
+                  handleChange("city", "");
+                }}
+                className="text-xs text-primary font-medium underline hover:text-primary/80 select-none cursor-pointer"
+              >
+                Not your city?
+              </button>
+            </div>
+            <select
+              value={formData.city}
+              onChange={(e) => handleChange("city", e.target.value)}
+              onBlur={() => handleBlur("city")}
+              className={`flex h-10 w-full rounded-full border bg-background px-4 py-2 text-sm text-neutral-700 placeholder:text-neutral-400 transition-colors focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 ${
+                errors.city
+                  ? "border-red-500 focus-visible:ring-red-500"
+                  : "border-border/60 hover:border-border"
+              }`}
+            >
+              {availableCities.map((cityOpt) => (
+                <option key={cityOpt} value={cityOpt}>
+                  {cityOpt}
+                </option>
+              ))}
+            </select>
+            {errors.city && (
+              <span className="text-red-500 text-xs px-1 select-none animate-in fade-in slide-in-from-top-1">
+                {errors.city}
+              </span>
+            )}
+          </div>
+        ) : (
+          <CustomInput
+            label="City"
+            placeholder="City (Autofilled)"
+            readOnly
+            value={formData.city}
+            onChange={(v) => handleChange("city", v)}
+            onBlur={() => handleBlur("city")}
+            error={errors.city}
+          />
+        )}
+
+        <div className="md:col-span-2 lg:col-span-1">
+          <CustomInput
+            label="Address 1"
+            placeholder="Enter Address 1"
+            value={formData.address1}
+            onChange={(v) => handleChange("address1", v)}
+            onBlur={() => handleBlur("address1")}
+            error={errors.address1}
+          />
+        </div>
+
+        <div className="md:col-span-2 lg:col-span-2">
+          <CustomInput
+            label="Address 2"
+            placeholder="Enter Address 2"
+            value={formData.address2}
+            onChange={(v) => handleChange("address2", v)}
+            onBlur={() => handleBlur("address2")}
+            error={errors.address2}
+          />
+        </div>
+      </div>
+    </GeneralModal>
   );
 }
 
@@ -293,6 +561,9 @@ const CustomInput = ({
   onChange,
   onBlur,
   error,
+  isOptional = false,
+  readOnly = false,
+  tooltip,
 }: {
   label: string;
   placeholder: string;
@@ -301,24 +572,46 @@ const CustomInput = ({
   onChange: (val: string) => void;
   onBlur?: () => void;
   error?: string;
+  isOptional?: boolean;
+  readOnly?: boolean;
+  tooltip?: string;
 }) => (
-  <div className="flex flex-col items-start gap-1 flex-1 w-full">
-    <Label className="font-inter text-muted-foreground text-xs font-normal leading-[150%]">
+  <div className="flex flex-col items-start gap-1 w-full">
+    <Label className="font-inter text-foreground text-sm font-semibold leading-[140%] select-none flex items-center gap-1.5 flex-wrap">
       {label}
+      {isOptional ? (
+        <span className="text-neutral-400 font-normal text-sm select-none">(Optional)</span>
+      ) : (
+        <span className="text-red-500">*</span>
+      )}
+      {tooltip && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex cursor-help text-neutral-400 hover:text-neutral-600 transition-colors">
+              <HelpCircle className="w-4 h-4" />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="bg-neutral-800 text-white rounded px-2 py-1 text-xs max-w-xs shadow-md border-0 select-none">
+            {tooltip}
+          </TooltipContent>
+        </Tooltip>
+      )}
     </Label>
     <Input
       type={type}
       placeholder={placeholder}
       value={value}
+      readOnly={readOnly}
       onChange={(e) => onChange(e.target.value)}
       onBlur={onBlur}
-      className={`flex h-12 px-4 items-center self-stretch rounded-[24px] border ${error
+      className={`rounded-full bg-background text-neutral-700 placeholder:text-neutral-400 transition-colors focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 ${
+        error
           ? "border-red-500 focus-visible:ring-red-500"
-          : "border-border bg-background text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-primary-500"
-        } focus-visible:ring-offset-0`}
+          : "border-border/60 hover:border-border"
+      } ${readOnly ? "bg-neutral-50 cursor-not-allowed select-none opacity-80" : ""}`}
     />
     {error && (
-      <span className="text-red-500 text-xs px-1 animate-in fade-in slide-in-from-top-1">
+      <span className="text-red-500 text-xs px-1 select-none animate-in fade-in slide-in-from-top-1">
         {error}
       </span>
     )}

@@ -10,6 +10,7 @@ import { EventCard } from "@/components/landingpage/_components/EventCard";
 import { EventTabs } from "@/app/events/[slug]/_components/EventTabs";
 import { FestivalInfoCard } from "./FestivalInfoCard";
 import { Button } from "@/components/ui/button";
+import DOMPurify from "isomorphic-dompurify";
 
 interface FestivalDetailsClientProps {
     festival: any;
@@ -138,7 +139,7 @@ export default function FestivalDetailsClient({
                                         {festival.description ? (
                                             <div
                                                 className="html-content whitespace-pre-line wrap-break-word leading-relaxed"
-                                                dangerouslySetInnerHTML={{ __html: festival.description }}
+                                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(festival.description) }}
                                             />
                                         ) : (
                                             <p>No description available.</p>

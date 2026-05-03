@@ -29,14 +29,51 @@ export class UpsertPayoutDetailsDto {
   @Matches(/^[A-Z]{4}0[A-Z0-9]{6}$/, { message: 'Invalid IFSC code format' })
   ifsc: string;
 
-  /** Empty string from the client must become undefined so @IsOptional skips @Matches. */
-  @Transform(({ value }) =>
-    value === '' || value === null ? undefined : value,
-  )
+  @IsString()
+  @IsNotEmpty()
+  bankName: string;
+
   @IsOptional()
   @IsString()
-  @Matches(/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/, {
-    message: 'Invalid UPI ID format',
-  })
+  panNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  gstNumber?: string;
+
+  @IsOptional()
+  @IsString()
   upiId?: string;
+
+  @IsOptional()
+  @IsString()
+  pinCode?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  address1?: string;
+
+  @IsOptional()
+  @IsString()
+  address2?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  razorpayBankName?: boolean;
 }

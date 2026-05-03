@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { SubmissionModal } from "./SubmissionModal";
 import type { RoundSubmissionInfo } from "@/lib/api/hackathonApi";
 import { formatToIST } from "@/lib/date-utils";
+import DOMPurify from "isomorphic-dompurify";
 
 export type { RoundSubmissionInfo };
 
@@ -121,7 +122,7 @@ export function RoundsTimeline({
                     {round.description && (
                       <div
                         className="prose prose-sm max-w-none text-neutral-500 mb-4"
-                        dangerouslySetInnerHTML={{ __html: round.description }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(round.description) }}
                       />
                     )}
 

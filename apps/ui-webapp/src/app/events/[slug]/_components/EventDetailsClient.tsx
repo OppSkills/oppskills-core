@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import DOMPurify from "isomorphic-dompurify";
 
 // Razorpay global type
 declare global {
@@ -318,7 +319,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                     {event.description ? (
                       <div
                         className="html-content whitespace-pre-line wrap-break-words leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: event.description }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(event.description) }}
                       />
                     ) : (
                       <p>No description available.</p>

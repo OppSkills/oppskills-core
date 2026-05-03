@@ -99,7 +99,11 @@ export default function BasicDetails({
 
       setFormData((prev) => ({
         ...prev,
-        eventThumbnail: presign.publicUrl,
+        eventThumbnail: presign.publicUrl.startsWith("http")
+          ? presign.publicUrl
+          : presign.publicUrl.startsWith("//")
+          ? `https:${presign.publicUrl}`
+          : `https://${presign.publicUrl}`,
       }));
 
       toast.success("Banner uploaded.");

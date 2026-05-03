@@ -144,9 +144,21 @@ export interface PayoutDetails {
   userId: string;
   accountHolderName: string;
   accountNumberLast4: string;
+  accountNumber: string;
   ifsc: string;
+  bankName: string;
+  panNumber?: string | null;
+  gstNumber?: string | null;
   upiId: string | null;
+  pinCode?: string | null;
+  city?: string | null;
+  state?: string | null;
+  address1?: string | null;
+  address2?: string | null;
+  phone?: string | null;
+  email?: string | null;
   updatedAt: string;
+  razorpayBankName?: boolean | null;
 }
 
 /** Backend may return `{ exists: false }` when the user has not saved details yet. */
@@ -158,7 +170,18 @@ export interface PayoutDetailsInput {
   accountHolderName: string;
   accountNumber: string;
   ifsc: string;
+  bankName: string;
+  panNumber?: string;
+  gstNumber?: string;
   upiId?: string;
+  pinCode?: string;
+  city?: string;
+  state?: string;
+  address1?: string;
+  address2?: string;
+  phone?: string;
+  email?: string;
+  razorpayBankName?: boolean;
 }
 
 export interface PaymentRecord {

@@ -9,7 +9,7 @@ export interface Opportunity {
   name: string;
   description: string;
   type: OpportunityType;
-  image: string;
+  image?: string | null;
   candidates: number;
   status: OpportunityStatus;
   startDate: string;
@@ -59,7 +59,7 @@ export function mapBackendToOpportunity(item: any, type: OpportunityType): Oppor
     name: item.name,
     description: item.description || '',
     type,
-    image: item.bannerImageUrl || 'https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?q=80&w=2070&auto=format&fit=crop',
+    image: item.bannerImageUrl || null,
     candidates: item.registrationCount || (Array.isArray(item.participants) ? item.participants.length : 0),
     status: mapStatus(item.status),
     startDate: formatDate(item.startDate),
