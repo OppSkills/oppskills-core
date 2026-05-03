@@ -1,4 +1,5 @@
 import { format, isAfter } from 'date-fns';
+import { normalizeUrl } from "@/lib/utils";
 
 export type OpportunityStatus = 'In Progress' | 'Completed' | 'Closed';
 export type OpportunityType = 'Event' | 'Competition';
@@ -59,9 +60,7 @@ export function mapBackendToOpportunity(item: any, type: OpportunityType): Oppor
     name: item.name,
     description: item.description || '',
     type,
-    image: item.bannerImageUrl && !item.bannerImageUrl.startsWith('http://') && !item.bannerImageUrl.startsWith('https://') 
-      ? `https://${item.bannerImageUrl}` 
-      : item.bannerImageUrl || null,
+    image: normalizeUrl(item.bannerImageUrl) || null,
     candidates: item.registrationCount || (Array.isArray(item.participants) ? item.participants.length : 0),
     status: mapStatus(item.status),
     startDate: formatDate(item.startDate),

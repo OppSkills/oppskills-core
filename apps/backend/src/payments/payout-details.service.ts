@@ -56,19 +56,24 @@ export class PayoutDetailsService {
   async upsertPayoutDetails(userId: string, dto: UpsertPayoutDetailsDto) {
     await this.assertCanAccess(userId, dto.eventId, dto.hackathonId);
 
-    const [hasHackathonPayout, hasEventPayout] = await Promise.all([
-      prisma.hackathonPayoutEntity.findFirst({
-        where: { organizerId: userId },
-      }),
-      prisma.eventPayoutEntity.findFirst({
-        where: { organizerId: userId },
-      }),
-    ]);
-
-    if (hasHackathonPayout || hasEventPayout) {
-      throw new ConflictException(
-        'Payout details locked after first payout has been processed',
-      );
+    if (dto.eventId) {
+      const hasEventPayout = await prisma.eventPayoutEntity.findFirst({
+        where: { eventId: dto.eventId },
+      });
+      if (hasEventPayout) {
+        throw new ConflictException(
+          'Payout details locked after first payout has been processed',
+        );
+      }
+    } else if (dto.hackathonId) {
+      const hasHackathonPayout = await prisma.hackathonPayoutEntity.findFirst({
+        where: { hackathonId: dto.hackathonId },
+      });
+      if (hasHackathonPayout) {
+        throw new ConflictException(
+          'Payout details locked after first payout has been processed',
+        );
+      }
     }
 
     let bankName = dto.bankName;
