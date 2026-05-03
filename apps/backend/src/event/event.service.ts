@@ -629,6 +629,7 @@ export class EventService {
           registrationDeadline: true,
           isRegistrationPaused: true,
           ownerId: true,
+          bannerImageUrl: true,
         },
         orderBy: { createdAt: 'desc' },
       }),

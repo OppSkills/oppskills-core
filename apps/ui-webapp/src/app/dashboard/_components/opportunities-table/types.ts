@@ -59,7 +59,9 @@ export function mapBackendToOpportunity(item: any, type: OpportunityType): Oppor
     name: item.name,
     description: item.description || '',
     type,
-    image: item.bannerImageUrl || null,
+    image: item.bannerImageUrl && !item.bannerImageUrl.startsWith('http://') && !item.bannerImageUrl.startsWith('https://') 
+      ? `https://${item.bannerImageUrl}` 
+      : item.bannerImageUrl || null,
     candidates: item.registrationCount || (Array.isArray(item.participants) ? item.participants.length : 0),
     status: mapStatus(item.status),
     startDate: formatDate(item.startDate),
