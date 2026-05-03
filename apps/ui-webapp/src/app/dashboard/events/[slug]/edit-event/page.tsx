@@ -18,7 +18,7 @@ import {
 import { format } from "date-fns";
 import InputBlock from "@/components/ui/derived/InputBlock";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
-import { cn } from "@/lib/utils";
+import { cn, normalizeUrl, isValidUrl } from "@/lib/utils";
 import RegistrationQuestionsModal, { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
 import BasicDetails from "./_components/BasicDetails";
 import RegistrationSettings from "./_components/RegistrationSettings";
@@ -184,36 +184,6 @@ function requireToken(token: string | null): string {
   return token;
 }
 
-function normalizeBannerUrl(url: string | undefined): string {
-  if (!url) return "";
-  const trimmed = url.trim();
-  if (trimmed.length === 0) return "";
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    return trimmed;
-  }
-  if (trimmed.startsWith("//")) {
-    return `https:${trimmed}`;
-  }
-  return `https://${trimmed}`;
-}
-
-function isValidUrl(value: string): boolean {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) return false;
-  let url = trimmed;
-  if (url.startsWith("//")) {
-    url = `https:${url}`;
-  } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
-    url = `https://${url}`;
-  }
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function toLocationDto(input: string): EventLocationDto | undefined {
   const trimmed = input.trim();
   if (trimmed.length === 0) return undefined;
@@ -226,13 +196,7 @@ function toLocationDto(input: string): EventLocationDto | undefined {
   }
 
   if (isValidUrl(trimmed)) {
-    let url = trimmed;
-    if (url.startsWith("//")) {
-      url = `https:${url}`;
-    } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
-      url = `https://${url}`;
-    }
-    return { type: "VIRTUAL", virtualLink: url };
+    return { type: "VIRTUAL", virtualLink: normalizeUrl(trimmed) };
   }
   return { type: "PHYSICAL", address: trimmed };
 }
@@ -433,7 +397,7 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
     eventLocation: location,
     eventTimeFrom: startDate ? toTimeHHmm(startDate) : "09:00",
     eventDescription: getString(event, "description") ?? "",
-    eventThumbnail: normalizeBannerUrl(getString(event, "bannerImageUrl")),
+    eventThumbnail: normalizeUrl(getString(event, "bannerImageUrl")),
     eventRegisterBy: registrationDeadline,
     eventType,
     participantType: "Individual",

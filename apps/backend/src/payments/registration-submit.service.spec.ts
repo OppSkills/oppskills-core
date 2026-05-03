@@ -119,9 +119,11 @@ describe('RegistrationSubmitService', () => {
         ],
       } as any);
 
-      prismaMock.hackathonRegistrationAnswerEntity.createMany.mockResolvedValue({
-        count: 1,
-      } as any);
+      prismaMock.hackathonRegistrationAnswerEntity.createMany.mockResolvedValue(
+        {
+          count: 1,
+        } as any,
+      );
 
       await service.ensureRegistrationAnswersAfterPayment({
         hackathonSlug: 'test-hack',
@@ -129,17 +131,17 @@ describe('RegistrationSubmitService', () => {
         answers: [{ fieldId: 'field-college', value: 'MIT' }],
       });
 
-      expect(prismaMock.hackathonRegistrationAnswerEntity.createMany).toHaveBeenCalledWith(
-        {
-          data: [
-            expect.objectContaining({
-              submissionId: 'sub-shell',
-              fieldId: 'field-college',
-              valueText: 'MIT',
-            }),
-          ],
-        },
-      );
+      expect(
+        prismaMock.hackathonRegistrationAnswerEntity.createMany,
+      ).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            submissionId: 'sub-shell',
+            fieldId: 'field-college',
+            valueText: 'MIT',
+          }),
+        ],
+      });
     });
 
     it('does not write when submission already has answers', async () => {

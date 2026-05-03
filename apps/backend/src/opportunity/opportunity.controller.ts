@@ -34,7 +34,8 @@ export class OpportunityController {
    */
   @Get('search')
   @ApiOperation({
-    summary: 'Search opportunities (4 match hackathons, 4 match events, 8 top overall)',
+    summary:
+      'Search opportunities (4 match hackathons, 4 match events, 8 top overall)',
   })
   async searchOpportunities(@Query('q') query: string) {
     return this.opportunityService.searchOpportunities(query || '');

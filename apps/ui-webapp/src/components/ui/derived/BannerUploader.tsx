@@ -1,6 +1,6 @@
 import React from "react";
 import { Upload, FileEdit, Trophy } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, normalizeUrl, isValidUrl } from "@/lib/utils";
 
 interface BannerUploaderProps {
     imageUrl?: string;
@@ -19,17 +19,8 @@ export default function BannerUploader({
     className,
     emptyState,
 }: BannerUploaderProps) {
-    let normalizedUrl = imageUrl;
-    if (normalizedUrl && typeof normalizedUrl === "string") {
-        normalizedUrl = normalizedUrl.trim();
-        if (normalizedUrl.startsWith("//")) {
-            normalizedUrl = `https:${normalizedUrl}`;
-        } else if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://") && !normalizedUrl.startsWith("/")) {
-            normalizedUrl = `https://${normalizedUrl}`;
-        }
-    }
-
-    const isValid = typeof normalizedUrl === "string" && normalizedUrl.length > 0 && (normalizedUrl.startsWith("http") || normalizedUrl.startsWith("/"));
+    const normalizedUrl = normalizeUrl(imageUrl);
+    const isValid = isValidUrl(normalizedUrl);
 
     return (
         <div

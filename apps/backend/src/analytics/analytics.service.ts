@@ -5,9 +5,15 @@ import Redis from 'ioredis';
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
-  constructor(@Inject('REDIS') private readonly redis: Redis) { }
+  constructor(@Inject('REDIS') private readonly redis: Redis) {}
 
-  private async resolveRange(options: { period?: string; from?: string; to?: string; slug?: string; type?: 'event' | 'hackathon' }) {
+  private async resolveRange(options: {
+    period?: string;
+    from?: string;
+    to?: string;
+    slug?: string;
+    type?: 'event' | 'hackathon';
+  }) {
     const { period, from, to, slug, type } = options;
     let startDate = new Date();
     let endDate = new Date();
@@ -83,14 +89,16 @@ export class AnalyticsService {
       mode = 'five_day';
     }
 
-    const data: { [key: string]: { men: number; women: number; other: number } } = {};
+    const data: {
+      [key: string]: { men: number; women: number; other: number };
+    } = {};
     const current = new Date(startDate);
     current.setUTCHours(0, 0, 0, 0);
 
     const normalizedEndDate = new Date(endDate);
     normalizedEndDate.setUTCHours(23, 59, 59, 999);
 
-    const bucketBoundaries: { key: string, start: number }[] = [];
+    const bucketBoundaries: { key: string; start: number }[] = [];
 
     // Initialize buckets and boundaries
     while (current <= normalizedEndDate) {
@@ -111,7 +119,7 @@ export class AnalyticsService {
     bucketBoundaries.sort((a, b) => a.start - b.start);
 
     // Fill buckets
-    items.forEach(item => {
+    items.forEach((item) => {
       const registrationTime = item.joinedAt.getTime();
 
       // Find the right bucket (last boundary <= registrationTime)
@@ -131,11 +139,11 @@ export class AnalyticsService {
       }
     });
 
-    return bucketBoundaries.map(b => ({
+    return bucketBoundaries.map((b) => ({
       date: b.key,
       men: data[b.key].men,
       women: data[b.key].women,
-      other: data[b.key].other
+      other: data[b.key].other,
     }));
   }
 
@@ -147,11 +155,11 @@ export class AnalyticsService {
   }
 
   async trackPageView(type: 'event' | 'opportunity', slug: string) {
-    this.redis.incr(`pv:${type}:${slug}`).catch(() => { });
+    this.redis.incr(`pv:${type}:${slug}`).catch(() => {});
   }
 
   async trackPostImpression(type: 'event' | 'opportunity', slug: string) {
-    this.redis.incr(`pi:${type}:${slug}`).catch(() => { });
+    this.redis.incr(`pi:${type}:${slug}`).catch(() => {});
   }
 
   async flushToDb() {
@@ -232,19 +240,23 @@ export class AnalyticsService {
         views: true,
         impressions: true,
         registrationCount: true,
-      }
+      },
     });
 
     if (!event) return null;
 
-    const { startDate, endDate } = await this.resolveRange({ ...options, slug, type: 'event' });
+    const { startDate, endDate } = await this.resolveRange({
+      ...options,
+      slug,
+      type: 'event',
+    });
 
     // Period-specific registrations
     const periodRegistrations = await prisma.eventParticipantEntity.count({
       where: {
         event: { slug },
         joinedAt: { gte: startDate, lte: endDate },
-      }
+      },
     });
 
     return {
@@ -273,7 +285,11 @@ export class AnalyticsService {
 
     if (!event) return null;
 
-    const { startDate, endDate } = await this.resolveRange({ ...options, slug, type: 'event' });
+    const { startDate, endDate } = await this.resolveRange({
+      ...options,
+      slug,
+      type: 'event',
+    });
 
     // Fetch real registrations
     const rawRegistrations = await prisma.eventParticipantEntity.findMany({
@@ -285,20 +301,20 @@ export class AnalyticsService {
         joinedAt: true,
         user: {
           select: {
-            onboardingProfile: { select: { gender: true } }
-          }
-        }
+            onboardingProfile: { select: { gender: true } },
+          },
+        },
       },
       orderBy: { joinedAt: 'asc' },
     });
 
     const registrationsTrend = this.processTrendData(
-      rawRegistrations.map(r => ({
+      rawRegistrations.map((r) => ({
         joinedAt: r.joinedAt,
-        gender: r.user.onboardingProfile?.gender ?? undefined
+        gender: r.user.onboardingProfile?.gender ?? undefined,
       })),
       startDate,
-      endDate
+      endDate,
     );
 
     // Fetch real gender stats
@@ -310,17 +326,21 @@ export class AnalyticsService {
           eventParticipations: {
             some: {
               event: { slug },
-              joinedAt: { gte: startDate, lte: endDate }
-            }
-          }
-        }
-      }
+              joinedAt: { gte: startDate, lte: endDate },
+            },
+          },
+        },
+      },
     });
 
     const gender = {
-      male: genderStats.find(g => g.gender === 'MALE')?._count.gender || 0,
-      female: genderStats.find(g => g.gender === 'FEMALE')?._count.gender || 0,
-      other: genderStats.find(g => g.gender === 'OTHER' || g.gender === 'PREFER_NOT_TO_SAY')?._count.gender || 0,
+      male: genderStats.find((g) => g.gender === 'MALE')?._count.gender || 0,
+      female:
+        genderStats.find((g) => g.gender === 'FEMALE')?._count.gender || 0,
+      other:
+        genderStats.find(
+          (g) => g.gender === 'OTHER' || g.gender === 'PREFER_NOT_TO_SAY',
+        )?._count.gender || 0,
     };
 
     return {
@@ -347,26 +367,30 @@ export class AnalyticsService {
         views: true,
         impressions: true,
         registrationCount: true,
-      }
+      },
     });
 
     if (!hackathon) return null;
 
-    const { startDate, endDate } = await this.resolveRange({ ...options, slug, type: 'hackathon' });
+    const { startDate, endDate } = await this.resolveRange({
+      ...options,
+      slug,
+      type: 'hackathon',
+    });
 
     // Period-specific registrations (Teams and Members)
     const teamLeaderCount = await prisma.teamEntity.count({
       where: {
         hackathon: { slug },
         createdAt: { gte: startDate, lte: endDate },
-      }
+      },
     });
 
     const teamMemberCount = await prisma.teamMemberEntity.count({
       where: {
         team: { hackathon: { slug } },
         joinedAt: { gte: startDate, lte: endDate },
-      }
+      },
     });
 
     return {
@@ -395,7 +419,11 @@ export class AnalyticsService {
 
     if (!hackathon) return null;
 
-    const { startDate, endDate } = await this.resolveRange({ ...options, slug, type: 'hackathon' });
+    const { startDate, endDate } = await this.resolveRange({
+      ...options,
+      slug,
+      type: 'hackathon',
+    });
 
     // Fetch real registrations (Combined leader creation and member joining)
     const leaders = await prisma.teamEntity.findMany({
@@ -406,8 +434,8 @@ export class AnalyticsService {
       select: {
         createdAt: true,
         leader: {
-          select: { onboardingProfile: { select: { gender: true } } }
-        }
+          select: { onboardingProfile: { select: { gender: true } } },
+        },
       },
     });
 
@@ -419,17 +447,27 @@ export class AnalyticsService {
       select: {
         joinedAt: true,
         user: {
-          select: { onboardingProfile: { select: { gender: true } } }
-        }
+          select: { onboardingProfile: { select: { gender: true } } },
+        },
       },
     });
 
     const combinedItems = [
-      ...leaders.map(l => ({ joinedAt: l.createdAt, gender: l.leader.onboardingProfile?.gender ?? undefined })),
-      ...members.map(m => ({ joinedAt: m.joinedAt, gender: m.user.onboardingProfile?.gender ?? undefined }))
+      ...leaders.map((l) => ({
+        joinedAt: l.createdAt,
+        gender: l.leader.onboardingProfile?.gender ?? undefined,
+      })),
+      ...members.map((m) => ({
+        joinedAt: m.joinedAt,
+        gender: m.user.onboardingProfile?.gender ?? undefined,
+      })),
     ].sort((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime());
 
-    const registrationsTrend = this.processTrendData(combinedItems, startDate, endDate);
+    const registrationsTrend = this.processTrendData(
+      combinedItems,
+      startDate,
+      endDate,
+    );
 
     // Fetch real gender stats
     const genderStats = await prisma.userOnboardingProfileEntity.groupBy({
@@ -438,17 +476,35 @@ export class AnalyticsService {
       where: {
         user: {
           OR: [
-            { teamsLed: { some: { hackathon: { slug }, createdAt: { gte: startDate, lte: endDate } } } },
-            { teamMembers: { some: { team: { hackathon: { slug } }, joinedAt: { gte: startDate, lte: endDate } } } }
-          ]
-        }
-      }
+            {
+              teamsLed: {
+                some: {
+                  hackathon: { slug },
+                  createdAt: { gte: startDate, lte: endDate },
+                },
+              },
+            },
+            {
+              teamMembers: {
+                some: {
+                  team: { hackathon: { slug } },
+                  joinedAt: { gte: startDate, lte: endDate },
+                },
+              },
+            },
+          ],
+        },
+      },
     });
 
     const gender = {
-      male: genderStats.find(g => g.gender === 'MALE')?._count.gender || 0,
-      female: genderStats.find(g => g.gender === 'FEMALE')?._count.gender || 0,
-      other: genderStats.find(g => g.gender === 'OTHER' || g.gender === 'PREFER_NOT_TO_SAY')?._count.gender || 0,
+      male: genderStats.find((g) => g.gender === 'MALE')?._count.gender || 0,
+      female:
+        genderStats.find((g) => g.gender === 'FEMALE')?._count.gender || 0,
+      other:
+        genderStats.find(
+          (g) => g.gender === 'OTHER' || g.gender === 'PREFER_NOT_TO_SAY',
+        )?._count.gender || 0,
     };
 
     return {
@@ -456,11 +512,17 @@ export class AnalyticsService {
       gender,
     };
   }
-  async getOrganizerStats(userId: string, options: { period?: string; from?: string; to?: string } = {}) {
+  async getOrganizerStats(
+    userId: string,
+    options: { period?: string; from?: string; to?: string } = {},
+  ) {
     // 1. Calculate Event Stats
     const events = await prisma.eventEntity.findMany({
       where: {
-        OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
         isDeleted: false,
       },
       select: {
@@ -490,7 +552,10 @@ export class AnalyticsService {
     // 2. Calculate Hackathon Stats
     const hackathons = await prisma.hackathonEntity.findMany({
       where: {
-        OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
         isDeleted: false,
       },
       select: {
@@ -539,7 +604,10 @@ export class AnalyticsService {
     const periodEventParticipants = await prisma.eventParticipantEntity.count({
       where: {
         event: {
-          OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
         },
         joinedAt: { gte: startDate, lte: endDate },
       },
@@ -548,7 +616,10 @@ export class AnalyticsService {
     const periodHackathonLeaders = await prisma.teamEntity.count({
       where: {
         hackathon: {
-          OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
         },
         createdAt: { gte: startDate, lte: endDate },
       },
@@ -558,7 +629,10 @@ export class AnalyticsService {
       where: {
         team: {
           hackathon: {
-            OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
+            OR: [
+              { ownerId: userId },
+              { userRoles: { some: { userId, role: 'MANAGER' } } },
+            ],
           },
         },
         joinedAt: { gte: startDate, lte: endDate },
@@ -600,7 +674,8 @@ export class AnalyticsService {
     }
 
     const totalParticipants = eventParticipants + hackathonParticipants;
-    const periodParticipants = periodEventParticipants + periodHackathonLeaders + periodHackathonMembers;
+    const periodParticipants =
+      periodEventParticipants + periodHackathonLeaders + periodHackathonMembers;
 
     const totalOpportunities = events.length + hackathons.length;
     const periodOpportunities = periodEventsCount + periodHackathonsCount;
@@ -620,14 +695,20 @@ export class AnalyticsService {
     };
   }
 
-  async getOrganizerRegistrationTrends(userId: string, options: { period?: string; from?: string; to?: string } = {}) {
+  async getOrganizerRegistrationTrends(
+    userId: string,
+    options: { period?: string; from?: string; to?: string } = {},
+  ) {
     const { startDate, endDate } = await this.resolveRange(options);
 
     // 1. Fetch Event Registrations
     const eventRegistrations = await prisma.eventParticipantEntity.findMany({
       where: {
         event: {
-          OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
         },
         joinedAt: { gte: startDate, lte: endDate },
       },
@@ -643,7 +724,10 @@ export class AnalyticsService {
     const hackathonLeaders = await prisma.teamEntity.findMany({
       where: {
         hackathon: {
-          OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
         },
         createdAt: { gte: startDate, lte: endDate },
       },
@@ -660,7 +744,10 @@ export class AnalyticsService {
       where: {
         team: {
           hackathon: {
-            OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
+            OR: [
+              { ownerId: userId },
+              { userRoles: { some: { userId, role: 'MANAGER' } } },
+            ],
           },
         },
         joinedAt: { gte: startDate, lte: endDate },
@@ -684,9 +771,15 @@ export class AnalyticsService {
       mode = 'five_day';
     }
 
-    const registrationTrend: Record<string, { events: number; hackathon: number }> = {};
-    const genderRegistrationTrend: Record<string, { male: number; female: number }> = {};
-    const bucketBoundaries: { key: string, start: number }[] = [];
+    const registrationTrend: Record<
+      string,
+      { events: number; hackathon: number }
+    > = {};
+    const genderRegistrationTrend: Record<
+      string,
+      { male: number; female: number }
+    > = {};
+    const bucketBoundaries: { key: string; start: number }[] = [];
 
     const current = new Date(startDate);
     current.setUTCHours(0, 0, 0, 0);
@@ -764,7 +857,10 @@ export class AnalyticsService {
     // 1. Fetch Top 3 Events
     const topEvents = await prisma.eventEntity.findMany({
       where: {
-        OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
         isDeleted: false,
       },
       select: {
@@ -792,7 +888,10 @@ export class AnalyticsService {
     // 2. Fetch Top 3 Hackathons
     const topHackathons = await prisma.hackathonEntity.findMany({
       where: {
-        OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
         isDeleted: false,
       },
       select: {
@@ -858,7 +957,10 @@ export class AnalyticsService {
     // 1. Highest Performing Event
     const topEvent = await prisma.eventEntity.findFirst({
       where: {
-        OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
         isDeleted: false,
       },
       select: {
@@ -880,7 +982,10 @@ export class AnalyticsService {
     // 2. Highest Performing Hackathon
     const topHackathon = await prisma.hackathonEntity.findFirst({
       where: {
-        OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }],
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
         isDeleted: false,
       },
       select: {
@@ -898,19 +1003,19 @@ export class AnalyticsService {
     return {
       event: topEvent
         ? {
-          title: topEvent.name,
-          slug: topEvent.slug,
-          thumbnail: topEvent.bannerImageUrl,
-          tregistrations: topEvent._count?.participants ?? 0,
-        }
+            title: topEvent.name,
+            slug: topEvent.slug,
+            thumbnail: topEvent.bannerImageUrl,
+            tregistrations: topEvent._count?.participants ?? 0,
+          }
         : null,
       hackathon: topHackathon
         ? {
-          title: topHackathon.name,
-          slug: topHackathon.slug,
-          thumbnail: topHackathon.bannerImageUrl,
-          tregistrations: topHackathon.registrationCount ?? 0,
-        }
+            title: topHackathon.name,
+            slug: topHackathon.slug,
+            thumbnail: topHackathon.bannerImageUrl,
+            tregistrations: topHackathon.registrationCount ?? 0,
+          }
         : null,
     };
   }

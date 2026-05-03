@@ -19,7 +19,7 @@ import {
 import { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
 import React, { useEffect, useMemo, useState } from "react";
 import { useQueryState } from "nuqs";
-import { cn } from "@/lib/utils";
+import { cn, normalizeUrl, isValidUrl } from "@/lib/utils";
 import { useParams } from "next/navigation";
 import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
 import { useAuth } from "@clerk/nextjs";
@@ -207,24 +207,6 @@ function requireToken(token: string | null): string {
   return token;
 }
 
-function isValidUrl(value: string): boolean {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) return false;
-  let url = trimmed;
-  if (url.startsWith("//")) {
-    url = `https:${url}`;
-  } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
-    url = `https://${url}`;
-  }
-  try {
-    // eslint-disable-next-line no-new
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function toVisibilityValue(
   label: string
 ): "PUBLIC" | "PRIVATE" | "UNIVERSITY_ONLY" | undefined {
@@ -298,13 +280,7 @@ function toLocationDto(input: string): HackathonLocationDto | undefined {
   }
 
   if (isValidUrl(trimmed)) {
-    let url = trimmed;
-    if (url.startsWith("//")) {
-      url = `https:${url}`;
-    } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
-      url = `https://${url}`;
-    }
-    return { type: "VIRTUAL", virtualLink: url };
+    return { type: "VIRTUAL", virtualLink: normalizeUrl(trimmed) };
   }
   return { type: "PHYSICAL", address: trimmed };
 }

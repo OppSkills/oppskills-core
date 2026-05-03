@@ -43,14 +43,20 @@ export class ReferralService {
   private async nextCode(): Promise<string> {
     for (let i = 0; i < 5; i++) {
       const code = randomBytes(8).toString('base64url').slice(0, 10);
-      const exists = await prisma.referralEntity.findUnique({ where: { code } });
+      const exists = await prisma.referralEntity.findUnique({
+        where: { code },
+      });
       if (!exists) return code;
     }
     throw new BadRequestException('Failed to generate referral code');
   }
 
   async lookupUser(dto: LookupUserDto, userId: string) {
-    await this.authz.assertCanManageEntity(userId, dto.entityType, dto.entityId);
+    await this.authz.assertCanManageEntity(
+      userId,
+      dto.entityType,
+      dto.entityId,
+    );
     const user = await prisma.userEntity.findFirst({
       where: { email: { equals: dto.email.trim(), mode: 'insensitive' } },
       select: {
@@ -66,9 +72,15 @@ export class ReferralService {
   }
 
   async createReferral(dto: CreateReferralDto, userId: string) {
-    await this.authz.assertCanManageEntity(userId, dto.entityType, dto.entityId);
+    await this.authz.assertCanManageEntity(
+      userId,
+      dto.entityType,
+      dto.entityId,
+    );
     const referrer = await prisma.userEntity.findFirst({
-      where: { email: { equals: dto.referrerEmail.trim(), mode: 'insensitive' } },
+      where: {
+        email: { equals: dto.referrerEmail.trim(), mode: 'insensitive' },
+      },
     });
     if (!referrer) {
       throw new NotFoundException('User with this email does not exist');
@@ -110,7 +122,10 @@ export class ReferralService {
     });
 
     if (dto.sendEmail !== false) {
-      const slug = await this.authz.getEntityPublicSlug(dto.entityType, dto.entityId);
+      const slug = await this.authz.getEntityPublicSlug(
+        dto.entityType,
+        dto.entityId,
+      );
       const creator = await prisma.userEntity.findUnique({
         where: { id: userId },
         select: { firstName: true, lastName: true },
@@ -228,11 +243,21 @@ export class ReferralService {
     // 3. Find all entities this organizer manages
     const [myHackathons, myEvents, myFestivals] = await Promise.all([
       prisma.hackathonEntity.findMany({
-        where: { OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }] },
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+        },
         select: { id: true, slug: true, name: true, bannerImageUrl: true },
       }),
       prisma.eventEntity.findMany({
-        where: { OR: [{ ownerId: userId }, { userRoles: { some: { userId, role: 'MANAGER' } } }] },
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+        },
         select: { id: true, slug: true, name: true, bannerImageUrl: true },
       }),
       prisma.festivalEntity.findMany({
@@ -247,14 +272,23 @@ export class ReferralService {
 
     // 4. Fetch referrals for this referrer filtered by managed entities
     const organizerReferrals = await prisma.referralEntity.findMany({
-      where: { 
-        referrerId: referral.referrerId, 
+      where: {
+        referrerId: referral.referrerId,
         isDeleted: false,
         OR: [
-          { entityType: 'HACKATHON', entityId: { in: Array.from(hackathonMap.keys()) } },
-          { entityType: 'EVENT', entityId: { in: Array.from(eventMap.keys()) } },
-          { entityType: 'FESTIVAL', entityId: { in: Array.from(festivalMap.keys()) } },
-        ]
+          {
+            entityType: 'HACKATHON',
+            entityId: { in: Array.from(hackathonMap.keys()) },
+          },
+          {
+            entityType: 'EVENT',
+            entityId: { in: Array.from(eventMap.keys()) },
+          },
+          {
+            entityType: 'FESTIVAL',
+            entityId: { in: Array.from(festivalMap.keys()) },
+          },
+        ],
       },
     });
 
@@ -262,7 +296,7 @@ export class ReferralService {
     const stats = await this.getReferralsWithStats(organizerReferrals);
 
     // Combine stats with entity details (name, slug, image)
-    const opportunities = stats.map(s => {
+    const opportunities = stats.map((s) => {
       let entityName = 'Unknown';
       let slug = '';
       let image: string | null = null;
@@ -270,13 +304,28 @@ export class ReferralService {
 
       if (s.entityType === 'HACKATHON') {
         const h = hackathonMap.get(s.entityId);
-        if (h) { entityName = h.name; slug = h.slug; image = h.bannerImageUrl; baseUrl = `/dashboard/hackathon/${h.slug}/referrals`; }
+        if (h) {
+          entityName = h.name;
+          slug = h.slug;
+          image = h.bannerImageUrl;
+          baseUrl = `/dashboard/hackathon/${h.slug}/referrals`;
+        }
       } else if (s.entityType === 'EVENT') {
         const e = eventMap.get(s.entityId);
-        if (e) { entityName = e.name; slug = e.slug; image = e.bannerImageUrl; baseUrl = `/dashboard/events/${e.slug}/referrals`; }
+        if (e) {
+          entityName = e.name;
+          slug = e.slug;
+          image = e.bannerImageUrl;
+          baseUrl = `/dashboard/events/${e.slug}/referrals`;
+        }
       } else if (s.entityType === 'FESTIVAL') {
         const f = festivalMap.get(s.entityId);
-        if (f) { entityName = f.name; slug = f.slug; image = f.posterImageUrl; baseUrl = `/dashboard/festivals/${f.slug}/referrals`; }
+        if (f) {
+          entityName = f.name;
+          slug = f.slug;
+          image = f.posterImageUrl;
+          baseUrl = `/dashboard/festivals/${f.slug}/referrals`;
+        }
       }
 
       return {
@@ -291,10 +340,15 @@ export class ReferralService {
     return {
       referrer: {
         id: referrer.id,
-        name: `${referrer.firstName || ''} ${referrer.lastName || ''}`.trim() || 'User',
+        name:
+          `${referrer.firstName || ''} ${referrer.lastName || ''}`.trim() ||
+          'User',
         email: referrer.email,
         avatarUrl: referrer.imageUrl,
-        institution: referrer.onboardingProfile?.college?.name || referrer.onboardingProfile?.schoolName || 'N/A',
+        institution:
+          referrer.onboardingProfile?.college?.name ||
+          referrer.onboardingProfile?.schoolName ||
+          'N/A',
         location: this.formatLocation(referrer.onboardingProfile),
         profession: this.formatProfession(referrer.onboardingProfile),
         registrationDate: referrer.createdAt.toISOString(),
@@ -303,9 +357,18 @@ export class ReferralService {
       summary: {
         totalReferrals: opportunities.length,
         totalClicks: opportunities.reduce((acc, s) => acc + s.clicks, 0),
-        clicksLast24h: opportunities.reduce((acc, s) => acc + s.clicksLast24h, 0),
-        totalRegistrations: opportunities.reduce((acc, s) => acc + s.registrations, 0),
-        registrationsLast24h: opportunities.reduce((acc, s) => acc + s.registrationsLast24h, 0),
+        clicksLast24h: opportunities.reduce(
+          (acc, s) => acc + s.clicksLast24h,
+          0,
+        ),
+        totalRegistrations: opportunities.reduce(
+          (acc, s) => acc + s.registrations,
+          0,
+        ),
+        registrationsLast24h: opportunities.reduce(
+          (acc, s) => acc + s.registrationsLast24h,
+          0,
+        ),
         activeLinks: opportunities.filter((s) => s.isActive).length,
       },
     };
@@ -415,7 +478,8 @@ export class ReferralService {
 
       const parts = [categoryMap[profile.userCategory] || 'User'];
 
-      if (profile.courseSpecialization) parts.push(profile.courseSpecialization);
+      if (profile.courseSpecialization)
+        parts.push(profile.courseSpecialization);
       if (profile.course) parts.push(profile.course);
       if (profile.collegeCurrentYear) parts.push(profile.collegeCurrentYear);
 
@@ -444,7 +508,10 @@ export class ReferralService {
         email: tm.user.email,
         avatarUrl: tm.user.imageUrl,
         registrationDate: tm.joinedAt.toISOString(),
-        institution: tm.user.onboardingProfile?.college?.name || tm.user.onboardingProfile?.schoolName || 'N/A',
+        institution:
+          tm.user.onboardingProfile?.college?.name ||
+          tm.user.onboardingProfile?.schoolName ||
+          'N/A',
         location: formatLocation(tm.user.onboardingProfile),
         profession: formatProfession(tm.user.onboardingProfile),
       })),
@@ -454,7 +521,10 @@ export class ReferralService {
         email: t.leader.email,
         avatarUrl: t.leader.imageUrl,
         registrationDate: t.createdAt.toISOString(),
-        institution: t.leader.onboardingProfile?.college?.name || t.leader.onboardingProfile?.schoolName || 'N/A',
+        institution:
+          t.leader.onboardingProfile?.college?.name ||
+          t.leader.onboardingProfile?.schoolName ||
+          'N/A',
         location: this.formatLocation(t.leader.onboardingProfile),
         profession: this.formatProfession(t.leader.onboardingProfile),
       })),
@@ -464,7 +534,10 @@ export class ReferralService {
         email: ep.user.email,
         avatarUrl: ep.user.imageUrl,
         registrationDate: ep.joinedAt.toISOString(),
-        institution: ep.user.onboardingProfile?.college?.name || ep.user.onboardingProfile?.schoolName || 'N/A',
+        institution:
+          ep.user.onboardingProfile?.college?.name ||
+          ep.user.onboardingProfile?.schoolName ||
+          'N/A',
         location: this.formatLocation(ep.user.onboardingProfile),
         profession: this.formatProfession(ep.user.onboardingProfile),
       })),
@@ -483,7 +556,10 @@ export class ReferralService {
     };
   }
 
-  async analytics(query: ListReferralsQueryDto, userId: string): Promise<ReferralAnalyticsDto> {
+  async analytics(
+    query: ListReferralsQueryDto,
+    userId: string,
+  ): Promise<ReferralAnalyticsDto> {
     await this.authz.assertCanManageEntity(
       userId,
       query.entityType,
@@ -534,7 +610,12 @@ export class ReferralService {
   async resolvePublic(code: string) {
     const referral = await prisma.referralEntity.findUnique({
       where: { code },
-      select: { entityType: true, entityId: true, isActive: true, isDeleted: true },
+      select: {
+        entityType: true,
+        entityId: true,
+        isActive: true,
+        isDeleted: true,
+      },
     });
     if (!referral || referral.isDeleted || !referral.isActive) {
       throw new NotFoundException('Referral code not found');
@@ -621,7 +702,6 @@ export class ReferralService {
     });
   }
 
-
   async getMyReferralPerformance(userId: string) {
     const referrals = await prisma.referralEntity.findMany({
       where: {
@@ -687,7 +767,9 @@ export class ReferralService {
     ];
     const eventIds = [
       ...new Set(
-        referrals.filter((r) => r.entityType === 'EVENT').map((r) => r.entityId),
+        referrals
+          .filter((r) => r.entityType === 'EVENT')
+          .map((r) => r.entityId),
       ),
     ];
     const festivalIds = [
@@ -832,7 +914,10 @@ export class ReferralService {
       }),
       prisma.teamEntity.groupBy({
         by: ['referralId'],
-        where: { referralId: { in: referralIds }, createdAt: { gte: start24h } },
+        where: {
+          referralId: { in: referralIds },
+          createdAt: { gte: start24h },
+        },
         _count: { _all: true },
       }),
       prisma.teamMemberEntity.groupBy({

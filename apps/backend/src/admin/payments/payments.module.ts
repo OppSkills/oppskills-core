@@ -7,6 +7,6 @@ import { AdminAuthModule } from '../auth/auth.module';
   imports: [AdminAuthModule],
   controllers: [AdminPaymentsController],
   providers: [AdminPaymentsService],
-  exports: [AdminPaymentsService]
+  exports: [AdminPaymentsService],
 })
-export class AdminPaymentsModule { }
+export class AdminPaymentsModule {}

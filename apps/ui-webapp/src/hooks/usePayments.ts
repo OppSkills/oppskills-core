@@ -203,6 +203,7 @@ export function usePayoutDetails(eventId?: string, hackathonId?: string) {
       if (!token) throw new Error("Not authenticated");
       return getPayoutDetails(token, eventId, hackathonId);
     },
+    enabled: !!eventId || !!hackathonId,
   });
 }
 

@@ -55,7 +55,10 @@ export class ReferralController {
 
   @Get(':id/referrer-details')
   getReferrerDetails(@Param('id') id: string, @Req() req: Request) {
-    return this.referralService.getReferrerDetailsForOrganizer(id, req.user!.id);
+    return this.referralService.getReferrerDetailsForOrganizer(
+      id,
+      req.user!.id,
+    );
   }
 
   @Get(':id')

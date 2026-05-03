@@ -183,7 +183,11 @@ describe('TeamService', () => {
       prismaMock.teamEntity.create.mockResolvedValueOnce({
         id: 'team-1',
         name: 'Team A',
-        leader: { email: 'jane@example.com', firstName: 'Jane', lastName: 'Doe' },
+        leader: {
+          email: 'jane@example.com',
+          firstName: 'Jane',
+          lastName: 'Doe',
+        },
         hackathon: { name: 'Hackathon 1' },
       });
       prismaMock.hackathonRegistrationSubmissionEntity.create.mockResolvedValueOnce(

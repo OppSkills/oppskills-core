@@ -68,8 +68,7 @@ export class AdminPayoutsService {
           pendingPayout: pendingPayout.toString(),
           payoutDetails: hackathon.payoutDetails
             ? {
-                accountHolderName:
-                  hackathon.payoutDetails.accountHolderName,
+                accountHolderName: hackathon.payoutDetails.accountHolderName,
                 accountNumber: hackathon.payoutDetails.accountNumber,
                 ifsc: hackathon.payoutDetails.ifsc,
                 upiId: hackathon.payoutDetails.upiId,

@@ -184,6 +184,43 @@ export function ensureAbsoluteUrl(url: string | null | undefined): string {
 }
 
 /**
+ * Normalizes a URL by trimming it and ensuring it has a protocol.
+ */
+export function normalizeUrl(url: string | null | undefined): string {
+  if (!url || typeof url !== "string") return "";
+  const trimmed = url.trim();
+  if (trimmed.length === 0) return "";
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("/")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("//")) {
+    return `https:${trimmed}`;
+  }
+  return `https://${trimmed}`;
+}
+
+/**
+ * Checks if a URL is valid according to our requirements.
+ */
+export function isValidUrl(value: string | null | undefined): boolean {
+  if (!value || typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return false;
+  let url = trimmed;
+  if (url.startsWith("//")) {
+    url = `https:${url}`;
+  } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+    url = `https://${url}`;
+  }
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === "localhost" || (parsed.hostname.includes(".") && !parsed.hostname.endsWith("."));
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Strips HTML tags and decodes common entities from a string.
  */
 export function stripHtml(html: string | null | undefined): string {

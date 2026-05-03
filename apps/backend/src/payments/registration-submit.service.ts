@@ -107,8 +107,11 @@ export class RegistrationSubmitService {
     }
 
     // Map frontend field IDs (like "default-name") to database field IDs
-    const { mappedAnswers, userCategory } =
-      await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
+    const { mappedAnswers, userCategory } = await this.mapFieldIdsToDatabaseIds(
+      hackathon.id,
+      userId,
+      answers,
+    );
 
     // Refetch registration form fields after mapping (in case new fields were created)
     const updatedRegForm = await prisma.registrationFormEntity.findUnique({
@@ -284,8 +287,11 @@ export class RegistrationSubmitService {
       await this.validatePaymentRequirement(hackathon, leaderTeam, userId);
     }
 
-    const { mappedAnswers, userCategory } =
-      await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
+    const { mappedAnswers, userCategory } = await this.mapFieldIdsToDatabaseIds(
+      hackathon.id,
+      userId,
+      answers,
+    );
 
     const updatedRegForm = await prisma.registrationFormEntity.findUnique({
       where: { hackathonId: hackathon.id },
@@ -836,8 +842,7 @@ export class RegistrationSubmitService {
     const isPaidButIncomplete =
       !hackathon.isFree && paymentCompleted && !hasSubmitted;
     const canCompleteRegistrationWithoutPayment =
-      !hasSubmitted &&
-      (paymentCompleted || (hackathon.isFree && !!leaderTeam));
+      !hasSubmitted && (paymentCompleted || (hackathon.isFree && !!leaderTeam));
 
     return {
       hasTeam: true,

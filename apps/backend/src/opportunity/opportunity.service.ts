@@ -28,7 +28,7 @@ export class OpportunityService {
   constructor(
     private readonly eventService: EventService,
     private readonly hackathonService: HackathonService,
-  ) { }
+  ) {}
 
   /**
    * List past public opportunities (Deadline < Now).
@@ -40,7 +40,9 @@ export class OpportunityService {
     search?: string;
   }) {
     const requestedTake = Number(params.take) || 10;
-    const PAGE_SIZE = [10, 20, 30, 40].includes(requestedTake) ? requestedTake : 10;
+    const PAGE_SIZE = [10, 20, 30, 40].includes(requestedTake)
+      ? requestedTake
+      : 10;
 
     const pageNum = Math.max(1, Number(params.page) || 1);
 
@@ -170,8 +172,8 @@ export class OpportunityService {
     ]);
 
     const combinedTop = [
-      ...topHackathons.map(h => ({ ...h, type: 'HACKATHON' })),
-      ...topEvents.map(e => ({ ...e, type: 'EVENT' })),
+      ...topHackathons.map((h) => ({ ...h, type: 'HACKATHON' })),
+      ...topEvents.map((e) => ({ ...e, type: 'EVENT' })),
     ];
 
     // Final sort for the top 8

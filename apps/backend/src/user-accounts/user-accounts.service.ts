@@ -1003,8 +1003,7 @@ export class UserAccountsService {
       opportunityType: 'hackathon' as const,
       slug: p.hackathon.slug,
       grossAmount: Number(p.grossAmount),
-      chargedAmount:
-        p.chargedAmount != null ? Number(p.chargedAmount) : null,
+      chargedAmount: p.chargedAmount != null ? Number(p.chargedAmount) : null,
       currency: p.currency,
       paymentStatus: p.paymentStatus,
       refundStatus: p.refundStatus ?? null,
@@ -1022,8 +1021,7 @@ export class UserAccountsService {
       opportunityType: 'event' as const,
       slug: p.event.slug,
       grossAmount: Number(p.grossAmount),
-      chargedAmount:
-        p.chargedAmount != null ? Number(p.chargedAmount) : null,
+      chargedAmount: p.chargedAmount != null ? Number(p.chargedAmount) : null,
       currency: p.currency,
       paymentStatus: p.paymentStatus,
       refundStatus: p.refundStatus ?? null,
@@ -1150,7 +1148,9 @@ export class UserAccountsService {
     return teams.map((t) => {
       const h = t.hackathon;
       const isPaid = h.isFree ? true : t.payments.length > 0;
-      const submission = submissions.find((s) => s.hackathonId === h.id && s.teamId === t.id);
+      const submission = submissions.find(
+        (s) => s.hackathonId === h.id && s.teamId === t.id,
+      );
       const hasSubmitted = !!submission;
       const isLeader = t.leaderId === userId;
       const memberRecord = t.members[0];
@@ -1191,7 +1191,9 @@ export class UserAccountsService {
             : [
                 {
                   label: 'Payment',
-                  status: isPaid ? ('completed' as const) : ('current' as const),
+                  status: isPaid
+                    ? ('completed' as const)
+                    : ('current' as const),
                 },
               ]),
           {

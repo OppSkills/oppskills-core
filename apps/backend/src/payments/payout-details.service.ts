@@ -1,10 +1,19 @@
-import { Injectable, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import { UpsertPayoutDetailsDto } from './dto/payout-details.dto';
 
 @Injectable()
 export class PayoutDetailsService {
-  async assertCanAccess(userId: string, eventId?: string, hackathonId?: string) {
+  async assertCanAccess(
+    userId: string,
+    eventId?: string,
+    hackathonId?: string,
+  ) {
     if (!eventId && !hackathonId) {
       throw new BadRequestException('eventId or hackathonId is required');
     }
@@ -12,18 +21,34 @@ export class PayoutDetailsService {
     if (eventId) {
       const event = await prisma.eventEntity.findFirst({
         where: { id: eventId, isDeleted: false },
-        select: { ownerId: true, userRoles: { where: { userId, role: 'MANAGER' } } },
+        select: {
+          ownerId: true,
+          userRoles: { where: { userId, role: 'MANAGER' } },
+        },
       });
-      if (!event || (event.ownerId !== userId && event.userRoles.length === 0)) {
-        throw new ForbiddenException('You are not allowed to access this event payout details');
+      if (
+        !event ||
+        (event.ownerId !== userId && event.userRoles.length === 0)
+      ) {
+        throw new ForbiddenException(
+          'You are not allowed to access this event payout details',
+        );
       }
     } else if (hackathonId) {
       const hackathon = await prisma.hackathonEntity.findFirst({
         where: { id: hackathonId, isDeleted: false },
-        select: { ownerId: true, userRoles: { where: { userId, role: 'MANAGER' } } },
+        select: {
+          ownerId: true,
+          userRoles: { where: { userId, role: 'MANAGER' } },
+        },
       });
-      if (!hackathon || (hackathon.ownerId !== userId && hackathon.userRoles.length === 0)) {
-        throw new ForbiddenException('You are not allowed to access this hackathon payout details');
+      if (
+        !hackathon ||
+        (hackathon.ownerId !== userId && hackathon.userRoles.length === 0)
+      ) {
+        throw new ForbiddenException(
+          'You are not allowed to access this hackathon payout details',
+        );
       }
     }
   }
@@ -31,11 +56,16 @@ export class PayoutDetailsService {
   async upsertPayoutDetails(userId: string, dto: UpsertPayoutDetailsDto) {
     await this.assertCanAccess(userId, dto.eventId, dto.hackathonId);
 
-    const hasAnyPayout = await prisma.hackathonPayoutEntity.findFirst({
-      where: { organizerId: userId },
-    });
+    const [hasHackathonPayout, hasEventPayout] = await Promise.all([
+      prisma.hackathonPayoutEntity.findFirst({
+        where: { organizerId: userId },
+      }),
+      prisma.eventPayoutEntity.findFirst({
+        where: { organizerId: userId },
+      }),
+    ]);
 
-    if (hasAnyPayout) {
+    if (hasHackathonPayout || hasEventPayout) {
       throw new ConflictException(
         'Payout details locked after first payout has been processed',
       );
@@ -113,7 +143,11 @@ export class PayoutDetailsService {
     return this.maskPayoutDetails(result);
   }
 
-  async getPayoutDetails(userId: string, eventId?: string, hackathonId?: string) {
+  async getPayoutDetails(
+    userId: string,
+    eventId?: string,
+    hackathonId?: string,
+  ) {
     await this.assertCanAccess(userId, eventId, hackathonId);
 
     let details: any = null;
@@ -137,7 +171,11 @@ export class PayoutDetailsService {
     };
   }
 
-  async getFullPayoutDetails(userId: string, eventId?: string, hackathonId?: string) {
+  async getFullPayoutDetails(
+    userId: string,
+    eventId?: string,
+    hackathonId?: string,
+  ) {
     await this.assertCanAccess(userId, eventId, hackathonId);
 
     if (eventId) {

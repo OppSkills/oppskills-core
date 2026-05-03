@@ -24,18 +24,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import dynamic from "next/dynamic";
 import React, { useState, useMemo } from "react";
-import { cn } from "@/lib/utils";
+import { cn, isValidUrl } from "@/lib/utils";
 import { FormData } from "../page";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
@@ -49,23 +47,6 @@ const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
   { ssr: false },
 );
-
-function isValidUrl(value: string): boolean {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) return false;
-  let url = trimmed;
-  if (url.startsWith("//")) {
-    url = `https:${url}`;
-  } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
-    url = `https://${url}`;
-  }
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname === "localhost" || (parsed.hostname.includes(".") && !parsed.hostname.endsWith("."));
-  } catch {
-    return false;
-  }
-}
 
 interface BasicDetailsProps {
   formData: FormData;
@@ -126,8 +107,8 @@ export default function BasicDetails({
         eventThumbnail: presign.publicUrl.startsWith("http")
           ? presign.publicUrl
           : presign.publicUrl.startsWith("//")
-          ? `https:${presign.publicUrl}`
-          : `https://${presign.publicUrl}`,
+            ? `https:${presign.publicUrl}`
+            : `https://${presign.publicUrl}`,
       }));
 
       toast.success("Banner uploaded.");
@@ -328,8 +309,8 @@ export default function BasicDetails({
                     ? formData.eventLocation.startsWith("OFFLINE:")
                       ? formData.eventLocation.substring(8)
                       : formData.eventLocation.startsWith("VIRTUAL:")
-                      ? formData.eventLocation.substring(8)
-                      : formData.eventLocation
+                        ? formData.eventLocation.substring(8)
+                        : formData.eventLocation
                     : "Add Event Location"
                 }
                 subLabel="Offline location or virtual link"
@@ -345,22 +326,20 @@ export default function BasicDetails({
                 <button
                   type="button"
                   onClick={() => setTempLocationMode("OFFLINE")}
-                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${
-                    tempLocationMode === "OFFLINE"
-                      ? "bg-white text-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-white/40"
-                  }`}
+                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${tempLocationMode === "OFFLINE"
+                    ? "bg-white text-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-white/40"
+                    }`}
                 >
                   Offline
                 </button>
                 <button
                   type="button"
                   onClick={() => setTempLocationMode("VIRTUAL")}
-                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${
-                    tempLocationMode === "VIRTUAL"
-                      ? "bg-white text-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-white/40"
-                  }`}
+                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${tempLocationMode === "VIRTUAL"
+                    ? "bg-white text-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-white/40"
+                    }`}
                 >
                   Virtual
                 </button>
@@ -397,11 +376,6 @@ export default function BasicDetails({
                   setFormData(prev => ({ ...prev, eventLocation: prefix + val }));
                   setIsLocationOpen(false);
                   toast.success("Location updated successfully.");
-                  if (triggerSave) {
-                    setTimeout(() => {
-                      triggerSave();
-                    }, 0);
-                  }
                 }}
                 className="w-full h-11 font-bold rounded-lg mt-2 transition-all bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
               >

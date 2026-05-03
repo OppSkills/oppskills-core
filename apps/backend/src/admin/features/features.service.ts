@@ -12,11 +12,15 @@ export class AdminFeaturesService {
     private readonly adminLogsService: AdminLogsService,
     private readonly hackathonService: HackathonService,
     @Inject(REQUEST) private request: any,
-  ) { }
+  ) {}
 
   private logger = new Logger('AdminFeaturesService');
 
-  async listHackathons(limit: number, cursor?: string, filterPending?: boolean) {
+  async listHackathons(
+    limit: number,
+    cursor?: string,
+    filterPending?: boolean,
+  ) {
     const take = limit + 1;
     const where: any = { isDeleted: false };
 

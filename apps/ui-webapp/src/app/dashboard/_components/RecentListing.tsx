@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import NoDataPlaceholder from "./NoDataPlaceholder";
-import { cn } from "@/lib/utils";
+import { cn, normalizeUrl, isValidUrl } from "@/lib/utils";
 import {
   MotionContainer,
   MotionItem
@@ -36,23 +36,8 @@ export default function RecentListing({ data }: { data: RecentListingItem[] }) {
            {data.map((item, index) => {
             const href = `/dashboard/${item.type.toLowerCase() === "event" ? "events" : "hackathon"}/${item.slug}`;
 
-            let thumbSrc = item.thumbnail;
-            let isValidThumbnail = false;
-            if (thumbSrc && typeof thumbSrc === "string") {
-              thumbSrc = thumbSrc.trim();
-              if (thumbSrc.startsWith("//")) {
-                thumbSrc = `https:${thumbSrc}`;
-              } else if (!thumbSrc.startsWith("http://") && !thumbSrc.startsWith("https://") && !thumbSrc.startsWith("/")) {
-                thumbSrc = `https://${thumbSrc}`;
-              }
-              try {
-                if (thumbSrc.startsWith("/") || new URL(thumbSrc)) {
-                  isValidThumbnail = true;
-                }
-              } catch {
-                isValidThumbnail = false;
-              }
-            }
+            const thumbSrc = normalizeUrl(item.thumbnail);
+            const isValidThumbnail = isValidUrl(thumbSrc);
 
             return (
               <MotionItem key={index}>

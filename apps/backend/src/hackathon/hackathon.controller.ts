@@ -47,7 +47,6 @@ import {
   UpdateHackathonMaxTeamsDto,
 } from './hackathon-update-nested.dto';
 
-
 function assertNonEmptyId(id: string, fieldName: string): string {
   const trimmed = id.trim();
   if (trimmed.length === 0) {
@@ -66,7 +65,7 @@ export class HackathonController {
   constructor(
     private readonly hackathonService: HackathonService,
     private readonly teamService: TeamService,
-  ) { }
+  ) {}
 
   @Get('my-team')
   @ApiOperation({
@@ -1565,8 +1564,8 @@ export class HackathonController {
     if (dto.teamId !== safeTeamId) {
       throw new BadRequestException('Team ID mismatch between URL and body');
     }
-    // We await the service call which now performs quick validations and then 
-    // offloads the actual email delivery to the background. This allows us to 
+    // We await the service call which now performs quick validations and then
+    // offloads the actual email delivery to the background. This allows us to
     // return early while still catching immediate issues like 404/403.
     return this.hackathonService.sendTeamEmail(safeId, userId, dto);
   }

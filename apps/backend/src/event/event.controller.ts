@@ -61,7 +61,7 @@ export class EventController {
   constructor(
     private readonly eventService: EventService,
     private readonly hackathonService: HackathonService,
-  ) { }
+  ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // PUBLIC Endpoints (no auth required) - sanitized data only
@@ -123,7 +123,8 @@ export class EventController {
   @ApiQuery({
     name: 'sort',
     required: false,
-    description: 'Sort by (most_relevant, recently_added, price_amount, submission_date)',
+    description:
+      'Sort by (most_relevant, recently_added, price_amount, submission_date)',
     type: String,
   })
   @ApiResponse({
@@ -206,7 +207,6 @@ export class EventController {
       filterMode: 'UPCOMING',
     });
   }
-
 
   /**
    * GET /events/public/by-slug/:slug - Get public event by slug.
@@ -357,7 +357,10 @@ export class EventController {
       'Get registration answers for all participants (owner/manager/admin only)',
   })
   @ApiParam({ name: 'slug', description: 'Event slug' })
-  @ApiResponse({ status: 200, description: 'All participant registration answers' })
+  @ApiResponse({
+    status: 200,
+    description: 'All participant registration answers',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({
     status: 403,

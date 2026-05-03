@@ -36,6 +36,7 @@ import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 import { ClockCircle, DocumentText, MapPoint, MagicStick2, Earth, AltArrowDown as SolarChevronDown } from "@solar-icons/react";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
 import InputBlock from "@/components/ui/derived/InputBlock";
+import { isValidUrl } from "@/lib/utils";
 
 const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
@@ -47,23 +48,6 @@ interface BasicDetailsProps {
   setFormData: (data: React.SetStateAction<FormData>) => void;
   registrationFormLocked?: boolean;
   triggerSave?: () => void;
-}
-
-function isValidUrl(value: string): boolean {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) return false;
-  let url = trimmed;
-  if (url.startsWith("//")) {
-    url = `https:${url}`;
-  } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
-    url = `https://${url}`;
-  }
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname === "localhost" || (parsed.hostname.includes(".") && !parsed.hostname.endsWith("."));
-  } catch {
-    return false;
-  }
 }
 
 export default function BasicDetails({
@@ -350,11 +334,6 @@ export default function BasicDetails({
                   setFormData(prev => ({ ...prev, eventLocation: prefix + val }));
                   setIsLocationOpen(false);
                   toast.success("Location updated successfully.");
-                  if (triggerSave) {
-                    setTimeout(() => {
-                      triggerSave();
-                    }, 0);
-                  }
                 }}
                 className="w-full h-11 font-bold rounded-lg mt-2 transition-all bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
               >

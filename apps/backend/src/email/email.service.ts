@@ -74,7 +74,7 @@ export interface SendEmailOptions<T extends EmailType> {
                         ? HackathonTeamNotificationEmailProps
                         : T extends 'referral-invitation'
                           ? ReferralInvitationEmailProps
-                        : never;
+                          : never;
 }
 
 @Injectable()

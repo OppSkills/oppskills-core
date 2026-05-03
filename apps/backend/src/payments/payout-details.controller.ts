@@ -1,4 +1,12 @@
-import { Controller, Get, Put, Body, UseGuards, Req, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Body,
+  UseGuards,
+  Req,
+  Query,
+} from '@nestjs/common';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { PayoutDetailsService } from './payout-details.service';
 import { UpsertPayoutDetailsDto } from './dto/payout-details.dto';
@@ -16,7 +24,11 @@ export class PayoutDetailsController {
     @Query('hackathonId') hackathonId?: string,
   ) {
     const userId = req.user!.id;
-    return this.payoutDetailsService.getPayoutDetails(userId, eventId, hackathonId);
+    return this.payoutDetailsService.getPayoutDetails(
+      userId,
+      eventId,
+      hackathonId,
+    );
   }
 
   @Put()

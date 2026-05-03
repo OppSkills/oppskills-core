@@ -23,4 +23,4 @@ import { HackathonModule } from 'src/hackathon/hackathon.module';
   ],
   exports: [EmailService, IncompleteRegistrationReminderService],
 })
-export class EmailModule { }
+export class EmailModule {}

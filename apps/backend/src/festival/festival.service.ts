@@ -119,7 +119,10 @@ export class FestivalService {
     });
   }
 
-  async listUserFestivals(userId: string, params: { page?: number; take?: number } = {}) {
+  async listUserFestivals(
+    userId: string,
+    params: { page?: number; take?: number } = {},
+  ) {
     const requestedTake = Number(params.take) || 10;
     const take = [10, 20, 30, 40].includes(requestedTake) ? requestedTake : 10;
     const page = Math.max(1, Number(params.page) || 1);
@@ -134,10 +137,20 @@ export class FestivalService {
         take,
         include: {
           hackathons: {
-            select: { id: true, slug: true, name: true, registrationCount: true },
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              registrationCount: true,
+            },
           },
           events: {
-            select: { id: true, slug: true, name: true, registrationCount: true },
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              registrationCount: true,
+            },
           },
         },
         orderBy: { createdAt: 'desc' },

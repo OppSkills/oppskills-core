@@ -5,7 +5,7 @@ import { AdminGuard } from '../admin.guard';
 @Controller('admin/payments')
 @UseGuards(AdminGuard)
 export class AdminPaymentsController {
-  constructor(private readonly paymentsService: AdminPaymentsService) { }
+  constructor(private readonly paymentsService: AdminPaymentsService) {}
 
   @Get()
   async getPayments(

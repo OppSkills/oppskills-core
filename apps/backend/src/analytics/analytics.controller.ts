@@ -13,7 +13,7 @@ import { AnalyticsService } from './analytics.service';
 @Controller('analytics')
 @UseGuards(ClerkAuthGuard)
 export class AnalyticsController {
-  constructor(private readonly analyticsService: AnalyticsService) { }
+  constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('event/:slug/general')
   async getEventGeneralStats(
@@ -97,7 +97,11 @@ export class AnalyticsController {
     const userId = req.user?.id;
     // userId is guaranteed by ClerkAuthGuard but let's be safe
     if (!userId) throw new NotFoundException('User not found');
-    return this.analyticsService.getOrganizerStats(userId, { period, from, to });
+    return this.analyticsService.getOrganizerStats(userId, {
+      period,
+      from,
+      to,
+    });
   }
 
   @Get('organizer-trends')
