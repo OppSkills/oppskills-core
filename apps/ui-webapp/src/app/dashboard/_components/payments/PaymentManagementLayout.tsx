@@ -239,7 +239,7 @@ export function PaymentManagementLayout({
         <div className="flex flex-col gap-8 w-full animate-in fade-in slide-in-from-top-4 duration-500">
           {/* EARNINGS OVERVIEW */}
           {earnings && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6 lg:gap-4 w-full">
               <AnalyticCard
                 title="Collected"
                 value={`₹${parseFloat(String(earnings.totalGross)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
@@ -435,17 +435,35 @@ export function PaymentManagementLayout({
             <div className="flex flex-col py-2">
               {[
                 { label: "Account Holder Name", value: payoutDetails?.accountHolderName },
+                {
+                  label: "Phone Number",
+                  value: (() => {
+                    const ph = payoutDetails?.phoneNumber || payoutDetails?.phone;
+                    if (!ph) return undefined;
+                    const cleaned = String(ph).trim();
+                    if (cleaned.startsWith("+91")) return cleaned;
+                    if (cleaned.length === 10 && /^\d{10}$/.test(cleaned)) {
+                      return `+91${cleaned}`;
+                    }
+                    return cleaned;
+                  })()
+                },
+                { label: "Email", value: payoutDetails?.email },
                 { label: "Bank Name", value: payoutDetails?.bankName },
-                { label: "Bank Account Number", value: payoutDetails?.accountNumberLast4 ? `•••• •••• ${payoutDetails.accountNumberLast4}` : undefined },
+                { label: "Bank Account Number", value: payoutDetails?.accountNumber || (payoutDetails?.accountNumberLast4 ? `•••• •••• ${payoutDetails.accountNumberLast4}` : undefined) },
                 { label: "IFSC Code", value: payoutDetails?.ifsc },
+                { label: "Pan Number", value: payoutDetails?.panNumber },
+                { label: "GST Tin Number", value: payoutDetails?.gstNumber },
+                { label: "Address 1", value: payoutDetails?.address1 },
+                { label: "Address 2", value: payoutDetails?.address2 },
+                { label: "State", value: payoutDetails?.state },
+                { label: "City", value: payoutDetails?.city },
+                { label: "Pincode", value: payoutDetails?.pinCode },
               ].map((item, index) => (
-                <div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 border-b border-neutral-100 last:border-0 gap-1 sm:gap-0">
-                  <span className="text-neutral-500 font-medium inter text-xs sm:text-sm">{item.label}</span>
-                  <span className={cn(
-                    "font-bold poppins text-sm sm:text-base",
-                    item.value ? "text-neutral-900" : "text-neutral-300 italic font-normal"
-                  )}>
-                    {item.value || "Not set"}
+                <div key={index} className="grid grid-cols-12 items-center gap-4 py-3 border-b border-neutral-100 last:border-0">
+                  <span className="col-span-5 sm:col-span-4 text-neutral-600 font-medium inter text-sm">{item.label}</span>
+                  <span className="col-span-7 sm:col-span-8 text-neutral-700 font-normal inter text-sm">
+                    {item.value && String(item.value).trim().length > 0 ? item.value : "--"}
                   </span>
                 </div>
               ))}

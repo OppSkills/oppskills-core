@@ -184,6 +184,19 @@ function requireToken(token: string | null): string {
   return token;
 }
 
+function normalizeBannerUrl(url: string | undefined): string {
+  if (!url) return "";
+  const trimmed = url.trim();
+  if (trimmed.length === 0) return "";
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("//")) {
+    return `https:${trimmed}`;
+  }
+  return `https://${trimmed}`;
+}
+
 function isValidUrl(value: string): boolean {
   const trimmed = value.trim();
   if (trimmed.length === 0) return false;
@@ -398,7 +411,7 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
     eventLocation: location,
     eventTimeFrom: startDate ? toTimeHHmm(startDate) : "09:00",
     eventDescription: getString(event, "description") ?? "",
-    eventThumbnail: getString(event, "bannerImageUrl") ?? "",
+    eventThumbnail: normalizeBannerUrl(getString(event, "bannerImageUrl")),
     eventRegisterBy: registrationDeadline,
     eventType,
     participantType: "Individual",
@@ -554,6 +567,12 @@ export default function EditEventPage() {
     organizationName: "",
   }));
 
+  const latestFormDataRef = React.useRef<FormData>(formData);
+
+  useEffect(() => {
+    latestFormDataRef.current = formData;
+  }, [formData]);
+
   // Refs for auto-save state tracking
   const lastSavedAdditionalInfoSnapshotRef = React.useRef<string | null>(null);
   const savingAdditionalInfoSnapshotRef = React.useRef<string | null>(null);
@@ -594,9 +613,10 @@ export default function EditEventPage() {
         throw new Error("Event id is not loaded yet.");
       }
       const token = requireToken(await getToken());
+      const currentFormData = latestFormDataRef.current;
 
       const additionalInfoSnapshot = serializeAdditionalInfo(
-        formData.additionalInfo,
+        currentFormData.additionalInfo,
       );
 
       // Map visibility back to backend enum
@@ -605,7 +625,7 @@ export default function EditEventPage() {
         Private: "PRIVATE",
       };
       const visibility =
-        visibilityMap[formData.eventFestVisibility] ?? "PUBLIC";
+        visibilityMap[currentFormData.eventFestVisibility] ?? "PUBLIC";
 
       // Map event type back to backend enum
       const eventTypeMap: Record<string, string> = {
@@ -617,7 +637,7 @@ export default function EditEventPage() {
         Webinar: "WEBINAR",
         Other: "OTHER",
       };
-      const eventType = eventTypeMap[formData.eventType] ?? "CONFERENCE";
+      const eventType = eventTypeMap[currentFormData.eventType] ?? "CONFERENCE";
 
       // Map candidate types back to backend enum
       const candidateTypeMap: Record<string, string> = {
@@ -627,64 +647,65 @@ export default function EditEventPage() {
         Freshers: "FRESHERS",
         Professionals: "PROFESSIONALS",
       };
-      const attendeeEligibility = formData.registrationSettings.candidateTypes
+      const attendeeEligibility = currentFormData.registrationSettings.candidateTypes
         .map((t) => candidateTypeMap[t])
         .filter((v): v is string => typeof v === "string");
 
       const payload: UpdateEventDto = {
         name:
-          formData.eventName.trim().length > 0
-            ? formData.eventName.trim()
+          currentFormData.eventName.trim().length > 0
+            ? currentFormData.eventName.trim()
             : undefined,
         description:
-          formData.eventDescription.trim().length > 0
-            ? formData.eventDescription
+          currentFormData.eventDescription.trim().length > 0
+            ? currentFormData.eventDescription
             : undefined,
-        bannerImageUrl: isValidUrl(formData.eventThumbnail)
-          ? formData.eventThumbnail.trim()
-          : undefined,
-        location: toLocationDto(formData.eventLocation),
+        bannerImageUrl:
+          currentFormData.eventThumbnail && currentFormData.eventThumbnail.trim().length > 0
+            ? normalizeBannerUrl(currentFormData.eventThumbnail)
+            : undefined,
+        location: toLocationDto(currentFormData.eventLocation),
         registrationDeadline: (() => {
           const deadlineDate =
-            formData.registrationSettings.endDate ?? formData.eventRegisterBy;
+            currentFormData.registrationSettings.endDate ?? currentFormData.eventRegisterBy;
           return deadlineDate
             ? combineDateAndTimeToIso(
               deadlineDate,
-              formData.registrationSettings.endTime,
+              currentFormData.registrationSettings.endTime,
             )
             : undefined;
         })(),
         startDate: (() => {
           const start =
-            formData.registrationSettings.eventDate ?? formData.eventDate;
+            currentFormData.registrationSettings.eventDate ?? currentFormData.eventDate;
           const time =
-            formData.registrationSettings.eventTime.trim().length > 0
-              ? formData.registrationSettings.eventTime
-              : formData.eventTimeFrom;
+            currentFormData.registrationSettings.eventTime.trim().length > 0
+              ? currentFormData.registrationSettings.eventTime
+              : currentFormData.eventTimeFrom;
           return start ? combineDateAndTimeToIso(start, time) : undefined;
         })(),
         endDate: (() => {
           const start =
-            formData.registrationSettings.eventDate ?? formData.eventDate;
+            currentFormData.registrationSettings.eventDate ?? currentFormData.eventDate;
           const time =
-            formData.registrationSettings.eventTime.trim().length > 0
-              ? formData.registrationSettings.eventTime
-              : formData.eventTimeFrom;
+            currentFormData.registrationSettings.eventTime.trim().length > 0
+              ? currentFormData.registrationSettings.eventTime
+              : currentFormData.eventTimeFrom;
           return start ? combineDateAndTimeToIso(start, time) : undefined;
         })(),
         maxUsers: (() => {
-          if (formData.registrationSettings.maxTeamsNoLimit) {
+          if (currentFormData.registrationSettings.maxTeamsNoLimit) {
             return null;
           }
-          const n = formData.registrationSettings.maxUsers;
+          const n = currentFormData.registrationSettings.maxUsers;
           if (typeof n === "number" && Number.isInteger(n) && n >= 1) {
             return n;
           }
           return undefined;
         })(),
         organizationName:
-          formData.organizationName.trim().length > 0
-            ? formData.organizationName.trim()
+          currentFormData.organizationName.trim().length > 0
+            ? currentFormData.organizationName.trim()
             : undefined,
         visibility: visibility as "PUBLIC" | "PRIVATE" | "UNIVERSITY_ONLY",
         eventType: eventType as
@@ -702,26 +723,26 @@ export default function EditEventPage() {
           | "FRESHERS"
           | "PROFESSIONALS"
         >,
-        prizeDescription: { summary: formData.prizes.description },
-        prizeCertificate: formData.prizes.certificateProvided ?? false,
+        prizeDescription: { summary: currentFormData.prizes.description },
+        prizeCertificate: currentFormData.prizes.certificateProvided ?? false,
         // Pass Settings
-        passSendingMode: formData.passSettings.passSendingMode,
-        collegeRestrictionEnabled: formData.passSettings.collegeRestrictionEnabled,
-        allowedCollegeIds: formData.passSettings.allowedCollegeIds,
-        allowedEmailDomains: formData.passSettings.allowedEmailDomains,
-        collegeMatchMode: formData.passSettings.collegeMatchMode,
+        passSendingMode: currentFormData.passSettings.passSendingMode,
+        collegeRestrictionEnabled: currentFormData.passSettings.collegeRestrictionEnabled,
+        allowedCollegeIds: currentFormData.passSettings.allowedCollegeIds,
+        allowedEmailDomains: currentFormData.passSettings.allowedEmailDomains,
+        collegeMatchMode: currentFormData.passSettings.collegeMatchMode,
       };
 
       await updateEvent(token, eventId, payload);
 
       const currentAdditionalInfoSnapshot = serializeAdditionalInfo(
-        formData.additionalInfo,
+        currentFormData.additionalInfo,
       );
       if (
         currentAdditionalInfoSnapshot !==
         lastSavedAdditionalInfoSnapshotRef.current
       ) {
-        const primaryContact = formData.additionalInfo.contacts[0];
+        const primaryContact = currentFormData.additionalInfo.contacts[0];
         const contact = primaryContact
           ? {
             name: primaryContact.name || undefined,
@@ -730,7 +751,7 @@ export default function EditEventPage() {
           }
           : undefined;
 
-        const attachments = formData.additionalInfo.attachments.map((a) => ({
+        const attachments = currentFormData.additionalInfo.attachments.map((a) => ({
           storageKey: a.storageKey ?? a.id,
           publicUrl: a.url,
           fileName: a.title,
@@ -748,10 +769,10 @@ export default function EditEventPage() {
           currentAdditionalInfoSnapshot;
       }
 
-      const currentPrizesSnapshot = serializePrizes(formData.prizes);
+      const currentPrizesSnapshot = serializePrizes(currentFormData.prizes);
       if (currentPrizesSnapshot !== lastSavedPrizesSnapshotRef.current) {
         await updateEventPrizeBreakdown(token, eventId, {
-          prizeBreakdown: formData.prizes.list.map((p) => ({
+          prizeBreakdown: currentFormData.prizes.list.map((p) => ({
             position: p.name,
             amount: p.amount.replace(/[^0-9.]/g, "") || "0",
             description: p.description,
@@ -761,7 +782,7 @@ export default function EditEventPage() {
       }
 
       const currentRegQuestionsSnapshot = serializeRegistrationQuestions(
-        formData.registrationQuestions,
+        currentFormData.registrationQuestions,
       );
       if (
         currentRegQuestionsSnapshot !==
@@ -781,7 +802,7 @@ export default function EditEventPage() {
 
         await updateEventRegistrationForm(token, eventId, {
           registrationForm: {
-            fields: formData.registrationQuestions.map((q, idx) => ({
+            fields: currentFormData.registrationQuestions.map((q, idx) => ({
               label: q.label,
               type: typeMap[q.type],
               required: q.required,
@@ -809,11 +830,6 @@ export default function EditEventPage() {
   );
   const saveQueuedRef = React.useRef<boolean>(false);
   const lastErrorToastAtRef = React.useRef<number>(0);
-  const latestFormDataRef = React.useRef<FormData>(formData);
-
-  useEffect(() => {
-    latestFormDataRef.current = formData;
-  }, [formData]);
 
   /**
    * Executes a save immediately (no debounce).

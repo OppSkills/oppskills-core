@@ -38,12 +38,14 @@ export class PayoutDetailsService {
         bankName,
         panNumber: dto.panNumber || null,
         gstNumber: dto.gstNumber || null,
-        upiId: dto.upiId || null,
-        pinCode: dto.pinCode || null,
-        city: dto.city || null,
-        state: dto.state || null,
-        address1: dto.address1 || null,
-        address2: dto.address2 || null,
+        upiId: dto.upiId || '',
+        pinCode: dto.pinCode || '',
+        city: dto.city || '',
+        state: dto.state || '',
+        address1: dto.address1 || '',
+        address2: dto.address2 || '',
+        phone: dto.phone || '',
+        email: dto.email || '',
       },
       update: {
         accountHolderName: dto.accountHolderName,
@@ -52,12 +54,14 @@ export class PayoutDetailsService {
         bankName,
         panNumber: dto.panNumber || null,
         gstNumber: dto.gstNumber || null,
-        upiId: dto.upiId || null,
-        pinCode: dto.pinCode || null,
-        city: dto.city || null,
-        state: dto.state || null,
-        address1: dto.address1 || null,
-        address2: dto.address2 || null,
+        upiId: dto.upiId || '',
+        pinCode: dto.pinCode || '',
+        city: dto.city || '',
+        state: dto.state || '',
+        address1: dto.address1 || '',
+        address2: dto.address2 || '',
+        phone: dto.phone || '',
+        email: dto.email || '',
       },
     });
 
@@ -99,12 +103,14 @@ export class PayoutDetailsService {
     bankName: string;
     panNumber: string | null;
     gstNumber: string | null;
-    upiId: string | null;
-    pinCode: string | null;
-    city: string | null;
-    state: string | null;
-    address1: string | null;
-    address2: string | null;
+    upiId: string;
+    pinCode: string;
+    city: string;
+    state: string;
+    address1: string;
+    address2: string;
+    phone: string;
+    email: string;
     updatedAt: Date;
   }) {
     return {
@@ -121,6 +127,8 @@ export class PayoutDetailsService {
       state: details.state,
       address1: details.address1,
       address2: details.address2,
+      phone: details.phone,
+      email: details.email,
       updatedAt: details.updatedAt,
     };
   }

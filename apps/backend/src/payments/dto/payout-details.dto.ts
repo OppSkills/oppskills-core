@@ -66,6 +66,14 @@ export class UpsertPayoutDetailsDto {
   address2?: string;
 
   @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
   razorpayBankName?: boolean;
 }

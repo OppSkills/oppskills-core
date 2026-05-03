@@ -40,6 +40,8 @@ export default function PayoutDetailsForm({
     city: "",
     address1: "",
     address2: "",
+    phone: "",
+    email: "",
     razorpayBankName: false,
   });
 
@@ -52,6 +54,7 @@ export default function PayoutDetailsForm({
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
   const [pincodeNotFound, setPincodeNotFound] = useState(false);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [showCustomCity, setShowCustomCity] = useState(false);
 
   // Track if we've initialized for this "open" session
   const hasInitializedRef = useRef(false);
@@ -65,6 +68,10 @@ export default function PayoutDetailsForm({
     // Only initialize when modal just opened, not on every render
     if (justOpened) {
       hasInitializedRef.current = true;
+      let phone = initialData?.phone || "";
+      if (phone.startsWith("+91")) {
+        phone = phone.slice(3);
+      }
       setFormData({
         accountHolderName: initialData?.accountHolderName || "",
         bankName: initialData?.bankName || "",
@@ -79,8 +86,11 @@ export default function PayoutDetailsForm({
         city: initialData?.city || "",
         address1: initialData?.address1 || "",
         address2: initialData?.address2 || "",
+        phone,
+        email: initialData?.email || "",
         razorpayBankName: initialData?.razorpayBankName || false,
       });
+      setShowCustomCity(false);
       setErrors({});
       setTouched({});
     }
@@ -92,6 +102,7 @@ export default function PayoutDetailsForm({
       setIfscNotFound(false);
       setAvailableCities([]);
       setPincodeNotFound(false);
+      setShowCustomCity(false);
     }
   }, [isOpen, initialData]);
 
@@ -217,8 +228,21 @@ export default function PayoutDetailsForm({
           return "Invalid GSTIN format (e.g., 22AAAAA0000A1Z5)";
         }
         return "";
+       case "address2":
+        return !value.trim() ? "Address 2 is required" : "";
+      case "phone": {
+        if (!value.trim()) return "Phone Number is required";
+        const rawNum = value.replace(/\s+/g, "").replace("+91", "");
+        if (!/^\d{10}$/.test(rawNum)) return "Phone number must be exactly 10 digits";
+        return "";
+      }
+      case "email":
+        if (!value.trim()) return "Email is required";
+        if (!/^[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(value)) return "Invalid email format";
+        return "";
       case "upiId":
-        if (value.trim() && !/^[\w.-]+@[\w.-]+$/.test(value)) {
+        if (!value.trim()) return "UPI ID is required";
+        if (!/^[\w.-]+@[\w.-]+$/.test(value)) {
           return "Invalid UPI ID format (e.g., name@bank)";
         }
         return "";
@@ -269,7 +293,8 @@ export default function PayoutDetailsForm({
     if (Object.keys(newErrors).length === 0) {
       // Exclude confirmAccountNumber before sending
       const { confirmAccountNumber: _, ...submitPayload } = formData;
-      onSave(submitPayload);
+      const cleanedPhone = submitPayload.phone.replace(/\s+/g, "").replace("+91", "");
+      onSave({ ...submitPayload, phone: cleanedPhone });
     }
   };
 
@@ -306,6 +331,24 @@ export default function PayoutDetailsForm({
           onChange={(v) => handleChange("accountHolderName", v)}
           onBlur={() => handleBlur("accountHolderName")}
           error={errors.accountHolderName}
+        />
+
+        <CustomInput
+          label="Phone Number"
+          placeholder="Enter Phone Number"
+          value={formData.phone}
+          onChange={(v) => handleChange("phone", v)}
+          onBlur={() => handleBlur("phone")}
+          error={errors.phone}
+        />
+
+        <CustomInput
+          label="Email"
+          placeholder="Enter Email"
+          value={formData.email}
+          onChange={(v) => handleChange("email", v)}
+          onBlur={() => handleBlur("email")}
+          error={errors.email}
         />
 
         <div className="flex flex-col gap-1">
@@ -386,7 +429,6 @@ export default function PayoutDetailsForm({
         <CustomInput
           label="UPI ID"
           placeholder="Enter UPI ID"
-          isOptional
           tooltip="Format: alphanumeric characters and dot/dash. e.g. name@okbank"
           value={formData.upiId}
           onChange={(v) => handleChange("upiId", v)}
@@ -425,11 +467,32 @@ export default function PayoutDetailsForm({
           error={errors.state}
         />
 
-        {availableCities.length > 0 ? (
+        {showCustomCity ? (
+          <CustomInput
+            label="City"
+            placeholder="Enter your city"
+            value={formData.city}
+            onChange={(v) => handleChange("city", v)}
+            onBlur={() => handleBlur("city")}
+            error={errors.city}
+          />
+        ) : availableCities.length > 0 ? (
           <div className="flex flex-col items-start gap-1 w-full">
-            <Label className="font-inter text-foreground text-sm font-semibold leading-[140%] select-none flex items-center gap-1.5">
-              City <span className="text-red-500">*</span>
-            </Label>
+            <div className="flex items-center justify-between w-full">
+              <Label className="font-inter text-foreground text-sm font-semibold leading-[140%] select-none flex items-center gap-1.5">
+                City <span className="text-red-500">*</span>
+              </Label>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCustomCity(true);
+                  handleChange("city", "");
+                }}
+                className="text-xs text-primary font-medium underline hover:text-primary/80 select-none cursor-pointer"
+              >
+                Not your city?
+              </button>
+            </div>
             <select
               value={formData.city}
               onChange={(e) => handleChange("city", e.target.value)}
@@ -479,7 +542,6 @@ export default function PayoutDetailsForm({
           <CustomInput
             label="Address 2"
             placeholder="Enter Address 2"
-            isOptional
             value={formData.address2}
             onChange={(v) => handleChange("address2", v)}
             onBlur={() => handleBlur("address2")}

@@ -155,6 +155,8 @@ export interface PayoutDetails {
   state?: string | null;
   address1?: string | null;
   address2?: string | null;
+  phone?: string | null;
+  email?: string | null;
   updatedAt: string;
   razorpayBankName?: boolean | null;
 }
@@ -177,6 +179,8 @@ export interface PayoutDetailsInput {
   state?: string;
   address1?: string;
   address2?: string;
+  phone?: string;
+  email?: string;
   razorpayBankName?: boolean;
 }
 
