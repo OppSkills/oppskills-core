@@ -648,7 +648,7 @@ export default function EditEventPage() {
             : undefined,
         bannerImageUrl:
           currentFormData.eventThumbnail && currentFormData.eventThumbnail.trim().length > 0
-            ? normalizeBannerUrl(currentFormData.eventThumbnail)
+            ? normalizeUrl(currentFormData.eventThumbnail)
             : undefined,
         location: toLocationDto(currentFormData.eventLocation),
         registrationDeadline: (() => {
