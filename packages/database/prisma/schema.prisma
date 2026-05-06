@@ -70,6 +70,7 @@ model UserEntity {
   teamsLed                         TeamEntity[]                            @relation("UserTeams")
   teamMembers                      TeamMemberEntity[]
   onboardingProfile                UserOnboardingProfileEntity?
+  notifications                    notifications[]                         @relation("UserNotifications")
 
   @@map("user")
   @@schema("oppskills")
@@ -160,6 +161,7 @@ model HackathonEntity {
   rounds                   RoundEntity[]
   teams                    TeamEntity[]
   payoutDetails            OrganizerPayoutDetailsEntity?
+  notifications            notifications[]
 
   @@index([festivalId])
   @@map("hackathon")
@@ -267,6 +269,7 @@ model EventEntity {
   registrationSubmissions   EventRegistrationSubmissionEntity[]
   userRoles                 EventUserRoleEntity[]
   payoutDetails             OrganizerPayoutDetailsEntity?
+  notifications             notifications[]
 
   @@index([festivalId])
   @@index([ownerId])
@@ -1207,6 +1210,113 @@ model AdminLog {
   @@index([type])
   @@index([createdAt])
   @@map("admin_log")
+  @@schema("oppskills")
+}
+
+model notifications {
+  id String @id @default(cuid())
+
+  userId      String  @map("user_id")
+  eventId     String? @map("event_id")
+  hackathonId String? @map("hackathon_id")
+
+  content String
+
+  // Scheduling
+  scheduleType ScheduleType @default(IMMEDIATELY) @map("schedule_type")
+  scheduledAt  DateTime?    @map("scheduled_at")
+
+  // Status
+  status NotificationStatus @default(DRAFT)
+
+  // Progress tracking
+  totalRecipients Int? @map("total_recipients")
+  processedCount  Int  @default(0) @map("processed_count")
+  successCount    Int  @default(0) @map("success_count")
+  failedCount     Int  @default(0) @map("failed_count")
+
+  // Cursor
+  lastProcessedId String? @map("last_processed_id")
+
+  // Worker control
+  processingBy          String?   @map("processing_by")
+  processingStartedAt   DateTime? @map("processing_started_at")
+  processingHeartbeatAt DateTime? @map("processing_heartbeat_at")
+
+  // Retry control
+  retryCount Int @default(0) @map("retry_count")
+
+  // Timing
+  expectedFinishAt DateTime? @map("expected_finish_at")
+  completedAt      DateTime? @map("completed_at")
+
+  // Safety to avoid duplication of same notification
+  dedupeKey String? @unique @map("dedupe_key")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user      UserEntity       @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  event     EventEntity?     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  hackathon HackathonEntity? @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  logs NotificationLogs[]
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([hackathonId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("notifications")
+  @@schema("oppskills")
+}
+
+model NotificationLogs {
+  id String @id @default(cuid())
+
+  notificationId String @map("notification_id")
+
+  level   LogLevel
+  message String
+  meta    Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  notification notifications @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+  @@map("notification_logs")
+  @@schema("oppskills")
+}
+
+enum NotificationStatus {
+  DRAFT
+  QUEUED
+  PROCESSING
+  PAUSED
+  COMPLETED
+  FAILED
+  CANCELLED
+
+  @@map("NotificationStatus")
+  @@schema("oppskills")
+}
+
+enum ScheduleType {
+  IMMEDIATELY
+  CUSTOM
+
+  @@map("ScheduleType")
+  @@schema("oppskills")
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+
+  @@map("LogLevel")
   @@schema("oppskills")
 }
 

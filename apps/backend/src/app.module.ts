@@ -20,6 +20,7 @@ import { WaitlistModule } from './waitlist/waitlist.module';
 import { AdminModule } from './admin/admin.module';
 import { OpportunityModule } from './opportunity/opportunity.module';
 import { ReferralModule } from './referral/referral.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { ReferralModule } from './referral/referral.module';
     AdminModule,
     OpportunityModule,
     ReferralModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService, ClerkAuthConfigService],

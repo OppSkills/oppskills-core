@@ -37,6 +37,7 @@
     "@oppskills/types": "workspace:*",
     "@react-email/components": "1.0.3",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.76.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
     "cookie-parser": "^1.4.7",
