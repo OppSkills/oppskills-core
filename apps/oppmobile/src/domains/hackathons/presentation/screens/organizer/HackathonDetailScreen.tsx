@@ -16,6 +16,10 @@ import { HackathonDashboardScreen } from './HackathonDashboardScreen';
 import { ManageHackathonRegistrationScreen } from './ManageHackathonRegistrationScreen';
 import { EditHackathonScreen } from './EditHackathonScreen';
 import { HackathonReferralsPanel } from './HackathonReferralsPanel';
+import { HackathonManageRolesPanel } from './HackathonManageRolesPanel';
+import { HackathonPaymentsPanel } from './HackathonPaymentsPanel';
+import { HackathonNotificationsPanel } from './HackathonNotificationsPanel';
+import { HackathonSettingsPanel } from './HackathonSettingsPanel';
 
 interface HackathonDetailScreenProps {
   readonly hackathon: LiveHackathon;
@@ -82,6 +86,14 @@ export function HackathonDetailScreen({ hackathon: initialHackathon, onBack, onO
         <EditHackathonScreen hackathon={hackathon} onUpdateHackathon={handleUpdateHackathon} />
       ) : activeContextSection === 'referrals' ? (
         <HackathonReferralsPanel hackathon={hackathon} />
+      ) : activeContextSection === 'manage-roles' ? (
+        <HackathonManageRolesPanel />
+      ) : activeContextSection === 'payments' ? (
+        <HackathonPaymentsPanel hackathon={hackathon} />
+      ) : activeContextSection === 'send-notifications' ? (
+        <HackathonNotificationsPanel />
+      ) : activeContextSection === 'settings' ? (
+        <HackathonSettingsPanel hackathon={hackathon} />
       ) : (
         <View style={styles.placeholderWrap}>
           <AppText style={styles.placeholderText}>Coming soon</AppText>
