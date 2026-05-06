@@ -17,7 +17,7 @@ import { HackathonDetailScreen } from '../../../hackathons/presentation/screens/
 import { styles } from './OrganizerDashboardScreen.styles';
 
 const organizerSidebarItems = [
-  { key: 'home', label: 'Home', icon: 'home' },
+  { key: 'dashboard', label: 'Home', icon: 'home' },
   { key: 'hackathon', label: 'Hackathon', icon: 'hackathon' },
   { key: 'event', label: 'Event', icon: 'events' },
   { key: 'festival', label: 'Festival', icon: 'festival' },

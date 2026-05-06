@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   Animated,
   Image,
@@ -31,23 +31,6 @@ export type OrganizerSidebarIconName =
   | 'talent-pipeline'
   | 'settings';
 
-const MINI_WIDTH = 66;
-const CHILD_WIDTH = 330;
-
-const HOME_CHILD_ITEMS = [
-  { key: 'dashboard', label: 'Dashboard', icon: 'dashboard' as OrganizerSidebarIconName },
-  { key: 'manage-registrations', label: 'Manage Registrations', icon: 'registrations' as OrganizerSidebarIconName },
-  { key: 'edit-opportunity', label: 'Edit Opportunity', icon: 'edit-opportunity' as OrganizerSidebarIconName },
-  { key: 'payments', label: 'Payments', icon: 'payments' as OrganizerSidebarIconName },
-  { key: 'manage-roles', label: 'Manage Roles', icon: 'organizer-id' as OrganizerSidebarIconName },
-  { key: 'send-notifications', label: 'Send Notifications', icon: 'notifications' as OrganizerSidebarIconName },
-  { key: 'referrals', label: 'Referrals', icon: 'referrals' as OrganizerSidebarIconName },
-  { key: 'talent-pipeline', label: 'Talent Pipeline', icon: 'talent-pipeline' as OrganizerSidebarIconName },
-  { key: 'settings', label: 'Settings', icon: 'settings' as OrganizerSidebarIconName },
-] as const;
-
-type ExpandableKey = 'home';
-
 export interface OrganizerSidebarItem {
   readonly key: string;
   readonly label: string;
@@ -74,19 +57,13 @@ export function OrganizerSidebarDrawer({
 
   const drawerSlideX = useRef(new Animated.Value(-fullDrawerWidth)).current;
   const mainWidthAnim = useRef(new Animated.Value(fullDrawerWidth)).current;
-  const childSlideX = useRef(new Animated.Value(CHILD_WIDTH)).current;
   const labelOpacity = useRef(new Animated.Value(1)).current;
-
-  const [childExpandedFor, setChildExpandedFor] = useState<ExpandableKey | null>(null);
-  const childVisible = childExpandedFor !== null;
 
   useEffect(() => {
     if (!visible) {
-      setChildExpandedFor(null);
       drawerSlideX.setValue(-fullDrawerWidth);
       mainWidthAnim.setValue(fullDrawerWidth);
       labelOpacity.setValue(1);
-      childSlideX.setValue(CHILD_WIDTH);
       return;
     }
 
@@ -96,43 +73,7 @@ export function OrganizerSidebarDrawer({
       toValue: 0,
       useNativeDriver: true,
     }).start();
-  }, [drawerSlideX, fullDrawerWidth, labelOpacity, mainWidthAnim, childSlideX, visible]);
-
-  useEffect(() => {
-    if (childVisible) {
-      Animated.parallel([
-        Animated.timing(mainWidthAnim, {
-          duration: 200,
-          toValue: MINI_WIDTH,
-          useNativeDriver: false,
-        }),
-        Animated.timing(labelOpacity, {
-          duration: 120,
-          toValue: 0,
-          useNativeDriver: false,
-        }),
-        Animated.timing(childSlideX, {
-          duration: 220,
-          toValue: 0,
-          useNativeDriver: false,
-        }),
-      ]).start();
-    } else {
-      childSlideX.setValue(CHILD_WIDTH);
-      Animated.parallel([
-        Animated.timing(mainWidthAnim, {
-          duration: 200,
-          toValue: fullDrawerWidth,
-          useNativeDriver: false,
-        }),
-        Animated.timing(labelOpacity, {
-          duration: 200,
-          toValue: 1,
-          useNativeDriver: false,
-        }),
-      ]).start();
-    }
-  }, [childVisible, childSlideX, fullDrawerWidth, labelOpacity, mainWidthAnim]);
+  }, [drawerSlideX, fullDrawerWidth, labelOpacity, mainWidthAnim, visible]);
 
   if (!visible) {
     return null;
@@ -167,19 +108,12 @@ export function OrganizerSidebarDrawer({
               <View style={styles.menuContainer}>
                 {items.map((item) => {
                   const isActive = item.key === activeItemKey;
-                  const isExpandable = item.key === 'home';
-                  const isExpanded = childExpandedFor === item.key;
 
                   return (
                     <Pressable
                       key={item.key}
                       onPress={() => {
-                        if (isExpandable) {
-                          setChildExpandedFor((prev) => prev === item.key ? null : item.key as ExpandableKey);
-                        } else {
-                          setChildExpandedFor(null);
-                          onSelect(item.key);
-                        }
+                        onSelect(item.key);
                       }}
                       style={[styles.menuItem, isActive ? styles.menuItemActive : null]}
                     >
@@ -195,15 +129,6 @@ export function OrganizerSidebarDrawer({
                       >
                         {item.label}
                       </Animated.Text>
-                      {isExpandable ? (
-                        <Animated.View
-                          style={[
-                            styles.chevron,
-                            isExpanded ? styles.chevronOpen : null,
-                            { opacity: labelOpacity },
-                          ]}
-                        />
-                      ) : null}
                     </Pressable>
                   );
                 })}
@@ -211,46 +136,6 @@ export function OrganizerSidebarDrawer({
             </SafeAreaView>
           </Animated.View>
 
-          {/* Child sidebar — slides in to the right of mini bar */}
-          <Animated.View
-            style={[
-              styles.childDrawer,
-              { transform: [{ translateX: childSlideX }], width: CHILD_WIDTH },
-            ]}
-          >
-            <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.drawerSafeArea}>
-              <View style={styles.childLogoBar}>
-                <Image resizeMode="contain" source={oppskillsLogo} style={styles.logoImage} />
-                <Pressable
-                  accessibilityLabel="Back to main sidebar"
-                  hitSlop={8}
-                  onPress={() => setChildExpandedFor(null)}
-                  style={styles.closeButton}
-                >
-                  <View style={[styles.closeStroke, styles.closeStrokePrimary]} />
-                  <View style={[styles.closeStroke, styles.closeStrokeSecondary]} />
-                </Pressable>
-              </View>
-
-              <ScrollView showsVerticalScrollIndicator={false} style={styles.childMenuContainer}>
-                {HOME_CHILD_ITEMS.map((item) => (
-                  <Pressable
-                    key={item.key}
-                    onPress={() => {
-                      setChildExpandedFor(null);
-                      onSelect(item.key);
-                    }}
-                    style={styles.childMenuItem}
-                  >
-                    <SidebarIcon active={false} name={item.icon} />
-                    <AppText style={styles.childMenuItemLabel} variant="body">
-                      {item.label}
-                    </AppText>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </SafeAreaView>
-          </Animated.View>
         </Animated.View>
       </View>
     </Modal>
