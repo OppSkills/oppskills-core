@@ -50,6 +50,7 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
   const [fetchingHistory, setFetchingHistory] = useState(false);
   const [selectedNotif, setSelectedNotif] = useState<NotificationRecord | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [lastScheduledTime, setLastScheduledTime] = useState<string | null>(null);
 
   const fetchHistory = useCallback(async () => {
     if (!id) return;
@@ -125,15 +126,16 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
     try {
       setLoading(true);
       const token = await getToken();
-      await sendBulkEmail(token, {
+      const response = await sendBulkEmail(token, {
         eventId: type === "event" ? id : undefined,
         hackathonId: type === "hackathon" ? id : undefined,
         htmlBody: message,
         scheduledAt: whenToSend === "Custom Time" ? customDateTime : undefined,
       });
 
-      setSuccess(true);
+      setLastScheduledTime(response.expectedFinishAt || new Date().toISOString());
       setMessage("");
+      setWhenToSend("Immediately");
       toast.success("Broadcast initiated successfully!");
       fetchHistory();
     } catch (error) {
@@ -157,6 +159,20 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
+  };
+
+  const formatDuration = (ms: number) => {
+    if (ms < 1000) return `${ms}ms`;
+    const seconds = Math.floor((ms / 1000) % 60);
+    const minutes = Math.floor((ms / (1000 * 60)) % 60);
+    const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
+
+    const parts = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    if (seconds > 0) parts.push(`${seconds}s`);
+    
+    return parts.join(" ") || "0s";
   };
 
   const renderLogMeta = (meta: any) => {
@@ -185,13 +201,13 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
         return (
           <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-neutral-500">
             <span className="flex items-center gap-1">
-              <span className="font-bold">Delay:</span> {data.delay}ms
+              <span className="font-bold uppercase tracking-tighter text-neutral-400">Delay:</span> {formatDuration(data.delay)}
             </span>
             <span className="flex items-center gap-1">
-              <span className="font-bold">Expected Finish:</span> {new Date(data.expectedFinishAt).toLocaleTimeString()}
+              <span className="font-bold uppercase tracking-tighter text-neutral-400">Expected Finish:</span> {new Date(data.expectedFinishAt).toLocaleTimeString()}
             </span>
             <span className="flex items-center gap-1">
-              <span className="font-bold">Total Recipients:</span> {data.totalRecipients}
+              <span className="font-bold uppercase tracking-tighter text-neutral-400">Recipients:</span> {data.totalRecipients}
             </span>
           </div>
         );
@@ -245,29 +261,8 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
     }
   };
 
-  if (success) {
-    return (
-      <div className="w-full bg-neutral-100 min-h-screen p-4 flex flex-col items-center justify-center gap-6">
-        <div className="w-full max-w-md bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-neutral-100 flex flex-col items-center text-center gap-4">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-2">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-          <h2 className="text-2xl font-bold font-poppins text-neutral-800">Broadcast Initiated!</h2>
-          <p className="text-muted-foreground text-sm">
-            Your email broadcast has been queued and will be circulated to all registered participants shortly.
-          </p>
-          <div className="text-sm bg-neutral-50 p-4 rounded-xl border border-neutral-100 w-full mt-2 text-left">
-            <p className="font-medium text-neutral-700">What happens next?</p>
-            <ul className="text-neutral-500 mt-2 list-disc list-inside space-y-1">
-              <li>The system will process recipients in batches.</li>
-              <li>You can track progress in the history panel.</li>
-              <li>Success and failure counts will update in real-time.</li>
-            </ul>
-          </div>
-          <Button onClick={() => setSuccess(false)} variant="outline" className="w-full mt-2 rounded-xl">Send Another</Button>
-        </div>
-      </div>
-    );
+  if (false) {
+    return null; // Full-screen success state disabled
   }
 
   return (
@@ -277,21 +272,34 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
 
           {/* LEFT CONTENT AREA (65%) */}
           <div className="lg:col-span-8 py-4 md:py-8 flex flex-col gap-6">
+            
+            {lastScheduledTime && (
+              <div className="bg-green-600 text-white px-6 py-4 rounded-2xl shadow-lg flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500 border border-green-500">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-full">
+                    <Clock className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Broadcast Status</p>
+                    <p className="text-sm font-medium">Successfully scheduled. Expected completion by <span className="font-bold underline">{new Date(lastScheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:bg-white/10 text-white h-8 w-8 p-0 rounded-full" 
+                  onClick={() => setLastScheduledTime(null)}
+                >
+                  <AlertCircle className="w-4 h-4 rotate-45" />
+                </Button>
+              </div>
+            )}
+
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-2xl font-bold text-neutral-800 font-poppins">Send Notification</h1>
                 <p className="text-neutral-500 text-sm mt-1">Send email to participants about {type === "event" ? "events" : "hackathons"}</p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={fetchHistory}
-                disabled={fetchingHistory}
-                className="text-neutral-500"
-              >
-                {fetchingHistory ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                <span className="ml-2">Refresh</span>
-              </Button>
             </div>
 
             {/* FLEXIBLE TWO COLUMN SCHEDULE AREA */}
@@ -369,7 +377,18 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
 
           {/* RIGHT SIDEBAR - PREVIOUS NOTIFICATIONS (35%) */}
           <div className="lg:col-span-4 py-4 md:py-8 h-fit">
-            <h3 className="text-lg font-bold text-neutral-800 font-poppins mb-6">Notification History</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-neutral-800 font-poppins">Notification History</h3>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 rounded-full hover:bg-white border border-neutral-200 shadow-sm"
+                onClick={fetchHistory}
+                disabled={fetchingHistory}
+              >
+                <RefreshCw className={`w-4 h-4 text-neutral-500 ${fetchingHistory ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
 
             <div className="flex flex-col gap-4">
               {notifications.length === 0 && !fetchingHistory && (
