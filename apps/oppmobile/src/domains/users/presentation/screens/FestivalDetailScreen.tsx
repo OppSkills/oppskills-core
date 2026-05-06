@@ -260,9 +260,12 @@ function ContextIcon({ name, active }: { readonly name: ContextSectionKey; reado
   if (name === 'referrals') {
     return (
       <View style={iconStyles.frame}>
-        <View style={[iconStyles.refHead, { borderColor: tintColor, left: 4 }]} />
-        <View style={[iconStyles.refHead, { borderColor: tintColor, left: 20 }]} />
-        <View style={[iconStyles.refArrow, { borderColor: tintColor }]} />
+        <Svg fill="none" height={32} viewBox="0 0 32 32" width={32}>
+          <Path d="M13.3333 2.66699C10.3878 2.66699 8.00001 5.05481 8.00001 8.00033C8.00001 10.9458 10.3878 13.3337 13.3333 13.3337C16.2789 13.3337 18.6667 10.9458 18.6667 8.00033C18.6667 5.05481 16.2789 2.66699 13.3333 2.66699Z" stroke={tintColor} strokeWidth="1.5" />
+          <Path d="M24 23.333C24 26.6467 24 29.333 13.3333 29.333C2.66667 29.333 2.66667 26.6467 2.66667 23.333C2.66667 20.0193 7.4423 17.333 13.3333 17.333C19.2244 17.333 24 20.0193 24 23.333Z" stroke={tintColor} strokeWidth="1.5" />
+          <Path d="M25.3333 2.66699C25.3333 2.66699 28 4.26699 28 8.00033C28 11.7337 25.3333 13.3337 25.3333 13.3337" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M22.6667 5.33301C22.6667 5.33301 24 6.13301 24 7.99967C24 9.86634 22.6667 10.6663 22.6667 10.6663" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+        </Svg>
       </View>
     );
   }
