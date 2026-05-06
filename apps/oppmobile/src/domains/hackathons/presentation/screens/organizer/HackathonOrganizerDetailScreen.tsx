@@ -282,9 +282,12 @@ function ContextIcon({ name, active }: { readonly name: ContextSectionKey; reado
   if (name === 'send-notifications') {
     return (
       <View style={iconStyles.frame}>
-        <View style={[iconStyles.bellBody, { borderColor: tintColor }]} />
-        <View style={[iconStyles.bellTop, { borderColor: tintColor }]} />
-        <View style={[iconStyles.bellClapper, { backgroundColor: tintColor }]} />
+        <Svg fill="none" height={32} viewBox="0 0 32 32" width={32}>
+          <Path d="M29.3333 14.0003V16.0003C29.3333 22.2857 29.3333 25.4284 27.3807 27.381C25.4281 29.3337 22.2854 29.3337 16 29.3337C9.71461 29.3337 6.57191 29.3337 4.61929 27.381C2.66667 25.4284 2.66667 22.2857 2.66667 16.0003C2.66667 9.71493 2.66667 6.57223 4.61929 4.61961C6.57191 2.66699 9.71461 2.66699 16 2.66699H18" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M25.3333 2.66699C27.5424 2.66699 29.3333 4.45785 29.3333 6.66699C29.3333 8.87613 27.5424 10.667 25.3333 10.667C23.1242 10.667 21.3333 8.87613 21.3333 6.66699C21.3333 4.45785 23.1242 2.66699 25.3333 2.66699Z" stroke={tintColor} strokeWidth="1.5" />
+          <Path d="M9.33333 18.667H21.3333" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M9.33333 23.333H17.3333" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+        </Svg>
       </View>
     );
   }
