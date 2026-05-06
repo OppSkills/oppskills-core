@@ -7,6 +7,7 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -34,9 +35,14 @@ import {
   DiscoverEventsSecondaryScreen,
 } from '../../domains/events/presentation/screens/EventScreens';
 import {
+  EventFreePageScreen,
+  EventPaidPageScreen,
+} from '../../domains/events/presentation/screens/EventDetailScreens';
+import {
   DiscoverHackathonsScreen,
   HackathonPageScreen,
 } from '../../domains/hackathons/presentation/screens/HackathonScreens';
+import { HackathonRegistrationScreen } from '../../domains/hackathons/presentation/screens/HackathonRegistrationScreen';
 import {
   searchRepository,
 } from '../../domains/search/data/repositories';
@@ -418,8 +424,9 @@ function DiscoverStackNavigator() {
         {({ navigation }) => (
           <DiscoverEventsPrimaryScreen
             onOpenCompetitions={() => navigation.navigate(appRoutes.discoverCompetitions)}
-            onOpenEventsSecondary={() => navigation.navigate(appRoutes.discoverEventsSecondary)}
             onOpenHackathons={() => navigation.navigate(appRoutes.discoverHackathons)}
+            onOpenEventFreePage={() => navigation.navigate(appRoutes.eventPageFree)}
+            onOpenEventPaidPage={() => navigation.navigate(appRoutes.eventPagePaid)}
             onOpenCommunities={() => {
               setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_RECENT' }));
               navigation.navigate(appRoutes.searchRecent);
@@ -435,8 +442,9 @@ function DiscoverStackNavigator() {
         {({ navigation }) => (
           <DiscoverEventsSecondaryScreen
             onOpenCompetitions={() => navigation.navigate(appRoutes.discoverCompetitions)}
-            onOpenEventsPrimary={() => navigation.navigate(appRoutes.discoverEventsPrimary)}
             onOpenHackathons={() => navigation.navigate(appRoutes.discoverHackathons)}
+            onOpenEventFreePage={() => navigation.navigate(appRoutes.eventPageFree)}
+            onOpenEventPaidPage={() => navigation.navigate(appRoutes.eventPagePaid)}
             onOpenCommunities={() => {
               setSearchFlowState((current) => transitionSearchFlowState(current, { type: 'OPEN_POPULAR' }));
               navigation.navigate(appRoutes.searchPopular);
@@ -618,6 +626,49 @@ function DiscoverStackNavigator() {
 
               navigation.navigate(appRoutes.discoverStack);
             }}
+            onRegisterNow={() => navigation.navigate(appRoutes.hackathonRegistration)}
+          />
+        )}
+      </DiscoverStack.Screen>
+      <DiscoverStack.Screen name={appRoutes.hackathonRegistration}>
+        {({ navigation }) => (
+          <HackathonRegistrationScreen
+            onBack={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+
+              navigation.navigate(appRoutes.hackathonPage);
+            }}
+          />
+        )}
+      </DiscoverStack.Screen>
+      <DiscoverStack.Screen name={appRoutes.eventPageFree}>
+        {({ navigation }) => (
+          <EventFreePageScreen
+            onBackToDiscover={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+
+              navigation.navigate(appRoutes.discoverStack);
+            }}
+          />
+        )}
+      </DiscoverStack.Screen>
+      <DiscoverStack.Screen name={appRoutes.eventPagePaid}>
+        {({ navigation }) => (
+          <EventPaidPageScreen
+            onBackToDiscover={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+
+              navigation.navigate(appRoutes.discoverStack);
+            }}
           />
         )}
       </DiscoverStack.Screen>
@@ -751,11 +802,10 @@ function MainTabIcon({
         ) : null}
 
         {routeName === appRoutes.homeTab && !profileMode ? (
-          <View style={tabStyles.homeGlyph}>
-            <View style={tabStyles.homeRoofLeft} />
-            <View style={tabStyles.homeRoofRight} />
-            <View style={tabStyles.homeBody} />
-          </View>
+          <Svg width={24} height={24} viewBox="0 0 32 32" fill="none">
+            <Path fillRule="evenodd" clipRule="evenodd" d="M17.4747 29.3334H14.5252C9.92979 29.3334 7.63208 29.3334 6.06533 27.9843C4.49858 26.6352 4.17363 24.377 3.52374 19.8604L3.15206 17.2772C2.64613 13.7612 2.39317 12.0031 3.11378 10.5C3.8344 8.99688 5.36821 8.0832 8.43584 6.25583L10.2823 5.15591C13.068 3.49647 14.4609 2.66675 16 2.66675C17.539 2.66675 18.9319 3.49647 21.7176 5.15591L23.5641 6.25583C26.6317 8.0832 28.1655 8.99688 28.8861 10.5C29.6068 12.0031 29.3538 13.7612 28.8479 17.2772L28.4762 19.8604C27.8263 24.377 27.5013 26.6352 25.9346 27.9843C24.3678 29.3334 22.0701 29.3334 17.4747 29.3334Z" fill="#271B40" />
+            <Path d="M11 24C11 23.4477 11.4477 23 12 23H20C20.5523 23 21 23.4477 21 24C21 24.5523 20.5523 25 20 25H12C11.4477 25 11 24.5523 11 24Z" fill="#AC89F2" />
+          </Svg>
         ) : null}
 
         {routeName === appRoutes.discoverTab && profileMode ? (
@@ -776,12 +826,10 @@ function MainTabIcon({
         ) : null}
 
         {routeName === appRoutes.discoverTab && !profileMode ? (
-          <View style={tabStyles.compassGlyph}>
-            <View style={tabStyles.compassRing} />
-            <View style={tabStyles.compassNeedle} />
-            <View style={tabStyles.compassNeedleInner} />
-            <View style={tabStyles.compassCenter} />
-          </View>
+          <Svg width={24} height={24} viewBox="0 0 32 32" fill="none">
+            <Path fillRule="evenodd" clipRule="evenodd" d="M19.7197 25.2995C11.3299 28.6554 7.13505 30.3334 4.739 28.7052C4.17089 28.3191 3.6809 27.8291 3.29485 27.261C1.66664 24.865 3.3446 20.6701 6.70052 12.2803C7.41633 10.4908 7.77423 9.59601 8.38979 8.89406C8.54666 8.71519 8.71506 8.54678 8.89394 8.38992C9.59589 7.77435 10.4907 7.41645 12.2802 6.70064C20.67 3.34472 24.8649 1.66676 27.2609 3.29497C27.829 3.68102 28.319 4.17101 28.7051 4.73912C30.3333 7.13518 28.6553 11.3301 25.2994 19.7199C24.5836 21.5094 24.2257 22.4042 23.6101 23.1061C23.4533 23.285 23.2849 23.4534 23.106 23.6102C22.404 24.2258 21.5092 24.5837 19.7197 25.2995Z" fill="#271B40" />
+            <Path d="M16 11C13.2386 11 11 13.2386 11 16C11 18.7614 13.2386 21 16 21C18.7614 21 21 18.7614 21 16C21 13.2386 18.7614 11 16 11Z" fill="#AC89F2" />
+          </Svg>
         ) : null}
 
         {routeName === appRoutes.appliedTab && profileMode ? (
@@ -796,10 +844,10 @@ function MainTabIcon({
         ) : null}
 
         {routeName === appRoutes.appliedTab && !profileMode ? (
-          <View style={tabStyles.cursorGlyph}>
-            <View style={tabStyles.cursorTriangle} />
-            <View style={tabStyles.cursorStem} />
-          </View>
+          <Svg width={24} height={24} viewBox="0 0 32 32" fill="none">
+            <Path fillRule="evenodd" clipRule="evenodd" d="M15.2445 21.9523L16.8481 20.3487L20.3488 16.848L21.9523 15.2445C23.594 13.6028 24.4148 12.782 24.221 11.8998C24.0272 11.0175 22.938 10.6163 20.7595 9.81365L13.4939 7.13686C9.14806 5.53575 6.97512 4.73519 5.85519 5.85513C4.73525 6.97506 5.53581 9.148 7.13692 13.4939L9.81371 20.7594C10.6163 22.9379 11.0176 24.0272 11.8998 24.2209C12.7821 24.4147 13.6029 23.5939 15.2445 21.9523Z" fill="#271B40" />
+            <Path d="M16.8477 20.3491L22.0987 25.6002C22.6424 26.1439 22.9143 26.4157 23.2176 26.5414C23.6219 26.7088 24.0762 26.7088 24.4806 26.5414C24.7839 26.4157 25.0557 26.1439 25.5994 25.6002C26.1431 25.0565 26.415 24.7846 26.5406 24.4813C26.7081 24.077 26.7081 23.6226 26.5406 23.2183C26.415 22.915 26.1431 22.6432 25.5994 22.0995L20.3484 16.8484L16.8477 20.3491Z" fill="#AC89F2" />
+          </Svg>
         ) : null}
       </View>
 
@@ -1038,49 +1086,6 @@ const tabStyles = StyleSheet.create({
     top: 4,
     width: 20,
   },
-  compassCenter: {
-    backgroundColor: '#271B40',
-    borderRadius: 2,
-    height: 4,
-    left: 10,
-    position: 'absolute',
-    top: 10,
-    width: 4,
-  },
-  compassGlyph: {
-    alignItems: 'center',
-    height: 24,
-    justifyContent: 'center',
-    position: 'relative',
-    width: 24,
-  },
-  compassNeedle: {
-    backgroundColor: '#271B40',
-    borderRadius: 2,
-    height: 12,
-    left: 11,
-    position: 'absolute',
-    top: 4,
-    transform: [{ rotate: '35deg' }],
-    width: 3,
-  },
-  compassNeedleInner: {
-    backgroundColor: '#FBF9FD',
-    borderRadius: 1.5,
-    height: 6,
-    left: 11.5,
-    position: 'absolute',
-    top: 6,
-    transform: [{ rotate: '35deg' }],
-    width: 2,
-  },
-  compassRing: {
-    borderColor: '#271B40',
-    borderRadius: 12,
-    borderWidth: 2.5,
-    height: 22,
-    width: 22,
-  },
   crownBase: {
     backgroundColor: '#271B40',
     borderRadius: 1,
@@ -1110,72 +1115,6 @@ const tabStyles = StyleSheet.create({
     borderRightColor: 'transparent',
     borderRightWidth: 4,
     height: 0,
-    width: 0,
-  },
-  cursorGlyph: {
-    alignItems: 'flex-end',
-    height: 24,
-    justifyContent: 'center',
-    width: 24,
-  },
-  cursorStem: {
-    backgroundColor: '#271B40',
-    borderRadius: 1.5,
-    height: 9,
-    marginRight: 1,
-    marginTop: -3,
-    transform: [{ rotate: '-28deg' }],
-    width: 4,
-  },
-  cursorTriangle: {
-    borderBottomColor: 'transparent',
-    borderBottomWidth: 6,
-    borderLeftColor: '#271B40',
-    borderLeftWidth: 15,
-    borderTopColor: 'transparent',
-    borderTopWidth: 6,
-    height: 0,
-    width: 0,
-  },
-  homeBody: {
-    backgroundColor: '#271B40',
-    borderBottomLeftRadius: 3,
-    borderBottomRightRadius: 3,
-    borderTopLeftRadius: 1,
-    borderTopRightRadius: 1,
-    height: 9,
-    marginTop: -2,
-    width: 16,
-  },
-  homeGlyph: {
-    alignItems: 'center',
-    height: 24,
-    justifyContent: 'center',
-    width: 24,
-  },
-  homeRoofLeft: {
-    borderBottomColor: '#271B40',
-    borderBottomWidth: 7,
-    borderLeftColor: 'transparent',
-    borderLeftWidth: 7,
-    borderRightColor: 'transparent',
-    borderRightWidth: 7,
-    height: 0,
-    marginBottom: -1,
-    marginRight: 3,
-    width: 0,
-  },
-  homeRoofRight: {
-    borderBottomColor: '#271B40',
-    borderBottomWidth: 7,
-    borderLeftColor: 'transparent',
-    borderLeftWidth: 7,
-    borderRightColor: 'transparent',
-    borderRightWidth: 7,
-    height: 0,
-    marginBottom: -7,
-    marginLeft: 3,
-    transform: [{ rotate: '0deg' }],
     width: 0,
   },
   iconWrap: {
@@ -1234,6 +1173,7 @@ const tabStyles = StyleSheet.create({
     height: '100%',
     justifyContent: 'flex-start',
     minWidth: 72,
+    overflow: 'hidden',
     paddingHorizontal: 10,
     paddingVertical: 8,
     width: '100%',

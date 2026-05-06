@@ -25,6 +25,7 @@ import { FooterSignatureBlock } from './FooterSignatureBlock';
 interface OpportunityDetailScreenProps {
   readonly detail: OpportunityDetailModel;
   readonly onBack: () => void;
+  readonly onRegisterNow?: () => void;
 }
 
 const detailTabs: readonly { id: OpportunityDetailTabId; label: string }[] = [
@@ -34,7 +35,7 @@ const detailTabs: readonly { id: OpportunityDetailTabId; label: string }[] = [
   { id: 'contact', label: 'Contact Info' },
 ];
 
-export function OpportunityDetailScreen({ detail, onBack }: OpportunityDetailScreenProps) {
+export function OpportunityDetailScreen({ detail, onBack, onRegisterNow }: OpportunityDetailScreenProps) {
   const [activeChip, setActiveChip] = useState<OpportunityDetailTabId>('rounds');
 
   const heroImage = useMemo(() => selectHeroImage(detail), [detail]);
@@ -170,7 +171,7 @@ export function OpportunityDetailScreen({ detail, onBack }: OpportunityDetailScr
             </View>
           </View>
 
-          <Pressable style={styles.ctaButton}>
+          <Pressable onPress={onRegisterNow} style={styles.ctaButton}>
             <AppText colorToken="textInverse" style={styles.ctaLabel} variant="bodyStrong">
               {detail.ctaLabel}
             </AppText>

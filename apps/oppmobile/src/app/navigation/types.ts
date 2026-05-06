@@ -34,12 +34,15 @@ export type DiscoverStackParamList = {
   [appRoutes.discoverCompetitions]: undefined;
   [appRoutes.discoverEventsPrimary]: undefined;
   [appRoutes.discoverEventsSecondary]: undefined;
+  [appRoutes.eventPageFree]: undefined;
+  [appRoutes.eventPagePaid]: undefined;
   [appRoutes.searchRecent]: undefined;
   [appRoutes.searchPopular]: undefined;
   [appRoutes.searchTyping]: undefined;
   [appRoutes.searchResults]: undefined;
   [appRoutes.competitionPage]: undefined;
   [appRoutes.hackathonPage]: undefined;
+  [appRoutes.hackathonRegistration]: undefined;
 };
 
 export type AppliedStackParamList = {

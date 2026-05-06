@@ -8,6 +8,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText } from '../../../../shared/ui';
@@ -217,10 +218,12 @@ function ContextIcon({ name, active }: { readonly name: ContextSectionKey; reado
   if (name === 'dashboard') {
     return (
       <View style={iconStyles.frame}>
-        <View style={[iconStyles.gridCell, { borderColor: tintColor, top: 4, left: 4 }]} />
-        <View style={[iconStyles.gridCell, { borderColor: tintColor, top: 4, left: 16 }]} />
-        <View style={[iconStyles.gridCell, { borderColor: tintColor, top: 16, left: 4 }]} />
-        <View style={[iconStyles.gridCell, { borderColor: tintColor, top: 16, left: 16 }]} />
+        <Svg fill="none" height={32} viewBox="0 0 32 32" width={32}>
+          <Path d="M18 20.6663C18 18.1522 18 16.8951 18.781 16.1141C19.5621 15.333 20.8192 15.333 23.3333 15.333C25.8475 15.333 27.1046 15.333 27.8856 16.1141C28.6667 16.8951 28.6667 18.1522 28.6667 20.6663V23.333C28.6667 25.8472 28.6667 27.1042 27.8856 27.8853C27.1046 28.6663 25.8475 28.6663 23.3333 28.6663C20.8192 28.6663 19.5621 28.6663 18.781 27.8853C18 27.1042 18 25.8472 18 23.333V20.6663Z" stroke={tintColor} strokeWidth="1.5" />
+          <Path d="M2.66667 11.333C2.66667 13.8472 2.66667 15.1042 3.44772 15.8853C4.22877 16.6663 5.48585 16.6663 8.00001 16.6663C10.5142 16.6663 11.7712 16.6663 12.5523 15.8853C13.3333 15.1042 13.3333 13.8472 13.3333 11.333V8.66634C13.3333 6.15218 13.3333 4.8951 12.5523 4.11406C11.7712 3.33301 10.5142 3.33301 8.00001 3.33301C5.48585 3.33301 4.22877 3.33301 3.44772 4.11406C2.66667 4.8951 2.66667 6.15218 2.66667 8.66634V11.333Z" stroke={tintColor} strokeWidth="1.5" />
+          <Path d="M18 7.33301C18 6.0905 18 5.46924 18.203 4.97919C18.4736 4.32578 18.9928 3.80665 19.6462 3.536C20.1362 3.33301 20.7575 3.33301 22 3.33301H24.6667C25.9092 3.33301 26.5304 3.33301 27.0205 3.536C27.6739 3.80665 28.193 4.32578 28.4637 4.97919C28.6667 5.46924 28.6667 6.0905 28.6667 7.33301C28.6667 8.57552 28.6667 9.19677 28.4637 9.68683C28.193 10.3402 27.6739 10.8594 27.0205 11.13C26.5304 11.333 25.9092 11.333 24.6667 11.333H22C20.7575 11.333 20.1362 11.333 19.6462 11.13C18.9928 10.8594 18.4736 10.3402 18.203 9.68683C18 9.19677 18 8.57552 18 7.33301Z" stroke={tintColor} strokeWidth="1.5" />
+          <Path d="M2.66667 24.667C2.66667 25.9095 2.66667 26.5308 2.86966 27.0208C3.14031 27.6742 3.65944 28.1934 4.31285 28.464C4.80291 28.667 5.42416 28.667 6.66667 28.667H9.33334C10.5758 28.667 11.1971 28.667 11.6872 28.464C12.3406 28.1934 12.8597 27.6742 13.1304 27.0208C13.3333 26.5308 13.3333 25.9095 13.3333 24.667C13.3333 23.4245 13.3333 22.8032 13.1304 22.3132C12.8597 21.6598 12.3406 21.1406 11.6872 20.87C11.1971 20.667 10.5758 20.667 9.33334 20.667H6.66667C5.42416 20.667 4.80291 20.667 4.31285 20.87C3.65944 21.1406 3.14031 21.6598 2.86966 22.3132C2.66667 22.8032 2.66667 23.4245 2.66667 24.667Z" stroke={tintColor} strokeWidth="1.5" />
+        </Svg>
       </View>
     );
   }
@@ -228,10 +231,14 @@ function ContextIcon({ name, active }: { readonly name: ContextSectionKey; reado
   if (name === 'manage-registration') {
     return (
       <View style={iconStyles.frame}>
-        <View style={[iconStyles.regOutline, { borderColor: tintColor }]} />
-        <View style={[iconStyles.regLine, { borderColor: tintColor, top: 11 }]} />
-        <View style={[iconStyles.regLine, { borderColor: tintColor, top: 16 }]} />
-        <View style={[iconStyles.regLineShort, { borderColor: tintColor, top: 21 }]} />
+        <Svg fill="none" height={32} viewBox="0 0 32 32" width={32}>
+          <Path d="M2.66667 7.33333L4.28572 9.33333L10 4" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M2.66667 16.6663L4.28572 18.6663L10 13.333" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M2.66667 26.0003L4.28572 28.0003L10 22.667" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M29.3333 25.333L16 25.333" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M29.3333 16L16 16" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M29.3333 6.66699L16 6.66699" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+        </Svg>
       </View>
     );
   }
@@ -248,9 +255,12 @@ function ContextIcon({ name, active }: { readonly name: ContextSectionKey; reado
   if (name === 'referrals') {
     return (
       <View style={iconStyles.frame}>
-        <View style={[iconStyles.refHead, { borderColor: tintColor, left: 4 }]} />
-        <View style={[iconStyles.refHead, { borderColor: tintColor, left: 20 }]} />
-        <View style={[iconStyles.refArrow, { borderColor: tintColor }]} />
+        <Svg fill="none" height={32} viewBox="0 0 32 32" width={32}>
+          <Path d="M13.3333 2.66699C10.3878 2.66699 8.00001 5.05481 8.00001 8.00033C8.00001 10.9458 10.3878 13.3337 13.3333 13.3337C16.2789 13.3337 18.6667 10.9458 18.6667 8.00033C18.6667 5.05481 16.2789 2.66699 13.3333 2.66699Z" stroke={tintColor} strokeWidth="1.5" />
+          <Path d="M24 23.333C24 26.6467 24 29.333 13.3333 29.333C2.66667 29.333 2.66667 26.6467 2.66667 23.333C2.66667 20.0193 7.4423 17.333 13.3333 17.333C19.2244 17.333 24 20.0193 24 23.333Z" stroke={tintColor} strokeWidth="1.5" />
+          <Path d="M25.3333 2.66699C25.3333 2.66699 28 4.26699 28 8.00033C28 11.7337 25.3333 13.3337 25.3333 13.3337" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M22.6667 5.33301C22.6667 5.33301 24 6.13301 24 7.99967C24 9.86634 22.6667 10.6663 22.6667 10.6663" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+        </Svg>
       </View>
     );
   }
@@ -258,10 +268,9 @@ function ContextIcon({ name, active }: { readonly name: ContextSectionKey; reado
   if (name === 'manage-roles') {
     return (
       <View style={iconStyles.frame}>
-        <View style={[iconStyles.idCard, { borderColor: tintColor }]} />
-        <View style={[iconStyles.idHead, { borderColor: tintColor }]} />
-        <View style={[iconStyles.idLine, { borderColor: tintColor, top: 12 }]} />
-        <View style={[iconStyles.idLine, { borderColor: tintColor, top: 18 }]} />
+        <Svg fill="none" height={29} viewBox="0 0 29 23" width={29}>
+          <Path d="M0.75 11.4167C0.75 6.38835 0.75 3.87419 2.3121 2.3121C3.87419 0.75 6.38835 0.75 11.4167 0.75H16.75C21.7783 0.75 24.2925 0.75 25.8546 2.3121C27.4167 3.87419 27.4167 6.38835 27.4167 11.4167C27.4167 16.445 27.4167 18.9591 25.8546 20.5212C24.2925 22.0833 21.7783 22.0833 16.75 22.0833H11.4167C6.38835 22.0833 3.87419 22.0833 2.3121 20.5212C0.75 18.9591 0.75 16.445 0.75 11.4167Z" stroke={tintColor} strokeWidth="1.5" />
+        </Svg>
       </View>
     );
   }
@@ -278,9 +287,12 @@ function ContextIcon({ name, active }: { readonly name: ContextSectionKey; reado
   if (name === 'send-notifications') {
     return (
       <View style={iconStyles.frame}>
-        <View style={[iconStyles.bellBody, { borderColor: tintColor }]} />
-        <View style={[iconStyles.bellTop, { borderColor: tintColor }]} />
-        <View style={[iconStyles.bellClapper, { backgroundColor: tintColor }]} />
+        <Svg fill="none" height={32} viewBox="0 0 32 32" width={32}>
+          <Path d="M29.3333 14.0003V16.0003C29.3333 22.2857 29.3333 25.4284 27.3807 27.381C25.4281 29.3337 22.2854 29.3337 16 29.3337C9.71461 29.3337 6.57191 29.3337 4.61929 27.381C2.66667 25.4284 2.66667 22.2857 2.66667 16.0003C2.66667 9.71493 2.66667 6.57223 4.61929 4.61961C6.57191 2.66699 9.71461 2.66699 16 2.66699H18" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M25.3333 2.66699C27.5424 2.66699 29.3333 4.45785 29.3333 6.66699C29.3333 8.87613 27.5424 10.667 25.3333 10.667C23.1242 10.667 21.3333 8.87613 21.3333 6.66699C21.3333 4.45785 23.1242 2.66699 25.3333 2.66699Z" stroke={tintColor} strokeWidth="1.5" />
+          <Path d="M9.33333 18.667H21.3333" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M9.33333 23.333H17.3333" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+        </Svg>
       </View>
     );
   }

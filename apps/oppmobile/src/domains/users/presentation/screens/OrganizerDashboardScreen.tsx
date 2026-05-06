@@ -9,10 +9,15 @@ import { OrganizerDashboardHome } from './OrganizerDashboardHome';
 import { OrganizerEventsPanel, updatePersistedEvent } from '../../../events/presentation/screens/OrganizerEventsPanel';
 import { SendNotificationsPanel } from './SendNotificationsPanel';
 import { TalentPipelinePanel } from './TalentPipelinePanel';
+import { OrganizerFestivalsPanel } from './OrganizerFestivalsPanel';
+import { FestivalDetailScreen, type LiveFestival } from './FestivalDetailScreen';
+import { type LiveHackathon } from '../../../hackathons/presentation/screens/organizer/OrganizerCreateHackathonScreen';
+import { OrganizerHackathonsPanel, updatePersistedHackathon } from '../../../hackathons/presentation/screens/organizer/OrganizerHackathonsPanel';
+import { HackathonDetailScreen } from '../../../hackathons/presentation/screens/organizer/HackathonDetailScreen';
 import { styles } from './OrganizerDashboardScreen.styles';
 
 const organizerSidebarItems = [
-  { key: 'home', label: 'Home', icon: 'home' },
+  { key: 'dashboard', label: 'Home', icon: 'home' },
   { key: 'hackathon', label: 'Hackathon', icon: 'hackathon' },
   { key: 'event', label: 'Event', icon: 'events' },
   { key: 'festival', label: 'Festival', icon: 'festival' },
@@ -185,6 +190,8 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [activeSectionKey, setActiveSectionKey] = useState<OrganizerSectionKey | 'event' | 'hackathon' | 'festival' | 'home'>('dashboard');
   const [selectedEvent, setSelectedEvent] = useState<LiveEvent | null>(null);
+  const [selectedFestival, setSelectedFestival] = useState<LiveFestival | null>(null);
+  const [selectedHackathon, setSelectedHackathon] = useState<LiveHackathon | null>(null);
 
   const activeSection = activeSectionKey in organizerSections
     ? organizerSections[activeSectionKey as OrganizerSectionKey]
@@ -193,6 +200,8 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
   const showingNotifications = activeSectionKey === 'send-notifications';
   const showingTalentPipeline = activeSectionKey === 'talent-pipeline';
   const showingEvents = activeSectionKey === 'event';
+  const showingFestivals = activeSectionKey === 'festival';
+  const showingHackathons = activeSectionKey === 'hackathon';
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
@@ -220,6 +229,18 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
 
       {showingHome ? (
         <OrganizerDashboardHome />
+      ) : showingHackathons && selectedHackathon !== null ? (
+        <HackathonDetailScreen
+          hackathon={selectedHackathon}
+          onBack={() => setSelectedHackathon(null)}
+          onOpenMainSidebar={() => setDrawerVisible(true)}
+          onUpdateHackathon={(updated) => {
+            updatePersistedHackathon(updated);
+            setSelectedHackathon(updated);
+          }}
+        />
+      ) : showingHackathons ? (
+        <OrganizerHackathonsPanel onSelectHackathon={(h) => setSelectedHackathon(h)} />
       ) : showingEvents && selectedEvent !== null ? (
         <EventDetailScreen
           event={selectedEvent}
@@ -232,6 +253,15 @@ export function OrganizerDashboardScreen({ onBack }: OrganizerDashboardScreenPro
         />
       ) : showingEvents ? (
         <OrganizerEventsPanel onSelectEvent={(e) => setSelectedEvent(e)} />
+      ) : showingFestivals && selectedFestival !== null ? (
+        <FestivalDetailScreen
+          festival={selectedFestival}
+          onBack={() => setSelectedFestival(null)}
+          onOpenMainSidebar={() => setDrawerVisible(true)}
+          onUpdateFestival={(updated) => setSelectedFestival(updated)}
+        />
+      ) : showingFestivals ? (
+        <OrganizerFestivalsPanel onSelectFestival={(f) => setSelectedFestival(f)} />
       ) : showingNotifications ? (
         <SendNotificationsPanel onOpenSidebar={() => setDrawerVisible(true)} />
       ) : showingTalentPipeline ? (

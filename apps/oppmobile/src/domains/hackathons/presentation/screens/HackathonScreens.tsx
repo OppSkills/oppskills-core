@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useDiscoverFeed } from '../../../discover/presentation/hooks/useDiscoverFeed';
 import { useHackathonDetail } from '../hooks/useHackathonDetail';
+import { useHideTabBar } from '../../../../shared/hooks/useHideTabBar';
 import type { DiscoverCategoryId } from '../../../../shared/types/discover';
 import { lightTheme } from '../../../../shared/theme';
 import type { DiscoverOpportunityItem } from '../../../../shared/types/discover';
@@ -262,9 +263,11 @@ function heroImageByIndex(_index: number): ImageSourcePropType {
 
 interface HackathonPageScreenProps {
   readonly onBackToDiscover: () => void;
+  readonly onRegisterNow?: () => void;
 }
 
-export function HackathonPageScreen({ onBackToDiscover }: HackathonPageScreenProps) {
+export function HackathonPageScreen({ onBackToDiscover, onRegisterNow }: HackathonPageScreenProps) {
+  useHideTabBar();
   const { data: detail, isError, isLoading, refetch } = useHackathonDetail();
 
   if (isLoading) {
@@ -286,7 +289,13 @@ export function HackathonPageScreen({ onBackToDiscover }: HackathonPageScreenPro
     return <DetailErrorState label="No hackathon details available yet." onRetry={onBackToDiscover} />;
   }
 
-  return <OpportunityDetailScreen detail={detail} onBack={onBackToDiscover} />;
+  return (
+    <OpportunityDetailScreen
+      detail={detail}
+      onBack={onBackToDiscover}
+      {...(onRegisterNow ? { onRegisterNow } : {})}
+    />
+  );
 }
 
 function DetailLoadingState() {

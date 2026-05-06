@@ -198,7 +198,7 @@ export const discoverEventFeatureItems: readonly DiscoverFeatureEventItem[] = [
     venue: 'Online',
     attendees: 44,
     registerBy: '22 Dec 2024',
-    entryFee: 'Free',
+    entryFee: 'INR 499',
     tone: 'teal',
   },
   {

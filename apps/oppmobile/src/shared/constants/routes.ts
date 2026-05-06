@@ -26,12 +26,15 @@ export const appRoutes = {
   discoverCompetitions: 'discover-competitions',
   discoverEventsPrimary: 'discover-events-primary',
   discoverEventsSecondary: 'discover-events-secondary',
+  eventPageFree: 'event-page-free',
+  eventPagePaid: 'event-page-paid',
   searchRecent: 'search-recent',
   searchPopular: 'search-popular',
   searchTyping: 'search-typing',
   searchResults: 'search-results',
   competitionPage: 'competition-page',
   hackathonPage: 'hackathon-page',
+  hackathonRegistration: 'hackathon-registration',
 } as const;
 
 export type AppRoute = (typeof appRoutes)[keyof typeof appRoutes];
@@ -61,6 +64,8 @@ export const discoverFlowRoutes = [
   appRoutes.discoverCompetitions,
   appRoutes.discoverEventsPrimary,
   appRoutes.discoverEventsSecondary,
+  appRoutes.eventPageFree,
+  appRoutes.eventPagePaid,
 ] as const;
 
 export const searchFlowRoutes = [
@@ -70,6 +75,11 @@ export const searchFlowRoutes = [
   appRoutes.searchResults,
 ] as const;
 
-export const detailRoutes = [appRoutes.competitionPage, appRoutes.hackathonPage] as const;
+export const detailRoutes = [
+  appRoutes.competitionPage,
+  appRoutes.hackathonPage,
+  appRoutes.eventPageFree,
+  appRoutes.eventPagePaid,
+] as const;
 
 export const deepLinkPrefixes = ['oppskills://', 'https://oppskills.app'] as const;
