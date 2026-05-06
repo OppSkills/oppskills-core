@@ -270,10 +270,9 @@ function ContextIcon({ name, active }: { readonly name: ContextSectionKey; reado
   if (name === 'manage-roles') {
     return (
       <View style={iconStyles.frame}>
-        <View style={[iconStyles.idCard, { borderColor: tintColor }]} />
-        <View style={[iconStyles.idHead, { borderColor: tintColor }]} />
-        <View style={[iconStyles.idLine, { borderColor: tintColor, top: 12 }]} />
-        <View style={[iconStyles.idLine, { borderColor: tintColor, top: 18 }]} />
+        <Svg fill="none" height={29} viewBox="0 0 29 23" width={29}>
+          <Path d="M0.75 11.4167C0.75 6.38835 0.75 3.87419 2.3121 2.3121C3.87419 0.75 6.38835 0.75 11.4167 0.75H16.75C21.7783 0.75 24.2925 0.75 25.8546 2.3121C27.4167 3.87419 27.4167 6.38835 27.4167 11.4167C27.4167 16.445 27.4167 18.9591 25.8546 20.5212C24.2925 22.0833 21.7783 22.0833 16.75 22.0833H11.4167C6.38835 22.0833 3.87419 22.0833 2.3121 20.5212C0.75 18.9591 0.75 16.445 0.75 11.4167Z" stroke={tintColor} strokeWidth="1.5" />
+        </Svg>
       </View>
     );
   }
