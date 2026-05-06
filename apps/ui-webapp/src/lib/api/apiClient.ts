@@ -96,10 +96,10 @@ export function createApiClient(resourcePath: string): AxiosInstance {
 /**
  * Builds auth headers for backend requests.
  */
-export function buildAuthHeaders(token: string): { Authorization: string } {
-  const safeToken = token.trim();
-  if (safeToken.length === 0) {
-    throw new Error("Auth token is empty.");
+export function buildAuthHeaders(token: string | null): Record<string, string> {
+  const safeToken = token?.trim();
+  if (!safeToken || safeToken.length === 0) {
+    return {};
   }
   return { Authorization: `Bearer ${safeToken}` };
 }

@@ -9,6 +9,8 @@ export const RedisProvider = {
       throw new Error('REDIS_URL is not defined');
     }
 
-    return new Redis(redisUrl);
+    return new Redis(redisUrl, {
+      maxRetriesPerRequest: null,
+    });
   },
 };

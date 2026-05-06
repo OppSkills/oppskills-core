@@ -2,6 +2,7 @@ import { toast } from "sonner";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/email");
+const NOTIFICATION_API = createApiClient("/notification");
 
 export interface SendDirectMessagePayload {
   userId: string;
@@ -17,6 +18,7 @@ export interface SendBulkEmailPayload {
   eventId?: string;
   hackathonId?: string;
   htmlBody: string;
+  scheduledAt?: string;
 }
 
 export interface ApiResponse {
@@ -49,7 +51,16 @@ export async function sendBulkEmail(
     toast.error(errorMsg);
     throw new Error(errorMsg);
   }
-  const res = await API.post("/bulk", payload, {
+
+  const mappedPayload = {
+    eventId: payload.eventId || undefined,
+    hackathonId: payload.hackathonId || undefined,
+    content: payload.htmlBody,
+    scheduleType: payload.scheduledAt ? "CUSTOM" : "IMMEDIATELY",
+    scheduledAt: payload.scheduledAt ? new Date(payload.scheduledAt).toISOString() : undefined,
+  };
+
+  const res = await NOTIFICATION_API.post("/schedule", mappedPayload, {
     headers: buildAuthHeaders(token),
   });
   return res.data as ApiResponse;
