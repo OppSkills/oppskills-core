@@ -1,5 +1,5 @@
 import { prisma } from '@oppskills/db';
-import { resend } from 'src/_utils/resend.utils';
+import { getResend } from 'src/_utils/resend.utils';
 import { createElement } from 'react';
 import { render } from '@react-email/components';
 import { EventNotificationEmail, HackathonNotificationEmail } from '@oppskills/emails';
@@ -44,6 +44,7 @@ export async function processNotification(notificationId: string) {
   let processedCount = notification.processedCount || 0;
 
   try {
+    const resend = getResend();
     while (true) {
       let batchRecipients: { email: string; firstName: string | null }[] = [];
       let lastIdThisBatch: string | null = null;
