@@ -276,8 +276,12 @@ function ContextIcon({ name, active }: { readonly name: ContextSectionKey; reado
   if (name === 'payments') {
     return (
       <View style={iconStyles.frame}>
-        <View style={[iconStyles.payCard, { borderColor: tintColor }]} />
-        <View style={[iconStyles.payStripe, { backgroundColor: tintColor }]} />
+        <Svg fill="none" height={32} viewBox="0 0 32 32" width={32}>
+          <Path d="M12 25.3337C8.25477 25.3337 6.38216 25.3337 5.03696 24.4348C4.45462 24.0457 3.95461 23.5457 3.5655 22.9634C2.66667 21.6182 2.66667 19.7456 2.66667 16.0003C2.66667 12.2551 2.66667 10.3825 3.5655 9.03728C3.95461 8.45494 4.45462 7.95493 5.03696 7.56582C6.38216 6.66699 8.25477 6.66699 12 6.66699L20 6.66699C23.7452 6.66699 25.6179 6.66699 26.963 7.56582C27.5454 7.95493 28.0454 8.45494 28.4345 9.03728C29.3333 10.3825 29.3333 12.2551 29.3333 16.0003C29.3333 19.7456 29.3333 21.6182 28.4345 22.9634C28.0454 23.5457 27.5454 24.0457 26.963 24.4348C25.6179 25.3337 23.7452 25.3337 20 25.3337H12Z" stroke={tintColor} strokeWidth="1.5" />
+          <Path d="M16 12C18.2091 12 20 13.7909 20 16C20 18.2091 18.2091 20 16 20C13.7909 20 12 18.2091 12 16C12 13.7909 13.7909 12 16 12Z" stroke={tintColor} strokeWidth="1.5" />
+          <Path d="M7.33333 20L7.33333 12" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M24.6667 20L24.6667 12" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+        </Svg>
       </View>
     );
   }
