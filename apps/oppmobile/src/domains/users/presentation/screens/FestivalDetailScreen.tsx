@@ -236,10 +236,14 @@ function ContextIcon({ name, active }: { readonly name: ContextSectionKey; reado
   if (name === 'manage-registration') {
     return (
       <View style={iconStyles.frame}>
-        <View style={[iconStyles.regOutline, { borderColor: tintColor }]} />
-        <View style={[iconStyles.regLine, { borderColor: tintColor, top: 11 }]} />
-        <View style={[iconStyles.regLine, { borderColor: tintColor, top: 16 }]} />
-        <View style={[iconStyles.regLineShort, { borderColor: tintColor, top: 21 }]} />
+        <Svg fill="none" height={32} viewBox="0 0 32 32" width={32}>
+          <Path d="M2.66667 7.33333L4.28572 9.33333L10 4" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M2.66667 16.6663L4.28572 18.6663L10 13.333" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M2.66667 26.0003L4.28572 28.0003L10 22.667" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M29.3333 25.333L16 25.333" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M29.3333 16L16 16" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M29.3333 6.66699L16 6.66699" stroke={tintColor} strokeWidth="1.5" strokeLinecap="round" />
+        </Svg>
       </View>
     );
   }

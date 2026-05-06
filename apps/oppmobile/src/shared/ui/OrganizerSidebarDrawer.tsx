@@ -368,10 +368,14 @@ function SidebarIcon({
   if (name === 'registrations') {
     return (
       <View style={styles.iconFrame}>
-        <View style={[styles.regOutline, tintStyle]} />
-        <View style={[styles.regLineTop, tintStyle]} />
-        <View style={[styles.regLineMid, tintStyle]} />
-        <View style={[styles.regLineBot, tintStyle]} />
+        <Svg fill="none" height={32} viewBox="0 0 32 32" width={32}>
+          <Path d="M2.66667 7.33333L4.28572 9.33333L10 4" stroke={strokeColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M2.66667 16.6663L4.28572 18.6663L10 13.333" stroke={strokeColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M2.66667 26.0003L4.28572 28.0003L10 22.667" stroke={strokeColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M29.3333 25.333L16 25.333" stroke={strokeColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M29.3333 16L16 16" stroke={strokeColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M29.3333 6.66699L16 6.66699" stroke={strokeColor} strokeWidth="1.5" strokeLinecap="round" />
+        </Svg>
       </View>
     );
   }
