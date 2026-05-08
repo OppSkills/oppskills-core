@@ -22,10 +22,20 @@ export class CreateNotificationDto {
   @IsOptional()
   eventId?: string;
 
+  @ApiProperty({ required: false, description: 'Target Event Slug' })
+  @IsString()
+  @IsOptional()
+  eventSlug?: string;
+
   @ApiProperty({ required: false, description: 'Target Hackathon ID' })
   @IsString()
   @IsOptional()
   hackathonId?: string;
+
+  @ApiProperty({ required: false, description: 'Target Hackathon Slug' })
+  @IsString()
+  @IsOptional()
+  hackathonSlug?: string;
 
   @ApiProperty({ description: 'The content message for the notification' })
   @IsString()
@@ -46,3 +56,4 @@ export class CreateNotificationDto {
   @IsOptional()
   status?: NotificationStatus;
 }
+
