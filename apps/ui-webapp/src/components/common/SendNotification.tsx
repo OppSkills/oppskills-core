@@ -30,15 +30,17 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 export interface SendNotificationProps {
   type: "event" | "hackathon";
-  id: string | null;
-  name: string;
-  endDate: Date | null;
+  id?: string | null;
+  slug?: string | null;
+  name?: string;
+  endDate?: Date | null;
 }
 
-export function SendNotification({ type, id, name, endDate }: SendNotificationProps) {
+export function SendNotification({ type, id, slug, name, endDate }: SendNotificationProps) {
   const { getToken } = useAuth();
 
   const [message, setMessage] = useState("");
@@ -53,15 +55,16 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
   const [lastScheduledTime, setLastScheduledTime] = useState<string | null>(null);
 
   const fetchHistory = useCallback(async () => {
-    if (!id) return;
+    const slugOrId = slug || id;
+    if (!slugOrId) return;
     try {
       setFetchingHistory(true);
       const token = await getToken();
       let data: NotificationRecord[] = [];
       if (type === "event") {
-        data = await getNotificationsForEvent(token, id);
+        data = await getNotificationsForEvent(token, slugOrId);
       } else {
-        data = await getNotificationsForHackathon(token, id);
+        data = await getNotificationsForHackathon(token, slugOrId);
       }
       setNotifications(data);
     } catch (error) {
@@ -69,7 +72,7 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
     } finally {
       setFetchingHistory(false);
     }
-  }, [id, type, getToken]);
+  }, [id, slug, type, getToken]);
 
   useEffect(() => {
     fetchHistory();
@@ -113,8 +116,8 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
       toast.error("Please enter a message body");
       return;
     }
-    if (!id) {
-      toast.error(`${type === "event" ? "Event" : "Hackathon"} ID not found. Please refresh.`);
+    if (!id && !slug) {
+      toast.error(`${type === "event" ? "Event" : "Hackathon"} identifier not found. Please refresh.`);
       return;
     }
 
@@ -127,8 +130,10 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
       setLoading(true);
       const token = await getToken();
       const response = await sendBulkEmail(token, {
-        eventId: type === "event" ? id : undefined,
-        hackathonId: type === "hackathon" ? id : undefined,
+        eventId: type === "event" ? id || undefined : undefined,
+        eventSlug: type === "event" ? slug || undefined : undefined,
+        hackathonId: type === "hackathon" ? id || undefined : undefined,
+        hackathonSlug: type === "hackathon" ? slug || undefined : undefined,
         htmlBody: message,
         scheduledAt: whenToSend === "Custom Time" ? customDateTime : undefined,
       });
@@ -146,8 +151,13 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (notif: NotificationRecord) => {
+    const { status, successCount, failedCount } = notif;
+
+    // Outcome-aware status: If "Completed" but 0 success and >0 failed, show as Failed
+    const effectiveStatus = (status === "COMPLETED" && successCount === 0 && failedCount > 0) ? "FAILED" : status;
+
+    switch (effectiveStatus) {
       case "COMPLETED":
         return <Badge className="bg-green-100 text-green-700 border-green-200">Completed</Badge>;
       case "PROCESSING":
@@ -156,8 +166,31 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
         return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Queued</Badge>;
       case "FAILED":
         return <Badge className="bg-red-100 text-red-700 border-red-200">Failed</Badge>;
+      case "CANCELLED":
+        return <Badge className="bg-neutral-100 text-neutral-700 border-neutral-200">Cancelled</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getStatusStyles = (notif: NotificationRecord) => {
+    const { status, successCount, failedCount } = notif;
+
+    // Outcome-aware status
+    const effectiveStatus = (status === "COMPLETED" && successCount === 0 && failedCount > 0) ? "FAILED" : status;
+
+    switch (effectiveStatus) {
+      case "COMPLETED":
+        return "border-l-green-500 hover:bg-green-50/50";
+      case "PROCESSING":
+        return "border-l-primary-500 hover:bg-primary-50/50";
+      case "QUEUED":
+        return "border-l-yellow-500 hover:bg-yellow-50/50";
+      case "FAILED":
+      case "CANCELLED":
+        return "border-l-red-500 hover:bg-red-50/50";
+      default:
+        return "border-l-neutral-300 hover:bg-neutral-50/50";
     }
   };
 
@@ -171,7 +204,7 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
     if (hours > 0) parts.push(`${hours}h`);
     if (minutes > 0) parts.push(`${minutes}m`);
     if (seconds > 0) parts.push(`${seconds}s`);
-    
+
     return parts.join(" ") || "0s";
   };
 
@@ -228,7 +261,7 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
       if (data.recipients && Array.isArray(data.recipients)) {
         return (
           <p className="text-[10px] text-neutral-500 mt-1 italic">
-             Broadcasted to: {data.recipients.map((r: any) => r.email).join(", ")}
+            Broadcasted to: {data.recipients.map((r: any) => r.email).join(", ")}
           </p>
         );
       }
@@ -272,7 +305,7 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
 
           {/* LEFT CONTENT AREA (65%) */}
           <div className="lg:col-span-8 py-4 md:py-8 flex flex-col gap-6">
-            
+
             {lastScheduledTime && (
               <div className="bg-green-600 text-white px-6 py-4 rounded-2xl shadow-lg flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500 border border-green-500">
                 <div className="flex items-center gap-3">
@@ -284,10 +317,10 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
                     <p className="text-sm font-medium">Successfully scheduled. Expected completion by <span className="font-bold underline">{new Date(lastScheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></p>
                   </div>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="hover:bg-white/10 text-white h-8 w-8 p-0 rounded-full" 
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hover:bg-white/10 text-white h-8 w-8 p-0 rounded-full"
                   onClick={() => setLastScheduledTime(null)}
                 >
                   <AlertCircle className="w-4 h-4 rotate-45" />
@@ -345,13 +378,14 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
             {/* MAIN BODY */}
             <div className="flex flex-col gap-2">
               <label className="text-xs text-neutral-400 font-medium tracking-wide">Main Body</label>
-              <div className="border border-neutral-100 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 bg-white">
+              <div className="border-none rounded-3xl overflow-hidden bg-white">
                 <RichTextEditor
                   placeholder="Type your message here..."
                   value={message}
                   onChange={(content) => setMessage(content)}
                   className="min-h-[300px]"
                 />
+
               </div>
             </div>
 
@@ -359,8 +393,8 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
             <div className="mt-4">
               <Button
                 onClick={handleSend}
-                disabled={loading || !id}
-                className="w-full bg-primary-700 hover:bg-primary-800 text-neutral-100 font-medium h-12 rounded-xl"
+                disabled={loading || (!id && !slug)}
+                className="w-full bg-primary-700 hover:bg-primary-800 text-neutral-100 font-medium"
               >
                 {loading ? (
                   <>
@@ -379,9 +413,9 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
           <div className="lg:col-span-4 py-4 md:py-8 h-fit">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-neutral-800 font-poppins">Notification History</h3>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-8 w-8 rounded-full hover:bg-white border border-neutral-200 shadow-sm"
                 onClick={fetchHistory}
                 disabled={fetchingHistory}
@@ -413,7 +447,10 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
                       setSelectedNotif(notif);
                       setIsSheetOpen(true);
                     }}
-                    className="px-4 py-4 border-l-4 border-accent-yellow-300 hover:bg-accent-yellow-100/30 cursor-pointer rounded-lg flex flex-col gap-2 transition-colors bg-white/50"
+                    className={cn(
+                      "px-4 py-4 border-l-4 cursor-pointer rounded-lg flex flex-col gap-2 transition-colors bg-white/50",
+                      getStatusStyles(notif)
+                    )}
                   >
                     <div className="flex justify-between items-start">
                       <span className="text-sm text-neutral-500">
@@ -427,7 +464,7 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
                           hour12: true,
                         })}
                       </span>
-                      {getStatusBadge(notif.status)}
+                      {getStatusBadge(notif)}
                     </div>
 
                     <p className="text-lg text-neutral-700 line-clamp-4 font-poppins">
@@ -472,14 +509,14 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
                       Initiated on {new Date(selectedNotif.createdAt).toLocaleString()}
                     </SheetDescription>
                   </div>
-                  {getStatusBadge(selectedNotif.status)}
+                  {getStatusBadge(selectedNotif)}
                 </div>
               </SheetHeader>
 
               <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                 <ScrollArea className="h-full">
                   <div className="p-6 flex flex-col gap-8 pb-12">
-                    
+
                     {/* ANALYTICS CARD */}
                     <div className="bg-neutral-900 rounded-2xl p-6 text-white shadow-xl shadow-neutral-200/50 shrink-0">
                       <div className="grid grid-cols-3 gap-4 text-center">
@@ -503,8 +540,8 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
                             <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Processing Progress</span>
                             <span className="text-lg font-bold">{Math.round((selectedNotif.processedCount / selectedNotif.totalRecipients) * 100)}%</span>
                           </div>
-                          <Progress 
-                            value={(selectedNotif.processedCount / selectedNotif.totalRecipients) * 100} 
+                          <Progress
+                            value={(selectedNotif.processedCount / selectedNotif.totalRecipients) * 100}
                             className="h-2 bg-neutral-800"
                           />
                         </div>
@@ -513,9 +550,9 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
 
                     {/* CONTENT PREVIEW */}
                     <div className="flex flex-col gap-3">
-                      <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-widest flex items-center gap-2 font-sans">
                         <Info className="w-3 h-3" />
-                        Broadcast Message
+                        <span>Broadcast Message</span>
                       </h4>
                       <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-100 text-sm text-neutral-700 leading-relaxed max-h-[250px] overflow-auto">
                         <div dangerouslySetInnerHTML={{ __html: selectedNotif.content }} />
@@ -526,21 +563,20 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
 
                     {/* LOG TRAIL */}
                     <div className="flex flex-col gap-4">
-                      <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-widest flex items-center gap-2 font-sans">
                         <Clock className="w-3 h-3" />
-                        System Log Trail
+                        <span>System Log Trail</span>
                       </h4>
-                      
+
                       <div className="flex flex-col gap-3">
                         {selectedNotif.logs && selectedNotif.logs.length > 0 ? (
                           selectedNotif.logs.map((log) => (
                             <div key={log.id} className="flex gap-4 group">
                               <div className="flex flex-col items-center gap-1">
-                                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                                  log.level === "ERROR" ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" : 
-                                  log.level === "INFO" ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" : 
-                                  "bg-neutral-300"
-                                }`} />
+                                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${log.level === "ERROR" ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" :
+                                  log.level === "INFO" ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" :
+                                    "bg-neutral-300"
+                                  }`} />
                                 <div className="w-px flex-1 bg-neutral-100" />
                               </div>
                               <div className="flex-1 pb-4">
@@ -566,11 +602,11 @@ export function SendNotification({ type, id, name, endDate }: SendNotificationPr
                   </div>
                 </ScrollArea>
               </div>
-              
+
               <div className="p-6 bg-neutral-50 border-t border-neutral-100 shrink-0">
-                 <Button variant="outline" className="w-full rounded-xl" onClick={() => setIsSheetOpen(false)}>
-                   Close Details
-                 </Button>
+                <Button variant="outline" className="w-full rounded-xl" onClick={() => setIsSheetOpen(false)}>
+                  Close Details
+                </Button>
               </div>
             </>
           )}

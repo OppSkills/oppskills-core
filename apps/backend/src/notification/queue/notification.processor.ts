@@ -170,13 +170,16 @@ export async function processNotification(notificationId: string) {
     }
 
     // Complete notification campaign
+    const finalStatus = (successCount === 0 && failedCount > 0) ? 'FAILED' : 'COMPLETED';
+
     await prisma.notifications.update({
       where: { id: notificationId },
       data: {
-        status: 'COMPLETED',
+        status: finalStatus,
         completedAt: new Date(),
       },
     });
+
 
     await prisma.notificationLogs.create({
       data: {

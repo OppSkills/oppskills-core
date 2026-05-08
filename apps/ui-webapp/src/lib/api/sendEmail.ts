@@ -16,7 +16,9 @@ export interface SendDirectMessagePayload {
 
 export interface SendBulkEmailPayload {
   eventId?: string;
+  eventSlug?: string;
   hackathonId?: string;
+  hackathonSlug?: string;
   htmlBody: string;
   scheduledAt?: string;
 }
@@ -54,11 +56,14 @@ export async function sendBulkEmail(
 
   const mappedPayload = {
     eventId: payload.eventId || undefined,
+    eventSlug: payload.eventSlug || undefined,
     hackathonId: payload.hackathonId || undefined,
+    hackathonSlug: payload.hackathonSlug || undefined,
     content: payload.htmlBody,
     scheduleType: payload.scheduledAt ? "CUSTOM" : "IMMEDIATELY",
     scheduledAt: payload.scheduledAt ? new Date(payload.scheduledAt).toISOString() : undefined,
   };
+
 
   const res = await NOTIFICATION_API.post("/schedule", mappedPayload, {
     headers: buildAuthHeaders(token),

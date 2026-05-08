@@ -22,30 +22,33 @@ export class NotificationService {
    */
   async assertEventOrHackathonAccess(
     userId: string,
-    eventId?: string,
-    hackathonId?: string,
-  ): Promise<number> {
-    if (eventId && hackathonId) {
+    eventSlugOrId?: string,
+    hackathonSlugOrId?: string,
+  ): Promise<{ id: string; type: 'event' | 'hackathon'; recipientCount: number }> {
+    if (eventSlugOrId && hackathonSlugOrId) {
       throw new BadRequestException(
-        'Both eventId and hackathonId cannot be provided together.',
+        'Both event and hackathon identifiers cannot be provided together.',
       );
     }
-    if (!eventId && !hackathonId) {
+    if (!eventSlugOrId && !hackathonSlugOrId) {
       throw new BadRequestException(
-        'Either eventId or hackathonId must be provided.',
+        'Either an event or hackathon identifier must be provided.',
       );
     }
 
-    if (eventId) {
-      const event = await prisma.eventEntity.findUnique({
-        where: { id: eventId, isDeleted: false },
+    if (eventSlugOrId) {
+      const event = await prisma.eventEntity.findFirst({
+        where: {
+          OR: [{ id: eventSlugOrId }, { slug: eventSlugOrId }],
+          isDeleted: false,
+        },
         select: { id: true, ownerId: true },
       });
       if (!event) throw new NotFoundException('Event not found');
 
       if (event.ownerId !== userId) {
         const hasManagerRole = await prisma.eventUserRoleEntity.findFirst({
-          where: { eventId, userId, role: 'MANAGER' },
+          where: { eventId: event.id, userId, role: 'MANAGER' },
         });
         if (!hasManagerRole) {
           throw new ForbiddenException(
@@ -54,22 +57,25 @@ export class NotificationService {
         }
       }
 
-      // Count direct event participants
-      return prisma.eventParticipantEntity.count({
-        where: { eventId },
+      const count = await prisma.eventParticipantEntity.count({
+        where: { eventId: event.id },
       });
+      return { id: event.id, type: 'event', recipientCount: count };
     }
 
-    if (hackathonId) {
-      const hackathon = await prisma.hackathonEntity.findUnique({
-        where: { id: hackathonId, isDeleted: false },
+    if (hackathonSlugOrId) {
+      const hackathon = await prisma.hackathonEntity.findFirst({
+        where: {
+          OR: [{ id: hackathonSlugOrId }, { slug: hackathonSlugOrId }],
+          isDeleted: false,
+        },
         select: { id: true, ownerId: true },
       });
       if (!hackathon) throw new NotFoundException('Hackathon not found');
 
       if (hackathon.ownerId !== userId) {
         const hasManagerRole = await prisma.hackathonUserRoleEntity.findFirst({
-          where: { hackathonId, userId, role: 'MANAGER' },
+          where: { hackathonId: hackathon.id, userId, role: 'MANAGER' },
         });
         if (!hasManagerRole) {
           throw new ForbiddenException(
@@ -78,24 +84,27 @@ export class NotificationService {
         }
       }
 
-      // Count direct hackathon registration submissions
-      return prisma.hackathonRegistrationSubmissionEntity.count({
-        where: { hackathonId },
+      const count = await prisma.hackathonRegistrationSubmissionEntity.count({
+        where: { hackathonId: hackathon.id },
       });
+      return { id: hackathon.id, type: 'hackathon', recipientCount: count };
     }
 
-    return 0;
+    return { id: '', type: 'event', recipientCount: 0 };
   }
 
   /**
    * Schedules or creates a new notification campaign.
    */
   async scheduleNotification(dto: CreateNotificationDto, userId: string) {
-    const totalRecipients = await this.assertEventOrHackathonAccess(
+    const { id, type, recipientCount } = await this.assertEventOrHackathonAccess(
       userId,
-      dto.eventId,
-      dto.hackathonId,
+      dto.eventId || dto.eventSlug,
+      dto.hackathonId || dto.hackathonSlug,
     );
+
+    const actualEventId = type === 'event' ? id : undefined;
+    const actualHackathonId = type === 'hackathon' ? id : undefined;
 
     const scheduleType = dto.scheduleType || 'IMMEDIATELY';
     const status = dto.status || 'QUEUED';
@@ -157,13 +166,13 @@ export class NotificationService {
     const notification = await prisma.notifications.create({
       data: {
         userId,
-        eventId: dto.eventId || null,
-        hackathonId: dto.hackathonId || null,
+        eventId: actualEventId || null,
+        hackathonId: actualHackathonId || null,
         content: dto.content,
         scheduleType,
         scheduledAt,
         status,
-        totalRecipients,
+        totalRecipients: recipientCount,
         expectedFinishAt,
       },
     });
@@ -179,9 +188,10 @@ export class NotificationService {
         notificationId: notification.id,
         level: 'INFO',
         message: `Notification created and enqueued with delay of ${delay}ms`,
-        meta: { delay, expectedFinishAt, totalRecipients },
+        meta: { delay, expectedFinishAt, recipientCount },
       },
     });
+
 
     return notification;
   }
@@ -189,26 +199,86 @@ export class NotificationService {
   /**
    * Lists all notifications scheduled for a specific event.
    */
-  async listNotificationsForEvent(eventId: string, userId: string) {
-    await this.assertEventOrHackathonAccess(userId, eventId, undefined);
+  async listNotificationsForEvent(eventSlugOrId: string, userId: string) {
+    const { id: eventId } = await this.assertEventOrHackathonAccess(
+      userId,
+      eventSlugOrId,
+      undefined,
+    );
 
     return prisma.notifications.findMany({
       where: { eventId },
       orderBy: { createdAt: 'desc' },
-      include: { logs: true },
+      select: {
+        id: true,
+        userId: true,
+        eventId: true,
+        hackathonId: true,
+        content: true,
+        scheduleType: true,
+        scheduledAt: true,
+        status: true,
+        totalRecipients: true,
+        processedCount: true,
+        successCount: true,
+        failedCount: true,
+        expectedFinishAt: true,
+        completedAt: true,
+        createdAt: true,
+        logs: {
+          select: {
+            id: true,
+            level: true,
+            message: true,
+            meta: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     });
   }
 
   /**
    * Lists all notifications scheduled for a specific hackathon.
    */
-  async listNotificationsForHackathon(hackathonId: string, userId: string) {
-    await this.assertEventOrHackathonAccess(userId, undefined, hackathonId);
+  async listNotificationsForHackathon(hackathonSlugOrId: string, userId: string) {
+    const { id: hackathonId } = await this.assertEventOrHackathonAccess(
+      userId,
+      undefined,
+      hackathonSlugOrId,
+    );
 
     return prisma.notifications.findMany({
       where: { hackathonId },
       orderBy: { createdAt: 'desc' },
-      include: { logs: true },
+      select: {
+        id: true,
+        userId: true,
+        eventId: true,
+        hackathonId: true,
+        content: true,
+        scheduleType: true,
+        scheduledAt: true,
+        status: true,
+        totalRecipients: true,
+        processedCount: true,
+        successCount: true,
+        failedCount: true,
+        expectedFinishAt: true,
+        completedAt: true,
+        createdAt: true,
+        logs: {
+          select: {
+            id: true,
+            level: true,
+            message: true,
+            meta: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     });
   }
 
@@ -218,7 +288,33 @@ export class NotificationService {
   async getNotificationById(id: string, userId: string) {
     const notification = await prisma.notifications.findUnique({
       where: { id },
-      include: { logs: true },
+      select: {
+        id: true,
+        userId: true,
+        eventId: true,
+        hackathonId: true,
+        content: true,
+        scheduleType: true,
+        scheduledAt: true,
+        status: true,
+        totalRecipients: true,
+        processedCount: true,
+        successCount: true,
+        failedCount: true,
+        expectedFinishAt: true,
+        completedAt: true,
+        createdAt: true,
+        logs: {
+          select: {
+            id: true,
+            level: true,
+            message: true,
+            meta: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     });
 
     if (!notification) {

@@ -29,19 +29,20 @@ export interface NotificationRecord {
   logs?: NotificationLog[];
 }
 
-export async function getNotificationsForEvent(token: string | null, eventId: string): Promise<NotificationRecord[]> {
-  const res = await API.get(`/event/${eventId}`, {
+export async function getNotificationsForEvent(token: string | null, eventSlugOrId: string): Promise<NotificationRecord[]> {
+  const res = await API.get(`/event/${eventSlugOrId}`, {
     headers: buildAuthHeaders(token),
   });
   return res.data;
 }
 
-export async function getNotificationsForHackathon(token: string | null, hackathonId: string): Promise<NotificationRecord[]> {
-  const res = await API.get(`/hackathon/${hackathonId}`, {
+export async function getNotificationsForHackathon(token: string | null, hackathonSlugOrId: string): Promise<NotificationRecord[]> {
+  const res = await API.get(`/hackathon/${hackathonSlugOrId}`, {
     headers: buildAuthHeaders(token),
   });
   return res.data;
 }
+
 
 export async function getNotificationDetails(token: string | null, id: string): Promise<NotificationRecord> {
   const res = await API.get(`/${id}`, {
