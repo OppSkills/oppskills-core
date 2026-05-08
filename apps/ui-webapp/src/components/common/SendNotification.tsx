@@ -47,7 +47,6 @@ export function SendNotification({ type, id, slug, name, endDate }: SendNotifica
   const [whenToSend, setWhenToSend] = useState("Immediately");
   const [customDateTime, setCustomDateTime] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
   const [fetchingHistory, setFetchingHistory] = useState(false);
   const [selectedNotif, setSelectedNotif] = useState<NotificationRecord | null>(null);
@@ -294,9 +293,6 @@ export function SendNotification({ type, id, slug, name, endDate }: SendNotifica
     }
   };
 
-  if (false) {
-    return null; // Full-screen success state disabled
-  }
 
   return (
     <div className="w-full min-h-screen bg-neutral-100 text-neutral-800 pb-12">
