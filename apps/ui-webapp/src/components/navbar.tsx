@@ -113,7 +113,7 @@ const Navbar = () => {
 
         {/* --- RIGHT SIDE ACTIONS --- */}
         <div className="flex items-center gap-3">
-          <div className="hidden xl:flex items-center justify-center relative">
+          <div className="hidden xl:flex items-center justify-center relative search-input-container">
             <form onSubmit={handleSearch} className="relative w-full max-w-[300px]">
               <Input
                 type="text"
@@ -123,10 +123,12 @@ const Navbar = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                onMouseDown={(e) => e.stopPropagation()}
               />
               <button
                 type="submit"
                 disabled={isSearching}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-primary-500 transition-colors disabled:opacity-50"
               >
                 {isSearching ? (
@@ -136,6 +138,11 @@ const Navbar = () => {
                 )}
               </button>
             </form>
+            <NavbarSearch 
+              query={searchQuery} 
+              isOpen={isSearchFocused} 
+              onClose={() => setIsSearchFocused(false)} 
+            />
           </div>
 
           <div className="flex items-center gap-3">
@@ -198,7 +205,7 @@ const Navbar = () => {
           isSearchingMobile && "bg-white"
         )}>
           {/* Mobile Search */}
-          <div className="mb-4">
+          <div className="mb-4 relative search-input-container">
             <form onSubmit={handleSearch} className="relative w-full">
               <Input
                 type="text"
@@ -208,10 +215,12 @@ const Navbar = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                onMouseDown={(e) => e.stopPropagation()}
               />
               <button
                 type="submit"
                 disabled={isSearching}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 disabled:opacity-50"
               >
                 {isSearching ? (
@@ -221,6 +230,11 @@ const Navbar = () => {
                 )}
               </button>
             </form>
+            <NavbarSearch 
+              query={searchQuery} 
+              isOpen={isSearchFocused} 
+              onClose={() => setIsSearchFocused(false)} 
+            />
           </div>
 
           {/* Hide mobile links when searching to give space to results */}
@@ -275,13 +289,7 @@ const Navbar = () => {
         </div>
       )}
 
-      <NavbarSearch 
-        query={searchQuery} 
-        isOpen={isSearchFocused} 
-        onClose={() => {
-          setIsSearchFocused(false);
-        }} 
-      />
+
 
       {authMode && <Auth onClose={() => setAuthMode(null)} />}
     </nav>
