@@ -250,6 +250,7 @@ export class OpportunityService {
           bannerImageUrl: true,
         },
         take: 10,
+        orderBy: { createdAt: 'desc' },
       }),
       prisma.eventEntity.findMany({
         where: {
@@ -278,6 +279,7 @@ export class OpportunityService {
           bannerImageUrl: true,
         },
         take: 10,
+        orderBy: { createdAt: 'desc' },
       }),
     ]);
 
