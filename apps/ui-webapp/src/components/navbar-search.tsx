@@ -175,7 +175,7 @@ export const NavbarSearch = ({ query, isOpen, onClose }: NavbarSearchProps) => {
                                 {item.type === "HACKATHON" ? (
                                   <>
                                     <Trophy className="h-2.5 w-2.5 mr-1" />
-                                    Opportunity
+                                    Hackathon
                                   </>
                                 ) : (
                                   <>
