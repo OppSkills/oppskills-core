@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import { EventService } from '../event/event.service';
 import { HackathonService } from '../hackathon/hackathon.service';
+import sanitizeHtml from 'sanitize-html';
 
 @Injectable()
 export class OpportunityService {
@@ -28,7 +29,7 @@ export class OpportunityService {
   constructor(
     private readonly eventService: EventService,
     private readonly hackathonService: HackathonService,
-  ) {}
+  ) { }
 
   /**
    * List past public opportunities (Deadline < Now).
@@ -209,5 +210,129 @@ export class OpportunityService {
       events: matchingEvents.map(sanitize),
       topOpportunities: finalTop.map(sanitize),
     };
+  }
+
+  /**
+   * Autosuggest search for hackathons and events.
+   * Returns a mixed list sorted by matching score.
+   */
+  async autosuggestOpportunities(query: string) {
+    const q = query.trim();
+    if (!q) return [];
+
+    const now = new Date();
+
+    const [hackathons, events] = await Promise.all([
+      prisma.hackathonEntity.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { name: { contains: q, mode: 'insensitive' } },
+                { description: { contains: q, mode: 'insensitive' } },
+              ],
+            },
+            {
+              OR: [
+                { registrationDeadline: { gte: now } },
+                { registrationDeadline: null },
+              ],
+            },
+          ],
+          status: 'PUBLISHED',
+          approvalStatus: 'APPROVED',
+          isDeleted: false,
+        },
+        select: {
+          slug: true,
+          name: true,
+          description: true,
+          bannerImageUrl: true,
+        },
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.eventEntity.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { name: { contains: q, mode: 'insensitive' } },
+                { description: { contains: q, mode: 'insensitive' } },
+              ],
+            },
+            {
+              OR: [
+                { registrationDeadline: { gte: now } },
+                { registrationDeadline: null },
+              ],
+            },
+          ],
+          status: 'PUBLISHED',
+          approvalStatus: 'APPROVED',
+          isDeleted: false,
+        },
+        select: {
+          slug: true,
+          name: true,
+          description: true,
+          bannerImageUrl: true,
+        },
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const mixed = [
+      ...hackathons.map((h) => ({ ...h, type: 'HACKATHON' })),
+      ...events.map((e) => ({ ...e, type: 'EVENT' })),
+    ];
+
+    const lowerQuery = q.toLowerCase();
+
+    const results = mixed.map((item) => {
+      // 1. Sanitize once during mapping
+      const strippedDesc = sanitizeHtml(item.description || '', {
+        allowedTags: [],
+        allowedAttributes: {},
+      })
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // 2. Score against plain text
+      let score = 0;
+      const lowerName = item.name.toLowerCase();
+      const lowerDesc = strippedDesc.toLowerCase();
+
+      if (lowerName === lowerQuery) {
+        score += 100;
+      } else if (lowerName.startsWith(lowerQuery)) {
+        score += 50;
+      } else if (lowerName.includes(lowerQuery)) {
+        score += 20;
+      }
+
+      if (lowerDesc.includes(lowerQuery)) {
+        score += 5;
+      }
+
+      return {
+        slug: item.slug,
+        type: item.type,
+        thumbnail: item.bannerImageUrl,
+        title: item.name,
+        description:
+          strippedDesc.length > 50
+            ? strippedDesc.substring(0, 50).trim() + '...'
+            : strippedDesc,
+        score,
+      };
+    });
+
+    // Sort by score
+    results.sort((a, b) => b.score - a.score);
+
+    // Return final items (dropping the score field)
+    return results.map(({ score: _, ...item }) => item);
   }
 }

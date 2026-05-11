@@ -27,3 +27,17 @@ export async function searchOpportunities(q: string) {
     topOpportunities: any[];
   };
 }
+
+/**
+ * Autosuggest search for hackathons and events.
+ */
+export async function autosuggestOpportunities(q: string) {
+  const res = await API.get("/autosuggest", { params: { q } });
+  return res.data as {
+    slug: string;
+    type: "HACKATHON" | "EVENT";
+    thumbnail: string;
+    title: string;
+    description: string;
+  }[];
+}

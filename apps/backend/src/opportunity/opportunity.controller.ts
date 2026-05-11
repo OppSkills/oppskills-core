@@ -40,4 +40,15 @@ export class OpportunityController {
   async searchOpportunities(@Query('q') query: string) {
     return this.opportunityService.searchOpportunities(query || '');
   }
+
+  /**
+   * GET /opportunity/autosuggest - Mixed search with scoring for autosuggest.
+   */
+  @Get('autosuggest')
+  @ApiOperation({
+    summary: 'Mixed search results for hackathons and events (autosuggest)',
+  })
+  async autosuggestOpportunities(@Query('q') query: string) {
+    return this.opportunityService.autosuggestOpportunities(query || '');
+  }
 }
