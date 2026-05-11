@@ -38,12 +38,22 @@ export const NavbarSearch = ({ query, isOpen, onClose }: NavbarSearchProps) => {
   // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        onClose();
+      const target = event.target as HTMLElement;
+
+      // Don't close if clicking inside this container
+      if (containerRef.current && containerRef.current.contains(target)) {
+        return;
       }
+
+      // Don't close if clicking on any search input or suggestion container (handles multiple instances)
+      if (
+        target.closest(".search-input-container") ||
+        target.closest(".search-suggestions-container")
+      ) {
+        return;
+      }
+
+      onClose();
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -86,9 +96,9 @@ export const NavbarSearch = ({ query, isOpen, onClose }: NavbarSearchProps) => {
     <div
       ref={containerRef}
       className={cn(
-        "w-full border p-0 bg-white rounded-2xl absolute right-0 top-12 shadow-xl z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top",
+        "w-full border p-0 bg-white rounded-2xl absolute right-0 top-12 shadow-xl z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top search-suggestions-container",
         "md:w-[450px] md:max-h-[500px]",
-        "fixed inset-x-0 bottom-0 top-[76px] md:absolute md:bottom-auto md:inset-x-auto"
+        "fixed inset-x-0 bottom-0 top-[76px] md:absolute md:bottom-auto md:left-auto md:right-0"
       )}
     >
       <ScrollArea className="h-full max-h-[500px]">
