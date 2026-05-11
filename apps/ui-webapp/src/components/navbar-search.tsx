@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Search, Loader2, X, TrendingUp, Calendar, Trophy } from "lucide-react";
-import { Input } from "./ui/input";
+import { Search, Calendar, Trophy } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -10,7 +9,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "./ui/scroll-area";
 import { Chart } from "@solar-icons/react";
-import { Button } from "./ui/button";
 import { autosuggestOpportunities } from "@/lib/api/opportunityApi";
 
 const TRENDING_SEARCHES = [
@@ -24,49 +22,6 @@ const TRENDING_SEARCHES = [
   "Startup Pitch",
 ];
 
-// Mock data for results
-const MOCK_RESULTS = [
-  {
-    id: "1",
-    title: "Global AI Hackathon",
-    description: "Build the future of AI in this 48-hour global challenge.",
-    type: "Hackathon",
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=100&h=100&fit=crop",
-    slug: "global-ai-hackathon",
-  },
-  {
-    id: "2",
-    title: "React Conf 2024",
-    description: "The biggest React conference of the year.",
-    type: "Event",
-    image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=100&h=100&fit=crop",
-    slug: "react-conf-2024",
-  },
-  {
-    id: "3",
-    title: "Blockchain Summit",
-    description: "Explore the latest in blockchain technology.",
-    type: "Event",
-    image: "https://images.unsplash.com/photo-1516245834210-c4c142787335?w=100&h=100&fit=crop",
-    slug: "blockchain-summit",
-  },
-  {
-    id: "4",
-    title: "Fintech Innovation Hack",
-    description: "Revolutionize finance with tech.",
-    type: "Hackathon",
-    image: "https://images.unsplash.com/photo-1551288049-bbda4865cda1?w=100&h=100&fit=crop",
-    slug: "fintech-innovation-hack",
-  },
-  {
-    id: "5",
-    title: "UI/UX Design Workshop",
-    description: "Master modern design principles.",
-    type: "Event",
-    image: "https://images.unsplash.com/photo-1586717791821-3f44a563dc4c?w=100&h=100&fit=crop",
-    slug: "ui-ux-workshop",
-  },
-];
 
 interface NavbarSearchProps {
   query: string;

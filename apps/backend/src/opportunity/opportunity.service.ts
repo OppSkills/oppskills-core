@@ -286,12 +286,21 @@ export class OpportunityService {
       ...events.map((e) => ({ ...e, type: 'EVENT' })),
     ];
 
-    // Score and sort
-    const scored = mixed.map((item) => {
+    const lowerQuery = q.toLowerCase();
+
+    const results = mixed.map((item) => {
+      // 1. Sanitize once during mapping
+      const strippedDesc = sanitizeHtml(item.description || '', {
+        allowedTags: [],
+        allowedAttributes: {},
+      })
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // 2. Score against plain text
       let score = 0;
-      const lowerQuery = q.toLowerCase();
       const lowerName = item.name.toLowerCase();
-      const lowerDesc = (item.description || '').toLowerCase();
+      const lowerDesc = strippedDesc.toLowerCase();
 
       if (lowerName === lowerQuery) {
         score += 100;
@@ -305,19 +314,6 @@ export class OpportunityService {
         score += 5;
       }
 
-      return { ...item, score };
-    });
-
-    scored.sort((a, b) => b.score - a.score);
-
-    return scored.map((item) => {
-      const strippedDesc = sanitizeHtml(item.description || '', {
-        allowedTags: [],
-        allowedAttributes: {},
-      })
-        .replace(/\s+/g, ' ')
-        .trim();
-
       return {
         slug: item.slug,
         type: item.type,
@@ -327,7 +323,14 @@ export class OpportunityService {
           strippedDesc.length > 50
             ? strippedDesc.substring(0, 50).trim() + '...'
             : strippedDesc,
+        score,
       };
     });
+
+    // Sort by score
+    results.sort((a, b) => b.score - a.score);
+
+    // Return final items (dropping the score field)
+    return results.map(({ score: _, ...item }) => item);
   }
 }
