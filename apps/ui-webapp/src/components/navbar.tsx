@@ -19,6 +19,8 @@ import { UserAccountButton } from "./user-account-button";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Chart } from "@solar-icons/react";
+import { NavbarSearch } from "./navbar-search";
 
 function isNavLinkActive(href: string, pathname: string): boolean {
   if (href === "/") {
@@ -106,7 +108,7 @@ const Navbar = () => {
 
         {/* --- RIGHT SIDE ACTIONS --- */}
         <div className="flex items-center gap-3">
-          <div className="hidden xl:flex items-center justify-center">
+          <div className="hidden xl:flex items-center justify-center relative">
             <form onSubmit={handleSearch} className="relative w-full max-w-[300px]">
               <Input
                 type="text"
@@ -114,6 +116,7 @@ const Navbar = () => {
                 className="w-full rounded-full border-neutral-400 py-2"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsOpen(true)}
               />
               <button
                 type="submit"
@@ -127,6 +130,11 @@ const Navbar = () => {
                 )}
               </button>
             </form>
+            <NavbarSearch 
+              query={searchQuery} 
+              isOpen={isOpen} 
+              onClose={() => setIsOpen(false)} 
+            />
           </div>
 
           {/* User actions / auth */}
@@ -201,6 +209,7 @@ const Navbar = () => {
                 className="w-full rounded-full border-neutral-400 py-2 pl-4 pr-12"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsOpen(true)}
               />
               <button
                 type="submit"
