@@ -324,7 +324,8 @@ export class OpportunityService {
         description:
           strippedDesc.length > 50
             ? strippedDesc.substring(0, 50).trim() + '...'
-            : strippedDesc,
+            : strippedDesc ||
+              `Check out this exciting ${item.type.toLowerCase()} on OppSkills!`,
         score,
       };
     });
