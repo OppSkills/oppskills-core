@@ -75,7 +75,7 @@ const Navbar = () => {
     };
   }, [authMode]);
 
-  const isSearchingMobile = isOpen && (isSearchFocused || searchQuery.trim().length > 0);
+  const isSearchingMobile = isOpen && isSearchFocused;
 
   return (
     <nav className="sticky top-0 z-50 w-full shadow-sm bg-neutral-100 px-4 md:px-8 py-4">
@@ -207,6 +207,7 @@ const Navbar = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
               />
               <button
                 type="submit"
@@ -269,10 +270,9 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* Suggestion Dropdown (Global) */}
       <NavbarSearch 
         query={searchQuery} 
-        isOpen={(isSearchFocused || searchQuery.trim().length > 0) && (isOpen || !isOpen)} // Always allow if focused
+        isOpen={isSearchFocused} 
         onClose={() => {
           setIsSearchFocused(false);
         }} 
