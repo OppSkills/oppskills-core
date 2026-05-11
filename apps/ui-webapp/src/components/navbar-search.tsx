@@ -129,7 +129,7 @@ export const NavbarSearch = ({ query, isOpen, onClose }: NavbarSearchProps) => {
                     {results.length > 0 ? (
                       results.map((item) => (
                         <Link
-                          key={item.slug}
+                          key={`${item.type}-${item.slug}`}
                           href={`/${item.type.toLowerCase()}s/${item.slug}`}
                           onClick={onClose}
                           className="flex items-start gap-3 p-2 rounded-xl hover:bg-neutral-50 transition-all group"
