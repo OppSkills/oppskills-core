@@ -47,6 +47,8 @@ function toListingItem(item: PastOpportunityItem): ListingItem {
     mode: deriveMode(item),
     isFree: item.isFree,
     entryFeeAmount: item.entryFeeAmount ?? null,
+    lowestTicketPrice: (item as any).lowestTicketPrice ?? null,
+    highestTicketPrice: (item as any).highestTicketPrice ?? null,
     currency: item.currency,
     registrationDeadline: item.registrationDeadline ?? null,
     registrationCount: item.registrationCount,

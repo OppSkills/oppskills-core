@@ -4,14 +4,8 @@ import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn, ensureAbsoluteUrl } from "@/lib/utils";
-import {
-  Building2,
-  Mail,
-  MapPin,
-  GraduationCap,
-  PenLine,
-} from "lucide-react";
-import { Buildings3, Letter, MapPoint, Pen2, SquareAcademicCap } from "@solar-icons/react";
+import { Buildings3, Letter, MapPoint, Pen2, SquareAcademicCap, ClockCircle } from "@solar-icons/react";
+import { CreditCard, Tag, CheckCircle2 } from "lucide-react";
 
 export interface RegistrationField {
   id: string;
@@ -22,6 +16,14 @@ export interface RegistrationField {
 export interface RegistrationAnswer {
   fieldId: string;
   value: string | string[] | number | null | undefined;
+}
+
+export interface ParticipantPaymentData {
+  status: string;
+  amount: number;
+  tierName: string | null;
+  capturedAt: string | null;
+  razorpayOrderId: string;
 }
 
 export interface ParticipantInfo {
@@ -36,6 +38,7 @@ export interface ParticipantInfo {
   avatarUrl?: string;
   answers?: RegistrationAnswer[];
   registrationFields?: RegistrationField[];
+  payment?: ParticipantPaymentData | null;
 }
 
 interface RegistrationInfoCardProps {
@@ -120,6 +123,75 @@ export function RegistrationInfoCard({ participant }: RegistrationInfoCardProps)
               </div>
             </div>
           </div>
+
+          {/* Payment Section */}
+          {participant.payment && (
+            <div className="space-y-3 border-t border-neutral-100 pt-4">
+              <h4 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider">Payment</h4>
+              <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 grid gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-neutral-600">
+                    <CreditCard className="w-4 h-4 shrink-0" />
+                    <span className="text-sm inter">Amount Paid</span>
+                  </div>
+                  <span className="text-sm font-bold poppins text-neutral-900">
+                    ₹{participant.payment.amount.toLocaleString("en-IN", { minimumFractionDigits: 0 })}
+                  </span>
+                </div>
+
+                {participant.payment.tierName && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-neutral-600">
+                      <Tag className="w-4 h-4 shrink-0" />
+                      <span className="text-sm inter">Ticket Tier</span>
+                    </div>
+                    <span className="text-sm font-semibold poppins text-neutral-800">
+                      {participant.payment.tierName}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-neutral-600">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span className="text-sm inter">Status</span>
+                  </div>
+                  <Badge
+                    className={cn(
+                      "text-xs font-semibold border-none px-2 py-0.5",
+                      participant.payment.status === "CAPTURED"
+                        ? "bg-accent-green-100 text-accent-green-600"
+                        : "bg-neutral-100 text-neutral-600"
+                    )}
+                  >
+                    {participant.payment.status === "CAPTURED" ? "Paid" : participant.payment.status}
+                  </Badge>
+                </div>
+
+                {participant.payment.capturedAt && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-neutral-600">
+                      <ClockCircle className="w-4 h-4 shrink-0" />
+                      <span className="text-sm inter">Paid On</span>
+                    </div>
+                    <span className="text-sm text-neutral-700 inter">
+                      {new Date(participant.payment.capturedAt).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                )}
+
+                <div className="pt-1 border-t border-neutral-100">
+                  <p className="text-xs text-neutral-400 inter font-mono truncate" title={participant.payment.razorpayOrderId}>
+                    Order: {participant.payment.razorpayOrderId}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Additional Questions Section */}
           {participant.registrationFields && participant.registrationFields.length > 0 && (

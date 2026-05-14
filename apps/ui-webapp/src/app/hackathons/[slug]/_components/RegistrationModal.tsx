@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useQueryState } from "nuqs";
 import {
   Users,
@@ -28,6 +28,7 @@ import {
   createPaymentOrder,
   verifyPayment,
   submitRegistration,
+  saveHackathonRegistrationCheckoutDraft,
 } from "@/lib/api/paymentsApi";
 import {
   joinEvent,
@@ -35,6 +36,7 @@ import {
   createEventPaymentOrder,
   verifyEventPayment,
   submitMissingRegistrationAnswers,
+  saveEventRegistrationCheckoutDraft,
 } from "@/lib/api/eventApi";
 import { getMe, submitOnboarding } from "@/lib/api/usersApi";
 import type { CreateOnboardingDto, MeResponseDto } from "@oppskills/types/frontend";
@@ -54,6 +56,7 @@ import {
   clearPendingHackathonRegistration,
   clearPendingEventRegistration,
 } from "@/lib/registration/pendingHackathonRegistration";
+import { writeHackathonCheckoutIntent } from "@/lib/registration/hackathonCheckoutIntent";
 import type { RegistrationModalProps, RegistrationMode } from "./RegistrationModal.types";
 import { CreateTeamFormContent } from "./CreateTeamFormContent";
 import { JoinTeamFormContent } from "./JoinTeamFormContent";
@@ -89,6 +92,9 @@ export function RegistrationModal({
   initialInvitationCode,
   type = "HACKATHON",
   completionMode = false,
+  pageSelectedTicketTierId = null,
+  omitTicketTierSection = false,
+  prefillAnswers,
 }: RegistrationModalProps) {
   const router = useRouter();
   const { user } = useUser();
@@ -104,7 +110,16 @@ export function RegistrationModal({
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, { name: string; url: string }>>({});
   const [invitationCode, setInvitationCode] = useState("");
   const [discountCode, setDiscountCode] = useState("");
+  const [ticketTierId, setTicketTierId] = useState<string | undefined>(undefined);
   const [isOpenToggle, setIsOpenToggle] = useState(true);
+
+  const selectedTierDisplayName = useMemo(() => {
+    if (!ticketTierId || !(competition.ticketTiers?.length ?? 0)) return null;
+    const t = competition.ticketTiers?.find(
+      (x: { id: string }) => x.id === ticketTierId,
+    ) as { name?: string } | undefined;
+    return t?.name ?? null;
+  }, [ticketTierId, competition.ticketTiers]);
 
   // Team search state
   const [isLoadingTeams, setIsLoadingTeams] = useState(false);
@@ -131,6 +146,7 @@ export function RegistrationModal({
       setUploadedFiles({});
       setInvitationCode("");
       setDiscountCode("");
+      setTicketTierId(undefined);
       setSearchQuery("");
       setMergedFields([]);
       setFieldsReady(false);
@@ -138,6 +154,20 @@ export function RegistrationModal({
     } else {
       if (initialInvitationCode) {
         setInvitationCode(initialInvitationCode);
+      }
+
+      const activeTiers = (competition.ticketTiers ?? []).filter(
+        (t: { isActive?: boolean }) => t.isActive !== false,
+      ) as Array<{ id: string }>;
+      if (activeTiers.length > 0) {
+        const fromPage =
+          pageSelectedTicketTierId &&
+          activeTiers.some((t) => t.id === pageSelectedTicketTierId)
+            ? pageSelectedTicketTierId
+            : undefined;
+        setTicketTierId(fromPage ?? activeTiers[0].id);
+      } else {
+        setTicketTierId(undefined);
       }
 
       const fetchProfileAndInit = async () => {
@@ -218,6 +248,19 @@ export function RegistrationModal({
             }
           }
 
+          if ((type === "EVENT" || type === "HACKATHON") && prefillAnswers?.length) {
+            for (const row of prefillAnswers) {
+              if (
+                row.fieldId &&
+                row.value !== undefined &&
+                row.value !== null &&
+                row.value !== ""
+              ) {
+                initialAnswers[row.fieldId] = row.value;
+              }
+            }
+          }
+
           setAnswers(initialAnswers);
         } catch (error) {
           console.error("Failed to fetch profile:", error);
@@ -251,7 +294,11 @@ export function RegistrationModal({
     getToken,
     user?.primaryPhoneNumber?.phoneNumber,
     competition.registrationForm?.fields,
+    competition.ticketTiers,
+    pageSelectedTicketTierId,
     initialInvitationCode,
+    type,
+    prefillAnswers,
   ]);
 
   const handleFileSelect = useCallback(
@@ -308,12 +355,45 @@ export function RegistrationModal({
     token: string,
     finalTeamName: string,
     formattedAnswers: Array<{ fieldId: string; value: string }>,
-    opts: { teamId?: string; invitationCode?: string }
+    opts: { teamId?: string; invitationCode?: string },
   ) => {
     try {
       if (type === "EVENT") {
+        const isPaidEvent =
+          !competition.isFree &&
+          ((((competition as any).ticketTiers?.length ?? 0) > 0) ||
+            !!(competition as any).entryFeeAmount);
+
+        if (isPaidEvent && !completionMode) {
+          try {
+            await saveEventRegistrationCheckoutDraft(token, competition.slug, {
+              answers: formattedAnswers,
+              ticketTierId,
+            });
+            toast.success("Saved. Continue to secure checkout.");
+            clearPendingEventRegistration(competition.slug);
+            onClose();
+            const tierQ =
+              ticketTierId != null
+                ? `?tier=${encodeURIComponent(ticketTierId)}`
+                : "";
+            router.push(`/events/${competition.slug}/checkout${tierQ}`);
+            return;
+          } catch (e) {
+            const msg = getApiErrorMessage(e, "");
+            if (
+              msg.toLowerCase().includes("free entry") ||
+              msg.toLowerCase().includes("without this checkout")
+            ) {
+              // Free college etc.: fall through to order + join / zero path below
+            } else {
+              throw e;
+            }
+          }
+        }
+
         const order = await createEventPaymentOrder(token, competition.slug, {
-          discountCode: discountCode.trim() || undefined,
+          ticketTierId,
           answers: formattedAnswers,
         });
 
@@ -384,13 +464,16 @@ export function RegistrationModal({
 
       const orderParams: {
         discountCode?: string;
+        ticketTierId?: string;
         teamId?: string;
         teamName?: string;
         maxSize?: number;
         invitationCode?: string;
+        joinTeamId?: string;
         answers?: Array<{ fieldId: string; value: string }>;
       } = {
         discountCode: discountCode.trim() || undefined,
+        ticketTierId,
         answers: formattedAnswers,
       };
 
@@ -404,10 +487,60 @@ export function RegistrationModal({
       } else if (competition.chargeMode === "PER_USER") {
         if (opts.invitationCode) {
           orderParams.invitationCode = opts.invitationCode;
+        } else if (opts.teamId) {
+          orderParams.joinTeamId = opts.teamId;
         } else {
           orderParams.teamName = finalTeamName;
           orderParams.maxSize = maxSize;
         }
+      }
+
+      if (
+        type === "HACKATHON" &&
+        !completionMode &&
+        !competition.isFree &&
+        (!!(competition as any).entryFeeAmount ||
+          ((competition as any).ticketTiers?.length ?? 0) > 0)
+      ) {
+        await saveHackathonRegistrationCheckoutDraft(
+          token,
+          competition.slug,
+          {
+            answers: formattedAnswers,
+            ticketTierId,
+            teamId: orderParams.teamId,
+            teamName: orderParams.teamName,
+            maxSize: orderParams.maxSize,
+            invitationCode: orderParams.invitationCode,
+            joinTeamId: orderParams.joinTeamId,
+          },
+        );
+        writeHackathonCheckoutIntent(competition.slug, {
+          discountCode: orderParams.discountCode,
+          ticketTierId,
+          teamId: orderParams.teamId,
+          teamName: orderParams.teamName,
+          maxSize: orderParams.maxSize,
+          invitationCode: orderParams.invitationCode,
+          joinTeamId: orderParams.joinTeamId,
+        });
+        writePendingHackathonRegistration(competition.slug, {
+          answers: formattedAnswers,
+          teamName: opts.invitationCode ? undefined : finalTeamName,
+          maxSize,
+          invitationCode: opts.invitationCode,
+          joinTeamId: orderParams.joinTeamId,
+          ticketTierId,
+          userId: user?.id,
+        });
+        toast.success("Saved. Continue to secure checkout.");
+        onClose();
+        const tierQ =
+          ticketTierId != null
+            ? `?tier=${encodeURIComponent(ticketTierId)}`
+            : "";
+        router.push(`/hackathons/${competition.slug}/checkout${tierQ}`);
+        return;
       }
 
       const order = await createPaymentOrder(token, competition.slug, orderParams);
@@ -425,8 +558,14 @@ export function RegistrationModal({
               if (!isBenignTeamAlreadyExistsError(e)) throw e;
             }
           } else if (opts.teamId) {
-            const draft = { team: { id: opts.teamId } };
-            teamId = draft.team.id;
+            try {
+              const draft = await joinDraftTeam(token, competition.slug, {
+                teamId: opts.teamId,
+              });
+              teamId = (draft as { team?: { id: string } }).team?.id;
+            } catch (e) {
+              if (!isBenignTeamAlreadyExistsError(e)) throw e;
+            }
           } else {
             try {
               const draft = await createDraftTeam(token, competition.slug, {
@@ -454,6 +593,30 @@ export function RegistrationModal({
         return;
       }
 
+      const tierQHack =
+        ticketTierId != null
+          ? `?tier=${encodeURIComponent(ticketTierId)}&razorpay_return=1`
+          : `?razorpay_return=1`;
+
+      await saveHackathonRegistrationCheckoutDraft(token, competition.slug, {
+        answers: formattedAnswers,
+        ticketTierId,
+        teamId: orderParams.teamId,
+        teamName: orderParams.teamName,
+        maxSize: orderParams.maxSize,
+        invitationCode: orderParams.invitationCode,
+        joinTeamId: orderParams.joinTeamId,
+      });
+      writeHackathonCheckoutIntent(competition.slug, {
+        discountCode: orderParams.discountCode,
+        ticketTierId,
+        teamId: orderParams.teamId,
+        teamName: orderParams.teamName,
+        maxSize: orderParams.maxSize,
+        invitationCode: orderParams.invitationCode,
+        joinTeamId: orderParams.joinTeamId,
+      });
+
       const options = {
         key: order.razorpayKeyId || order.keyId,
         amount: order.amountPaise,
@@ -461,8 +624,8 @@ export function RegistrationModal({
         name: competition.title || (competition as any).name,
         description: "Hackathon registration",
         order_id: order.razorpayOrderId || order.orderId,
-        /** Mobile redirect flows: return to app if checkout kills the tab */
-        callback_url: `${SITE_URL}/hackathons/${competition.slug}?razorpay_return=1`,
+        /** Mobile redirect: dedicated checkout page runs verify from query params */
+        callback_url: `${SITE_URL}/hackathons/${competition.slug}/checkout${tierQHack}`,
         handler: async (response: any) => {
           // Modal is already closed (onClose before rzp.open) so do not call setState here.
           // Use a global toast so the user sees progress/errors after pay.
@@ -525,6 +688,8 @@ export function RegistrationModal({
         teamName: opts.invitationCode ? undefined : finalTeamName,
         maxSize,
         invitationCode: opts.invitationCode,
+        joinTeamId: orderParams.joinTeamId,
+        ticketTierId,
         userId: user?.id,
       });
 
@@ -583,6 +748,18 @@ export function RegistrationModal({
         toast.error(
           "Registration form answers are missing. Please fill in the required fields.",
         );
+        return;
+      }
+
+      const activeRegTiers = (competition.ticketTiers ?? []).filter(
+        (t: { isActive?: boolean }) => t.isActive !== false,
+      );
+      const isPaidOpportunity =
+        !competition.isFree &&
+        (!!(competition as any).entryFeeAmount ||
+          activeRegTiers.length > 0);
+      if (isPaidOpportunity && activeRegTiers.length > 1 && !ticketTierId) {
+        toast.error("Please select a ticket type before continuing.");
         return;
       }
 
@@ -757,8 +934,17 @@ export function RegistrationModal({
           <h2 className="text-3xl font-medium tracking-tight text-neutral-900">
             {completionMode && (type === "HACKATHON" || type === "EVENT")
               ? "Complete registration"
-              : "Registration Form"}
+              : "Registration"}
           </h2>
+          {!completionMode && selectedTierDisplayName ? (
+            <p className="mt-2 text-sm text-neutral-600 leading-snug">
+              Registering with the{" "}
+              <span className="font-semibold text-[#7E22CE]">
+                {selectedTierDisplayName}
+              </span>{" "}
+              ticket.
+            </p>
+          ) : null}
           {!isIndividual && !completionMode && (
             <div className="flex gap-3">
               {[
@@ -805,10 +991,14 @@ export function RegistrationModal({
                 feeBearer={competition.feeBearer}
                 discountCode={discountCode}
                 setDiscountCode={setDiscountCode}
+                ticketTiers={competition.ticketTiers}
+                ticketTierId={ticketTierId}
+                setTicketTierId={setTicketTierId}
                 isOpenToggle={isOpenToggle}
                 setIsOpenToggle={setIsOpenToggle}
                 type={type}
                 completionMode
+                omitTicketTierSection={omitTicketTierSection}
               />
             ) : completionMode && type === "EVENT" ? (
               <CreateTeamFormContent
@@ -824,12 +1014,14 @@ export function RegistrationModal({
                 isFree={competition.isFree}
                 entryFeeAmount={competition.entryFeeAmount}
                 feeBearer={competition.feeBearer}
-                discountCode={discountCode}
-                setDiscountCode={setDiscountCode}
+                ticketTiers={competition.ticketTiers}
+                ticketTierId={ticketTierId}
+                setTicketTierId={setTicketTierId}
                 isOpenToggle={isOpenToggle}
                 setIsOpenToggle={setIsOpenToggle}
                 type={type}
                 completionMode
+                omitTicketTierSection={omitTicketTierSection}
               />
             ) : mode === "CREATE" ? (
               <CreateTeamFormContent
@@ -845,11 +1037,16 @@ export function RegistrationModal({
                 isFree={competition.isFree}
                 entryFeeAmount={competition.entryFeeAmount}
                 feeBearer={competition.feeBearer}
-                discountCode={discountCode}
-                setDiscountCode={setDiscountCode}
+                {...(type === "EVENT"
+                  ? {}
+                  : { discountCode, setDiscountCode })}
+                ticketTiers={competition.ticketTiers}
+                ticketTierId={ticketTierId}
+                setTicketTierId={setTicketTierId}
                 isOpenToggle={isOpenToggle}
                 setIsOpenToggle={setIsOpenToggle}
                 type={type}
+                omitTicketTierSection={omitTicketTierSection}
               />
             ) : (
               <JoinTeamFormContent

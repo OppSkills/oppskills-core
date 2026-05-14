@@ -47,6 +47,8 @@ export class EventPaymentService {
      * Silently ignored if invalid / mismatched.
      */
     referralCode?: string;
+    /** The specific ticket tier the user is purchasing */
+    ticketTierId?: string;
   }) {
     const event = await prisma.eventEntity.findUnique({
       where: { slug: params.eventSlug, isDeleted: false },
@@ -78,7 +80,11 @@ export class EventPaymentService {
       throw new BadRequestException('This event is free, no payment required');
     }
 
-    if (!event.entryFeeAmount) {
+    const activeTierCount = await prisma.ticketTierEntity.count({
+      where: { eventId: event.id, isActive: true },
+    });
+
+    if (!event.entryFeeAmount && activeTierCount === 0) {
       throw new BadRequestException('Entry fee not configured');
     }
 
@@ -102,7 +108,45 @@ export class EventPaymentService {
       throw new BadRequestException('Event is at full capacity');
     }
 
-    // Check if user already registered
+    let registrationFee: Decimal;
+    if (activeTierCount > 0) {
+      if (!params.ticketTierId) {
+        throw new BadRequestException('Please select a ticket type');
+      }
+      const tier = await prisma.ticketTierEntity.findFirst({
+        where: {
+          id: params.ticketTierId,
+          eventId: event.id,
+          isActive: true,
+        },
+      });
+      if (!tier) {
+        throw new BadRequestException(
+          'Invalid or inactive ticket tier selected',
+        );
+      }
+      if (tier.capacity != null) {
+        const sold = await prisma.eventPaymentEntity.count({
+          where: {
+            ticketTierId: tier.id,
+            paymentStatus: {
+              in: [EventPaymentStatus.CAPTURED, EventPaymentStatus.AUTHORIZED],
+            },
+          },
+        });
+        if (sold >= tier.capacity) {
+          throw new BadRequestException('This ticket type is sold out');
+        }
+      }
+      registrationFee = new Decimal(tier.price);
+    } else {
+      if (params.ticketTierId) {
+        throw new BadRequestException('Ticket type is not used for this event');
+      }
+      registrationFee = new Decimal(event.entryFeeAmount || 0);
+    }
+
+    // Check if user already fully registered (draft checkout rows are allowed)
     const existingParticipant = await prisma.eventParticipantEntity.findUnique({
       where: {
         eventId_userId: {
@@ -110,9 +154,10 @@ export class EventPaymentService {
           userId: params.userId,
         },
       },
+      select: { id: true, checkoutPending: true },
     });
 
-    if (existingParticipant) {
+    if (existingParticipant && !existingParticipant.checkoutPending) {
       throw new BadRequestException(
         'You are already registered for this event',
       );
@@ -132,6 +177,16 @@ export class EventPaymentService {
       throw new BadRequestException('Payment already completed');
     }
 
+    // Drop abandoned Razorpay CREATED rows so checkout can refresh pricing/discounts
+    await prisma.eventPaymentEntity.deleteMany({
+      where: {
+        eventId: event.id,
+        payerUserId: params.userId,
+        paymentStatus: EventPaymentStatus.CREATED,
+        orderStatus: EventPaymentOrderStatus.CREATED,
+      },
+    });
+
     // Check if user is eligible for free entry (college-based)
     const isEligibleForFreeEntry = await this.checkFreeCollegeEligibility(
       event.freeCollegeIds,
@@ -144,6 +199,7 @@ export class EventPaymentService {
           eventId: event.id,
           organizerId: event.ownerId,
           payerUserId: params.userId,
+          ticketTierId: params.ticketTierId,
           currency: event.currency || 'INR',
           grossAmount: new Decimal(0),
           platformFeeAmount: new Decimal(0),
@@ -167,14 +223,15 @@ export class EventPaymentService {
         currency: event.currency || 'INR',
         eventName: event.name,
         eventSlug: event.slug,
-        originalAmount: Number(event.entryFeeAmount),
+        originalAmount: Number(registrationFee),
         finalAmount: 0,
         zeroAmountPayment: true,
         isCollegeFree: true,
       };
     }
 
-    let registrationFee = new Decimal(event.entryFeeAmount);
+    // registrationFee is already set above to either ticket tier price or entry fee
+    const orderBaseAmount = registrationFee;
     let discountAmount = new Decimal(0);
     let discountCodeId: string | null = null;
 
@@ -216,6 +273,56 @@ export class EventPaymentService {
 
     const grossAmountPaise = chargeAmount.times(100).toNumber();
 
+    // Paid checkout with internal registration fields requires a prior draft save
+    // (participant checkoutPending + submission answers), unless the client still
+    // sends legacy answers at order-create time.
+    if (grossAmountPaise > 0) {
+      const legacyAnswersAtOrderCreate = !!(
+        params.answers && params.answers.length > 0
+      );
+      const eventRegForm = await prisma.eventRegistrationFormEntity.findUnique({
+        where: { eventId: event.id },
+        select: {
+          externalFormLink: true,
+          _count: { select: { fields: true } },
+        },
+      });
+      const internalFieldCount = eventRegForm?._count.fields ?? 0;
+      const externalFormOnly =
+        !!eventRegForm?.externalFormLink?.trim() && internalFieldCount === 0;
+
+      if (
+        internalFieldCount > 0 &&
+        !legacyAnswersAtOrderCreate &&
+        !externalFormOnly
+      ) {
+        const participant = await prisma.eventParticipantEntity.findUnique({
+          where: {
+            eventId_userId: {
+              eventId: event.id,
+              userId: params.userId,
+            },
+          },
+          select: { checkoutPending: true },
+        });
+        if (!participant?.checkoutPending) {
+          throw new BadRequestException(
+            'Save your registration before checkout — complete the registration form first.',
+          );
+        }
+        const submission =
+          await prisma.eventRegistrationSubmissionEntity.findFirst({
+            where: { eventId: event.id, userId: params.userId },
+            select: { _count: { select: { answers: true } } },
+          });
+        if (!submission || submission._count.answers === 0) {
+          throw new BadRequestException(
+            'Save your registration before checkout — registration answers are missing.',
+          );
+        }
+      }
+    }
+
     // Handle zero amount after discount
     if (grossAmountPaise === 0) {
       const payment = await prisma.eventPaymentEntity.create({
@@ -223,6 +330,7 @@ export class EventPaymentService {
           eventId: event.id,
           organizerId: event.ownerId,
           payerUserId: params.userId,
+          ticketTierId: params.ticketTierId,
           currency: event.currency || 'INR',
           grossAmount: new Decimal(0),
           platformFeeAmount: new Decimal(0),
@@ -246,7 +354,7 @@ export class EventPaymentService {
         currency: event.currency || 'INR',
         eventName: event.name,
         eventSlug: event.slug,
-        originalAmount: Number(event.entryFeeAmount),
+        originalAmount: Number(orderBaseAmount),
         finalAmount: 0,
         discountAmount: Number(discountAmount),
         zeroAmountPayment: true,
@@ -277,6 +385,7 @@ export class EventPaymentService {
         eventId: event.id,
         organizerId: event.ownerId,
         payerUserId: params.userId,
+        ticketTierId: params.ticketTierId,
         currency: event.currency || 'INR',
         grossAmount: registrationFee,
         platformFeeAmount: gatewayFee,
@@ -292,12 +401,20 @@ export class EventPaymentService {
       },
     });
 
-    await this.paymentEscrowService.upsertEventEscrow({
-      razorpayOrderId: razorpayOrder.id,
-      payerUserId: params.userId,
-      eventId: event.id,
-      answers: params.answers || [],
-    });
+    if (params.answers && params.answers.length > 0) {
+      const draftFromDb = await this.loadSubmissionAnswersForUser(
+        event.id,
+        params.userId,
+      );
+      if (!draftFromDb.length) {
+        await this.paymentEscrowService.upsertEventEscrow({
+          razorpayOrderId: razorpayOrder.id,
+          payerUserId: params.userId,
+          eventId: event.id,
+          answers: params.answers,
+        });
+      }
+    }
 
     return {
       paymentId: payment.id,
@@ -307,7 +424,7 @@ export class EventPaymentService {
       currency: event.currency || 'INR',
       eventName: event.name,
       eventSlug: event.slug,
-      originalAmount: Number(event.entryFeeAmount),
+      originalAmount: Number(orderBaseAmount),
       finalAmount: Number(registrationFee),
       discountAmount: discountAmount.greaterThan(0)
         ? Number(discountAmount)
@@ -316,6 +433,205 @@ export class EventPaymentService {
         ? Number(processingFeeAmount)
         : undefined,
       feeBearer: event.feeBearer,
+    };
+  }
+
+  /**
+   * Persist registration answers to live tables before Razorpay checkout.
+   * Participant is marked checkoutPending until verify completes payment.
+   */
+  async saveRegistrationCheckoutDraft(params: {
+    eventSlug: string;
+    userId: string;
+    answers: Array<{ fieldId: string; value: string }>;
+    ticketTierId?: string;
+    referralCode?: string;
+  }) {
+    void params.referralCode;
+    const event = await prisma.eventEntity.findUnique({
+      where: { slug: params.eventSlug, isDeleted: false },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        isFree: true,
+        status: true,
+        approvalStatus: true,
+        isRegistrationPaused: true,
+        ownerId: true,
+        maxUsers: true,
+        registrationCount: true,
+        registrationDeadline: true,
+        entryFeeAmount: true,
+        freeCollegeIds: true,
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    if (event.isFree) {
+      throw new BadRequestException('This event is free; use join instead');
+    }
+
+    if (event.status !== 'PUBLISHED' && event.status !== 'ONGOING') {
+      throw new BadRequestException('Registration is not open');
+    }
+
+    if (event.approvalStatus !== 'APPROVED') {
+      throw new BadRequestException('Event is not approved');
+    }
+
+    if (event.isRegistrationPaused) {
+      throw new BadRequestException('Registration is paused');
+    }
+
+    if (event.registrationDeadline && new Date() > event.registrationDeadline) {
+      throw new BadRequestException('Registration deadline has passed');
+    }
+
+    if (event.maxUsers !== null && event.registrationCount >= event.maxUsers) {
+      throw new BadRequestException('Event is at full capacity');
+    }
+
+    if (event.ownerId === params.userId) {
+      throw new BadRequestException('You cannot register for your own event');
+    }
+
+    const activeTierCount = await prisma.ticketTierEntity.count({
+      where: { eventId: event.id, isActive: true },
+    });
+
+    if (activeTierCount > 0) {
+      if (!params.ticketTierId) {
+        throw new BadRequestException('Please select a ticket type');
+      }
+      const tier = await prisma.ticketTierEntity.findFirst({
+        where: {
+          id: params.ticketTierId,
+          eventId: event.id,
+          isActive: true,
+        },
+      });
+      if (!tier) {
+        throw new BadRequestException(
+          'Invalid or inactive ticket tier selected',
+        );
+      }
+    } else if (params.ticketTierId) {
+      throw new BadRequestException('Ticket type is not used for this event');
+    }
+
+    const existingParticipant = await prisma.eventParticipantEntity.findUnique({
+      where: {
+        eventId_userId: {
+          eventId: event.id,
+          userId: params.userId,
+        },
+      },
+      select: { id: true, checkoutPending: true },
+    });
+
+    if (existingParticipant && !existingParticipant.checkoutPending) {
+      throw new BadRequestException(
+        'You are already registered for this event',
+      );
+    }
+
+    const successfulPayment = await prisma.eventPaymentEntity.findFirst({
+      where: {
+        eventId: event.id,
+        payerUserId: params.userId,
+        paymentStatus: {
+          in: [EventPaymentStatus.CAPTURED, EventPaymentStatus.AUTHORIZED],
+        },
+      },
+    });
+
+    if (successfulPayment) {
+      throw new BadRequestException('Payment already completed');
+    }
+
+    const isEligibleForFreeEntry = await this.checkFreeCollegeEligibility(
+      event.freeCollegeIds,
+      params.userId,
+    );
+    if (isEligibleForFreeEntry) {
+      throw new BadRequestException(
+        'You qualify for free entry — complete registration without this checkout step.',
+      );
+    }
+
+    const mappedAnswers = await this.mapFrontendFieldIdsToDbIds(
+      event.id,
+      params.userId,
+      params.answers as Array<{
+        fieldId: string;
+        value: string | number | string[];
+      }>,
+    );
+
+    if (!mappedAnswers.length) {
+      throw new BadRequestException('Registration answers are required');
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const participant = await tx.eventParticipantEntity.upsert({
+        where: {
+          eventId_userId: {
+            eventId: event.id,
+            userId: params.userId,
+          },
+        },
+        create: {
+          eventId: event.id,
+          userId: params.userId,
+          approved: false,
+          approvedAt: null,
+          passEmailSent: false,
+          checkoutPending: true,
+        },
+        update: {
+          checkoutPending: true,
+        },
+      });
+
+      let submission = await tx.eventRegistrationSubmissionEntity.findFirst({
+        where: { eventId: event.id, userId: params.userId },
+      });
+
+      if (submission) {
+        await tx.eventRegistrationAnswerEntity.deleteMany({
+          where: { submissionId: submission.id },
+        });
+      } else {
+        submission = await tx.eventRegistrationSubmissionEntity.create({
+          data: {
+            eventId: event.id,
+            userId: params.userId,
+            participantId: participant.id,
+          },
+        });
+      }
+
+      const answerData = mappedAnswers.map((a) => ({
+        submissionId: submission.id,
+        fieldId: a.fieldId,
+        valueText:
+          typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
+        valueJson: a.value,
+      }));
+
+      await tx.eventRegistrationAnswerEntity.createMany({
+        data: answerData,
+      });
+    });
+
+    return {
+      success: true,
+      eventSlug: event.slug,
+      checkoutPath: `/events/${event.slug}/checkout`,
     };
   }
 
@@ -341,11 +657,18 @@ export class EventPaymentService {
     if (!payment || payment.paymentStatus !== EventPaymentStatus.CAPTURED) {
       return;
     }
-    const escrowAnswers = await this.paymentEscrowService.loadAnswersForVerify(
-      razorpayOrderId,
+    const fromSubmission = await this.loadSubmissionAnswersForUser(
+      payment.eventId,
       payment.payerUserId,
     );
-    if (!escrowAnswers?.length) {
+    const escrowAnswers =
+      fromSubmission.length > 0
+        ? null
+        : await this.paymentEscrowService.loadAnswersForVerify(
+            razorpayOrderId,
+            payment.payerUserId,
+          );
+    if (!fromSubmission.length && !(escrowAnswers?.length ?? 0)) {
       return;
     }
     const participant = await prisma.eventParticipantEntity.findUnique({
@@ -363,14 +686,17 @@ export class EventPaymentService {
       return;
     }
     try {
-      const merged = escrowAnswers.map((a) => ({
-        fieldId: a.fieldId,
-        value: a.value,
-      }));
+      const merged =
+        fromSubmission.length > 0
+          ? fromSubmission
+          : escrowAnswers!.map((a) => ({
+              fieldId: a.fieldId,
+              value: a.value,
+            }));
       const mappedAnswers = await this.mapFrontendFieldIdsToDbIds(
         payment.eventId,
         payment.payerUserId,
-        merged,
+        merged as Array<{ fieldId: string; value: string | number | string[] }>,
       );
       if (!mappedAnswers.length) {
         return;
@@ -389,26 +715,156 @@ export class EventPaymentService {
     }
   }
 
+  /**
+   * After payment is CAPTURED (verify or webhook), clear checkoutPending and bump
+   * registration count once — mirrors verifyPayment when a draft participant already exists.
+   * Safe to call multiple times (idempotent).
+   */
+  async finalizeEventParticipantAfterCapture(
+    razorpayOrderId: string,
+  ): Promise<void> {
+    const payment = await prisma.eventPaymentEntity.findUnique({
+      where: { razorpayOrderId },
+      include: {
+        event: {
+          select: { id: true, passSendingMode: true },
+        },
+      },
+    });
+    if (!payment || payment.paymentStatus !== EventPaymentStatus.CAPTURED) {
+      return;
+    }
+
+    const participant = await prisma.eventParticipantEntity.findUnique({
+      where: {
+        eventId_userId: {
+          eventId: payment.eventId,
+          userId: payment.payerUserId,
+        },
+      },
+      select: { id: true },
+    });
+    if (!participant) {
+      return;
+    }
+
+    if (!payment.participantId) {
+      await prisma.eventPaymentEntity.update({
+        where: { id: payment.id },
+        data: { participantId: participant.id },
+      });
+    }
+
+    const isImmediate = payment.event.passSendingMode === 'IMMEDIATE';
+    const checkoutCleared = await prisma.eventParticipantEntity.updateMany({
+      where: {
+        id: participant.id,
+        checkoutPending: true,
+      },
+      data: {
+        checkoutPending: false,
+        approved: isImmediate,
+        approvedAt: isImmediate ? new Date() : null,
+      },
+    });
+
+    if (checkoutCleared.count === 1) {
+      await prisma.eventEntity.update({
+        where: { id: payment.eventId },
+        data: { registrationCount: { increment: 1 } },
+      });
+      this.eventEmitter.emit('event.participant.registered', {
+        eventId: payment.eventId,
+        userId: payment.payerUserId,
+        participantId: participant.id,
+        passSendingMode: payment.event.passSendingMode,
+      });
+    }
+  }
+
+  private async loadSubmissionAnswersForUser(
+    eventId: string,
+    userId: string,
+  ): Promise<Array<{ fieldId: string; value: string | number | string[] }>> {
+    const submission = await prisma.eventRegistrationSubmissionEntity.findFirst(
+      {
+        where: { eventId, userId },
+        include: {
+          answers: {
+            select: { fieldId: true, valueJson: true, valueText: true },
+          },
+        },
+      },
+    );
+    if (!submission?.answers?.length) {
+      return [];
+    }
+    return submission.answers.map((a) => ({
+      fieldId: a.fieldId,
+      value:
+        a.valueJson !== null && a.valueJson !== undefined
+          ? (a.valueJson as string | number | string[])
+          : (a.valueText ?? ''),
+    }));
+  }
+
   private async resolveMergedAnswersForEventVerify(
     razorpayOrderId: string,
     userId: string,
+    eventId: string,
     bodyAnswers?: Array<{ fieldId: string; value: string | number | string[] }>,
   ): Promise<Array<{ fieldId: string; value: string | number | string[] }>> {
-    if (bodyAnswers?.length) {
-      return bodyAnswers;
-    }
+    const fromSubmission = await this.loadSubmissionAnswersForUser(
+      eventId,
+      userId,
+    );
     const fromEscrow = await this.paymentEscrowService.loadAnswersForVerify(
       razorpayOrderId,
       userId,
     );
-    if (fromEscrow?.length) {
-      this.logger.log(
-        `Event verifyPayment: using server-escrowed registration answers for order ${razorpayOrderId} (${fromEscrow.length} fields)`,
-      );
-      return fromEscrow.map((a) => ({
-        fieldId: a.fieldId,
-        value: a.value,
+    const fromEscrowMapped: Array<{
+      fieldId: string;
+      value: string | number | string[];
+    }> =
+      fromEscrow?.length ?? 0
+        ? fromEscrow!.map((a) => ({
+            fieldId: a.fieldId,
+            value: a.value,
+          }))
+        : [];
+
+    const base =
+      fromSubmission.length > 0 ? fromSubmission : fromEscrowMapped;
+
+    if (bodyAnswers?.length) {
+      const merged = new Map<string, string | number | string[]>();
+      for (const a of base) {
+        merged.set(a.fieldId, a.value);
+      }
+      for (const b of bodyAnswers) {
+        merged.set(b.fieldId, b.value);
+      }
+      const out = Array.from(merged.entries()).map(([fieldId, value]) => ({
+        fieldId,
+        value,
       }));
+      this.logger.log(
+        `Event verifyPayment: merged registration answers for user ${userId} (${out.length} fields; body overlay on draft/escrow)`,
+      );
+      return out;
+    }
+
+    if (fromSubmission.length) {
+      this.logger.log(
+        `Event verifyPayment: using saved registration submission for user ${userId} (${fromSubmission.length} fields)`,
+      );
+      return fromSubmission;
+    }
+    if (fromEscrowMapped.length) {
+      this.logger.log(
+        `Event verifyPayment: using server-escrowed registration answers for order ${razorpayOrderId} (${fromEscrowMapped.length} fields)`,
+      );
+      return fromEscrowMapped;
     }
     return [];
   }
@@ -460,6 +916,7 @@ export class EventPaymentService {
     const mergedAnswers = await this.resolveMergedAnswersForEventVerify(
       params.razorpayOrderId,
       params.userId,
+      payment.eventId,
       params.answers,
     );
 
@@ -502,7 +959,7 @@ export class EventPaymentService {
       mergedAnswers,
     );
 
-    // Check for existing participant (might have been created by webhook)
+    // Check for existing participant (might have been created by webhook or checkout draft)
     const existingParticipant = await prisma.eventParticipantEntity.findUnique({
       where: {
         eventId_userId: {
@@ -510,6 +967,7 @@ export class EventPaymentService {
           userId: params.userId,
         },
       },
+      select: { id: true, checkoutPending: true },
     });
 
     // If participant already exists, save answers if not already saved, then return
@@ -536,6 +994,32 @@ export class EventPaymentService {
         existingParticipant.id,
         mappedAnswers,
       );
+
+      const isImmediate = payment.event.passSendingMode === 'IMMEDIATE';
+      const checkoutCleared = await prisma.eventParticipantEntity.updateMany({
+        where: {
+          id: existingParticipant.id,
+          checkoutPending: true,
+        },
+        data: {
+          checkoutPending: false,
+          approved: isImmediate,
+          approvedAt: isImmediate ? new Date() : null,
+        },
+      });
+
+      if (checkoutCleared.count === 1) {
+        await prisma.eventEntity.update({
+          where: { id: payment.event.id },
+          data: { registrationCount: { increment: 1 } },
+        });
+        this.eventEmitter.emit('event.participant.registered', {
+          eventId: payment.event.id,
+          userId: params.userId,
+          participantId: existingParticipant.id,
+          passSendingMode: payment.event.passSendingMode,
+        });
+      }
 
       await this.syncOnboardingMobileFromEventVerify(
         params.userId,
@@ -623,7 +1107,32 @@ export class EventPaymentService {
             }
           }
 
-          return { participantId: participantCheck.id, alreadyExisted: true };
+          const isImmediateInner =
+            payment.event.passSendingMode === 'IMMEDIATE';
+          const checkoutClearedInner =
+            await tx.eventParticipantEntity.updateMany({
+              where: {
+                id: participantCheck.id,
+                checkoutPending: true,
+              },
+              data: {
+                checkoutPending: false,
+                approved: isImmediateInner,
+                approvedAt: isImmediateInner ? new Date() : null,
+              },
+            });
+          if (checkoutClearedInner.count === 1) {
+            await tx.eventEntity.update({
+              where: { id: payment.event.id },
+              data: { registrationCount: { increment: 1 } },
+            });
+          }
+
+          return {
+            participantId: participantCheck.id,
+            alreadyExisted: true,
+            didClearCheckout: checkoutClearedInner.count === 1,
+          };
         }
 
         // Create participant
@@ -635,6 +1144,7 @@ export class EventPaymentService {
             approved: isImmediate,
             approvedAt: isImmediate ? new Date() : null,
             passEmailSent: false,
+            checkoutPending: false,
             ...(referralId ? { referralId } : {}),
           },
         });
@@ -700,11 +1210,15 @@ export class EventPaymentService {
           }
         }
 
-        return { participantId: participant.id, alreadyExisted: false };
+        return {
+          participantId: participant.id,
+          alreadyExisted: false,
+          didClearCheckout: false,
+        };
       });
 
       // Emit event for pass email sending (only if we created the participant)
-      if (!result.alreadyExisted) {
+      if (!result.alreadyExisted || result.didClearCheckout) {
         this.eventEmitter.emit('event.participant.registered', {
           eventId: payment.event.id,
           userId: params.userId,
@@ -913,7 +1427,25 @@ export class EventPaymentService {
       });
 
     if (existingSubmission) {
-      // Answers already saved
+      const answerCount = await prisma.eventRegistrationAnswerEntity.count({
+        where: { submissionId: existingSubmission.id },
+      });
+      if (answerCount > 0) {
+        return;
+      }
+      const answerData = mappedAnswers.map((a) => ({
+        submissionId: existingSubmission.id,
+        fieldId: a.fieldId,
+        valueText:
+          typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
+        valueJson: a.value,
+      }));
+      await prisma.eventRegistrationAnswerEntity.createMany({
+        data: answerData,
+      });
+      this.logger.log(
+        `Filled ${answerData.length} registration answers on existing shell submission ${existingSubmission.id} for event ${eventId}`,
+      );
       return;
     }
 

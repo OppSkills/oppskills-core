@@ -99,6 +99,7 @@ export interface CompetitionDetails {
   chargeMode?: "PER_TEAM" | "PER_USER";
   currency?: string;
   feeBearer?: "ORGANISER" | "PARTICIPANT";
+  ticketTiers?: any[];
 
   contact?: {
     name: string;

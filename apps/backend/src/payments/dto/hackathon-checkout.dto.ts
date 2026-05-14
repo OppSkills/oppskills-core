@@ -72,6 +72,51 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   referralCode?: string;
+
+  /**
+   * The specific ticket tier the user is purchasing.
+   * If omitted, the default base entry fee is charged.
+   */
+  @IsOptional()
+  @IsString()
+  ticketTierId?: string;
+}
+
+export class SaveHackathonRegistrationCheckoutDraftDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateOrderAnswerDto)
+  answers: CreateOrderAnswerDto[];
+
+  @IsOptional()
+  @IsString()
+  teamId?: string;
+
+  @IsOptional()
+  @IsString()
+  teamName?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(50)
+  maxSize?: number;
+
+  @IsOptional()
+  @IsString()
+  invitationCode?: string;
+
+  @IsOptional()
+  @IsString()
+  joinTeamId?: string;
+
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
+
+  @IsOptional()
+  @IsString()
+  ticketTierId?: string;
 }
 
 export class VerifyPaymentDto {

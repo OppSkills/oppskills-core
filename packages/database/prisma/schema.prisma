@@ -162,6 +162,7 @@ model HackathonEntity {
   teams                    TeamEntity[]
   payoutDetails            OrganizerPayoutDetailsEntity?
   notifications            notifications[]
+  ticketTiers              TicketTierEntity[]
 
   @@index([festivalId])
   @@map("hackathon")
@@ -270,6 +271,7 @@ model EventEntity {
   userRoles                 EventUserRoleEntity[]
   payoutDetails             OrganizerPayoutDetailsEntity?
   notifications             notifications[]
+  ticketTiers               TicketTierEntity[]
 
   @@index([festivalId])
   @@index([ownerId])
@@ -297,6 +299,9 @@ model EventParticipantEntity {
   payment                           EventPaymentEntity?
   submission                        EventRegistrationSubmissionEntity?
   incompleteRegistrationReminderLog IncompleteRegistrationReminderLogEntity?
+  /// True while user saved registration answers but has not completed payment (paid events).
+  /// Hidden from organizer lists until checkout completes.
+  checkoutPending                   Boolean                                  @default(false) @map("checkout_pending")
 
   @@unique([eventId, userId])
   @@index([eventId])
@@ -839,6 +844,7 @@ model HackathonPaymentEntity {
   organizerId                    String                                   @map("organizer_id")
   payerUserId                    String                                   @map("payer_user_id")
   teamId                         String?                                  @map("team_id")
+  ticketTierId                   String?                                  @map("ticket_tier_id")
   currency                       String                                   @default("INR")
   /// Registration / entry fee amount (organizer-facing); excludes payment-gateway charges.
   grossAmount                    Decimal                                  @map("gross_amount") @db.Decimal(12, 2)
@@ -873,12 +879,14 @@ model HackathonPaymentEntity {
   organizer                      UserEntity                               @relation("HackathonPaymentOrganizer", fields: [organizerId], references: [id])
   payerUser                      UserEntity                               @relation("HackathonPaymentPayer", fields: [payerUserId], references: [id])
   team                           TeamEntity?                              @relation(fields: [teamId], references: [id])
+  ticketTier                     TicketTierEntity?                        @relation("HackathonPaymentTicketTier", fields: [ticketTierId], references: [id])
   payoutItems                    HackathonPayoutItemEntity[]
   incompleteRegistrationReminder IncompleteRegistrationReminderLogEntity?
 
   @@index([hackathonId])
   @@index([organizerId])
   @@index([payerUserId])
+  @@index([ticketTierId])
   @@map("hackathon_payment")
   @@schema("oppskills")
 }
@@ -1019,6 +1027,7 @@ model EventPaymentEntity {
   organizerId                    String                                   @map("organizer_id")
   payerUserId                    String                                   @map("payer_user_id")
   participantId                  String?                                  @unique @map("participant_id")
+  ticketTierId                   String?                                  @map("ticket_tier_id")
   currency                       String                                   @default("INR")
   /// Registration / entry fee amount (organizer-facing); excludes payment-gateway charges.
   grossAmount                    Decimal                                  @map("gross_amount") @db.Decimal(12, 2)
@@ -1053,12 +1062,14 @@ model EventPaymentEntity {
   organizer                      UserEntity                               @relation("EventPaymentOrganizer", fields: [organizerId], references: [id])
   participant                    EventParticipantEntity?                  @relation(fields: [participantId], references: [id])
   payerUser                      UserEntity                               @relation("EventPaymentPayer", fields: [payerUserId], references: [id])
+  ticketTier                     TicketTierEntity?                        @relation("EventPaymentTicketTier", fields: [ticketTierId], references: [id])
   payoutItems                    EventPayoutItemEntity[]
   incompleteRegistrationReminder IncompleteRegistrationReminderLogEntity?
 
   @@index([eventId])
   @@index([organizerId])
   @@index([payerUserId])
+  @@index([ticketTierId])
   @@map("event_payment")
   @@schema("oppskills")
 }
@@ -1143,6 +1154,33 @@ model EventPayoutItemEntity {
   @@index([payoutId])
   @@index([paymentId])
   @@map("event_payout_item")
+  @@schema("oppskills")
+}
+
+/// Ticket tier for events and hackathons (multi-pricing support).
+model TicketTierEntity {
+  id          String                   @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal                  @db.Decimal(12, 2)
+  currency    String                   @default("INR")
+  /// null = unlimited
+  capacity    Int?
+  isActive    Boolean                  @default(true) @map("is_active")
+  /// Display order (lower = shown first)
+  order       Int                      @default(0)
+  eventId     String?                  @map("event_id")
+  hackathonId String?                  @map("hackathon_id")
+  createdAt   DateTime                 @default(now()) @map("created_at")
+  updatedAt   DateTime                 @updatedAt @map("updated_at")
+  event       EventEntity?             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  hackathon   HackathonEntity?         @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  eventPayments      EventPaymentEntity[]     @relation("EventPaymentTicketTier")
+  hackathonPayments  HackathonPaymentEntity[] @relation("HackathonPaymentTicketTier")
+
+  @@index([eventId])
+  @@index([hackathonId])
+  @@map("ticket_tier")
   @@schema("oppskills")
 }
 

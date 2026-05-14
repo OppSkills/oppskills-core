@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventPaymentService } from './event-payment.service';
 import { RazorpayService } from '../payments/razorpay.service';
-import { ConfigService } from '@nestjs/config';
+import { PaymentRegistrationEscrowService } from '../payments/payment-registration-escrow.service';
+import { ReferralService } from '../referral/referral.service';
 import {
   BadRequestException,
   NotFoundException,
@@ -15,15 +17,21 @@ jest.mock('@oppskills/db', () => ({
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    ticketTierEntity: {
+      count: jest.fn().mockResolvedValue(0),
+    },
     eventParticipantEntity: {
       findUnique: jest.fn(),
       create: jest.fn(),
     },
     eventPaymentEntity: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      deleteMany: jest.fn(),
     },
     eventDiscountCodeEntity: {
       findFirst: jest.fn(),
@@ -93,6 +101,10 @@ describe('EventPaymentService', () => {
     getKeyId: jest.fn().mockReturnValue('test_key_id'),
   };
 
+  const mockEventEmitter = { emit: jest.fn() };
+  const mockEscrow = {};
+  const mockReferral = {};
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -101,12 +113,12 @@ describe('EventPaymentService', () => {
           provide: RazorpayService,
           useValue: mockRazorpayService,
         },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
         {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn(),
-          },
+          provide: PaymentRegistrationEscrowService,
+          useValue: mockEscrow,
         },
+        { provide: ReferralService, useValue: mockReferral },
       ],
     }).compile();
 
@@ -128,7 +140,7 @@ describe('EventPaymentService', () => {
       name: 'Test Event',
       isFree: false,
       freeCollegeIds: [],
-      entryFeeAmount: { toNumber: () => 100 },
+      entryFeeAmount: 100,
       currency: 'INR',
       registrationDeadline: new Date(Date.now() + 86400000), // Tomorrow
       status: 'PUBLISHED',
@@ -183,6 +195,7 @@ describe('EventPaymentService', () => {
       (prisma.eventParticipantEntity.findUnique as jest.Mock).mockResolvedValue(
         {
           id: 'existing-participant',
+          checkoutPending: false,
         },
       );
 

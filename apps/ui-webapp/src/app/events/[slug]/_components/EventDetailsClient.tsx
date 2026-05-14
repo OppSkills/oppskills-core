@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { EventTabs } from "./EventTabs";
 import { RegistrationModal } from "@/app/hackathons/[slug]/_components/RegistrationModal";
 import { EventSidebar } from "./EventSidebar";
+import { EventRegisterCta } from "./EventRegisterCta";
 import { EventDetails } from "./types";
 import Image from "next/image";
 import { cn, ensureAbsoluteUrl } from "@/lib/utils";
@@ -14,6 +15,7 @@ import { useAuth, useClerk } from "@clerk/nextjs";
 import {
   checkMyRegistration,
   submitMissingRegistrationAnswers,
+  verifyEventPayment,
 } from "@/lib/api/eventApi";
 import { withRetry } from "@/lib/utils/retry";
 import {
@@ -24,6 +26,10 @@ import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import DOMPurify from "isomorphic-dompurify";
+import {
+  TicketTierRegistrationPicker,
+  getActiveRegistrationTiers,
+} from "@/components/registration/TicketTierRegistrationPicker";
 
 // Razorpay global type
 declare global {
@@ -76,6 +82,7 @@ function formatLocation(event: {
 
 export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isSignedIn, getToken } = useAuth();
   const { openSignIn, user } = useClerk();
 
@@ -87,7 +94,16 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [discountCode, setDiscountCode] = useState("");
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>("standard");
+
+  const pageTicketTiers = useMemo(
+    () => getActiveRegistrationTiers(event?.ticketTiers),
+    [event?.ticketTiers],
+  );
+  const [pageSelectedTierId, setPageSelectedTierId] = useState<string | null>(
+    null,
+  );
+
+  const showPageTierPicker = pageTicketTiers.length > 0;
 
   // Fetch registration status if logged in
   const {
@@ -104,7 +120,81 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     },
   });
 
+  useEffect(() => {
+    if (pageTicketTiers.length === 0) {
+      setPageSelectedTierId(null);
+      return;
+    }
+    const registeredTierId =
+      registrationStatus?.isRegistered && registrationStatus?.ticketTierId
+        ? registrationStatus.ticketTierId
+        : null;
+    setPageSelectedTierId((prev) => {
+      if (
+        registeredTierId &&
+        pageTicketTiers.some((t) => t.id === registeredTierId)
+      ) {
+        return registeredTierId;
+      }
+      if (prev && pageTicketTiers.some((t) => t.id === prev)) return prev;
+      return pageTicketTiers[0].id;
+    });
+  }, [
+    event?.id,
+    pageTicketTiers,
+    registrationStatus?.isRegistered,
+    registrationStatus?.ticketTierId,
+  ]);
+
   const isPaidButIncomplete = !!registrationStatus?.isPaidButIncomplete;
+
+  const eventRazorpayVerifyTriedRef = useRef(false);
+
+  useEffect(() => {
+    const rp = searchParams.get("razorpay_payment_id");
+    const ro = searchParams.get("razorpay_order_id");
+    const rs = searchParams.get("razorpay_signature");
+    if (!rp || !ro || !rs) return;
+    if (!isSignedIn || !event?.slug) return;
+    if (eventRazorpayVerifyTriedRef.current) return;
+    eventRazorpayVerifyTriedRef.current = true;
+
+    void (async () => {
+      try {
+        const token = await getToken();
+        if (!token) {
+          eventRazorpayVerifyTriedRef.current = false;
+          return;
+        }
+        await withRetry(() =>
+          verifyEventPayment(token, event.slug, {
+            razorpayOrderId: ro,
+            razorpayPaymentId: rp,
+            razorpaySignature: rs,
+          }),
+        );
+        toast.success("Payment confirmed — you are registered!");
+        clearPendingEventRegistration(event.slug);
+        router.replace(`/events/${event.slug}?registered=true`);
+        await refetchRegistrationStatus();
+      } catch (e) {
+        eventRazorpayVerifyTriedRef.current = false;
+        toast.error(
+          getApiErrorMessage(
+            e,
+            "Could not verify payment. If you were charged, contact support with your payment id.",
+          ),
+        );
+      }
+    })();
+  }, [
+    searchParams,
+    isSignedIn,
+    event?.slug,
+    getToken,
+    router,
+    refetchRegistrationStatus,
+  ]);
 
   const eventRecoveryTriedRef = useRef(false);
 
@@ -174,6 +264,15 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
       return;
     }
 
+    if (
+      showPageTierPicker &&
+      pageTicketTiers.length > 1 &&
+      !pageSelectedTierId
+    ) {
+      toast.error("Please select a ticket type first.");
+      return;
+    }
+
     setIsModalOpen(true);
   };
 
@@ -209,19 +308,36 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
   const { venueName, venueAddress } = formatLocation(event);
 
-  const tickets = [
-    {
-      id: "standard",
-      name: event.isFree ? "Free Entry" : "Standard Ticket",
-      // Coerce entry fee to number to avoid runtime issues in calculations
-      price: event.isFree
-        ? 0
-        : typeof event.entryFeeAmount === "number"
-          ? event.entryFeeAmount
-          : Number(event.entryFeeAmount ?? 0) || 0,
-      description: "Don’t miss out, FOMO is real! 🚀",
-    },
-  ];
+  const tickets =
+    Array.isArray(event.ticketTiers) && event.ticketTiers.length > 0
+      ? event.ticketTiers.map(
+          (t: {
+            id: string;
+            name: string;
+            price: unknown;
+            description?: string | null;
+          }) => ({
+            id: t.id,
+            name: t.name,
+            price:
+              typeof t.price === "number"
+                ? t.price
+                : Number(t.price ?? 0) || 0,
+            description: t.description?.trim() || "",
+          }),
+        )
+      : [
+          {
+            id: "standard",
+            name: event.isFree ? "Free Entry" : "Standard Ticket",
+            price: event.isFree
+              ? 0
+              : typeof event.entryFeeAmount === "number"
+                ? event.entryFeeAmount
+                : Number(event.entryFeeAmount ?? 0) || 0,
+            description: "Standard registration for this event.",
+          },
+        ];
 
   const cardUser = user
     ? {
@@ -258,7 +374,59 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     currency: event.currency || "INR",
     impressions: event.impressions,
     teamSize: event.isRecruitmentEvent ? "Recruitment" : "Individual", // Customize as needed
+    isFree: !!event.isFree,
+    ticketTiers: event.ticketTiers,
   };
+
+  const registrationPickerDisabled =
+    !!registrationStatus?.isRegistered ||
+    !!registrationStatus?.isPaidButIncomplete;
+
+  const mainRegistrationCard = showPageTierPicker ? (
+    <TicketTierRegistrationPicker
+      ticketTiers={pageTicketTiers}
+      feeBearer={event.feeBearer}
+      selectedTierId={pageSelectedTierId}
+      onSelectTier={setPageSelectedTierId}
+      disabled={registrationPickerDisabled}
+      isRegistered={!!registrationStatus?.isRegistered}
+      registeredTierId={registrationStatus?.ticketTierId ?? null}
+      footer={
+        <EventRegisterCta
+          event={sidebarEvent}
+          onRegister={handleRegistration}
+          isCheckingRegistration={
+            isSignedIn && !!user?.id && isRegistrationStatusPending
+          }
+          isRegistered={!!registrationStatus?.isRegistered}
+          needsCompleteRegistration={
+            !!registrationStatus?.isPaidButIncomplete
+          }
+        />
+      }
+    />
+  ) : (
+    <div className="rounded-2xl border border-[#E9D5FF] bg-white shadow-sm overflow-hidden">
+      <div className="bg-[#F3E8FF] px-4 py-2.5 border-b border-[#E9D5FF]">
+        <p className="text-sm font-semibold text-neutral-700 tracking-wide">
+          Registration
+        </p>
+      </div>
+      <div className="p-4 sm:p-5">
+        <EventRegisterCta
+          event={sidebarEvent}
+          onRegister={handleRegistration}
+          isCheckingRegistration={
+            isSignedIn && !!user?.id && isRegistrationStatusPending
+          }
+          isRegistered={!!registrationStatus?.isRegistered}
+          needsCompleteRegistration={
+            !!registrationStatus?.isPaidButIncomplete
+          }
+        />
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-transparent lg:pt-8 pb-8 font-sans">
@@ -278,6 +446,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
           <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden rounded-2xl">
             <EventSidebar
               event={sidebarEvent}
+              hideRegisterButton
               onRegister={handleRegistration}
               isCheckingRegistration={
                 isSignedIn && !!user?.id && isRegistrationStatusPending
@@ -300,6 +469,8 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             <h1 className="hidden lg:block text-neutral-900 text-3xl font-semibold px-1 pl-4 mb-2 break-all line-clamp-2">
               {event.name}
             </h1>
+
+            <div className="px-1 pl-4 mb-6">{mainRegistrationCard}</div>
 
             <div className="space-y-6">
               <EventTabs
@@ -443,12 +614,15 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         </div>
       </div>
 
-      <RegistrationModal
+        <RegistrationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         competition={event}
         type="EVENT"
         completionMode={!!registrationStatus?.isPaidButIncomplete}
+        pageSelectedTicketTierId={pageSelectedTierId}
+        omitTicketTierSection={showPageTierPicker}
+        prefillAnswers={registrationStatus?.draftAnswers ?? undefined}
         onSuccess={async () => {
           await refetchRegistrationStatus();
           setIsModalOpen(false);

@@ -21,6 +21,11 @@ import { PayoutDetailsController } from './payout-details.controller';
 import { AdminPayoutsService } from './admin-payouts.service';
 import { AdminPayoutsController } from './admin-payouts.controller';
 import { PaymentRegistrationEscrowService } from './payment-registration-escrow.service';
+import { TicketTierService } from './ticket-tier.service';
+import {
+  EventTicketTierController,
+  HackathonTicketTierController,
+} from './ticket-tier.controller';
 
 @Module({
   imports: [forwardRef(() => EventModule), forwardRef(() => ReferralModule)],
@@ -34,6 +39,8 @@ import { PaymentRegistrationEscrowService } from './payment-registration-escrow.
     DiscountCodeController,
     PayoutDetailsController,
     AdminPayoutsController,
+    EventTicketTierController,
+    HackathonTicketTierController,
   ],
   providers: [
     RazorpayService,
@@ -47,6 +54,7 @@ import { PaymentRegistrationEscrowService } from './payment-registration-escrow.
     PayoutDetailsService,
     AdminPayoutsService,
     PaymentRegistrationEscrowService,
+    TicketTierService,
   ],
   exports: [
     RazorpayService,
@@ -60,6 +68,7 @@ import { PaymentRegistrationEscrowService } from './payment-registration-escrow.
     PayoutDetailsService,
     AdminPayoutsService,
     PaymentRegistrationEscrowService,
+    TicketTierService,
   ],
 })
-export class PaymentsModule {}
+export class PaymentsModule { }

@@ -49,6 +49,10 @@ export interface EventDetails {
   currency?: string;
   teamSize?: string;
   impressions?: number;
+  isFree?: boolean;
+  entryFeeAmount?: number | null;
+  feeBearer?: "ORGANISER" | "PARTICIPANT";
+  ticketTiers?: any[];
 
   // Tab Content
   about: string; // HTML string

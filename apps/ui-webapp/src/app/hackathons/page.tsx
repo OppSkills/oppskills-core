@@ -48,6 +48,8 @@ export default function CompetitionsPage() {
     location: h.locationCity ?? h.locationAddress ?? undefined,
     isFree: h.isFree,
     entryFeeAmount: h.entryFeeAmount,
+    lowestTicketPrice: h.lowestTicketPrice,
+    highestTicketPrice: h.highestTicketPrice,
     currency: h.currency,
     registrationDeadline: h.registrationDeadline,
     registrationCount: h.registrationCount,

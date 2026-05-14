@@ -151,7 +151,7 @@ export class HackathonService {
     private readonly analyticsService: AnalyticsService,
     @Inject(forwardRef(() => EmailService))
     private readonly emailService: EmailService,
-  ) {}
+  ) { }
 
   async createHackathon(dto: CreateHackathonDto, userId: string) {
     this.logger.log(
@@ -188,16 +188,16 @@ export class HackathonService {
     // Build rounds data - either from DTO or empty (no default rounds)
     const roundsData = dto.rounds
       ? dto.rounds.map((round) => ({
-          name: round.name,
-          description: round.description,
-          startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
-          endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
-          order: round.order,
-          roundType: round.roundType,
-          submissionConfig: round.submissionConfig
-            ? (round.submissionConfig as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-        }))
+        name: round.name,
+        description: round.description,
+        startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
+        endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
+        order: round.order,
+        roundType: round.roundType,
+        submissionConfig: round.submissionConfig
+          ? (round.submissionConfig as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
+      }))
       : []; // Don't create default rounds - organizers can add them later
 
     // Determine attendee eligibility
@@ -262,21 +262,21 @@ export class HackathonService {
               fields: dto.registrationForm?.externalFormLink
                 ? undefined
                 : {
-                    create: [
-                      ...BASE_DEFAULT_FIELDS.map((f) => ({
-                        ...f,
-                        type: f.type as RegistrationFieldType,
-                      })),
-                      ...(dto.registrationForm?.fields ?? []).map((field) => ({
-                        label: field.label,
-                        type: field.type,
-                        required: field.required,
-                        order: field.order,
-                        options: field.options ?? [],
-                        placeholder: field.placeholder,
-                      })),
-                    ],
-                  },
+                  create: [
+                    ...BASE_DEFAULT_FIELDS.map((f) => ({
+                      ...f,
+                      type: f.type as RegistrationFieldType,
+                    })),
+                    ...(dto.registrationForm?.fields ?? []).map((field) => ({
+                      label: field.label,
+                      type: field.type,
+                      required: field.required,
+                      order: field.order,
+                      options: field.options ?? [],
+                      placeholder: field.placeholder,
+                    })),
+                  ],
+                },
             },
           },
 
@@ -286,25 +286,25 @@ export class HackathonService {
 
           prizeBreakdown: dto.prizeBreakdown
             ? {
-                create: dto.prizeBreakdown.map((prize) => ({
-                  position: prize.position,
-                  amount: prize.amount,
-                  description: prize.description,
-                })),
-              }
+              create: dto.prizeBreakdown.map((prize) => ({
+                position: prize.position,
+                amount: prize.amount,
+                description: prize.description,
+              })),
+            }
             : undefined,
 
           // New attachments relation
           attachments: dto.additionalInfo?.attachments
             ? {
-                create: dto.additionalInfo.attachments.map((att) => ({
-                  storageKey: att.storageKey,
-                  publicUrl: att.publicUrl,
-                  fileName: att.fileName,
-                  mimeType: att.mimeType,
-                  sizeBytes: att.sizeBytes,
-                })),
-              }
+              create: dto.additionalInfo.attachments.map((att) => ({
+                storageKey: att.storageKey,
+                publicUrl: att.publicUrl,
+                fileName: att.fileName,
+                mimeType: att.mimeType,
+                sizeBytes: att.sizeBytes,
+              })),
+            }
             : undefined,
         },
         include: this.getHackathonIncludeClause(),
@@ -558,7 +558,7 @@ export class HackathonService {
     const page = Math.max(1, Number(input.page) || 1);
     const skip = (page - 1) * take;
 
-    const [items, total] = await Promise.all([
+    const [hackathonRows, total] = await Promise.all([
       prisma.hackathonEntity.findMany({
         where: baseWhere,
         skip,
@@ -635,10 +635,26 @@ export class HackathonService {
             },
             orderBy: { amount: 'desc' },
           },
+          ticketTiers: {
+            where: { isActive: true },
+            select: { price: true },
+          },
         },
       }),
       prisma.hackathonEntity.count({ where: baseWhere }),
     ]);
+
+    const items = hackathonRows.map((h) => {
+      const tierNums = (h.ticketTiers ?? [])
+        .map((t) => Number(t.price))
+        .filter((n) => Number.isFinite(n));
+      const lowestTicketPrice =
+        tierNums.length > 0 ? Math.min(...tierNums) : null;
+      const highestTicketPrice =
+        tierNums.length > 0 ? Math.max(...tierNums) : null;
+      const { ticketTiers: _tiers, ...rest } = h;
+      return { ...rest, lowestTicketPrice, highestTicketPrice };
+    });
 
     // Track impressions for all returned hackathons (type 'opportunity')
     Promise.all(
@@ -730,6 +746,19 @@ export class HackathonService {
         prizeBreakdown: {
           select: { id: true, position: true, amount: true, description: true },
           orderBy: { amount: 'desc' },
+        },
+        ticketTiers: {
+          where: { isActive: true },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            currency: true,
+            capacity: true,
+            order: true,
+          },
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
         },
         registrationForm: {
           select: {
@@ -860,6 +889,19 @@ export class HackathonService {
         prizeBreakdown: {
           select: { id: true, position: true, amount: true, description: true },
           orderBy: { amount: 'desc' },
+        },
+        ticketTiers: {
+          where: { isActive: true },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            currency: true,
+            capacity: true,
+            order: true,
+          },
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
         },
         registrationForm: {
           select: {
@@ -1508,7 +1550,7 @@ export class HackathonService {
 
     const externalFormLink =
       typeof dto.externalFormLink === 'string' &&
-      dto.externalFormLink.trim().length > 0
+        dto.externalFormLink.trim().length > 0
         ? dto.externalFormLink.trim()
         : undefined;
 
@@ -2034,14 +2076,14 @@ export class HackathonService {
     const existing = await prisma.hackathonEntity.findFirst({
       where: excludeId
         ? {
-            slug: base,
-            NOT: {
-              id: excludeId,
-            },
-          }
-        : {
-            slug: base,
+          slug: base,
+          NOT: {
+            id: excludeId,
           },
+        }
+        : {
+          slug: base,
+        },
       select: { id: true },
     });
 
@@ -2142,7 +2184,7 @@ export class HackathonService {
       (dto.isFree !== undefined && dto.isFree !== currentHackathon.isFree) ||
       (dto.entryFeeAmount !== undefined &&
         String(dto.entryFeeAmount) !==
-          String(currentHackathon.entryFeeAmount)) ||
+        String(currentHackathon.entryFeeAmount)) ||
       ('chargeMode' in dto && dto.chargeMode !== currentHackathon.chargeMode) ||
       ('feeBearer' in dto && dto.feeBearer !== currentHackathon.feeBearer);
 
@@ -3424,12 +3466,12 @@ export class HackathonService {
   private formatAnswersForUser(
     submission:
       | {
-          answers: Array<{
-            fieldId: string;
-            valueText: string | null;
-            valueJson: unknown;
-          }>;
-        }
+        answers: Array<{
+          fieldId: string;
+          valueText: string | null;
+          valueJson: unknown;
+        }>;
+      }
       | undefined,
     fields: Array<{ id: string }>,
   ): Array<{ fieldId: string; value: string | null }> {

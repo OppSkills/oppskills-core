@@ -44,7 +44,7 @@ export class EventService {
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
     private readonly referralService: ReferralService,
-  ) {}
+  ) { }
 
   /**
    * Create an event as a user.
@@ -380,13 +380,26 @@ export class EventService {
             },
             orderBy: { amount: 'desc' },
           },
+          ticketTiers: {
+            where: { isActive: true },
+            select: { price: true },
+          },
         },
       }),
       prisma.eventEntity.count({ where: baseWhere }),
     ]);
 
-    // Determine if there's further results
-    const items = events.slice(0, take);
+    const items = events.map((e) => {
+      const tierNums = (e.ticketTiers ?? [])
+        .map((t) => Number(t.price))
+        .filter((n) => Number.isFinite(n));
+      const lowestTicketPrice =
+        tierNums.length > 0 ? Math.min(...tierNums) : null;
+      const highestTicketPrice =
+        tierNums.length > 0 ? Math.max(...tierNums) : null;
+      const { ticketTiers: _tiers, ...rest } = e;
+      return { ...rest, lowestTicketPrice, highestTicketPrice };
+    });
 
     // Track impressions for all returned events
     Promise.all(
@@ -476,6 +489,20 @@ export class EventService {
           orderBy: { amount: 'desc' },
         },
         // NOTE: NO participants - this is the key security fix
+        // Ticket tiers (public: active only, without internal fields)
+        ticketTiers: {
+          where: { isActive: true },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            currency: true,
+            capacity: true,
+            order: true,
+          },
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+        },
       },
     });
 
@@ -562,6 +589,19 @@ export class EventService {
         prizeBreakdown: {
           select: { id: true, position: true, amount: true, description: true },
           orderBy: { amount: 'desc' },
+        },
+        ticketTiers: {
+          where: { isActive: true },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            currency: true,
+            capacity: true,
+            order: true,
+          },
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
         },
       },
     });
@@ -1550,7 +1590,7 @@ export class EventService {
             // Use field options, or default gender options for Gender field
             const effectiveOptions =
               field.label.toLowerCase() === 'gender' &&
-              (!field.options || field.options.length === 0)
+                (!field.options || field.options.length === 0)
                 ? DEFAULT_GENDER_OPTIONS
                 : field.options;
 
@@ -2071,6 +2111,7 @@ export class EventService {
       select: {
         id: true,
         joinedAt: true,
+        checkoutPending: true,
       },
     });
 
@@ -2086,38 +2127,75 @@ export class EventService {
     const hasRegistrationAnswers =
       !!registrationSubmission && registrationSubmission._count.answers > 0;
 
-    // Check if payment exists and is captured (for paid events)
+    // Check if payment exists and is captured (for paid events, including tiered pricing)
     let paymentCompleted = false;
-    if (!event.isFree && event.entryFeeAmount) {
+    let ticketTierId: string | null = null;
+    let ticketTierName: string | null = null;
+    if (!event.isFree) {
       const payment = await prisma.eventPaymentEntity.findFirst({
         where: {
           eventId,
           payerUserId: userId,
-          paymentStatus: 'CAPTURED',
+          paymentStatus: { in: ['CAPTURED', 'AUTHORIZED'] },
         },
-        select: { id: true },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          ticketTierId: true,
+          ticketTier: { select: { id: true, name: true } },
+        },
       });
       paymentCompleted = !!payment;
+      ticketTierId = payment?.ticketTierId ?? payment?.ticketTier?.id ?? null;
+      ticketTierName = payment?.ticketTier?.name ?? null;
     } else {
-      // Free events don't require payment
       paymentCompleted = true;
     }
 
+    const awaitingCheckout =
+      !!participant?.checkoutPending && !paymentCompleted;
+
+    let draftAnswers: Array<{ fieldId: string; value: unknown }> | null =
+      null;
+    if (awaitingCheckout) {
+      const sub = await prisma.eventRegistrationSubmissionEntity.findFirst({
+        where: { eventId, userId },
+        include: {
+          answers: {
+            select: { fieldId: true, valueJson: true, valueText: true },
+          },
+        },
+      });
+      if (sub?.answers?.length) {
+        draftAnswers = sub.answers.map((a) => ({
+          fieldId: a.fieldId,
+          value: a.valueJson ?? a.valueText,
+        }));
+      }
+    }
+
     // Determine registration status:
-    // - isRegistered: true only if participant exists AND answers are submitted
+    // - isRegistered: paid + answers + checkout finished (not draft)
     // - isPaidButIncomplete: payment done but answers missing (needs to re-submit form)
     const isPaidButIncomplete =
       !!participant && paymentCompleted && !hasRegistrationAnswers;
     const isFullyRegistered =
-      !!participant && paymentCompleted && hasRegistrationAnswers;
+      !!participant &&
+      paymentCompleted &&
+      hasRegistrationAnswers &&
+      !participant.checkoutPending;
 
     return {
       isRegistered: isFullyRegistered,
       isPaidButIncomplete,
       hasRegistrationAnswers,
       paymentCompleted,
+      awaitingCheckout,
+      draftAnswers,
       participantId: participant?.id ?? null,
       registeredAt: participant?.joinedAt ?? null,
+      ticketTierId,
+      ticketTierName,
     };
   }
 
@@ -2246,14 +2324,14 @@ export class EventService {
       existingSubmission && existingSubmission._count.answers === 0
         ? existingSubmission.id
         : (
-            await prisma.eventRegistrationSubmissionEntity.create({
-              data: {
-                eventId,
-                userId,
-                participantId: participant.id,
-              },
-            })
-          ).id;
+          await prisma.eventRegistrationSubmissionEntity.create({
+            data: {
+              eventId,
+              userId,
+              participantId: participant.id,
+            },
+          })
+        ).id;
 
     if (mappedAnswers.length > 0) {
       const answerData = mappedAnswers.map((a) => ({
@@ -2413,7 +2491,7 @@ export class EventService {
     // Query participants with pagination
     const [participants, total] = await Promise.all([
       prisma.eventParticipantEntity.findMany({
-        where: { eventId: event.id },
+        where: { eventId: event.id, checkoutPending: false },
         include: {
           user: {
             select: {
@@ -2466,13 +2544,26 @@ export class EventService {
               isUsed: true,
             },
           },
+          payment: {
+            select: {
+              id: true,
+              grossAmount: true,
+              paymentStatus: true,
+              capturedAt: true,
+              razorpayOrderId: true,
+              ticketTierId: true,
+              ticketTier: {
+                select: { id: true, name: true },
+              },
+            },
+          },
         },
         orderBy: { joinedAt: 'desc' },
         skip,
         take,
       }),
       prisma.eventParticipantEntity.count({
-        where: { eventId: event.id },
+        where: { eventId: event.id, checkoutPending: false },
       }),
     ]);
 
@@ -2556,6 +2647,11 @@ export class EventService {
         passEmailSent: p.passEmailSent,
         passEmailSentAt: p.passEmailSentAt?.toISOString(),
         approvedAt: p.approvedAt?.toISOString(),
+        ticketTierId: p.payment?.ticketTierId ?? null,
+        ticketTierName: p.payment?.ticketTier?.name ?? null,
+        paymentAmount: p.payment ? Number(p.payment.grossAmount) : null,
+        paymentStatus: p.payment?.paymentStatus ?? null,
+        paymentCapturedAt: p.payment?.capturedAt?.toISOString() ?? null,
       };
     });
 
@@ -3391,7 +3487,7 @@ export class EventService {
     }
 
     const participants = await prisma.eventParticipantEntity.findMany({
-      where: { eventId: event.id },
+      where: { eventId: event.id, checkoutPending: false },
       include: {
         user: {
           select: {
@@ -3526,6 +3622,19 @@ export class EventService {
             },
           },
         },
+        payment: {
+          select: {
+            id: true,
+            grossAmount: true,
+            paymentStatus: true,
+            capturedAt: true,
+            razorpayOrderId: true,
+            ticketTierId: true,
+            ticketTier: {
+              select: { id: true, name: true },
+            },
+          },
+        },
       },
     });
 
@@ -3571,6 +3680,16 @@ export class EventService {
       value: a.valueJson ?? a.valueText,
     }));
 
+    const paymentData = participant.payment
+      ? {
+          status: participant.payment.paymentStatus,
+          amount: Number(participant.payment.grossAmount),
+          tierName: participant.payment.ticketTier?.name ?? null,
+          capturedAt: participant.payment.capturedAt?.toISOString() ?? null,
+          razorpayOrderId: participant.payment.razorpayOrderId,
+        }
+      : null;
+
     return {
       participant: {
         id: participant.id,
@@ -3582,6 +3701,7 @@ export class EventService {
       },
       fields,
       answers: formattedAnswers,
+      payment: paymentData,
     };
   }
 

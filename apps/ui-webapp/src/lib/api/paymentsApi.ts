@@ -73,12 +73,12 @@ export interface RouteOnboardingParams {
 export interface RouteStatus {
   hasAccount: boolean;
   status:
-    | "CREATED"
-    | "UNDER_REVIEW"
-    | "NEEDS_CLARIFICATION"
-    | "ACTIVATED"
-    | "SUSPENDED"
-    | null;
+  | "CREATED"
+  | "UNDER_REVIEW"
+  | "NEEDS_CLARIFICATION"
+  | "ACTIVATED"
+  | "SUSPENDED"
+  | null;
   razorpayAccountId: string | null;
   routeProductId: string | null;
   requirements: unknown[] | null;
@@ -277,6 +277,38 @@ export async function deleteDiscountCode(
   });
 }
 
+/**
+ * Save paid hackathon registration answers before Razorpay checkout (then open /hackathons/:slug/checkout).
+ */
+export async function saveHackathonRegistrationCheckoutDraft(
+  token: string,
+  hackathonSlug: string,
+  params: {
+    answers: Array<{ fieldId: string; value: string }>;
+    teamId?: string;
+    teamName?: string;
+    maxSize?: number;
+    invitationCode?: string;
+    joinTeamId?: string;
+    ticketTierId?: string;
+    referralCode?: string;
+  },
+): Promise<{
+  success: boolean;
+  hackathonSlug: string;
+  checkoutPath: string;
+  teamId: string;
+}> {
+  const referralCode = params.referralCode ?? getReferralCodeFromCookie();
+  const body = { ...params, ...(referralCode ? { referralCode } : {}) };
+  const res = await HackathonsAPI.post(
+    `/${hackathonSlug}/registration/checkout-draft`,
+    body,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data;
+}
+
 export async function createPaymentOrder(
   token: string,
   hackathonSlug: string,
@@ -285,6 +317,7 @@ export async function createPaymentOrder(
     teamName?: string;
     maxSize?: number;
     discountCode?: string;
+    ticketTierId?: string;
     /** PER_USER join: stored on Razorpay order for server-side registration completion */
     invitationCode?: string;
     /** PER_USER join-by-team list: stored on Razorpay order notes */
@@ -404,6 +437,13 @@ export interface HackathonRegistrationStatus {
   isPaidButIncomplete: boolean;
   canCompleteRegistrationWithoutPayment: boolean;
   isRegistrationIncomplete: boolean;
+  /** True when the user has a CREATED Razorpay order and has not completed payment. */
+  awaitingCheckout?: boolean;
+  /** Saved answers to prefill the registration modal before completing checkout. */
+  draftAnswers?: Array<{ fieldId: string; value: unknown }> | null;
+  /** Paid tier from successful payment (when applicable). */
+  ticketTierId?: string | null;
+  ticketTierName?: string | null;
 }
 
 export async function getHackathonRegistrationStatus(
@@ -451,4 +491,152 @@ export async function upsertPayoutDetails(
     headers: buildAuthHeaders(token),
   });
   return res.data;
+}
+
+// =============================================================================
+// TICKET TIERS
+// =============================================================================
+
+export interface TicketTier {
+  id: string;
+  eventId?: string | null;
+  hackathonId?: string | null;
+  name: string;
+  description?: string | null;
+  price: string | number;
+  currency?: string;
+  capacity: number | null;
+  isActive: boolean;
+  order: number;
+  createdAt?: string;
+  updatedAt?: string;
+  _count?: {
+    eventPayments?: number;
+    hackathonPayments?: number;
+  };
+}
+
+export interface CreateTicketTierParams {
+  name: string;
+  description?: string;
+  price: number;
+  capacity?: number | null;
+  order?: number;
+  isActive?: boolean;
+}
+
+const EventsAPI = createApiClient("/events");
+
+// Hackathon Ticket Tiers
+export async function getHackathonTicketTiers(
+  token: string,
+  hackathonSlug: string,
+): Promise<TicketTier[]> {
+  const res = await HackathonsAPI.get(`/${hackathonSlug}/tickets`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data;
+}
+
+export async function createHackathonTicketTier(
+  token: string,
+  hackathonSlug: string,
+  params: CreateTicketTierParams,
+): Promise<TicketTier> {
+  const res = await HackathonsAPI.post(
+    `/${hackathonSlug}/tickets`,
+    params,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data;
+}
+
+export async function updateHackathonTicketTier(
+  token: string,
+  hackathonSlug: string,
+  tierId: string,
+  params: Partial<CreateTicketTierParams>,
+): Promise<TicketTier> {
+  const res = await HackathonsAPI.patch(
+    `/${hackathonSlug}/tickets/${tierId}`,
+    params,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data;
+}
+
+export async function deleteHackathonTicketTier(
+  token: string,
+  hackathonSlug: string,
+  tierId: string,
+): Promise<void> {
+  await HackathonsAPI.delete(`/${hackathonSlug}/tickets/${tierId}`, {
+    headers: buildAuthHeaders(token),
+  });
+}
+
+export async function toggleHackathonTicketTierActive(
+  token: string,
+  hackathonSlug: string,
+  tierId: string,
+  isActive: boolean,
+): Promise<TicketTier> {
+  return updateHackathonTicketTier(token, hackathonSlug, tierId, { isActive });
+}
+
+// Event Ticket Tiers
+export async function getEventTicketTiers(
+  token: string,
+  eventSlug: string,
+): Promise<TicketTier[]> {
+  const res = await EventsAPI.get(`/${eventSlug}/tickets`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data;
+}
+
+export async function createEventTicketTier(
+  token: string,
+  eventSlug: string,
+  params: CreateTicketTierParams,
+): Promise<TicketTier> {
+  const res = await EventsAPI.post(
+    `/${eventSlug}/tickets`,
+    params,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data;
+}
+
+export async function updateEventTicketTier(
+  token: string,
+  eventSlug: string,
+  tierId: string,
+  params: Partial<CreateTicketTierParams>,
+): Promise<TicketTier> {
+  const res = await EventsAPI.patch(
+    `/${eventSlug}/tickets/${tierId}`,
+    params,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data;
+}
+
+export async function deleteEventTicketTier(
+  token: string,
+  eventSlug: string,
+  tierId: string,
+): Promise<void> {
+  await EventsAPI.delete(`/${eventSlug}/tickets/${tierId}`, {
+    headers: buildAuthHeaders(token),
+  });
+}
+
+export async function toggleEventTicketTierActive(
+  token: string,
+  eventSlug: string,
+  tierId: string,
+  isActive: boolean,
+): Promise<TicketTier> {
+  return updateEventTicketTier(token, eventSlug, tierId, { isActive });
 }
