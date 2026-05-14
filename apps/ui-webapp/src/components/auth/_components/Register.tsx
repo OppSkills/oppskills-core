@@ -35,6 +35,7 @@ export default function Register({
   // Form States
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const [otpError, setOtpError] = useState("");
   const [errors, setErrors] = useState({ phone: "" });
 
   const [userDetails, setUserDetails] = useState({
@@ -99,7 +100,7 @@ export default function Register({
       }
     } catch (err: unknown) {
       console.log(JSON.stringify(err, null, 2));
-      toast.error(getClerkErrorMessage(err, "Invalid Code"));
+      setOtpError(getClerkErrorMessage(err, "Invalid Code"));
     } finally {
       setIsLoading(false);
     }
@@ -272,8 +273,17 @@ export default function Register({
               maxLength={6}
               className="rounded-full py-6 text-center text-lg tracking-[0.5em] placeholder:tracking-normal placeholder:text-neutral-400"
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={(e) => {
+                setOtp(e.target.value);
+                setOtpError("");
+              }}
             />
+
+            {otpError && (
+              <p className="text-red-500 text-sm font-medium mt-1">
+                {otpError}
+              </p>
+            )}
 
             <Button
               onClick={handleVerifyOtp}

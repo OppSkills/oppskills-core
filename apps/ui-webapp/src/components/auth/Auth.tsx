@@ -3,6 +3,7 @@ import { useClerk, useSignIn, useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import Register from "./_components/Register";
 import Login from "./_components/Login";
+import ForgotPassword from "./_components/ForgotPassword";
 import { X } from "lucide-react";
 import { useQueryState } from "nuqs";
 import Image from "next/image";
@@ -24,7 +25,12 @@ export default function Auth({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("resize", checkIsDesktop);
   }, []);
 
-  const currentMode = authMode === "signup" ? "signup" : "login";
+  const currentMode =
+    authMode === "signup"
+      ? "signup"
+      : authMode === "forgot-password"
+      ? "forgot-password"
+      : "login";
   const isSignUpOtpStep = currentMode === "signup" && registerStep === 2;
 
 
@@ -80,73 +86,92 @@ export default function Auth({ onClose }: { onClose: () => void }) {
                 <>
                   <div>
                     <h2 className="text-2xl text-neutral-800 font-semibold">
-                      {currentMode === "login" ? "Sign In" : "Sign Up"}
+                      {currentMode === "login"
+                        ? "Sign In"
+                        : currentMode === "signup"
+                        ? "Sign Up"
+                        : "Reset Password"}
                     </h2>
                     <p className="text-neutral-700 py-2">
                       {currentMode === "login"
                         ? "Login to your account"
-                        : "Register now to take part in all the events"}
+                        : currentMode === "signup"
+                        ? "Register now to take part in all the events"
+                        : "Enter your email to receive a reset code"}
                     </p>
                   </div>
-                  <div className="flex items-center justify-center gap-2 py-1 mb-4 w-full">
-                    <div className="border-[0.5px] border-neutral-400 p-1 rounded-full flex gap-2 w-full">
-                      <Button
-                        variant={currentMode === "signup" ? "default" : "ghost"}
-                        className="rounded-full flex-1 font-normal"
-                        onClick={() => {
-                          setAuthMode("signup");
-                          setRegisterStep(1);
-                        }}
-                      >
-                        Sign Up
-                      </Button>
-                      <Button
-                        variant={currentMode === "login" ? "default" : "ghost"}
-                        className="rounded-full flex-1"
-                        onClick={() => setAuthMode("login")}
-                      >
-                        Sign In
-                      </Button>
+                  {currentMode !== "forgot-password" && (
+                    <div className="flex items-center justify-center gap-2 py-1 mb-4 w-full">
+                      <div className="border-[0.5px] border-neutral-400 p-1 rounded-full flex gap-2 w-full">
+                        <Button
+                          variant={
+                            currentMode === "signup" ? "default" : "ghost"
+                          }
+                          className="rounded-full flex-1 font-normal"
+                          onClick={() => {
+                            setAuthMode("signup");
+                            setRegisterStep(1);
+                          }}
+                        >
+                          Sign Up
+                        </Button>
+                        <Button
+                          variant={
+                            currentMode === "login" ? "default" : "ghost"
+                          }
+                          className="rounded-full flex-1"
+                          onClick={() => setAuthMode("login")}
+                        >
+                          Sign In
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col gap-4">
-                    <Button
-                      onClick={handleGoogleLogin}
-                      className="w-full rounded-full py-5 text-primary-600 border-px border-primary-200"
-                      variant="outline"
-                      type="button"
-                      aria-label="Sign in with Google account"
-                    >
-                      <Image
-                        src="/google.png"
-                        alt="Google"
-                        width={20}
-                        height={20}
-                      />{" "}
-                      Continue with Google
-                    </Button>
+                  )}
+                    {currentMode !== "forgot-password" && (
+                      <div className="flex flex-col gap-4">
+                        <Button
+                          onClick={handleGoogleLogin}
+                          className="w-full rounded-full py-5 text-primary-600 border-px border-primary-200"
+                          variant="outline"
+                          type="button"
+                          aria-label="Sign in with Google account"
+                        >
+                          <Image
+                            src="/google.png"
+                            alt="Google"
+                            width={20}
+                            height={20}
+                          />{" "}
+                          Continue with Google
+                        </Button>
 
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-neutral-200 " />
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-neutral-200 " />
+                          </div>
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">
+                              Or continue with
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                          Or continue with
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
+                    )}
+                  </>
+                )}
 
               <div className={`container ${!isSignUpOtpStep ? "mt-4" : ""}`}>
                 {currentMode === "login" ? (
                   <Login setIsOpenLogin={onClose} />
-                ) : (
+                ) : currentMode === "signup" ? (
                   <Register
                     setIsOpenLogin={onClose}
                     onStepChange={setRegisterStep}
+                  />
+                ) : (
+                  <ForgotPassword
+                    onBack={() => setAuthMode("login")}
+                    onSuccess={onClose}
                   />
                 )}
               </div>
