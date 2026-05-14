@@ -10,6 +10,10 @@
   - [Health Check](#health-check)
   - [Opportunities](apis/opportunities.md)
   - [Organizer Dashboard](apis/organizer.md)
+  - [Dashboard Analytics](apis/dashboard.md)
+  - [Hackathon Organizer (Detailed)](apis/organnizer/hackathon.md)
+  - [Event Organizer (Detailed)](apis/organnizer/event.md)
+  - [Festival Organizer (Detailed)](apis/organnizer/festival.md)
   - [Hackathons](#hackathons)
   - [Events](#events)
   - [Festivals](#festivals)
@@ -141,6 +145,12 @@ Documentation for the entire opportunity lifecycle (creation, public listing, an
 Documentation for dashboard management, participant tracking, and role assignment for organizers has been moved to:
 
 [Organizer API](apis/organizer.md)
+
+### Dashboard Analytics
+
+Documentation for organizer-wide metrics, registration trends, and opportunity-specific analytics has been moved to:
+
+[Dashboard Analytics API](apis/dashboard.md)
 
 ### Health Check
 
