@@ -75,8 +75,7 @@ export function EventRegisterCta({
     buttonText = "Register now";
   } else {
     if (priceDisplay) {
-      buttonText =
-        tickets.length > 1 ? "Click to pay" : "Click to pay";
+      buttonText = "Click to pay";
     }
 
     return (

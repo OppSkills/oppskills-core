@@ -572,8 +572,28 @@ export class EventPaymentService {
       }>,
     );
 
-    if (!mappedAnswers.length) {
-      throw new BadRequestException('Registration answers are required');
+    const requiredOrganizerFields =
+      await this.applicableRequiredOrganizerRegistrationFields(
+        event.id,
+        params.userId,
+      );
+
+    if (requiredOrganizerFields.length > 0) {
+      const answerByFieldId = new Map(
+        mappedAnswers.map((a) => [a.fieldId, a] as const),
+      );
+      for (const field of requiredOrganizerFields) {
+        const answer = answerByFieldId.get(field.id);
+        const value = answer?.value;
+        const isEmpty =
+          value === undefined ||
+          value === null ||
+          value === '' ||
+          (Array.isArray(value) && value.length === 0);
+        if (isEmpty) {
+          throw new BadRequestException(`Field "${field.label}" is required.`);
+        }
+      }
     }
 
     await prisma.$transaction(async (tx) => {
@@ -623,9 +643,11 @@ export class EventPaymentService {
         valueJson: a.value,
       }));
 
-      await tx.eventRegistrationAnswerEntity.createMany({
-        data: answerData,
-      });
+      if (answerData.length > 0) {
+        await tx.eventRegistrationAnswerEntity.createMany({
+          data: answerData,
+        });
+      }
     });
 
     return {
@@ -1473,6 +1495,67 @@ export class EventPaymentService {
     this.logger.log(
       `Saved ${answerData.length} registration answers for participant ${participantId} in event ${eventId}`,
     );
+  }
+
+  /**
+   * Required registration fields created by the organizer use order >= 0. Lazy default
+   * identity fields (name, email, etc.) use negative orders and are not counted here,
+   * so paid checkout drafts are allowed when the event has no custom required questions.
+   */
+  private async applicableRequiredOrganizerRegistrationFields(
+    eventId: string,
+    userId: string,
+  ): Promise<Array<{ id: string; label: string }>> {
+    const userOnboardingProfile =
+      await prisma.userOnboardingProfileEntity.findUnique({
+        where: { userId },
+        select: { userCategory: true },
+      });
+    const userCategory = userOnboardingProfile?.userCategory;
+
+    const regForm = await prisma.eventRegistrationFormEntity.findUnique({
+      where: { eventId },
+      include: {
+        fields: {
+          where: {
+            required: true,
+            order: { gte: 0 },
+          },
+          select: { id: true, label: true },
+        },
+      },
+    });
+
+    if (!regForm || regForm.fields.length === 0) {
+      return [];
+    }
+
+    const identityFieldLabels = new Set([
+      'school name',
+      'college name',
+      'company name',
+    ]);
+
+    const requiredIdentityLabel =
+      userCategory === 'SCHOOL_STUDENT'
+        ? 'school name'
+        : userCategory === 'WORKING_PROFESSIONAL'
+          ? 'company name'
+          : 'college name';
+
+    const applicable: Array<{ id: string; label: string }> = [];
+    for (const field of regForm.fields) {
+      const labelLower = field.label.toLowerCase();
+      if (
+        identityFieldLabels.has(labelLower) &&
+        labelLower !== requiredIdentityLabel
+      ) {
+        continue;
+      }
+      applicable.push({ id: field.id, label: field.label });
+    }
+
+    return applicable;
   }
 
   /**
