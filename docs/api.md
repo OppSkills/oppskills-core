@@ -3,17 +3,19 @@
 ## Table of Contents
 - [Overview](#overview)
 - [Base URL](#base-url)
-- [Authentication](#authentication)
+- [Authentication](apis/auth.md)
 - [Common Patterns](#common-patterns)
 - [Error Responses](#error-responses)
 - [Endpoints](#endpoints)
   - [Health Check](#health-check)
+  - [Opportunities](apis/opportunities.md)
+  - [Organizer Dashboard](apis/organizer.md)
   - [Hackathons](#hackathons)
   - [Events](#events)
   - [Festivals](#festivals)
   - [Teams](#teams)
   - [Media](#media)
-  - [User Accounts](#user-accounts)
+  - [User Accounts](apis/user_profile.md)
 
 ---
 
@@ -32,35 +34,16 @@ The backend runs on port 3001 by default (configurable via `PORT` environment va
 
 ## Authentication
 
-### Bearer Token Authentication
+Documentation for authentication, user profiles, and authorization roles has been moved to:
 
-Most endpoints require authentication using Clerk JWT tokens. Include the token in the `Authorization` header:
+[Auth and User Management API](apis/auth.md)
 
-```http
-Authorization: Bearer <your-clerk-jwt-token>
-```
-
-### Development Auth Bypass (Non-Production Only)
-
-When `AUTH_BYPASS=true` is set in development environments, you can bypass Clerk authentication by passing a user ID in the header:
-
-```http
-x-user-id: user_1234567890
-```
-
-**Security Note**: This bypass is automatically disabled in production environments.
-
-### User Roles
-
-The API supports three access levels:
-- **ADMIN**: Full system access (configured via `ADMIN_USER_IDS` environment variable)
-- **USER**: Standard user access (default)
-- **VIEWER**: Read-only access
-
-Additional hackathon-specific roles:
-- **OWNER**: Creator of the hackathon
-- **MANAGER**: Can manage hackathon settings and participants
-- **EVALUATOR**: Can evaluate submissions (read-only for now)
+This includes:
+- Clerk JWT authentication details
+- User profile management
+- Onboarding workflow
+- Role management (Admin, Manager, Evaluator)
+- Development auth bypass
 
 ---
 
@@ -146,6 +129,18 @@ The API uses standard HTTP status codes and returns errors in the following form
 ---
 
 ## Endpoints
+
+### Opportunities
+
+Documentation for the entire opportunity lifecycle (creation, public listing, and joining) for hackathons, events, and festivals has been consolidated to:
+
+[Opportunities API](apis/opportunities.md)
+
+### Organizer Dashboard
+
+Documentation for dashboard management, participant tracking, and role assignment for organizers has been moved to:
+
+[Organizer API](apis/organizer.md)
 
 ### Health Check
 
@@ -1819,53 +1814,7 @@ Content-Type: application/json
 
 ### User Accounts
 
-#### Search Users by Email
-
-Search for users by email address (partial, case-insensitive match). Returns up to 10 results. Useful for role assignment autocomplete.
-
-```http
-GET /user-accounts/search?q=john@
-Authorization: Bearer <token>
-```
-
-**Query Parameters:**
-- `q` (required): Search query (email pattern)
-
-**Response (200):**
-```json
-[
-  {
-    "id": "user_abc123",
-    "email": "john@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "imageUrl": "https://example.com/avatar.jpg"
-  },
-  {
-    "id": "user_def456",
-    "email": "john.smith@example.com",
-    "firstName": "John",
-    "lastName": "Smith",
-    "imageUrl": "https://example.com/avatar2.jpg"
-  }
-]
-```
-
----
-
-#### Clerk Webhook (Internal)
-
-This endpoint is used internally by Clerk to sync user events. Do not call this endpoint directly.
-
-```http
-POST /user-accounts/clerk-webhook
-Headers:
-  svix-id: <signature-id>
-  svix-timestamp: <timestamp>
-  svix-signature: <signature>
-```
-
-This webhook handles user creation, updates, and deletion events from Clerk.
+Detailed documentation for User Account endpoints has been moved to **[apis/user_profile.md](apis/user_profile.md)**.
 
 ---
 
