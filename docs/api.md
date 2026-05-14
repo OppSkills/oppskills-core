@@ -44,10 +44,13 @@ Documentation for authentication, user profiles, and authorization roles has bee
 
 This includes:
 - Clerk JWT authentication details
+- Sign In / Sign Up flow
+- Generating tokens (Client/Server/Manual)
 - User profile management
 - Onboarding workflow
-- Role management (Admin, Manager, Evaluator)
 - Development auth bypass
+
+*Note: Role management (Admin, Manager, Evaluator) for specific opportunities is covered in the [Organizer API](apis/organizer.md).*
 
 ---
 
