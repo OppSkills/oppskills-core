@@ -27,6 +27,7 @@ import {
   CreateEventDiscountCodeDto,
   UpdateEventDiscountCodeDto,
   UpdateEventPricingDto,
+  SaveEventRegistrationCheckoutDraftDto,
 } from '@oppskills/types';
 
 @ApiTags('Event Payments')
@@ -40,6 +41,34 @@ export class EventPaymentController {
   // ─────────────────────────────────────────────────────────────────────────────
   // Payment Order & Verification
   // ─────────────────────────────────────────────────────────────────────────────
+
+  @Post(':slug/registration/checkout-draft')
+  @UseGuards(ClerkAuthGuard)
+  @ApiOperation({
+    summary:
+      'Save registration answers before checkout (paid events); then open /events/:slug/checkout',
+  })
+  @ApiParam({ name: 'slug', description: 'Event slug' })
+  @ApiResponse({ status: 201, description: 'Draft saved' })
+  @ApiResponse({ status: 400, description: 'Invalid request' })
+  async saveRegistrationCheckoutDraft(
+    @Param('slug') slug: string,
+    @Body() dto: SaveEventRegistrationCheckoutDraftDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
+    return this.eventPaymentService.saveRegistrationCheckoutDraft({
+      eventSlug: slug,
+      userId,
+      answers: dto.answers,
+      ticketTierId: dto.ticketTierId,
+      referralCode: dto.referralCode,
+    });
+  }
 
   @Post(':slug/payment/order')
   @UseGuards(ClerkAuthGuard)
@@ -64,6 +93,7 @@ export class EventPaymentController {
       discountCode: dto.discountCode,
       answers: dto.answers,
       referralCode: dto.referralCode,
+      ticketTierId: dto.ticketTierId,
     });
   }
 

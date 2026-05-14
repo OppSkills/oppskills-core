@@ -215,6 +215,7 @@ export class RazorpayWebhookService {
       await this.eventPayment.trySubmitRegistrationFromEscrowAfterWebhook(
         orderId,
       );
+      await this.eventPayment.finalizeEventParticipantAfterCapture(orderId);
       await this.attributeEventParticipantReferral({
         referralId,
         eventId: paymentRecord.eventId,
@@ -282,6 +283,7 @@ export class RazorpayWebhookService {
               userId: paymentRecord.payerUserId,
               approved: isImmediate,
               approvedAt: isImmediate ? new Date() : null,
+              checkoutPending: false,
               ...(referralId ? { referralId } : {}),
             },
           });
@@ -315,7 +317,15 @@ export class RazorpayWebhookService {
         this.logger.warn(
           `Race condition in webhook: Participant already exists for user ${paymentRecord.payerUserId} in event ${paymentRecord.eventId}`,
         );
-        // This is fine - verifyPayment beat us to it
+        await this.eventPayment.trySubmitRegistrationFromEscrowAfterWebhook(
+          orderId,
+        );
+        await this.eventPayment.finalizeEventParticipantAfterCapture(orderId);
+        await this.attributeEventParticipantReferral({
+          referralId,
+          eventId: paymentRecord.eventId,
+          userId: paymentRecord.payerUserId,
+        });
         return;
       }
       throw error;
@@ -344,6 +354,11 @@ export class RazorpayWebhookService {
       }
     }
 
+    await this.eventPayment.trySubmitRegistrationFromEscrowAfterWebhook(
+      orderId,
+    );
+    await this.eventPayment.finalizeEventParticipantAfterCapture(orderId);
+
     // When the webhook created the participant, verifyPayment did not run (or ran after);
     // the email listener only runs on event.participant.registered, so emit it here
     // so the user receives the pending or immediate pass email.
@@ -355,10 +370,6 @@ export class RazorpayWebhookService {
         passSendingMode,
       });
     }
-
-    await this.eventPayment.trySubmitRegistrationFromEscrowAfterWebhook(
-      orderId,
-    );
 
     await this.attributeEventParticipantReferral({
       referralId,

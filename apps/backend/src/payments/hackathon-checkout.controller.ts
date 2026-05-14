@@ -9,13 +9,38 @@ import {
 } from '@nestjs/common';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { HackathonCheckoutService } from './hackathon-checkout.service';
-import { CreateOrderDto, VerifyPaymentDto } from './dto';
+import {
+  CreateOrderDto,
+  VerifyPaymentDto,
+  SaveHackathonRegistrationCheckoutDraftDto,
+} from './dto';
 import type { Request } from 'express';
 
 @Controller('hackathons')
 @UseGuards(ClerkAuthGuard)
 export class HackathonCheckoutController {
   constructor(private readonly checkoutService: HackathonCheckoutService) {}
+
+  @Post(':slug/registration/checkout-draft')
+  async saveRegistrationCheckoutDraft(
+    @Param('slug') slug: string,
+    @Body() dto: SaveHackathonRegistrationCheckoutDraftDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user!.id;
+    return this.checkoutService.saveRegistrationCheckoutDraft({
+      hackathonSlug: slug,
+      userId,
+      answers: dto.answers,
+      teamId: dto.teamId,
+      teamName: dto.teamName,
+      maxSize: dto.maxSize,
+      invitationCode: dto.invitationCode,
+      joinTeamId: dto.joinTeamId,
+      referralCode: dto.referralCode,
+      ticketTierId: dto.ticketTierId,
+    });
+  }
 
   @Post(':slug/payment/order')
   async createPaymentOrder(
@@ -35,6 +60,7 @@ export class HackathonCheckoutController {
       joinTeamId: dto.joinTeamId,
       answers: dto.answers,
       referralCode: dto.referralCode,
+      ticketTierId: dto.ticketTierId,
     });
   }
 

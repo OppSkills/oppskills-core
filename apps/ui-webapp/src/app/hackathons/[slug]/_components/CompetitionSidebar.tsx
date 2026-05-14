@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { SquareShareLine } from '@solar-icons/react'
 import { useRouter, useSearchParams } from "next/navigation";
@@ -41,12 +42,24 @@ import { getApiErrorMessage } from "@/lib/utils";
 import { formatToIST, isSameDayInIST } from "@/lib/date-utils";
 import type { CompetitionDetails } from "./types";
 import { RegistrationModal } from "./RegistrationModal";
+import {
+  TicketTierRegistrationPicker,
+  getActiveRegistrationTiers,
+} from "@/components/registration/TicketTierRegistrationPicker";
 
 interface CompetitionSidebarProps {
   competition: CompetitionDetails;
+  /** When set, tier picker + register CTA render in this DOM node (main column) */
+  registrationHostEl?: HTMLElement | null;
+  /** When true, never render registration UI in the sidebar (wait for host or portal) */
+  anchorRegistrationToMain?: boolean;
 }
 
-export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
+export function CompetitionSidebar({
+  competition,
+  registrationHostEl = null,
+  anchorRegistrationToMain = false,
+}: CompetitionSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoaded, isSignedIn, getToken } = useAuth();
@@ -63,11 +76,49 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
   const isOrganizer = !!user && !!competition.organizers?.some((o) => o.id === user.id);
 
+  const sidebarActiveTiers = useMemo(
+    () => getActiveRegistrationTiers(competition.ticketTiers),
+    [competition.ticketTiers],
+  );
+  const [pageSelectedTierId, setPageSelectedTierId] = useState<string | null>(
+    null,
+  );
+
   const hasTeam = !!myTeam;
   const isFullyRegistered = registrationStatus?.hasSubmitted === true;
+  const hackathonRegistrationCompleteForDisplay =
+    !!registrationStatus?.hasSubmitted &&
+    (!!competition.isFree || !!registrationStatus.paymentCompleted);
   const needsCompleteRegistration =
     hasTeam &&
     registrationStatus?.canCompleteRegistrationWithoutPayment === true;
+
+  useEffect(() => {
+    if (sidebarActiveTiers.length === 0) {
+      setPageSelectedTierId(null);
+      return;
+    }
+    const registeredTierId =
+      hackathonRegistrationCompleteForDisplay &&
+      registrationStatus?.ticketTierId
+        ? registrationStatus.ticketTierId
+        : null;
+    setPageSelectedTierId((prev) => {
+      if (
+        registeredTierId &&
+        sidebarActiveTiers.some((t) => t.id === registeredTierId)
+      ) {
+        return registeredTierId;
+      }
+      if (prev && sidebarActiveTiers.some((t) => t.id === prev)) return prev;
+      return sidebarActiveTiers[0].id;
+    });
+  }, [
+    competition.id,
+    sidebarActiveTiers,
+    hackathonRegistrationCompleteForDisplay,
+    registrationStatus?.ticketTierId,
+  ]);
 
   const isCompletionFlow = registration === "complete";
   const isRegistrationModalOpen =
@@ -305,6 +356,11 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         return;
       }
 
+      if (sidebarActiveTiers.length > 1 && !pageSelectedTierId) {
+        toast.error("Please select a ticket type first.");
+        return;
+      }
+
       setRegistration("create");
     } catch (error) {
       console.error("Error starting registration:", error);
@@ -421,10 +477,26 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     }
 
     const rawEntryFee = competition.entryFeeAmount as number | string | null | undefined;
-    const baseAmount =
+    const entryBase =
       typeof rawEntryFee === "number"
         ? rawEntryFee
         : Number(rawEntryFee ?? 0) || 0;
+
+    const tierSelected =
+      sidebarActiveTiers.length > 0 && pageSelectedTierId
+        ? sidebarActiveTiers.find((t) => t.id === pageSelectedTierId)
+        : undefined;
+    const tierBase = tierSelected
+      ? typeof tierSelected.price === "number"
+        ? tierSelected.price
+        : Number(tierSelected.price ?? 0) || 0
+      : null;
+
+    const baseAmount =
+      sidebarActiveTiers.length > 0 && tierBase !== null
+        ? tierBase
+        : entryBase;
+
     const isPaid = competition.isFree === false && baseAmount > 0;
     const processingFee = Math.ceil(baseAmount * 0.0236 * 100) / 100;
     const totalAmount = competition.feeBearer === "PARTICIPANT"
@@ -490,6 +562,49 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
     );
   };
 
+  const showHackathonTierPicker =
+    !competition.isFree && sidebarActiveTiers.length > 0;
+
+  const registrationMainColumn = (
+    <>
+      {showHackathonTierPicker ? (
+        <TicketTierRegistrationPicker
+          ticketTiers={sidebarActiveTiers}
+          feeBearer={competition.feeBearer}
+          selectedTierId={pageSelectedTierId}
+          onSelectTier={(id) => setPageSelectedTierId(id)}
+          disabled={
+            !!(
+              isCheckingRegistration ||
+              isOrganizer ||
+              isFullyRegistered ||
+              needsCompleteRegistration ||
+              isRegistrationClosed
+            )
+          }
+          isRegistered={hackathonRegistrationCompleteForDisplay}
+          registeredTierId={registrationStatus?.ticketTierId ?? null}
+          footer={renderRegisterButton()}
+        />
+      ) : (
+        <div className="rounded-2xl border border-[#E9D5FF] bg-white shadow-sm overflow-hidden">
+          <div className="bg-[#F3E8FF] px-4 py-2.5 border-b border-[#E9D5FF]">
+            <p className="text-sm font-semibold text-neutral-700 tracking-wide">
+              Registration
+            </p>
+          </div>
+          <div className="p-4 sm:p-5">{renderRegisterButton()}</div>
+        </div>
+      )}
+    </>
+  );
+
+  const registrationPortalActive =
+    anchorRegistrationToMain && !!registrationHostEl;
+  const registrationInSidebar = !anchorRegistrationToMain
+    ? registrationMainColumn
+    : null;
+
   const getDeterministicPseudoImpressions = (
     registrationCount: number | null | undefined,
     createdAt: Date
@@ -527,23 +642,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
   return (
     <div className="space-y-5 font-sans">
-      {/* Mobile Title */}
-      <h1 className="lg:hidden text-neutral-900 text-3xl font-semibold mb-4 break-all px-1">
-        {competition.title}
-      </h1>
-
-      {/* Featured In Pill */}
-      {competition.featuredIn && (
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-200  rounded-md text-sm text-neutral-600 ">
-          <span className="font-normal text-neutral-600">Featured in</span>
-          <span className="font-semibold text-neutral-800 ">
-            {competition.featuredIn}
-          </span>
-          <ChevronRight className="w-4 h-4 text-neutral-800" />
-        </div>
-      )}
-
-      {/* Banner Component */}
+      {/* Banner first in sidebar */}
       <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl shadow-sm">
         {competition.thumbnail ? (
           <Image
@@ -562,16 +661,34 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         )}
       </div>
 
+      {/* Mobile Title */}
+      <h1 className="lg:hidden text-neutral-900 text-3xl font-semibold mb-4 break-all px-1">
+        {competition.title}
+      </h1>
+
+      {/* Featured In Pill */}
+      {competition.featuredIn && (
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-200  rounded-md text-sm text-neutral-600 ">
+          <span className="font-normal text-neutral-600">Featured in</span>
+          <span className="font-semibold text-neutral-800 ">
+            {competition.featuredIn}
+          </span>
+          <ChevronRight className="w-4 h-4 text-neutral-800" />
+        </div>
+      )}
+
       {/* Info Card */}
       <div className="bg-background  rounded-2xl border border-neutral-200  p-6 shadow-sm">
         <p className="text-neutral-600  text-[15px] mb-6">
-          Welcome! to join event please register below.
+          {anchorRegistrationToMain
+            ? "Welcome! Date, venue, and team status are below."
+            : "Welcome! to join event please register below."}
         </p>
 
         <div className="space-y-5">
           {/* Date Row */}
           <div className="flex gap-4 items-center">
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl border border-neutral-400  flex flex-col items-center justify-center">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex flex-col items-center justify-center">
               <span className="text-[10px] uppercase text-neutral-500 font-medium leading-none mb-0.5">
                 {competition.startDate ? formatToIST(competition.startDate, { formatType: "short_month", showSuffix: false }) : "TBD"}
               </span>
@@ -611,7 +728,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
 
           {/* Location Row */}
           <div className="flex gap-4 items-center">
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
               <MapPin className="w-5 h-5 text-neutral-700 " />
             </div>
             <div>
@@ -624,8 +741,7 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
             </div>
           </div>
 
-          {/* Register Button */}
-          {renderRegisterButton()}
+          {registrationInSidebar}
 
           {/* Team Status Card - shown when user has a team */}
           {hasTeam && myTeam && user && (
@@ -662,8 +778,6 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
             />
           )}
 
-          {/* Divider */}
-          <div className="h-px bg-neutral-100  w-full my-2" />
 
           {/* Stats List */}
           <div className="space-y-4">
@@ -746,6 +860,10 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         </div>
       </div>
 
+      {registrationPortalActive
+        ? createPortal(registrationMainColumn, registrationHostEl)
+        : null}
+
       <RegistrationModal
         isOpen={isRegistrationModalOpen}
         onClose={() => {
@@ -756,6 +874,11 @@ export function CompetitionSidebar({ competition }: CompetitionSidebarProps) {
         initialMode={initialMode as any}
         initialInvitationCode={invitation || undefined}
         completionMode={isCompletionFlow}
+        pageSelectedTicketTierId={pageSelectedTierId}
+        omitTicketTierSection={
+          !competition.isFree && sidebarActiveTiers.length > 0
+        }
+        prefillAnswers={registrationStatus?.draftAnswers ?? undefined}
         onSuccess={async (updatedTeam) => {
           setMyTeam(updatedTeam);
           setRegistration(null);

@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import type { PublicHackathonListItem } from "@/lib/api/hackathonApi";
 import { formatCount } from "@/lib/tools";
 import { HackathonCard } from "./HackathonCard";
+import { formatListingEntryFee } from "@/lib/formatListingEntryFee";
 
 interface CompetitionCardProps {
     hackathon: PublicHackathonListItem;
@@ -21,15 +22,6 @@ function formatMode(mode: string | null): string {
     }
 }
 
-function formatCurrency(amount: number | null, currency: string): string {
-    if (!amount) return "0";
-    return new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: currency,
-        maximumFractionDigits: 0,
-    }).format(amount);
-}
-
 export function CompetitionCard({ hackathon }: CompetitionCardProps) {
     const mode = formatMode(hackathon.mode);
     const isFree = hackathon.isFree;
@@ -38,7 +30,13 @@ export function CompetitionCard({ hackathon }: CompetitionCardProps) {
         ? format(new Date(hackathon.registrationDeadline), "dd MMM yyyy")
         : "N/A";
 
-    const entryFee = formatCurrency(hackathon.entryFeeAmount, hackathon.currency);
+    const entryFee = formatListingEntryFee({
+        isFree: hackathon.isFree,
+        currency: hackathon.currency,
+        entryFeeAmount: hackathon.entryFeeAmount,
+        lowestTicketPrice: hackathon.lowestTicketPrice,
+        highestTicketPrice: hackathon.highestTicketPrice,
+    });
 
     const footerContent = (
         <div className="flex items-between justify-between mt-auto pt-2 w-full">
@@ -62,7 +60,7 @@ export function CompetitionCard({ hackathon }: CompetitionCardProps) {
 
             <div className="flex flex-col gap-1 text-right">
                 <span className="text-neutral-500 text-xs">Entry Fee</span>
-                <span className="text-neutral-700 text-sm font-medium">{isFree ? "Free" : `${entryFee}`}</span>
+                <span className="text-neutral-700 text-sm font-medium">{entryFee}</span>
             </div>
         </div>
     );

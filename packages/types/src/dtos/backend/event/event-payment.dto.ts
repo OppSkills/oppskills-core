@@ -86,6 +86,43 @@ class CreateEventPaymentOrderAnswerDto {
   value: string;
 }
 
+class SaveCheckoutDraftAnswerDto {
+  @IsString()
+  @IsNotEmpty()
+  fieldId: string;
+
+  @IsString()
+  value: string;
+}
+
+/**
+ * Persist registration answers before Razorpay checkout (paid events).
+ * User is redirected to /events/:slug/checkout after this succeeds.
+ */
+export class SaveEventRegistrationCheckoutDraftDto {
+  @ApiProperty({
+    description: "Registration form answers (same shape as join / payment order)",
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SaveCheckoutDraftAnswerDto)
+  answers: SaveCheckoutDraftAnswerDto[];
+
+  @ApiPropertyOptional({
+    description: "Ticket tier when the event uses tiered pricing",
+  })
+  @IsOptional()
+  @IsString()
+  ticketTierId?: string;
+
+  @ApiPropertyOptional({
+    description: "Referral code (optional; stored for attribution on payment order later)",
+  })
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
+}
+
 /**
  * DTO for creating a payment order for event registration.
  */
@@ -122,6 +159,18 @@ export class CreateEventPaymentOrderDto {
   @IsOptional()
   @IsString()
   referralCode?: string;
+
+  /**
+   * The specific ticket tier the user is purchasing.
+   * If omitted, the default base entry fee is charged.
+   */
+  @ApiPropertyOptional({
+    description: "The specific ticket tier the user is purchasing",
+    example: "evt-tier-12345",
+  })
+  @IsOptional()
+  @IsString()
+  ticketTierId?: string;
 }
 
 // =============================================================================

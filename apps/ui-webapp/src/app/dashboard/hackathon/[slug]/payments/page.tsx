@@ -233,6 +233,7 @@ export default function Page() {
   return (
     <div className="w-full p-4 sm:p-8 min-h-screen">
       <PaymentManagementLayout
+        slug={slug}
         opportunityType="Hackathon"
         isPaid={isPaid}
         setIsPaid={setIsPaid}

@@ -24,6 +24,10 @@ export class OpportunityService {
     organizationName: true,
     views: true,
     impressions: true,
+    ticketTiers: {
+      where: { isActive: true },
+      select: { price: true },
+    },
   } as const;
 
   constructor(
@@ -201,8 +205,20 @@ export class OpportunityService {
 
     // 3. Cleanup: Remove internal sorting fields (views, impressions) before returning
     const sanitize = (item: any) => {
-      const { views: _v, impressions: _i, ...rest } = item;
-      return rest;
+      const tierNums = (item.ticketTiers ?? [])
+        .map((t: { price: unknown }) => Number(t.price))
+        .filter((n: number) => Number.isFinite(n));
+      const lowestTicketPrice =
+        tierNums.length > 0 ? Math.min(...tierNums) : null;
+      const highestTicketPrice =
+        tierNums.length > 0 ? Math.max(...tierNums) : null;
+      const {
+        views: _v,
+        impressions: _i,
+        ticketTiers: _t,
+        ...rest
+      } = item;
+      return { ...rest, lowestTicketPrice, highestTicketPrice };
     };
 
     return {

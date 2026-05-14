@@ -13,8 +13,8 @@ import type {
   Organizer,
   Prize,
 } from "./_components/types";
-import { useParams } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState, useMemo, useRef } from "react";
 import {
   getPublicHackathonBySlug,
   getHackathonBySlug,
@@ -28,6 +28,14 @@ import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { HackathonDetailFallback } from "@/components/boneyard/loading-fallbacks";
 import { useAuth } from "@clerk/nextjs";
 import { transformApiData, type HackathonApiData } from "./_components/transform";
+import { verifyPayment } from "@/lib/api/paymentsApi";
+import { withRetry } from "@/lib/utils/retry";
+import { toast } from "sonner";
+import {
+  readPendingHackathonRegistration,
+  clearPendingHackathonRegistration,
+} from "@/lib/registration/pendingHackathonRegistration";
+import { getApiErrorMessage } from "@/lib/utils";
 
 // Functions moved to transform.ts
 
@@ -37,7 +45,10 @@ export function CompetitionDetailsClient({
   initialData?: CompetitionDetails;
 }) {
   const { slug } = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const { getToken, isSignedIn, userId } = useAuth();
+  const hackathonRzpVerifyTriedRef = useRef(false);
   const [competition, setCompetition] = useState<CompetitionDetails | null>(
     initialData || null
   );
@@ -56,6 +67,8 @@ export function CompetitionDetailsClient({
   const [myQualifications, setMyQualifications] = useState<
     MyTeamSubmissionsResponse["qualifications"]
   >({});
+  const [hackathonRegHost, setHackathonRegHost] =
+    useState<HTMLDivElement | null>(null);
 
   const submissionsByRoundId = useMemo(() => {
     const map: Record<string, RoundSubmissionInfo> = {};
@@ -79,6 +92,47 @@ export function CompetitionDetailsClient({
     }
     return map;
   }, [myQualifications]);
+
+  useEffect(() => {
+    const rp = searchParams.get("razorpay_payment_id");
+    const ro = searchParams.get("razorpay_order_id");
+    const rs = searchParams.get("razorpay_signature");
+    if (!rp || !ro || !rs) return;
+    if (!isSignedIn || typeof slug !== "string") return;
+    if (hackathonRzpVerifyTriedRef.current) return;
+    hackathonRzpVerifyTriedRef.current = true;
+
+    void (async () => {
+      try {
+        const token = await getToken();
+        if (!token) {
+          hackathonRzpVerifyTriedRef.current = false;
+          return;
+        }
+        const pending = readPendingHackathonRegistration(slug);
+        const hasPendingAnswers = (pending?.answers?.length ?? 0) > 0;
+        await withRetry(() =>
+          verifyPayment(token, slug, {
+            razorpayOrderId: ro,
+            razorpayPaymentId: rp,
+            razorpaySignature: rs,
+            answers: hasPendingAnswers ? pending!.answers : undefined,
+          }),
+        );
+        toast.success("Payment confirmed — registration completing…");
+        clearPendingHackathonRegistration(slug);
+        router.replace(`/hackathons/${slug}?registered=true`);
+      } catch (e) {
+        hackathonRzpVerifyTriedRef.current = false;
+        toast.error(
+          getApiErrorMessage(
+            e,
+            "Could not verify payment. Open Register again — you will not be charged twice.",
+          ),
+        );
+      }
+    })();
+  }, [searchParams, slug, isSignedIn, getToken, router]);
 
   useEffect(() => {
     async function fetchCompetition() {
@@ -205,13 +259,19 @@ export function CompetitionDetailsClient({
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative items-start">
             <div className="lg:col-span-1 lg:sticky lg:top-24">
-              <CompetitionSidebar competition={competition} />
+              <CompetitionSidebar
+                competition={competition}
+                anchorRegistrationToMain
+                registrationHostEl={hackathonRegHost}
+              />
             </div>
 
             <div className="lg:col-span-2">
               <h1 className="hidden lg:block text-4xl font-semibold text-neutral-900 leading-tight mb-6">
                 {competition.title}
               </h1>
+
+              <div ref={setHackathonRegHost} className="mb-6" />
 
               <CompetitionTabs
                 setCurTab={setCurTab}

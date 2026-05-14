@@ -123,7 +123,7 @@ export async function getMyEvents(
   take: number;
   totalPages: number;
 }> {
-  const res = await API.get("/my", { 
+  const res = await API.get("/my", {
     headers: buildAuthHeaders(token),
     params
   });
@@ -433,8 +433,15 @@ export interface MyRegistrationResponse {
   isPaidButIncomplete: boolean;
   hasRegistrationAnswers: boolean;
   paymentCompleted: boolean;
+  /** User saved the registration form and must finish payment on checkout */
+  awaitingCheckout?: boolean;
+  /** Saved answers when awaitingCheckout (for modal prefill) */
+  draftAnswers?: Array<{ fieldId: string; value: unknown }> | null;
   participantId: string | null;
   registeredAt: string | null;
+  /** Paid tier the user purchased (when applicable) */
+  ticketTierId?: string | null;
+  ticketTierName?: string | null;
 }
 
 /**
@@ -486,6 +493,11 @@ export interface EventRegistration {
   isAttended: boolean;
   passEmailSentAt?: string;
   approvedAt?: string;
+  ticketTierId?: string | null;
+  ticketTierName?: string | null;
+  paymentAmount?: number | null;
+  paymentStatus?: string | null;
+  paymentCapturedAt?: string | null;
 }
 
 /**
@@ -523,6 +535,14 @@ export interface RegistrationAnswer {
   value: string | number | string[] | null;
 }
 
+export interface ParticipantPaymentInfo {
+  status: string;
+  amount: number;
+  tierName: string | null;
+  capturedAt: string | null;
+  razorpayOrderId: string;
+}
+
 export interface ParticipantRegistrationAnswersResponse {
   participant: {
     id: string;
@@ -532,6 +552,7 @@ export interface ParticipantRegistrationAnswersResponse {
   };
   fields: RegistrationField[];
   answers: RegistrationAnswer[];
+  payment?: ParticipantPaymentInfo | null;
 }
 
 export async function getParticipantRegistrationAnswers(
@@ -766,6 +787,7 @@ export async function createEventPaymentOrder(
   eventSlug: string,
   params: {
     discountCode?: string;
+    ticketTierId?: string;
     answers?: Array<{ fieldId: string; value: string }>;
     /**
      * Referral code. Defaults to the `oppskills_ref` cookie if unset.
@@ -782,6 +804,28 @@ export async function createEventPaymentOrder(
     { headers: buildAuthHeaders(token) },
   );
   return res.data as EventPaymentOrderResponse;
+}
+
+/**
+ * Save paid event registration answers before Razorpay checkout (then redirect to /events/:slug/checkout).
+ */
+export async function saveEventRegistrationCheckoutDraft(
+  token: string,
+  eventSlug: string,
+  params: {
+    answers: Array<{ fieldId: string; value: string }>;
+    ticketTierId?: string;
+    referralCode?: string;
+  },
+): Promise<{ success: boolean; eventSlug: string; checkoutPath: string }> {
+  const referralCode = params.referralCode ?? getReferralCodeFromCookie();
+  const body = { ...params, ...(referralCode ? { referralCode } : {}) };
+  const res = await API.post(
+    `/${encodeURIComponent(eventSlug)}/registration/checkout-draft`,
+    body,
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as { success: boolean; eventSlug: string; checkoutPath: string };
 }
 
 /**

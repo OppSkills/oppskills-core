@@ -27,6 +27,8 @@ export interface EventListItem {
   isFree: boolean;
   entryFeeAmount: number | null;
   currency: string;
+  lowestTicketPrice?: number | null;
+  highestTicketPrice?: number | null;
   visibility: string;
   eventType: string | null;
   registrationCount: number;

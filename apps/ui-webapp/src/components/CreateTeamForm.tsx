@@ -15,11 +15,13 @@ import {
   createPaymentOrder,
   verifyPayment,
   submitRegistration,
+  saveHackathonRegistrationCheckoutDraft,
 } from "@/lib/api/paymentsApi";
 import { withRetry } from "@/lib/utils/retry";
 import { SITE_URL } from "@/lib/constants";
 import { getMe } from "@/lib/api/usersApi";
 import { writePendingHackathonRegistration } from "@/lib/registration/pendingHackathonRegistration";
+import { writeHackathonCheckoutIntent } from "@/lib/registration/hackathonCheckoutIntent";
 import {
   HackathonRegistrationModal,
   type RegistrationField,
@@ -292,6 +294,33 @@ export function CreateTeamForm({
       } else if (chargeMode === "PER_USER") {
         orderParams.teamName = teamName;
         orderParams.maxSize = maxSize;
+      }
+
+      if (!isFree) {
+        await saveHackathonRegistrationCheckoutDraft(token, hackathonSlug, {
+          answers: orderParams.answers!,
+          teamId: orderParams.teamId,
+          teamName: orderParams.teamName,
+          maxSize: orderParams.maxSize,
+        });
+        writeHackathonCheckoutIntent(hackathonSlug, {
+          discountCode: orderParams.discountCode,
+          teamId: orderParams.teamId,
+          teamName: orderParams.teamName,
+          maxSize: orderParams.maxSize,
+        });
+        writePendingHackathonRegistration(hackathonSlug, {
+          answers: orderParams.answers!,
+          teamName: orderParams.teamName,
+          maxSize: orderParams.maxSize,
+          userId: user?.id,
+        });
+        setIsLoading(false);
+        setIsSubmittingRegistration(false);
+        setShowRegistrationModal(false);
+        toast.success("Continue to secure checkout.");
+        router.push(`/hackathons/${hackathonSlug}/checkout`);
+        return;
       }
 
       const order = await createPaymentOrder(token, hackathonSlug, orderParams);

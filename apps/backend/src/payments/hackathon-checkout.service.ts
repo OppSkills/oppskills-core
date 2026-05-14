@@ -53,6 +53,8 @@ export class HackathonCheckoutService {
      * redirects, webhooks, and retries. Silently ignored if invalid.
      */
     referralCode?: string;
+    /** The specific ticket tier the user is purchasing */
+    ticketTierId?: string;
   }) {
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { slug: params.hackathonSlug, isDeleted: false },
@@ -84,7 +86,11 @@ export class HackathonCheckoutService {
       );
     }
 
-    if (!hackathon.entryFeeAmount) {
+    const activeTierCount = await prisma.ticketTierEntity.count({
+      where: { hackathonId: hackathon.id, isActive: true },
+    });
+
+    if (!hackathon.entryFeeAmount && activeTierCount === 0) {
       throw new BadRequestException('Entry fee not configured');
     }
 
@@ -108,6 +114,49 @@ export class HackathonCheckoutService {
 
     if (new Date() > hackathon.registrationDeadline) {
       throw new BadRequestException('Registration deadline has passed');
+    }
+
+    let registrationFee: Decimal;
+    if (activeTierCount > 0) {
+      if (!params.ticketTierId) {
+        throw new BadRequestException('Please select a ticket type');
+      }
+      const tier = await prisma.ticketTierEntity.findFirst({
+        where: {
+          id: params.ticketTierId,
+          hackathonId: hackathon.id,
+          isActive: true,
+        },
+      });
+      if (!tier) {
+        throw new BadRequestException(
+          'Invalid or inactive ticket tier selected',
+        );
+      }
+      if (tier.capacity != null) {
+        const sold = await prisma.hackathonPaymentEntity.count({
+          where: {
+            ticketTierId: tier.id,
+            paymentStatus: {
+              in: [
+                HackathonPaymentStatus.CAPTURED,
+                HackathonPaymentStatus.AUTHORIZED,
+              ],
+            },
+          },
+        });
+        if (sold >= tier.capacity) {
+          throw new BadRequestException('This ticket type is sold out');
+        }
+      }
+      registrationFee = new Decimal(tier.price);
+    } else {
+      if (params.ticketTierId) {
+        throw new BadRequestException(
+          'Ticket type is not used for this hackathon',
+        );
+      }
+      registrationFee = new Decimal(hackathon.entryFeeAmount || 0);
     }
 
     const chargeMode = hackathon.chargeMode || HackathonChargeMode.PER_TEAM;
@@ -249,6 +298,7 @@ export class HackathonCheckoutService {
           organizerId: hackathon.ownerId,
           payerUserId: params.userId,
           teamId,
+          ticketTierId: params.ticketTierId ?? null,
           currency: hackathon.currency || 'INR',
           grossAmount: new Decimal(0),
           platformFeeAmount: new Decimal(0),
@@ -297,7 +347,8 @@ export class HackathonCheckoutService {
       };
     }
 
-    let registrationFee = new Decimal(hackathon.entryFeeAmount);
+    // registrationFee is already set above (base amount or ticket tier price)
+
     let discountAmount = new Decimal(0);
     let discountCodeId: string | null = null;
 
@@ -336,6 +387,44 @@ export class HackathonCheckoutService {
 
     const grossAmountPaise = chargeAmount.times(100).toNumber();
 
+    if (grossAmountPaise > 0) {
+      const legacyAnswersAtOrderCreate = !!(
+        params.answers && params.answers.length > 0
+      );
+      const regForm = await prisma.registrationFormEntity.findUnique({
+        where: { hackathonId: hackathon.id },
+        select: {
+          externalFormLink: true,
+          _count: { select: { fields: true } },
+        },
+      });
+      const internalFieldCount = regForm?._count.fields ?? 0;
+      const externalFormOnly =
+        !!regForm?.externalFormLink?.trim() && internalFieldCount === 0;
+
+      if (
+        internalFieldCount > 0 &&
+        !legacyAnswersAtOrderCreate &&
+        !externalFormOnly
+      ) {
+        const dbDraft =
+          await prisma.hackathonRegistrationSubmissionEntity.findUnique({
+            where: {
+              hackathonId_userId: {
+                hackathonId: hackathon.id,
+                userId: params.userId,
+              },
+            },
+            select: { _count: { select: { answers: true } } },
+          });
+        if (!dbDraft || dbDraft._count.answers === 0) {
+          throw new BadRequestException(
+            'Save your registration before checkout — complete the registration form first.',
+          );
+        }
+      }
+    }
+
     if (grossAmountPaise === 0) {
       const payment = await prisma.hackathonPaymentEntity.create({
         data: {
@@ -344,6 +433,7 @@ export class HackathonCheckoutService {
           organizerId: hackathon.ownerId,
           payerUserId: params.userId,
           teamId,
+          ticketTierId: params.ticketTierId,
           currency: hackathon.currency || 'INR',
           grossAmount: new Decimal(0),
           platformFeeAmount: new Decimal(0),
@@ -430,6 +520,7 @@ export class HackathonCheckoutService {
         organizerId: hackathon.ownerId,
         payerUserId: params.userId,
         teamId,
+        ticketTierId: params.ticketTierId,
         currency: hackathon.currency || 'INR',
         grossAmount: registrationFee,
         platformFeeAmount: gatewayFee,
@@ -445,12 +536,20 @@ export class HackathonCheckoutService {
       },
     });
 
-    await this.paymentEscrowService.upsertHackathonEscrow({
-      razorpayOrderId: razorpayOrder.id,
-      payerUserId: params.userId,
-      hackathonId: hackathon.id,
-      answers: params.answers || [],
-    });
+    if (params.answers && params.answers.length > 0) {
+      const fromDb = await this.loadSubmissionAnswersForHackathonVerify(
+        hackathon.id,
+        params.userId,
+      );
+      if (!fromDb.length) {
+        await this.paymentEscrowService.upsertHackathonEscrow({
+          razorpayOrderId: razorpayOrder.id,
+          payerUserId: params.userId,
+          hackathonId: hackathon.id,
+          answers: params.answers,
+        });
+      }
+    }
 
     return {
       paymentId: payment.id,
@@ -466,6 +565,363 @@ export class HackathonCheckoutService {
           : undefined,
       feeBearer: hackathon.feeBearer,
     };
+  }
+
+  /**
+   * Persist registration answers to live tables before Razorpay checkout (paid hackathons).
+   */
+  async saveRegistrationCheckoutDraft(params: {
+    hackathonSlug: string;
+    userId: string;
+    answers: Array<{ fieldId: string; value: string }>;
+    teamId?: string;
+    teamName?: string;
+    maxSize?: number;
+    invitationCode?: string;
+    joinTeamId?: string;
+    referralCode?: string;
+    ticketTierId?: string;
+  }) {
+    const hackathon =
+      await this.registrationSubmitService.assertHackathonRegistrationWindow(
+        params.hackathonSlug,
+      );
+
+    if (hackathon.isFree) {
+      throw new BadRequestException(
+        'This hackathon is free, no paid checkout draft is required',
+      );
+    }
+
+    const activeTierCount = await prisma.ticketTierEntity.count({
+      where: { hackathonId: hackathon.id, isActive: true },
+    });
+
+    if (!hackathon.entryFeeAmount && activeTierCount === 0) {
+      throw new BadRequestException('Entry fee not configured');
+    }
+
+    if (activeTierCount > 0) {
+      if (!params.ticketTierId) {
+        throw new BadRequestException('Please select a ticket type');
+      }
+      const tier = await prisma.ticketTierEntity.findFirst({
+        where: {
+          id: params.ticketTierId,
+          hackathonId: hackathon.id,
+          isActive: true,
+        },
+      });
+      if (!tier) {
+        throw new BadRequestException(
+          'Invalid or inactive ticket tier selected',
+        );
+      }
+    } else if (params.ticketTierId) {
+      throw new BadRequestException(
+        'Ticket type is not used for this hackathon',
+      );
+    }
+
+    const chargeMode = hackathon.chargeMode || HackathonChargeMode.PER_TEAM;
+    const scope =
+      chargeMode === HackathonChargeMode.PER_TEAM
+        ? HackathonPaymentScope.TEAM
+        : HackathonPaymentScope.USER;
+
+    if (scope === HackathonPaymentScope.TEAM) {
+      if (params.teamId) {
+        const existingTeamPayment =
+          await prisma.hackathonPaymentEntity.findFirst({
+            where: {
+              scope: HackathonPaymentScope.TEAM,
+              hackathonId: hackathon.id,
+              teamId: params.teamId,
+              paymentStatus: {
+                in: [
+                  HackathonPaymentStatus.CAPTURED,
+                  HackathonPaymentStatus.AUTHORIZED,
+                ],
+              },
+            },
+          });
+        if (existingTeamPayment) {
+          throw new BadRequestException('Payment already completed');
+        }
+      }
+    } else {
+      const successfulUserPayment =
+        await prisma.hackathonPaymentEntity.findFirst({
+          where: {
+            scope: HackathonPaymentScope.USER,
+            hackathonId: hackathon.id,
+            payerUserId: params.userId,
+            paymentStatus: {
+              in: [
+                HackathonPaymentStatus.CAPTURED,
+                HackathonPaymentStatus.AUTHORIZED,
+              ],
+            },
+          },
+        });
+      if (successfulUserPayment) {
+        throw new BadRequestException('Payment already completed');
+      }
+    }
+
+    const isEligibleForFreeEntry = await this.checkFreeCollegeEligibility(
+      hackathon.freeCollegeIds,
+      params.userId,
+    );
+    if (isEligibleForFreeEntry) {
+      throw new BadRequestException(
+        'You qualify for free entry — complete registration without this checkout step.',
+      );
+    }
+
+    const teamCtx = await this.resolveLeaderTeamContextForPrePaymentDraft(
+      hackathon,
+      params.userId,
+      {
+        teamId: params.teamId,
+        teamName: params.teamName,
+        maxSize: params.maxSize,
+        invitationCode: params.invitationCode,
+        joinTeamId: params.joinTeamId,
+        referralCode: params.referralCode,
+      },
+    );
+
+    await this.registrationSubmitService.upsertHackathonRegistrationCheckoutDraft(
+      {
+        hackathonSlug: hackathon.slug,
+        userId: params.userId,
+        answers: params.answers,
+        leaderTeam: teamCtx.leaderTeam,
+        teamMemberId: teamCtx.teamMemberId,
+        isLeader: teamCtx.isLeader,
+      },
+    );
+
+    return {
+      success: true,
+      hackathonSlug: hackathon.slug,
+      checkoutPath: `/hackathons/${hackathon.slug}/checkout`,
+      teamId: teamCtx.leaderTeam.id,
+    };
+  }
+
+  private async resolveLeaderTeamContextForPrePaymentDraft(
+    hackathon: {
+      id: string;
+      slug: string;
+      chargeMode: HackathonChargeMode | null;
+      festivalId: string | null;
+    },
+    userId: string,
+    params: {
+      teamId?: string;
+      teamName?: string;
+      maxSize?: number;
+      invitationCode?: string;
+      joinTeamId?: string;
+      referralCode?: string;
+    },
+  ): Promise<{
+    leaderTeam: { id: string; leaderId: string; name: string };
+    teamMemberId: string | null;
+    isLeader: boolean;
+  }> {
+    const scope =
+      (hackathon.chargeMode || HackathonChargeMode.PER_TEAM) ===
+      HackathonChargeMode.PER_TEAM
+        ? HackathonPaymentScope.TEAM
+        : HackathonPaymentScope.USER;
+
+    if (scope === HackathonPaymentScope.TEAM) {
+      if (params.teamId) {
+        const team = await prisma.teamEntity.findUnique({
+          where: { id: params.teamId },
+          select: { id: true, hackathonId: true, leaderId: true, name: true },
+        });
+        if (!team) {
+          throw new NotFoundException('Team not found');
+        }
+        if (team.hackathonId !== hackathon.id) {
+          throw new BadRequestException(
+            'Team does not belong to this hackathon',
+          );
+        }
+        if (team.leaderId !== userId) {
+          throw new ForbiddenException(
+            'Only team leader can save registration for checkout',
+          );
+        }
+        return {
+          leaderTeam: {
+            id: team.id,
+            leaderId: team.leaderId,
+            name: team.name,
+          },
+          teamMemberId: null,
+          isLeader: true,
+        };
+      }
+      if (params.teamName) {
+        const existingTeam = await prisma.teamEntity.findFirst({
+          where: {
+            hackathonId: hackathon.id,
+            OR: [{ leaderId: userId }, { members: { some: { userId } } }],
+          },
+        });
+        if (existingTeam) {
+          throw new BadRequestException(
+            'You are already in a team for this hackathon',
+          );
+        }
+        const draftTeam = await this.draftTeamService.createDraftTeam({
+          hackathonSlug: hackathon.slug,
+          name: params.teamName,
+          maxSize: params.maxSize,
+          leaderId: userId,
+        });
+        const t = draftTeam.team;
+        return {
+          leaderTeam: {
+            id: t.id,
+            leaderId: t.leaderId,
+            name: t.name,
+          },
+          teamMemberId: null,
+          isLeader: true,
+        };
+      }
+      throw new BadRequestException(
+        'Either teamId or teamName is required for per-team registration',
+      );
+    }
+
+    let referralId: string | null = null;
+    if (params.referralCode?.trim()) {
+      try {
+        referralId = await this.referralService.resolveForRegistration({
+          code: params.referralCode.trim(),
+          userId,
+          expectedEntityType: ReferralEntityTypeDto.HACKATHON,
+          expectedEntityId: hackathon.id,
+          parentFestivalId: hackathon.festivalId,
+        });
+      } catch {
+        referralId = null;
+      }
+    }
+
+    if (params.joinTeamId?.trim()) {
+      try {
+        await this.draftTeamService.joinDraftTeam({
+          teamId: params.joinTeamId.trim(),
+          userId,
+          referralId,
+        });
+      } catch (err) {
+        if (!this.isBenignTeamAlreadyExistsError(err)) {
+          throw err;
+        }
+      }
+    } else if (params.invitationCode?.trim()) {
+      try {
+        await this.draftTeamService.joinDraftTeam({
+          invitationCode: params.invitationCode.trim().toUpperCase(),
+          userId,
+          referralId,
+        });
+      } catch (err) {
+        if (!this.isBenignTeamAlreadyExistsError(err)) {
+          throw err;
+        }
+      }
+    } else if (params.teamName?.trim()) {
+      try {
+        await this.draftTeamService.createDraftTeam({
+          hackathonSlug: hackathon.slug,
+          name: params.teamName.trim(),
+          maxSize: params.maxSize,
+          leaderId: userId,
+        });
+      } catch (err) {
+        if (!this.isBenignTeamAlreadyExistsError(err)) {
+          throw err;
+        }
+      }
+    }
+
+    const membership = await prisma.teamMemberEntity.findFirst({
+      where: {
+        userId,
+        team: { hackathonId: hackathon.id },
+      },
+      include: {
+        team: true,
+      },
+    });
+
+    const leaderTeam =
+      membership?.team ??
+      (await prisma.teamEntity.findFirst({
+        where: { hackathonId: hackathon.id, leaderId: userId },
+        select: { id: true, name: true, leaderId: true },
+      }));
+
+    if (!leaderTeam) {
+      throw new BadRequestException(
+        'Join or create a team before saving registration for checkout',
+      );
+    }
+
+    const isLeader = leaderTeam.leaderId === userId;
+    const teamMemberId = membership?.id ?? null;
+    if (!isLeader && !teamMemberId) {
+      throw new BadRequestException('Team membership is required');
+    }
+
+    return {
+      leaderTeam: {
+        id: leaderTeam.id,
+        leaderId: leaderTeam.leaderId,
+        name: leaderTeam.name,
+      },
+      teamMemberId: isLeader ? null : teamMemberId,
+      isLeader,
+    };
+  }
+
+  private async loadSubmissionAnswersForHackathonVerify(
+    hackathonId: string,
+    userId: string,
+  ): Promise<Array<{ fieldId: string; value: string }>> {
+    const submission =
+      await prisma.hackathonRegistrationSubmissionEntity.findUnique({
+        where: {
+          hackathonId_userId: { hackathonId, userId },
+        },
+        include: {
+          answers: {
+            select: { fieldId: true, valueJson: true, valueText: true },
+          },
+        },
+      });
+    if (!submission?.answers?.length) {
+      return [];
+    }
+    return submission.answers.map((a) => ({
+      fieldId: a.fieldId,
+      value:
+        a.valueJson !== null && a.valueJson !== undefined
+          ? typeof a.valueJson === 'string'
+            ? a.valueJson
+            : JSON.stringify(a.valueJson)
+          : (a.valueText ?? ''),
+    }));
   }
 
   /**
@@ -591,12 +1047,46 @@ export class HackathonCheckoutService {
             }
           }
         } else {
-          this.logger.warn(
-            `Bundled registration: no teamName/invitationCode on Razorpay order ${razorpayOrderId} for payment ${paymentId}; client must pass team context in order notes`,
-          );
-          throw new BadRequestException(
-            'Could not complete registration: team context missing. Please open Register again to finish — you will not be charged twice.',
-          );
+          const paymentRow = await prisma.hackathonPaymentEntity.findUnique({
+            where: { id: paymentId },
+            select: { teamId: true },
+          });
+          const submissionRow =
+            await prisma.hackathonRegistrationSubmissionEntity.findUnique({
+              where: {
+                hackathonId_userId: {
+                  hackathonId: params.hackathonId,
+                  userId,
+                },
+              },
+              select: { teamId: true },
+            });
+          const fallbackTeamId =
+            paymentRow?.teamId ?? submissionRow?.teamId ?? null;
+
+          if (fallbackTeamId) {
+            this.logger.log(
+              `Bundled registration PER_USER: using DB team fallback ${fallbackTeamId} for payment ${paymentId} (order ${razorpayOrderId})`,
+            );
+            try {
+              await this.draftTeamService.joinDraftTeam({
+                teamId: fallbackTeamId,
+                userId,
+                referralId: referralId ?? null,
+              });
+            } catch (err) {
+              if (!this.isBenignTeamAlreadyExistsError(err)) {
+                throw err;
+              }
+            }
+          } else {
+            this.logger.warn(
+              `Bundled registration: no teamName/invitationCode on Razorpay order ${razorpayOrderId} for payment ${paymentId}; client must pass team context in order notes`,
+            );
+            throw new BadRequestException(
+              'Could not complete registration: team context missing. Please open Register again to finish — you will not be charged twice.',
+            );
+          }
         }
       }
     }
@@ -642,10 +1132,6 @@ export class HackathonCheckoutService {
     if (!payment || payment.paymentStatus !== HackathonPaymentStatus.CAPTURED) {
       return;
     }
-    const answers = await this.paymentEscrowService.loadAnswersForVerify(
-      razorpayOrderId,
-      payment.payerUserId,
-    );
 
     let resolvedReferralId = referralId ?? null;
     if (!resolvedReferralId) {
@@ -668,7 +1154,13 @@ export class HackathonCheckoutService {
       }
     }
 
-    if (!answers?.length) {
+    const mergedAnswers = await this.resolveMergedAnswersForVerify(
+      razorpayOrderId,
+      payment.payerUserId,
+      payment.hackathonId,
+      undefined,
+    );
+    if (!mergedAnswers.length) {
       return;
     }
     try {
@@ -678,7 +1170,7 @@ export class HackathonCheckoutService {
         hackathonSlug: payment.hackathon.slug,
         userId: payment.payerUserId,
         razorpayOrderId,
-        answers,
+        answers: mergedAnswers,
         referralId: resolvedReferralId,
       });
     } catch (err) {
@@ -691,22 +1183,51 @@ export class HackathonCheckoutService {
   private async resolveMergedAnswersForVerify(
     razorpayOrderId: string,
     userId: string,
+    hackathonId: string,
     bodyAnswers?: Array<{ fieldId: string; value: string }>,
-  ): Promise<Array<{ fieldId: string; value: string }> | undefined> {
-    if (bodyAnswers?.length) {
-      return bodyAnswers;
-    }
+  ): Promise<Array<{ fieldId: string; value: string }>> {
+    const fromSubmission = await this.loadSubmissionAnswersForHackathonVerify(
+      hackathonId,
+      userId,
+    );
     const fromEscrow = await this.paymentEscrowService.loadAnswersForVerify(
       razorpayOrderId,
       userId,
     );
+    const base =
+      fromSubmission.length > 0 ? fromSubmission : (fromEscrow ?? []);
+
+    if (bodyAnswers?.length) {
+      const merged = new Map<string, string>();
+      for (const a of base) {
+        merged.set(a.fieldId, a.value);
+      }
+      for (const b of bodyAnswers) {
+        merged.set(b.fieldId, b.value);
+      }
+      const out = Array.from(merged.entries()).map(([fieldId, value]) => ({
+        fieldId,
+        value,
+      }));
+      this.logger.log(
+        `verifyPayment: merged registration answers for user ${userId} (${out.length} fields; body overlay on draft/escrow)`,
+      );
+      return out;
+    }
+
+    if (fromSubmission.length) {
+      this.logger.log(
+        `verifyPayment: using saved registration submission for user ${userId} (${fromSubmission.length} fields)`,
+      );
+      return fromSubmission;
+    }
     if (fromEscrow?.length) {
       this.logger.log(
         `verifyPayment: using server-escrowed registration answers for order ${razorpayOrderId} (${fromEscrow.length} fields)`,
       );
       return fromEscrow;
     }
-    return undefined;
+    return [];
   }
 
   async verifyPayment(params: {
@@ -741,6 +1262,7 @@ export class HackathonCheckoutService {
     const mergedAnswers = await this.resolveMergedAnswersForVerify(
       params.razorpayOrderId,
       params.userId,
+      payment.hackathonId,
       params.answers,
     );
 

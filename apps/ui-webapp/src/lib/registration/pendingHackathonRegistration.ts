@@ -11,6 +11,9 @@ export type PendingHackathonRegistrationPayload = {
   teamName?: string;
   maxSize?: number;
   invitationCode?: string;
+  /** PER_USER join flow: recover team after mobile redirect / tab kill */
+  joinTeamId?: string;
+  ticketTierId?: string;
   userId: string | undefined;
   ts: number;
 };
@@ -114,6 +117,8 @@ export function writePendingHackathonRegistration(
       teamName: payload.teamName,
       maxSize: payload.maxSize,
       invitationCode: payload.invitationCode,
+      joinTeamId: payload.joinTeamId,
+      ticketTierId: payload.ticketTierId,
       userId: payload.userId,
       ts: payload.ts ?? Date.now(),
     };

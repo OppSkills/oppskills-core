@@ -67,6 +67,7 @@ export function ParticipantRegistrationDetailsSheet({
       avatarUrl: participant.avatarUrl || undefined,
       answers: registrationAnswersData?.answers || [],
       registrationFields: registrationAnswersData?.fields || [],
+      payment: registrationAnswersData?.payment ?? null,
     };
   }, [participant, registrationAnswersData]);
 

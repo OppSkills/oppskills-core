@@ -5,6 +5,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { Dot } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ensureAbsoluteUrl } from "@/lib/utils";
+import { formatListingEntryFee } from "@/lib/formatListingEntryFee";
 
 // Expanded interface to match PublicHackathonListItem fields + UI needs
 export interface Competition {
@@ -22,6 +23,8 @@ export interface Competition {
   isFree?: boolean;
   entryFeeAmount?: number | null;
   currency?: string;
+  lowestTicketPrice?: number | null;
+  highestTicketPrice?: number | null;
   registrationDeadline?: string | null;
   locationType?: string | null; // e.g. "To format mode"
   eventType?: string; // "Hackathon" usually
@@ -58,11 +61,13 @@ function formatMode(locationType: string | null | undefined): string {
  * Format entry fee display.
  */
 function formatEntryFee(competition: Competition): string {
-  if (competition.isFree) return "Free";
-  if (competition.entryFeeAmount) {
-    return `${competition.currency || "INR"} ${competition.entryFeeAmount.toLocaleString()}`;
-  }
-  return "Free"; // Default to Free if unknown
+  return formatListingEntryFee({
+    isFree: competition.isFree,
+    currency: competition.currency,
+    entryFeeAmount: competition.entryFeeAmount,
+    lowestTicketPrice: competition.lowestTicketPrice,
+    highestTicketPrice: competition.highestTicketPrice,
+  });
 }
 
 function formatCount(num: number | undefined): string {

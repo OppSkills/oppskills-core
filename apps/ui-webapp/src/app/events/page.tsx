@@ -46,6 +46,8 @@ export default function EventsPage() {
     location: e.locationCity ?? e.locationAddress ?? undefined,
     isFree: e.isFree,
     entryFeeAmount: e.entryFeeAmount,
+    lowestTicketPrice: e.lowestTicketPrice,
+    highestTicketPrice: e.highestTicketPrice,
     currency: e.currency,
     registrationDeadline: e.registrationDeadline,
     registrationCount: e.registrationCount,

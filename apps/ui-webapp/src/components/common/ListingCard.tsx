@@ -1,5 +1,6 @@
 import React from "react";
 import { OpportunityCard } from "./OpportunityCard";
+import { formatListingEntryFee } from "@/lib/formatListingEntryFee";
 
 export interface ListingItem {
   id: string;
@@ -18,6 +19,8 @@ export interface ListingItem {
   isFree?: boolean;
   entryFeeAmount?: number | null;
   currency?: string;
+  lowestTicketPrice?: number | null;
+  highestTicketPrice?: number | null;
 
   registrationDeadline?: string | null;
   registrationCount?: number;
@@ -58,11 +61,13 @@ function formatMode(
 }
 
 function formatEntryFee(item: ListingItem): string {
-  if (item.isFree) return "Free";
-  if (item.entryFeeAmount) {
-    return `${item.currency === "INR" || !item.currency ? "₹" : item.currency} ${item.entryFeeAmount.toLocaleString()}`;
-  }
-  return "Free";
+  return formatListingEntryFee({
+    isFree: item.isFree,
+    currency: item.currency,
+    entryFeeAmount: item.entryFeeAmount,
+    lowestTicketPrice: item.lowestTicketPrice,
+    highestTicketPrice: item.highestTicketPrice,
+  });
 }
 
 export function ListingCard({ item }: ListingCardProps) {
