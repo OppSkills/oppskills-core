@@ -402,7 +402,6 @@ export function JoinTeamList({
       if (!isFree) {
         await saveHackathonRegistrationCheckoutDraft(token, hackathonSlug, {
           answers: formattedAnswers,
-          discountCode: discountCode.trim() || undefined,
           invitationCode: invitationCode?.toUpperCase(),
           joinTeamId: teamId,
         });
