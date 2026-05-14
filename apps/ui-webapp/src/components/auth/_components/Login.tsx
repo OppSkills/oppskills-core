@@ -8,6 +8,7 @@ import { ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { FloatingLabelInput } from "@/components/ui/derived/FloatingInput";
 import { getClerkErrorMessage } from "@/lib/utils";
+import { useQueryState } from "nuqs";
 
 export default function Login({
   setIsOpenLogin,
@@ -21,6 +22,8 @@ export default function Login({
   const [isLoading, setIsLoading] = useState(false);
   const [needsSecondFactor, setNeedsSecondFactor] = useState(false);
   const [secondFactorCode, setSecondFactorCode] = useState("");
+  const [secondFactorError, setSecondFactorError] = useState("");
+  const [, setAuthMode] = useQueryState("auth");
 
   const completeSignIn = async (sessionId: string | null | undefined) => {
     if (!sessionId) {
@@ -58,7 +61,7 @@ export default function Login({
         toast.error("Verification is not complete yet. Please try again.");
       }
     } catch (err: unknown) {
-      toast.error(getClerkErrorMessage(err, "Invalid verification code"));
+      setSecondFactorError(getClerkErrorMessage(err, "Invalid verification code"));
     } finally {
       setIsLoading(false);
     }
@@ -121,8 +124,16 @@ export default function Login({
               type="text"
               label="Verification Code"
               value={secondFactorCode}
-              onChange={(e) => setSecondFactorCode(e.target.value)}
+              onChange={(e) => {
+                setSecondFactorCode(e.target.value);
+                setSecondFactorError("");
+              }}
             />
+            {secondFactorError && (
+              <p className="text-red-500 text-sm font-medium mt-1">
+                {secondFactorError}
+              </p>
+            )}
           </div>
           <Button
             type="submit"
@@ -153,6 +164,15 @@ export default function Login({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setAuthMode("forgot-password")}
+                className="text-sm text-neutral-600 hover:text-primary-600 transition-colors"
+              >
+                Forgot password?
+              </button>
+            </div>
           </div>
           <Button
             type="submit"

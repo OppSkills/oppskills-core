@@ -27,10 +27,17 @@ export function getClerkErrorMessage(error: unknown, fallback: string): string {
   const first = errorsValue[0];
   if (!isRecord(first)) return fallback;
 
+  const longMessage = first["long_message"] || first["longMessage"];
   const message = first["message"];
-  return typeof message === "string" && message.trim().length > 0
-    ? message
-    : fallback;
+
+  const finalMessage =
+    typeof longMessage === "string" && longMessage.trim().length > 0
+      ? longMessage
+      : typeof message === "string" && message.trim().length > 0
+      ? message
+      : fallback;
+
+  return finalMessage;
 }
 
 export function getApiErrorMessage(
