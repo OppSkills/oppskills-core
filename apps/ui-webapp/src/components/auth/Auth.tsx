@@ -101,33 +101,32 @@ export default function Auth({ onClose }: { onClose: () => void }) {
                     </p>
                   </div>
                   {currentMode !== "forgot-password" && (
-                    <div className="flex items-center justify-center gap-2 py-1 mb-4 w-full">
-                      <div className="border-[0.5px] border-neutral-400 p-1 rounded-full flex gap-2 w-full">
-                        <Button
-                          variant={
-                            currentMode === "signup" ? "default" : "ghost"
-                          }
-                          className="rounded-full flex-1 font-normal"
-                          onClick={() => {
-                            setAuthMode("signup");
-                            setRegisterStep(1);
-                          }}
-                        >
-                          Sign Up
-                        </Button>
-                        <Button
-                          variant={
-                            currentMode === "login" ? "default" : "ghost"
-                          }
-                          className="rounded-full flex-1"
-                          onClick={() => setAuthMode("login")}
-                        >
-                          Sign In
-                        </Button>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center justify-center gap-2 py-1 mb-4 w-full">
+                        <div className="border-[0.5px] border-neutral-400 p-1 rounded-full flex gap-2 w-full">
+                          <Button
+                            variant={
+                              currentMode === "signup" ? "default" : "ghost"
+                            }
+                            className="rounded-full flex-1 font-normal"
+                            onClick={() => {
+                              setAuthMode("signup");
+                              setRegisterStep(1);
+                            }}
+                          >
+                            Sign Up
+                          </Button>
+                          <Button
+                            variant={
+                              currentMode === "login" ? "default" : "ghost"
+                            }
+                            className="rounded-full flex-1"
+                            onClick={() => setAuthMode("login")}
+                          >
+                            Sign In
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                    {currentMode !== "forgot-password" && (
                       <div className="flex flex-col gap-4">
                         <Button
                           onClick={handleGoogleLogin}
@@ -156,7 +155,8 @@ export default function Auth({ onClose }: { onClose: () => void }) {
                           </div>
                         </div>
                       </div>
-                    )}
+                    </div>
+                  )}
                   </>
                 )}
 

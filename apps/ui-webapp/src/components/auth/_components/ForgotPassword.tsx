@@ -20,6 +20,7 @@ export default function ForgotPassword({
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Email, 2: Code & New Password
 
@@ -52,8 +53,13 @@ export default function ForgotPassword({
     e.preventDefault();
     if (!isLoaded || !signIn) return;
 
-    if (!code || !password) {
-      toast.error("Please provide the code and your new password");
+    if (!code || !password || !confirmPassword) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setCodeError("Passwords do not match");
       return;
     }
 
@@ -100,6 +106,7 @@ export default function ForgotPassword({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="off"
             />
           </div>
           <Button
@@ -124,6 +131,7 @@ export default function ForgotPassword({
                 setCodeError("");
               }}
               required
+              autoComplete="one-time-code"
             />
             {codeError && (
               <p className="text-red-500 text-sm font-medium mt-1">
@@ -137,8 +145,26 @@ export default function ForgotPassword({
               type="password"
               label="New Password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setCodeError("");
+              }}
               required
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="grid gap-2">
+            <FloatingLabelInput
+              id="confirm_password"
+              type="password"
+              label="Confirm New Password"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setCodeError("");
+              }}
+              required
+              autoComplete="new-password"
             />
           </div>
           <Button

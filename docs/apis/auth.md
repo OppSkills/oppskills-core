@@ -83,6 +83,52 @@ If you need to test the API via **Postman** or **cURL**, you can extract a token
 
 ---
 
+## Password Reset Flow (Forgot Password)
+
+For users who have forgotten their password, OppSkills implements a custom two-step reset flow using Clerk's `signIn` methods.
+
+### 1. Requesting a Reset Code
+The first step is to initiate a sign-in attempt specifically for password reset. This sends a 6-digit verification code to the user's email.
+
+```typescript
+import { useSignIn } from "@clerk/nextjs";
+
+const { signIn } = useSignIn();
+
+const handleSendResetCode = async (email: string) => {
+  await signIn.create({
+    strategy: "reset_password_email_code",
+    identifier: email,
+  });
+  // Inform user that code has been sent
+};
+```
+
+### 2. Verifying Code and Setting New Password
+Once the user receives the code, they must provide it along with their new password to complete the reset and sign in.
+
+```typescript
+const handleResetPassword = async (code: string, newPassword: string) => {
+  const result = await signIn.attemptFirstFactor({
+    strategy: "reset_password_email_code",
+    code: code,
+    password: newPassword,
+  });
+
+  if (result.status === "complete") {
+    // User is now signed in with the new password
+    await setActive({ session: result.createdSessionId });
+  }
+};
+```
+
+**Implementation Notes:**
+- **Error Handling**: Use `getClerkErrorMessage(error)` to display meaningful feedback (e.g., "The verification code is incorrect").
+- **Security**: This flow automatically signs the user in upon successful reset.
+- **UX**: Always provide a way for the user to navigate back to the standard Sign In form.
+
+---
+
 ## Infrastructure
 
 ### Clerk Webhook (`POST /user-accounts/clerk-webhook`)
