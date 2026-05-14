@@ -30,10 +30,12 @@ import {
   createPaymentOrder,
   verifyPayment,
   submitRegistration,
+  saveHackathonRegistrationCheckoutDraft,
 } from "@/lib/api/paymentsApi";
 import { withRetry } from "@/lib/utils/retry";
 import { SITE_URL } from "@/lib/constants";
 import { writePendingHackathonRegistration } from "@/lib/registration/pendingHackathonRegistration";
+import { writeHackathonCheckoutIntent } from "@/lib/registration/hackathonCheckoutIntent";
 import { getMe } from "@/lib/api/usersApi";
 import {
   HackathonRegistrationModal,
@@ -392,6 +394,37 @@ export function JoinTeamList({
         );
       }
 
+      const formattedAnswers = answers.map((a) => ({
+        fieldId: a.fieldId,
+        value: String(a.value),
+      }));
+
+      if (!isFree) {
+        await saveHackathonRegistrationCheckoutDraft(token, hackathonSlug, {
+          answers: formattedAnswers,
+          invitationCode: invitationCode?.toUpperCase(),
+          joinTeamId: teamId,
+        });
+        writeHackathonCheckoutIntent(hackathonSlug, {
+          discountCode: discountCode.trim() || undefined,
+          invitationCode: invitationCode?.toUpperCase(),
+          joinTeamId: teamId,
+        });
+        writePendingHackathonRegistration(hackathonSlug, {
+          answers: formattedAnswers,
+          userId: user?.id,
+          invitationCode: invitationCode?.toUpperCase(),
+          joinTeamId: teamId,
+        });
+        toast.success("Continue to secure checkout.");
+        setShowRegistrationModal(false);
+        setIsSubmittingRegistration(false);
+        setJoiningTeamId(null);
+        setIsJoiningByCode(false);
+        router.push(`/hackathons/${hackathonSlug}/checkout`);
+        return;
+      }
+
       const order = await createPaymentOrder(token, hackathonSlug, {
         discountCode: discountCode.trim() || undefined,
         ...(invitationCode && {
@@ -505,6 +538,7 @@ export function JoinTeamList({
         answers: formattedAnswersForPending,
         userId: user?.id,
         invitationCode: invitationCode?.toUpperCase(),
+        joinTeamId: teamId,
       });
 
       // Close the registration modal BEFORE opening Razorpay.

@@ -11,6 +11,12 @@ export interface RegistrationModalProps {
   type?: "HACKATHON" | "EVENT";
   /** Paid/free team exists but registration answers were not saved; submit without payment */
   completionMode?: boolean;
+  /** Tier chosen on the opportunity detail page before opening the modal */
+  pageSelectedTicketTierId?: string | null;
+  /** When true, in-modal tier cards are hidden (selection already on the page) */
+  omitTicketTierSection?: boolean;
+  /** Saved answers from a previous checkout draft (paid events) */
+  prefillAnswers?: Array<{ fieldId: string; value: unknown }> | null;
 }
 
 export type RegistrationMode = "CREATE" | "JOIN";
@@ -45,6 +51,11 @@ export interface CreateTeamFormContentProps {
   type?: "HACKATHON" | "EVENT";
   /** Hide team name / fee / discount; show completion notice (hackathon only) */
   completionMode?: boolean;
+  ticketTiers?: any[];
+  ticketTierId?: string;
+  setTicketTierId?: (id: string) => void;
+  /** Hide tier list when tiers were chosen on the detail page */
+  omitTicketTierSection?: boolean;
 }
 
 export interface JoinTeamFormContentProps {

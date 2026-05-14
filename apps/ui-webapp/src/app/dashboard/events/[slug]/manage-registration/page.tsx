@@ -28,6 +28,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEventRegistrationsBySlug } from "@/hooks/useEventRegistrationsBySlug";
 import { getParticipantRegistrationAnswers, getBulkParticipantRegistrationAnswers, getEventBySlug, approveParticipant, bulkApproveParticipants, markParticipantAttendance } from "@/lib/api/eventApi";
+import { useEventTicketTiers } from "@/hooks/usePayments";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import SendParticipantEmailModal from "./_components/SendParticipantEmailModal";
@@ -95,6 +96,11 @@ interface Participant {
   isAttended: boolean;
   passEmailSentAt?: string;
   approvedAt?: string;
+  ticketTierId?: string | null;
+  ticketTierName?: string | null;
+  paymentAmount?: number | null;
+  paymentStatus?: string | null;
+  paymentCapturedAt?: string | null;
 }
 
 // --- Components ---
@@ -139,6 +145,7 @@ export default function ManageRegistrationPage() {
   const [activeTab, setActiveTab] = useState<
     "All" | "Completed" | "Incomplete" | "Pending" | "Approved"
   >("All");
+  const [tierFilter, setTierFilter] = useState<string>("All");
   const [emailRecipient, setEmailRecipient] = useState<Participant | null>(
     null
   );
@@ -155,6 +162,10 @@ export default function ManageRegistrationPage() {
 
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+
+  const { data: ticketTiers } = useEventTicketTiers(slug ?? "");
+  const hasMultipleTiers = !!(ticketTiers && ticketTiers.length > 1);
+
   const { data: eventDetails } = useQuery({
     queryKey: ["event-details", slug],
     queryFn: async () => {
@@ -184,6 +195,11 @@ export default function ManageRegistrationPage() {
       isAttended: reg.isAttended ?? false,
       passEmailSentAt: reg.passEmailSentAt,
       approvedAt: reg.approvedAt,
+      ticketTierId: reg.ticketTierId ?? null,
+      ticketTierName: reg.ticketTierName ?? null,
+      paymentAmount: reg.paymentAmount ?? null,
+      paymentStatus: reg.paymentStatus ?? null,
+      paymentCapturedAt: reg.paymentCapturedAt ?? null,
     }));
   }, [registrations]);
 
@@ -254,11 +270,16 @@ export default function ManageRegistrationPage() {
 
 
   const filteredData = useMemo(() => {
-    if (activeTab === "All") return data;
-    if (activeTab === "Pending") return data.filter((p) => !p.approved);
-    if (activeTab === "Approved") return data.filter((p) => p.approved);
-    return data.filter((participant) => participant.status === activeTab);
-  }, [data, activeTab]);
+    let result = data;
+    if (activeTab === "Pending") result = result.filter((p) => !p.approved);
+    else if (activeTab === "Approved") result = result.filter((p) => p.approved);
+    else if (activeTab !== "All") result = result.filter((p) => p.status === activeTab);
+
+    if (tierFilter !== "All") {
+      result = result.filter((p) => p.ticketTierId === tierFilter);
+    }
+    return result;
+  }, [data, activeTab, tierFilter]);
 
   const columns = useMemo<ColumnDef<Participant>[]>(
     () => [
@@ -346,6 +367,29 @@ export default function ManageRegistrationPage() {
           </div>
         ),
       },
+      ...(hasMultipleTiers ? [{
+        id: "ticketTier" as const,
+        accessorKey: "ticketTierName" as const,
+        header: () => (
+          <div className="flex items-center gap-1 justify-center">
+            Ticket Tier
+          </div>
+        ),
+        cell: ({ row }: any) => {
+          const tierName = row.original.ticketTierName;
+          return (
+            <div className="flex justify-center">
+              {tierName ? (
+                <Badge variant="outline" className="bg-primary-50 text-primary-700 border-primary-200 whitespace-nowrap text-xs font-semibold">
+                  {tierName}
+                </Badge>
+              ) : (
+                <span className="text-neutral-400 text-xs">—</span>
+              )}
+            </div>
+          );
+        },
+      }] as ColumnDef<Participant>[] : []),
       {
         accessorKey: "passEmailSent",
         header: "Pass Status",
@@ -446,7 +490,7 @@ export default function ManageRegistrationPage() {
         },
       },
     ],
-    [data.length, approvingId, markingAttendanceId, handleApprove, handleMarkAttendance, slug]
+    [data.length, approvingId, markingAttendanceId, handleApprove, handleMarkAttendance, slug, hasMultipleTiers]
   );
 
   const table = useReactTable({
@@ -673,8 +717,8 @@ export default function ManageRegistrationPage() {
 
         {/* Header Controls */}
         <div className="w-full max-w-5xl flex flex-col md:flex-row justify-between items-center gap-4">
-          {/* Filter Dropdown */}
-          <div className="flex items-center gap-2">
+          {/* Filter Dropdowns */}
+          <div className="flex items-center gap-2 flex-wrap">
             <Select
               value={activeTab}
               onValueChange={(value) =>
@@ -695,6 +739,25 @@ export default function ManageRegistrationPage() {
                 <SelectItem value="Approved" className="rounded-lg">Approved ({approvedCount})</SelectItem>
               </SelectContent>
             </Select>
+
+            {hasMultipleTiers && ticketTiers && (
+              <Select value={tierFilter} onValueChange={setTierFilter}>
+                <SelectTrigger className="w-[180px] h-10 rounded-full bg-primary-50 border-primary-100 text-foreground font-medium focus:ring-1 focus:ring-primary/20">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-primary-500" />
+                    <SelectValue placeholder="Filter by Tier" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border shadow-lg">
+                  <SelectItem value="All" className="rounded-lg">All Tiers</SelectItem>
+                  {ticketTiers.map((tier: any) => (
+                    <SelectItem key={tier.id} value={tier.id} className="rounded-lg">
+                      {tier.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Search & Actions */}

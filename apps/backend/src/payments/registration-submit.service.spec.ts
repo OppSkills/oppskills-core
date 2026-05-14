@@ -24,6 +24,7 @@ jest.mock('@oppskills/db', () => {
       },
       hackathonRegistrationSubmissionEntity: {
         findFirst: jest.fn(),
+        findUnique: jest.fn(),
         create: jest.fn(),
       },
       hackathonRegistrationAnswerEntity: {
@@ -238,10 +239,12 @@ describe('RegistrationSubmitService', () => {
         },
       } as any);
 
-      prismaMock.hackathonRegistrationSubmissionEntity.findFirst.mockResolvedValue(
+      prismaMock.hackathonRegistrationSubmissionEntity.findUnique.mockResolvedValue(
         {
           id: 'sub-1',
+          teamId: 'team-1',
           _count: { answers: 0 },
+          answers: [],
         } as any,
       );
 
@@ -277,10 +280,12 @@ describe('RegistrationSubmitService', () => {
         },
       } as any);
 
-      prismaMock.hackathonRegistrationSubmissionEntity.findFirst.mockResolvedValue(
+      prismaMock.hackathonRegistrationSubmissionEntity.findUnique.mockResolvedValue(
         {
           id: 'sub-1',
+          teamId: 'team-1',
           _count: { answers: 0 },
+          answers: [],
         } as any,
       );
 

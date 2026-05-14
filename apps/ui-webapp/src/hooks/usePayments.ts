@@ -223,3 +223,221 @@ export function useUpsertPayoutDetails(eventId?: string, hackathonId?: string) {
     },
   });
 }
+
+// =============================================================================
+// TICKET TIERS
+// =============================================================================
+
+import {
+  getHackathonTicketTiers,
+  createHackathonTicketTier,
+  updateHackathonTicketTier,
+  deleteHackathonTicketTier,
+  toggleHackathonTicketTierActive,
+  getEventTicketTiers,
+  createEventTicketTier,
+  updateEventTicketTier,
+  deleteEventTicketTier,
+  toggleEventTicketTierActive,
+  type CreateTicketTierParams,
+} from "@/lib/api/paymentsApi";
+
+/** ------------------------------------------------------------------
+ * HACKATHON TICKET TIERS
+ * ----------------------------------------------------------------- */
+
+export function useHackathonTicketTiers(hackathonSlug: string) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["ticket-tiers", "hackathon", hackathonSlug],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return getHackathonTicketTiers(token, hackathonSlug);
+    },
+    enabled: !!hackathonSlug,
+  });
+}
+
+export function useCreateHackathonTicketTier(hackathonSlug: string) {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: CreateTicketTierParams) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return createHackathonTicketTier(token, hackathonSlug, params);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-tiers", "hackathon", hackathonSlug],
+      });
+    },
+  });
+}
+
+export function useUpdateHackathonTicketTier(hackathonSlug: string) {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      tierId,
+      params,
+    }: {
+      tierId: string;
+      params: Partial<CreateTicketTierParams>;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return updateHackathonTicketTier(token, hackathonSlug, tierId, params);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-tiers", "hackathon", hackathonSlug],
+      });
+    },
+  });
+}
+
+export function useDeleteHackathonTicketTier(hackathonSlug: string) {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (tierId: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return deleteHackathonTicketTier(token, hackathonSlug, tierId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-tiers", "hackathon", hackathonSlug],
+      });
+    },
+  });
+}
+
+export function useToggleHackathonTicketTierActive(hackathonSlug: string) {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      tierId,
+      isActive,
+    }: {
+      tierId: string;
+      isActive: boolean;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return toggleHackathonTicketTierActive(
+        token,
+        hackathonSlug,
+        tierId,
+        isActive,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-tiers", "hackathon", hackathonSlug],
+      });
+    },
+  });
+}
+
+/** ------------------------------------------------------------------
+ * EVENT TICKET TIERS
+ * ----------------------------------------------------------------- */
+
+export function useEventTicketTiers(eventSlug: string) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["ticket-tiers", "event", eventSlug],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return getEventTicketTiers(token, eventSlug);
+    },
+    enabled: !!eventSlug,
+  });
+}
+
+export function useCreateEventTicketTier(eventSlug: string) {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: CreateTicketTierParams) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return createEventTicketTier(token, eventSlug, params);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-tiers", "event", eventSlug],
+      });
+    },
+  });
+}
+
+export function useUpdateEventTicketTier(eventSlug: string) {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      tierId,
+      params,
+    }: {
+      tierId: string;
+      params: Partial<CreateTicketTierParams>;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return updateEventTicketTier(token, eventSlug, tierId, params);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-tiers", "event", eventSlug],
+      });
+    },
+  });
+}
+
+export function useDeleteEventTicketTier(eventSlug: string) {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (tierId: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return deleteEventTicketTier(token, eventSlug, tierId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-tiers", "event", eventSlug],
+      });
+    },
+  });
+}
+
+export function useToggleEventTicketTierActive(eventSlug: string) {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      tierId,
+      isActive,
+    }: {
+      tierId: string;
+      isActive: boolean;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      return toggleEventTicketTierActive(token, eventSlug, tierId, isActive);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["ticket-tiers", "event", eventSlug],
+      });
+    },
+  });
+}
+

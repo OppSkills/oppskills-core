@@ -7,6 +7,7 @@ import {
 import {
   prisma,
   HackathonPaymentStatus,
+  HackathonPaymentOrderStatus,
   HackathonPaymentScope,
   HackathonChargeMode,
   LifecycleStatus,
@@ -337,6 +338,173 @@ export class RegistrationSubmitService {
     this.logger.log(
       `Appended ${mappedAnswers.length} registration answers to shell submission ${existingShell.id} for user ${userId} hackathon ${hackathonSlug}`,
     );
+  }
+
+  /**
+   * Loads hackathon and throws if registration is not currently open.
+   */
+  async assertHackathonRegistrationWindow(hackathonSlug: string) {
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug: hackathonSlug, isDeleted: false },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        isFree: true,
+        chargeMode: true,
+        status: true,
+        approvalStatus: true,
+        isRegistrationPaused: true,
+        registrationDeadline: true,
+        ownerId: true,
+        festivalId: true,
+        freeCollegeIds: true,
+        entryFeeAmount: true,
+      },
+    });
+    if (!hackathon) {
+      throw new NotFoundException('Hackathon not found');
+    }
+    this.validateRegistrationOpen(hackathon);
+    return hackathon;
+  }
+
+  /**
+   * Persist registration answers to live tables before Razorpay checkout (paid hackathons).
+   * Upserts the unique (hackathonId, userId) submission and replaces answer rows.
+   */
+  async upsertHackathonRegistrationCheckoutDraft(params: {
+    hackathonSlug: string;
+    userId: string;
+    answers: Array<{ fieldId: string; value: string }>;
+    leaderTeam: { id: string; leaderId: string; name: string };
+    teamMemberId: string | null;
+    isLeader: boolean;
+  }): Promise<void> {
+    const {
+      hackathonSlug,
+      userId,
+      answers,
+      leaderTeam,
+      teamMemberId,
+      isLeader,
+    } = params;
+
+    const hackathon = await prisma.hackathonEntity.findUnique({
+      where: { slug: hackathonSlug, isDeleted: false },
+      select: {
+        id: true,
+        registrationForm: {
+          select: {
+            externalFormLink: true,
+            fields: {
+              select: {
+                id: true,
+                label: true,
+                type: true,
+                required: true,
+                options: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!hackathon) {
+      throw new NotFoundException('Hackathon not found');
+    }
+
+    if (hackathon.registrationForm?.externalFormLink?.trim()) {
+      return;
+    }
+
+    const { mappedAnswers, userCategory } = await this.mapFieldIdsToDatabaseIds(
+      hackathon.id,
+      userId,
+      answers,
+    );
+
+    const updatedRegForm = await prisma.registrationFormEntity.findUnique({
+      where: { hackathonId: hackathon.id },
+      include: {
+        fields: {
+          select: {
+            id: true,
+            label: true,
+            type: true,
+            required: true,
+            options: true,
+          },
+        },
+      },
+    });
+
+    this.validateAnswers(
+      updatedRegForm?.fields || [],
+      mappedAnswers,
+      userCategory,
+    );
+
+    if (!mappedAnswers.length && (updatedRegForm?.fields?.length ?? 0) > 0) {
+      throw new BadRequestException('Registration answers are required');
+    }
+
+    await prisma.$transaction(async (tx) => {
+      let submission =
+        await tx.hackathonRegistrationSubmissionEntity.findUnique({
+          where: {
+            hackathonId_userId: {
+              hackathonId: hackathon.id,
+              userId,
+            },
+          },
+        });
+
+      if (!submission) {
+        submission = await tx.hackathonRegistrationSubmissionEntity.create({
+          data: {
+            hackathonId: hackathon.id,
+            userId,
+            teamId: leaderTeam.id,
+            teamMemberId,
+            isLeader,
+            submittedAt: new Date(),
+          },
+        });
+      } else {
+        await tx.hackathonRegistrationSubmissionEntity.update({
+          where: { id: submission.id },
+          data: {
+            teamId: leaderTeam.id,
+            teamMemberId,
+            isLeader,
+            submittedAt: new Date(),
+          },
+        });
+        await tx.hackathonRegistrationAnswerEntity.deleteMany({
+          where: { submissionId: submission.id },
+        });
+      }
+
+      if (mappedAnswers.length > 0) {
+        await tx.hackathonRegistrationAnswerEntity.createMany({
+          data: mappedAnswers.map((a) => ({
+            submissionId: submission.id,
+            fieldId: a.fieldId,
+            valueText:
+              typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
+            valueJson: a.value,
+          })),
+        });
+      }
+    });
+
+    const mobile = extractMobileFromRegistrationFieldAnswers(
+      mappedAnswers,
+      updatedRegForm?.fields ?? [],
+    );
+    await syncUserOnboardingMobileFromRegistration(userId, mobile);
   }
 
   private validateRegistrationOpen(hackathon: {
@@ -725,6 +893,60 @@ export class RegistrationSubmitService {
     return !!p;
   }
 
+  /**
+   * Ticket tier from the user's successful hackathon payment (for UX on detail page).
+   */
+  private async resolveHackathonPurchasedTicketTier(
+    hackathonId: string,
+    isFree: boolean,
+    chargeMode: HackathonChargeMode,
+    userId: string,
+    leaderTeamId: string | null,
+  ): Promise<{ ticketTierId: string | null; ticketTierName: string | null }> {
+    if (isFree) {
+      return { ticketTierId: null, ticketTierName: null };
+    }
+
+    if (chargeMode === HackathonChargeMode.PER_TEAM && leaderTeamId) {
+      const teamPay = await prisma.hackathonPaymentEntity.findFirst({
+        where: {
+          hackathonId,
+          teamId: leaderTeamId,
+          scope: HackathonPaymentScope.TEAM,
+          paymentStatus: { in: SUCCESSFUL_PAYMENT_STATUSES },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          ticketTierId: true,
+          ticketTier: { select: { name: true } },
+        },
+      });
+      if (teamPay) {
+        return {
+          ticketTierId: teamPay.ticketTierId ?? null,
+          ticketTierName: teamPay.ticketTier?.name ?? null,
+        };
+      }
+    }
+
+    const userPay = await prisma.hackathonPaymentEntity.findFirst({
+      where: {
+        hackathonId,
+        payerUserId: userId,
+        paymentStatus: { in: SUCCESSFUL_PAYMENT_STATUSES },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        ticketTierId: true,
+        ticketTier: { select: { name: true } },
+      },
+    });
+    return {
+      ticketTierId: userPay?.ticketTierId ?? null,
+      ticketTierName: userPay?.ticketTier?.name ?? null,
+    };
+  }
+
   async getRegistrationStatus(hackathonSlug: string, userId: string) {
     const hackathon = await prisma.hackathonEntity.findUnique({
       where: { slug: hackathonSlug, isDeleted: false },
@@ -769,6 +991,19 @@ export class RegistrationSubmitService {
         null,
       );
       const isPaidButIncomplete = !hackathon.isFree && paymentCompleted;
+      let ticketTierId: string | null = null;
+      let ticketTierName: string | null = null;
+      if (!hackathon.isFree && paymentCompleted) {
+        const tier = await this.resolveHackathonPurchasedTicketTier(
+          hackathon.id,
+          hackathon.isFree,
+          hackathon.chargeMode,
+          userId,
+          null,
+        );
+        ticketTierId = tier.ticketTierId;
+        ticketTierName = tier.ticketTierName;
+      }
       return {
         hasTeam: false,
         teamId: null,
@@ -783,19 +1018,28 @@ export class RegistrationSubmitService {
         /** Paid but no team yet — open modal to create team + form without charging again. */
         canCompleteRegistrationWithoutPayment: isPaidButIncomplete,
         isRegistrationIncomplete: true,
+        awaitingCheckout: false,
+        draftAnswers: null,
+        ticketTierId,
+        ticketTierName,
       };
     }
 
     const submissionRow =
-      await prisma.hackathonRegistrationSubmissionEntity.findFirst({
+      await prisma.hackathonRegistrationSubmissionEntity.findUnique({
         where: {
-          hackathonId: hackathon.id,
-          userId,
-          teamId: leaderTeam.id,
+          hackathonId_userId: {
+            hackathonId: hackathon.id,
+            userId,
+          },
         },
         select: {
           id: true,
+          teamId: true,
           _count: { select: { answers: true } },
+          answers: {
+            select: { fieldId: true, valueJson: true, valueText: true },
+          },
         },
       });
 
@@ -839,10 +1083,50 @@ export class RegistrationSubmitService {
       userId,
       leaderTeam.id,
     );
+
+    const pendingCheckoutPayment =
+      !hackathon.isFree && !paymentCompleted
+        ? await prisma.hackathonPaymentEntity.findFirst({
+            where: {
+              hackathonId: hackathon.id,
+              payerUserId: userId,
+              paymentStatus: HackathonPaymentStatus.CREATED,
+              orderStatus: HackathonPaymentOrderStatus.CREATED,
+            },
+            select: { id: true },
+          })
+        : null;
+    const awaitingCheckout = !!pendingCheckoutPayment;
+
+    let draftAnswers: Array<{ fieldId: string; value: unknown }> | null = null;
+    if (awaitingCheckout && submissionRow && submissionRow._count.answers > 0) {
+      draftAnswers = submissionRow.answers.map((a) => ({
+        fieldId: a.fieldId,
+        value:
+          a.valueJson !== null && a.valueJson !== undefined
+            ? a.valueJson
+            : (a.valueText ?? ''),
+      }));
+    }
+
     const isPaidButIncomplete =
       !hackathon.isFree && paymentCompleted && !hasSubmitted;
     const canCompleteRegistrationWithoutPayment =
       !hasSubmitted && (paymentCompleted || (hackathon.isFree && !!leaderTeam));
+
+    let ticketTierId: string | null = null;
+    let ticketTierName: string | null = null;
+    if (!hackathon.isFree && paymentCompleted) {
+      const tier = await this.resolveHackathonPurchasedTicketTier(
+        hackathon.id,
+        hackathon.isFree,
+        hackathon.chargeMode,
+        userId,
+        leaderTeam.id,
+      );
+      ticketTierId = tier.ticketTierId;
+      ticketTierName = tier.ticketTierName;
+    }
 
     return {
       hasTeam: true,
@@ -857,6 +1141,10 @@ export class RegistrationSubmitService {
       isPaidButIncomplete,
       canCompleteRegistrationWithoutPayment,
       isRegistrationIncomplete: !hasSubmitted,
+      awaitingCheckout,
+      draftAnswers,
+      ticketTierId,
+      ticketTierName,
     };
   }
 

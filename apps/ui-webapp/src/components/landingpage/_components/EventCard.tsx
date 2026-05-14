@@ -2,6 +2,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { formatCount } from "@/lib/tools";
 import type { EventListItem, PastOpportunityItem } from "@/hooks/useEvents";
 import { HackathonCard } from "./HackathonCard";
+import { formatListingEntryFee } from "@/lib/formatListingEntryFee";
 
 interface EventCardProps {
     event: EventListItem | PastOpportunityItem;
@@ -27,11 +28,13 @@ function formatMode(locationType: string | null): string {
 }
 
 function formatEntryFee(event: EventListItem | PastOpportunityItem): string {
-    if (event.isFree) return "Free";
-    if (event.entryFeeAmount) {
-        return `${event.currency === "INR" ? "₹" : event.currency} ${event.entryFeeAmount.toLocaleString()}`;
-    }
-    return "Free";
+    return formatListingEntryFee({
+        isFree: event.isFree,
+        currency: event.currency,
+        entryFeeAmount: event.entryFeeAmount,
+        lowestTicketPrice: (event as { lowestTicketPrice?: number | null }).lowestTicketPrice,
+        highestTicketPrice: (event as { highestTicketPrice?: number | null }).highestTicketPrice,
+    });
 }
 
 export function EventCard({ event, hideRegistrationInfo, organizationName }: EventCardProps) {

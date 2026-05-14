@@ -40,6 +40,8 @@ export interface PublicHackathonListItem {
   isFree: boolean;
   entryFeeAmount: number | null;
   currency: string;
+  lowestTicketPrice?: number | null;
+  highestTicketPrice?: number | null;
   prizeTotalWorthAmount: number | null;
   hackathonType: string;
   participantType: string;

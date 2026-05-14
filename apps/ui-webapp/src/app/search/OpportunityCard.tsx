@@ -4,6 +4,7 @@ import Link from 'next/link'
 import React from 'react'
 import { formatInTimeZone } from 'date-fns-tz'
 import { formatCount } from '@/lib/tools'
+import { formatListingEntryFee } from '@/lib/formatListingEntryFee'
 
 interface OpportunityCardProps {
     opportunity: {
@@ -20,6 +21,8 @@ interface OpportunityCardProps {
         entryFeeAmount?: number | null;
         isFree?: boolean;
         currency?: string;
+        lowestTicketPrice?: number | null;
+        highestTicketPrice?: number | null;
     }
 }
 
@@ -32,9 +35,13 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
         ? formatInTimeZone(new Date(opportunity.registrationDeadline), 'UTC', 'dd MMM yyyy')
         : 'N/A'
 
-    const feeDisplay = opportunity.isFree
-        ? 'Free'
-        : `Paid ${opportunity.currency === "INR" ? "₹" : opportunity.currency} ${Number(opportunity.entryFeeAmount ?? 0).toLocaleString()}`
+    const feeDisplay = formatListingEntryFee({
+        isFree: opportunity.isFree,
+        currency: opportunity.currency,
+        entryFeeAmount: opportunity.entryFeeAmount,
+        lowestTicketPrice: opportunity.lowestTicketPrice,
+        highestTicketPrice: opportunity.highestTicketPrice,
+    })
 
     return (
         <Link href={`${baseUrl}/${opportunity.slug}`} className="block">

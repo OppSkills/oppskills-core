@@ -1070,7 +1070,7 @@ export class UserAccountsService {
 
   private async getEventParticipations(userId: string) {
     const participations = await prisma.eventParticipantEntity.findMany({
-      where: { userId },
+      where: { userId, checkoutPending: false },
       include: {
         event: true,
         payment: true,
