@@ -2,12 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
-  Banknote,
-  IndianRupee,
   Pencil,
   Plus,
   CheckCircle,
@@ -45,8 +41,6 @@ interface PaymentManagementLayoutProps {
   setChargeMode?: (val: ChargeMode) => void;
   feeBearer: FeeBearer;
   setFeeBearer: (val: FeeBearer) => void;
-  entryFeeAmount?: string;
-  setEntryFeeAmount?: (val: string) => void;
   canEditPricing: boolean;
   earnings: any;
   payoutDetails: any;
@@ -78,8 +72,6 @@ export function PaymentManagementLayout({
   autoSaveStatus,
   lastSavedAt,
   upsertPayoutLoading,
-  entryFeeAmount,
-  setEntryFeeAmount,
 }: PaymentManagementLayoutProps) {
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<any>(null);
@@ -117,14 +109,11 @@ export function PaymentManagementLayout({
     }
   };
 
-  // Safe parsed fees — when tiers are set up, use the first tier's price for the example calculation
+  // Example fee breakdown uses ticket tier prices only (no separate base entry fee in this UI).
   let parsedEntryFee = 0;
   if (ticketTiers && ticketTiers.length > 0) {
     const firstTierPrice = parseFloat(String(ticketTiers[0].price));
     if (!isNaN(firstTierPrice)) parsedEntryFee = firstTierPrice;
-  } else if (entryFeeAmount) {
-    const v = parseFloat(entryFeeAmount);
-    if (!isNaN(v)) parsedEntryFee = v;
   }
   
   let feePercentage = 0.02; // 2%
@@ -189,38 +178,11 @@ export function PaymentManagementLayout({
         </div>
       </div>
 
-      {isPaid && !(ticketTiers && ticketTiers.length > 0) && (
-        <div className="w-full flex flex-col gap-2 p-4 sm:p-6 border border-primary-100 bg-primary-50/30 rounded-lg animate-in fade-in slide-in-from-top-4 duration-300">
-          <label className="text-neutral-900 text-lg font-bold poppins flex items-center gap-2">
-            Base Entry Fee (INR)
-            <span className="text-xs font-medium text-primary-600 bg-primary-100 px-2 py-0.5 rounded-full">Required</span>
-          </label>
-          <div className="relative max-w-sm">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-lg">₹</span>
-            <input
-              type="number"
-              value={entryFeeAmount || ""}
-              disabled={!canEditPricing}
-              onChange={(e) => setEntryFeeAmount && setEntryFeeAmount(e.target.value)}
-              className={cn(
-                "w-full pl-10 pr-4 py-3 bg-white border-2 border-neutral-200 rounded-xl focus:border-primary-500 focus:ring-0 transition-all text-xl font-bold text-neutral-900 poppins",
-                !canEditPricing && "bg-neutral-100 border-neutral-100 cursor-not-allowed text-neutral-400"
-              )}
-              placeholder="0.00"
-            />
-          </div>
-          <p className="text-sm text-neutral-500">This is the fallback price participants will see if no active ticket tiers are created.</p>
-          {!canEditPricing && (
-            <p className="text-sm text-amber-600 font-medium animate-in fade-in">
-              The entry fee cannot be modified after registration has started.
-            </p>
-          )}
-        </div>
-      )}
-
       {isPaid && (
         <>
-          <p className="text-base text-neutral-700">Set up opportunity fees for participants (if applicable). Add payment methods, types of ticket, payout methods from here.</p>
+          <p className="text-base text-neutral-700">
+            Participant prices are set per ticket type below. Configure who pays the service charge and your payout account here.
+          </p>
 
           {/* Multiple tickets Section */}
           <Container

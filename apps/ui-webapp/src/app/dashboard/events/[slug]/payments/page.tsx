@@ -69,7 +69,6 @@ export default function Page() {
   const [isPaid, setIsPaid] = useState<boolean>(false);
   const [feeBearer, setFeeBearer] = useState<FeeBearer>("ORGANISER");
   const [eventId, setEventId] = useState<string | null>(null);
-  const [entryFeeAmount, setEntryFeeAmount] = useState<string>("0");
   const [hasHydrated, setHasHydrated] = useState(false);
 
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
@@ -99,9 +98,8 @@ export default function Page() {
     () => ({
       isFree: !isPaid,
       feeBearer,
-      entryFeeAmount: isPaid ? entryFeeAmount : "0",
     }),
-    [isPaid, feeBearer, entryFeeAmount],
+    [isPaid, feeBearer],
   );
 
   const latestPricingRef = useRef<any>(currentPricing);
@@ -114,12 +112,10 @@ export default function Page() {
       setEventId(eventData.id);
       setIsPaid(!eventData.isFree);
       setFeeBearer((eventData.feeBearer as FeeBearer) || "ORGANISER");
-      setEntryFeeAmount(eventData.entryFeeAmount?.toString() || "0");
 
       const initialState = {
         isFree: eventData.isFree,
         feeBearer: (eventData.feeBearer as FeeBearer) || "ORGANISER",
-        entryFeeAmount: !eventData.isFree ? (eventData.entryFeeAmount?.toString() || "0") : "0",
       };
       lastSavedSnapshotRef.current = serializePricing(initialState);
       lastSavedAtRef.current = Date.now();
@@ -144,7 +140,6 @@ export default function Page() {
       {
         isFree: pricing.isFree,
         feeBearer: pricing.isFree ? undefined : pricing.feeBearer,
-        entryFeeAmount: pricing.isFree ? "0" : pricing.entryFeeAmount,
       },
       {
         onSuccess: () => {
@@ -241,8 +236,6 @@ export default function Page() {
         setIsPaid={setIsPaid}
         feeBearer={feeBearer}
         setFeeBearer={setFeeBearer}
-        entryFeeAmount={entryFeeAmount}
-        setEntryFeeAmount={setEntryFeeAmount}
         canEditPricing={canEditPricing}
         earnings={earnings}
         payoutDetails={payoutDetails}
