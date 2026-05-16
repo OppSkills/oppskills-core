@@ -25,7 +25,7 @@ if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
 
   # Prisma will read DATABASE_URL from /app/packages/database/.env (written by secrets loader).
   # We explicitly set the schema path for safety.
-  pnpm exec prisma migrate deploy --schema packages/database/prisma/schema.prisma
+  pnpm exec prisma migrate deploy --schema packages/database/prisma
 else
   echo "[entrypoint] Skipping migrations (RUN_MIGRATIONS=false)"
 fi

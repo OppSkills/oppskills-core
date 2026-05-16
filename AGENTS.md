@@ -93,8 +93,8 @@ Debug a single test:
 
 Notes:
 
-- PostgreSQL schema is `oppskills` (not `public`).
-- After editing `packages/database/prisma/schema.prisma`, run `pnpm db:generate`.
+- PostgreSQL uses multi-schema layout: `admin`, `user`, `common`, `events`, `hackathon`, `payments`, `email_notifications`. Prisma files live in `packages/database/prisma/schemas/`.
+- Prisma schema is multi-file under `packages/database/prisma/` (`schema.prisma` + `schemas/*.prisma`). After edits, run `pnpm db:generate`.
 
 ## Code Style (repo-wide)
 

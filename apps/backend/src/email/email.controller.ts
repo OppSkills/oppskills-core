@@ -232,15 +232,15 @@ export class EmailController {
         u.email,
         u."firstName",
         u."lastName"
-      FROM oppskills.event_participant p
-      INNER JOIN oppskills."user" u ON u.id = p.user_id
-      INNER JOIN oppskills.event_payment pay
+      FROM events.event_participant p
+      INNER JOIN "user"."user" u ON u.id = p.user_id
+      INNER JOIN payments.event_payment pay
         ON pay.event_id = p.event_id
         AND pay.payer_user_id = p.user_id
         AND pay.payment_status = 'CAPTURED'
       WHERE p.event_id = ${eventId}
       AND NOT EXISTS (
-        SELECT 1 FROM oppskills.event_registration_submission sub
+        SELECT 1 FROM events.event_registration_submission sub
         WHERE sub.event_id = p.event_id AND sub.user_id = p.user_id
       )
     `;

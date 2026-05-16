@@ -498,7 +498,7 @@ docker run --rm \
   -e AWS_SECRETS_ID="${AWS_SECRETS_ID}" \
   --entrypoint sh \
   "${ECR_IMAGE}" \
-  -lc "node scripts/load-secrets.mjs && pnpm exec prisma migrate deploy --schema packages/database/prisma/schema.prisma"
+  -lc "node scripts/load-secrets.mjs && pnpm exec prisma migrate deploy --schema packages/database/prisma"
 ```
 
 **Concurrency:** `run-migrations-ec2` group (no cancellation)
@@ -757,7 +757,7 @@ docker run --rm \
   -e AWS_SECRETS_ID=oppskills-env \
   --entrypoint sh \
   443512646680.dkr.ecr.us-east-1.amazonaws.com/oppskills-core:latest \
-  -lc "node scripts/load-secrets.mjs && pnpm exec prisma migrate deploy --schema packages/database/prisma/schema.prisma"
+  -lc "node scripts/load-secrets.mjs && pnpm exec prisma migrate deploy --schema packages/database/prisma"
 ```
 
 ### Migration Files
@@ -1103,7 +1103,7 @@ Error: P3009 migrate found failed migrations in the target database
 ```bash
 pnpm -C packages/database exec prisma migrate resolve \
   --rolled-back "20251106112805_oppskills" \
-  --schema packages/database/prisma/schema.prisma
+  --schema packages/database/prisma
 ```
 
 **Option 2: Migration partially applied (fix manually)**
@@ -1112,7 +1112,7 @@ pnpm -C packages/database exec prisma migrate resolve \
    ```bash
    pnpm -C packages/database exec prisma migrate resolve \
      --applied "20251106112805_oppskills" \
-     --schema packages/database/prisma/schema.prisma
+     --schema packages/database/prisma
    ```
 
 **After resolution:**

@@ -130,7 +130,7 @@ jobs:
             -e AWS_SECRETS_ID="${AWS_SECRETS_ID}" \
             --entrypoint sh \
             "${ECR_IMAGE}" \
-            -lc "node scripts/load-secrets.mjs && pnpm exec prisma migrate deploy --schema packages/database/prisma/schema.prisma"
+            -lc "node scripts/load-secrets.mjs && pnpm exec prisma migrate deploy --schema packages/database/prisma"
           REMOTE
 
 

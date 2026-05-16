@@ -1,0 +1,416 @@
+// PostgreSQL schema: hackathon
+// Hackathons, teams, rounds, and registrations
+
+model HackathonUserRoleEntity {
+  id          String            @id @default(cuid())
+  hackathonId String            @map("hackathon_id")
+  userId      String            @map("user_id")
+  role        HackathonUserRole
+  createdAt   DateTime          @default(now()) @map("created_at")
+  createdById String?           @map("created_by_id")
+  createdBy   UserEntity?       @relation("HackathonRoleCreator", fields: [createdById], references: [id])
+  hackathon   HackathonEntity   @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  user        UserEntity        @relation("UserHackathonRoles", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([hackathonId, userId, role])
+  @@index([hackathonId])
+  @@index([userId])
+  @@map("hackathon_user_role")
+  @@schema("hackathon")
+}
+
+model HackathonEntity {
+  id                       String                                  @id @default(cuid())
+  name                     String                                  @map("title")
+  description              String?
+  startDate                DateTime
+  endDate                  DateTime
+  mode                     HackathonMode
+  createdAt                DateTime                                @default(now())
+  updatedAt                DateTime                                @updatedAt
+  slug                     String                                  @unique
+  festivalId               String?                                 @map("festival_id")
+  bannerImageUrl           String?
+  visibility               Visibility                              @default(PUBLIC)
+  hackathonType            HackathonType                           @default(CODING_HACKATHON)
+  participantType          ParticipantType                         @default(INDIVIDUAL)
+  locationType             LocationType?                           @map("location_type")
+  locationAddress          String?                                 @map("location_address")
+  locationCity             String?                                 @map("location_city")
+  locationVirtualLink      String?                                 @map("location_virtual_link")
+  registrationDeadline     DateTime?                               @map("registration_deadline")
+  externalRegistrationLink String?                                 @map("external_registration_link")
+  isFree                   Boolean                                 @default(true) @map("is_free")
+  entryFeeAmount           Decimal?                                @map("entry_fee_amount") @db.Decimal(12, 2)
+  currency                 String                                  @default("INR")
+  prizeTotalWorthAmount    Decimal?                                @map("prize_total_worth_amount") @db.Decimal(12, 2)
+  prizeDescription         Json?                                   @map("prize_description")
+  prizeCertificate         Boolean                                 @default(false) @map("prize_certificate")
+  organizationName         String?                                 @map("organization_name")
+  organizationLogoUrl      String?                                 @map("organization_logo_url")
+  allowedUniversities      String[]                                @default([]) @map("allowed_universities")
+  attendeeEligibility      HackathonAttendeeEligibility[]          @default([]) @map("attendee_eligibility")
+  maxTeams                 Int?                                    @map("max_teams")
+  contactName              String?                                 @map("contact_name")
+  contactEmail             String?                                 @map("contact_email")
+  contactPhone             String?                                 @map("contact_phone")
+  impressions              BigInt                                  @default(0)
+  registrationCount        Int                                     @default(0) @map("registration_count")
+  status                   LifecycleStatus                         @default(DRAFT)
+  ownerId                  String
+  approvalApprovedAt       DateTime?                               @map("approval_approved_at")
+  approvalNote             String?                                 @map("approval_note")
+  approvalRejectedAt       DateTime?                               @map("approval_rejected_at")
+  approvalStatus           ApprovalStatus                          @default(PENDING) @map("approval_status")
+  approvalSubmittedAt      DateTime?                               @map("approval_submitted_at")
+  isRegistrationPaused     Boolean                                 @default(false) @map("is_registration_paused")
+  chargeMode               HackathonChargeMode                     @default(PER_TEAM) @map("charge_mode")
+  freeCollegeIds           String[]                                @default([]) @map("free_college_ids")
+  views                    BigInt                                  @default(0)
+  deletedAt                DateTime?                               @map("deleted_at")
+  isDeleted                Boolean                                 @default(false) @map("is_deleted")
+  feeBearer                FeeBearer                               @default(ORGANISER) @map("fee_bearer")
+  festival                 FestivalEntity?                         @relation(fields: [festivalId], references: [id])
+  owner                    UserEntity                              @relation("UserHackathons", fields: [ownerId], references: [id])
+  attachments              HackathonAttachmentEntity[]
+  discountCodes            HackathonDiscountCodeEntity[]
+  payments                 HackathonPaymentEntity[]
+  payouts                  HackathonPayoutEntity[]
+  registrationSubmissions  HackathonRegistrationSubmissionEntity[]
+  userRoles                HackathonUserRoleEntity[]
+  prizeBreakdown           PrizeBreakdownEntity[]
+  registrationForm         RegistrationFormEntity?
+  rounds                   RoundEntity[]
+  teams                    TeamEntity[]
+  payoutDetails            OrganizerPayoutDetailsEntity?
+  notifications            notifications[]
+  ticketTiers              TicketTierEntity[]
+
+  @@index([festivalId])
+  @@map("hackathon")
+  @@schema("hackathon")
+}
+
+model RoundEntity {
+  id               String                               @id @default(cuid())
+  hackathonId      String                               @map("hackathon_id")
+  name             String
+  description      String?
+  startsAt         DateTime                             @map("starts_at")
+  endsAt           DateTime                             @map("ends_at")
+  order            Int
+  status           RoundStatus                          @default(UPCOMING)
+  roundType        HackathonRoundType                   @map("round_type")
+  submissionConfig Json?                                @map("submission_config")
+  createdAt        DateTime                             @default(now())
+  updatedAt        DateTime                             @updatedAt
+  teamSubmissions  HackathonTeamRoundSubmissionEntity[]
+  hackathon        HackathonEntity                      @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  qualifications   TeamRoundQualificationEntity[]
+
+  @@unique([hackathonId, order])
+  @@index([hackathonId])
+  @@map("round")
+  @@schema("hackathon")
+}
+
+model RegistrationFormEntity {
+  id               String                    @id @default(cuid())
+  externalFormLink String?                   @map("external_form_link")
+  hackathonId      String?                   @unique @map("hackathon_id")
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  fields           RegistrationFieldEntity[]
+  hackathon        HackathonEntity?          @relation(fields: [hackathonId], references: [id])
+
+  @@map("registration_form")
+  @@schema("hackathon")
+}
+
+model RegistrationFieldEntity {
+  id                 String                              @id @default(cuid())
+  registrationFormId String                              @map("registration_form_id")
+  label              String
+  type               RegistrationFieldType
+  required           Boolean                             @default(false)
+  order              Int
+  options            String[]                            @default([])
+  placeholder        String?
+  createdAt          DateTime                            @default(now())
+  updatedAt          DateTime                            @updatedAt
+  hackathonAnswers   HackathonRegistrationAnswerEntity[]
+  registrationForm   RegistrationFormEntity              @relation(fields: [registrationFormId], references: [id])
+
+  @@unique([registrationFormId, order])
+  @@index([registrationFormId])
+  @@map("registration_field")
+  @@schema("hackathon")
+}
+
+model PrizeBreakdownEntity {
+  id          String          @id @default(cuid())
+  hackathonId String          @map("hackathon_id")
+  position    String
+  amount      Decimal         @db.Decimal(12, 2)
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  hackathon   HackathonEntity @relation(fields: [hackathonId], references: [id])
+
+  @@index([hackathonId])
+  @@map("prize_breakdown")
+  @@schema("hackathon")
+}
+
+/// Attachments for hackathon (S3-ready: stores storageKey + optional publicUrl).
+model HackathonAttachmentEntity {
+  id          String          @id @default(cuid())
+  hackathonId String          @map("hackathon_id")
+  /// Storage key for S3 or other storage provider
+  storageKey  String          @map("storage_key")
+  /// Optional public URL (for direct access or CDN)
+  publicUrl   String?         @map("public_url")
+  /// Original file name
+  fileName    String?         @map("file_name")
+  /// MIME type of the file
+  mimeType    String?         @map("mime_type")
+  /// File size in bytes
+  sizeBytes   Int?            @map("size_bytes")
+  createdAt   DateTime        @default(now())
+  hackathon   HackathonEntity @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  @@index([hackathonId])
+  @@map("hackathon_attachment")
+  @@schema("hackathon")
+}
+
+enum HackathonMode {
+  ONLINE
+  OFFLINE
+  HYBRID
+
+  @@map("HackathonMode")
+  @@schema("hackathon")
+}
+
+enum HackathonType {
+  CODING_HACKATHON
+  IDEA_HACKATHON
+  CASE_STUDY_COMPETITION
+  DESIGN_HACKATHON
+  OPEN_HACKATHON
+
+  @@map("HackathonType")
+  @@schema("hackathon")
+}
+
+enum ParticipantType {
+  INDIVIDUAL
+  TEAM_OF_2
+  TEAM_OF_3
+  TEAM_OF_4
+  TEAM_OF_5
+  TEAM_OF_6
+  MORE_THAN_6
+  TEAM_OF_2_3
+  TEAM_OF_2_4
+  TEAM_OF_3_4
+  TEAM_OF_3_5
+  TEAM_OF_4_5
+  TEAM_OF_4_6
+  TEAM_OF_5_6
+
+  @@map("ParticipantType")
+  @@schema("hackathon")
+}
+
+enum RoundStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+
+  @@map("RoundStatus")
+  @@schema("hackathon")
+}
+
+/// Who can attend the hackathon (multi-select).
+enum HackathonAttendeeEligibility {
+  EVERYONE_CAN_APPLY
+  SCHOOL_STUDENTS
+  COLLEGE_STUDENTS
+  FRESHERS
+  PROFESSIONALS
+
+  @@map("HackathonAttendeeEligibility")
+  @@schema("hackathon")
+}
+
+/// Type of hackathon round (determines submission requirements).
+enum HackathonRoundType {
+  ONLINE
+  OFFLINE
+  PRESENTATION
+
+  @@map("HackathonRoundType")
+  @@schema("hackathon")
+}
+
+/// Per-hackathon user roles (assigned by owner/admin).
+enum HackathonUserRole {
+  MANAGER
+  EVALUATOR
+
+  @@map("HackathonUserRole")
+  @@schema("hackathon")
+}
+
+/// Charge mode for paid hackathons.
+enum HackathonChargeMode {
+  PER_TEAM
+  PER_USER
+
+  @@map("HackathonChargeMode")
+  @@schema("hackathon")
+}
+
+model TeamEntity {
+  id                      String                                  @id @default(cuid())
+  name                    String
+  createdAt               DateTime                                @default(now())
+  updatedAt               DateTime                                @updatedAt
+  maxSize                 Int
+  hackathonId             String
+  leaderId                String
+  creatorId               String                                  @map("creator_id")
+  /// Unique invitation code for joining this team (generated on create)
+  invitationCode          String?                                 @unique @map("invitation_code")
+  /// Whether the team is open for new members to browse and join
+  isOpen                  Boolean                                 @default(true) @map("is_open")
+  /// When set, the PER_TEAM leader registration was attributed to this referral (leader has no TeamMemberEntity row).
+  referralId              String?                                 @map("referral_id")
+  payments                HackathonPaymentEntity[]
+  registrationSubmissions HackathonRegistrationSubmissionEntity[]
+  roundSubmissions        HackathonTeamRoundSubmissionEntity[]
+  creator                 UserEntity                              @relation("TeamCreator", fields: [creatorId], references: [id])
+  hackathon               HackathonEntity                         @relation(fields: [hackathonId], references: [id])
+  leader                  UserEntity                              @relation("UserTeams", fields: [leaderId], references: [id])
+  referral                ReferralEntity?                         @relation(fields: [referralId], references: [id])
+  members                 TeamMemberEntity[]
+  roundQualifications     TeamRoundQualificationEntity[]
+
+  @@index([referralId])
+  @@map("team")
+  @@schema("hackathon")
+}
+
+model TeamMemberEntity {
+  id                     String                                 @id @default(cuid())
+  joinedAt               DateTime                               @default(now())
+  userId                 String
+  teamId                 String
+  referralId             String?                                @map("referral_id")
+  scanned_at             DateTime?
+  registrationSubmission HackathonRegistrationSubmissionEntity?
+  referral               ReferralEntity?                        @relation(fields: [referralId], references: [id])
+  team                   TeamEntity                             @relation(fields: [teamId], references: [id])
+  user                   UserEntity                             @relation(fields: [userId], references: [id])
+
+  @@unique([userId, teamId])
+  @@index([referralId])
+  @@map("team_member")
+  @@schema("hackathon")
+}
+
+model HackathonRegistrationSubmissionEntity {
+  id           String                              @id @default(cuid())
+  hackathonId  String                              @map("hackathon_id")
+  userId       String                              @map("user_id")
+  teamId       String                              @map("team_id")
+  /// Optional link to team member (null for team leader who is not in members table)
+  teamMemberId String?                             @unique @map("team_member_id")
+  /// Whether this user is the team leader
+  isLeader     Boolean                             @default(false) @map("is_leader")
+  submittedAt  DateTime                            @default(now()) @map("submitted_at")
+  createdAt    DateTime                            @default(now())
+  updatedAt    DateTime                            @updatedAt
+  answers      HackathonRegistrationAnswerEntity[]
+  hackathon    HackathonEntity                     @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  team         TeamEntity                          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamMember   TeamMemberEntity?                   @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+  user         UserEntity                          @relation("UserHackathonSubmissions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([hackathonId, userId])
+  @@index([hackathonId])
+  @@index([userId])
+  @@index([teamId])
+  @@map("hackathon_registration_submission")
+  @@schema("hackathon")
+}
+
+/// Individual answer to a hackathon registration field.
+
+model HackathonRegistrationAnswerEntity {
+  id           String                                @id @default(cuid())
+  submissionId String                                @map("submission_id")
+  fieldId      String                                @map("field_id")
+  valueText    String?                               @map("value_text")
+  valueJson    Json?                                 @map("value_json")
+  createdAt    DateTime                              @default(now())
+  updatedAt    DateTime                              @updatedAt
+  field        RegistrationFieldEntity               @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  submission   HackathonRegistrationSubmissionEntity @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, fieldId])
+  @@index([submissionId])
+  @@index([fieldId])
+  @@map("hackathon_registration_answer")
+  @@schema("hackathon")
+}
+
+/// Submission for a team in a hackathon round.
+/// Stores the full submission payload (synopsis, presentation links, etc.).
+
+model HackathonTeamRoundSubmissionEntity {
+  id          String      @id @default(cuid())
+  teamId      String      @map("team_id")
+  roundId     String      @map("round_id")
+  /// Full submission payload (flexible JSON for synopsis text, links, file URLs, etc.)
+  payload     Json        @default("{}")
+  /// When the submission was made (null = not yet submitted)
+  submittedAt DateTime?   @map("submitted_at")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  round       RoundEntity @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  team        TeamEntity  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, roundId])
+  @@index([teamId])
+  @@index([roundId])
+  @@map("hackathon_team_round_submission")
+  @@schema("hackathon")
+}
+
+/// Tracks team qualification/advancement status per round.
+/// Organizers mark teams as qualified to advance to the next round.
+
+model TeamRoundQualificationEntity {
+  id          String      @id @default(cuid())
+  teamId      String      @map("team_id")
+  roundId     String      @map("round_id")
+  /// Whether the team is qualified/advanced for this round
+  qualified   Boolean     @default(false)
+  /// When the qualification status was set
+  qualifiedAt DateTime?   @map("qualified_at")
+  /// User ID of the organizer who set the status
+  qualifiedBy String?     @map("qualified_by")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  round       RoundEntity @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  team        TeamEntity  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, roundId])
+  @@index([teamId])
+  @@index([roundId])
+  @@map("team_round_qualification")
+  @@schema("hackathon")
+}

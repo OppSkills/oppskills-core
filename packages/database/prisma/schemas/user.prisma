@@ -1,0 +1,176 @@
+// PostgreSQL schema: user
+// Users, profiles, onboarding, and access levels
+
+enum AccessLevel {
+  ADMIN
+  USER
+  VIEWER
+
+  @@map("AccessLevel")
+  @@schema("user")
+}
+
+model UserEntity {
+  id                               String                                  @id @default(cuid())
+  email                            String                                  @unique
+  imageUrl                         String?
+  firstName                        String?
+  lastName                         String?
+  accessLevel                      AccessLevel                             @default(USER) @map("access_level")
+  createdAt                        DateTime                                @default(now())
+  updatedAt                        DateTime                                @updatedAt
+  onboarded                        Boolean                                 @default(false)
+  events                           EventEntity[]                           @relation("UserEvents")
+  eventDiscountRedemptions         EventDiscountRedemptionEntity[]         @relation("UserEventDiscountRedemptions")
+  eventParticipantApprovals        EventParticipantEntity[]                @relation("EventParticipantApprover")
+  eventParticipations              EventParticipantEntity[]
+  scannedEventPasses               EventPassEntity[]                       @relation("ScannedEventPasses")
+  eventPasses                      EventPassEntity[]                       @relation("UserEventPasses")
+  eventPaymentsAsOrganizer         EventPaymentEntity[]                    @relation("EventPaymentOrganizer")
+  eventPaymentsAsPayer             EventPaymentEntity[]                    @relation("EventPaymentPayer")
+  eventPayoutsReceived             EventPayoutEntity[]                     @relation("UserEventPayoutsReceived")
+  eventRegistrationSubmissions     EventRegistrationSubmissionEntity[]     @relation("UserEventSubmissions")
+  eventRolesCreated                EventUserRoleEntity[]                   @relation("EventRoleCreator")
+  eventRoles                       EventUserRoleEntity[]                   @relation("UserEventRoles")
+  featureWaitlist                  FeatureWaitlistEntity[]                 @relation("UserFeatureWaitlist")
+  festivals                        FestivalEntity[]                        @relation("UserFestivals")
+  hackathons                       HackathonEntity[]                       @relation("UserHackathons")
+  discountRedemptions              HackathonDiscountRedemptionEntity[]     @relation("UserDiscountRedemptions")
+  paymentsAsOrganizer              HackathonPaymentEntity[]                @relation("HackathonPaymentOrganizer")
+  paymentsAsPayer                  HackathonPaymentEntity[]                @relation("HackathonPaymentPayer")
+  payoutsReceived                  HackathonPayoutEntity[]                 @relation("UserPayoutsReceived")
+  hackathonRegistrationSubmissions HackathonRegistrationSubmissionEntity[] @relation("UserHackathonSubmissions")
+  hackathonRolesCreated            HackathonUserRoleEntity[]               @relation("HackathonRoleCreator")
+  hackathonRoles                   HackathonUserRoleEntity[]               @relation("UserHackathonRoles")
+  payoutDetails                    OrganizerPayoutDetailsEntity[]          @relation("UserPayoutDetails")
+  paymentRegistrationEscrows       PaymentRegistrationEscrowEntity[]
+  razorpayRouteAccount             RazorpayRouteAccountEntity?             @relation("UserRazorpayRouteAccount")
+  approvedReferrals                ReferralEntity[]                        @relation("ReferralApprover")
+  referralsCreated                 ReferralEntity[]                        @relation("ReferralCreator")
+  referralsAssigned                ReferralEntity[]                        @relation("ReferralReferrer")
+  teamsCreated                     TeamEntity[]                            @relation("TeamCreator")
+  teamsLed                         TeamEntity[]                            @relation("UserTeams")
+  teamMembers                      TeamMemberEntity[]
+  onboardingProfile                UserOnboardingProfileEntity?
+  notifications                    notifications[]                         @relation("UserNotifications")
+
+  @@map("user")
+  @@schema("user")
+}
+
+/// College entity for storing colleges in the system.
+model CollegeEntity {
+  id                 String                        @id
+  name               String
+  country            String
+  state              String
+  city               String
+  address            String
+  website            String?
+  logo               String?
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
+  onboardingProfiles UserOnboardingProfileEntity[]
+
+  @@index([name])
+  @@index([city])
+  @@index([state])
+  @@map("college")
+  @@schema("user")
+}
+
+/// User onboarding profile entity (1:1 with UserEntity).
+model UserOnboardingProfileEntity {
+  id                   String           @id @default(cuid())
+  userId               String           @unique @map("user_id")
+  gender               Gender?
+  userCategory         UserCategory     @default(COLLEGE_STUDENT) @map("user_category")
+  schoolName           String?          @map("school_name")
+  schoolClass          String?          @map("school_class")
+  schoolAddress        String?          @map("school_address")
+  collegeId            String?          @map("college_id")
+  collegeCurrentYear   String?          @map("college_current_year")
+  collegePassoutYear   Int?             @map("college_passout_year")
+  collegeSkipped       Boolean          @default(false) @map("college_skipped")
+  companyName          String?          @map("company_name")
+  jobTitle             String?          @map("job_title")
+  locationCity         String?          @map("location_city")
+  locationState        String?          @map("location_state")
+  locationCountry      String?          @map("location_country")
+  interests            String[]         @default([])
+  skills               String[]         @default([])
+  experienceLevel      ExperienceLevel? @map("experience_level")
+  teamPreference       TeamPreference?  @map("team_preference")
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  cgpa                 String?
+  course               String?
+  courseSpecialization String?          @map("course_specialization")
+  rollNumber           String?          @map("roll_number")
+  mobileNumber         String?          @map("mobile_number")
+  college              CollegeEntity?   @relation(fields: [collegeId], references: [id])
+  user                 UserEntity       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_onboarding_profile")
+  @@schema("user")
+}
+
+/// Waitlist for upcoming features - users can sign up to be notified when features launch.
+model FeatureWaitlistEntity {
+  id        String     @id @default(cuid())
+  userId    String     @map("user_id")
+  feature   String
+  createdAt DateTime   @default(now()) @map("created_at")
+  user      UserEntity @relation("UserFeatureWaitlist", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, feature])
+  @@index([userId])
+  @@index([feature])
+  @@map("feature_waitlist")
+  @@schema("user")
+}
+
+/// Gender values for onboarding profile.
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+
+  @@map("Gender")
+  @@schema("user")
+}
+
+/// User category for onboarding profile.
+enum UserCategory {
+  SCHOOL_STUDENT
+  COLLEGE_STUDENT
+  WORKING_PROFESSIONAL
+  FRESHER
+  PROFESSIONAL_SCHOOL_STUDENT
+
+  @@map("UserCategory")
+  @@schema("user")
+}
+
+/// Experience level for onboarding profile.
+enum ExperienceLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+
+  @@map("ExperienceLevel")
+  @@schema("user")
+}
+
+/// Team preference for onboarding profile.
+enum TeamPreference {
+  LOOKING_FOR_TEAM
+  HAVE_TEAM
+  OPEN_TO_EITHER
+  PREFER_SOLO
+
+  @@map("TeamPreference")
+  @@schema("user")
+}

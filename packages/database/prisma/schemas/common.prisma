@@ -1,0 +1,147 @@
+// PostgreSQL schema: common
+// Festivals, shared enums, and cross-cutting referrals
+
+model FestivalEntity {
+  id                  String            @id @default(cuid())
+  slug                String            @unique
+  name                String
+  description         String?
+  posterImageUrl      String?           @map("poster_image_url")
+  websiteUrl          String?           @map("website_url")
+  locationType        LocationType?     @map("location_type")
+  locationAddress     String?           @map("location_address")
+  locationCity        String?           @map("location_city")
+  locationVirtualLink String?           @map("location_virtual_link")
+  startDate           DateTime          @map("start_date")
+  endDate             DateTime          @map("end_date")
+  organizerId         String?           @map("organizer_id")
+  organizationName    String?           @map("organization_name")
+  organizationLogoUrl String?           @map("organization_logo_url")
+  status              LifecycleStatus   @default(DRAFT)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  approvalApprovedAt  DateTime?         @map("approval_approved_at")
+  approvalNote        String?           @map("approval_note")
+  approvalRejectedAt  DateTime?         @map("approval_rejected_at")
+  approvalStatus      ApprovalStatus    @default(PENDING) @map("approval_status")
+  approvalSubmittedAt DateTime?         @map("approval_submitted_at")
+  deletedAt           DateTime?         @map("deleted_at")
+  isDeleted           Boolean           @default(false) @map("is_deleted")
+  events              EventEntity[]
+  organizer           UserEntity?       @relation("UserFestivals", fields: [organizerId], references: [id])
+  hackathons          HackathonEntity[]
+
+  @@index([organizerId])
+  @@map("festival")
+  @@schema("common")
+}
+
+/// General lifecycle status for festivals and hackathons.
+enum LifecycleStatus {
+  DRAFT
+  PUBLISHED
+  ONGOING
+  COMPLETED
+  CANCELLED
+
+  @@map("LifecycleStatus")
+  @@schema("common")
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+  UNIVERSITY_ONLY
+
+  @@map("Visibility")
+  @@schema("common")
+}
+
+enum LocationType {
+  PHYSICAL
+  VIRTUAL
+
+  @@map("LocationType")
+  @@schema("common")
+}
+
+enum RegistrationFieldType {
+  TEXT
+  PHONE_NO
+  EMAIL
+  NUMBER
+  ATTACHMENTS
+  OPTIONS
+
+  @@map("RegistrationFieldType")
+  @@schema("common")
+}
+
+/// Approval status for platform-wide publish approval workflow.
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("ApprovalStatus")
+  @@schema("common")
+}
+
+model ReferralEntity {
+  id                 String                   @id @default(cuid())
+  code               String                   @unique
+  entityType         ReferralEntityType       @map("entity_type")
+  entityId           String                   @map("entity_id")
+  referrerId         String                   @map("referrer_id")
+  createdById        String                   @map("created_by_id")
+  approvedById       String?                  @map("approved_by_id")
+  isActive           Boolean                  @default(true) @map("is_active")
+  isDeleted          Boolean                  @default(false) @map("is_deleted")
+  deletedAt          DateTime?                @map("deleted_at")
+  clicksCount        Int                      @default(0) @map("clicks_count")
+  humanClicksCount   Int                      @default(0) @map("human_clicks_count")
+  registrationsCount Int                      @default(0) @map("registrations_count")
+  lastClickAt        DateTime?                @map("last_click_at")
+  lastRegistrationAt DateTime?                @map("last_registration_at")
+  createdAt          DateTime                 @default(now()) @map("created_at")
+  updatedAt          DateTime                 @updatedAt @map("updated_at")
+  eventParticipants  EventParticipantEntity[]
+  approvedBy         UserEntity?              @relation("ReferralApprover", fields: [approvedById], references: [id])
+  createdBy          UserEntity               @relation("ReferralCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  referrer           UserEntity               @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  clicks             ReferralClickEntity[]
+  teams              TeamEntity[]
+  teamMembers        TeamMemberEntity[]
+
+  @@unique([entityType, entityId, referrerId])
+  @@index([entityType, entityId])
+  @@index([referrerId])
+  @@index([createdById])
+  @@map("referral")
+  @@schema("common")
+}
+
+model ReferralClickEntity {
+  id            String         @id @default(cuid())
+  referralId    String         @map("referral_id")
+  ipHash        String         @map("ip_hash")
+  userAgentHash String         @map("user_agent_hash")
+  source        String?
+  isBot         Boolean        @default(false) @map("is_bot")
+  clickedAt     DateTime       @default(now()) @map("clicked_at")
+  referral      ReferralEntity @relation(fields: [referralId], references: [id], onDelete: Cascade)
+
+  @@index([referralId, clickedAt])
+  @@index([clickedAt])
+  @@map("referral_click")
+  @@schema("common")
+}
+
+enum ReferralEntityType {
+  HACKATHON
+  EVENT
+  FESTIVAL
+
+  @@map("ReferralEntityType")
+  @@schema("common")
+}
