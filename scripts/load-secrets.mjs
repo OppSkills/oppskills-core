@@ -13,9 +13,9 @@ import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
  *
  * What it does:
  * - Pulls a JSON secret from AWS Secrets Manager
- * - Writes env files for:
- *   - Backend runtime: /app/.env (Nest ConfigModule reads this when NODE_ENV=production)
- *   - Prisma migrations: /app/packages/database/.env (DATABASE_URL only)
+ * - Writes env file for:
+ *   - Backend + Prisma: /app/.env (Nest + `prisma migrate` both read this; do not duplicate DATABASE_URL
+ *     under packages/database/.env — Prisma 6+ errors on conflicting env files.)
  *
  * This works on:
  * - ECS/Fargate (task role)
@@ -147,8 +147,7 @@ async function loadSecrets(
     const secretsMap = parseSecretsJson(secretString);
     console.log("Secrets keys retrieved:", Object.keys(secretsMap));
 
-    const databaseUrl = secretsMap.DATABASE_URL;
-    if (!databaseUrl) {
+    if (!secretsMap.DATABASE_URL) {
       throw new Error("DATABASE_URL not found in secrets");
     }
 
@@ -159,8 +158,16 @@ async function loadSecrets(
     console.log(`Saved backend env file: ${backendEnvPath}`);
 
     const prismaEnvPath = path.resolve(process.cwd(), "packages/database/.env");
-    writeEnvFile(prismaEnvPath, { DATABASE_URL: databaseUrl });
-    console.log(`Saved prisma env file: ${prismaEnvPath}`);
+    try {
+      fs.unlinkSync(prismaEnvPath);
+      console.log(
+        `Removed legacy ${prismaEnvPath} (avoids Prisma "conflicting env vars: DATABASE_URL" when both .env files exist).`
+      );
+    } catch (unlinkErr) {
+      if (unlinkErr && typeof unlinkErr === "object" && "code" in unlinkErr && unlinkErr.code !== "ENOENT") {
+        throw unlinkErr;
+      }
+    }
   } catch (error) {
     console.error("Error loading secrets", error);
     if (retryCount < maxRetries) {

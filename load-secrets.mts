@@ -11,9 +11,8 @@ import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
  * Production secrets loader
  *
  * - Pulls a JSON secret from AWS Secrets Manager
- * - Writes env files for:
- *   - Backend runtime: /app/.env (Nest ConfigModule reads this when NODE_ENV=production)
- *   - Prisma migrations: /app/packages/database/.env (DATABASE_URL only)
+ * - Writes env file for:
+ *   - Backend + Prisma: /app/.env (Nest + Prisma; never duplicate DATABASE_URL under packages/database/.env)
  *
  * This must work on both:
  * - ECS/Fargate (task role)
@@ -141,8 +140,7 @@ async function loadSecrets(
     const secretsMap: SecretsRecord = parseSecretsJson(secretString);
     console.log("Secrets keys retrieved:", Object.keys(secretsMap));
 
-    const databaseUrl: string | undefined = secretsMap.DATABASE_URL;
-    if (!databaseUrl) {
+    if (!secretsMap.DATABASE_URL) {
       throw new Error("DATABASE_URL not found in secrets");
     }
 
@@ -157,8 +155,20 @@ async function loadSecrets(
       process.cwd(),
       "packages/database/.env"
     );
-    writeEnvFile(prismaEnvPath, { DATABASE_URL: databaseUrl });
-    console.log(`Saved prisma env file: ${prismaEnvPath}`);
+    try {
+      fs.unlinkSync(prismaEnvPath);
+      console.log(
+        `Removed legacy ${prismaEnvPath} (avoids Prisma DATABASE_URL conflict across two .env files).`
+      );
+    } catch (unlinkErr: unknown) {
+      const code =
+        unlinkErr && typeof unlinkErr === "object" && "code" in unlinkErr
+          ? (unlinkErr as NodeJS.ErrnoException).code
+          : undefined;
+      if (code !== "ENOENT") {
+        throw unlinkErr;
+      }
+    }
   } catch (error: unknown) {
     console.error("Error loading secrets", error);
     if (retryCount < maxRetries) {
