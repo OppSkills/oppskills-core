@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import InputBlock from "@/components/ui/derived/InputBlock";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
+import LocationInputModal from "@/components/ui/derived/LocationInputModal";
 import OpportunityPreviewCard from "@/components/ui/derived/OpportunityPreviewCard";
 import HackathonInput from "@/components/ui/hackathon/Input";
 import RegistrationQuestionsModal, {
@@ -353,6 +354,13 @@ export default function Page() {
   ): HackathonLocationDto | FestivalLocationDto | undefined {
     const trimmed = input.trim();
     if (trimmed.length === 0) return undefined;
+
+    if (trimmed.startsWith("OFFLINE:")) {
+      return { type: "PHYSICAL", address: trimmed.substring(8).trim() };
+    }
+    if (trimmed.startsWith("VIRTUAL:")) {
+      return { type: "VIRTUAL", virtualLink: trimmed.substring(8).trim() };
+    }
 
     if (isValidUrl(trimmed)) {
       let url = trimmed;
@@ -775,47 +783,12 @@ export default function Page() {
 
             {/* Location and Time */}
             <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <div className="h-full min-w-0">
-                    <InputBlock
-                      icon={<MapPin className="w-6 h-6" />}
-                      label={formData.eventLocation || "Add Hackathon Location"}
-                      subLabel="Offline location or virtual link"
-                      className="h-full"
-                    />
-                  </div>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Event Location</DialogTitle>
-                    <DialogDescription>
-                      Enter the location where the event will take place.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="location">Location</Label>
-                      <Input
-                        id="location"
-                        value={formData.eventLocation}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            eventLocation: e.target.value,
-                          })
-                        }
-                        placeholder="e.g. San Francisco, CA or https://zoom.us/..."
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button type="button">Save changes</Button>
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <LocationInputModal
+                value={formData.eventLocation}
+                onChange={(val) => setFormData({ ...formData, eventLocation: val })}
+                label="Add Hackathon Location"
+                subLabel="Offline location or virtual link"
+              />
 
               <Dialog>
                 <DialogTrigger asChild>
