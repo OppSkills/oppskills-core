@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
-import { ClerkAuthGuard } from '../common/clerk-auth.guard';
-import { AdminGuard } from '../common/admin.guard';
+import { ClerkAuthGuard } from '../../common/clerk-auth.guard';
+import { AdminGuard } from '../../common/admin.guard';
 import { AdminPayoutsService } from './admin-payouts.service';
-import { MarkPayoutPaidDto } from './dto/admin-payout.dto';
+import { MarkPayoutPaidDto } from '@oppskills/types';
 
 @Controller('admin/payouts')
 @UseGuards(ClerkAuthGuard, AdminGuard)

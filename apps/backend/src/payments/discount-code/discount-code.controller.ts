@@ -9,9 +9,9 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { ClerkAuthGuard } from '../common/clerk-auth.guard';
+import { ClerkAuthGuard } from '../../common/clerk-auth.guard';
 import { DiscountCodeService } from './discount-code.service';
-import { CreateDiscountCodeDto, UpdateDiscountCodeDto } from './dto';
+import { CreateDiscountCodeDto, UpdateDiscountCodeDto } from '@oppskills/types';
 
 @Controller('hackathons/:slug/discount-codes')
 @UseGuards(ClerkAuthGuard)

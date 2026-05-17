@@ -9,9 +9,9 @@ import {
     UseGuards,
     Req,
 } from '@nestjs/common';
-import { ClerkAuthGuard } from '../common/clerk-auth.guard';
+import { ClerkAuthGuard } from '../../common/clerk-auth.guard';
 import { TicketTierService } from './ticket-tier.service';
-import { CreateTicketTierDto, UpdateTicketTierDto } from './dto/ticket-tier.dto';
+import { CreateTicketTierDto, UpdateTicketTierDto } from '@oppskills/types';
 
 @Controller('events/:slug/tickets')
 @UseGuards(ClerkAuthGuard)

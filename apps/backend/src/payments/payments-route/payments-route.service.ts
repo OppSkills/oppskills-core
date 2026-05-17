@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { prisma, RazorpayRouteStatus } from '@oppskills/db';
-import { RazorpayService } from './razorpay.service';
+import { RazorpayService } from '../gateway/razorpay.service';
 
 export interface OnboardRouteInput {
   email: string;

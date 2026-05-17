@@ -9,10 +9,12 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { prisma } from '@oppskills/db';
-import { RazorpayService } from './razorpay.service';
+import { RazorpayService } from '../gateway/razorpay.service';
 import { RazorpayWebhookService } from './razorpay-webhook.service';
+import { SkipRateLimit } from '../../common/rate-limit';
 
 @Controller('webhooks')
+@SkipRateLimit()
 export class RazorpayWebhookController {
   private readonly logger = new Logger(RazorpayWebhookController.name);
 

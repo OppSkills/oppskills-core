@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { CreateTeamDto } from "@oppskills/types/frontend";
+import type { CreateTeamDto } from "@oppskills/types";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/hackathons");

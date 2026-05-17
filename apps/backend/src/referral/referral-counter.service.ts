@@ -1,14 +1,17 @@
-import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { prisma, Prisma } from '@oppskills/db';
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
 import { createHash } from 'crypto';
+import { CacheService } from 'src/common/cache.service';
 
 @Injectable()
 export class ReferralCounterService implements OnModuleDestroy {
   private readonly logger = new Logger(ReferralCounterService.name);
   private readonly flushInterval: NodeJS.Timeout;
+  private readonly redis: Redis;
 
-  constructor(@Inject('REDIS') private readonly redis: Redis) {
+  constructor(cacheService: CacheService) {
+    this.redis = cacheService.getClient();
     this.flushInterval = setInterval(() => {
       this.flushToDb().catch((err) =>
         this.logger.error('Failed to flush referral counters', err),

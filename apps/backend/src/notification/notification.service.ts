@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
-import { CreateNotificationDto } from './dto/schedule-notification.dto';
+import { CreateNotificationDto } from '@oppskills/types';
 import { NotificationQueue } from './queue/notification.queue';
 import { NotificationWorker } from './queue/notification.worker';
 

@@ -1,8 +1,8 @@
-import type { CreateOnboardingDto, MeResponseDto } from "@oppskills/types/frontend";
+import type { CreateOnboardingDto, MeResponseDto } from "@oppskills/types";
 import {
   GenderValue,
   UserCategoryValue,
-} from "@oppskills/types/frontend";
+} from "@oppskills/types/enums";
 
 type OnboardingProfile = NonNullable<MeResponseDto["onboardingProfile"]>;
 

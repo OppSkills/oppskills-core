@@ -1,13 +1,14 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
+import { CacheService } from '../../common/cache.service';
 
 @Injectable()
 export class NotificationQueue {
   private queue: Queue;
 
-  constructor(@Inject('REDIS') private readonly redis: any) {
+  constructor(private readonly cacheService: CacheService) {
     this.queue = new Queue('notification', {
-      connection: this.redis as any,
+      connection: this.cacheService.getClient() as any,
       defaultJobOptions: {
         attempts: 5,
         backoff: { type: 'exponential', delay: 3000 },

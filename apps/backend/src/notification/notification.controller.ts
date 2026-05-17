@@ -12,7 +12,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
-import { CreateNotificationDto } from './dto/schedule-notification.dto';
+import { CreateNotificationDto } from '@oppskills/types';
 import { NotificationService } from './notification.service';
 
 function assertNonEmptyId(id: string, fieldName: string): string {

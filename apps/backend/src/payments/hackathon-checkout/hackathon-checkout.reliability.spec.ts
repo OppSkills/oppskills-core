@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HackathonCheckoutService } from './hackathon-checkout.service';
-import { RazorpayService } from './razorpay.service';
-import { PaymentsRouteService } from './payments-route.service';
-import { DraftTeamService } from './draft-team.service';
-import { RegistrationSubmitService } from './registration-submit.service';
-import { PaymentRegistrationEscrowService } from './payment-registration-escrow.service';
-import { ReferralService } from '../referral/referral.service';
+import { RazorpayService } from '../gateway/razorpay.service';
+import { PaymentsRouteService } from '../payments-route/payments-route.service';
+import { DraftTeamService } from '../draft-team/draft-team.service';
+import { RegistrationSubmitService } from '../registration-submit/registration-submit.service';
+import { PaymentRegistrationEscrowService } from '../escrow/payment-registration-escrow.service';
+import { ReferralService } from '../../referral/referral.service';
 import { prisma } from '@oppskills/db';
 import { HackathonChargeMode } from '@oppskills/db';
 

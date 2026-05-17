@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
-import { UpsertPayoutDetailsDto } from './dto/payout-details.dto';
+import { UpsertPayoutDetailsDto } from '@oppskills/types';
 
 @Injectable()
 export class PayoutDetailsService {

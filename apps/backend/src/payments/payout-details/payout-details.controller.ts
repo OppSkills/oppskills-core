@@ -7,9 +7,9 @@ import {
   Req,
   Query,
 } from '@nestjs/common';
-import { ClerkAuthGuard } from '../common/clerk-auth.guard';
+import { ClerkAuthGuard } from '../../common/clerk-auth.guard';
 import { PayoutDetailsService } from './payout-details.service';
-import { UpsertPayoutDetailsDto } from './dto/payout-details.dto';
+import { UpsertPayoutDetailsDto } from '@oppskills/types';
 import type { Request } from 'express';
 
 @Controller('payments/payout-details')

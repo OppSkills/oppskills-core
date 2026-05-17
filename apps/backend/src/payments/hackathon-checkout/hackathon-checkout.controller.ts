@@ -7,14 +7,15 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { ClerkAuthGuard } from '../common/clerk-auth.guard';
+import { ClerkAuthGuard } from '../../common/clerk-auth.guard';
 import { HackathonCheckoutService } from './hackathon-checkout.service';
 import {
   CreateOrderDto,
   VerifyPaymentDto,
   SaveHackathonRegistrationCheckoutDraftDto,
-} from './dto';
+} from '@oppskills/types';
 import type { Request } from 'express';
+import { RateLimit } from '../../common/rate-limit';
 
 @Controller('hackathons')
 @UseGuards(ClerkAuthGuard)
@@ -43,6 +44,7 @@ export class HackathonCheckoutController {
   }
 
   @Post(':slug/payment/order')
+  @RateLimit({ limit: 10, windowMs: 60_000, keyPrefix: 'payment:order' })
   async createPaymentOrder(
     @Param('slug') slug: string,
     @Body() dto: CreateOrderDto,
@@ -65,6 +67,7 @@ export class HackathonCheckoutController {
   }
 
   @Post(':slug/payment/verify')
+  @RateLimit({ limit: 10, windowMs: 60_000, keyPrefix: 'payment:verify' })
   async verifyPayment(
     @Param('slug') _slug: string,
     @Body() dto: VerifyPaymentDto,

@@ -6,6 +6,7 @@ import { Pencil, ShieldCheck, ChevronDown, Check, Loader2, Camera } from "lucide
 import { ProfileInput } from "./profile-input";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { updateProfile } from "@/lib/api/usersApi";
+import type { GenderValue, UserCategoryValue } from "@oppskills/types/enums";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -71,7 +72,16 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
 
-      await updateProfile(token, formData);
+      await updateProfile(token, {
+        firstName: formData.firstName || undefined,
+        lastName: formData.lastName || undefined,
+        ...(formData.gender
+          ? { gender: formData.gender as GenderValue }
+          : {}),
+        ...(formData.userCategory
+          ? { userCategory: formData.userCategory as UserCategoryValue }
+          : {}),
+      });
       toast.success("Profile updated successfully");
       setIsEditing(false);
     } catch (error) {

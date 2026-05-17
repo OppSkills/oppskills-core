@@ -1,11 +1,16 @@
-import { ForbiddenException, Inject, Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
+import { CacheService } from 'src/common/cache.service';
 
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
-  constructor(@Inject('REDIS') private readonly redis: Redis) {}
+  private readonly redis: Redis;
+
+  constructor(cacheService: CacheService) {
+    this.redis = cacheService.getClient();
+  }
 
   private async resolveRange(options: {
     period?: string;

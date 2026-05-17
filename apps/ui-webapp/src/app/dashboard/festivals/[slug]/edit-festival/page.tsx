@@ -12,7 +12,7 @@ import { useFestivalBySlug } from "@/hooks/useFestivalBySlug";
 import { updateFestival, updateFestivalStatus } from "@/lib/api/festivalApi";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { UpdateFestivalDto } from "@oppskills/types/frontend";
+import type { UpdateFestivalDto } from "@oppskills/types";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
 import { useQueryState } from "nuqs";

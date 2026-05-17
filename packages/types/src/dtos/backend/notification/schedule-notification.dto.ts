@@ -1,5 +1,5 @@
 import { IsString, IsNotEmpty, IsOptional, IsEnum, IsDateString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum ScheduleType {
   IMMEDIATELY = 'IMMEDIATELY',
@@ -17,22 +17,22 @@ export enum NotificationStatus {
 }
 
 export class CreateNotificationDto {
-  @ApiProperty({ required: false, description: 'Target Event ID' })
+  @ApiPropertyOptional({ description: 'Target Event ID' })
   @IsString()
   @IsOptional()
   eventId?: string;
 
-  @ApiProperty({ required: false, description: 'Target Event Slug' })
+  @ApiPropertyOptional({ description: 'Target Event Slug' })
   @IsString()
   @IsOptional()
   eventSlug?: string;
 
-  @ApiProperty({ required: false, description: 'Target Hackathon ID' })
+  @ApiPropertyOptional({ description: 'Target Hackathon ID' })
   @IsString()
   @IsOptional()
   hackathonId?: string;
 
-  @ApiProperty({ required: false, description: 'Target Hackathon Slug' })
+  @ApiPropertyOptional({ description: 'Target Hackathon Slug' })
   @IsString()
   @IsOptional()
   hackathonSlug?: string;
@@ -46,14 +46,18 @@ export class CreateNotificationDto {
   @IsEnum(ScheduleType)
   scheduleType: ScheduleType;
 
-  @ApiProperty({ required: false, description: 'Target date-time string if type is CUSTOM' })
+  @ApiPropertyOptional({
+    description: 'Target date-time string if type is CUSTOM',
+  })
   @IsDateString()
   @IsOptional()
   scheduledAt?: string;
 
-  @ApiProperty({ required: false, enum: NotificationStatus, default: NotificationStatus.QUEUED })
+  @ApiPropertyOptional({
+    enum: NotificationStatus,
+    default: NotificationStatus.QUEUED,
+  })
   @IsEnum(NotificationStatus)
   @IsOptional()
   status?: NotificationStatus;
 }
-

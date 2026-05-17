@@ -1,53 +1,62 @@
-import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import Redis from 'ioredis';
-import { OnModuleDestroy } from '@nestjs/common';
 import { Logger } from 'src/_utils/logger';
+
 @Injectable()
-export class CacheService implements OnModuleInit, OnModuleDestroy {
-  private redis: Redis;
+export class CacheService implements OnModuleDestroy {
+  private redis!: Redis;
   private readonly logger: Logger;
   private connectionHealthy: boolean = false;
   private pingInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     this.logger = new Logger(CacheService.name);
-  }
-
-  async onModuleInit() {
-    // this.initializeRedis();
+    /**
+     * Create the ioredis client in the constructor (not `onModuleInit`).
+     * Other services (BullMQ, ReferralCounterService, etc.) capture
+     * `getClient()` in their constructors; Nest runs all constructors before
+     * any `onModuleInit`, so deferring init there left `this.redis` undefined.
+     */
+    this.initializeRedis();
   }
 
   private initializeRedis() {
     try {
-      // Log environment variables for debugging
-      this.logger.debug('Redis environment variables:', {
+      this.logger.debug('Initializing Redis client', {
         REDIS_URL: process.env.REDIS_URL ? 'SET' : 'NOT SET',
         REDISHOST: process.env.REDISHOST,
         REDISPORT: process.env.REDISPORT,
       });
 
-      // Use REDIS_URL if available, otherwise fall back to individual host/port
-      const redisConfig = process.env.REDIS_URL
-        ? { url: process.env.REDIS_URL }
-        : {
-            host: process.env.REDISHOST || 'localhost',
-            port: parseInt(process.env.REDISPORT || '6379'),
-          };
+      /**
+       * ioredis accepts the URL as the first positional argument.
+       * Passing { url: '...' } inside the options object is NOT supported
+       * and was the root cause of the original connection failure.
+       *
+       * maxRetriesPerRequest: null is required so that BullMQ (which uses
+       * this same client via getClient()) can manage its own retry logic
+       * using blocking commands that must not auto-retry.
+       */
+      const sharedOptions: Redis['options'] & { maxRetriesPerRequest: null } = {
+        maxRetriesPerRequest: null,
+        enableOfflineQueue: false,
+        retryStrategy: (times) => Math.min(times * 200, 5_000),
+      };
 
-      this.logger.debug('Redis config:', redisConfig);
-
-      this.redis = new Redis({
-        ...redisConfig,
-        maxRetriesPerRequest: 3,
-        retryStrategy: (times) => {
-          const delay = Math.min(times * 100, 3000);
-          return delay;
-        },
-      });
+      if (process.env.REDIS_URL) {
+        this.redis = new Redis(process.env.REDIS_URL, sharedOptions);
+      } else {
+        this.redis = new Redis({
+          host: process.env.REDISHOST || 'localhost',
+          port: parseInt(process.env.REDISPORT || '6379', 10),
+          password: process.env.REDISPASSWORD || undefined,
+          ...sharedOptions,
+        });
+      }
 
       this.redis.on('error', (err) => {
         this.connectionHealthy = false;
-        this.logger.error('Redis connection error:', err);
+        this.logger.error('Redis connection error', err);
       });
 
       this.redis.on('connect', () => {
@@ -55,109 +64,147 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         this.logger.debug('Connected to Redis successfully');
       });
 
-      // Set up a periodic health check
+      this.redis.on('reconnecting', () => {
+        this.connectionHealthy = false;
+        this.logger.warn('Redis reconnecting…');
+      });
+
+      // Periodic health check every 30 s
       this.pingInterval = setInterval(async () => {
         try {
           const pong = await this.redis.ping();
           this.connectionHealthy = pong === 'PONG';
           if (!this.connectionHealthy) {
-            this.logger.warn('Redis ping failed, unexpected response');
+            this.logger.warn('Redis ping returned unexpected response');
           }
         } catch (error) {
           this.connectionHealthy = false;
-          this.logger.error('Redis health check failed:', error);
-          this.reconnect();
+          this.logger.error('Redis health check failed', error);
         }
-      }, 30000); // Every 30 seconds
+      }, 30_000);
 
-      this.logger.debug('Redis client initialized for cache service');
+      this.logger.debug('Redis client initialized');
     } catch (error) {
-      this.logger.error('Failed to initialize Redis client:', error);
+      this.logger.error('Failed to initialize Redis client', error);
       this.connectionHealthy = false;
-      // Schedule a reconnection attempt
-      setTimeout(() => this.reconnect(), 5000);
     }
   }
 
-  private async reconnect() {
-    try {
-      this.logger.debug('Attempting to reconnect to Redis...');
-      if (this.redis) {
-        try {
-          await this.redis.quit();
-        } catch (e) {
-          // Ignore errors during quit
-        }
-      }
-      this.initializeRedis();
-    } catch (error) {
-      this.logger.error('Redis reconnection failed:', error);
+  /**
+   * Expose the raw ioredis client for callers that need advanced operations
+   * (BullMQ connections, pipelines, Lua eval, SCAN streams, etc.).
+   *
+   * Prefer the high-level methods (get/set/delete/setJSON/getJSON) for simple
+   * cache operations — they include health-checking and graceful degradation.
+   */
+  getClient(): Redis {
+    const client = this.redis;
+    if (!client) {
+      throw new Error(
+        'CacheService: Redis client is not initialized. Check REDIS_URL / REDISHOST.',
+      );
     }
+    return client;
   }
 
-  async set(key: string, value: any, ttl?: number) {
-    try {
-      if (!this.connectionHealthy) {
-        this.logger.warn(
-          `Redis connection unhealthy, skipping set for key: ${key}`,
-        );
-        return;
-      }
+  /**
+   * Like {@link getClient} but never throws — for optional Redis usage
+   * (e.g. rate limit fail-open when env is misconfigured).
+   */
+  tryGetClient(): Redis | null {
+    return this.redis ?? null;
+  }
 
+  async set(key: string, value: string, ttl?: number) {
+    if (!this.connectionHealthy) {
+      this.logger.warn(`Redis unhealthy — skipping set for key: ${key}`);
+      return;
+    }
+    try {
       if (ttl) {
         await this.redis.set(key, value, 'PX', ttl);
       } else {
         await this.redis.set(key, value);
       }
     } catch (error) {
-      this.logger.error(`Error setting cache key ${key}:`, error);
-      this.checkConnectionHealth();
+      this.logger.error(`Error setting cache key ${key}`, error);
     }
   }
 
-  async get(key: string) {
+  async get(key: string): Promise<string | null> {
+    if (!this.connectionHealthy) {
+      this.logger.warn(`Redis unhealthy — skipping get for key: ${key}`);
+      return null;
+    }
     try {
-      if (!this.connectionHealthy) {
-        this.logger.warn(
-          `Redis connection unhealthy, skipping get for key: ${key}`,
-        );
-        return null;
-      }
-
       return await this.redis.get(key);
     } catch (error) {
-      this.logger.error(`Error getting cache key ${key}:`, error);
-      this.checkConnectionHealth();
+      this.logger.error(`Error getting cache key ${key}`, error);
       return null;
     }
   }
 
   async delete(key: string) {
+    if (!this.connectionHealthy) {
+      this.logger.warn(`Redis unhealthy — skipping delete for key: ${key}`);
+      return;
+    }
     try {
-      if (!this.connectionHealthy) {
-        this.logger.warn(
-          `Redis connection unhealthy, skipping delete for key: ${key}`,
-        );
-        return;
-      }
-
       await this.redis.del(key);
     } catch (error) {
-      this.logger.error(`Error deleting cache key ${key}:`, error);
-      this.checkConnectionHealth();
+      this.logger.error(`Error deleting cache key ${key}`, error);
     }
   }
 
-  private async checkConnectionHealth() {
+  async keys(pattern: string): Promise<string[]> {
+    if (!this.connectionHealthy) {
+      this.logger.warn(
+        `Redis unhealthy — skipping keys query for pattern: ${pattern}`,
+      );
+      return [];
+    }
     try {
-      const pong = await this.redis.ping();
-      this.connectionHealthy = pong === 'PONG';
-      if (!this.connectionHealthy) {
-        this.reconnect();
+      return await this.redis.keys(pattern);
+    } catch (error) {
+      this.logger.error(`Error getting keys for pattern ${pattern}`, error);
+      return [];
+    }
+  }
+
+  async setJSON(key: string, value: unknown, ttl?: number) {
+    if (!this.connectionHealthy) {
+      this.logger.warn(`Redis unhealthy — skipping setJSON for key: ${key}`);
+      return;
+    }
+    try {
+      const jsonString = JSON.stringify(value);
+      if (ttl) {
+        await this.redis.set(key, jsonString, 'PX', ttl);
+      } else {
+        await this.redis.set(key, jsonString);
       }
     } catch (error) {
-      this.connectionHealthy = false;
-      this.reconnect();
+      this.logger.error(`Error setting JSON cache key ${key}`, error);
+    }
+  }
+
+  async getJSON<T = unknown>(key: string): Promise<T | null> {
+    if (!this.connectionHealthy) {
+      this.logger.warn(`Redis unhealthy — skipping getJSON for key: ${key}`);
+      return null;
+    }
+    try {
+      const value = await this.redis.get(key);
+      if (!value) return null;
+      try {
+        return JSON.parse(value) as T;
+      } catch {
+        this.logger.warn(`Failed to parse JSON for key ${key}`);
+        return null;
+      }
+    } catch (error) {
+      this.logger.error(`Error getting JSON cache key ${key}`, error);
+      return null;
     }
   }
 
@@ -166,86 +213,13 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       clearInterval(this.pingInterval);
       this.pingInterval = null;
     }
-
     if (this.redis) {
       try {
         await this.redis.quit();
         this.logger.debug('Redis connection closed');
       } catch (error) {
-        this.logger.error('Error closing Redis connection:', error);
+        this.logger.error('Error closing Redis connection', error);
       }
-    }
-  }
-
-  async keys(pattern: string) {
-    try {
-      if (!this.connectionHealthy) {
-        this.logger.warn(
-          `Redis connection unhealthy, skipping keys query for pattern: ${pattern}`,
-        );
-        return [];
-      }
-
-      return await this.redis.keys(pattern);
-    } catch (error) {
-      this.logger.error(
-        `Error getting cache keys for pattern ${pattern}:`,
-        error,
-      );
-      this.checkConnectionHealth();
-      return [];
-    }
-  }
-
-  /**
-   * Set a JSON object in Redis
-   */
-  async setJSON(key: string, value: any, ttl?: number) {
-    try {
-      if (!this.connectionHealthy) {
-        this.logger.warn(
-          `Redis connection unhealthy, skipping setJSON for key: ${key}`,
-        );
-        return;
-      }
-
-      const jsonString = JSON.stringify(value);
-      if (ttl) {
-        await this.redis.set(key, jsonString, 'PX', ttl);
-      } else {
-        await this.redis.set(key, jsonString);
-      }
-    } catch (error) {
-      this.logger.error(`Error setting JSON cache key ${key}:`, error);
-      this.checkConnectionHealth();
-    }
-  }
-
-  /**
-   * Get and parse a JSON object from Redis
-   */
-  async getJSON(key: string) {
-    try {
-      if (!this.connectionHealthy) {
-        this.logger.warn(
-          `Redis connection unhealthy, skipping getJSON for key: ${key}`,
-        );
-        return null;
-      }
-
-      const value = await this.redis.get(key);
-      if (!value) return null;
-
-      try {
-        return JSON.parse(value);
-      } catch (err) {
-        this.logger.warn(`Failed to parse JSON for key ${key}:`, err);
-        return null;
-      }
-    } catch (error) {
-      this.logger.error(`Error getting JSON cache key ${key}:`, error);
-      this.checkConnectionHealth();
-      return null;
     }
   }
 }

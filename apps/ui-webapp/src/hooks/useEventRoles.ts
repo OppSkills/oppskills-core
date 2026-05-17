@@ -9,7 +9,7 @@ import type {
   EventRolesResponse,
   AddEventRoleDto,
   RemoveEventRoleDto,
-} from "@oppskills/types/frontend";
+} from "@oppskills/types";
 
 /**
  * Ensures we have a token for authenticated API calls.

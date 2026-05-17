@@ -13,8 +13,8 @@ import {
   LifecycleStatus,
   ApprovalStatus,
 } from '@oppskills/db';
-import { extractMobileFromRegistrationFieldAnswers } from '../_utils/extract-mobile-from-registration-field-answers';
-import { syncUserOnboardingMobileFromRegistration } from '../_utils/sync-user-onboarding-mobile';
+import { extractMobileFromRegistrationFieldAnswers } from '../../_utils/extract-mobile-from-registration-field-answers';
+import { syncUserOnboardingMobileFromRegistration } from '../../_utils/sync-user-onboarding-mobile';
 
 const SUCCESSFUL_PAYMENT_STATUSES: HackathonPaymentStatus[] = [
   HackathonPaymentStatus.CAPTURED,

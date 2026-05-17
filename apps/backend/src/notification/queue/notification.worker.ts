@@ -1,9 +1,8 @@
-// app/src/notification/queue/notification.worker.ts
-
-import { Injectable, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Worker } from 'bullmq';
 import { processNotification } from './notification.processor';
 import { Logger } from '../../_utils/logger';
+import { CacheService } from '../../common/cache.service';
 
 const logger = new Logger('NotificationWorker');
 
@@ -11,7 +10,7 @@ const logger = new Logger('NotificationWorker');
 export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
   private worker: Worker | null = null;
 
-  constructor(@Inject('REDIS') private readonly redis: any) {}
+  constructor(private readonly cacheService: CacheService) {}
 
   onModuleInit() {
     logger.info('Initializing notification worker...');
@@ -22,7 +21,7 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
         await processNotification(job.data.notificationId);
       },
       {
-        connection: this.redis as any,
+        connection: this.cacheService.getClient() as any,
         concurrency: 2,
       },
     );

@@ -14,8 +14,6 @@ import {
   Request,
   BadRequestException,
 } from '@nestjs/common';
-import { IsString, IsOptional, IsEnum, IsInt, Max, Min } from 'class-validator';
-import { Type } from 'class-transformer';
 import {
   ApiTags,
   ApiOperation,
@@ -25,75 +23,14 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { UserAccountsService } from './user-accounts.service';
-import { CreateOnboardingDto } from '@oppskills/types';
+import {
+  CreateOnboardingDto,
+  UpdateProfileDto,
+  UpdateEducationDto,
+} from '@oppskills/types';
 import type { ClerkWebhookRequestDto } from '@oppskills/types';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
-
-class UpdateProfileDto {
-  @IsOptional()
-  @IsString()
-  firstName?: string;
-
-  @IsOptional()
-  @IsString()
-  lastName?: string;
-
-  @IsOptional()
-  @IsEnum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'])
-  gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
-
-  @IsOptional()
-  @IsEnum([
-    'SCHOOL_STUDENT',
-    'COLLEGE_STUDENT',
-    'WORKING_PROFESSIONAL',
-    'FRESHER',
-    'PROFESSIONAL_SCHOOL_STUDENT',
-  ])
-  userCategory?:
-    | 'SCHOOL_STUDENT'
-    | 'COLLEGE_STUDENT'
-    | 'WORKING_PROFESSIONAL'
-    | 'FRESHER'
-    | 'PROFESSIONAL_SCHOOL_STUDENT';
-}
-
-class UpdateEducationDto {
-  @IsOptional()
-  @IsString()
-  collegeId?: string | null;
-
-  @IsOptional()
-  @IsString()
-  collegeName?: string;
-
-  @IsOptional()
-  @IsString()
-  course?: string;
-
-  @IsOptional()
-  @IsString()
-  courseSpecialization?: string;
-
-  @IsOptional()
-  @IsString()
-  startYear?: string;
-
-  @IsOptional()
-  @IsInt()
-  @Min(1900)
-  @Max(2100)
-  @Type(() => Number)
-  endYear?: number;
-
-  @IsOptional()
-  @IsString()
-  rollNumber?: string;
-
-  @IsOptional()
-  @IsString()
-  cgpa?: string;
-}
+import { SkipRateLimit } from '../common/rate-limit';
 
 @ApiTags('User Accounts')
 @Controller('user-accounts')
@@ -102,6 +39,7 @@ export class UserAccountsController {
   constructor(private readonly userAccountsService: UserAccountsService) {}
 
   @Post('/clerk-webhook')
+  @SkipRateLimit()
   create(
     @Body() createUserAccountDto: ClerkWebhookRequestDto,
     @Headers('svix-id') svixId: string,

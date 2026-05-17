@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
-import { RazorpayService } from './razorpay.service';
+import { RazorpayService } from '../gateway/razorpay.service';
 
 @Injectable()
 export class RefundService {

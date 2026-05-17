@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
+import type {
+  EventEarningsData,
+  EventDiscountCodeResponse,
+  CreateEventDiscountCodeDto,
+  UpdateEventDiscountCodeDto,
+  UpdateEventPricingDto,
+} from "@oppskills/types";
 import {
   getEventEarnings,
   getEventDiscountCodes,
@@ -7,8 +14,6 @@ import {
   updateEventDiscountCode,
   deleteEventDiscountCode,
   updateEventPricing,
-  type EventEarningsData,
-  type EventDiscountCode,
   type EventPricingData,
 } from "@/lib/api/eventApi";
 
@@ -45,7 +50,7 @@ export function useEventEarnings(slug: string) {
 export function useEventDiscountCodes(slug: string) {
   const { getToken } = useAuth();
 
-  return useQuery<EventDiscountCode[]>({
+  return useQuery<EventDiscountCodeResponse[]>({
     queryKey: eventPaymentKeys.discountCodes(slug),
     queryFn: async () => {
       const token = await getToken();
@@ -65,16 +70,7 @@ export function useCreateEventDiscountCode(slug: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: {
-      code: string;
-      type: "PERCENT" | "FIXED";
-      value: number;
-      maxRedemptions?: number;
-      maxPerUser?: number;
-      validFrom?: string;
-      validUntil?: string;
-      active?: boolean;
-    }) => {
+    mutationFn: async (params: CreateEventDiscountCodeDto) => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
       return createEventDiscountCode(token, slug, params);
@@ -100,10 +96,7 @@ export function useUpdateEventDiscountCode(slug: string) {
       ...params
     }: {
       codeId: string;
-      active?: boolean;
-      maxRedemptions?: number;
-      validUntil?: string;
-    }) => {
+    } & Partial<UpdateEventDiscountCodeDto>) => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
       return updateEventDiscountCode(token, slug, codeId, params);
@@ -145,12 +138,9 @@ export function useUpdateEventPricing(slug: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: {
-      isFree?: boolean;
-      entryFeeAmount?: string;
-      freeCollegeIds?: string[];
-      feeBearer?: "ORGANISER" | "PARTICIPANT";
-    }): Promise<EventPricingData> => {
+    mutationFn: async (
+      params: Partial<UpdateEventPricingDto>,
+    ): Promise<EventPricingData> => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
       return updateEventPricing(token, slug, params);

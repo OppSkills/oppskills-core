@@ -1,4 +1,4 @@
-import { AnalyticsGeneralStatsDto } from '@oppskills/types';
+import type { AnalyticsGeneralStatsDto } from "@oppskills/types";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/analytics");

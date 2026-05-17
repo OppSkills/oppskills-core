@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
-import { HackathonCheckoutService } from './hackathon-checkout.service';
-import { EventPaymentService } from '../event/event-payment.service';
+import { HackathonCheckoutService } from '../hackathon-checkout/hackathon-checkout.service';
+import { EventPaymentService } from '../../event/event-payment.service';
 import { randomBytes } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
@@ -10,7 +10,7 @@ import {
   HackathonPaymentScope,
   Prisma,
 } from '@oppskills/db';
-import { ReferralService } from '../referral/referral.service';
+import { ReferralService } from '../../referral/referral.service';
 import { ReferralEntityTypeDto } from '@oppskills/types';
 
 function getMaxSizeFromParticipantType(participantType: string): number {

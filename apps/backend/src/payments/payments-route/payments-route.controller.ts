@@ -7,9 +7,9 @@ import {
   Req,
   BadRequestException,
 } from '@nestjs/common';
-import { ClerkAuthGuard } from '../common/clerk-auth.guard';
+import { ClerkAuthGuard } from '../../common/clerk-auth.guard';
 import { PaymentsRouteService } from './payments-route.service';
-import { OnboardRouteDto, UpdateSettlementsDto } from './dto';
+import { OnboardRouteDto, UpdateSettlementsDto } from '@oppskills/types';
 
 @Controller('payments/route')
 @UseGuards(ClerkAuthGuard)

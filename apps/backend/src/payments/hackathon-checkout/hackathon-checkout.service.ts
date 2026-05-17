@@ -11,15 +11,15 @@ import {
   HackathonPaymentStatus,
   HackathonPaymentOrderStatus,
 } from '@oppskills/db';
-import { RazorpayService } from './razorpay.service';
-import { PaymentsRouteService } from './payments-route.service';
-import { DraftTeamService } from './draft-team.service';
-import { RegistrationSubmitService } from './registration-submit.service';
-import { PaymentRegistrationEscrowService } from './payment-registration-escrow.service';
+import { RazorpayService } from '../gateway/razorpay.service';
+import { PaymentsRouteService } from '../payments-route/payments-route.service';
+import { DraftTeamService } from '../draft-team/draft-team.service';
+import { RegistrationSubmitService } from '../registration-submit/registration-submit.service';
+import { PaymentRegistrationEscrowService } from '../escrow/payment-registration-escrow.service';
 import { Decimal } from '@prisma/client/runtime/library';
 import { Logger } from 'src/_utils/logger';
-import { computeRazorpayGatewayFee } from './payment-gateway-fee.util';
-import { ReferralService } from '../referral/referral.service';
+import { computeRazorpayGatewayFee } from '../utils/payment-gateway-fee.util';
+import { ReferralService } from '../../referral/referral.service';
 import { ReferralEntityTypeDto } from '@oppskills/types';
 
 @Injectable()

@@ -67,7 +67,7 @@ import type {
   CreateEventDto,
   EventLocationDto,
   FestivalLocationDto,
-} from "@oppskills/types/frontend";
+} from "@oppskills/types";
 import { createEvent } from "@/lib/api/eventApi";
 import { getMyFestivals } from "@/lib/api/festivalApi";
 import CreateFestivalModal from "@/components/ui/derived/CreateFestivalModal";

@@ -12,7 +12,7 @@ import {
 } from "@/hooks/useEventRoles";
 import type {
   EventUserRoleValue,
-} from "@oppskills/types/frontend";
+} from "@oppskills/types";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";

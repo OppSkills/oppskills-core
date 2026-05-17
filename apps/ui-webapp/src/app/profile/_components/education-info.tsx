@@ -121,6 +121,7 @@ export function EducationInfo({ data }: {
 
       await updateEducation(token, {
         collegeId: formData.collegeId || undefined,
+        collegeName: formData.collegeName || undefined,
         course: formData.course || undefined,
         courseSpecialization: formData.courseSpecialization || undefined,
         startYear: formData.startYear || undefined,

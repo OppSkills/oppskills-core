@@ -7,9 +7,9 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { ClerkAuthGuard } from '../common/clerk-auth.guard';
+import { ClerkAuthGuard } from '../../common/clerk-auth.guard';
 import { RefundService } from './refund.service';
-import { CreateRefundDto } from './dto';
+import { CreateRefundDto } from '@oppskills/types';
 
 @Controller('hackathons')
 @UseGuards(ClerkAuthGuard)

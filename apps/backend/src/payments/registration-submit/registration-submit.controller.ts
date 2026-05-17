@@ -7,9 +7,10 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { ClerkAuthGuard } from '../common/clerk-auth.guard';
+import { ClerkAuthGuard } from '../../common/clerk-auth.guard';
 import { RegistrationSubmitService } from './registration-submit.service';
-import { SubmitRegistrationDto } from './dto';
+import { SubmitRegistrationDto } from '@oppskills/types';
+import { RateLimit } from '../../common/rate-limit';
 
 @Controller('hackathons')
 @UseGuards(ClerkAuthGuard)
@@ -30,6 +31,7 @@ export class RegistrationSubmitController {
   }
 
   @Post(':slug/registrations/submit')
+  @RateLimit({ limit: 5, windowMs: 60_000, keyPrefix: 'registration:submit' })
   async submitRegistration(
     @Param('slug') slug: string,
     @Body() dto: SubmitRegistrationDto,

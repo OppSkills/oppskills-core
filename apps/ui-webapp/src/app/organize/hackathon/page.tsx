@@ -72,7 +72,7 @@ import type {
   HackathonTypeValue,
   ParticipantTypeValue,
   VisibilityValue,
-} from "@oppskills/types/frontend";
+} from "@oppskills/types";
 import {
   createHackathon,
 } from "@/lib/api/hackathonApi";

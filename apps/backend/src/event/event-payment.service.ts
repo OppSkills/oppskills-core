@@ -10,11 +10,13 @@ import {
   EventPaymentStatus,
   EventPaymentOrderStatus,
 } from '@oppskills/db';
-import { RazorpayService } from '../payments/razorpay.service';
-import { PaymentRegistrationEscrowService } from '../payments/payment-registration-escrow.service';
+import {
+  RazorpayService,
+  PaymentRegistrationEscrowService,
+  computeRazorpayGatewayFee,
+} from '../payments';
 import { Decimal } from '@prisma/client/runtime/library';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { computeRazorpayGatewayFee } from '../payments/payment-gateway-fee.util';
 import { extractMobileFromRegistrationFieldAnswers } from '../_utils/extract-mobile-from-registration-field-answers';
 import { syncUserOnboardingMobileFromRegistration } from '../_utils/sync-user-onboarding-mobile';
 import { ReferralService } from '../referral/referral.service';
