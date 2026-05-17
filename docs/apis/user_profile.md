@@ -2,6 +2,8 @@
 
 API reference for endpoints related to user profile management, onboarding, and activity history.
 
+For **step-by-step onboarding** (which route to call when, Clerk vs API, and exact `CreateOnboardingDto` rules), prefer **[Onboarding API](./onboarding.md)** and the **[Mobile API client guide](./mobile-client-guide.md)**.
+
 ## Profile Overview
 
 The user profile contains:
@@ -61,7 +63,8 @@ The user profile contains:
     "course": "B.Tech",
     "courseSpecialization": "Computer Science",
     "startYear": "2021",
-    "endYear": "2025",
+    "endYear": 2025,
+    "rollNumber": "21CS1234",
     "cgpa": "9.2"
   },
   "skills": ["React", "TypeScript", "Node.js"],
@@ -82,15 +85,15 @@ The user profile contains:
 **Method**: `PUT`  
 **Description**: Initializes or updates the onboarding profile. Sets the user status to onboarded.
 
-**Sample Request Body**:
+**Sample Request Body** (see [Onboarding API](./onboarding.md) for full rules; `course` / `rollNumber` belong on **`PATCH /user-accounts/education`**, not on this DTO):
+
 ```json
 {
   "gender": "MALE",
   "userCategory": "COLLEGE_STUDENT",
   "collegeId": "clx123...",
-  "course": "B.Tech",
   "collegeCurrentYear": "3rd Year",
-  "collegePassoutYear": "2025",
+  "collegePassoutYear": 2025,
   "locationCity": "Mumbai",
   "locationState": "Maharashtra",
   "locationCountry": "India",
@@ -128,7 +131,7 @@ The user profile contains:
   "course": "M.Tech",
   "courseSpecialization": "AI",
   "startYear": "2025",
-  "endYear": "2027",
+  "endYear": 2027,
   "cgpa": "9.8"
 }
 ```

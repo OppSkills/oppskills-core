@@ -2,13 +2,65 @@
 
 Reference for authentication methods, sign-in/up flows, and token generation.
 
+## Related guides
+
+- **[Mobile API client guide](./mobile-client-guide.md)** — Read this first for React Native: TanStack Query, a shared API client, caching, and auth-gated navigation.
+- **[Onboarding API](./onboarding.md)** — Backend onboarding DTOs and user-account routes (Clerk vs OppSkills).
+
 ## Overview
 
-OppSkills uses **Clerk** for identity management. Authentication is handled on the frontend via Clerk's UI components, and the backend verifies the resulting JWT (JSON Web Token) to authorize requests.
+OppSkills uses **Clerk** for identity management. Authentication is handled on the **client** (web or mobile) via Clerk; the **backend** only verifies the short-lived **Clerk JWT** on each request. There are **no** first-party REST endpoints for “send signup OTP” or “verify email code” — those flows are implemented with **Clerk** (email verification, OAuth, password reset, and so on).
 
 - **Base URL**: `http://localhost:3001` (Dev) / `https://api.oppskills.com` (Prod)
 - **Auth Method**: `Bearer <clerk_jwt_token>`
 - **Development Bypass**: In dev environments, use the `X-User-Id` header (see [Development Bypass](#development-auth-bypass)).
+
+---
+
+## React Native (Expo) — tokens and API calls
+
+Use **`@clerk/clerk-expo`** (or the current Clerk Expo SDK recommended in Clerk’s own docs for your SDK version). The same backend rule applies as on web: send the session JWT on every protected request.
+
+### Retrieving a JWT in a component
+
+```tsx
+import { useAuth } from '@clerk/clerk-expo';
+
+function useOppskillsRequest() {
+  const { getToken, isSignedIn } = useAuth();
+
+  return async function oppskillsFetch(path: string, init: RequestInit = {}) {
+    if (!isSignedIn) {
+      throw new Error('Not signed in');
+    }
+    const token = await getToken();
+    if (!token) {
+      throw new Error('Missing Clerk token');
+    }
+
+    const base = process.env.EXPO_PUBLIC_API_BASE_URL!;
+    const headers = new Headers(init.headers);
+    headers.set('Authorization', `Bearer ${token}`);
+    headers.set('Accept', 'application/json');
+    if (init.body && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    return fetch(`${base}${path}`, { ...init, headers });
+  };
+}
+```
+
+### Google sign-in and email / password
+
+- **Google**: Use Clerk’s **OAuth** flow for Expo (Google provider configured in the Clerk dashboard). After success, `getToken()` works the same way.
+- **Email + password**: Use Clerk’s **`useSignUp` / `useSignIn`** hooks with the `password` strategy. If your product shows an **email verification code** step, that verification is performed **against Clerk**, not against OppSkills.
+
+After the user has an active Clerk session, load app state from the API with e.g. **`GET /user-accounts/me`** (see [Onboarding API](./onboarding.md)).
+
+### Password reset on mobile
+
+The [Password Reset Flow](#password-reset-flow-forgot-password) below uses `@clerk/nextjs`. On Expo, use the **equivalent Clerk Expo hooks** (`useSignIn`, `setActive`, and so on) with the same strategies (`reset_password_email_code`). The sequence (request code → attempt factor with code + new password) is identical; only the import path changes.
 
 ---
 
@@ -40,8 +92,9 @@ export function Navbar() {
 ### 2. Generating a JWT Token
 To call protected backend endpoints, the frontend must retrieve a short-lived JWT from Clerk.
 
-#### Client-Side (React Components)
-Use the `useAuth` hook from `@clerk/nextjs`.
+#### Client-Side (Next.js)
+
+Use the `useAuth` hook from `@clerk/nextjs`. For **Expo**, use the [React Native (Expo)](#react-native-expo--tokens-and-api-calls) section above instead of this snippet.
 
 ```typescript
 import { useAuth } from "@clerk/nextjs";

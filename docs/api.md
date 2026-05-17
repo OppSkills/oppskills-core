@@ -42,6 +42,12 @@ Documentation for authentication, user profiles, and authorization roles has bee
 
 [Auth and User Management API](apis/auth.md)
 
+**Mobile / React Native teams** should start with the foundation guide, then auth and onboarding:
+
+1. [Mobile API client guide](apis/mobile-client-guide.md) — TanStack Query, API client, caching, and conventions.
+2. [Authentication API](apis/auth.md) — Clerk JWTs, Expo `getToken()`, password reset.
+3. [Onboarding API](apis/onboarding.md) — Accepted payloads (`CreateOnboardingDto` and related PATCH bodies).
+
 This includes:
 - Clerk JWT authentication details
 - Sign In / Sign Up flow
