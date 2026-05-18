@@ -40,7 +40,7 @@ export function Navbar() {
 ### 2. Generating a JWT Token
 To call protected backend endpoints, the frontend must retrieve a short-lived JWT from Clerk.
 
-#### Client-Side (React Components)
+#### Client-Side (React / Next.js)
 Use the `useAuth` hook from `@clerk/nextjs`.
 
 ```typescript
@@ -58,6 +58,27 @@ const callProtectedApi = async () => {
     }
   });
 };
+```
+
+#### Client-Side (Flutter)
+For Flutter apps, use the `clerk_flutter` package to securely fetch the token.
+
+```dart
+import 'package:clerk_flutter/clerk_flutter.dart';
+import 'package:http/http.dart' as http;
+
+Future<void> callProtectedApi() async {
+  // Retrieves the current active session's JWT token
+  final token = await Clerk.instance.session?.getToken();
+  
+  final response = await http.get(
+    Uri.parse('https://api.oppskills.com/hackathons/my'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
+}
 ```
 
 #### Server-Side (Next.js Server Components / Actions)
@@ -139,6 +160,18 @@ Syncs user lifecycle events (Create, Update, Delete) from Clerk to the local dat
 - `svix-id`, `svix-timestamp`, `svix-signature`: Required for verification.
 
 **Body**: Clerk Webhook Payload (JSON)
+
+---
+
+## Admin Authentication
+
+While regular users use Clerk, platform Administrators use a separate internal JWT-based authentication system managed by the backend.
+
+- **Login**: `POST /admin/login` (Returns an HTTP-only cookie or custom token).
+- **Logout**: `POST /admin/logout`
+- **Session Check**: `GET /admin/me`
+
+*For full details on Admin endpoints, see [admin.md](./admin.md).*
 
 ---
 

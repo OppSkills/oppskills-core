@@ -35,6 +35,7 @@ Endpoints used to populate the public discovery pages (`/hackathons`, `/events`,
 ### Discovery and Search
 - **Mixed Search**: `GET /opportunity/search?q=...` (Returns hackathons, events, and top results).
 - **Autosuggest**: `GET /opportunity/autosuggest?q=...` (Quick dropdown suggestions).
+- **Past Opportunities**: `GET /opportunity/public/past` (Lists merged past events/hackathons).
 
 ### Public Listing Endpoints
 - **List Hackathons**: `GET /hackathons/public`
@@ -93,7 +94,7 @@ Endpoints for users to participate in an opportunity.
 
 ### Publishing
 Once a draft is ready:
-1.  **Submit for Approval**: `POST /hackathons/:id/submit-for-approval` (Notifies Admins).
+1.  **Submit for Approval**: `POST /hackathons/:id/submit-for-approval` or `POST /events/:id/submit-approval` (Notifies Admins).
 2.  **Update Status**: `PATCH /hackathons/:id/status` (Manual transition to `PUBLISHED`).
 
 **Status Values**: `DRAFT`, `PUBLISHED`, `ONGOING`, `COMPLETED`, `CANCELLED`.

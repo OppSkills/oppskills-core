@@ -9,6 +9,8 @@ Detailed documentation for managing events within the organizer dashboard.
 Overview of event engagement and participation.
 
 ### 1.1 Analytics
+- **My Events**: `GET /events/my`
+  - Paginated list of events owned or managed by the user.
 - **General Stats**: `GET /analytics/event/:slug/general`
   - Views, impressions, total registrations, and period-specific growth.
 - **Detailed Analytics**: `GET /analytics/event/:slug/detailed`
@@ -66,25 +68,19 @@ Overview of event engagement and participation.
 
 ---
 
-## 6. Payments (`/dashboard/events/:slug/payments`)
+## 6. Tickets (`/dashboard/events/:slug/tickets`)
 
-Comprehensive financial tools for organizers.
+Tools to configure ticketing for the event.
 
-- **Earnings Summary**: `GET /events/:slug/earnings`
-  - Net earnings, share breakdown, and payout status.
-- **Payments Log**: `GET /events/:slug/payments`
-  - Detailed transaction history.
-- **Pricing Settings**: `PATCH /events/:slug/pricing`
-  - Update entry fees, fee bearer (organizer vs participant), and currency.
-- **Discount Codes**:
-  - `POST /events/:slug/discount-codes`: Create new code.
-  - `GET /events/:slug/discount-codes`: List all.
-  - `PATCH /events/:slug/discount-codes/:codeId`: Update (active status, limit).
-  - `DELETE /events/:slug/discount-codes/:codeId`: Delete.
+- **List Ticket Tiers**: `GET /events/:slug/tickets`
+- **Create Ticket Tier**: `POST /events/:slug/tickets`
+- **Update Ticket Tier**: `PATCH /events/:slug/tickets/:tierId`
+- **Delete Ticket Tier**: `DELETE /events/:slug/tickets/:tierId`
 
 ---
 
 ## 7. Settings (`/dashboard/events/:slug/settings`)
 
 - **Lifecycle**: `PATCH /events/:id/status`
+- **Submit for Approval**: `POST /events/:id/submit-approval`
 - **Capacity**: `PUT /events/:id/max-users`

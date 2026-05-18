@@ -12,6 +12,30 @@ The user profile contains:
 
 ---
 
+## Utilities
+
+### Search Users (`GET /user-accounts/search`)
+**Method**: `GET`  
+**Description**: Search for users by email address (partial, case-insensitive match). Used for role assignment autocomplete.
+
+**Query Parameters**:
+- `q`: Search query string (email pattern).
+
+**Sample Response**:
+```json
+[
+  {
+    "id": "user_2abc123",
+    "email": "john.doe@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "imageUrl": "https://..."
+  }
+]
+```
+
+---
+
 ## Basic Profile
 
 ### Get Current Session (`GET /user-accounts/me`)

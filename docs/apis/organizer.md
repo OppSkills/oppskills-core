@@ -82,6 +82,7 @@ Organizers can update various modules of an opportunity throughout its lifecycle
 - **Update Hackathon**: `PUT /hackathons/:id`
 - **Update Event**: `PUT /events/:id`
 - **Update Festival**: `PUT /festivals/:id`
+- **Submit for Approval**: `POST /hackathons/:id/submit-for-approval` or `POST /events/:id/submit-approval`
 
 ### Module-Specific Settings
 These endpoints allow for granular updates without sending the full opportunity object.

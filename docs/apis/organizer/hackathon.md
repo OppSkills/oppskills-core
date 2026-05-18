@@ -9,6 +9,8 @@ Detailed documentation for the entire hackathon management workflow within the o
 Primary entry point for organizers to see the health and status of their hackathon.
 
 ### 1.1 Analytics Overview
+- **My Hackathons**: `GET /hackathons/my`
+  - Paginated list of hackathons owned or managed by the user.
 - **General Stats**: `GET /analytics/hackathon/:slug/general`
   - Returns: Total registrations, period registrations, views, and impressions.
 - **Detailed Analytics**: `GET /analytics/hackathon/:slug/detailed`
@@ -57,6 +59,8 @@ Granular updates to the hackathon's structure and content.
 - **Registration Form**: `PUT /hackathons/:id/registration-form`
   - Defines the custom fields users must answer.
 - **Prizes**: `PUT /hackathons/:id/prize-breakdown`
+- **Additional Info**: `PUT /hackathons/:id/additional-info`
+  - Updates contact info, FAQs, and attachments.
 
 ---
 
@@ -118,5 +122,7 @@ Final platform configurations.
 
 - **Lifecycle Management**: `PATCH /hackathons/:id/status`
   - Transition between `DRAFT`, `PUBLISHED`, `ONGOING`, `COMPLETED`.
+- **Submit for Approval**: `POST /hackathons/:id/submit-for-approval`
+  - Submits a DRAFT hackathon for admin review.
 - **Capacity**: `PUT /hackathons/:id/max-teams`
   - Update the maximum number of teams allowed to register.
