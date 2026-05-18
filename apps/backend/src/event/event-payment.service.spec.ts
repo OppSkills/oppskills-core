@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventPaymentService } from './event-payment.service';
-import { RazorpayService } from '../payments/razorpay.service';
-import { PaymentRegistrationEscrowService } from '../payments/payment-registration-escrow.service';
+import {
+  RazorpayService,
+  PaymentRegistrationEscrowService,
+} from '../payments';
 import { ReferralService } from '../referral/referral.service';
 import {
   BadRequestException,

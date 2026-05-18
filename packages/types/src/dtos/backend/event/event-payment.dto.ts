@@ -344,11 +344,12 @@ export class UpdateEventDiscountCodeDto {
 // =============================================================================
 
 /**
- * Response for payment order creation.
+ * Response for payment order creation (aligns with event-payment.service.ts).
  */
 export interface EventPaymentOrderResponse {
-  razorpayOrderId: string;
-  razorpayKey: string;
+  paymentId: string;
+  razorpayOrderId: string | null;
+  razorpayKey: string | null;
   amountPaise: number;
   currency: string;
   eventName: string;
@@ -359,6 +360,8 @@ export interface EventPaymentOrderResponse {
   finalAmount: number;
   /** Discount applied (if any) */
   discountAmount?: number;
+  /** True when Razorpay is skipped (discount / college free paths) */
+  zeroAmountPayment?: boolean;
   /** Whether user is from a free college */
   isCollegeFree?: boolean;
   /** Processing fee added when feeBearer === PARTICIPANT (in INR) */

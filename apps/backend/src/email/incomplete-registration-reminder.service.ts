@@ -158,9 +158,9 @@ export class IncompleteRegistrationReminderService {
           u.email AS "payerEmail",
           u."firstName" AS "firstName",
           u."lastName" AS "lastName"
-        FROM oppskills.hackathon_payment hp
-        INNER JOIN oppskills.hackathon h ON h.id = hp.hackathon_id
-        INNER JOIN oppskills."user" u ON u.id = hp.payer_user_id
+        FROM payments.hackathon_payment hp
+        INNER JOIN hackathon.hackathon h ON h.id = hp.hackathon_id
+        INNER JOIN "user"."user" u ON u.id = hp.payer_user_id
         WHERE hp.payment_status IN ('CAPTURED', 'AUTHORIZED')
           AND h.is_deleted = false
           AND h.approval_status = 'APPROVED'
@@ -170,13 +170,13 @@ export class IncompleteRegistrationReminderService {
           AND (h.registration_deadline IS NULL OR h.registration_deadline >= ${now})
           AND NOT EXISTS (
             SELECT 1
-            FROM oppskills.hackathon_registration_submission hrs
+            FROM hackathon.hackathon_registration_submission hrs
             WHERE hrs.hackathon_id = hp.hackathon_id
               AND hrs.user_id = hp.payer_user_id
           )
           AND NOT EXISTS (
             SELECT 1
-            FROM oppskills.incomplete_registration_reminder_log l
+            FROM payments.incomplete_registration_reminder_log l
             WHERE l.hackathon_payment_id = hp.id
               AND l.last_sent_at > ${cutoff}
           )
@@ -199,9 +199,9 @@ export class IncompleteRegistrationReminderService {
           u.email AS "payerEmail",
           u."firstName" AS "firstName",
           u."lastName" AS "lastName"
-        FROM oppskills.event_payment ep
-        INNER JOIN oppskills.event e ON e.id = ep.event_id
-        INNER JOIN oppskills."user" u ON u.id = ep.payer_user_id
+        FROM payments.event_payment ep
+        INNER JOIN events.event e ON e.id = ep.event_id
+        INNER JOIN "user"."user" u ON u.id = ep.payer_user_id
         WHERE ep.payment_status IN ('CAPTURED', 'AUTHORIZED')
           AND e.is_deleted = false
           AND e.approval_status = 'APPROVED'
@@ -211,14 +211,14 @@ export class IncompleteRegistrationReminderService {
           AND (e.registration_deadline IS NULL OR e.registration_deadline >= ${now})
           AND NOT EXISTS (
             SELECT 1
-            FROM oppskills.event_registration_submission ers
-            INNER JOIN oppskills.event_registration_answer era ON era.submission_id = ers.id
+            FROM events.event_registration_submission ers
+            INNER JOIN events.event_registration_answer era ON era.submission_id = ers.id
             WHERE ers.event_id = ep.event_id
               AND ers.user_id = ep.payer_user_id
           )
           AND NOT EXISTS (
             SELECT 1
-            FROM oppskills.incomplete_registration_reminder_log l
+            FROM payments.incomplete_registration_reminder_log l
             WHERE l.event_payment_id = ep.id
               AND l.last_sent_at > ${cutoff}
           )
@@ -241,9 +241,9 @@ export class IncompleteRegistrationReminderService {
           u.email AS "payerEmail",
           u."firstName" AS "firstName",
           u."lastName" AS "lastName"
-        FROM oppskills.event_participant ep
-        INNER JOIN oppskills.event e ON e.id = ep.event_id
-        INNER JOIN oppskills."user" u ON u.id = ep.user_id
+        FROM events.event_participant ep
+        INNER JOIN events.event e ON e.id = ep.event_id
+        INNER JOIN "user"."user" u ON u.id = ep.user_id
         WHERE e.is_free = true
           AND e.is_deleted = false
           AND e.approval_status = 'APPROVED'
@@ -253,14 +253,14 @@ export class IncompleteRegistrationReminderService {
           AND (e.registration_deadline IS NULL OR e.registration_deadline >= ${now})
           AND NOT EXISTS (
             SELECT 1
-            FROM oppskills.event_registration_submission ers
-            INNER JOIN oppskills.event_registration_answer era ON era.submission_id = ers.id
+            FROM events.event_registration_submission ers
+            INNER JOIN events.event_registration_answer era ON era.submission_id = ers.id
             WHERE ers.event_id = e.id
               AND ers.user_id = ep.user_id
           )
           AND NOT EXISTS (
             SELECT 1
-            FROM oppskills.incomplete_registration_reminder_log l
+            FROM payments.incomplete_registration_reminder_log l
             WHERE l.event_participant_id = ep.id
               AND l.last_sent_at > ${cutoff}
           )

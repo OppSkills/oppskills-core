@@ -40,7 +40,7 @@ import type {
   UpdateHackathonAdditionalInfoDto,
   UpdateHackathonDto,
   UpdateHackathonRoundsDto,
-} from "@oppskills/types/frontend";
+} from "@oppskills/types";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
 import {

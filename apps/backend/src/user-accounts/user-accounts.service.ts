@@ -10,6 +10,8 @@ import {
   ClerkWebhookEventType,
   CreateOnboardingDto,
   UserCategoryValue,
+  UpdateProfileDto,
+  UpdateEducationDto,
 } from '@oppskills/types';
 import {
   EMAIL_EVENTS,
@@ -807,20 +809,7 @@ export class UserAccountsService {
     }
   }
 
-  async updateProfile(
-    userId: string,
-    profile: {
-      firstName?: string;
-      lastName?: string;
-      gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
-      userCategory?:
-        | 'SCHOOL_STUDENT'
-        | 'COLLEGE_STUDENT'
-        | 'WORKING_PROFESSIONAL'
-        | 'FRESHER'
-        | 'PROFESSIONAL_SCHOOL_STUDENT';
-    },
-  ) {
+  async updateProfile(userId: string, profile: UpdateProfileDto) {
     try {
       const user = await prisma.userEntity.findUnique({
         where: { id: userId },
@@ -878,19 +867,7 @@ export class UserAccountsService {
     }
   }
 
-  async updateEducation(
-    userId: string,
-    education: {
-      collegeId?: string | null;
-      collegeName?: string;
-      course?: string;
-      courseSpecialization?: string;
-      startYear?: string;
-      endYear?: number;
-      rollNumber?: string;
-      cgpa?: string;
-    },
-  ) {
+  async updateEducation(userId: string, education: UpdateEducationDto) {
     try {
       const user = await prisma.userEntity.findUnique({
         where: { id: userId },

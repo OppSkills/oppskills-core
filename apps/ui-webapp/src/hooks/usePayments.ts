@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
+import type {
+  CreateDiscountCodeDto,
+  UpdateDiscountCodeDto,
+  UpdateSettlementsDto,
+  CreateRefundDto,
+} from "@oppskills/types";
 import {
   getRouteStatus,
   submitRouteOnboarding,
@@ -14,7 +20,6 @@ import {
   getPayoutDetails,
   upsertPayoutDetails,
   type RouteOnboardingParams,
-  type CreateDiscountCodeParams,
   type PayoutDetailsInput,
 } from "@/lib/api/paymentsApi";
 
@@ -52,11 +57,7 @@ export function useUpdateRouteSettlements() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: {
-      accountNumber: string;
-      ifscCode: string;
-      beneficiaryName: string;
-    }) => {
+    mutationFn: async (params: UpdateSettlementsDto) => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
       return updateRouteSettlements(token, params);
@@ -86,7 +87,7 @@ export function useCreateDiscountCode(hackathonSlug: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: CreateDiscountCodeParams) => {
+    mutationFn: async (params: CreateDiscountCodeDto) => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
       return createDiscountCode(token, hackathonSlug, params);
@@ -107,9 +108,7 @@ export function useUpdateDiscountCode(hackathonSlug: string) {
     mutationFn: async ({
       codeId,
       ...params
-    }: { codeId: string } & Partial<
-      CreateDiscountCodeParams & { active: boolean }
-    >) => {
+    }: { codeId: string } & Partial<UpdateDiscountCodeDto>) => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
       return updateDiscountCode(token, hackathonSlug, codeId, params);
@@ -173,11 +172,7 @@ export function useRequestRefund(hackathonSlug: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: {
-      paymentId: string;
-      amount?: number;
-      reason?: string;
-    }) => {
+    mutationFn: async (params: CreateRefundDto) => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
       return requestRefund(token, hackathonSlug, params);

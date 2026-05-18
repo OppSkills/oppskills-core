@@ -60,7 +60,6 @@ export default function Page() {
   const [isPaid, setIsPaid] = useState<boolean>(false);
   const [chargeMode, setChargeMode] = useState<ChargeMode>("PER_TEAM");
   const [feeBearer, setFeeBearer] = useState<FeeBearer>("ORGANISER");
-  const [entryFeeAmount, setEntryFeeAmount] = useState<string>("0");
   const [hackathonId, setHackathonId] = useState<string | null>(null);
   const [hasHydrated, setHasHydrated] = useState(false);
 
@@ -83,9 +82,8 @@ export default function Page() {
       isFree: !isPaid,
       chargeMode,
       feeBearer,
-      entryFeeAmount: isPaid ? entryFeeAmount : "0",
     }),
-    [isPaid, chargeMode, feeBearer, entryFeeAmount],
+    [isPaid, chargeMode, feeBearer],
   );
 
   const latestPricingRef = useRef<any>(currentPricing);
@@ -99,13 +97,11 @@ export default function Page() {
       setIsPaid(!hackathon.isFree);
       setChargeMode((hackathon.chargeMode as ChargeMode) || "PER_TEAM");
       setFeeBearer((hackathon.feeBearer as FeeBearer) || "ORGANISER");
-      setEntryFeeAmount(hackathon.entryFeeAmount?.toString() || "0");
 
       const initialState = {
         isFree: hackathon.isFree,
         chargeMode: (hackathon.chargeMode as ChargeMode) || "PER_TEAM",
         feeBearer: (hackathon.feeBearer as FeeBearer) || "ORGANISER",
-        entryFeeAmount: !hackathon.isFree ? (hackathon.entryFeeAmount?.toString() || "0") : "0",
       };
       lastSavedSnapshotRef.current = serializePricing(initialState);
       lastSavedAtRef.current = Date.now();
@@ -127,7 +123,6 @@ export default function Page() {
         isFree: pricing.isFree,
         chargeMode: pricing.isFree ? undefined : pricing.chargeMode,
         feeBearer: pricing.isFree ? undefined : pricing.feeBearer,
-        entryFeeAmount: pricing.isFree ? "0" : pricing.entryFeeAmount,
       });
     },
   });
@@ -241,8 +236,6 @@ export default function Page() {
         setChargeMode={setChargeMode}
         feeBearer={feeBearer}
         setFeeBearer={setFeeBearer}
-        entryFeeAmount={entryFeeAmount}
-        setEntryFeeAmount={setEntryFeeAmount}
         canEditPricing={canEditPricing}
         earnings={earnings}
         payoutDetails={payoutDetails}

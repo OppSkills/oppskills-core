@@ -1,5 +1,5 @@
 import { buildAuthHeaders, createApiClient } from "./apiClient";
-import type { CollegeSearchResultDto } from "@oppskills/types/frontend";
+import type { CollegeSearchResultDto } from "@oppskills/types";
 
 const API = createApiClient("/colleges");
 

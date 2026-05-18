@@ -10,7 +10,7 @@ import type {
   HackathonRolesResponse,
   TeamInvitePreviewResponse,
   SendTeamEmailDto,
-} from "@oppskills/types/frontend";
+} from "@oppskills/types";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/hackathons");

@@ -1,17 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { AnalyticsService } from './analytics.service';
-import { Inject } from '@nestjs/common';
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
+import { CacheService } from 'src/common/cache.service';
 
 @Injectable()
 export class AnalyticsCron {
   private readonly logger = new Logger(AnalyticsCron.name);
+  private readonly redis: Redis;
 
   constructor(
     private readonly analyticsService: AnalyticsService,
-    @Inject('REDIS') private readonly redis: Redis,
-  ) {}
+    cacheService: CacheService,
+  ) {
+    this.redis = cacheService.getClient();
+  }
 
   // Runs every 15 minutes
   @Cron('*/15 * * * *')

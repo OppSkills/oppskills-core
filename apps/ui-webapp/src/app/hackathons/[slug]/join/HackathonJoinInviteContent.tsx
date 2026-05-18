@@ -11,7 +11,7 @@ import {
   getTeamInvitePreview,
 } from "@/lib/api/hackathonApi";
 import { checkMyHackathonTeam } from "@/lib/api/teamApi";
-import type { TeamInvitePreviewResponse } from "@oppskills/types/frontend";
+import type { TeamInvitePreviewResponse } from "@oppskills/types";
 import { isAxiosError } from "axios";
 
 type HackathonPublic = { id: string; name: string; slug: string };

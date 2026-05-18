@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ClerkAuthConfigService } from './common/config.service';
+import { CommonModule } from './common/common.module';
+import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
 import { FestivalModule } from './festival/festival.module';
 import { HackathonModule } from './hackathon/hackathon.module';
 import { TeamModule } from './team/team.module';
@@ -31,6 +34,7 @@ import { NotificationModule } from './notification/notification.module';
     }),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
+    CommonModule,
     UserAccountsModule,
     TeamModule,
     HackathonModule,
@@ -49,6 +53,19 @@ import { NotificationModule } from './notification/notification.module';
     NotificationModule,
   ],
   controllers: [AppController],
-  providers: [AppService, ClerkAuthConfigService],
+  providers: [
+    AppService,
+    ClerkAuthConfigService,
+    /**
+     * Global rate-limiter — runs on every request before auth guards.
+     * Unauthenticated: 60 req/min per IP
+     * Authenticated:  200 req/min per user
+     * Override with @RateLimit() or exempt with @SkipRateLimit().
+     */
+    {
+      provide: APP_GUARD,
+      useClass: RateLimitGuard,
+    },
+  ],
 })
 export class AppModule {}

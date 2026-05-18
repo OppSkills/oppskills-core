@@ -1,4 +1,4 @@
-import type { CreateFestivalDto, UpdateFestivalDto } from "@oppskills/types/frontend";
+import type { CreateFestivalDto, UpdateFestivalDto } from "@oppskills/types";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/festivals");

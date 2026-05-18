@@ -1,4 +1,4 @@
--- Registration incident — diagnostic queries (PostgreSQL, schema: oppskills)
+-- Registration incident — diagnostic queries (PostgreSQL, multi-schema)
 -- Replace :festival_id with your festival UUID string.
 
 -- =============================================================================
@@ -9,9 +9,9 @@ SELECT
   COUNT(*)::bigint AS total_paid,
   COUNT(hrs.id)::bigint AS has_submission,
   (COUNT(*) - COUNT(hrs.id))::bigint AS missing_submission
-FROM oppskills.hackathon_payment hp
-INNER JOIN oppskills.hackathon h ON h.id = hp.hackathon_id
-LEFT JOIN oppskills.hackathon_registration_submission hrs
+FROM payments.hackathon_payment hp
+INNER JOIN hackathon.hackathon h ON h.id = hp.hackathon_id
+LEFT JOIN hackathon.hackathon_registration_submission hrs
   ON hrs.hackathon_id = hp.hackathon_id
   AND hrs.user_id = hp.payer_user_id
 WHERE h.festival_id = :festival_id
@@ -28,9 +28,9 @@ SELECT
   COUNT(hp.id)::bigint AS paid_count,
   COUNT(hrs.id)::bigint AS submitted_count,
   (COUNT(hp.id) - COUNT(hrs.id))::bigint AS missing
-FROM oppskills.hackathon_payment hp
-INNER JOIN oppskills.hackathon h ON h.id = hp.hackathon_id
-LEFT JOIN oppskills.hackathon_registration_submission hrs
+FROM payments.hackathon_payment hp
+INNER JOIN hackathon.hackathon h ON h.id = hp.hackathon_id
+LEFT JOIN hackathon.hackathon_registration_submission hrs
   ON hrs.hackathon_id = hp.hackathon_id
   AND hrs.user_id = hp.payer_user_id
 WHERE h.festival_id = :festival_id
@@ -50,14 +50,14 @@ SELECT
   hp.created_at AS payment_date,
   hp.id AS payment_id,
   hp.razorpay_order_id
-FROM oppskills.hackathon_payment hp
-INNER JOIN oppskills.hackathon h ON h.id = hp.hackathon_id
-INNER JOIN oppskills."user" u ON u.id = hp.payer_user_id
+FROM payments.hackathon_payment hp
+INNER JOIN hackathon.hackathon h ON h.id = hp.hackathon_id
+INNER JOIN "user"."user" u ON u.id = hp.payer_user_id
 WHERE h.festival_id = :festival_id
   AND hp.payment_status IN ('CAPTURED', 'AUTHORIZED')
   AND NOT EXISTS (
     SELECT 1
-    FROM oppskills.hackathon_registration_submission hrs
+    FROM hackathon.hackathon_registration_submission hrs
     WHERE hrs.hackathon_id = hp.hackathon_id
       AND hrs.user_id = hp.payer_user_id
   )
@@ -71,9 +71,9 @@ SELECT
   COUNT(*)::bigint AS total_paid,
   COUNT(ers.id)::bigint AS has_submission,
   (COUNT(*) - COUNT(ers.id))::bigint AS missing_submission
-FROM oppskills.event_payment ep
-INNER JOIN oppskills.event e ON e.id = ep.event_id
-LEFT JOIN oppskills.event_registration_submission ers
+FROM payments.event_payment ep
+INNER JOIN events.event e ON e.id = ep.event_id
+LEFT JOIN events.event_registration_submission ers
   ON ers.event_id = ep.event_id
   AND ers.user_id = ep.payer_user_id
 WHERE e.festival_id = :festival_id
@@ -92,11 +92,11 @@ SELECT
   EXTRACT(
     EPOCH FROM (hrs.submitted_at - hp.captured_at)
   ) AS seconds_between_capture_and_submission
-FROM oppskills.hackathon_payment hp
-LEFT JOIN oppskills.hackathon_registration_submission hrs
+FROM payments.hackathon_payment hp
+LEFT JOIN hackathon.hackathon_registration_submission hrs
   ON hrs.hackathon_id = hp.hackathon_id
   AND hrs.user_id = hp.payer_user_id
-INNER JOIN oppskills.hackathon h ON h.id = hp.hackathon_id
+INNER JOIN hackathon.hackathon h ON h.id = hp.hackathon_id
 WHERE h.festival_id = :festival_id
   AND hp.payment_status = 'CAPTURED'
 ORDER BY hp.captured_at DESC

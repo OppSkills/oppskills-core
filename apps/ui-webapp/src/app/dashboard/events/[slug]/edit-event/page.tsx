@@ -55,7 +55,7 @@ const RichTextEditor = dynamic(
 import type {
   UpdateEventDto,
   EventLocationDto,
-} from "@oppskills/types/frontend";
+} from "@oppskills/types";
 import {
   updateEvent,
   updateEventAdditionalInfo,

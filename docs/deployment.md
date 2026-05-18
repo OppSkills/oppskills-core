@@ -358,8 +358,8 @@ Trigger via GitHub Actions UI (workflow_dispatch):
 
 **Startup sequence:**
 1. Load secrets from AWS Secrets Manager (via `scripts/load-secrets.mjs`)
-   - Writes `/app/.env` (Nest runtime)
-   - Writes `/app/packages/database/.env` (Prisma)
+   - Writes `/app/.env` (Nest + Prisma; includes `DATABASE_URL`)
+   - Removes legacy `/app/packages/database/.env` if present (avoids Prisma 6 duplicate-`DATABASE_URL` errors)
 2. Optionally run Prisma migrations (`RUN_MIGRATIONS=true`)
 3. Start NestJS backend: `node apps/backend/dist/main.js`
 
@@ -498,7 +498,7 @@ docker run --rm \
   -e AWS_SECRETS_ID="${AWS_SECRETS_ID}" \
   --entrypoint sh \
   "${ECR_IMAGE}" \
-  -lc "node scripts/load-secrets.mjs && pnpm exec prisma migrate deploy --schema packages/database/prisma/schema.prisma"
+  -lc "node scripts/load-secrets.mjs && pnpm exec prisma migrate deploy --schema packages/database/prisma"
 ```
 
 **Concurrency:** `run-migrations-ec2` group (no cancellation)
@@ -757,7 +757,7 @@ docker run --rm \
   -e AWS_SECRETS_ID=oppskills-env \
   --entrypoint sh \
   443512646680.dkr.ecr.us-east-1.amazonaws.com/oppskills-core:latest \
-  -lc "node scripts/load-secrets.mjs && pnpm exec prisma migrate deploy --schema packages/database/prisma/schema.prisma"
+  -lc "node scripts/load-secrets.mjs && pnpm exec prisma migrate deploy --schema packages/database/prisma"
 ```
 
 ### Migration Files
@@ -825,9 +825,7 @@ ssh -L 5432:rds-endpoint:5432 ec2-user@<ec2-host>
 2. Uses AWS SDK with IAM role credentials (EC2/ECS)
 3. Fetches secret from Secrets Manager
 4. Parses JSON
-5. Writes environment files:
-   - `/app/.env` (all secrets for Nest)
-   - `/app/packages/database/.env` (DATABASE_URL only for Prisma)
+5. Writes `/app/.env` (all secrets for Nest and Prisma) and deletes `/app/packages/database/.env` if it exists (Prisma 6+ errors when the same key appears in multiple `.env` files).
 
 **Retry logic:**
 - Waits for AWS credentials (max 5 retries, 5s delay)
@@ -1103,7 +1101,7 @@ Error: P3009 migrate found failed migrations in the target database
 ```bash
 pnpm -C packages/database exec prisma migrate resolve \
   --rolled-back "20251106112805_oppskills" \
-  --schema packages/database/prisma/schema.prisma
+  --schema packages/database/prisma
 ```
 
 **Option 2: Migration partially applied (fix manually)**
@@ -1112,7 +1110,7 @@ pnpm -C packages/database exec prisma migrate resolve \
    ```bash
    pnpm -C packages/database exec prisma migrate resolve \
      --applied "20251106112805_oppskills" \
-     --schema packages/database/prisma/schema.prisma
+     --schema packages/database/prisma
    ```
 
 **After resolution:**

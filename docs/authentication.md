@@ -1185,11 +1185,11 @@ echo $ADMIN_USER_IDS  # Should contain user's Clerk ID
 
 # Check database
 SELECT id, email, access_level
-FROM oppskills.user
+FROM "user"."user"
 WHERE id = 'user_123';
 
 # Update access level manually if needed
-UPDATE oppskills.user
+UPDATE "user"."user"
 SET access_level = 'ADMIN'
 WHERE id = 'user_123';
 ```

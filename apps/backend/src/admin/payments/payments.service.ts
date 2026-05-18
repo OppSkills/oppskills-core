@@ -188,9 +188,9 @@ export class AdminPaymentsService {
       Prisma.sql`
         SELECT COUNT(*)::bigint AS count
         FROM (
-          SELECT id FROM oppskills.hackathon_payment
+          SELECT id FROM payments.hackathon_payment
           UNION ALL
-          SELECT id FROM oppskills.event_payment
+          SELECT id FROM payments.event_payment
         ) t
       `,
     );
@@ -204,10 +204,10 @@ export class AdminPaymentsService {
         SELECT id, kind, created_at
         FROM (
           SELECT id, created_at, 'Hackathon' AS kind
-          FROM oppskills.hackathon_payment
+          FROM payments.hackathon_payment
           UNION ALL
           SELECT id, created_at, 'Event' AS kind
-          FROM oppskills.event_payment
+          FROM payments.event_payment
         ) sub
         ORDER BY sub.created_at DESC
         LIMIT ${limit} OFFSET ${skip}

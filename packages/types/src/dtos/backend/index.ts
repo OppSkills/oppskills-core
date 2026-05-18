@@ -5,3 +5,5 @@ export * from "./team";
 export * from "./event";
 export * from "./analytics";
 export * from "./referral";
+export * from "./payments";
+export * from "./notification";

@@ -52,8 +52,8 @@ import {
   UserCategoryValue,
   ExperienceLevelValue,
   TeamPreferenceValue,
-  type CreateOnboardingDto,
-} from "@oppskills/types/frontend";
+} from "@oppskills/types/enums";
+import type { CreateOnboardingDto } from "@oppskills/types";
 
 import { submitOnboarding, getMe } from "@/lib/api/usersApi";
 import { searchColleges } from "@/lib/api/collegesApi";

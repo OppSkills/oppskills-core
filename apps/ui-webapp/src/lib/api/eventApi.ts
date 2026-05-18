@@ -7,7 +7,22 @@ import type {
   EventPrizeBreakdownDto,
   EventRegistrationFormDto,
   EventAdditionalInfoDto,
-} from "@oppskills/types/frontend";
+  EventPassDto,
+  ScanResultDto,
+  ScanEventPassDto,
+  PublicPassLookupDto,
+  SaveEventRegistrationCheckoutDraftDto,
+  CreateEventPaymentOrderDto,
+  VerifyEventPaymentDto,
+  EventPaymentOrderResponse,
+  EventPaymentVerifyResponse,
+  EventEarningsData,
+  EventDiscountCodeResponse,
+  CreateEventDiscountCodeDto,
+  UpdateEventDiscountCodeDto,
+  UpdateEventPricingDto,
+  FeeBearer,
+} from "@oppskills/types";
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/events");
@@ -628,8 +643,6 @@ export async function markParticipantAttendance(
 // Event Pass API Functions
 // =====================
 
-import type { EventPassDto, ScanResultDto, ScanEventPassDto, PublicPassLookupDto } from '@oppskills/types';
-
 const EVENT_PASS_API = createApiClient('/event-pass');
 const EVENT_PASS_SCAN_API = createApiClient('/events');
 
@@ -711,72 +724,14 @@ export async function scanEventPass(
 // =====================
 
 /**
- * Event payment order response.
- */
-export interface EventPaymentOrderResponse {
-  paymentId: string;
-  razorpayKey: string | null;
-  razorpayOrderId: string | null;
-  amountPaise: number;
-  currency: string;
-  eventName: string;
-  eventSlug: string;
-  originalAmount: number;
-  finalAmount: number;
-  discountAmount?: number;
-  zeroAmountPayment?: boolean;
-  isCollegeFree?: boolean;
-}
-
-/**
- * Event payment verification response.
- */
-export interface EventPaymentVerifyResponse {
-  success: boolean;
-  paymentId: string;
-  participantId: string;
-}
-
-/**
- * Event earnings data for organizer dashboard.
- */
-export interface EventEarningsData {
-  totalGross: string;
-  totalPlatformFees: string;
-  totalOrganizerShare: string;
-  pendingPayout: string;
-  paidOut: string;
-  capturedPaymentsCount: number;
-  isEligibleNow: boolean;
-  eligibleAt: string | null;
-}
-
-/**
- * Event discount code data.
- */
-export interface EventDiscountCode {
-  id: string;
-  code: string;
-  type: "PERCENT" | "FIXED";
-  value: number;
-  active: boolean;
-  maxRedemptions: number | null;
-  maxPerUser: number;
-  validFrom: string | null;
-  validUntil: string | null;
-  redemptionCount: number;
-  createdAt: string;
-}
-
-/**
- * Event pricing data.
+ * Organizer dashboard snapshot for event pricing controls (PATCH response shape).
  */
 export interface EventPricingData {
   isFree: boolean;
   entryFeeAmount: string | null;
   currency: string;
   freeCollegeIds: string[];
-  feeBearer: "ORGANISER" | "PARTICIPANT";
+  feeBearer: FeeBearer;
 }
 
 /**
@@ -785,16 +740,7 @@ export interface EventPricingData {
 export async function createEventPaymentOrder(
   token: string,
   eventSlug: string,
-  params: {
-    discountCode?: string;
-    ticketTierId?: string;
-    answers?: Array<{ fieldId: string; value: string }>;
-    /**
-     * Referral code. Defaults to the `oppskills_ref` cookie if unset.
-     * Persisted to Razorpay order notes so attribution survives redirects.
-     */
-    referralCode?: string;
-  },
+  params: CreateEventPaymentOrderDto,
 ): Promise<EventPaymentOrderResponse> {
   const referralCode = params.referralCode ?? getReferralCodeFromCookie();
   const body = { ...params, ...(referralCode ? { referralCode } : {}) };
@@ -812,11 +758,7 @@ export async function createEventPaymentOrder(
 export async function saveEventRegistrationCheckoutDraft(
   token: string,
   eventSlug: string,
-  params: {
-    answers: Array<{ fieldId: string; value: string }>;
-    ticketTierId?: string;
-    referralCode?: string;
-  },
+  params: SaveEventRegistrationCheckoutDraftDto,
 ): Promise<{ success: boolean; eventSlug: string; checkoutPath: string }> {
   const referralCode = params.referralCode ?? getReferralCodeFromCookie();
   const body = { ...params, ...(referralCode ? { referralCode } : {}) };
@@ -834,14 +776,7 @@ export async function saveEventRegistrationCheckoutDraft(
 export async function verifyEventPayment(
   token: string,
   eventSlug: string,
-  params: {
-    razorpayOrderId: string;
-    razorpayPaymentId: string;
-    razorpaySignature: string;
-    answers?: Array<{ fieldId: string; value: string | number | string[] }>;
-    /** Fallback referral code (primary source is Razorpay notes). */
-    referralCode?: string;
-  },
+  params: VerifyEventPaymentDto,
 ): Promise<EventPaymentVerifyResponse> {
   const referralCode = params.referralCode ?? getReferralCodeFromCookie();
   const body = { ...params, ...(referralCode ? { referralCode } : {}) };
@@ -875,12 +810,7 @@ export async function getEventEarnings(
 export async function updateEventPricing(
   token: string,
   eventSlug: string,
-  params: {
-    isFree?: boolean;
-    entryFeeAmount?: string;
-    freeCollegeIds?: string[];
-    feeBearer?: "ORGANISER" | "PARTICIPANT";
-  },
+  params: Partial<UpdateEventPricingDto>,
 ): Promise<EventPricingData> {
   const res = await API.patch(
     `/${encodeURIComponent(eventSlug)}/pricing`,
@@ -896,23 +826,14 @@ export async function updateEventPricing(
 export async function createEventDiscountCode(
   token: string,
   eventSlug: string,
-  params: {
-    code: string;
-    type: "PERCENT" | "FIXED";
-    value: number;
-    maxRedemptions?: number;
-    maxPerUser?: number;
-    validFrom?: string;
-    validUntil?: string;
-    active?: boolean;
-  },
-): Promise<EventDiscountCode> {
+  params: CreateEventDiscountCodeDto,
+): Promise<EventDiscountCodeResponse> {
   const res = await API.post(
     `/${encodeURIComponent(eventSlug)}/discount-codes`,
     params,
     { headers: buildAuthHeaders(token) },
   );
-  return res.data as EventDiscountCode;
+  return res.data as EventDiscountCodeResponse;
 }
 
 /**
@@ -921,12 +842,12 @@ export async function createEventDiscountCode(
 export async function getEventDiscountCodes(
   token: string,
   eventSlug: string,
-): Promise<EventDiscountCode[]> {
+): Promise<EventDiscountCodeResponse[]> {
   const res = await API.get(
     `/${encodeURIComponent(eventSlug)}/discount-codes`,
     { headers: buildAuthHeaders(token) },
   );
-  return res.data as EventDiscountCode[];
+  return res.data as EventDiscountCodeResponse[];
 }
 
 /**
@@ -936,18 +857,14 @@ export async function updateEventDiscountCode(
   token: string,
   eventSlug: string,
   codeId: string,
-  params: {
-    active?: boolean;
-    maxRedemptions?: number;
-    validUntil?: string;
-  },
-): Promise<EventDiscountCode> {
+  params: Partial<UpdateEventDiscountCodeDto>,
+): Promise<EventDiscountCodeResponse> {
   const res = await API.patch(
     `/${encodeURIComponent(eventSlug)}/discount-codes/${encodeURIComponent(codeId)}`,
     params,
     { headers: buildAuthHeaders(token) },
   );
-  return res.data as EventDiscountCode;
+  return res.data as EventDiscountCodeResponse;
 }
 
 /**

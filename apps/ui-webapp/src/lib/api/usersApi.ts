@@ -2,7 +2,9 @@ import { buildAuthHeaders, createApiClient } from "./apiClient";
 import type {
   MeResponseDto,
   CreateOnboardingDto,
-} from "@oppskills/types/frontend";
+  UpdateProfileDto,
+  UpdateEducationDto,
+} from "@oppskills/types";
 
 const API = createApiClient("/user-accounts");
 
@@ -142,12 +144,7 @@ export async function updateInterests(
  */
 export async function updateProfile(
   token: string,
-  data: {
-    firstName?: string;
-    lastName?: string;
-    gender?: string;
-    userCategory?: string;
-  }
+  data: Partial<UpdateProfileDto>,
 ): Promise<{ success: boolean }> {
   try {
     const res = await API.patch("/profile", data, {
@@ -165,15 +162,7 @@ export async function updateProfile(
  */
 export async function updateEducation(
   token: string,
-  data: {
-    collegeId?: string;
-    course?: string;
-    courseSpecialization?: string;
-    startYear?: string;
-    endYear?: number;
-    rollNumber?: string;
-    cgpa?: string;
-  }
+  data: Partial<UpdateEducationDto>,
 ): Promise<{ success: boolean }> {
   try {
     const res = await API.patch("/education", data, {

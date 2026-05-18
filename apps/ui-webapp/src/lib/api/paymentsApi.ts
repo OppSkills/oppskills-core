@@ -1,4 +1,21 @@
 import { buildAuthHeaders, createApiClient } from "./apiClient";
+import type {
+  OnboardRouteDto,
+  UpsertPayoutDetailsDto,
+  CreateDiscountCodeDto,
+  UpdateDiscountCodeDto,
+  SaveHackathonRegistrationCheckoutDraftDto,
+  CreateOrderDto,
+  VerifyPaymentDto,
+  SubmitRegistrationDto,
+  CreateRefundDto,
+  CreateTicketTierDto,
+  UpdateTicketTierDto,
+  UpdateSettlementsDto,
+} from "@oppskills/types";
+
+export type RouteOnboardingParams = OnboardRouteDto;
+export type PayoutDetailsInput = UpsertPayoutDetailsDto;
 
 const PaymentsAPI = createApiClient("/payments");
 const HackathonsAPI = createApiClient("/hackathons");
@@ -22,63 +39,15 @@ function clearReferralCookie(): void {
   document.cookie = "oppskills_ref=; Path=/; Max-Age=0";
 }
 
-export interface RouteOnboardingParams {
-  email: string;
-  phone: string;
-  legalBusinessName: string;
-  businessType: string;
-  contactName: string;
-  profile: {
-    category: string;
-    subcategory: string;
-    address: {
-      street1: string;
-      street2?: string;
-      city: string;
-      state: string;
-      postalCode: string;
-      country: string;
-    };
-  };
-  legalInfo?: {
-    pan?: string;
-    gst?: string;
-  };
-  stakeholder: {
-    name: string;
-    email: string;
-    phone?: {
-      primary: string;
-      secondary?: string;
-    };
-    address?: {
-      street: string;
-      city: string;
-      state: string;
-      postalCode: string;
-      country: string;
-    };
-    kyc?: {
-      pan: string;
-    };
-    notes?: Record<string, string>;
-  };
-  settlements: {
-    accountNumber: string;
-    ifscCode: string;
-    beneficiaryName: string;
-  };
-}
-
 export interface RouteStatus {
   hasAccount: boolean;
   status:
-  | "CREATED"
-  | "UNDER_REVIEW"
-  | "NEEDS_CLARIFICATION"
-  | "ACTIVATED"
-  | "SUSPENDED"
-  | null;
+    | "CREATED"
+    | "UNDER_REVIEW"
+    | "NEEDS_CLARIFICATION"
+    | "ACTIVATED"
+    | "SUSPENDED"
+    | null;
   razorpayAccountId: string | null;
   routeProductId: string | null;
   requirements: unknown[] | null;
@@ -96,14 +65,6 @@ export interface DiscountCode {
   maxPerUser: number;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface CreateDiscountCodeParams {
-  code: string;
-  type: "PERCENT" | "FIXED";
-  value: number;
-  maxRedemptions?: number;
-  maxPerUser?: number;
 }
 
 export interface PaymentOrder {
@@ -166,26 +127,6 @@ export type PayoutDetailsApiResponse =
   | { exists: false }
   | ({ exists: true } & PayoutDetails);
 
-export interface PayoutDetailsInput {
-  eventId?: string;
-  hackathonId?: string;
-  accountHolderName: string;
-  accountNumber: string;
-  ifsc: string;
-  bankName: string;
-  panNumber?: string;
-  gstNumber?: string;
-  upiId?: string;
-  pinCode?: string;
-  city?: string;
-  state?: string;
-  address1?: string;
-  address2?: string;
-  phone?: string;
-  email?: string;
-  razorpayBankName?: boolean;
-}
-
 export interface PaymentRecord {
   id: string;
   payerName: string | null;
@@ -218,7 +159,7 @@ export async function submitRouteOnboarding(
 
 export async function updateRouteSettlements(
   token: string,
-  params: { accountNumber: string; ifscCode: string; beneficiaryName: string },
+  params: UpdateSettlementsDto,
 ): Promise<RouteStatus> {
   const res = await PaymentsAPI.patch("/route/settlements", params, {
     headers: buildAuthHeaders(token),
@@ -239,7 +180,7 @@ export async function getDiscountCodes(
 export async function createDiscountCode(
   token: string,
   hackathonSlug: string,
-  params: CreateDiscountCodeParams,
+  params: CreateDiscountCodeDto,
 ): Promise<DiscountCode> {
   const res = await HackathonsAPI.post(
     `/${hackathonSlug}/discount-codes`,
@@ -255,7 +196,7 @@ export async function updateDiscountCode(
   token: string,
   hackathonSlug: string,
   codeId: string,
-  params: Partial<CreateDiscountCodeParams & { active: boolean }>,
+  params: Partial<UpdateDiscountCodeDto>,
 ): Promise<DiscountCode> {
   const res = await HackathonsAPI.patch(
     `/${hackathonSlug}/discount-codes/${codeId}`,
@@ -283,16 +224,7 @@ export async function deleteDiscountCode(
 export async function saveHackathonRegistrationCheckoutDraft(
   token: string,
   hackathonSlug: string,
-  params: {
-    answers: Array<{ fieldId: string; value: string }>;
-    teamId?: string;
-    teamName?: string;
-    maxSize?: number;
-    invitationCode?: string;
-    joinTeamId?: string;
-    ticketTierId?: string;
-    referralCode?: string;
-  },
+  params: SaveHackathonRegistrationCheckoutDraftDto,
 ): Promise<{
   success: boolean;
   hackathonSlug: string;
@@ -312,25 +244,7 @@ export async function saveHackathonRegistrationCheckoutDraft(
 export async function createPaymentOrder(
   token: string,
   hackathonSlug: string,
-  params: {
-    teamId?: string;
-    teamName?: string;
-    maxSize?: number;
-    discountCode?: string;
-    ticketTierId?: string;
-    /** PER_USER join: stored on Razorpay order for server-side registration completion */
-    invitationCode?: string;
-    /** PER_USER join-by-team list: stored on Razorpay order notes */
-    joinTeamId?: string;
-    /** Escrowed server-side when creating the Razorpay order (verify/webhook fallback). */
-    answers?: Array<{ fieldId: string; value: string }>;
-    /**
-     * Referral code from /r/<code> link. If omitted, read from the
-     * `oppskills_ref` cookie. Persisted on Razorpay order notes so it
-     * survives payment redirects (mobile) and webhook-only completion.
-     */
-    referralCode?: string;
-  },
+  params: CreateOrderDto,
 ): Promise<PaymentOrder & { teamId?: string }> {
   const referralCode = params.referralCode ?? getReferralCodeFromCookie();
   const body = { ...params, ...(referralCode ? { referralCode } : {}) };
@@ -347,19 +261,7 @@ export async function createPaymentOrder(
 export async function verifyPayment(
   token: string,
   hackathonSlug: string,
-  params: {
-    razorpayOrderId: string;
-    razorpayPaymentId: string;
-    razorpaySignature: string;
-    /** When set, backend saves registration answers in the same request as verify (hackathons). */
-    answers?: Array<{ fieldId: string; value: string }>;
-    /**
-     * Fallback referral code. Primary source is the Razorpay order notes
-     * (set at createPaymentOrder). If omitted, client also forwards the
-     * `oppskills_ref` cookie as a belt-and-braces fallback.
-     */
-    referralCode?: string;
-  },
+  params: VerifyPaymentDto,
 ): Promise<{ success: boolean; paymentId: string; teamId?: string }> {
   const referralCode = params.referralCode ?? getReferralCodeFromCookie();
   const body = { ...params, ...(referralCode ? { referralCode } : {}) };
@@ -400,7 +302,7 @@ export async function getHackathonPayments(
 export async function requestRefund(
   token: string,
   hackathonSlug: string,
-  params: { paymentId: string; amount?: number; reason?: string },
+  params: CreateRefundDto,
 ): Promise<{ success: boolean; refundId: string }> {
   const res = await HackathonsAPI.post(`/${hackathonSlug}/refunds`, params, {
     headers: buildAuthHeaders(token),
@@ -411,7 +313,7 @@ export async function requestRefund(
 export async function submitRegistration(
   token: string,
   hackathonSlug: string,
-  answers: Array<{ fieldId: string; value: string }>,
+  answers: SubmitRegistrationDto['answers'],
 ): Promise<{ success: boolean; submissionId: string }> {
   const res = await HackathonsAPI.post(
     `/${hackathonSlug}/registrations/submit`,
@@ -516,14 +418,7 @@ export interface TicketTier {
   };
 }
 
-export interface CreateTicketTierParams {
-  name: string;
-  description?: string;
-  price: number;
-  capacity?: number | null;
-  order?: number;
-  isActive?: boolean;
-}
+export type CreateTicketTierParams = CreateTicketTierDto;
 
 const EventsAPI = createApiClient("/events");
 
@@ -555,7 +450,7 @@ export async function updateHackathonTicketTier(
   token: string,
   hackathonSlug: string,
   tierId: string,
-  params: Partial<CreateTicketTierParams>,
+  params: Partial<UpdateTicketTierDto>,
 ): Promise<TicketTier> {
   const res = await HackathonsAPI.patch(
     `/${hackathonSlug}/tickets/${tierId}`,
@@ -612,7 +507,7 @@ export async function updateEventTicketTier(
   token: string,
   eventSlug: string,
   tierId: string,
-  params: Partial<CreateTicketTierParams>,
+  params: Partial<UpdateTicketTierDto>,
 ): Promise<TicketTier> {
   const res = await EventsAPI.patch(
     `/${eventSlug}/tickets/${tierId}`,

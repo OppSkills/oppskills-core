@@ -1,0 +1,330 @@
+// PostgreSQL schema: events
+// Events, passes, and event registration
+
+model EventEntity {
+  id                        String                              @id @default(cuid())
+  slug                      String                              @unique
+  name                      String
+  description               String?
+  bannerImageUrl            String?                             @map("banner_image_url")
+  startDate                 DateTime                            @map("start_date")
+  endDate                   DateTime                            @map("end_date")
+  festivalId                String?                             @map("festival_id")
+  locationType              LocationType?                       @map("location_type")
+  locationAddress           String?                             @map("location_address")
+  locationCity              String?                             @map("location_city")
+  locationVirtualLink       String?                             @map("location_virtual_link")
+  isFree                    Boolean                             @default(true) @map("is_free")
+  entryFeeAmount            Decimal?                            @map("entry_fee_amount") @db.Decimal(12, 2)
+  currency                  String                              @default("INR")
+  maxUsers                  Int?                                @map("max_users")
+  registrationCount         Int                                 @default(0) @map("registration_count")
+  registrationDeadline      DateTime?                           @map("registration_deadline")
+  status                    LifecycleStatus                     @default(DRAFT)
+  ownerId                   String                              @map("owner_id")
+  organizationName          String?                             @map("organization_name")
+  organizationLogoUrl       String?                             @map("organization_logo_url")
+  createdAt                 DateTime                            @default(now())
+  updatedAt                 DateTime                            @updatedAt
+  attendeeEligibility       EventAttendeeEligibility[]          @default([]) @map("attendee_eligibility")
+  contactEmail              String?                             @map("contact_email")
+  contactName               String?                             @map("contact_name")
+  contactPhone              String?                             @map("contact_phone")
+  eventType                 EventType                           @default(CONFERENCE) @map("event_type")
+  externalRegistrationLink  String?                             @map("external_registration_link")
+  impressions               BigInt                              @default(0)
+  prizeCertificate          Boolean                             @default(false) @map("prize_certificate")
+  prizeDescription          Json?                               @map("prize_description")
+  prizeTotalWorthAmount     Decimal?                            @map("prize_total_worth_amount") @db.Decimal(12, 2)
+  visibility                Visibility                          @default(PUBLIC)
+  approvalApprovedAt        DateTime?                           @map("approval_approved_at")
+  approvalNote              String?                             @map("approval_note")
+  approvalRejectedAt        DateTime?                           @map("approval_rejected_at")
+  approvalStatus            ApprovalStatus                      @default(PENDING) @map("approval_status")
+  approvalSubmittedAt       DateTime?                           @map("approval_submitted_at")
+  isRegistrationPaused      Boolean                             @default(false) @map("is_registration_paused")
+  views                     BigInt                              @default(0)
+  allowedCollegeIds         String[]                            @default([]) @map("allowed_college_ids")
+  allowedEmailDomains       String[]                            @default([]) @map("allowed_email_domains")
+  collegeMatchMode          CollegeMatchMode                    @default(EITHER_OR) @map("college_match_mode")
+  collegeRestrictionEnabled Boolean                             @default(false) @map("college_restriction_enabled")
+  passSendingMode           PassSendingMode                     @default(IMMEDIATE) @map("pass_sending_mode")
+  freeCollegeIds            String[]                            @default([]) @map("free_college_ids")
+  deletedAt                 DateTime?                           @map("deleted_at")
+  isDeleted                 Boolean                             @default(false) @map("is_deleted")
+  feeBearer                 FeeBearer                           @default(ORGANISER) @map("fee_bearer")
+  festival                  FestivalEntity?                     @relation(fields: [festivalId], references: [id])
+  owner                     UserEntity                          @relation("UserEvents", fields: [ownerId], references: [id])
+  attachments               EventAttachmentEntity[]
+  discountCodes             EventDiscountCodeEntity[]
+  participants              EventParticipantEntity[]
+  eventPasses               EventPassEntity[]                   @relation("EventPasses")
+  payments                  EventPaymentEntity[]
+  payouts                   EventPayoutEntity[]
+  prizeBreakdown            EventPrizeBreakdownEntity[]
+  registrationForm          EventRegistrationFormEntity?
+  registrationSubmissions   EventRegistrationSubmissionEntity[]
+  userRoles                 EventUserRoleEntity[]
+  payoutDetails             OrganizerPayoutDetailsEntity?
+  notifications             notifications[]
+  ticketTiers               TicketTierEntity[]
+
+  @@index([festivalId])
+  @@index([ownerId])
+  @@map("event")
+  @@schema("events")
+}
+
+/// Join table for event participants (individual user registration).
+model EventParticipantEntity {
+  id                                String                                   @id @default(cuid())
+  eventId                           String                                   @map("event_id")
+  userId                            String                                   @map("user_id")
+  joinedAt                          DateTime                                 @default(now()) @map("joined_at")
+  approved                          Boolean                                  @default(false)
+  approvedAt                        DateTime?                                @map("approved_at")
+  approvedById                      String?                                  @map("approved_by_id")
+  passEmailSent                     Boolean                                  @default(false) @map("pass_email_sent")
+  passEmailSentAt                   DateTime?                                @map("pass_email_sent_at")
+  referralId                        String?                                  @map("referral_id")
+  approvedBy                        UserEntity?                              @relation("EventParticipantApprover", fields: [approvedById], references: [id])
+  event                             EventEntity                              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  referral                          ReferralEntity?                          @relation(fields: [referralId], references: [id])
+  user                              UserEntity                               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventPass                         EventPassEntity?
+  payment                           EventPaymentEntity?
+  submission                        EventRegistrationSubmissionEntity?
+  incompleteRegistrationReminderLog IncompleteRegistrationReminderLogEntity?
+  /// True while user saved registration answers but has not completed payment (paid events).
+  /// Hidden from organizer lists until checkout completes.
+  checkoutPending                   Boolean                                  @default(false) @map("checkout_pending")
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([referralId])
+  @@map("event_participant")
+  @@schema("events")
+}
+
+/// Event Pass entity - QR code-based pass for event participants.
+model EventPassEntity {
+  id            String                 @id @default(cuid())
+  /// Display ticket ID (format: № 001429)
+  ticketId      String                 @unique @map("ticket_id")
+  /// Unique secure token for QR code validation (UUID v4)
+  token         String                 @unique @default(uuid())
+  /// User this pass belongs to
+  userId        String                 @map("user_id")
+  /// Event this pass is for
+  eventId       String                 @map("event_id")
+  /// Participant record (links to EventParticipantEntity)
+  participantId String                 @unique @map("participant_id")
+  /// Whether pass has been scanned/used
+  isUsed        Boolean                @default(false) @map("is_used")
+  /// When pass was scanned
+  scannedAt     DateTime?              @map("scanned_at")
+  /// Who scanned the pass (organizer/manager)
+  scannedById   String?                @map("scanned_by_id")
+  /// Pass creation and updates
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @updatedAt @map("updated_at")
+  event         EventEntity            @relation("EventPasses", fields: [eventId], references: [id], onDelete: Cascade)
+  participant   EventParticipantEntity @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  scannedBy     UserEntity?            @relation("ScannedEventPasses", fields: [scannedById], references: [id])
+  user          UserEntity             @relation("UserEventPasses", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([participantId])
+  @@index([token])
+  @@map("event_pass")
+  @@schema("events")
+}
+
+/// Join table for per-event user roles (Manager, Evaluator).
+model EventUserRoleEntity {
+  id          String        @id @default(cuid())
+  eventId     String        @map("event_id")
+  userId      String        @map("user_id")
+  role        EventUserRole
+  createdAt   DateTime      @default(now()) @map("created_at")
+  createdById String?       @map("created_by_id")
+  createdBy   UserEntity?   @relation("EventRoleCreator", fields: [createdById], references: [id])
+  event       EventEntity   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user        UserEntity    @relation("UserEventRoles", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId, role])
+  @@index([eventId])
+  @@index([userId])
+  @@map("event_user_role")
+  @@schema("events")
+}
+
+/// Registration form for events (separate from hackathon forms).
+model EventRegistrationFormEntity {
+  id               String                         @id @default(cuid())
+  externalFormLink String?                        @map("external_form_link")
+  eventId          String?                        @unique @map("event_id")
+  createdAt        DateTime                       @default(now())
+  updatedAt        DateTime                       @updatedAt
+  fields           EventRegistrationFieldEntity[]
+  event            EventEntity?                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_registration_form")
+  @@schema("events")
+}
+
+/// Registration field for event forms.
+model EventRegistrationFieldEntity {
+  id                 String                          @id @default(cuid())
+  registrationFormId String                          @map("registration_form_id")
+  label              String
+  type               RegistrationFieldType
+  required           Boolean                         @default(false)
+  order              Int
+  options            String[]                        @default([])
+  placeholder        String?
+  createdAt          DateTime                        @default(now())
+  updatedAt          DateTime                        @updatedAt
+  answers            EventRegistrationAnswerEntity[]
+  registrationForm   EventRegistrationFormEntity     @relation(fields: [registrationFormId], references: [id], onDelete: Cascade)
+
+  @@unique([registrationFormId, order])
+  @@index([registrationFormId])
+  @@map("event_registration_field")
+  @@schema("events")
+}
+
+/// Registration submission for an event (links user + event + participant).
+model EventRegistrationSubmissionEntity {
+  id            String                          @id @default(cuid())
+  eventId       String                          @map("event_id")
+  userId        String                          @map("user_id")
+  participantId String                          @unique @map("participant_id")
+  submittedAt   DateTime                        @default(now()) @map("submitted_at")
+  createdAt     DateTime                        @default(now())
+  updatedAt     DateTime                        @updatedAt
+  answers       EventRegistrationAnswerEntity[]
+  event         EventEntity                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participant   EventParticipantEntity          @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  user          UserEntity                      @relation("UserEventSubmissions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@map("event_registration_submission")
+  @@schema("events")
+}
+
+/// Individual answer to a registration field.
+model EventRegistrationAnswerEntity {
+  id           String                            @id @default(cuid())
+  submissionId String                            @map("submission_id")
+  fieldId      String                            @map("field_id")
+  valueText    String?                           @map("value_text")
+  valueJson    Json?                             @map("value_json")
+  createdAt    DateTime                          @default(now())
+  updatedAt    DateTime                          @updatedAt
+  field        EventRegistrationFieldEntity      @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  submission   EventRegistrationSubmissionEntity @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, fieldId])
+  @@index([submissionId])
+  @@index([fieldId])
+  @@map("event_registration_answer")
+  @@schema("events")
+}
+
+/// Prize breakdown for events.
+model EventPrizeBreakdownEntity {
+  id          String      @id @default(cuid())
+  eventId     String      @map("event_id")
+  position    String
+  amount      Decimal     @db.Decimal(12, 2)
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  event       EventEntity @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_prize_breakdown")
+  @@schema("events")
+}
+
+/// Attachments for events (S3-ready: stores storageKey + optional publicUrl).
+model EventAttachmentEntity {
+  id         String      @id @default(cuid())
+  eventId    String      @map("event_id")
+  /// Storage key for S3 or other storage provider
+  storageKey String      @map("storage_key")
+  /// Optional public URL (for direct access or CDN)
+  publicUrl  String?     @map("public_url")
+  /// Original file name
+  fileName   String?     @map("file_name")
+  /// MIME type of the file
+  mimeType   String?     @map("mime_type")
+  /// File size in bytes
+  sizeBytes  Int?        @map("size_bytes")
+  createdAt  DateTime    @default(now())
+  event      EventEntity @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_attachment")
+  @@schema("events")
+}
+
+/// Type of event.
+enum EventType {
+  WORKSHOP
+  CONFERENCE
+  MEETUP
+  NETWORKING
+  SEMINAR
+  WEBINAR
+  OTHER
+
+  @@map("EventType")
+  @@schema("events")
+}
+
+/// Who can attend the event (multi-select).
+enum EventAttendeeEligibility {
+  EVERYONE_CAN_APPLY
+  SCHOOL_STUDENTS
+  COLLEGE_STUDENTS
+  FRESHERS
+  PROFESSIONALS
+
+  @@map("EventAttendeeEligibility")
+  @@schema("events")
+}
+
+/// Event pass sending mode.
+enum PassSendingMode {
+  IMMEDIATE
+  APPROVAL
+
+  @@map("PassSendingMode")
+  @@schema("events")
+}
+
+/// College matching mode for event restrictions.
+enum CollegeMatchMode {
+  PROFILE_ONLY
+  EMAIL_ONLY
+  EITHER_OR
+  BOTH_REQUIRED
+
+  @@map("CollegeMatchMode")
+  @@schema("events")
+}
+
+/// Per-event user roles (assigned by owner/admin).
+enum EventUserRole {
+  MANAGER
+  EVALUATOR
+
+  @@map("EventUserRole")
+  @@schema("events")
+}

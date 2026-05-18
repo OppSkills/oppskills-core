@@ -39,7 +39,7 @@ import {
   saveEventRegistrationCheckoutDraft,
 } from "@/lib/api/eventApi";
 import { getMe, submitOnboarding } from "@/lib/api/usersApi";
-import type { CreateOnboardingDto, MeResponseDto } from "@oppskills/types/frontend";
+import type { CreateOnboardingDto, MeResponseDto } from "@oppskills/types";
 import { mergeDefaultAndCustomFields } from "@/lib/registration/mergeRegistrationFields";
 import {
   buildCreateOnboardingDtoFromRegistration,

@@ -112,9 +112,9 @@ Look at the row for `migration_name='20251106112805_oppskills'` and check `logs`
 Use `prisma migrate resolve` depending on what happened:
 
 - If the migration **did not actually apply** (no schema changes): mark it rolled back:
-  - `pnpm -C packages/database exec prisma migrate resolve --rolled-back "20251106112805_oppskills" --schema packages/database/prisma/schema.prisma`
+  - `pnpm -C packages/database exec prisma migrate resolve --rolled-back "20251106112805_oppskills" --schema packages/database/prisma`
 - If the migration **partially applied**: fix the DB manually (or restore from backup), then mark it applied:
-  - `pnpm -C packages/database exec prisma migrate resolve --applied "20251106112805_oppskills" --schema packages/database/prisma/schema.prisma`
+  - `pnpm -C packages/database exec prisma migrate resolve --applied "20251106112805_oppskills" --schema packages/database/prisma`
 
 **Step 4: run migrations**
 

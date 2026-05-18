@@ -24,7 +24,7 @@ import { useAuth } from "@clerk/nextjs";
 import type {
     CreateFestivalDto,
     FestivalLocationDto,
-} from "@oppskills/types/frontend";
+} from "@oppskills/types";
 import { createFestival } from "@/lib/api/festivalApi";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";

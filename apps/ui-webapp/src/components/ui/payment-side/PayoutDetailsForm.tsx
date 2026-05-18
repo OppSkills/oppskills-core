@@ -5,7 +5,7 @@ import { Loader2, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PayoutDetailsInput } from "@/lib/api/paymentsApi";
+import type { PayoutDetailsInput } from "@/lib/api/paymentsApi";
 import GeneralModal from "@/components/ui/derived/GeneralModal";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 

@@ -1,4 +1,4 @@
-import type { CreateHackathonDto, UpdateHackathonDto } from "@oppskills/types/frontend";
+import type { CreateHackathonDto, UpdateHackathonDto } from "@oppskills/types";
 import {
   createHackathon,
   deleteHackathon,

@@ -1,14 +1,23 @@
 /**
- * Frontend-safe exports.
- * This file only exports types that don't depend on NestJS or other backend-only packages.
- * Use this in frontend applications to avoid bundling backend dependencies.
- * 
- * IMPORTANT: Only export TypeScript TYPES (interfaces, type aliases) here,
- * NOT classes with decorators which would pull in NestJS dependencies.
+ * Optional entry for frontend apps that need a **small runtime** surface (enums,
+ * a few exported constants like role lists) without going through main `index.js`,
+ * which eagerly re-exports the whole `dtos/` tree (`require("./dtos")`).
+ *
+ * For DTO/class shapes used only in TypeScript, prefer:
+ *
+ * ```ts
+ * import type { SomeDto } from "@oppskills/types";
+ * ```
+ *
+ * Value imports (`import { Enum }`) for enums-only should use **`@oppskills/types/enums`**
+ * so bundles do not load every DTO module.
+ *
+ * This file forwards enums and re-exports selected DTOs as **`export type`** (erased from JS)
+ * plus a few explicit value exports (HackathonUserRoleValues, DiscountType, etc.).
  */
 
-// Re-export all enums (no dependencies)
-export * from './enums/index';
+// Re-export all enums (no heavy dependencies)
+export * from "./enums/index";
 
 // =====================
 // Account DTOs (type-only)
@@ -18,11 +27,14 @@ export type {
   UpdateOnboardingDto,
   OnboardingProfileResponseDto,
   MeResponseDto,
-} from './dtos/backend/account/onboarding.dto';
+} from "./dtos/backend/account/onboarding.dto";
 
 export type {
-  CollegeSearchResultDto,
-} from './dtos/backend/account/college.dto';
+  UpdateProfileDto,
+  UpdateEducationDto,
+} from "./dtos/backend/account/user-account-profile.dto";
+
+export type { CollegeSearchResultDto } from "./dtos/backend/account/college.dto";
 
 // =====================
 // Hackathon DTOs (type-only)
@@ -53,7 +65,7 @@ export type {
   UpdateHackathonDto,
   UpdateHackathonRoundsDto,
   UpdateHackathonAdditionalInfoDto,
-} from './dtos/backend/hackathon/create-hackathon.dto';
+} from "./dtos/backend/hackathon/create-hackathon.dto";
 
 export type {
   HackathonUserRoleValue,
@@ -62,14 +74,12 @@ export type {
   HackathonRoleUserResponse,
   HackathonOwnerResponse,
   HackathonRolesResponse,
-} from './dtos/backend/hackathon/hackathon-roles.dto';
+} from "./dtos/backend/hackathon/hackathon-roles.dto";
 
-export type {
-  SendTeamEmailDto,
-} from './dtos/backend/hackathon/send-team-email.dto';
+export type { SendTeamEmailDto } from "./dtos/backend/hackathon/send-team-email.dto";
 
 // Also export the value constant (it's just an array, no NestJS deps)
-export { HackathonUserRoleValues } from './dtos/backend/hackathon/hackathon-roles.dto';
+export { HackathonUserRoleValues } from "./dtos/backend/hackathon/hackathon-roles.dto";
 
 // =====================
 // Festival DTOs (type-only)
@@ -81,19 +91,17 @@ export type {
   CreateFestivalDto,
   UpdateFestivalDto,
   UpdateFestivalStatusDto,
-} from './dtos/backend/festival/create-festival.dto';
+} from "./dtos/backend/festival/create-festival.dto";
 
 // =====================
 // Team DTOs (type-only)
 // =====================
-export type {
-  CreateTeamDto,
-} from './dtos/backend/team/team.dto';
+export type { CreateTeamDto } from "./dtos/backend/team/team.dto";
 
 export type {
   TeamInvitePreviewResponse,
   TeamInvitePreviewClosedReason,
-} from './dtos/backend/team/team-invite-preview.dto';
+} from "./dtos/backend/team/team-invite-preview.dto";
 
 // =====================
 // Event DTOs (type-only)
@@ -130,7 +138,7 @@ export type {
   // Registration DTOs
   EventRegistrationAnswerDto,
   JoinEventDto,
-} from './dtos/backend/event/create-event.dto';
+} from "./dtos/backend/event/create-event.dto";
 
 export type {
   EventUserRoleValue,
@@ -139,15 +147,60 @@ export type {
   EventRoleUserResponse,
   EventOwnerResponse,
   EventRolesResponse,
-} from './dtos/backend/event/event-roles.dto';
+} from "./dtos/backend/event/event-roles.dto";
 
 // Also export the value constant (it's just an array, no NestJS deps)
-export { EventUserRoleValues } from './dtos/backend/event/event-roles.dto';
+export { EventUserRoleValues } from "./dtos/backend/event/event-roles.dto";
 
 export type {
   EventPassDto,
   ScanEventPassDto,
   ScanResultDto,
-} from './dtos/backend/event/event-pass.dto';
+} from "./dtos/backend/event/event-pass.dto";
 
+// =====================
+// Payment DTOs (type-only)
+// =====================
+export type { MarkPayoutPaidDto } from "./dtos/backend/payments/admin-payout.dto";
+
+export type {
+  CreateDiscountCodeDto,
+  UpdateDiscountCodeDto,
+} from "./dtos/backend/payments/discount-code.dto";
+export { DiscountType } from "./dtos/backend/payments/discount-code.dto";
+
+export type {
+  CreateDraftTeamDto,
+  JoinDraftTeamDto,
+  LeaveDraftTeamDto,
+} from "./dtos/backend/payments/draft-team.dto";
+
+export type {
+  CreateOrderDto,
+  SaveHackathonRegistrationCheckoutDraftDto,
+  VerifyPaymentDto,
+} from "./dtos/backend/payments/hackathon-checkout.dto";
+
+export type {
+  OnboardRouteDto,
+  UpdateSettlementsDto,
+} from "./dtos/backend/payments/payments-route.dto";
+export { BusinessType } from "./dtos/backend/payments/payments-route.dto";
+
+export type { UpsertPayoutDetailsDto } from "./dtos/backend/payments/payout-details.dto";
+
+export type { CreateRefundDto } from "./dtos/backend/payments/refund.dto";
+
+export type { SubmitRegistrationDto } from "./dtos/backend/payments/registration-submit.dto";
+
+export type {
+  CreateTicketTierDto,
+  UpdateTicketTierDto,
+} from "./dtos/backend/payments/ticket-tier.dto";
+
+// =====================
+// Notifications
+// =====================
+export type { CreateNotificationDto } from "./dtos/backend/notification/schedule-notification.dto";
+export { ScheduleType, NotificationStatus } from "./dtos/backend/notification/schedule-notification.dto";
 

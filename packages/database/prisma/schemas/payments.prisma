@@ -1,0 +1,509 @@
+// PostgreSQL schema: payments
+// Payments, payouts, discounts, and billing
+
+/// Determines who bears the Razorpay processing fee (2% + 18% GST = 2.36%).
+enum FeeBearer {
+  ORGANISER
+  PARTICIPANT
+
+  @@map("FeeBearer")
+  @@schema("payments")
+}
+
+/// Server-side escrow for registration form answers between order creation and verify/webhook.
+/// Lets verify and webhook recover answers when the client omits them or never calls verify.
+model PaymentRegistrationEscrowEntity {
+  id              String     @id @default(cuid())
+  razorpayOrderId String     @unique @map("razorpay_order_id")
+  payerUserId     String     @map("payer_user_id")
+  resourceType    String     @map("resource_type")
+  hackathonId     String?    @map("hackathon_id")
+  eventId         String?    @map("event_id")
+  answers         Json
+  expiresAt       DateTime   @map("expires_at")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  user            UserEntity @relation(fields: [payerUserId], references: [id], onDelete: Cascade)
+
+  @@index([payerUserId])
+  @@index([hackathonId])
+  @@index([eventId])
+  @@map("payment_registration_escrow")
+  @@schema("payments")
+}
+
+/// Organizer's Razorpay Route linked account for receiving payouts.
+model RazorpayRouteAccountEntity {
+  id                String              @id @default(cuid())
+  userId            String              @unique @map("user_id")
+  razorpayAccountId String              @unique @map("razorpay_account_id")
+  routeProductId    String?             @map("route_product_id")
+  status            RazorpayRouteStatus @default(CREATED)
+  requirements      Json?
+  resolutionUrl     String?             @map("resolution_url")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  user              UserEntity          @relation("UserRazorpayRouteAccount", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("razorpay_route_account")
+  @@schema("payments")
+}
+
+/// Payment record for hackathon registration (supports PER_TEAM and PER_USER modes).
+model HackathonPaymentEntity {
+  id                             String                                   @id @default(cuid())
+  scope                          HackathonPaymentScope
+  hackathonId                    String                                   @map("hackathon_id")
+  organizerId                    String                                   @map("organizer_id")
+  payerUserId                    String                                   @map("payer_user_id")
+  teamId                         String?                                  @map("team_id")
+  ticketTierId                   String?                                  @map("ticket_tier_id")
+  currency                       String                                   @default("INR")
+  /// Registration / entry fee amount (organizer-facing); excludes payment-gateway charges.
+  grossAmount                    Decimal                                  @map("gross_amount") @db.Decimal(12, 2)
+  /// Razorpay gateway fee (2% + GST on that fee), not an OppSkills platform cut.
+  platformFeeAmount              Decimal                                  @map("platform_fee_amount") @db.Decimal(12, 2)
+  organizerShareAmount           Decimal                                  @map("organizer_share_amount") @db.Decimal(12, 2)
+  razorpayOrderId                String                                   @unique @map("razorpay_order_id")
+  razorpayPaymentId              String?                                  @unique @map("razorpay_payment_id")
+  razorpaySignature              String?                                  @map("razorpay_signature")
+  razorpayTransferId             String?                                  @map("razorpay_transfer_id")
+  transferOnHold                 Boolean                                  @default(true) @map("transfer_on_hold")
+  transferOnHoldUntil            Int?                                     @map("transfer_on_hold_until")
+  transferStatus                 String?                                  @map("transfer_status")
+  settlementStatus               String?                                  @map("settlement_status")
+  orderStatus                    HackathonPaymentOrderStatus              @default(CREATED) @map("order_status")
+  paymentStatus                  HackathonPaymentStatus                   @default(CREATED) @map("payment_status")
+  discountCodeId                 String?                                  @map("discount_code_id")
+  discountAmount                 Decimal?                                 @map("discount_amount") @db.Decimal(12, 2)
+  razorpayRefundId               String?                                  @unique @map("razorpay_refund_id")
+  refundStatus                   RefundStatus?                            @map("refund_status")
+  refundedAt                     DateTime?                                @map("refunded_at")
+  capturedAt                     DateTime?                                @map("captured_at")
+  failedAt                       DateTime?                                @map("failed_at")
+  createdAt                      DateTime                                 @default(now()) @map("created_at")
+  updatedAt                      DateTime                                 @updatedAt @map("updated_at")
+  refundedAmount                 Decimal                                  @default(0) @map("refunded_amount") @db.Decimal(12, 2)
+  /// Total charged via Razorpay (used for refunds). Null on legacy rows.
+  chargedAmount                  Decimal?                                 @map("charged_amount") @db.Decimal(12, 2)
+  discountRedemption             HackathonDiscountRedemptionEntity?
+  discountCode                   HackathonDiscountCodeEntity?             @relation(fields: [discountCodeId], references: [id])
+  hackathon                      HackathonEntity                          @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  organizer                      UserEntity                               @relation("HackathonPaymentOrganizer", fields: [organizerId], references: [id])
+  payerUser                      UserEntity                               @relation("HackathonPaymentPayer", fields: [payerUserId], references: [id])
+  team                           TeamEntity?                              @relation(fields: [teamId], references: [id])
+  ticketTier                     TicketTierEntity?                        @relation("HackathonPaymentTicketTier", fields: [ticketTierId], references: [id])
+  payoutItems                    HackathonPayoutItemEntity[]
+  incompleteRegistrationReminder IncompleteRegistrationReminderLogEntity?
+
+  @@index([hackathonId])
+  @@index([organizerId])
+  @@index([payerUserId])
+  @@index([ticketTierId])
+  @@map("hackathon_payment")
+  @@schema("payments")
+}
+
+/// Discount code for a hackathon (supports PERCENT and FIXED types).
+model HackathonDiscountCodeEntity {
+  id             String                              @id @default(cuid())
+  hackathonId    String                              @map("hackathon_id")
+  code           String
+  type           DiscountCodeType
+  value          Decimal                             @db.Decimal(12, 2)
+  active         Boolean                             @default(true)
+  maxRedemptions Int?                                @map("max_redemptions")
+  maxPerUser     Int                                 @default(1) @map("max_per_user")
+  validFrom      DateTime?                           @map("valid_from")
+  validUntil     DateTime?                           @map("valid_until")
+  createdAt      DateTime                            @default(now()) @map("created_at")
+  updatedAt      DateTime                            @updatedAt @map("updated_at")
+  hackathon      HackathonEntity                     @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  redemptions    HackathonDiscountRedemptionEntity[]
+  payments       HackathonPaymentEntity[]
+
+  @@unique([hackathonId, code])
+  @@index([hackathonId])
+  @@map("hackathon_discount_code")
+  @@schema("payments")
+}
+
+/// Tracks redemption of a discount code by a user.
+model HackathonDiscountRedemptionEntity {
+  id             String                      @id @default(cuid())
+  discountCodeId String                      @map("discount_code_id")
+  userId         String                      @map("user_id")
+  paymentId      String                      @unique @map("payment_id")
+  redeemedAt     DateTime                    @default(now()) @map("redeemed_at")
+  discountCode   HackathonDiscountCodeEntity @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  payment        HackathonPaymentEntity      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  user           UserEntity                  @relation("UserDiscountRedemptions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([discountCodeId, userId])
+  @@index([discountCodeId])
+  @@index([userId])
+  @@map("hackathon_discount_redemption")
+  @@schema("payments")
+}
+
+/// Stores Razorpay webhook events for idempotency.
+model RazorpayWebhookEventEntity {
+  id          String    @id @default(cuid())
+  eventId     String    @unique @map("event_id")
+  eventType   String    @map("event_type")
+  payload     Json
+  receivedAt  DateTime  @default(now()) @map("received_at")
+  processedAt DateTime? @map("processed_at")
+
+  @@map("razorpay_webhook_event")
+  @@schema("payments")
+}
+
+/// Organizer's bank account details for manual payouts.
+model OrganizerPayoutDetailsEntity {
+  id                String           @id @default(cuid())
+  userId            String           @map("user_id")
+  eventId           String?          @unique @map("event_id")
+  hackathonId       String?          @unique @map("hackathon_id")
+  accountHolderName String           @map("account_holder_name")
+  accountNumber     String           @map("account_number")
+  ifsc              String
+  bankName          String           @map("bank_name")
+  panNumber         String?          @map("pan_number")
+  gstNumber         String?          @map("gst_number")
+  upiId             String           @map("upi_id")
+  pinCode           String           @map("pin_code")
+  city              String           @map("city")
+  state             String           @map("state")
+  address1          String           @map("address1")
+  address2          String           @map("address2")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  phone             String           @map("phone")
+  email             String           @map("email")
+  user              UserEntity       @relation("UserPayoutDetails", fields: [userId], references: [id], onDelete: Cascade)
+  event             EventEntity?     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  hackathon         HackathonEntity? @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([hackathonId])
+  @@map("organizer_payout_details")
+  @@schema("payments")
+}
+
+/// Record of a manual payout to an organizer for a hackathon.
+model HackathonPayoutEntity {
+  id          String                      @id @default(cuid())
+  hackathonId String                      @map("hackathon_id")
+  organizerId String                      @map("organizer_id")
+  amount      Decimal                     @db.Decimal(12, 2)
+  currency    String                      @default("INR")
+  status      PayoutStatus                @default(PAID)
+  eligibleAt  DateTime                    @map("eligible_at")
+  paidAt      DateTime                    @map("paid_at")
+  reference   String
+  notes       String?
+  createdAt   DateTime                    @default(now()) @map("created_at")
+  updatedAt   DateTime                    @updatedAt @map("updated_at")
+  hackathon   HackathonEntity             @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  organizer   UserEntity                  @relation("UserPayoutsReceived", fields: [organizerId], references: [id])
+  items       HackathonPayoutItemEntity[]
+
+  @@index([hackathonId])
+  @@index([organizerId])
+  @@map("hackathon_payout")
+  @@schema("payments")
+}
+
+/// Links a payout to the individual payments it covers.
+model HackathonPayoutItemEntity {
+  id              String                 @id @default(cuid())
+  payoutId        String                 @map("payout_id")
+  paymentId       String                 @map("payment_id")
+  amountAllocated Decimal                @map("amount_allocated") @db.Decimal(12, 2)
+  createdAt       DateTime               @default(now()) @map("created_at")
+  payment         HackathonPaymentEntity @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  payout          HackathonPayoutEntity  @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
+  @@unique([payoutId, paymentId])
+  @@index([payoutId])
+  @@index([paymentId])
+  @@map("hackathon_payout_item")
+  @@schema("payments")
+}
+
+/// Payment record for event registration (individual participation).
+model EventPaymentEntity {
+  id                             String                                   @id @default(cuid())
+  eventId                        String                                   @map("event_id")
+  organizerId                    String                                   @map("organizer_id")
+  payerUserId                    String                                   @map("payer_user_id")
+  participantId                  String?                                  @unique @map("participant_id")
+  ticketTierId                   String?                                  @map("ticket_tier_id")
+  currency                       String                                   @default("INR")
+  /// Registration / entry fee amount (organizer-facing); excludes payment-gateway charges.
+  grossAmount                    Decimal                                  @map("gross_amount") @db.Decimal(12, 2)
+  /// Razorpay gateway fee (2% + GST on that fee), not an OppSkills platform cut.
+  platformFeeAmount              Decimal                                  @map("platform_fee_amount") @db.Decimal(12, 2)
+  organizerShareAmount           Decimal                                  @map("organizer_share_amount") @db.Decimal(12, 2)
+  razorpayOrderId                String                                   @unique @map("razorpay_order_id")
+  razorpayPaymentId              String?                                  @unique @map("razorpay_payment_id")
+  razorpaySignature              String?                                  @map("razorpay_signature")
+  razorpayTransferId             String?                                  @map("razorpay_transfer_id")
+  transferOnHold                 Boolean                                  @default(true) @map("transfer_on_hold")
+  transferOnHoldUntil            Int?                                     @map("transfer_on_hold_until")
+  transferStatus                 String?                                  @map("transfer_status")
+  settlementStatus               String?                                  @map("settlement_status")
+  orderStatus                    EventPaymentOrderStatus                  @default(CREATED) @map("order_status")
+  paymentStatus                  EventPaymentStatus                       @default(CREATED) @map("payment_status")
+  discountCodeId                 String?                                  @map("discount_code_id")
+  discountAmount                 Decimal?                                 @map("discount_amount") @db.Decimal(12, 2)
+  razorpayRefundId               String?                                  @unique @map("razorpay_refund_id")
+  refundStatus                   RefundStatus?                            @map("refund_status")
+  refundedAmount                 Decimal                                  @default(0) @map("refunded_amount") @db.Decimal(12, 2)
+  refundedAt                     DateTime?                                @map("refunded_at")
+  capturedAt                     DateTime?                                @map("captured_at")
+  failedAt                       DateTime?                                @map("failed_at")
+  createdAt                      DateTime                                 @default(now()) @map("created_at")
+  updatedAt                      DateTime                                 @updatedAt @map("updated_at")
+  /// Total charged via Razorpay (used for refunds). Null on legacy rows.
+  chargedAmount                  Decimal?                                 @map("charged_amount") @db.Decimal(12, 2)
+  discountRedemption             EventDiscountRedemptionEntity?
+  discountCode                   EventDiscountCodeEntity?                 @relation(fields: [discountCodeId], references: [id])
+  event                          EventEntity                              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  organizer                      UserEntity                               @relation("EventPaymentOrganizer", fields: [organizerId], references: [id])
+  participant                    EventParticipantEntity?                  @relation(fields: [participantId], references: [id])
+  payerUser                      UserEntity                               @relation("EventPaymentPayer", fields: [payerUserId], references: [id])
+  ticketTier                     TicketTierEntity?                        @relation("EventPaymentTicketTier", fields: [ticketTierId], references: [id])
+  payoutItems                    EventPayoutItemEntity[]
+  incompleteRegistrationReminder IncompleteRegistrationReminderLogEntity?
+
+  @@index([eventId])
+  @@index([organizerId])
+  @@index([payerUserId])
+  @@index([ticketTierId])
+  @@map("event_payment")
+  @@schema("payments")
+}
+
+/// Discount code for an event (supports PERCENT and FIXED types).
+model EventDiscountCodeEntity {
+  id             String                          @id @default(cuid())
+  eventId        String                          @map("event_id")
+  code           String
+  type           DiscountCodeType
+  value          Decimal                         @db.Decimal(12, 2)
+  active         Boolean                         @default(true)
+  maxRedemptions Int?                            @map("max_redemptions")
+  maxPerUser     Int                             @default(1) @map("max_per_user")
+  validFrom      DateTime?                       @map("valid_from")
+  validUntil     DateTime?                       @map("valid_until")
+  createdAt      DateTime                        @default(now()) @map("created_at")
+  updatedAt      DateTime                        @updatedAt @map("updated_at")
+  event          EventEntity                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  redemptions    EventDiscountRedemptionEntity[]
+  payments       EventPaymentEntity[]
+
+  @@unique([eventId, code])
+  @@index([eventId])
+  @@map("event_discount_code")
+  @@schema("payments")
+}
+
+/// Tracks redemption of an event discount code by a user.
+model EventDiscountRedemptionEntity {
+  id             String                  @id @default(cuid())
+  discountCodeId String                  @map("discount_code_id")
+  userId         String                  @map("user_id")
+  paymentId      String                  @unique @map("payment_id")
+  redeemedAt     DateTime                @default(now()) @map("redeemed_at")
+  discountCode   EventDiscountCodeEntity @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  payment        EventPaymentEntity      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  user           UserEntity              @relation("UserEventDiscountRedemptions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([discountCodeId, userId])
+  @@index([discountCodeId])
+  @@index([userId])
+  @@map("event_discount_redemption")
+  @@schema("payments")
+}
+
+/// Record of a manual payout to an organizer for an event.
+model EventPayoutEntity {
+  id          String                  @id @default(cuid())
+  eventId     String                  @map("event_id")
+  organizerId String                  @map("organizer_id")
+  amount      Decimal                 @db.Decimal(12, 2)
+  currency    String                  @default("INR")
+  status      PayoutStatus            @default(PAID)
+  eligibleAt  DateTime                @map("eligible_at")
+  paidAt      DateTime                @map("paid_at")
+  reference   String
+  notes       String?
+  createdAt   DateTime                @default(now()) @map("created_at")
+  updatedAt   DateTime                @updatedAt @map("updated_at")
+  event       EventEntity             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  organizer   UserEntity              @relation("UserEventPayoutsReceived", fields: [organizerId], references: [id])
+  items       EventPayoutItemEntity[]
+
+  @@index([eventId])
+  @@index([organizerId])
+  @@map("event_payout")
+  @@schema("payments")
+}
+
+/// Links an event payout to the individual payments it covers.
+model EventPayoutItemEntity {
+  id              String             @id @default(cuid())
+  payoutId        String             @map("payout_id")
+  paymentId       String             @map("payment_id")
+  amountAllocated Decimal            @map("amount_allocated") @db.Decimal(12, 2)
+  createdAt       DateTime           @default(now()) @map("created_at")
+  payment         EventPaymentEntity @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  payout          EventPayoutEntity  @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
+  @@unique([payoutId, paymentId])
+  @@index([payoutId])
+  @@index([paymentId])
+  @@map("event_payout_item")
+  @@schema("payments")
+}
+
+/// Ticket tier for events and hackathons (multi-pricing support).
+model TicketTierEntity {
+  id                String                   @id @default(cuid())
+  name              String
+  description       String?
+  price             Decimal                  @db.Decimal(12, 2)
+  currency          String                   @default("INR")
+  /// null = unlimited
+  capacity          Int?
+  isActive          Boolean                  @default(true) @map("is_active")
+  /// Display order (lower = shown first)
+  order             Int                      @default(0)
+  eventId           String?                  @map("event_id")
+  hackathonId       String?                  @map("hackathon_id")
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  updatedAt         DateTime                 @updatedAt @map("updated_at")
+  event             EventEntity?             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  hackathon         HackathonEntity?         @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  eventPayments     EventPaymentEntity[]     @relation("EventPaymentTicketTier")
+  hackathonPayments HackathonPaymentEntity[] @relation("HackathonPaymentTicketTier")
+
+  @@index([eventId])
+  @@index([hackathonId])
+  @@map("ticket_tier")
+  @@schema("payments")
+}
+
+/// Tracks last send time for incomplete-registration reminder emails (per hackathon or event payment).
+model IncompleteRegistrationReminderLogEntity {
+  id                 String                  @id @default(cuid())
+  hackathonPaymentId String?                 @unique @map("hackathon_payment_id")
+  eventPaymentId     String?                 @unique @map("event_payment_id")
+  lastSentAt         DateTime                @map("last_sent_at")
+  sentCount          Int                     @default(1) @map("sent_count")
+  createdAt          DateTime                @default(now()) @map("created_at")
+  updatedAt          DateTime                @updatedAt @map("updated_at")
+  /// Free event: participant row without a completed registration submission (no payment row).
+  eventParticipantId String?                 @unique @map("event_participant_id")
+  eventParticipant   EventParticipantEntity? @relation(fields: [eventParticipantId], references: [id], onDelete: Cascade)
+  eventPayment       EventPaymentEntity?     @relation(fields: [eventPaymentId], references: [id], onDelete: Cascade)
+  hackathonPayment   HackathonPaymentEntity? @relation(fields: [hackathonPaymentId], references: [id], onDelete: Cascade)
+
+  @@index([lastSentAt])
+  @@map("incomplete_registration_reminder_log")
+  @@schema("payments")
+}
+
+/// Status of organizer's Razorpay Route linked account.
+enum RazorpayRouteStatus {
+  CREATED
+  UNDER_REVIEW
+  NEEDS_CLARIFICATION
+  ACTIVATED
+  SUSPENDED
+
+  @@map("RazorpayRouteStatus")
+  @@schema("payments")
+}
+
+/// Scope of a hackathon payment (team-wide or per-user).
+enum HackathonPaymentScope {
+  TEAM
+  USER
+
+  @@map("HackathonPaymentScope")
+  @@schema("payments")
+}
+
+/// Status of hackathon payment.
+enum HackathonPaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+
+  @@map("HackathonPaymentStatus")
+  @@schema("payments")
+}
+
+/// Status of hackathon payment order.
+enum HackathonPaymentOrderStatus {
+  CREATED
+  PAID
+  FAILED
+
+  @@map("HackathonPaymentOrderStatus")
+  @@schema("payments")
+}
+
+/// Status of a refund.
+enum RefundStatus {
+  CREATED
+  PROCESSED
+  FAILED
+
+  @@map("RefundStatus")
+  @@schema("payments")
+}
+
+/// Type of discount code.
+enum DiscountCodeType {
+  PERCENT
+  FIXED
+
+  @@map("DiscountCodeType")
+  @@schema("payments")
+}
+
+/// Status of a manual payout to organizer.
+enum PayoutStatus {
+  PAID
+
+  @@map("PayoutStatus")
+  @@schema("payments")
+}
+
+/// Status of event payment.
+enum EventPaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+
+  @@map("EventPaymentStatus")
+  @@schema("payments")
+}
+
+/// Status of event payment order.
+enum EventPaymentOrderStatus {
+  CREATED
+  PAID
+  FAILED
+
+  @@map("EventPaymentOrderStatus")
+  @@schema("payments")
+}
