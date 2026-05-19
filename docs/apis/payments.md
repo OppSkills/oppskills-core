@@ -33,10 +33,19 @@ When a user registers for a paid hackathon, your frontend must execute the Razor
 1. **Calculate Price (Draft Checkout)**
    - **Endpoint:** `POST /hackathons/:slug/registration/checkout-draft`
    - **Usage:** Send the `ticketId` and an optional `discountCode`. The backend calculates the final amount (including taxes and platform fees) and returns it. Display this final price to the user in your UI.
+   - **Request Body:**
+     ```json
+     {
+       "ticketTierId": "tier_123",
+       "discountCode": "SAVE20" // Optional
+     }
+     ```
+   - **Returns:** An object containing the base price, applied discount, calculated taxes, and the final `totalAmount`.
 
 2. **Create Razorpay Order**
    - **Endpoint:** `POST /hackathons/:slug/payment/order`
    - **Usage:** Once the user clicks "Pay", call this. The backend talks to Razorpay and returns a `razorpayOrderId`.
+   - **Returns:** `{ "orderId": "order_XYZ123", "amount": 50000, "currency": "INR" }`
 
 3. **Open Razorpay UI (Frontend)**
    - **Usage:** Use the Razorpay React Native SDK. Pass the `razorpayOrderId` to open the payment sheet. 
@@ -44,6 +53,15 @@ When a user registers for a paid hackathon, your frontend must execute the Razor
 4. **Verify Payment**
    - **Endpoint:** `POST /hackathons/:slug/payment/verify`
    - **Usage:** If the user pays successfully, Razorpay gives you a signature on the frontend. Send that signature to this endpoint. The backend verifies it and officially completes the registration!
+   - **Request Body:**
+     ```json
+     {
+       "razorpay_order_id": "order_XYZ123",
+       "razorpay_payment_id": "pay_ABC987",
+       "razorpay_signature": "sig_secret_hash_string"
+     }
+     ```
+   - **Returns:** `{ "success": true, "registrationId": "reg_789" }`
 
 ### React Native Example: Verification Step
 ```typescript

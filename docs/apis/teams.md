@@ -10,7 +10,14 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
 
 ### Create a Team (`POST /hackathons/create-team`)
 - **Usage:** Creates a new team and makes the current user the leader.
-- **Body:** `{ "hackathonId": "hack_123", "teamName": "Byte Busters" }`
+- **Request Body:** 
+  ```json
+  { 
+    "hackathonId": "hack_123", 
+    "teamName": "Byte Busters" 
+  }
+  ```
+- **Returns:** The created team object, including the `id` and `inviteCode`.
 
 ### React Native Example (TanStack Query)
 ```typescript
@@ -27,13 +34,32 @@ const createTeam = useMutation({
 
 ### Join an Existing Team (`POST /hackathons/join-team`)
 - **Usage:** Adds the user to an existing team.
-- **Body:** `{ "teamId": "team_abc", "inviteCode": "XYZ789" }`
+- **Request Body:** 
+  ```json
+  { 
+    "teamId": "team_abc", 
+    "inviteCode": "XYZ789" 
+  }
+  ```
+- **Returns:** `{ "success": true }`
 
 ---
 
 ## 2. Viewing Teams
 
 - **Get My Team:** `GET /hackathons/my-team` (Fetches the user's current team).
+  - **Returns:**
+    ```json
+    {
+      "id": "team_abc",
+      "name": "Byte Busters",
+      "inviteCode": "XYZ789",
+      "leaderId": "user_123",
+      "members": [
+        { "id": "user_123", "name": "John Doe", "role": "LEADER" }
+      ]
+    }
+    ```
 - **Get Specific Team:** `GET /hackathons/team/:teamId` (Gets team members and details).
 - **List All Teams (Leaderboard):** `GET /hackathons/teams/:hackathonId`
 

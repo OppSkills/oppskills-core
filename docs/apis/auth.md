@@ -1,6 +1,6 @@
 # Authentication API
 
-This guide explains how authentication works in OppSkills and how to implement it in web and mobile apps. 
+This guide explains how authentication works in OppSkills and how to implement it in web and mobile apps.
 
 ## Overview
 
@@ -14,169 +14,336 @@ OppSkills uses **Clerk** for all user authentication.
 
 ---
 
-## 1. Web Application (Next.js)
+## 1. Sign Up Flow (Email + Password + Verification OTP)
 
-### UI Components (Sign In / Sign Up)
-Use Clerk's pre-built components for the easiest setup.
+To sign up a user with email and password, you must capture their details, register them with Clerk, send a verification email with a 6-digit OTP code, and verify it.
 
+### Web (Next.js Component / Custom Flow)
+You can use the default Clerk `<SignUp />` component or create a custom form using `useSignUp()`.
+
+### Mobile (React Native / Expo Custom Flow)
 ```tsx
-import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import * as React from 'react';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSignUp } from '@clerk/clerk-expo';
 
-export function Navbar() {
+export function SignUpScreen({ onSignUpSuccess }: { onSignUpSuccess: () => void }) {
+  const { isLoaded, signUp, setActive } = useSignUp();
+
+  const [emailAddress, setEmailAddress] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [pendingVerification, setPendingVerification] = React.useState(false);
+  const [code, setCode] = React.useState('');
+
+  // 1. Submit email and password
+  const onSignUpPress = async () => {
+    if (!isLoaded) return;
+    try {
+      await signUp.create({ emailAddress, password });
+      // Send the verification email code
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      setPendingVerification(true);
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+    }
+  };
+
+  // 2. Verify the 6-digit OTP code sent to user email
+  const onPressVerify = async () => {
+    if (!isLoaded) return;
+    try {
+      const completeSignUp = await signUp.attemptEmailAddressVerification({ code });
+      if (completeSignUp.status === 'complete') {
+        await setActive({ session: completeSignUp.createdSessionId });
+        onSignUpSuccess();
+      } else {
+        console.error(JSON.stringify(completeSignUp, null, 2));
+      }
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+    }
+  };
+
   return (
-    <nav>
-      <SignedOut>
-        {/* Shows when user is logged out */}
-        <SignInButton mode="modal" />
-        <SignUpButton mode="modal" />
-      </SignedOut>
-      <SignedIn>
-        {/* Shows when user is logged in */}
-        <UserButton />
-      </SignedIn>
-    </nav>
+    <View style={{ padding: 20 }}>
+      {!pendingVerification ? (
+        <View>
+          <TextInput
+            autoCapitalize="none"
+            placeholder="Email..."
+            value={emailAddress}
+            onChangeText={(email) => setEmailAddress(email)}
+          />
+          <TextInput
+            placeholder="Password..."
+            secureTextEntry={true}
+            value={password}
+            onChangeText={(pwd) => setPassword(pwd)}
+          />
+          <TouchableOpacity onPress={onSignUpPress}>
+            <Text style={{ color: 'blue', marginTop: 10 }}>Sign Up</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View>
+          <TextInput
+            placeholder="6-digit verification code..."
+            value={code}
+            onChangeText={(c) => setCode(c)}
+          />
+          <TouchableOpacity onPress={onPressVerify}>
+            <Text style={{ color: 'blue', marginTop: 10 }}>Verify Email</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
   );
 }
 ```
 
-### Making API Calls (Client Components)
-Use the `useAuth` hook to get the token before making an API request.
+---
 
-```typescript
-import { useAuth } from "@clerk/nextjs";
+## 2. Sign In Flow (Email + Password)
 
-export function useMyData() {
-  const { getToken } = useAuth();
+### Mobile (React Native / Expo Custom Flow)
+```tsx
+import * as React from 'react';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSignIn } from '@clerk/clerk-expo';
 
-  const fetchMyData = async () => {
-    const token = await getToken(); 
-    
-    const response = await fetch("http://localhost:3001/hackathons/my", {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
-    return response.json();
+export function SignInScreen({ onSignInSuccess }: { onSignInSuccess: () => void }) {
+  const { isLoaded, signIn, setActive } = useSignIn();
+  const [emailAddress, setEmailAddress] = React.useState('');
+  const [password, setPassword] = React.useState('');
+
+  const onSignInPress = async () => {
+    if (!isLoaded) return;
+    try {
+      const completeSignIn = await signIn.create({
+        identifier: emailAddress,
+        password,
+      });
+      // Set the active session and log the user in
+      await setActive({ session: completeSignIn.createdSessionId });
+      onSignInSuccess();
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+    }
   };
 
-  return { fetchMyData };
-}
-```
-
-### Making API Calls (Server Components / Actions)
-Use the `auth()` helper to get the token on the server.
-
-```typescript
-import { auth } from "@clerk/nextjs/server";
-
-export async function fetchServerData() {
-  const { getToken } = await auth();
-  const token = await getToken();
-  
-  const response = await fetch("http://localhost:3001/hackathons/my", {
-    headers: {
-      "Authorization": `Bearer ${token}`
-    }
-  });
-  return response.json();
-}
-```
-
----
-
-## 2. Mobile Application (React Native / Expo)
-
-### UI Components (Sign In / Sign Up)
-- **Google Login**: Use Clerk’s OAuth flow for Expo.
-- **Email + Password**: Use Clerk’s `useSignUp` and `useSignIn` hooks.
-
-### Making API Calls
-Use the `@clerk/clerk-expo` package to get the token. It is best practice to wrap this in a custom hook.
-
-```tsx
-import { useAuth } from '@clerk/clerk-expo';
-import { useCallback, useState } from 'react';
-import { Alert } from 'react-native';
-
-export function useProtectedApi() {
-  const { getToken, isSignedIn } = useAuth();
-  const [data, setData] = useState<any>(null);
-
-  const fetchMyHackathons = useCallback(async () => {
-    if (!isSignedIn) {
-      Alert.alert('Error', 'You must be signed in.');
-      return;
-    }
-
-    try {
-      const token = await getToken();
-      const response = await fetch('https://api.oppskills.com/hackathons/my', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-        },
-      });
-
-      if (!response.ok) throw new Error('API request failed');
-      
-      const json = await response.json();
-      setData(json);
-    } catch (error) {
-      console.error(error);
-    }
-  }, [getToken, isSignedIn]);
-
-  return { fetchMyHackathons, data };
+  return (
+    <View style={{ padding: 20 }}>
+      <TextInput
+        autoCapitalize="none"
+        placeholder="Email..."
+        value={emailAddress}
+        onChangeText={(email) => setEmailAddress(email)}
+      />
+      <TextInput
+        placeholder="Password..."
+        secureTextEntry={true}
+        value={password}
+        onChangeText={(pwd) => setPassword(pwd)}
+      />
+      <TouchableOpacity onPress={onSignInPress}>
+        <Text style={{ color: 'blue', marginTop: 10 }}>Sign In</Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
 ```
 
 ---
 
-## 3. Password Reset Flow (Forgot Password)
+## 3. Social Logins (Google OAuth)
 
-If you need to build a custom "Forgot Password" screen, use a two-step flow with Clerk's `useSignIn` hook.
-
-### Step 1: Send the Code
-Send a 6-digit verification code to the user's email.
-
-```typescript
-import { useSignIn } from "@clerk/nextjs"; // Use @clerk/clerk-expo for React Native
-
-const { signIn } = useSignIn();
-
-const sendCode = async (email: string) => {
-  await signIn.create({
-    strategy: "reset_password_email_code",
-    identifier: email,
-  });
-};
-```
-
-### Step 2: Verify Code and Set New Password
-Pass the code and the new password to complete the reset. This automatically logs the user in.
-
+### Web (Next.js)
+Simply render the `<SignInButton>` or call `signIn.authenticateWithRedirect()`:
 ```typescript
 import { useSignIn } from "@clerk/nextjs";
 
-const { signIn, setActive } = useSignIn();
+export function SocialLoginButton() {
+  const { signIn } = useSignIn();
+  const loginWithGoogle = () => {
+    signIn?.authenticateWithRedirect({
+      strategy: "oauth_google",
+      redirectUrl: "/sso-callback",
+      redirectUrlComplete: "/"
+    });
+  };
+  return <button onClick={loginWithGoogle}>Google Login</button>;
+}
+```
 
-const resetPassword = async (code: string, newPassword: string) => {
-  const result = await signIn.attemptFirstFactor({
-    strategy: "reset_password_email_code",
-    code: code,
-    password: newPassword,
-  });
+### Mobile (React Native / Expo)
+In React Native, OAuth requires opening the system browser using `expo-web-browser` and capturing the redirect URL.
 
-  if (result.status === "complete") {
-    // Log the user in with the new session
-    await setActive({ session: result.createdSessionId });
-  }
-};
+```typescript
+import React from 'react';
+import * as WebBrowser from 'expo-web-browser';
+import { Button } from 'react-native';
+import { useOAuth } from '@clerk/clerk-expo';
+import * as Linking from 'expo-linking';
+
+// Warm up the browser on mobile before authentication starts
+WebBrowser.maybeCompleteAuthSession();
+
+export function GoogleLoginButton() {
+  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
+
+  const onPressGoogleLogin = React.useCallback(async () => {
+    try {
+      const { createdSessionId, signIn, signUp, setActive } = await startOAuthFlow({
+        redirectUrl: Linking.createURL('/oauth-callback', { scheme: 'oppskills' }),
+      });
+
+      if (createdSessionId) {
+        setActive!({ session: createdSessionId });
+      } else {
+        // Use signIn or signUp for next steps such as MFA verification
+      }
+    } catch (err) {
+      console.error('OAuth error: ', err);
+    }
+  }, []);
+
+  return <Button title="Login with Google" onPress={onPressGoogleLogin} />;
+}
 ```
 
 ---
 
-## 4. Manual API Testing (Postman / cURL)
+## 4. Session & Signed-In User Management
+
+### Checking & Monitoring Auth State
+- On Web: Check status using Clerk’s `<SignedIn>` or `<SignedOut>` components, or the `useUser()` hook.
+- On Mobile: Use the `useAuth()` or `useUser()` hooks to inspect if a session exists.
+
+```typescript
+import { useUser } from '@clerk/clerk-expo';
+import { Text, View } from 'react-native';
+
+export function ProfileHeader() {
+  const { isSignedIn, user } = useUser();
+
+  if (!isSignedIn || !user) return null;
+
+  return (
+    <View>
+      <Text>Welcome back, {user.firstName || user.username}</Text>
+      <Text>Primary Email: {user.primaryEmailAddress?.emailAddress}</Text>
+    </View>
+  );
+}
+```
+
+### Sign Out / Log Out
+```typescript
+import { useAuth } from '@clerk/clerk-expo';
+import { Button } from 'react-native';
+
+export function LogoutButton() {
+  const { signOut } = useAuth();
+  return <Button title="Sign Out" onPress={() => signOut()} />;
+}
+```
+
+---
+
+## 5. Password Reset Flow (Forgot Password)
+
+If a user forgets their password, they must enter their email, receive a 6-digit OTP code, verify it, and then submit a new password.
+
+### Custom React Native Flow
+```tsx
+import * as React from 'react';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSignIn } from '@clerk/clerk-expo';
+
+export function ForgotPasswordScreen({ onResetSuccess }: { onResetSuccess: () => void }) {
+  const { isLoaded, signIn, setActive } = useSignIn();
+
+  const [emailAddress, setEmailAddress] = React.useState('');
+  const [code, setCode] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [step, setStep] = React.useState(1); // 1 = Send Code, 2 = Verify & Reset
+
+  // Step 1: Request a password reset code
+  const onRequestCode = async () => {
+    if (!isLoaded) return;
+    try {
+      await signIn.create({
+        strategy: 'reset_password_email_code',
+        identifier: emailAddress,
+      });
+      setStep(2);
+    } catch (err: any) {
+      console.error(err.message);
+    }
+  };
+
+  // Step 2: Submit the reset code and the new password
+  const onSubmitNewPassword = async () => {
+    if (!isLoaded) return;
+    try {
+      const result = await signIn.attemptFirstFactor({
+        strategy: 'reset_password_email_code',
+        code,
+        password: newPassword,
+      });
+
+      if (result.status === 'complete') {
+        // Login the user with the new session
+        await setActive({ session: result.createdSessionId });
+        onResetSuccess();
+      } else {
+        console.error(result);
+      }
+    } catch (err: any) {
+      console.error(err.message);
+    }
+  };
+
+  return (
+    <View style={{ padding: 20 }}>
+      {step === 1 ? (
+        <View>
+          <TextInput
+            autoCapitalize="none"
+            placeholder="Enter your email..."
+            value={emailAddress}
+            onChangeText={setEmailAddress}
+          />
+          <TouchableOpacity onPress={onRequestCode}>
+            <Text style={{ color: 'blue', marginTop: 10 }}>Send Reset Code</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View>
+          <TextInput
+            placeholder="Enter the 6-digit code..."
+            value={code}
+            onChangeText={setCode}
+          />
+          <TextInput
+            placeholder="New Password..."
+            secureTextEntry={true}
+            value={newPassword}
+            onChangeText={setNewPassword}
+          />
+          <TouchableOpacity onPress={onSubmitNewPassword}>
+            <Text style={{ color: 'blue', marginTop: 10 }}>Reset Password & Log In</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+}
+```
+
+---
+
+## 6. Manual API Testing (Postman / cURL)
 
 To test the backend API manually:
 1. Open your frontend dev server in the browser (e.g., `localhost:3000`).
@@ -189,7 +356,7 @@ To test the backend API manually:
 
 ---
 
-## 5. Development Bypass (Local Testing Without Clerk)
+## 7. Development Bypass (Local Testing Without Clerk)
 
 For quick backend testing without needing a real Clerk token, you can bypass authentication.
 
@@ -203,7 +370,7 @@ For quick backend testing without needing a real Clerk token, you can bypass aut
 
 ---
 
-## 6. Infrastructure & Admin Auth
+## 8. Infrastructure & Admin Auth
 
 - **Clerk Webhooks (`POST /user-accounts/clerk-webhook`)**: The backend listens to Clerk webhooks to keep the local database in sync when a user signs up or updates their profile.
 - **Admin Auth**: Platform administrators do not use Clerk. They use a separate internal JWT system (`POST /admin/login`). See `admin.md` for details.

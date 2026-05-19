@@ -13,12 +13,32 @@ Organizers use these endpoints to broadcast alerts directly to their participant
 ### Schedule a Notification
 - **Endpoint:** `POST /notification/schedule`
 - **Usage:** Create a new announcement for an event or hackathon. You can send it instantly or schedule it for later.
-- **Body:**
+- **Request Body:**
   ```json
   {
     "eventId": "evt_123", // Use hackathonId if this is for a hackathon
     "content": "Hackathon starts in 1 hour!",
     "scheduleType": "IMMEDIATELY" // Or "CUSTOM" if providing a 'scheduledAt' date
+  }
+  ```
+- **Returns:**
+  ```json
+  {
+    "id": "notif_123",
+    "userId": "usr_organizer",
+    "eventId": "evt_123",
+    "hackathonId": null,
+    "content": "Hackathon starts in 1 hour!",
+    "scheduleType": "IMMEDIATELY",
+    "scheduledAt": "2026-05-19T10:00:00.000Z",
+    "status": "QUEUED",
+    "totalRecipients": 42,
+    "processedCount": 0,
+    "successCount": 0,
+    "failedCount": 0,
+    "expectedFinishAt": "2026-05-19T10:00:10.000Z",
+    "completedAt": null,
+    "createdAt": "2026-05-19T09:59:50.000Z"
   }
   ```
 - **React Native Example (TanStack Query):**
@@ -29,7 +49,6 @@ Organizers use these endpoints to broadcast alerts directly to their participant
       body: JSON.stringify(data),
     }),
     onSuccess: () => {
-      // Refresh the campaign list immediately so the UI reflects the new notification
       queryClient.invalidateQueries({ queryKey: queryKeys.campaigns(eventId) });
     },
   });
@@ -39,21 +58,45 @@ Organizers use these endpoints to broadcast alerts directly to their participant
 - **Endpoints:** 
   - `GET /notification/event/:eventId`
   - `GET /notification/hackathon/:hackathonId`
-- **Usage:** Fetch the history of all announcements sent for a specific listing. The response includes delivery stats (`successCount`, `failedCount`) and detailed logs.
-- **React Native Example:**
-  ```typescript
-  const { data: campaigns } = useQuery({
-    queryKey: queryKeys.campaigns(eventId),
-    queryFn: () => apiClient.request(`/notification/event/${eventId}`),
-    staleTime: 30000, // Safe to cache for 30 seconds to prevent over-fetching
-  });
+- **Usage:** Fetch the history of all announcements sent for a specific listing.
+- **Returns:** An array of notification campaign objects:
+  ```json
+  [
+    {
+      "id": "notif_123",
+      "userId": "usr_organizer",
+      "eventId": "evt_123",
+      "hackathonId": null,
+      "content": "Hackathon starts in 1 hour!",
+      "scheduleType": "IMMEDIATELY",
+      "scheduledAt": "2026-05-19T10:00:00.000Z",
+      "status": "COMPLETED",
+      "totalRecipients": 42,
+      "processedCount": 42,
+      "successCount": 40,
+      "failedCount": 2,
+      "expectedFinishAt": "2026-05-19T10:00:10.000Z",
+      "completedAt": "2026-05-19T10:00:08.000Z",
+      "createdAt": "2026-05-19T09:59:50.000Z",
+      "logs": [
+        {
+          "id": "log_123",
+          "level": "INFO",
+          "message": "Notification created and enqueued with delay of 0ms",
+          "meta": {},
+          "createdAt": "2026-05-19T09:59:51.000Z"
+        }
+      ]
+    }
+  ]
   ```
 
 ### Manage a Specific Campaign
 - **Get Details:** `GET /notification/:id` 
-  - **Usage:** Fetch the full details and logs of a single campaign.
+  - **Usage:** Fetch the full details and logs of a single campaign. Returns a single notification object as shown in the List Campaigns response.
 - **Cancel Campaign:** `DELETE /notification/:id` 
   - **Usage:** Stops a campaign from sending, but **only** works if its status is still `QUEUED`.
+  - **Returns:** The deleted notification details.
 
 ---
 
@@ -64,7 +107,7 @@ These endpoints allow organizers to send raw emails (HTML or text) directly to p
 ### Send a Direct Email
 - **Endpoint:** `POST /email/messages/direct`
 - **Usage:** Send a one-off transactional email to a single user.
-- **Body:**
+- **Request Body:**
   ```json
   {
     "userId": "usr_123",
@@ -76,18 +119,42 @@ These endpoints allow organizers to send raw emails (HTML or text) directly to p
     "htmlBody": "<p>Hello John...</p>"
   }
   ```
+- **Returns:**
+  ```json
+  {
+    "success": true,
+    "message": "Email queued successfully"
+  }
+  ```
 
 ### Send a Bulk Email Campaign
 - **Endpoint:** `POST /email/bulk`
 - **Usage:** Queue an email to be sent to *all* participants of an event or hackathon. The backend automatically processes this in the background.
-- **Body:**
+- **Request Body:**
   ```json
   {
-    "eventId": "evt_123", // Use hackathonId if this is for a hackathon
+    "eventId": "evt_123", // Or use 'hackathonId'
     "htmlBody": "<h1>Welcome to the Hackathon!</h1>"
+  }
+  ```
+- **Returns:**
+  ```json
+  {
+    "success": true,
+    "message": "Bulk email started successfully. You will be notified when it is finished."
   }
   ```
 
 ### Send Reminders (Incomplete Registrations)
 - **Endpoint:** `POST /email/incomplete-registration/:eventId`
-- **Usage:** Automatically trigger a backend script that finds users who have paid for a ticket but haven't submitted their required forms, and emails them a reminder to finish their registration.
+- **Usage:** Automatically find users who have paid for a ticket but haven't submitted their required forms, and email them a reminder.
+- **Returns:**
+  ```json
+  {
+    "success": true,
+    "message": "Sent 10 emails, 2 failed.",
+    "emailsSent": 10,
+    "emailsFailed": 2,
+    "totalIncompleteUsers": 12
+  }
+  ```
