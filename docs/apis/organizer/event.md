@@ -1,90 +1,66 @@
-# Event Organizer API (Recursive)
+# Event Organizer API
 
-Detailed documentation for managing events within the organizer dashboard.
+This guide covers all the endpoints an organizer needs to manage a specific event in their dashboard.
 
----
-
-## 1. Dashboard (`/dashboard/events/:slug`)
-
-Overview of event engagement and participation.
-
-### 1.1 Analytics
-- **General Stats**: `GET /analytics/event/:slug/general`
-  - Views, impressions, total registrations, and period-specific growth.
-- **Detailed Analytics**: `GET /analytics/event/:slug/detailed`
-  - Registration trends and demographic (gender) breakdown.
-
-### 1.2 Status & Context
-- **Full Context**: `GET /events/by-slug/:slug`
-  - Returns complete configuration, participant summaries, and settings.
+For mobile (React Native) integrations, use the `apiClient.request` and TanStack Query patterns from the `mobile-client-guide.md`.
 
 ---
 
-## 2. Manage Registration (`/dashboard/events/:slug/registrations`)
+## 1. Dashboard & Analytics
 
-### 2.1 Participant Management
-- **List Participants**: `GET /events/by-slug/:slug/registrations`
-  - Paginated list of all joined users.
-- **Participant Detail**: `GET /events/by-slug/:slug/registrations/:participantId`
-  - Specific details and custom form answers for one participant.
-- **Bulk Registration Answers**: `GET /events/by-slug/:slug/registrations-answers`
-  - Exports answers for all participants at once.
+### Get Full Event Context (`GET /events/by-slug/:slug`)
+- **Usage:** Fetches the complete event data (including configuration and settings).
 
-### 2.2 Approvals
-- **Approve Participant**: `POST /events/by-slug/:slug/participants/:participantId/approve`
-- **Bulk Approve**: `POST /events/by-slug/:slug/participants/bulk-approve`
-  - Body: `{ "participantIds": string[] }`
+### Analytics
+- **General Stats:** `GET /analytics/event/:slug/general`
+- **Detailed Stats:** `GET /analytics/event/:slug/detailed`
 
-### 2.3 Registration Control
-- **Pause/Resume**: `PATCH /events/:id/registration`
-  - Body: `{ "isRegistrationPaused": boolean }`
+### React Native Example (TanStack Query)
+```typescript
+const { data: eventDetails } = useQuery({
+  queryKey: ['event', slug],
+  queryFn: () => apiClient.request(`/events/by-slug/${slug}`),
+});
+```
 
 ---
 
-## 3. Edit Event (`/dashboard/events/:slug/edit`)
+## 2. Manage Registrations
 
-### 3.1 Module Configuration
-- **Update Basic Info**: `PUT /events/:id`
-- **Registration Form**: `PUT /events/:id/registration-form`
-- **Prize Breakdown**: `PUT /events/:id/prize-breakdown`
-- **Additional Info**: `PUT /events/:id/additional-info` (Contact & Attachments)
+### View Participants
+- **List All:** `GET /events/by-slug/:slug/registrations`
+- **View One:** `GET /events/by-slug/:slug/registrations/:participantId` (Includes their form answers).
+- **Export Answers:** `GET /events/by-slug/:slug/registrations-answers`
 
----
-
-## 4. Referrals (`/dashboard/events/:slug/referrals`)
-
-- **Campaign Stats**: `GET /referrals/analytics?opportunityId=...`
-- **List Referrals**: `GET /referrals?opportunityId=...`
-- **Create Code**: `POST /referrals`
+### Approvals & Control
+- **Approve Participant:** `POST /events/by-slug/:slug/participants/:participantId/approve`
+- **Bulk Approve:** `POST /events/by-slug/:slug/participants/bulk-approve`
+- **Pause Signups:** `PATCH /events/:id/registration` (Body: `{ "isRegistrationPaused": true }`)
 
 ---
 
-## 5. Manage Roles (`/dashboard/events/:slug/roles`)
+## 3. Edit Event Configuration
 
-- **Get Roles**: `GET /events/:id/roles`
-- **Add/Remove Role**: `POST /events/:id/roles` | `DELETE /events/:id/roles`
-
----
-
-## 6. Payments (`/dashboard/events/:slug/payments`)
-
-Comprehensive financial tools for organizers.
-
-- **Earnings Summary**: `GET /events/:slug/earnings`
-  - Net earnings, share breakdown, and payout status.
-- **Payments Log**: `GET /events/:slug/payments`
-  - Detailed transaction history.
-- **Pricing Settings**: `PATCH /events/:slug/pricing`
-  - Update entry fees, fee bearer (organizer vs participant), and currency.
-- **Discount Codes**:
-  - `POST /events/:slug/discount-codes`: Create new code.
-  - `GET /events/:slug/discount-codes`: List all.
-  - `PATCH /events/:slug/discount-codes/:codeId`: Update (active status, limit).
-  - `DELETE /events/:slug/discount-codes/:codeId`: Delete.
+Instead of sending the whole event object back and forth, update specific pieces:
+- **Basic Info:** `PUT /events/:id`
+- **Registration Form:** `PUT /events/:id/registration-form`
+- **Prizes:** `PUT /events/:id/prize-breakdown`
+- **Additional Info:** `PUT /events/:id/additional-info`
 
 ---
 
-## 7. Settings (`/dashboard/events/:slug/settings`)
+## 4. Tickets & Roles
 
-- **Lifecycle**: `PATCH /events/:id/status`
-- **Capacity**: `PUT /events/:id/max-users`
+### Tickets
+- **List/Manage Tiers:** `GET`, `POST`, `PATCH`, `DELETE` at `/events/:slug/tickets`
+
+### Roles
+- **Manage Team:** `GET`, `POST`, `DELETE` at `/events/:id/roles` (Assign co-managers or evaluators).
+
+---
+
+## 5. Lifecycle & Settings
+
+- **Update Status:** `PATCH /events/:id/status` (Transitions between `DRAFT`, `PUBLISHED`, `COMPLETED`, etc.)
+- **Submit for Approval:** `POST /events/:id/submit-approval`
+- **Set Capacity:** `PUT /events/:id/max-users`

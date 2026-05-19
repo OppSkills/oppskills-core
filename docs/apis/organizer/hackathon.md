@@ -1,122 +1,78 @@
-# Hackathon Organizer API (Recursive)
+# Hackathon Organizer API
 
-Detailed documentation for the entire hackathon management workflow within the organizer dashboard.
+This guide covers all the endpoints an organizer needs to manage a specific hackathon in their dashboard.
 
----
-
-## 1. Dashboard (`/dashboard/hackathons/:slug`)
-
-Primary entry point for organizers to see the health and status of their hackathon.
-
-### 1.1 Analytics Overview
-- **General Stats**: `GET /analytics/hackathon/:slug/general`
-  - Returns: Total registrations, period registrations, views, and impressions.
-- **Detailed Analytics**: `GET /analytics/hackathon/:slug/detailed`
-  - Returns: Registration trends over time and gender breakdown.
-- **Top Listings**: `GET /analytics/organizer-top-listings`
-  - Comparison of current hackathon vs other managed listings.
-
-### 1.2 Status & Context
-- **Full Context**: `GET /hackathons/by-slug/:slug`
-  - Retrieves all configuration (rounds, prizes, form) and current status.
+For mobile (React Native) integrations, use the `apiClient.request` and TanStack Query patterns from the `mobile-client-guide.md`.
 
 ---
 
-## 2. Manage Registration (`/dashboard/hackathons/:slug/registrations`)
+## 1. Dashboard & Analytics
 
-Tools for reviewing, approving, and qualifying participants and teams.
+### Get Full Hackathon Context (`GET /hackathons/by-slug/:slug`)
+- **Usage:** Fetches the complete hackathon data, including all its configuration (rounds, prizes, forms).
 
-### 2.1 Team Management
-- **List Teams**: `GET /hackathons/by-slug/:slug/registrations`
-  - Supports pagination (`page`, `take`). Returns team details, leader info, and submission counts.
-- **Team Detail**: `GET /hackathons/by-slug/:slug/teams/:teamId/registration`
-  - Deep dive into a specific team's status and members.
-- **Registration Answers**: `GET /hackathons/by-slug/:slug/teams/:teamId/registration-answers`
-  - Retrieves custom form responses for all members of the team.
+### Analytics
+- **General Stats:** `GET /analytics/hackathon/:slug/general`
+- **Detailed Trends:** `GET /analytics/hackathon/:slug/detailed`
 
-### 2.2 Qualification Workflow
-- **Single Team Qualification**: `PUT /hackathons/by-slug/:slug/rounds/:roundId/teams/:teamId/qualification`
-  - Body: `{ "qualified": boolean }`
-- **Bulk Qualification**: `PUT /hackathons/by-slug/:slug/rounds/:roundId/bulk-qualification`
-  - Body: `{ "teamIds": string[], "qualified": boolean }`
-
-### 2.3 Registration Control
-- **Pause/Resume**: `PATCH /hackathons/:id/registration-paused`
-  - Body: `{ "isRegistrationPaused": boolean }`
+### React Native Example (TanStack Query)
+```typescript
+const { data: hackathonDetails } = useQuery({
+  queryKey: ['hackathon', slug],
+  queryFn: () => apiClient.request(`/hackathons/by-slug/${slug}`),
+});
+```
 
 ---
 
-## 3. Edit Hackathon (`/dashboard/hackathons/:slug/edit`)
+## 2. Manage Registrations & Teams
 
-Granular updates to the hackathon's structure and content.
+### View Teams
+- **List All Teams:** `GET /hackathons/by-slug/:slug/registrations`
+- **View One Team:** `GET /hackathons/by-slug/:slug/teams/:teamId/registration`
+- **Export Answers:** `GET /hackathons/by-slug/:slug/teams/:teamId/registration-answers`
 
-### 3.1 Module Configuration
-- **Update Basic Info**: `PUT /hackathons/:id`
-- **Manage Rounds**: `PUT /hackathons/:id/rounds`
-  - Configures round names, dates, and submission requirements.
-- **Registration Form**: `PUT /hackathons/:id/registration-form`
-  - Defines the custom fields users must answer.
-- **Prizes**: `PUT /hackathons/:id/prize-breakdown`
+### Qualify Teams for Rounds
+- **Qualify One Team:** `PUT /hackathons/by-slug/:slug/rounds/:roundId/teams/:teamId/qualification`
+- **Bulk Qualify:** `PUT /hackathons/by-slug/:slug/rounds/:roundId/bulk-qualification` (Body: `{ "teamIds": ["t_1"], "qualified": true }`)
 
----
-
-## 4. Referrals (`/dashboard/hackathons/:slug/referrals`)
-
-Tracking and managing referral campaigns for the hackathon.
-
-### 4.1 Referral Analytics
-- **Campaign Stats**: `GET /referrals/analytics?opportunityId=...`
-  - Aggregated performance of all referral codes for this hackathon.
-- **List Referrals**: `GET /referrals?opportunityId=...`
-  - Individual breakdown of each referral code's performance.
-
-### 4.2 Management
-- **Create Referral**: `POST /referrals`
-  - Body: `{ "opportunityId": "...", "code": "...", "rewardDetails": "..." }`
-- **Referred Registrations**: `GET /referrals/:id/registrations`
-  - List of users/teams who joined using a specific referral code.
+### Control Registration
+- **Pause Signups:** `PATCH /hackathons/:id/registration-paused`
 
 ---
 
-## 5. Manage Roles (`/dashboard/hackathons/:slug/roles`)
+## 3. Edit Hackathon Configuration
 
-Assigning team members to help with management or evaluation.
-
-- **Get Roles**: `GET /hackathons/:id/roles`
-  - Returns list of Owner, Managers, and Evaluators.
-- **Add Role**: `POST /hackathons/:id/roles`
-  - Body: `{ "email": "...", "role": "MANAGER" | "EVALUATOR" }`
-- **Remove Role**: `DELETE /hackathons/:id/roles`
-  - Body: `{ "email": "...", "role": "..." }`
+Update specific modules of the hackathon without resending the entire object.
+- **Basic Info:** `PUT /hackathons/:id`
+- **Rounds:** `PUT /hackathons/:id/rounds`
+- **Registration Form:** `PUT /hackathons/:id/registration-form`
+- **Prizes:** `PUT /hackathons/:id/prize-breakdown`
+- **Additional Info:** `PUT /hackathons/:id/additional-info`
 
 ---
 
-## 6. Payments (`/dashboard/hackathons/:slug/payments`)
+## 4. Referrals & Roles
 
-Financial oversight for paid hackathons.
+### Referrals
+- **List Campaigns:** `GET /referrals?opportunityId=...`
+- **Create Code:** `POST /referrals`
 
-- **Earnings Summary**: `GET /hackathons/:slug/earnings`
-  - Net earnings, total share, and payout status.
-- **Payments List**: `GET /hackathons/:slug/payments`
-  - Individual transaction log for all registrations.
-
----
-
-## 7. Send Notifications (`/dashboard/hackathons/:slug/notifications`)
-
-Direct communication with participants.
-
-- **Custom Team Email**: `POST /hackathons/:id/teams/:teamId/send-email`
-  - Body: `{ "subject": "...", "body": "HTML content" }`
-  - Broadcasts to all members of the specified team.
+### Roles
+- **Manage Team:** `GET`, `POST`, `DELETE` at `/hackathons/:id/roles` (Assign co-managers or evaluators).
 
 ---
 
-## 8. Settings (`/dashboard/hackathons/:slug/settings`)
+## 5. Payments & Notifications
 
-Final platform configurations.
+- **Earnings Summary:** `GET /hackathons/:slug/earnings`
+- **Payment Logs:** `GET /hackathons/:slug/payments`
+- **Email a Team:** `POST /hackathons/:id/teams/:teamId/send-email` (Broadcasts an email to all team members).
 
-- **Lifecycle Management**: `PATCH /hackathons/:id/status`
-  - Transition between `DRAFT`, `PUBLISHED`, `ONGOING`, `COMPLETED`.
-- **Capacity**: `PUT /hackathons/:id/max-teams`
-  - Update the maximum number of teams allowed to register.
+---
+
+## 6. Lifecycle & Settings
+
+- **Update Status:** `PATCH /hackathons/:id/status` (Transitions between `DRAFT`, `PUBLISHED`, `COMPLETED`, etc.)
+- **Submit for Approval:** `POST /hackathons/:id/submit-for-approval`
+- **Set Capacity:** `PUT /hackathons/:id/max-teams`
