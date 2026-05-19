@@ -1,53 +1,54 @@
 # Referrals API
 
-API reference for the OppSkills referral system, enabling users to refer peers, track performance, and earn rewards or discounts.
+This guide covers how users generate referral links, track their clicks, and view their rewards.
 
-## Overview
-
-The Referral API tracks link generation, clicks, and successful conversions (registrations via a referral link).
+For mobile (React Native) integrations, use the `apiClient.request` and TanStack Query patterns from the `mobile-client-guide.md`.
 
 ---
 
-## 1. Public Resolvers
+## 1. Public Links and Tracking
 
-These endpoints are called by the frontend when a user lands on the platform via a referral link.
+These endpoints are used when a user clicks a referral link (often handled before they even log in).
 
-### Resolve Referral Code (`GET /referrals/public/resolve/:code`)
-**Method**: `GET`
-**Description**: Validates a referral code and returns details about the referrer and the target opportunity (if applicable).
+### Validate a Code (`GET /referrals/public/resolve/:code`)
+- **Usage:** Checks if a referral code is valid and returns who it belongs to.
 
-### Track Click (`POST /referrals/public/track-click`)
-**Method**: `POST`
-**Description**: Logs a click event for analytics, useful to calculate the conversion rate of a referral campaign.
+### Track a Click (`POST /referrals/public/track-click`)
+- **Usage:** Logs that someone clicked the link so the referrer can see their analytics.
 
 ---
 
-## 2. User Referral Dashboard
+## 2. The Referrer's Dashboard
 
-Endpoints for a user to track their own referral performance.
+These endpoints are for the logged-in user who is *sharing* their links.
 
-### Create a Referral (`POST /referrals`)
-**Method**: `POST`
-**Description**: Generates a new unique referral link for a specific campaign or opportunity.
+### Generate a Link (`POST /referrals`)
+- **Usage:** Creates a new referral code for the user to share.
 
-### Get My Performance (`GET /referrals/my/performance`)
-**Method**: `GET`
-**Description**: Returns aggregate metrics: total clicks, total successful registrations, and rewards earned.
+### React Native Example (TanStack Query)
+```typescript
+const createReferral = useMutation({
+  mutationFn: () => apiClient.request('/referrals', { method: 'POST' }),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['referrals', 'performance'] });
+  },
+});
+```
 
-### Get My Referred Users (`GET /referrals/my/referred-users`)
-**Method**: `GET`
-**Description**: Lists the users who have successfully signed up or registered using the authenticated user's referral links.
+### View Performance (`GET /referrals/my/performance`)
+- **Usage:** Returns total clicks, signups, and rewards earned.
+- **React Native Example:**
+  ```typescript
+  const { data: performance } = useQuery({
+    queryKey: ['referrals', 'performance'],
+    queryFn: () => apiClient.request('/referrals/my/performance'),
+  });
+  ```
+
+### List Referred Users (`GET /referrals/my/referred-users`)
+- **Usage:** Lists the people who successfully signed up using this user's links.
 
 ---
 
-## 3. Admin & Lookup
-
-Endpoints for administrative tasks and analytics.
-
-- **Get All Referrals**: `GET /referrals`
-- **Get Referral by ID**: `GET /referrals/:id`
-- **Analytics**: `GET /referrals/analytics` (Platform-wide or campaign-specific metrics)
-- **User Lookup**: `GET /referrals/user-lookup` (Find referrals associated with a specific user)
-- **Referrer Details**: `GET /referrals/:id/referrer-details`
-- **Referral Activity**: `GET /referrals/:id/registrations`
-- **Delete Referral**: `DELETE /referrals/:id`
+## 3. Admin Tools
+Admins can view platform-wide referral metrics using `GET /referrals/analytics` or look up a specific user's links with `GET /referrals/user-lookup`.

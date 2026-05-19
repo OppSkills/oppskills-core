@@ -1,39 +1,52 @@
-# Festival Organizer API (Recursive)
+# Festival Organizer API
 
-Documentation for managing festivals (collections of opportunities) within the organizer dashboard.
+This guide covers how organizers manage festivals (which are collections of multiple events and hackathons).
+
+For mobile (React Native) integrations, use the `apiClient.request` and TanStack Query patterns from the `mobile-client-guide.md`.
 
 ---
 
-## 1. Dashboard (`/dashboard/festivals/:slug`)
+## 1. Dashboard & Detail
 
-Overview of the festival status and its children opportunities.
+### List My Festivals (`GET /festivals/my`)
+- **Usage:** Fetches all festivals the user manages.
 
-- **My Festivals**: `GET /festivals/my`
-  - Paginated list of festivals owned by the user.
-- **Full Detail**: `GET /festivals/:id`
-  - Returns metadata, location, and a list of all associated hackathons/events.
+### Get Festival Details (`GET /festivals/:id`)
+- **Usage:** Fetches the metadata, location, and the list of associated hackathons/events.
+
+### React Native Example (TanStack Query)
+```typescript
+const { data: festival } = useQuery({
+  queryKey: ['festival', festivalId],
+  queryFn: () => apiClient.request(`/festivals/${festivalId}`),
+});
+```
 
 ---
 
 ## 2. Content Management
 
-Festivals primarily serve as containers for other opportunities.
+Festivals are containers. You can list what is inside them.
 
-- **List Hackathons**: `GET /festivals/:id/hackathons`
-  - Returns all hackathons currently linked to this festival.
-
----
-
-## 3. Edit Festival (`/dashboard/festivals/:slug/edit`)
-
-- **Update Basic Info**: `PUT /festivals/:id`
-  - Modify name, dates, description, poster image, and location.
-- **Update Status**: `PATCH /festivals/:id/status`
-  - Lifecycle transitions: `DRAFT`, `PUBLISHED`, `ONGOING`, `COMPLETED`, `CANCELLED`.
+- **List Hackathons in Festival:** `GET /festivals/:id/hackathons`
 
 ---
 
-## 4. Lifecycle & Settings
+## 3. Editing & Lifecycle
 
-- **Delete Festival**: `DELETE /festivals/:id`
-  - Permanently removes the festival (soft delete).
+- **Update Basic Info:** `PUT /festivals/:id` (Modifies name, dates, poster, location).
+- **Update Status:** `PATCH /festivals/:id/status` (Changes state between `DRAFT`, `PUBLISHED`, `COMPLETED`, etc.).
+- **Delete Festival:** `DELETE /festivals/:id` (Soft deletes the festival).
+
+### React Native Example
+```typescript
+const updateStatus = useMutation({
+  mutationFn: (newStatus) => apiClient.request(`/festivals/${festivalId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: newStatus }),
+  }),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['festival', festivalId] });
+  },
+});
+```

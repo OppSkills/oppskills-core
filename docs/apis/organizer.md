@@ -1,103 +1,57 @@
 # Organizer API
 
-Reference for endpoints used by organizers (owners and managers) to manage their opportunities from the dashboard.
+This guide covers the dashboard endpoints organizers use to manage their opportunities and participants.
+
+For mobile (React Native) integrations, use the `apiClient.request` and TanStack Query patterns from the `mobile-client-guide.md`.
 
 ---
 
 ## 1. Dashboard Overview
 
-Endpoints for listing opportunities where the authenticated user has management permissions.
-
 ### List My Opportunities
-- **Hackathons**: `GET /hackathons/my`
-- **Events**: `GET /events/my`
-- **Festivals**: `GET /festivals/my`
+- **Endpoints:** `GET /hackathons/my`, `GET /events/my`, `GET /festivals/my`
+- **Usage:** Fetches all listings the current user manages.
 
-**Query Parameters**:
-- `page`: Page number (default: 1).
-- `take`: Items per page (default: 10).
-
----
-
-## 2. Opportunity Details (Full Data)
-
-Returns complete opportunity data, including non-public configuration and participant summaries.
-
-- **Hackathon Details**: `GET /hackathons/by-slug/:slug`
-- **Event Details**: `GET /events/by-slug/:slug`
+### React Native Example (TanStack Query)
+```typescript
+const { data: myHackathons } = useQuery({
+  queryKey: ['organizer', 'hackathons'],
+  queryFn: () => apiClient.request('/hackathons/my?page=1&take=10'),
+});
+```
 
 ---
 
-## 3. Participant Management
+## 2. Participant & Team Management
 
-### Hackathons (Teams and Submissions)
-- **List Teams**: `GET /hackathons/by-slug/:slug/registrations`  
-  Returns a list of teams, their members, and their submission status across all rounds.
-- **Team Registration Detail**: `GET /hackathons/by-slug/:slug/teams/:teamId/registration`
-- **Registration Answers**: `GET /hackathons/by-slug/:slug/teams/:teamId/registration-answers`
+### View Registrations
+- **Hackathon Teams:** `GET /hackathons/by-slug/:slug/registrations`
+- **Event Participants:** `GET /events/by-slug/:slug/registrations`
+- **Usage:** Lists everyone who signed up.
 
-### Events (Individual Participants)
-- **List Participants**: `GET /events/by-slug/:slug/registrations`
-- **Participant Detail**: `GET /events/by-slug/:slug/registrations/:participantId`
-- **Bulk Registration Answers**: `GET /events/by-slug/:slug/registrations-answers`
+### Approvals
+- **Approve One:** `POST /events/by-slug/:slug/participants/:participantId/approve`
+- **Bulk Approve:** `POST /events/by-slug/:slug/participants/bulk-approve`
 
-### Approval Actions
-- **Approve Participant**: `POST /events/by-slug/:slug/participants/:participantId/approve`
-- **Bulk Approve**: `POST /events/by-slug/:slug/participants/bulk-approve`
+### Control Registration
+- **Pause/Resume Signups:** `PATCH /hackathons/:id/registration-paused` (Body: `{ "isRegistrationPaused": true }`)
 
 ---
 
-## 4. Role Management
+## 3. Role Management
 
-Organizers can assign others to help manage or evaluate opportunities.
+Organizers can invite co-managers or evaluators to help run the event.
 
-- **Get Roles**: `GET /hackathons/:id/roles` or `GET /events/:id/roles`
-- **Add Role**: `POST /hackathons/:id/roles` or `POST /events/:id/roles`
-- **Remove Role**: `DELETE /hackathons/:id/roles` or `DELETE /events/:id/roles`
-
-**Roles**:
-- `MANAGER`: Full management access.
-- `EVALUATOR`: Access to view and score submissions (future feature).
+- **View Roles:** `GET /hackathons/:id/roles`
+- **Add Role:** `POST /hackathons/:id/roles` (Roles: `MANAGER`, `EVALUATOR`)
+- **Remove Role:** `DELETE /hackathons/:id/roles`
 
 ---
 
-## 5. Operations and Communication
+## 4. Editing Opportunities
 
-### Registration Control
-- **Pause/Resume**: `PATCH /hackathons/:id/registration-paused` or `PATCH /events/:id/registration`
-  - Body: `{ "isRegistrationPaused": boolean }`
+Organizers update pieces of their event using module-specific endpoints so they don't have to send the entire massive object back and forth.
 
-### Communication
-- **Send Team Email**: `POST /hackathons/:id/teams/:teamId/send-email`
-  - Body: `{ "subject": "...", "body": "HTML content" }`
-  - Sends a custom email to all members of the specified team.
-
----
-
-## 6. Editing and Settings
-
-Organizers can update various modules of an opportunity throughout its lifecycle (primarily while in `DRAFT`, `PUBLISHED`, or `ONGOING` status).
-
-### General Updates
-- **Update Hackathon**: `PUT /hackathons/:id`
-- **Update Event**: `PUT /events/:id`
-- **Update Festival**: `PUT /festivals/:id`
-- **Submit for Approval**: `POST /hackathons/:id/submit-for-approval` or `POST /events/:id/submit-approval`
-
-### Module-Specific Settings
-These endpoints allow for granular updates without sending the full opportunity object.
-- **Rounds (Hackathons)**: `PUT /hackathons/:id/rounds`
-- **Max Teams (Hackathons)**: `PUT /hackathons/:id/max-teams`
-- **Max Users (Events)**: `PUT /events/:id/max-users`
-- **Registration Form**: `PUT /<type>/:id/registration-form`
-- **Prize Breakdown**: `PUT /<type>/:id/prize-breakdown`
-- **Additional Info**: `PUT /<type>/:id/additional-info` (Contact details and file attachments)
-
----
-
-## 7. Round and Submission Control (Hackathons)
-
-### Qualification
-- **Set Qualification**: `PUT /hackathons/by-slug/:slug/rounds/:roundId/teams/:teamId/qualification`
-- **Bulk Qualification**: `PUT /hackathons/by-slug/:slug/rounds/:roundId/bulk-qualification`
-  - Body: `{ "teamIds": ["id1", "id2"], "qualified": true }`
+- **General Info:** `PUT /hackathons/:id` or `PUT /events/:id`
+- **Max Teams:** `PUT /hackathons/:id/max-teams`
+- **Prizes:** `PUT /hackathons/:id/prize-breakdown`

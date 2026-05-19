@@ -1,41 +1,45 @@
-# Payments and Ticketing API
+# Payments API
 
-API reference for managing payments, ticket tiers, hackathon checkouts, refunds, and payouts via Razorpay.
+This guide covers tickets, discounts, the checkout flow, and organizer payouts.
+
+For mobile (React Native) integrations, use the `apiClient.request` and TanStack Query patterns from the `mobile-client-guide.md`.
 
 ---
 
-## 1. Ticket Tiers
-- **Event Tickets**: `GET`, `POST` `/events/:slug/tickets` | `PATCH`, `DELETE` `/events/:slug/tickets/:tierId`
-- **Hackathon Tickets**: `GET`, `POST` `/hackathons/:slug/tickets` | `PATCH`, `DELETE` `/hackathons/:slug/tickets/:tierId`
+## 1. Tickets and Discounts
 
-## 2. Discount Codes
-- **Manage Codes**: `GET`, `POST` `/hackathons/:slug/discount-codes` | `PATCH`, `DELETE` `/hackathons/:slug/discount-codes/:codeId`
+Organizers set these up to charge for their events.
 
-## 3. Checkout and Payment Processing
-Handles the full Razorpay payment sequence for hackathon registrations.
-- **Create Checkout Draft**: `POST /hackathons/:slug/registration/checkout-draft`
-- **Create Razorpay Order**: `POST /hackathons/:slug/payment/order`
-- **Verify Payment Signature**: `POST /hackathons/:slug/payment/verify`
-- **Check Payment Status**: `GET /hackathons/:slug/payment/:paymentId/status`
-- **Free/Basic Submission**: `POST /hackathons/:slug/registrations/submit`
-- **Registration Status**: `GET /hackathons/:slug/registrations/status`
+- **Manage Tickets:** `GET`, `POST`, `PATCH`, `DELETE` at `/events/:slug/tickets`
+- **Manage Discounts:** `GET`, `POST`, `PATCH`, `DELETE` at `/hackathons/:slug/discount-codes`
 
-## 4. Webhooks and Refunds
-- **Razorpay Webhook**: `POST /webhooks/razorpay` (Handles asynchronous payment capture events).
-- **Issue Refund**: `POST /hackathons/:slug/refunds`
-- **Refund Status**: `GET /hackathons/:slug/refunds/:paymentId/status`
+---
 
-## 5. Organizer Payouts and Earnings
-- **Earnings Summary**: `GET /hackathons/:slug/earnings`
-- **List Payments Received**: `GET /hackathons/:slug/payments`
-- **Payout Details (Bank Info)**: `GET /payments/payout-details`, `PUT /payments/payout-details`
+## 2. The Checkout Flow (Razorpay)
 
-### Razorpay Route Onboarding
-- **Onboard Organizer**: `POST /payments/route/onboard`
-- **Check Route Status**: `GET /payments/route/status`
-- **Refresh Status**: `POST /payments/route/refresh-status`
-- **Update Settlements**: `POST /payments/route/update-settlements`
+When a user buys a ticket, your frontend must execute these steps in order.
 
-### Admin Payouts Processing
-- **List Eligible Payouts**: `GET /admin/payouts/eligible`
-- **Process Payout**: `POST /admin/payouts/pay`
+1. **Create Draft:** `POST /hackathons/:slug/registration/checkout-draft` (Calculates the final price).
+2. **Create Order:** `POST /hackathons/:slug/payment/order` (Creates the Razorpay order ID).
+3. **Pay on Frontend:** Open the Razorpay UI using the order ID.
+4. **Verify Signature:** `POST /hackathons/:slug/payment/verify` (Send Razorpay's success signature to the backend to confirm).
+
+### Free Registrations
+If the event is free, skip Razorpay entirely and just call:
+- `POST /hackathons/:slug/registrations/submit`
+
+---
+
+## 3. Organizer Earnings and Payouts
+
+- **View Earnings:** `GET /hackathons/:slug/earnings`
+- **Set Bank Info:** `PUT /payments/payout-details`
+- **Razorpay Route Onboarding:** `POST /payments/route/onboard` (Links the organizer's bank directly to Razorpay for split payments).
+
+### React Native Example
+```typescript
+const { data: earnings } = useQuery({
+  queryKey: ['earnings', hackathonSlug],
+  queryFn: () => apiClient.request(`/hackathons/${hackathonSlug}/earnings`),
+});
+```

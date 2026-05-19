@@ -1,86 +1,61 @@
 # Teams API
 
-API reference for endpoints related to hackathon team management, including creation, joining, leaving, and team leadership.
+This guide covers how users create, join, and manage teams for hackathons.
 
-## Overview
-
-Teams are specific to Hackathons. A user can either participate solo (a team of 1) or join a multi-member team, depending on the hackathon's configuration (e.g., `minTeamSize`, `maxTeamSize`).
-
-**Base URL prefix**: `/hackathons`
+For mobile (React Native) integrations, use the `apiClient.request` and TanStack Query patterns from the `mobile-client-guide.md`.
 
 ---
 
-## 1. Team Creation and Joining
+## 1. Creating and Joining
 
 ### Create a Team (`POST /hackathons/create-team`)
-**Method**: `POST`
-**Description**: Creates a new team for a specific hackathon and makes the creator the team leader.
+- **Usage:** Creates a new team and makes the current user the leader.
+- **Body:** `{ "hackathonId": "hack_123", "teamName": "Byte Busters" }`
 
-**Sample Request Body**:
-```json
-{
-  "hackathonId": "hack_123",
-  "teamName": "Byte Busters"
-}
+### React Native Example (TanStack Query)
+```typescript
+const createTeam = useMutation({
+  mutationFn: (data) => apiClient.request('/hackathons/create-team', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['my-team', hackathonId] });
+  },
+});
 ```
 
-### Join a Team (`POST /hackathons/join-team`)
-**Method**: `POST`
-**Description**: Joins an existing team. This might require an invite code or open participation depending on the team's settings.
-
-**Sample Request Body**:
-```json
-{
-  "teamId": "team_abc123",
-  "inviteCode": "XYZ789"
-}
-```
+### Join an Existing Team (`POST /hackathons/join-team`)
+- **Usage:** Adds the user to an existing team.
+- **Body:** `{ "teamId": "team_abc", "inviteCode": "XYZ789" }`
 
 ---
 
-## 2. Team Queries
+## 2. Viewing Teams
 
-### Get My Team (`GET /hackathons/my-team`)
-**Method**: `GET`
-**Description**: Retrieves the team(s) the currently authenticated user belongs to. Often combined with a query parameter for a specific hackathon.
+- **Get My Team:** `GET /hackathons/my-team` (Fetches the user's current team).
+- **Get Specific Team:** `GET /hackathons/team/:teamId` (Gets team members and details).
+- **List All Teams (Leaderboard):** `GET /hackathons/teams/:hackathonId`
 
-### Get Team by ID (`GET /hackathons/team/:teamId`)
-**Method**: `GET`
-**Description**: Retrieves details of a specific team, including its members, leader, and status.
-
-### Get All Teams for a Hackathon (`GET /hackathons/teams/:hackathonId`)
-**Method**: `GET`
-**Description**: Retrieves all registered teams for a given hackathon. Used primarily for leaderboards, discovery, or organizer views.
+### React Native Example
+```typescript
+const { data: myTeam } = useQuery({
+  queryKey: ['my-team', hackathonId],
+  queryFn: () => apiClient.request(`/hackathons/my-team?hackathonId=${hackathonId}`),
+});
+```
 
 ---
 
 ## 3. Team Management
 
-### Leave a Team (`DELETE /hackathons/leave-team/:teamId`)
-**Method**: `DELETE`
-**Description**: Allows the current user to leave their team. If the user is the leader, they may need to reassign leadership first, or the team is dissolved if they are the only member.
-
-### Remove a Member (`DELETE /hackathons/leave-team/:teamId/member/:userId`)
-**Method**: `DELETE`
-**Description**: Allows a team leader or organizer to remove a specific member from the team.
-
-### Change Team Leader (`PATCH /hackathons/team/:teamId/leader`)
-**Method**: `PATCH`
-**Description**: Promotes another team member to be the team leader. Can only be performed by the current leader or an organizer.
-
-**Sample Request Body**:
-```json
-{
-  "newLeaderId": "user_456"
-}
-```
+- **Leave Team:** `DELETE /hackathons/leave-team/:teamId` (If the leader leaves, they must assign a new leader or the team dissolves if empty).
+- **Kick Member:** `DELETE /hackathons/leave-team/:teamId/member/:userId` (Leader only).
+- **Change Leader:** `PATCH /hackathons/team/:teamId/leader` (Body: `{ "newLeaderId": "user_456" }`).
 
 ---
 
-## 4. Draft Teams (Checkout Process)
+## 4. Checkout / Draft Teams
 
-Used during the registration checkout flow to create temporary team structures before payment is completed.
-- **Create Draft Team**: `POST /hackathons/:slug/teams/draft`
-- **Join Draft Team**: `POST /hackathons/:slug/teams/draft/join`
-- **Check Fee Status**: `GET /hackathons/:slug/teams/draft/per-user-fee-status`
-- **Leave Draft Team**: `DELETE /hackathons/:slug/teams/draft/leave`
+When users pay for a team ticket, they build a "draft" team first before they are officially registered.
+- **Draft Endpoints:** `POST /hackathons/:slug/teams/draft`, `POST .../draft/join`, `DELETE .../draft/leave`.

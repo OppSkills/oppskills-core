@@ -1,103 +1,48 @@
 # Dashboard Analytics API
 
-Reference for analytics and aggregated metrics used in the organizer dashboard. All endpoints require authentication and management permissions for the respective opportunities.
+This guide covers how to fetch analytics and metrics for the organizer dashboard. 
+
+For mobile (React Native) integrations, use the `apiClient.request` and TanStack Query patterns from the `mobile-client-guide.md`.
 
 ---
 
 ## 1. Overall Dashboard Analytics
 
-Aggregated statistics for all opportunities owned or managed by the authenticated user.
+Fetch high-level stats across all the events and hackathons the organizer manages.
 
 ### Organizer Overview (`GET /analytics/organizer-stats`)
-**Method**: `GET`  
-**Description**: Returns top-level metrics across all hackathons, events, and festivals.
+- **Usage:** Shows total participants, views, and impressions across all listings.
+- **Parameters:** `period` (`today`, `this_week`, `this_month`, `all_time`) or custom `from`/`to` dates.
 
-**Query Parameters**:
-- `period`: Filter by time range (`today`, `yesterday`, `this_week`, `this_month`, `this_year`, `all_time`).
-- `from` / `to`: ISO date strings for custom ranges.
-
-**Sample Response**:
-```json
-{
-  "total_participants": 1250,
-  "period_participants": 150,
-  "total_opportunities": 12,
-  "period_opportunities": 2,
-  "total_views": 45000,
-  "period_views": 3200,
-  "total_impressions": 120000,
-  "period_impressions": 8500,
-  "hackathon": { "active": 3, "total": 5 },
-  "event": { "active": 4, "total": 6 },
-  "festival": { "active": 1, "total": 1 }
-}
+### React Native Example (TanStack Query)
+```typescript
+const { data: stats } = useQuery({
+  queryKey: ['organizer', 'stats', period],
+  queryFn: () => apiClient.request(`/analytics/organizer-stats?period=${period}`),
+  staleTime: 60000,
+});
 ```
 
 ### Registration Trends (`GET /analytics/organizer-trends`)
-**Method**: `GET`  
-**Description**: Returns time-series data for registrations and gender distribution.
-
-**Sample Response**:
-```json
-{
-  "registrationTrend": [
-    { "date": "01-05-2025", "events": 10, "hackathon": 5 },
-    { "date": "02-05-2025", "events": 12, "hackathon": 8 }
-  ],
-  "genderTrend": [
-    { "date": "01-05-2025", "male": 8, "female": 7 },
-    { "date": "02-05-2025", "male": 11, "female": 9 }
-  ]
-}
-```
+- **Usage:** Shows daily registration counts and gender distribution to plot charts.
 
 ---
 
 ## 2. Specific Opportunity Analytics
 
-Detailed metrics for a single hackathon or event, identified by its slug.
+Get metrics for a single hackathon or event.
 
-### General Stats (`GET /analytics/{type}/:slug/general`)
-**Method**: `GET`  
-**Description**: Fetches views, impressions, and registration totals for a specific opportunity.
-**Types**: `hackathon` or `event`.
+### General Stats
+- **Endpoint:** `GET /analytics/{type}/:slug/general` (where `{type}` is `hackathon` or `event`)
+- **Usage:** Fetches views, impressions, and total registrations for this specific listing.
 
-**Sample Response**:
-```json
-{
-  "registrations": 450,
-  "periodRegistrations": 25,
-  "views": "1200",
-  "impressions": "5000"
-}
-```
-
-### Detailed Stats (`GET /analytics/{type}/:slug/detailed`)
-**Method**: `GET`  
-**Description**: Returns registration trends and demographic (gender) breakdown for a specific opportunity.
-
-**Sample Response**:
-```json
-{
-  "registrations": [
-    { "date": "01-05-2025", "men": 5, "women": 4, "other": 1 }
-  ],
-  "gender": {
-    "male": 210,
-    "female": 190,
-    "other": 50
-  }
-}
-```
+### Detailed Stats
+- **Endpoint:** `GET /analytics/{type}/:slug/detailed`
+- **Usage:** Fetches daily trends and demographic breakdowns for this specific listing.
 
 ---
 
 ## 3. Performance Rankings
 
-### Top Listings (`GET /analytics/organizer-top-listings`)
-**Method**: `GET`  
-**Description**: Lists opportunities sorted by their total registration count.
-
-### Highest Performing (`GET /analytics/organizer-highest-performing`)
-**Method**: `GET`  
-**Description**: Lists opportunities with the best view-to-registration conversion rates.
+- **Top Listings:** `GET /analytics/organizer-top-listings` (Sorted by total registrations).
+- **Highest Performing:** `GET /analytics/organizer-highest-performing` (Sorted by view-to-registration conversion rate).
