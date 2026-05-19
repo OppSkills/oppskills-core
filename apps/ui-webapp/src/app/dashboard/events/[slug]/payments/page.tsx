@@ -226,6 +226,7 @@ export default function Page() {
     eventData.status !== "CANCELLED";
   const canEditPricing =
     !!isPricingLifecycleEditable && !registrationStarted;
+  const canManageTicketTiers = !!isPricingLifecycleEditable;
 
   return (
     <div className="w-full p-4 sm:p-8 min-h-screen">
@@ -237,6 +238,7 @@ export default function Page() {
         feeBearer={feeBearer}
         setFeeBearer={setFeeBearer}
         canEditPricing={canEditPricing}
+        canManageTicketTiers={canManageTicketTiers}
         earnings={earnings}
         payoutDetails={payoutDetails}
         payoutLoading={payoutLoading}

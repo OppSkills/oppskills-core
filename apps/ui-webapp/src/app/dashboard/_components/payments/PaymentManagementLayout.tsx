@@ -42,6 +42,8 @@ interface PaymentManagementLayoutProps {
   feeBearer: FeeBearer;
   setFeeBearer: (val: FeeBearer) => void;
   canEditPricing: boolean;
+  /** Add/edit ticket tiers (allowed after registrations for legacy events migrating to tiers). */
+  canManageTicketTiers: boolean;
   earnings: any;
   payoutDetails: any;
   payoutLoading: boolean;
@@ -63,6 +65,7 @@ export function PaymentManagementLayout({
   feeBearer,
   setFeeBearer,
   canEditPricing,
+  canManageTicketTiers,
   earnings,
   payoutDetails,
   payoutLoading,
@@ -191,8 +194,13 @@ export function PaymentManagementLayout({
             action={
               <button
                 onClick={handleOpenCreateTicket}
-                disabled={!canEditPricing}
-                className="w-10 h-10 flex items-center justify-center rounded-full border-2 border-neutral-200 text-neutral-400 hover:border-primary-600 hover:text-primary-600 transition-all active:scale-95"
+                disabled={!canManageTicketTiers}
+                className={cn(
+                  "w-10 h-10 flex items-center justify-center rounded-full border-2 border-neutral-200 text-neutral-400 transition-all active:scale-95",
+                  canManageTicketTiers
+                    ? "hover:border-primary-600 hover:text-primary-600"
+                    : "opacity-60 cursor-not-allowed",
+                )}
               >
                 <Plus className="w-6 h-6" />
               </button>
@@ -242,20 +250,20 @@ export function PaymentManagementLayout({
                     <div className="flex items-center gap-6 mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-primary-200/50">
                       <button 
                         onClick={() => handleEditTicket(ticket)}
-                        disabled={!canEditPricing}
+                        disabled={!canManageTicketTiers}
                         className={cn(
                           "text-sm font-bold flex items-center gap-2 transition-colors",
-                          canEditPricing ? "text-primary-700 hover:text-primary-800" : "text-neutral-400 cursor-not-allowed"
+                          canManageTicketTiers ? "text-primary-700 hover:text-primary-800" : "text-neutral-400 cursor-not-allowed"
                         )}
                       >
                         <Pencil className="w-4 h-4" /> Edit
                       </button>
                       <button 
                         onClick={() => handleDeleteTicket(ticket.id)}
-                        disabled={!canEditPricing}
+                        disabled={!canManageTicketTiers}
                         className={cn(
                           "text-sm font-bold flex items-center gap-2 transition-colors",
-                          canEditPricing ? "text-red-600 hover:text-red-700" : "text-neutral-400 cursor-not-allowed"
+                          canManageTicketTiers ? "text-red-600 hover:text-red-700" : "text-neutral-400 cursor-not-allowed"
                         )}
                       >
                         <TrashBinTrash className="w-4 h-4" /> Delete
@@ -268,7 +276,7 @@ export function PaymentManagementLayout({
                   <Ticket className="w-6 h-6" /> 
                   <p className="text-base text-neutral-700">
                     Don’t have any ticket generated as of now. 
-                    {canEditPricing && (
+                    {canManageTicketTiers && (
                       <a className="text-primary-600 hover:underline cursor-pointer ml-1" onClick={handleOpenCreateTicket}>
                         Click here to generate one
                       </a>

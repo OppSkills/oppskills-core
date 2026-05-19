@@ -33,6 +33,37 @@ export class EventPaymentService {
     private readonly referralService: ReferralService,
   ) {}
 
+  /** Owner, platform admin, or event manager — matches dashboard edit access. */
+  private async canManageEventPayments(
+    eventId: string,
+    ownerId: string,
+    userId: string,
+  ): Promise<boolean> {
+    if (ownerId === userId) return true;
+
+    const user = await prisma.userEntity.findUnique({
+      where: { id: userId },
+      select: { accessLevel: true },
+    });
+    if (user?.accessLevel === 'ADMIN') return true;
+
+    const managerRole = await prisma.eventUserRoleEntity.findFirst({
+      where: { eventId, userId, role: 'MANAGER' },
+    });
+    return !!managerRole;
+  }
+
+  private async assertCanManageEventPayments(
+    eventId: string,
+    ownerId: string,
+    userId: string,
+    message: string,
+  ): Promise<void> {
+    if (!(await this.canManageEventPayments(eventId, ownerId, userId))) {
+      throw new ForbiddenException(message);
+    }
+  }
+
   /**
    * Create a payment order for event registration.
    * Returns zero-amount response if user is from a free college or event is free.
@@ -1937,9 +1968,12 @@ export class EventPaymentService {
       throw new NotFoundException('Event not found');
     }
 
-    if (event.ownerId !== userId) {
-      throw new ForbiddenException('Only the organizer can view earnings');
-    }
+    await this.assertCanManageEventPayments(
+      event.id,
+      event.ownerId,
+      userId,
+      'Only the organizer can view earnings',
+    );
 
     const payments = await prisma.eventPaymentEntity.findMany({
       where: {
@@ -2017,9 +2051,12 @@ export class EventPaymentService {
       throw new NotFoundException('Event not found');
     }
 
-    if (event.ownerId !== userId) {
-      throw new ForbiddenException('Only the organizer can view payments');
-    }
+    await this.assertCanManageEventPayments(
+      event.id,
+      event.ownerId,
+      userId,
+      'Only the organizer can view payments',
+    );
 
     const payments = await prisma.eventPaymentEntity.findMany({
       where: { eventId: event.id },
@@ -2075,11 +2112,12 @@ export class EventPaymentService {
       throw new NotFoundException('Event not found');
     }
 
-    if (event.ownerId !== userId) {
-      throw new ForbiddenException(
-        'Only the organizer can create discount codes',
-      );
-    }
+    await this.assertCanManageEventPayments(
+      event.id,
+      event.ownerId,
+      userId,
+      'Only the organizer can create discount codes',
+    );
 
     const normalizedCode = params.code.toUpperCase().trim();
 
@@ -2134,11 +2172,12 @@ export class EventPaymentService {
       throw new NotFoundException('Event not found');
     }
 
-    if (event.ownerId !== userId) {
-      throw new ForbiddenException(
-        'Only the organizer can view discount codes',
-      );
-    }
+    await this.assertCanManageEventPayments(
+      event.id,
+      event.ownerId,
+      userId,
+      'Only the organizer can view discount codes',
+    );
 
     const codes = await prisma.eventDiscountCodeEntity.findMany({
       where: { eventId: event.id },
@@ -2175,11 +2214,12 @@ export class EventPaymentService {
       throw new NotFoundException('Event not found');
     }
 
-    if (event.ownerId !== userId) {
-      throw new ForbiddenException(
-        'Only the organizer can delete discount codes',
-      );
-    }
+    await this.assertCanManageEventPayments(
+      event.id,
+      event.ownerId,
+      userId,
+      'Only the organizer can delete discount codes',
+    );
 
     const code = await prisma.eventDiscountCodeEntity.findUnique({
       where: { id: codeId },
@@ -2215,11 +2255,12 @@ export class EventPaymentService {
       throw new NotFoundException('Event not found');
     }
 
-    if (event.ownerId !== userId) {
-      throw new ForbiddenException(
-        'Only the organizer can update discount codes',
-      );
-    }
+    await this.assertCanManageEventPayments(
+      event.id,
+      event.ownerId,
+      userId,
+      'Only the organizer can update discount codes',
+    );
 
     const code = await prisma.eventDiscountCodeEntity.findUnique({
       where: { id: codeId },
@@ -2282,9 +2323,12 @@ export class EventPaymentService {
       throw new NotFoundException('Event not found');
     }
 
-    if (event.ownerId !== userId) {
-      throw new ForbiddenException('Only the organizer can update pricing');
-    }
+    await this.assertCanManageEventPayments(
+      event.id,
+      event.ownerId,
+      userId,
+      'Only the organizer can update pricing',
+    );
 
     // Only allow base pricing changes (free vs paid, amount) in DRAFT status or if no registrations.
     // However, feeBearer can be toggled as it only affects the checkout calculation.

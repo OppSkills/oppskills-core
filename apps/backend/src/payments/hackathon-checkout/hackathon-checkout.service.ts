@@ -35,6 +35,37 @@ export class HackathonCheckoutService {
     private readonly referralService: ReferralService,
   ) {}
 
+  /** Owner, platform admin, or hackathon manager — matches dashboard edit access. */
+  private async canManageHackathonPayments(
+    hackathonId: string,
+    ownerId: string,
+    userId: string,
+  ): Promise<boolean> {
+    if (ownerId === userId) return true;
+
+    const user = await prisma.userEntity.findUnique({
+      where: { id: userId },
+      select: { accessLevel: true },
+    });
+    if (user?.accessLevel === 'ADMIN') return true;
+
+    const managerRole = await prisma.hackathonUserRoleEntity.findFirst({
+      where: { hackathonId, userId, role: 'MANAGER' },
+    });
+    return !!managerRole;
+  }
+
+  private async assertCanManageHackathonPayments(
+    hackathonId: string,
+    ownerId: string,
+    userId: string,
+    message: string,
+  ): Promise<void> {
+    if (!(await this.canManageHackathonPayments(hackathonId, ownerId, userId))) {
+      throw new ForbiddenException(message);
+    }
+  }
+
   async createPaymentOrder(params: {
     hackathonSlug: string;
     userId: string;
@@ -1669,9 +1700,12 @@ export class HackathonCheckoutService {
       throw new NotFoundException('Hackathon not found');
     }
 
-    if (hackathon.ownerId !== userId) {
-      throw new ForbiddenException('Only the organizer can view earnings');
-    }
+    await this.assertCanManageHackathonPayments(
+      hackathon.id,
+      hackathon.ownerId,
+      userId,
+      'Only the organizer can view earnings',
+    );
 
     const payments = await prisma.hackathonPaymentEntity.findMany({
       where: {
@@ -1771,9 +1805,12 @@ export class HackathonCheckoutService {
       throw new NotFoundException('Hackathon not found');
     }
 
-    if (hackathon.ownerId !== userId) {
-      throw new ForbiddenException('Only the organizer can view payments');
-    }
+    await this.assertCanManageHackathonPayments(
+      hackathon.id,
+      hackathon.ownerId,
+      userId,
+      'Only the organizer can view payments',
+    );
 
     const payments = await prisma.hackathonPaymentEntity.findMany({
       where: { hackathonId: hackathon.id },

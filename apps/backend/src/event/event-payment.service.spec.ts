@@ -54,6 +54,12 @@ jest.mock('@oppskills/db', () => ({
     userOnboardingProfileEntity: {
       findUnique: jest.fn(),
     },
+    userEntity: {
+      findUnique: jest.fn(),
+    },
+    eventUserRoleEntity: {
+      findFirst: jest.fn(),
+    },
     $transaction: jest.fn((fn) =>
       fn({
         eventParticipantEntity: {
@@ -226,6 +232,12 @@ describe('EventPaymentService', () => {
         name: 'Test Event',
         endDate: new Date(),
       });
+      (prisma.userEntity.findUnique as jest.Mock).mockResolvedValue({
+        accessLevel: 'USER',
+      });
+      (prisma.eventUserRoleEntity.findFirst as jest.Mock).mockResolvedValue(
+        null,
+      );
 
       await expect(
         service.getEventEarnings('test-event', 'user-1'),
@@ -260,6 +272,12 @@ describe('EventPaymentService', () => {
         id: 'event-1',
         ownerId: 'other-user',
       });
+      (prisma.userEntity.findUnique as jest.Mock).mockResolvedValue({
+        accessLevel: 'USER',
+      });
+      (prisma.eventUserRoleEntity.findFirst as jest.Mock).mockResolvedValue(
+        null,
+      );
 
       await expect(
         service.createDiscountCode('test-event', 'user-1', {
