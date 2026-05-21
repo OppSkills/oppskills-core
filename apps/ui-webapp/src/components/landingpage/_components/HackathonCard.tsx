@@ -55,15 +55,15 @@ export function HackathonCard({
                     )}
 
                     {/* Bottom Left Badge (Common Style) */}
-                    <div className="absolute -bottom-0.5 left-0 flex items-center">
-                        <div className="py-1 pr-3 pl-5 bg-background text-primary-500 text-xs rounded-tr-lg flex gap-2 items-center">
+                    <div className="absolute -bottom-[0.1px] left-0 flex items-center">
+                        <div className="pt-1.5 pb-0.5 pr-3 pl-5 bg-background text-primary-500 text-xs flex gap-2 items-center rounded-tr-[1px]">
                             <span>{isFree ? "Free" : "Paid"}</span>
                             <span className="text-[6px]">  ●  </span>
                             <span>{mode}</span>
                         </div>
-                        <div className="relative -left-[0.5px] -top-[0.5px] self-stretch w-5  flex-1 overflow-hidden">
+                        <div className="relative left-0 -top-[0.185px] self-stretch w-5  flex-1 overflow-hidden">
                             <Image
-                                src="/illustrations/curve.svg"
+                                src="/illustrations/sin-shape-with-rectangle.svg"
                                 alt="curve"
                                 fill
                                 className="object-cover object-right"
