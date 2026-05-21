@@ -214,7 +214,9 @@ export function useUpsertPayoutDetails(eventId?: string, hackathonId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payout-details"] });
-      queryClient.invalidateQueries({ queryKey: ["payout-details", eventId, hackathonId] });
+      queryClient.invalidateQueries({
+        queryKey: ["payout-details", eventId, hackathonId],
+      });
     },
   });
 }
@@ -435,4 +437,3 @@ export function useToggleEventTicketTierActive(eventSlug: string) {
     },
   });
 }
-

@@ -37,7 +37,7 @@ export default function RoleCard({
         "flex flex-col md:flex-row items-start md:items-center justify-between p-6 rounded-xl border gap-4 transition-all",
         isOwner
           ? "bg-[#FCF0FF] border-[#F3E8FF]"
-          : "bg-background border-border hover:shadow-sm"
+          : "bg-background border-border hover:shadow-sm",
       )}
     >
       <div className="flex items-center gap-4">
@@ -53,7 +53,7 @@ export default function RoleCard({
           <div
             className={cn(
               "flex items-center justify-center w-14 h-14 rounded-full text-background text-xl font-bold shrink-0",
-              "bg-[#3b0764]" // darker purple for avatar
+              "bg-[#3b0764]", // darker purple for avatar
             )}
           >
             {getInitials(name)}

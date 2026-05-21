@@ -8,12 +8,7 @@ export function DashboardManageRolesFallback({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "flex w-full flex-col gap-8 p-6 md:p-10",
-        className,
-      )}
-    >
+    <div className={cn("flex w-full flex-col gap-8 p-6 md:p-10", className)}>
       <Skeleton className="h-4 w-full max-w-2xl rounded-md" />
       <div className="space-y-3">
         <Skeleton className="h-24 w-full rounded-xl" />
@@ -157,7 +152,12 @@ export function StackedFieldsFallback({
 /** 4-column analytics / stats cards placeholder */
 export function StatsGridFallback({ className }: { className?: string }) {
   return (
-    <div className={cn("grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 w-full", className)}>
+    <div
+      className={cn(
+        "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 w-full",
+        className,
+      )}
+    >
       {Array.from({ length: 4 }).map((_, i) => (
         <Skeleton key={i} className="h-40 w-full rounded-3xl" />
       ))}

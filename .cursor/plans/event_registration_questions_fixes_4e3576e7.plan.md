@@ -26,6 +26,7 @@ todos:
 ### 1) Default questions are never asked unless organizer created/saved a registration form
 
 In `apps/ui-landing/src/app/events/[slug]/page.tsx`:
+
 - The modal opens only if `event.registrationForm.fields.length > 0`.
 - If organizer never created questions, `registrationForm` is null/empty → user is registered via `handleJoinEvent([])` → **no questions asked**.
 
@@ -34,12 +35,14 @@ In `apps/ui-landing/src/app/events/[slug]/page.tsx`:
 In `apps/ui-landing/src/components/ui/hackathon/RegistrationQuestionsModal.tsx` the fixed default question “Gender” has `type: "Options"` but **no default options**, and the edit-event autosave currently persists these fixed questions into DB (so Gender field can end up as OPTIONS with empty options).
 
 In `apps/ui-landing/src/app/events/[slug]/_components/EventRegistrationModal.tsx`:
+
 - OPTIONS fields render with `field.options.map(...)`.
 - If options are empty → dropdown shows **no items**.
 
 ### 3) Custom questions created in dashboard may not show in public registration
 
 Likely causes in current flow:
+
 - If organizers never saved registration form (default UI shows fixed questions but nothing persisted), public API returns no fields.
 - If gender OPTIONS stored with empty options, the field effectively breaks the form.
 
@@ -76,6 +79,7 @@ Define a small canonical list of default fields with stable labels and types:
 **File**: `apps/ui-landing/src/app/events/[slug]/page.tsx`
 
 Changes:
+
 - Build `fieldsForModal = mergeDefaultAndCustomFields(event.registrationForm?.fields, meData/onboardingProfile)`.
 - Open modal if `fieldsForModal.length > 0` (it will always be >0 for onboarded users).
 - Stop calling `handleJoinEvent([])` just because there are no DB fields.
@@ -83,6 +87,7 @@ Changes:
 **File**: `apps/ui-landing/src/app/events/[slug]/_components/EventRegistrationModal.tsx`
 
 Changes:
+
 - Add a small normalizer before rendering:
   - If `field.label == "Gender"` and `field.type == "OPTIONS"` and `options` empty → inject the default gender options.
 - Ensure required markers are correct for default + conditional fields.
@@ -90,10 +95,12 @@ Changes:
 ### C) Dashboard: show default questions in the editor, but do NOT persist them as DB fields
 
 **Files**:
+
 - `apps/ui-landing/src/components/ui/hackathon/RegistrationQuestionsModal.tsx`
 - `apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx`
 
 Changes:
+
 - Keep fixed questions visible in the modal UI.
 - Update the “Save” behavior so the payload to `updateEventRegistrationForm()` only includes **custom questions**.
   - This honors “don’t add defaults in DB at the beginning”.
@@ -104,6 +111,7 @@ Changes:
 **File**: `apps/backend/src/event/event.service.ts` in `joinEvent()`
 
 Changes:
+
 - Before validation:
   - Fetch user onboarding profile (`userOnboardingProfileEntity`) to determine `userCategory`.
   - Upsert `EventRegistrationFormEntity` if missing.
@@ -129,10 +137,10 @@ No endpoint changes required if defaults are created on join; after first regist
 
 ## Incremental rollout order
 
-1) Fix modal opening logic + gender options injection (frontend) so users can register with defaults immediately.
-2) Change dashboard save to persist only custom questions (prevents creating broken Gender OPTIONS fields).
-3) Add backend lazy-create defaults + conditional required enforcement + storage.
-4) Verify custom questions + defaults both save and show correctly.
+1. Fix modal opening logic + gender options injection (frontend) so users can register with defaults immediately.
+2. Change dashboard save to persist only custom questions (prevents creating broken Gender OPTIONS fields).
+3. Add backend lazy-create defaults + conditional required enforcement + storage.
+4. Verify custom questions + defaults both save and show correctly.
 
 ---
 
@@ -146,4 +154,3 @@ No endpoint changes required if defaults are created on join; after first regist
 - Working professional:
   - Sees Company Name (not College Name) and can submit.
 - Answers are saved in DB for both defaults and custom (same table model).
-

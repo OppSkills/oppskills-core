@@ -1,9 +1,7 @@
 import type { Metadata, ResolvingMetadata } from "next";
 import { getPublicHackathonBySlug } from "@/lib/api/hackathonApi";
 import { API_URL, SITE_URL } from "@/lib/constants";
-import {
-  CompetitionDetailsClient,
-} from "./CompetitionDetailsClient";
+import { CompetitionDetailsClient } from "./CompetitionDetailsClient";
 import {
   transformApiData,
   type HackathonApiData,
@@ -25,7 +23,7 @@ async function getCompetition(slug: string): Promise<HackathonApiData | null> {
 
 export async function generateMetadata(
   { params }: Props,
-  parent: ResolvingMetadata
+  parent: ResolvingMetadata,
 ): Promise<Metadata> {
   const { slug } = await params;
   const data = await getCompetition(slug);

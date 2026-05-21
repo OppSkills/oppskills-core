@@ -8,11 +8,11 @@ import {
   Max,
   ValidateIf,
   IsNotEmpty,
-} from 'class-validator';
+} from "class-validator";
 
 export enum DiscountType {
-  PERCENT = 'PERCENT',
-  FIXED = 'FIXED',
+  PERCENT = "PERCENT",
+  FIXED = "FIXED",
 }
 
 export class CreateDiscountCodeDto {
@@ -24,9 +24,9 @@ export class CreateDiscountCodeDto {
   type: DiscountType;
 
   @IsNumber()
-  @Min(0.01, { message: 'Discount value must be positive' })
+  @Min(0.01, { message: "Discount value must be positive" })
   @ValidateIf((o) => o.type === DiscountType.PERCENT)
-  @Max(100, { message: 'Percentage discount cannot exceed 100%' })
+  @Max(100, { message: "Percentage discount cannot exceed 100%" })
   value: number;
 
   @IsOptional()

@@ -19,4 +19,3 @@ export class SendTeamEmailDto {
   @MaxLength(50000)
   htmlBody: string;
 }
-

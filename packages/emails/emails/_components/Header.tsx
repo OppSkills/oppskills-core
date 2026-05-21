@@ -1,14 +1,8 @@
-import {
-  Img,
-  Link,
-  Section,
-  Row,
-  Column,
-} from '@react-email/components';
-import * as React from 'react';
+import { Img, Link, Section, Row, Column } from "@react-email/components";
+import * as React from "react";
 
-const defaultBaseUrl = 'https://www.oppskills.com';
-const iconColor = '7C737E';
+const defaultBaseUrl = "https://www.oppskills.com";
+const iconColor = "7C737E";
 
 export function Header({ baseUrl = defaultBaseUrl }: { baseUrl?: string }) {
   const logoUrl = `${baseUrl}/logo.png`;
@@ -64,21 +58,20 @@ export function Header({ baseUrl = defaultBaseUrl }: { baseUrl?: string }) {
 }
 
 const header: React.CSSProperties = {
-  padding: '32px 40px',
+  padding: "32px 40px",
 };
 
 const socialRow: React.CSSProperties = {
-  width: 'auto',
-  display: 'inline-block',
+  width: "auto",
+  display: "inline-block",
 };
 
 const socialColumn: React.CSSProperties = {
-  paddingLeft: '12px',
+  paddingLeft: "12px",
 };
 
 const logoStyle: React.CSSProperties = {
-  display: 'block',
-  maxWidth: '140px',
-  height: 'auto',
+  display: "block",
+  maxWidth: "140px",
+  height: "auto",
 };
-

@@ -25,7 +25,7 @@ export interface UserSearchResult {
  */
 export async function searchUsers(
   token: string,
-  query: string
+  query: string,
 ): Promise<UserSearchResult[]> {
   const safeQuery = query.trim();
   if (safeQuery.length === 0) {
@@ -66,7 +66,7 @@ export async function getMe(token: string): Promise<MeResponseDto> {
  */
 export async function submitOnboarding(
   token: string,
-  data: CreateOnboardingDto
+  data: CreateOnboardingDto,
 ): Promise<{ success: boolean; message: string; onboardingProfile: unknown }> {
   try {
     const res = await API.put("/onboarding", data, {
@@ -100,7 +100,7 @@ export async function getFullProfile(token: string): Promise<any> {
  */
 export async function updateSkills(
   token: string,
-  skills: string[]
+  skills: string[],
 ): Promise<{ success: boolean }> {
   try {
     const res = await API.patch(
@@ -108,7 +108,7 @@ export async function updateSkills(
       { skills },
       {
         headers: buildAuthHeaders(token),
-      }
+      },
     );
     return res.data;
   } catch (error) {
@@ -122,7 +122,7 @@ export async function updateSkills(
  */
 export async function updateInterests(
   token: string,
-  interests: string[]
+  interests: string[],
 ): Promise<{ success: boolean }> {
   try {
     const res = await API.patch(
@@ -130,7 +130,7 @@ export async function updateInterests(
       { interests },
       {
         headers: buildAuthHeaders(token),
-      }
+      },
     );
     return res.data;
   } catch (error) {
@@ -204,4 +204,3 @@ export async function getRegistrations(token: string): Promise<any[]> {
     throw new Error("Failed to fetch registrations.");
   }
 }
-

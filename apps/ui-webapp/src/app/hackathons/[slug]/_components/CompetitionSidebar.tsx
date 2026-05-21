@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { SquareShareLine } from '@solar-icons/react'
+import { SquareShareLine } from "@solar-icons/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronRight,
@@ -65,7 +65,8 @@ export function CompetitionSidebar({
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { user } = useUser();
   const [, setAuthMode] = useQueryState("auth");
-  const [isCheckingRegistration, setIsCheckingRegistration] = useState(!!isSignedIn);
+  const [isCheckingRegistration, setIsCheckingRegistration] =
+    useState(!!isSignedIn);
   const [isStartingRegistration, setIsStartingRegistration] = useState(false);
   const [myTeam, setMyTeam] = useState<TeamDetailResponse | null>(null);
   const [registrationStatus, setRegistrationStatus] =
@@ -74,7 +75,8 @@ export function CompetitionSidebar({
   const [registration, setRegistration] = useQueryState("registration");
   const [invitation, setInvitation] = useQueryState("invitation");
 
-  const isOrganizer = !!user && !!competition.organizers?.some((o) => o.id === user.id);
+  const isOrganizer =
+    !!user && !!competition.organizers?.some((o) => o.id === user.id);
 
   const sidebarActiveTiers = useMemo(
     () => getActiveRegistrationTiers(competition.ticketTiers),
@@ -174,8 +176,7 @@ export function CompetitionSidebar({
         setRegistrationStatus(status);
 
         const canComplete =
-          !!team &&
-          status?.canCompleteRegistrationWithoutPayment === true;
+          !!team && status?.canCompleteRegistrationWithoutPayment === true;
 
         if (team && registration) {
           if (status?.hasSubmitted) {
@@ -221,7 +222,11 @@ export function CompetitionSidebar({
     if (!registrationStatus || isCheckingRegistration) return;
 
     const pending = readPendingHackathonRegistration(competition.slug);
-    if (!pending || pending.userId !== user.id || pending.answers.length === 0) {
+    if (
+      !pending ||
+      pending.userId !== user.id ||
+      pending.answers.length === 0
+    ) {
       return;
     }
 
@@ -365,7 +370,7 @@ export function CompetitionSidebar({
     } catch (error) {
       console.error("Error starting registration:", error);
       toast.error(
-        getApiErrorMessage(error, "Something went wrong. Please try again.")
+        getApiErrorMessage(error, "Something went wrong. Please try again."),
       );
     } finally {
       setIsStartingRegistration(false);
@@ -410,9 +415,7 @@ export function CompetitionSidebar({
                 setIsStartingRegistration(false);
               }
             }}
-            disabled={
-              isStartingRegistration || Boolean(isRegistrationClosed)
-            }
+            disabled={isStartingRegistration || Boolean(isRegistrationClosed)}
           >
             {isStartingRegistration ? (
               <>
@@ -476,7 +479,11 @@ export function CompetitionSidebar({
       );
     }
 
-    const rawEntryFee = competition.entryFeeAmount as number | string | null | undefined;
+    const rawEntryFee = competition.entryFeeAmount as
+      | number
+      | string
+      | null
+      | undefined;
     const entryBase =
       typeof rawEntryFee === "number"
         ? rawEntryFee
@@ -493,15 +500,14 @@ export function CompetitionSidebar({
       : null;
 
     const baseAmount =
-      sidebarActiveTiers.length > 0 && tierBase !== null
-        ? tierBase
-        : entryBase;
+      sidebarActiveTiers.length > 0 && tierBase !== null ? tierBase : entryBase;
 
     const isPaid = competition.isFree === false && baseAmount > 0;
     const processingFee = Math.ceil(baseAmount * 0.0236 * 100) / 100;
-    const totalAmount = competition.feeBearer === "PARTICIPANT"
-      ? baseAmount + processingFee
-      : baseAmount;
+    const totalAmount =
+      competition.feeBearer === "PARTICIPANT"
+        ? baseAmount + processingFee
+        : baseAmount;
     const currency = competition.currency || "INR";
     const registerLabel = isPaid
       ? `Register for ${currency} ${totalAmount.toFixed(2)}`
@@ -520,7 +526,8 @@ export function CompetitionSidebar({
           {isPaid && competition.feeBearer === "PARTICIPANT" && (
             <div className="text-center space-y-0.5">
               <p className="text-xs text-neutral-500">
-                ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)} Transaction Charges
+                ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)}{" "}
+                Transaction Charges
               </p>
               <p className="text-[10px] text-neutral-400 px-2">
                 Charged by payment partners to process your transaction.
@@ -548,16 +555,19 @@ export function CompetitionSidebar({
             registerLabel
           )}
         </Button>
-        {isPaid && competition.feeBearer === "PARTICIPANT" && !isStartingRegistration && (
-          <div className="text-center space-y-0.5">
-            <p className="text-xs text-neutral-500">
-              ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)} Transaction Charges
-            </p>
-            <p className="text-[10px] text-neutral-400 px-2">
-              Charged by payment partners to process your transaction.
-            </p>
-          </div>
-        )}
+        {isPaid &&
+          competition.feeBearer === "PARTICIPANT" &&
+          !isStartingRegistration && (
+            <div className="text-center space-y-0.5">
+              <p className="text-xs text-neutral-500">
+                ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)}{" "}
+                Transaction Charges
+              </p>
+              <p className="text-[10px] text-neutral-400 px-2">
+                Charged by payment partners to process your transaction.
+              </p>
+            </div>
+          )}
       </div>
     );
   };
@@ -607,7 +617,7 @@ export function CompetitionSidebar({
 
   const getDeterministicPseudoImpressions = (
     registrationCount: number | null | undefined,
-    createdAt: Date
+    createdAt: Date,
   ): number => {
     if (!registrationCount || registrationCount <= 0) return 0;
 
@@ -618,7 +628,7 @@ export function CompetitionSidebar({
 
     const hoursOld = Math.max(
       1,
-      Math.floor((now - createdTime) / (1000 * 60 * 60))
+      Math.floor((now - createdTime) / (1000 * 60 * 60)),
     );
 
     const registrationBase = registrationCount * 6;
@@ -690,22 +700,43 @@ export function CompetitionSidebar({
           <div className="flex gap-4 items-center">
             <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex flex-col items-center justify-center">
               <span className="text-[10px] uppercase text-neutral-500 font-medium leading-none mb-0.5">
-                {competition.startDate ? formatToIST(competition.startDate, { formatType: "short_month", showSuffix: false }) : "TBD"}
+                {competition.startDate
+                  ? formatToIST(competition.startDate, {
+                      formatType: "short_month",
+                      showSuffix: false,
+                    })
+                  : "TBD"}
               </span>
               <span className="text-lg font-bold text-neutral-900  leading-none">
-                {competition.startDate ? formatToIST(competition.startDate, { formatType: "day", showSuffix: false }) : "--"}
+                {competition.startDate
+                  ? formatToIST(competition.startDate, {
+                      formatType: "day",
+                      showSuffix: false,
+                    })
+                  : "--"}
               </span>
             </div>
             <div>
               <h4 className="font-semibold text-neutral-900  text-[15px]">
                 {(() => {
                   if (competition.startDate && competition.endDate) {
-                    if (isSameDayInIST(competition.startDate, competition.endDate)) {
-                      return formatToIST(competition.startDate, { formatType: "full_date", showSuffix: false });
+                    if (
+                      isSameDayInIST(competition.startDate, competition.endDate)
+                    ) {
+                      return formatToIST(competition.startDate, {
+                        formatType: "full_date",
+                        showSuffix: false,
+                      });
                     } else {
-                      const startMonth = formatToIST(competition.startDate, { formatType: "short_month" });
-                      const startDay = formatToIST(competition.startDate, { formatType: "day" });
-                      const endFormatted = formatToIST(competition.endDate, { formatType: "date" });
+                      const startMonth = formatToIST(competition.startDate, {
+                        formatType: "short_month",
+                      });
+                      const startDay = formatToIST(competition.startDate, {
+                        formatType: "day",
+                      });
+                      const endFormatted = formatToIST(competition.endDate, {
+                        formatType: "date",
+                      });
                       return `${startMonth} ${startDay} - ${endFormatted}`;
                     }
                   }
@@ -715,8 +746,12 @@ export function CompetitionSidebar({
               <p className="text-sm text-neutral-500">
                 {(() => {
                   if (competition.startDate && competition.endDate) {
-                    const startTime = formatToIST(competition.startDate, { formatType: "time" });
-                    const endTime = formatToIST(competition.endDate, { formatType: "time" });
+                    const startTime = formatToIST(competition.startDate, {
+                      formatType: "time",
+                    });
+                    const endTime = formatToIST(competition.endDate, {
+                      formatType: "time",
+                    });
                     return `${startTime} - ${endTime}`;
                   }
                   return competition.specificTime || "Time TBD";
@@ -724,7 +759,6 @@ export function CompetitionSidebar({
               </p>
             </div>
           </div>
-
 
           {/* Location Row */}
           <div className="flex gap-4 items-center">
@@ -756,7 +790,10 @@ export function CompetitionSidebar({
                 const checkReg = async () => {
                   const token = await getToken();
                   if (token) {
-                    const team = await checkMyHackathonTeam(token, competition.id);
+                    const team = await checkMyHackathonTeam(
+                      token,
+                      competition.id,
+                    );
                     setMyTeam(team);
                     if (team) {
                       try {
@@ -778,7 +815,6 @@ export function CompetitionSidebar({
             />
           )}
 
-
           {/* Stats List */}
           <div className="space-y-4">
             {/* Participation Capacity */}
@@ -789,7 +825,8 @@ export function CompetitionSidebar({
                 </div>
                 <div>
                   <div className="font-semibold text-neutral-900  text-sm">
-                    {competition.registrationCount || 0}/{competition.maxTeams} Teams
+                    {competition.registrationCount || 0}/{competition.maxTeams}{" "}
+                    Teams
                   </div>
                   <div className="text-xs text-neutral-500">Capacity</div>
                 </div>
@@ -834,7 +871,7 @@ export function CompetitionSidebar({
                   {competition.impressions ||
                     getDeterministicPseudoImpressions(
                       competition.registrationCount,
-                      competition.createdAt
+                      competition.createdAt,
                     )}
                 </div>
                 <div className="text-xs text-neutral-500">Impressions</div>
@@ -855,7 +892,6 @@ export function CompetitionSidebar({
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </div>

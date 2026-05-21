@@ -30,40 +30,68 @@ export function useReferrals(entityType: ReferralEntityType, entityId: string) {
   });
 }
 
-export function useReferralAnalytics(entityType: ReferralEntityType, entityId: string) {
+export function useReferralAnalytics(
+  entityType: ReferralEntityType,
+  entityId: string,
+) {
   const { getToken } = useAuth();
   return useQuery({
     queryKey: ["referral-analytics", entityType, entityId],
     enabled: Boolean(entityId),
     queryFn: async () =>
-      getReferralAnalytics(await tokenOrThrow(getToken), { entityType, entityId }),
+      getReferralAnalytics(await tokenOrThrow(getToken), {
+        entityType,
+        entityId,
+      }),
   });
 }
 
-export function useCreateReferral(entityType: ReferralEntityType, entityId: string) {
+export function useCreateReferral(
+  entityType: ReferralEntityType,
+  entityId: string,
+) {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { referrerEmail: string; sendEmail?: boolean }) =>
-      createReferral(await tokenOrThrow(getToken), { ...payload, entityType, entityId }),
+    mutationFn: async (payload: {
+      referrerEmail: string;
+      sendEmail?: boolean;
+    }) =>
+      createReferral(await tokenOrThrow(getToken), {
+        ...payload,
+        entityType,
+        entityId,
+      }),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["referrals", entityType, entityId] }),
-        queryClient.invalidateQueries({ queryKey: ["referral-analytics", entityType, entityId] }),
+        queryClient.invalidateQueries({
+          queryKey: ["referrals", entityType, entityId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["referral-analytics", entityType, entityId],
+        }),
       ]);
     },
   });
 }
 
-export function useDeleteReferral(entityType: ReferralEntityType, entityId: string) {
+export function useDeleteReferral(
+  entityType: ReferralEntityType,
+  entityId: string,
+) {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => deleteReferral(await tokenOrThrow(getToken), id),
+    mutationFn: async (id: string) =>
+      deleteReferral(await tokenOrThrow(getToken), id),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["referrals", entityType, entityId] }),
-        queryClient.invalidateQueries({ queryKey: ["referral-analytics", entityType, entityId] }),
+        queryClient.invalidateQueries({
+          queryKey: ["referrals", entityType, entityId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["referral-analytics", entityType, entityId],
+        }),
       ]);
     },
   });
@@ -86,17 +114,30 @@ export function useReferrerLookup(
      */
     staleTime: 60_000,
     queryFn: async () =>
-      lookupReferrerUser(await tokenOrThrow(getToken), { entityType, entityId, email }),
+      lookupReferrerUser(await tokenOrThrow(getToken), {
+        entityType,
+        entityId,
+        email,
+      }),
   });
 }
 
-export function useReferralRegistrations(referralId: string | null, page = 1, pageSize = 10) {
+export function useReferralRegistrations(
+  referralId: string | null,
+  page = 1,
+  pageSize = 10,
+) {
   const { getToken } = useAuth();
   return useQuery({
     queryKey: ["referral-registrations", referralId, page, pageSize],
     enabled: Boolean(referralId),
     queryFn: async () =>
-      getReferralRegistrations(await tokenOrThrow(getToken), referralId!, page, pageSize),
+      getReferralRegistrations(
+        await tokenOrThrow(getToken),
+        referralId!,
+        page,
+        pageSize,
+      ),
   });
 }
 
@@ -105,7 +146,8 @@ export function useReferralById(referralId: string) {
   return useQuery({
     queryKey: ["referral", referralId],
     enabled: Boolean(referralId),
-    queryFn: async () => getReferralById(await tokenOrThrow(getToken), referralId),
+    queryFn: async () =>
+      getReferralById(await tokenOrThrow(getToken), referralId),
   });
 }
 
@@ -114,6 +156,7 @@ export function useReferrerDetailsForOrganizer(referralId: string | null) {
   return useQuery({
     queryKey: ["referrer-details", referralId],
     enabled: Boolean(referralId),
-    queryFn: async () => getReferrerDetails(await tokenOrThrow(getToken), referralId!),
+    queryFn: async () =>
+      getReferrerDetails(await tokenOrThrow(getToken), referralId!),
   });
 }

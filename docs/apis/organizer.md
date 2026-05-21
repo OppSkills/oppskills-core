@@ -9,14 +9,16 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
 ## 1. Dashboard Overview
 
 ### List My Opportunities
+
 - **Endpoints:** `GET /hackathons/my`, `GET /events/my`, `GET /festivals/my`
 - **Usage:** Fetches all listings the current user manages.
 
 ### React Native Example (TanStack Query)
+
 ```typescript
 const { data: myHackathons } = useQuery({
-  queryKey: ['organizer', 'hackathons'],
-  queryFn: () => apiClient.request('/hackathons/my?page=1&take=10'),
+  queryKey: ["organizer", "hackathons"],
+  queryFn: () => apiClient.request("/hackathons/my?page=1&take=10"),
 });
 ```
 
@@ -25,15 +27,18 @@ const { data: myHackathons } = useQuery({
 ## 2. Participant & Team Management
 
 ### View Registrations
+
 - **Hackathon Teams:** `GET /hackathons/by-slug/:slug/registrations`
 - **Event Participants:** `GET /events/by-slug/:slug/registrations`
 - **Usage:** Lists everyone who signed up.
 
 ### Approvals
+
 - **Approve One:** `POST /events/by-slug/:slug/participants/:participantId/approve`
 - **Bulk Approve:** `POST /events/by-slug/:slug/participants/bulk-approve`
 
 ### Control Registration
+
 - **Pause/Resume Signups:** `PATCH /hackathons/:id/registration-paused` (Body: `{ "isRegistrationPaused": true }`)
 
 ---

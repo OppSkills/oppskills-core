@@ -2,7 +2,10 @@
 
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
-import { ManageRolesLayout, type RoleUser } from "@/app/dashboard/_components/roles/ManageRolesLayout";
+import {
+  ManageRolesLayout,
+  type RoleUser,
+} from "@/app/dashboard/_components/roles/ManageRolesLayout";
 import { AddRoleModal } from "@/app/dashboard/_components/roles/AddRoleModal";
 import { useHackathonBySlug } from "@/hooks/useHackathonBySlug";
 import {
@@ -10,9 +13,7 @@ import {
   useAddHackathonRoleMutation,
   useRemoveHackathonRoleMutation,
 } from "@/hooks/useHackathonRoles";
-import type {
-  HackathonUserRoleValue,
-} from "@oppskills/types";
+import type { HackathonUserRoleValue } from "@oppskills/types";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -37,7 +38,9 @@ export default function ManageRolesPage() {
   const params = useParams();
   const slug = typeof params.slug === "string" ? params.slug : null;
 
-  const [activeTab, setActiveTab] = useState<"Manager" | "Evaluator">("Manager");
+  const [activeTab, setActiveTab] = useState<"Manager" | "Evaluator">(
+    "Manager",
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Query for hackathon data (reusing existing hook)
@@ -74,11 +77,17 @@ export default function ManageRolesPage() {
     }
   };
 
-  const handleDeleteClick = async (user: RoleUser, role: "Manager" | "Evaluator") => {
-    const displayName = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email;
+  const handleDeleteClick = async (
+    user: RoleUser,
+    role: "Manager" | "Evaluator",
+  ) => {
+    const displayName =
+      user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`
+        : user.email;
     if (
       !confirm(
-        `Are you sure you want to remove ${displayName} as a ${role.toLowerCase()}?`
+        `Are you sure you want to remove ${displayName} as a ${role.toLowerCase()}?`,
       )
     ) {
       return;
@@ -130,7 +139,11 @@ export default function ManageRolesPage() {
   return (
     <div className="min-h-screen w-full">
       <ManageRolesLayout
-        owner={roles?.owner ? { ...roles.owner, id: roles.owner.id || "owner-id" } : null}
+        owner={
+          roles?.owner
+            ? { ...roles.owner, id: roles.owner.id || "owner-id" }
+            : null
+        }
         managers={roles?.managers || []}
         evaluators={roles?.evaluators || []}
         isLoading={isLoading}
@@ -153,4 +166,3 @@ export default function ManageRolesPage() {
     </div>
   );
 }
-

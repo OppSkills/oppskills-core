@@ -71,14 +71,10 @@ export function RoundsTimeline({
               <div className="flex-shrink-0 flex flex-col items-center">
                 <div
                   className={cn(
-                    "w-12 h-12 rounded-lg flex items-center justify-center z-10 bg-primary-200"
+                    "w-12 h-12 rounded-lg flex items-center justify-center z-10 bg-primary-200",
                   )}
                 >
-                  <span
-                    className="text-primary-900"
-                  >
-                    R{roundNumber}
-                  </span>
+                  <span className="text-primary-900">R{roundNumber}</span>
                 </div>
               </div>
 
@@ -122,7 +118,9 @@ export function RoundsTimeline({
                     {round.description && (
                       <div
                         className="prose prose-sm max-w-none text-neutral-500 mb-4"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(round.description) }}
+                        dangerouslySetInnerHTML={{
+                          __html: DOMPurify.sanitize(round.description),
+                        }}
                       />
                     )}
 
@@ -130,12 +128,20 @@ export function RoundsTimeline({
                       <div className="flex items-center gap-3 text-neutral-600">
                         <Calendar className="w-4 h-4 text-neutral-500 stroke-[2] opacity-80" />
                         <span className="text-sm">
-                          Start: {formatToIST(round.startDate, { formatType: "datetime" })}
+                          Start:{" "}
+                          {formatToIST(round.startDate, {
+                            formatType: "datetime",
+                          })}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-neutral-600">
                         <Calendar className="w-4 h-4 text-neutral-500 stroke-[2] opacity-80" />
-                        <span className="text-sm">End: {formatToIST(round.endDate, { formatType: "datetime" })}</span>
+                        <span className="text-sm">
+                          End:{" "}
+                          {formatToIST(round.endDate, {
+                            formatType: "datetime",
+                          })}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -153,7 +159,7 @@ export function RoundsTimeline({
                               </span>
                             </div>
                           ) : qualificationsByRoundId?.[rounds[index + 1].id]
-                            ?.qualified === false ? (
+                              ?.qualified === false ? (
                             <div className="flex items-center gap-2 text-red-600">
                               <XCircle className="w-5 h-5" />
                               <span className="text-sm font-medium">
@@ -191,7 +197,7 @@ export function RoundsTimeline({
                     round.submissionConfig?.enabled && (
                       <div className="flex flex-col items-start md:items-end gap-2 w-full md:w-auto border-t md:border-t-0 pt-4 md:pt-0 border-neutral-100 mt-2 md:mt-0">
                         {index > 0 &&
-                          qualificationsByRoundId?.[round.id]?.qualified ===
+                        qualificationsByRoundId?.[round.id]?.qualified ===
                           false ? (
                           <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100">
                             <XCircle className="w-5 h-5" />

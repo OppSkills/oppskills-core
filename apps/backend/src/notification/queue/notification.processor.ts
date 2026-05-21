@@ -2,7 +2,10 @@ import { prisma } from '@oppskills/db';
 import { getResend } from 'src/_utils/resend.utils';
 import { createElement } from 'react';
 import { render } from '@react-email/components';
-import { EventNotificationEmail, HackathonNotificationEmail } from '@oppskills/emails';
+import {
+  EventNotificationEmail,
+  HackathonNotificationEmail,
+} from '@oppskills/emails';
 
 export async function processNotification(notificationId: string) {
   const notification = await prisma.notifications.findUnique({
@@ -24,7 +27,8 @@ export async function processNotification(notificationId: string) {
       where: { id: notification.hackathonId },
       select: { name: true, slug: true },
     });
-    if (hackathon) entityDetails = { name: hackathon.name, slug: hackathon.slug };
+    if (hackathon)
+      entityDetails = { name: hackathon.name, slug: hackathon.slug };
   }
 
   // Mark status as PROCESSING immediately
@@ -64,24 +68,31 @@ export async function processNotification(notificationId: string) {
 
         batchRecipients = participants
           .map((p) => ({ email: p.user?.email, firstName: p.user?.firstName }))
-          .filter((u) => !!u.email) as { email: string; firstName: string | null }[];
+          .filter((u) => !!u.email) as {
+          email: string;
+          firstName: string | null;
+        }[];
         lastIdThisBatch = participants[participants.length - 1].id;
       } else if (notification.hackathonId) {
-        const submissions = await prisma.hackathonRegistrationSubmissionEntity.findMany({
-          where: {
-            hackathonId: notification.hackathonId,
-            ...(lastProcessedId ? { id: { gt: lastProcessedId } } : {}),
-          },
-          take: 100,
-          orderBy: { id: 'asc' },
-          include: { user: { select: { email: true, firstName: true } } },
-        });
+        const submissions =
+          await prisma.hackathonRegistrationSubmissionEntity.findMany({
+            where: {
+              hackathonId: notification.hackathonId,
+              ...(lastProcessedId ? { id: { gt: lastProcessedId } } : {}),
+            },
+            take: 100,
+            orderBy: { id: 'asc' },
+            include: { user: { select: { email: true, firstName: true } } },
+          });
 
         if (submissions.length === 0) break;
 
         batchRecipients = submissions
           .map((s) => ({ email: s.user?.email, firstName: s.user?.firstName }))
-          .filter((u) => !!u.email) as { email: string; firstName: string | null }[];
+          .filter((u) => !!u.email) as {
+          email: string;
+          firstName: string | null;
+        }[];
         lastIdThisBatch = submissions[submissions.length - 1].id;
       }
 
@@ -118,7 +129,9 @@ export async function processNotification(notificationId: string) {
             }
 
             return {
-              from: process.env.RESEND_FROM_EMAIL || 'OppSkills <noreply@oppskills.com>',
+              from:
+                process.env.RESEND_FROM_EMAIL ||
+                'OppSkills <noreply@oppskills.com>',
               to: recipient.email,
               subject,
               html,
@@ -170,7 +183,8 @@ export async function processNotification(notificationId: string) {
     }
 
     // Complete notification campaign
-    const finalStatus = (successCount === 0 && failedCount > 0) ? 'FAILED' : 'COMPLETED';
+    const finalStatus =
+      successCount === 0 && failedCount > 0 ? 'FAILED' : 'COMPLETED';
 
     await prisma.notifications.update({
       where: { id: notificationId },
@@ -179,7 +193,6 @@ export async function processNotification(notificationId: string) {
         completedAt: new Date(),
       },
     });
-
 
     await prisma.notificationLogs.create({
       data: {

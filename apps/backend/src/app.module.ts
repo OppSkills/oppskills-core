@@ -24,6 +24,7 @@ import { AdminModule } from './admin/admin.module';
 import { OpportunityModule } from './opportunity/opportunity.module';
 import { ReferralModule } from './referral/referral.module';
 import { NotificationModule } from './notification/notification.module';
+import { RecommendationModule } from './recommendation/recommendation.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { NotificationModule } from './notification/notification.module';
     OpportunityModule,
     ReferralModule,
     NotificationModule,
+    RecommendationModule,
   ],
   controllers: [AppController],
   providers: [

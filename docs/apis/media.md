@@ -5,6 +5,7 @@ This document explains how to upload files (images and documents) to OppSkills a
 ## Overview
 
 To save server bandwidth, OppSkills **does not** accept direct file uploads to our API. Instead, we use a two-step "presigned URL" process:
+
 1. Your frontend asks the OppSkills backend for permission to upload a file.
 2. The backend returns a temporary, secure Amazon S3 URL.
 3. Your frontend uploads the file directly to Amazon S3 using that URL.
@@ -14,6 +15,7 @@ To save server bandwidth, OppSkills **does not** accept direct file uploads to o
 ## 1. Requesting Upload URLs
 
 ### Upload an Image
+
 - **Endpoint:** `POST /media/presign-image`
 - **Usage:** Call this when a user wants to upload an avatar, banner, or any other image.
 - **Body:**
@@ -26,6 +28,7 @@ To save server bandwidth, OppSkills **does not** accept direct file uploads to o
 - **Response:** Returns an `uploadUrl` (where to send the file), `fields` (security tokens), and a `publicUrl` (the final URL you will save to the database).
 
 ### Upload a Document
+
 - **Endpoint:** `POST /media/presign-document`
 - **Usage:** Call this when a user wants to upload a PDF or Word document (e.g., for a hackathon problem statement).
 - **Body:**
@@ -44,12 +47,16 @@ To save server bandwidth, OppSkills **does not** accept direct file uploads to o
 Here is how you execute the two-step upload process on the frontend.
 
 ### Web (Next.js / React)
+
 ```javascript
 // 1. Ask backend for permission
-const response = await fetch('https://api.oppskills.com/media/presign-image', {
-  method: 'POST',
-  headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-  body: JSON.stringify({ purpose: "AVATAR", mimeType: file.type })
+const response = await fetch("https://api.oppskills.com/media/presign-image", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ purpose: "AVATAR", mimeType: file.type }),
 });
 const { uploadUrl, fields, publicUrl } = await response.json();
 
@@ -65,11 +72,12 @@ await fetch(uploadUrl, { method: "POST", body: formData });
 ```
 
 ### Mobile (React Native / Expo)
+
 In React Native, you use `expo-image-picker` to select the file, then format the `FormData` object slightly differently than on the web.
 
 ```typescript
-import * as ImagePicker from 'expo-image-picker';
-import { useAuth } from '@clerk/clerk-expo';
+import * as ImagePicker from "expo-image-picker";
+import { useAuth } from "@clerk/clerk-expo";
 
 export function useS3Uploader() {
   const { getToken } = useAuth();
@@ -85,20 +93,23 @@ export function useS3Uploader() {
     if (result.canceled || !result.assets[0]) return null;
 
     const asset = result.assets[0];
-    const mimeType = asset.mimeType || 'image/jpeg';
-    
+    const mimeType = asset.mimeType || "image/jpeg";
+
     // 2. Ask backend for permission
     const token = await getToken();
-    const backendResponse = await fetch('https://api.oppskills.com/media/presign-image', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+    const backendResponse = await fetch(
+      "https://api.oppskills.com/media/presign-image",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ purpose: "HACKATHON_BANNER", mimeType }),
       },
-      body: JSON.stringify({ purpose: 'HACKATHON_BANNER', mimeType }),
-    });
+    );
 
-    if (!backendResponse.ok) throw new Error('Failed to get upload URL');
+    if (!backendResponse.ok) throw new Error("Failed to get upload URL");
     const { uploadUrl, fields, publicUrl } = await backendResponse.json();
 
     // 3. Attach security fields and the file
@@ -106,8 +117,9 @@ export function useS3Uploader() {
     Object.keys(fields).forEach((key) => formData.append(key, fields[key]));
 
     // React Native requires this specific object structure for files
-    const filename = asset.fileName || asset.uri.split('/').pop() || 'upload.jpg';
-    formData.append('file', {
+    const filename =
+      asset.fileName || asset.uri.split("/").pop() || "upload.jpg";
+    formData.append("file", {
       uri: asset.uri,
       type: mimeType,
       name: filename,
@@ -115,11 +127,11 @@ export function useS3Uploader() {
 
     // 4. Upload directly to S3
     const s3Response = await fetch(uploadUrl, {
-      method: 'POST',
+      method: "POST",
       body: formData, // Do NOT manually set Content-Type header here
     });
 
-    if (!s3Response.ok) throw new Error('S3 Upload failed');
+    if (!s3Response.ok) throw new Error("S3 Upload failed");
 
     // 5. Save the final publicUrl to your database!
     return publicUrl;
@@ -134,5 +146,5 @@ export function useS3Uploader() {
 ## 3. Dynamic Image Resizing
 
 - **Endpoint:** `GET /image/serve?url=<raw_s3_url>`
-- **Usage:** Use this when generating Open Graph (OG) meta tags for social media sharing. 
+- **Usage:** Use this when generating Open Graph (OG) meta tags for social media sharing.
 - **What it does:** It takes a raw, potentially massive S3 image URL and instantly serves a compressed, perfectly sized (1200x630) JPEG version optimized for Twitter, LinkedIn, and iMessage previews.

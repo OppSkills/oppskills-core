@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Download, Loader2 } from "lucide-react";
 
 import {
@@ -47,14 +53,20 @@ export default function PublicLinkQrCard({
   } | null>(null);
   const qrDownloadRef = useRef<{
     update: (options: Record<string, unknown>) => void;
-    download: (options?: { name?: string; extension?: "png" | "jpeg" | "webp" | "svg" }) => Promise<void>;
+    download: (options?: {
+      name?: string;
+      extension?: "png" | "jpeg" | "webp" | "svg";
+    }) => Promise<void>;
   } | null>(null);
   const qrContainerRef = useRef<HTMLDivElement | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
   const finalUrl = useMemo(() => {
     if (referralCode) {
-      const origin = typeof window !== "undefined" ? window.location.origin : "https://www.oppskills.com";
+      const origin =
+        typeof window !== "undefined"
+          ? window.location.origin
+          : "https://www.oppskills.com";
       return `${origin}/r/${referralCode}?source=op_qr`;
     }
     return url;
@@ -140,7 +152,8 @@ export default function PublicLinkQrCard({
         className="max-w-[200px] text-center"
         content={
           <p className="text-xs">
-            Download shareable QR code for: <span className="font-bold">{title || itemName}</span>
+            Download shareable QR code for:{" "}
+            <span className="font-bold">{title || itemName}</span>
           </p>
         }
       >
@@ -181,4 +194,3 @@ export default function PublicLinkQrCard({
     </div>
   );
 }
-

@@ -25,18 +25,19 @@ export type FestivalLifecycleStatusValue =
 
 export class FestivalLocationDto {
   @ApiProperty({
-    description: 'Location type for the festival',
+    description: "Location type for the festival",
     enum: LOCATION_TYPE_VALUES,
-    example: 'PHYSICAL'
+    example: "PHYSICAL",
   })
   @IsString()
   @IsIn(LOCATION_TYPE_VALUES)
   type: FestivalLocationTypeValue;
 
   @ApiPropertyOptional({
-    description: 'Physical address of the festival venue (required when type=PHYSICAL)',
+    description:
+      "Physical address of the festival venue (required when type=PHYSICAL)",
     maxLength: 500,
-    example: '123 Convention Center Dr, San Francisco, CA 94103'
+    example: "123 Convention Center Dr, San Francisco, CA 94103",
   })
   @IsOptional()
   @IsString()
@@ -44,9 +45,9 @@ export class FestivalLocationDto {
   address?: string;
 
   @ApiPropertyOptional({
-    description: 'City name for filtering and display',
+    description: "City name for filtering and display",
     maxLength: 120,
-    example: 'San Francisco'
+    example: "San Francisco",
   })
   @IsOptional()
   @IsString()
@@ -54,9 +55,9 @@ export class FestivalLocationDto {
   city?: string;
 
   @ApiPropertyOptional({
-    description: 'Virtual meeting link (required when type=VIRTUAL)',
-    format: 'uri',
-    example: 'https://zoom.us/j/123456789'
+    description: "Virtual meeting link (required when type=VIRTUAL)",
+    format: "uri",
+    example: "https://zoom.us/j/123456789",
   })
   @IsOptional()
   @IsUrl()
@@ -65,9 +66,9 @@ export class FestivalLocationDto {
 
 export class CreateFestivalDto {
   @ApiPropertyOptional({
-    description: 'URL-friendly slug for the festival',
+    description: "URL-friendly slug for the festival",
     maxLength: 180,
-    example: 'tech-fest-2025'
+    example: "tech-fest-2025",
   })
   @IsOptional()
   @IsString()
@@ -75,18 +76,19 @@ export class CreateFestivalDto {
   slug?: string;
 
   @ApiProperty({
-    description: 'Festival name',
+    description: "Festival name",
     maxLength: 255,
-    example: 'TechFest 2025 - Innovation Conference'
+    example: "TechFest 2025 - Innovation Conference",
   })
   @IsString()
   @MaxLength(255)
   name: string;
 
   @ApiPropertyOptional({
-    description: 'Detailed festival description',
+    description: "Detailed festival description",
     maxLength: 50000,
-    example: 'Join us for the largest tech innovation conference of 2025, featuring hackathons, workshops, and networking opportunities.'
+    example:
+      "Join us for the largest tech innovation conference of 2025, featuring hackathons, workshops, and networking opportunities.",
   })
   @IsOptional()
   @IsString()
@@ -94,26 +96,26 @@ export class CreateFestivalDto {
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'URL of the festival poster/banner image',
-    format: 'uri',
-    example: 'https://cdn.oppskills.com/festivals/techfest-2025-poster.jpg'
+    description: "URL of the festival poster/banner image",
+    format: "uri",
+    example: "https://cdn.oppskills.com/festivals/techfest-2025-poster.jpg",
   })
   @IsOptional()
   @IsUrl()
   posterImageUrl?: string;
 
   @ApiPropertyOptional({
-    description: 'Official website URL for the festival',
-    format: 'uri',
-    example: 'https://techfest2025.com'
+    description: "Official website URL for the festival",
+    format: "uri",
+    example: "https://techfest2025.com",
   })
   @IsOptional()
   @IsUrl()
   websiteUrl?: string;
 
   @ApiPropertyOptional({
-    description: 'Location details for the festival',
-    type: () => FestivalLocationDto
+    description: "Location details for the festival",
+    type: () => FestivalLocationDto,
   })
   @IsOptional()
   @ValidateNested()
@@ -121,25 +123,25 @@ export class CreateFestivalDto {
   location?: FestivalLocationDto;
 
   @ApiProperty({
-    description: 'Festival start date (ISO 8601)',
-    format: 'date-time',
-    example: '2025-06-15T09:00:00Z'
+    description: "Festival start date (ISO 8601)",
+    format: "date-time",
+    example: "2025-06-15T09:00:00Z",
   })
   @IsDateString()
   startDate: string;
 
   @ApiProperty({
-    description: 'Festival end date (ISO 8601)',
-    format: 'date-time',
-    example: '2025-06-18T18:00:00Z'
+    description: "Festival end date (ISO 8601)",
+    format: "date-time",
+    example: "2025-06-18T18:00:00Z",
   })
   @IsDateString()
   endDate: string;
 
   @ApiPropertyOptional({
-    description: 'Name of the organizing entity',
+    description: "Name of the organizing entity",
     maxLength: 255,
-    example: 'TechCorp International'
+    example: "TechCorp International",
   })
   @IsOptional()
   @IsString()
@@ -147,9 +149,9 @@ export class CreateFestivalDto {
   organizationName?: string;
 
   @ApiPropertyOptional({
-    description: 'URL of the organization logo',
-    format: 'uri',
-    example: 'https://cdn.oppskills.com/orgs/techcorp-logo.svg'
+    description: "URL of the organization logo",
+    format: "uri",
+    example: "https://cdn.oppskills.com/orgs/techcorp-logo.svg",
   })
   @IsOptional()
   @IsUrl()
@@ -163,9 +165,9 @@ export class CreateFestivalDto {
  */
 export class UpdateFestivalDto {
   @ApiPropertyOptional({
-    description: 'URL-friendly slug for the festival',
+    description: "URL-friendly slug for the festival",
     maxLength: 180,
-    example: 'tech-fest-2025'
+    example: "tech-fest-2025",
   })
   @IsOptional()
   @IsString()
@@ -173,9 +175,9 @@ export class UpdateFestivalDto {
   slug?: string;
 
   @ApiPropertyOptional({
-    description: 'Festival name',
+    description: "Festival name",
     maxLength: 255,
-    example: 'TechFest 2025 - Innovation Conference'
+    example: "TechFest 2025 - Innovation Conference",
   })
   @IsOptional()
   @IsString()
@@ -183,9 +185,10 @@ export class UpdateFestivalDto {
   name?: string;
 
   @ApiPropertyOptional({
-    description: 'Detailed festival description',
+    description: "Detailed festival description",
     maxLength: 50000,
-    example: 'Join us for the largest tech innovation conference of 2025, featuring hackathons, workshops, and networking opportunities.'
+    example:
+      "Join us for the largest tech innovation conference of 2025, featuring hackathons, workshops, and networking opportunities.",
   })
   @IsOptional()
   @IsString()
@@ -193,26 +196,26 @@ export class UpdateFestivalDto {
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'URL of the festival poster/banner image',
-    format: 'uri',
-    example: 'https://cdn.oppskills.com/festivals/techfest-2025-poster.jpg'
+    description: "URL of the festival poster/banner image",
+    format: "uri",
+    example: "https://cdn.oppskills.com/festivals/techfest-2025-poster.jpg",
   })
   @IsOptional()
   @IsUrl()
   posterImageUrl?: string;
 
   @ApiPropertyOptional({
-    description: 'Official website URL for the festival',
-    format: 'uri',
-    example: 'https://techfest2025.com'
+    description: "Official website URL for the festival",
+    format: "uri",
+    example: "https://techfest2025.com",
   })
   @IsOptional()
   @IsUrl()
   websiteUrl?: string;
 
   @ApiPropertyOptional({
-    description: 'Location details for the festival',
-    type: () => FestivalLocationDto
+    description: "Location details for the festival",
+    type: () => FestivalLocationDto,
   })
   @IsOptional()
   @ValidateNested()
@@ -220,27 +223,27 @@ export class UpdateFestivalDto {
   location?: FestivalLocationDto;
 
   @ApiPropertyOptional({
-    description: 'Festival start date (ISO 8601)',
-    format: 'date-time',
-    example: '2025-06-15T09:00:00Z'
+    description: "Festival start date (ISO 8601)",
+    format: "date-time",
+    example: "2025-06-15T09:00:00Z",
   })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
   @ApiPropertyOptional({
-    description: 'Festival end date (ISO 8601)',
-    format: 'date-time',
-    example: '2025-06-18T18:00:00Z'
+    description: "Festival end date (ISO 8601)",
+    format: "date-time",
+    example: "2025-06-18T18:00:00Z",
   })
   @IsOptional()
   @IsDateString()
   endDate?: string;
 
   @ApiPropertyOptional({
-    description: 'Name of the organizing entity',
+    description: "Name of the organizing entity",
     maxLength: 255,
-    example: 'TechCorp International'
+    example: "TechCorp International",
   })
   @IsOptional()
   @IsString()
@@ -248,9 +251,9 @@ export class UpdateFestivalDto {
   organizationName?: string;
 
   @ApiPropertyOptional({
-    description: 'URL of the organization logo',
-    format: 'uri',
-    example: 'https://cdn.oppskills.com/orgs/techcorp-logo.svg'
+    description: "URL of the organization logo",
+    format: "uri",
+    example: "https://cdn.oppskills.com/orgs/techcorp-logo.svg",
   })
   @IsOptional()
   @IsUrl()
@@ -263,9 +266,9 @@ export class UpdateFestivalDto {
  */
 export class UpdateFestivalStatusDto {
   @ApiProperty({
-    description: 'New lifecycle status for the festival',
+    description: "New lifecycle status for the festival",
     enum: LIFECYCLE_STATUS_VALUES,
-    example: 'PUBLISHED'
+    example: "PUBLISHED",
   })
   @IsString()
   @IsIn(LIFECYCLE_STATUS_VALUES)

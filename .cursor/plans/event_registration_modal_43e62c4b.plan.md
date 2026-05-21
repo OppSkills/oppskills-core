@@ -29,6 +29,7 @@ todos:
 # Event Registration Modal (Auth + Persisted Answers)
 
 ## Key decisions
+
 - **Auth required**: If the user is logged out and clicks **Register**, we will open the **Clerk sign-in modal** (no registration modal shown until signed in).
 - **Questions source**: Questions come from the event’s `registrationForm.fields` (already returned by `GET /events/by-slug/:slug`).
 - **Persist answers**: We will store submitted answers in the database.
@@ -37,11 +38,13 @@ todos:
 > Terminology correction (important): the backend currently supports joining via `POST /events/:id/join`, and it stores participants, but it **does not yet accept or persist registration answers**. We’ll add that persistence now.
 
 ## Current code touchpoints (already in repo)
+
 - Public event page uses a stubbed handler: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/events/[slug]/page.tsx`.
 - Event details include `registrationForm.fields`: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/hooks/usePublicEventBySlug.ts`.
 - Backend join endpoint: `/Users/harshit/Documents/freelance/oppskills-core/apps/backend/src/event/event.controller.ts` (`POST :id/join`) and `/Users/harshit/Documents/freelance/oppskills-core/apps/backend/src/event/event.service.ts` (`joinEvent`).
 
 ## Flow (high level)
+
 ```mermaid
 sequenceDiagram
 participant User as User
@@ -66,6 +69,7 @@ UI-->>User: SuccessToastAndUIState
 ```
 
 ## Backend changes (NestJS + Prisma)
+
 - **Schema** (`/Users/harshit/Documents/freelance/oppskills-core/packages/database/prisma/schema.prisma`):
   - Add `EventRegistrationSubmissionEntity` with `eventId`, `userId`, timestamps.
   - Add `EventRegistrationAnswerEntity` linked to submission and `EventRegistrationFieldEntity`.
@@ -85,6 +89,7 @@ UI-->>User: SuccessToastAndUIState
     - create submission + answers
 
 ## Frontend changes (Next.js)
+
 - **Auth gating** (`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/events/[slug]/page.tsx`):
   - Use Clerk client APIs (`useAuth`, `useClerk`) to detect logged-out state.
   - If logged out: `openSignIn()`.
@@ -101,6 +106,6 @@ UI-->>User: SuccessToastAndUIState
   - On success: toast + disable button or show “Registered”. (We’ll choose the minimal UI change: disable and change label.)
 
 ## Execution notes
+
 - Use **pnpm** (repo has `pnpm-lock.yaml`).
 - Keep strict TypeScript: **no `any`, no non-null assertions, no double-casts**, and use **double quotes** for strings.
-

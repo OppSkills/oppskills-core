@@ -5,7 +5,11 @@ import { InitBoneyard } from "@/components/boneyard/init-boneyard";
 
 const queryClient = new QueryClient();
 
-export default function ClientProviders({ children }: { children: React.ReactNode }) {
+export default function ClientProviders({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <QueryClientProvider client={queryClient}>
       <InitBoneyard />

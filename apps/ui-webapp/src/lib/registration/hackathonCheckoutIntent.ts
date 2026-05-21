@@ -26,10 +26,7 @@ export function readHackathonCheckoutIntent(
     if (!raw) return null;
     const parsed = JSON.parse(raw) as HackathonCheckoutIntentV1;
     if (parsed.v !== 1) return null;
-    if (
-      parsed.answers != null &&
-      !Array.isArray(parsed.answers)
-    ) {
+    if (parsed.answers != null && !Array.isArray(parsed.answers)) {
       return null;
     }
     if (Date.now() - parsed.ts > MAX_AGE_MS) {

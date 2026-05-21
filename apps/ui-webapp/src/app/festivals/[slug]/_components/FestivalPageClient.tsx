@@ -16,38 +16,40 @@ interface FestivalPageClientProps {
 }
 
 export default function FestivalPageClient({ slug }: FestivalPageClientProps) {
-  const { 
-    data: festival, 
-    isLoading: isLoadingFestival, 
+  const {
+    data: festival,
+    isLoading: isLoadingFestival,
     isError: isErrorFestival,
-    error: festivalError
+    error: festivalError,
   } = useFestivalBySlug(slug);
 
   const festivalId = (festival as any)?.id;
 
-  const { 
-    data: hackathonsData, 
+  const {
+    data: hackathonsData,
     isLoading: isLoadingHackathons,
     hasNextPage: hasNextPageHackathons,
     fetchNextPage: fetchNextPageHackathons,
-    isFetchingNextPage: isFetchingNextPageHackathons
+    isFetchingNextPage: isFetchingNextPageHackathons,
   } = usePublicHackathons(festivalId, undefined, { enabled: !!festivalId });
 
-  const { 
-    data: eventsData, 
+  const {
+    data: eventsData,
     isLoading: isLoadingEvents,
     hasNextPage: hasNextPageEvents,
     fetchNextPage: fetchNextPageEvents,
-    isFetchingNextPage: isFetchingNextPageEvents
+    isFetchingNextPage: isFetchingNextPageEvents,
   } = useEvents(festivalId, undefined, { enabled: !!festivalId });
 
   // Flatten infinite query results
   const hackathons = useMemo(() => {
-    return hackathonsData?.pages.flatMap(page => (page as any).items || []) || [];
+    return (
+      hackathonsData?.pages.flatMap((page) => (page as any).items || []) || []
+    );
   }, [hackathonsData]);
 
   const events = useMemo(() => {
-    return eventsData?.pages.flatMap(page => (page as any).items || []) || [];
+    return eventsData?.pages.flatMap((page) => (page as any).items || []) || [];
   }, [eventsData]);
 
   if (isErrorFestival || (!isLoadingFestival && !festival)) {
@@ -57,12 +59,14 @@ export default function FestivalPageClient({ slug }: FestivalPageClientProps) {
           <AlertCircle className="w-12 h-12 text-red-500" />
         </div>
         <h1 className="text-3xl font-bold text-neutral-900 mb-3">
-          {festivalError instanceof Error && (festivalError as any).response?.status === 404 
-            ? "Festival Not Found" 
+          {festivalError instanceof Error &&
+          (festivalError as any).response?.status === 404
+            ? "Festival Not Found"
             : "Oops! Something went wrong"}
         </h1>
         <p className="text-neutral-600 max-w-md mb-8">
-          {festivalError instanceof Error && (festivalError as any).response?.status === 404
+          {festivalError instanceof Error &&
+          (festivalError as any).response?.status === 404
             ? "The festival you're looking for doesn't exist or has been removed."
             : "We couldn't load the festival details. Please try again later or contact support if the problem persists."}
         </p>
@@ -72,8 +76,8 @@ export default function FestivalPageClient({ slug }: FestivalPageClientProps) {
               Browse All Festivals
             </Button>
           </Link>
-          <Button 
-            onClick={() => window.location.reload()} 
+          <Button
+            onClick={() => window.location.reload()}
             className="rounded-full px-8"
           >
             Retry Now
@@ -90,19 +94,19 @@ export default function FestivalPageClient({ slug }: FestivalPageClientProps) {
       className="w-full"
       fallback={<HackathonDetailFallback />}
     >
-    {festival ? (
-    <FestivalDetailsClient
-      festival={festival}
-      hackathons={hackathons}
-      events={events}
-      hasNextPageHackathons={hasNextPageHackathons}
-      fetchNextPageHackathons={fetchNextPageHackathons}
-      isFetchingNextPageHackathons={isFetchingNextPageHackathons}
-      hasNextPageEvents={hasNextPageEvents}
-      fetchNextPageEvents={fetchNextPageEvents}
-      isFetchingNextPageEvents={isFetchingNextPageEvents}
-    />
-    ) : null}
+      {festival ? (
+        <FestivalDetailsClient
+          festival={festival}
+          hackathons={hackathons}
+          events={events}
+          hasNextPageHackathons={hasNextPageHackathons}
+          fetchNextPageHackathons={fetchNextPageHackathons}
+          isFetchingNextPageHackathons={isFetchingNextPageHackathons}
+          hasNextPageEvents={hasNextPageEvents}
+          fetchNextPageEvents={fetchNextPageEvents}
+          isFetchingNextPageEvents={isFetchingNextPageEvents}
+        />
+      ) : null}
     </BoneyardSkeleton>
   );
 }

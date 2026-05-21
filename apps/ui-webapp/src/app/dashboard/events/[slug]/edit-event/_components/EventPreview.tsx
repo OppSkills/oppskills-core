@@ -64,7 +64,7 @@ interface EventData {
  */
 function getInitials(
   firstName: string | null,
-  lastName: string | null
+  lastName: string | null,
 ): string {
   const first = (firstName ?? "").trim().charAt(0).toUpperCase();
   const last = (lastName ?? "").trim().charAt(0).toUpperCase();
@@ -253,7 +253,9 @@ export function EventPreview({ slug }: EventPreviewProps) {
                 <div className="prose  max-w-none text-neutral-600  inter whitespace-pre-line">
                   {event.description ? (
                     <div
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(event.description) }}
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(event.description),
+                      }}
                     />
                   ) : (
                     <p>No description available.</p>
@@ -281,7 +283,7 @@ export function EventPreview({ slug }: EventPreviewProps) {
                       <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg flex-shrink-0">
                         {getInitials(
                           event.owner.firstName,
-                          event.owner.lastName
+                          event.owner.lastName,
                         )}
                       </div>
                     )}

@@ -1,1 +1,1 @@
-export * from './schedule-notification.dto';
+export * from "./schedule-notification.dto";

@@ -108,7 +108,6 @@ export async function getPublicUpcomingEvents(
   return res.data;
 }
 
-
 // =====================
 // Authenticated API Functions
 // =====================
@@ -130,7 +129,7 @@ export async function getEvents(token: string): Promise<unknown> {
  */
 export async function getMyEvents(
   token: string,
-  params: { page?: number; take?: number } = {}
+  params: { page?: number; take?: number } = {},
 ): Promise<{
   items: any[];
   total: number;
@@ -140,7 +139,7 @@ export async function getMyEvents(
 }> {
   const res = await API.get("/my", {
     headers: buildAuthHeaders(token),
-    params
+    params,
   });
   return res.data;
 }
@@ -430,7 +429,10 @@ export async function joinEvent(
   data?: JoinEventPayload,
 ): Promise<unknown> {
   const referralCode = data?.referralCode ?? getReferralCodeFromCookie();
-  const payload = { ...(data ?? {}), ...(referralCode ? { referralCode } : {}) };
+  const payload = {
+    ...(data ?? {}),
+    ...(referralCode ? { referralCode } : {}),
+  };
   const res = await API.post(`/${id}/join`, payload, {
     headers: buildAuthHeaders(token),
   });
@@ -486,7 +488,11 @@ export async function submitMissingRegistrationAnswers(
     { answers },
     { headers: buildAuthHeaders(token) },
   );
-  return res.data as { success: boolean; message: string; participantId: string };
+  return res.data as {
+    success: boolean;
+    message: string;
+    participantId: string;
+  };
 }
 
 /**
@@ -643,8 +649,8 @@ export async function markParticipantAttendance(
 // Event Pass API Functions
 // =====================
 
-const EVENT_PASS_API = createApiClient('/event-pass');
-const EVENT_PASS_SCAN_API = createApiClient('/events');
+const EVENT_PASS_API = createApiClient("/event-pass");
+const EVENT_PASS_SCAN_API = createApiClient("/events");
 
 /**
  * Protected lookup of event pass by token
@@ -654,9 +660,12 @@ export async function lookupPassByToken(
   authToken: string,
   passToken: string,
 ): Promise<PublicPassLookupDto> {
-  const response = await EVENT_PASS_API.get(`/lookup/${encodeURIComponent(passToken)}`, {
-    headers: buildAuthHeaders(authToken),
-  });
+  const response = await EVENT_PASS_API.get(
+    `/lookup/${encodeURIComponent(passToken)}`,
+    {
+      headers: buildAuthHeaders(authToken),
+    },
+  );
   return response.data as PublicPassLookupDto;
 }
 
@@ -693,10 +702,8 @@ export async function getEventPass(
 /**
  * Get all event passes for authenticated user
  */
-export async function getMyEventPasses(
-  token: string,
-): Promise<EventPassDto[]> {
-  const response = await EVENT_PASS_API.get('/my-passes', {
+export async function getMyEventPasses(token: string): Promise<EventPassDto[]> {
+  const response = await EVENT_PASS_API.get("/my-passes", {
     headers: buildAuthHeaders(token),
   });
   return response.data as EventPassDto[];
@@ -767,7 +774,11 @@ export async function saveEventRegistrationCheckoutDraft(
     body,
     { headers: buildAuthHeaders(token) },
   );
-  return res.data as { success: boolean; eventSlug: string; checkoutPath: string };
+  return res.data as {
+    success: boolean;
+    eventSlug: string;
+    checkoutPath: string;
+  };
 }
 
 /**

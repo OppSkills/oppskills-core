@@ -90,12 +90,14 @@ Code Push → GitHub → GitHub Actions → Build → Deploy
 ### Step-by-Step Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd oppskills-core
    ```
 
 2. **Install dependencies**
+
    ```bash
    pnpm install
    ```
@@ -103,6 +105,7 @@ Code Push → GitHub → GitHub Actions → Build → Deploy
 3. **Set up environment files**
 
    Create `apps/backend/.env.local`:
+
    ```env
    # Database (use local Docker PostgreSQL)
    DATABASE_URL="postgresql://oppskills:yourpassword@localhost:5434/oppskills?schema=oppskills"
@@ -129,6 +132,7 @@ Code Push → GitHub → GitHub Actions → Build → Deploy
    ```
 
    Create `apps/ui-webapp/.env.local`:
+
    ```env
    # Clerk Authentication
    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
@@ -139,6 +143,7 @@ Code Push → GitHub → GitHub Actions → Build → Deploy
    ```
 
    Create `packages/database/.env`:
+
    ```env
    DATABASE_URL="postgresql://oppskills:yourpassword@localhost:5434/oppskills?schema=oppskills"
    ```
@@ -167,12 +172,14 @@ Code Push → GitHub → GitHub Actions → Build → Deploy
    ```
 
 5. **Generate Prisma client and apply schema**
+
    ```bash
    pnpm db:generate
    pnpm db:push
    ```
 
 6. **Start development servers**
+
    ```bash
    # All services
    pnpm dev
@@ -206,11 +213,13 @@ svix listen http://localhost:3001/user-accounts/clerk-webhook
 #### 1. EC2 Instance Setup
 
 **Requirements:**
+
 - Docker installed
 - AWS CLI installed
 - Instance IAM role attached
 
 **Instance IAM Role Permissions:**
+
 ```json
 {
   "Version": "2012-10-17",
@@ -227,18 +236,12 @@ svix listen http://localhost:3001/user-accounts/clerk-webhook
     },
     {
       "Effect": "Allow",
-      "Action": [
-        "secretsmanager:GetSecretValue"
-      ],
+      "Action": ["secretsmanager:GetSecretValue"],
       "Resource": "arn:aws:secretsmanager:us-east-1:*:secret:oppskills-env-*"
     },
     {
       "Effect": "Allow",
-      "Action": [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:DeleteObject"
-      ],
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
       "Resource": "arn:aws:s3:::oppskills-assets/*"
     }
   ]
@@ -247,6 +250,7 @@ svix listen http://localhost:3001/user-accounts/clerk-webhook
 
 **Docker Access:**
 The SSH user must have Docker access. Choose one:
+
 - Add user to docker group: `sudo usermod -aG docker <user>`
 - Allow NOPASSWD sudo for docker commands
 - Use a different SSH user with Docker access
@@ -254,6 +258,7 @@ The SSH user must have Docker access. Choose one:
 #### 2. RDS PostgreSQL
 
 **Configuration:**
+
 - Engine: PostgreSQL 15+
 - Instance class: Based on workload (e.g., db.t3.medium)
 - Storage: General Purpose SSD (gp3)
@@ -261,28 +266,33 @@ The SSH user must have Docker access. Choose one:
 - Security group: Allow access from EC2 instance
 
 **Connection:**
+
 - Connection string stored in AWS Secrets Manager
 - Format: `postgresql://user:password@endpoint:5432/database?schema=oppskills`
 
 #### 3. ElastiCache Redis
 
 **Configuration:**
+
 - Engine: Redis 7+
 - Node type: Based on workload (e.g., cache.t3.micro)
 - Security group: Allow access from EC2 instance
 
 **Connection:**
+
 - Host, port, and password stored in AWS Secrets Manager
 
 #### 4. S3 + CloudFront
 
 **S3 Bucket Configuration:**
+
 - Bucket name: `oppskills-assets`
 - Region: `us-east-1`
 - Block Public Access: **ENABLED** (all checks)
 - Encryption: SSE-S3 (AES-256)
 
 **CORS Configuration:**
+
 ```json
 [
   {
@@ -300,6 +310,7 @@ The SSH user must have Docker access. Choose one:
 ```
 
 **CloudFront Distribution:**
+
 - Origin: S3 bucket with OAC (Origin Access Control)
 - Viewer protocol: Redirect HTTP to HTTPS
 - Allowed methods: GET, HEAD
@@ -318,6 +329,7 @@ The backend uses a multi-stage Dockerfile for production builds:
 **File:** `apps/backend/Dockerfile.prod`
 
 **Build stages:**
+
 1. **base**: Node.js 22 Alpine with pnpm
 2. **deps**: Install dependencies
 3. **build**: Build backend + workspace dependencies (types, database)
@@ -330,6 +342,7 @@ The backend uses a multi-stage Dockerfile for production builds:
 #### Automatic Deployment
 
 Triggered on push to `main` branch when backend-related files change:
+
 - `apps/backend/**`
 - `packages/**`
 - `scripts/load-secrets.mjs`
@@ -338,6 +351,7 @@ Triggered on push to `main` branch when backend-related files change:
 **Workflow:** `.github/workflows/deploy-backend-ec2.yml`
 
 **Steps:**
+
 1. Build Docker image
 2. Tag with Git SHA and `latest`
 3. Push to ECR
@@ -349,6 +363,7 @@ Triggered on push to `main` branch when backend-related files change:
 #### Manual Deployment
 
 Trigger via GitHub Actions UI (workflow_dispatch):
+
 - Option to specify custom image tag
 - Option to run migrations on deployment
 
@@ -357,6 +372,7 @@ Trigger via GitHub Actions UI (workflow_dispatch):
 **Entrypoint:** `apps/backend/docker-entrypoint.sh`
 
 **Startup sequence:**
+
 1. Load secrets from AWS Secrets Manager (via `scripts/load-secrets.mjs`)
    - Writes `/app/.env` (Nest + Prisma; includes `DATABASE_URL`)
    - Removes legacy `/app/packages/database/.env` if present (avoids Prisma 6 duplicate-`DATABASE_URL` errors)
@@ -364,6 +380,7 @@ Trigger via GitHub Actions UI (workflow_dispatch):
 3. Start NestJS backend: `node apps/backend/dist/main.js`
 
 **Container configuration:**
+
 - Port: 3001
 - Restart policy: `unless-stopped`
 - Environment variables:
@@ -406,11 +423,13 @@ docker run --rm -p 3001:3001 \
 ### Deployment Triggers
 
 #### Automatic Production Deployment
+
 - Trigger: Push to `main` branch
 - Workflow: `.github/workflows/deploy-vercel.yml`
 - Vercel automatically deploys via GitHub integration
 
 #### Preview Deployments
+
 - Vercel creates preview deployments for all pull requests
 - Unique URL for each deployment
 
@@ -421,6 +440,7 @@ docker run --rm -p 3001:3001 \
 **Purpose:** Updates deployment log file to track deployments
 
 **Steps:**
+
 1. Checkout sparse (only `.verceldeployments` file)
 2. Append deployment timestamp
 3. Commit and push
@@ -435,6 +455,7 @@ docker run --rm -p 3001:3001 \
 **Build command:** `pnpm build` (uses Turborepo)
 
 **Build outputs:**
+
 - `.next/**` (except cache)
 - Static assets
 
@@ -447,11 +468,13 @@ docker run --rm -p 3001:3001 \
 #### 1. Backend Deployment (`deploy-backend-ec2.yml`)
 
 **Trigger:**
+
 - Push to `main` branch
 - Changes in backend-related paths
 - Manual trigger (workflow_dispatch)
 
 **Jobs:**
+
 1. **build_and_push**
    - Checkout code
    - Configure AWS credentials
@@ -466,6 +489,7 @@ docker run --rm -p 3001:3001 \
    - Start new container
 
 **Environment variables:**
+
 ```yaml
 AWS_REGION: "us-east-1"
 ECR_REGISTRY: "443512646680.dkr.ecr.us-east-1.amazonaws.com"
@@ -485,12 +509,14 @@ RUN_MIGRATIONS: "false"
 **Purpose:** Run Prisma migrations on production database without redeploying
 
 **Steps:**
+
 1. SSH to EC2 instance
 2. Pull specified image (or latest)
 3. Run container with migration command only
 4. Exit (does not start long-running server)
 
 **Command executed:**
+
 ```bash
 docker run --rm \
   -e NODE_ENV=production \
@@ -506,12 +532,14 @@ docker run --rm \
 #### 3. Vercel Deployment (`deploy-vercel.yml`)
 
 **Trigger:**
+
 - Push to `main` branch
 - Excludes `.verceldeployments` file changes
 - Manual trigger (workflow_dispatch)
 - Repository dispatch event
 
 **Job:**
+
 - Update deployment log file
 - Commit timestamp to `.verceldeployments`
 - Push to main branch
@@ -522,15 +550,15 @@ docker run --rm \
 
 Configure in GitHub repository settings: **Settings → Secrets and variables → Actions**
 
-| Secret Name | Description | Example |
-|------------|-------------|---------|
-| `AWS_ACCESS_KEY_ID` | IAM user access key for GitHub Actions | `AKIA...` |
-| `AWS_SECRET_ACCESS_KEY` | IAM user secret access key | `wJalr...` |
-| `EC2_HOST` | EC2 instance public hostname or IP | `ec2-1-2-3-4.compute-1.amazonaws.com` |
-| `EC2_USER` | SSH username for EC2 instance | `ec2-user` or `ubuntu` |
-| `EC2_SSH_PRIVATE_KEY` | SSH private key (PEM format) | `-----BEGIN RSA PRIVATE KEY-----...` |
-| `EC2_SSH_PORT` | SSH port (optional, defaults to 22) | `22` |
-| `OPPSKILLS_CORE_DEV_PAT` | GitHub Personal Access Token for deployment log | `ghp_...` |
+| Secret Name              | Description                                     | Example                               |
+| ------------------------ | ----------------------------------------------- | ------------------------------------- |
+| `AWS_ACCESS_KEY_ID`      | IAM user access key for GitHub Actions          | `AKIA...`                             |
+| `AWS_SECRET_ACCESS_KEY`  | IAM user secret access key                      | `wJalr...`                            |
+| `EC2_HOST`               | EC2 instance public hostname or IP              | `ec2-1-2-3-4.compute-1.amazonaws.com` |
+| `EC2_USER`               | SSH username for EC2 instance                   | `ec2-user` or `ubuntu`                |
+| `EC2_SSH_PRIVATE_KEY`    | SSH private key (PEM format)                    | `-----BEGIN RSA PRIVATE KEY-----...`  |
+| `EC2_SSH_PORT`           | SSH port (optional, defaults to 22)             | `22`                                  |
+| `OPPSKILLS_CORE_DEV_PAT` | GitHub Personal Access Token for deployment log | `ghp_...`                             |
 
 ### IAM User Permissions (GitHub Actions)
 
@@ -677,16 +705,19 @@ DATABASE_URL=postgresql://oppskills:yourpassword@localhost:5434/oppskills?schema
 #### Creating a Migration
 
 1. **Modify the Prisma schema**
+
    ```bash
    # Edit packages/database/prisma/schema.prisma
    ```
 
 2. **Generate Prisma client**
+
    ```bash
    pnpm db:generate
    ```
 
 3. **Create and apply migration**
+
    ```bash
    # Creates migration file and applies to database
    pnpm db:migrate
@@ -717,6 +748,7 @@ pnpm db:push
 Migrations can run automatically on container startup by setting `RUN_MIGRATIONS=true`. However, this is **disabled by default** to prevent issues.
 
 **Why disabled:**
+
 - Failed migrations cause container restart loops
 - Cannot easily troubleshoot migration issues
 - Risk of P3009 errors (failed migration state)
@@ -728,6 +760,7 @@ Migrations can run automatically on container startup by setting `RUN_MIGRATIONS
 Trigger: `.github/workflows/run-migrations-ec2.yml`
 
 Steps:
+
 1. Go to GitHub Actions
 2. Select "Run Prisma migrations on EC2"
 3. Click "Run workflow"
@@ -738,6 +771,7 @@ Steps:
 Trigger: `.github/workflows/deploy-backend-ec2.yml`
 
 Steps:
+
 1. Go to GitHub Actions
 2. Select "Deploy backend to EC2"
 3. Click "Run workflow"
@@ -765,6 +799,7 @@ docker run --rm \
 **Location:** `packages/database/prisma/migrations/`
 
 **Format:**
+
 ```
 20251106112805_oppskills/
   migration.sql
@@ -799,6 +834,7 @@ ssh -L 5432:rds-endpoint:5432 ec2-user@<ec2-host>
 **Format:** JSON key-value pairs
 
 **Example structure:**
+
 ```json
 {
   "DATABASE_URL": "postgresql://...",
@@ -821,6 +857,7 @@ ssh -L 5432:rds-endpoint:5432 ec2-user@<ec2-host>
 **Purpose:** Fetch secrets from AWS Secrets Manager and write to `.env` files
 
 **How it works:**
+
 1. Checks `NODE_ENV` (skips if `local`)
 2. Uses AWS SDK with IAM role credentials (EC2/ECS)
 3. Fetches secret from Secrets Manager
@@ -828,10 +865,12 @@ ssh -L 5432:rds-endpoint:5432 ec2-user@<ec2-host>
 5. Writes `/app/.env` (all secrets for Nest and Prisma) and deletes `/app/packages/database/.env` if it exists (Prisma 6+ errors when the same key appears in multiple `.env` files).
 
 **Retry logic:**
+
 - Waits for AWS credentials (max 5 retries, 5s delay)
 - Retries secret fetch (max 5 retries, 5s delay)
 
 **Usage:**
+
 ```bash
 # Production (uses IAM role)
 NODE_ENV=production node scripts/load-secrets.mjs
@@ -843,6 +882,7 @@ NODE_ENV=local node scripts/load-secrets.mjs
 ### Updating Secrets
 
 **AWS Console:**
+
 1. Go to AWS Secrets Manager
 2. Find `oppskills-env`
 3. Click "Retrieve secret value"
@@ -851,6 +891,7 @@ NODE_ENV=local node scripts/load-secrets.mjs
 6. Save
 
 **AWS CLI:**
+
 ```bash
 aws secretsmanager update-secret \
   --secret-id oppskills-env \
@@ -872,11 +913,13 @@ docker restart oppskills-backend
 ### Local Secrets
 
 **Never commit:**
+
 - `.env.local`
 - `.env`
 - Any file containing secrets
 
 **Gitignore patterns:**
+
 ```gitignore
 .env
 .env.local
@@ -888,6 +931,7 @@ docker restart oppskills-backend
 ### Container Logs (Backend)
 
 **View logs on EC2:**
+
 ```bash
 # SSH to EC2
 ssh ec2-user@<ec2-host>
@@ -908,6 +952,7 @@ docker logs --since 2024-01-01T00:00:00 oppskills-backend
 ### Container Status
 
 **Check container health:**
+
 ```bash
 # List running containers
 docker ps
@@ -939,11 +984,13 @@ curl http://localhost:3001/health/redis
 #### Vercel Deployment Status
 
 View deployment logs in Vercel dashboard:
+
 - https://vercel.com/[your-team]/oppskills-ui-webapp
 
 ### Database Monitoring
 
 **RDS CloudWatch Metrics:**
+
 - CPU Utilization
 - Database Connections
 - Free Storage Space
@@ -951,12 +998,14 @@ View deployment logs in Vercel dashboard:
 - Replication Lag (if using replicas)
 
 **Access RDS logs:**
+
 - AWS Console → RDS → Databases → oppskills-db → Logs
 - Enable PostgreSQL logs: `log_statement`, `log_duration`
 
 ### Redis Monitoring
 
 **ElastiCache CloudWatch Metrics:**
+
 - CPU Utilization
 - Network Bytes In/Out
 - Cache Hit Rate
@@ -966,18 +1015,21 @@ View deployment logs in Vercel dashboard:
 ### Recommended Monitoring Tools
 
 **AWS CloudWatch:**
+
 - Set up alarms for critical metrics
 - EC2 CPU/Memory utilization
 - RDS connection count
 - ElastiCache hit rate
 
 **Application Performance Monitoring (APM):**
+
 - Consider: New Relic, Datadog, or AWS X-Ray
 - Track API response times
 - Monitor error rates
 - Database query performance
 
 **Log Aggregation:**
+
 - CloudWatch Logs (native AWS)
 - Or third-party: Datadog, Splunk, Elasticsearch
 
@@ -990,6 +1042,7 @@ View deployment logs in Vercel dashboard:
 **Symptom:** Container exits immediately after deployment
 
 **Check:**
+
 ```bash
 # View logs for errors
 docker logs oppskills-backend
@@ -999,6 +1052,7 @@ docker ps -a | grep oppskills-backend
 ```
 
 **Common causes:**
+
 1. **Secrets loading failed**
    - Verify IAM role has Secrets Manager permissions
    - Check secret ID matches (`oppskills-env`)
@@ -1014,6 +1068,7 @@ docker ps -a | grep oppskills-backend
    - `docker ps -a` and remove old containers
 
 **Fix:**
+
 ```bash
 # Remove failed container
 docker rm -f oppskills-backend
@@ -1037,6 +1092,7 @@ docker run --rm -it \
 **Symptom:** GitHub Actions workflow fails during SSH step
 
 **Common causes:**
+
 1. **SSH key permission denied**
    - Verify `EC2_SSH_PRIVATE_KEY` secret is correct
    - Check key matches EC2 instance key pair
@@ -1054,10 +1110,12 @@ docker run --rm -it \
 **Symptom:** Cannot push Docker image to ECR
 
 **Check IAM permissions:**
+
 - GitHub Actions IAM user needs ECR permissions
 - Verify `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` secrets
 
 **Fix:**
+
 ```bash
 # Manually test ECR login
 aws ecr get-login-password --region us-east-1 | \
@@ -1069,6 +1127,7 @@ aws ecr get-login-password --region us-east-1 | \
 #### P3009: Failed Migration Error
 
 **Full error:**
+
 ```
 Error: P3009 migrate found failed migrations in the target database
 ```
@@ -1076,12 +1135,15 @@ Error: P3009 migrate found failed migrations in the target database
 **Cause:** A previous migration started but failed, leaving the database in an inconsistent state.
 
 **Diagnosis:**
+
 1. **Connect to database:**
+
    ```bash
    psql postgresql://user:password@rds-endpoint:5432/oppskills
    ```
 
 2. **Check migrations table:**
+
    ```sql
    \c oppskills
    SET search_path TO oppskills;
@@ -1098,6 +1160,7 @@ Error: P3009 migrate found failed migrations in the target database
 **Resolution:**
 
 **Option 1: Migration didn't apply (safe to roll back)**
+
 ```bash
 pnpm -C packages/database exec prisma migrate resolve \
   --rolled-back "20251106112805_oppskills" \
@@ -1105,6 +1168,7 @@ pnpm -C packages/database exec prisma migrate resolve \
 ```
 
 **Option 2: Migration partially applied (fix manually)**
+
 1. Manually apply or revert the SQL changes
 2. Mark as applied:
    ```bash
@@ -1115,6 +1179,7 @@ pnpm -C packages/database exec prisma migrate resolve \
 
 **After resolution:**
 Run migrations again:
+
 ```bash
 pnpm db:migrate:deploy
 ```
@@ -1124,7 +1189,9 @@ pnpm db:migrate:deploy
 **Symptom:** Migration ran successfully but schema changes not visible
 
 **Check:**
+
 1. **Verify Prisma client regenerated:**
+
    ```bash
    pnpm db:generate
    pnpm build --filter=@oppskills/db
@@ -1132,6 +1199,7 @@ pnpm db:migrate:deploy
    ```
 
 2. **Restart backend:**
+
    ```bash
    docker restart oppskills-backend
    ```
@@ -1147,6 +1215,7 @@ pnpm db:migrate:deploy
 **Symptom:** Vercel deployment shows build errors
 
 **Common causes:**
+
 1. **Type errors**
    - Check TypeScript compilation locally: `pnpm check-types`
    - Fix type errors before pushing
@@ -1159,6 +1228,7 @@ pnpm db:migrate:deploy
    - Verify all `NEXT_PUBLIC_*` vars are set in Vercel dashboard
 
 **Debug:**
+
 - View build logs in Vercel dashboard
 - Test build locally: `pnpm build:ui-webapp`
 
@@ -1167,6 +1237,7 @@ pnpm db:migrate:deploy
 **Symptom:** Frontend deployed but API calls return errors
 
 **Check:**
+
 1. **NEXT_PUBLIC_API_URL is correct**
    - Should point to production backend
    - Example: `https://api.oppskills.com`
@@ -1184,11 +1255,13 @@ pnpm db:migrate:deploy
 #### High Database Load
 
 **Symptoms:**
+
 - Slow API responses
 - High RDS CPU usage
 - Connection pool exhausted
 
 **Diagnosis:**
+
 ```sql
 -- Find slow queries
 SELECT query, calls, total_time, mean_time
@@ -1201,6 +1274,7 @@ SELECT count(*) FROM pg_stat_activity;
 ```
 
 **Solutions:**
+
 - Add database indexes
 - Optimize Prisma queries
 - Increase RDS instance size
@@ -1210,10 +1284,12 @@ SELECT count(*) FROM pg_stat_activity;
 #### High Redis Memory Usage
 
 **Symptoms:**
+
 - Redis evictions in CloudWatch
 - Cache misses increasing
 
 **Solutions:**
+
 - Review cache TTLs
 - Implement cache eviction policy
 - Increase ElastiCache node size
@@ -1224,6 +1300,7 @@ SELECT count(*) FROM pg_stat_activity;
 **Symptom:** Container OOM (Out of Memory) killed
 
 **Check:**
+
 ```bash
 # Container resource usage
 docker stats oppskills-backend
@@ -1233,6 +1310,7 @@ docker inspect oppskills-backend | grep -i memory
 ```
 
 **Solutions:**
+
 - Increase EC2 instance size
 - Set Docker memory limits
 - Optimize application memory usage
@@ -1243,12 +1321,15 @@ docker inspect oppskills-backend | grep -i memory
 #### Cannot Reach Backend API
 
 **Check:**
+
 1. **Container running:**
+
    ```bash
    docker ps | grep oppskills-backend
    ```
 
 2. **Port binding:**
+
    ```bash
    docker port oppskills-backend
    netstat -tulpn | grep 3001
@@ -1266,6 +1347,7 @@ docker inspect oppskills-backend | grep -i memory
 #### Cannot Connect to RDS
 
 **Check:**
+
 1. **Security group:**
    - RDS security group allows EC2 security group
    - Port 5432 open
@@ -1274,6 +1356,7 @@ docker inspect oppskills-backend | grep -i memory
    - Subnet ACLs allow traffic
 
 3. **DNS resolution:**
+
    ```bash
    nslookup rds-endpoint
    ```
@@ -1288,6 +1371,7 @@ docker inspect oppskills-backend | grep -i memory
 #### Rollback Backend Deployment
 
 **Method 1: Redeploy previous image**
+
 ```bash
 # SSH to EC2
 ssh ec2-user@<ec2-host>
@@ -1316,6 +1400,7 @@ docker run -d --restart unless-stopped \
 ```
 
 **Method 2: Trigger workflow with specific tag**
+
 1. Go to GitHub Actions
 2. Select "Deploy backend to EC2"
 3. Run workflow with previous Git SHA
@@ -1325,12 +1410,14 @@ docker run -d --restart unless-stopped \
 **WARNING:** Be extremely careful with migration rollbacks in production.
 
 **Safe approach:**
+
 1. Write a new migration that reverts changes
 2. Test thoroughly in staging
 3. Apply new migration
 
 **Emergency rollback:**
 If you must rollback:
+
 1. Restore RDS snapshot from before migration
 2. Update application code to match database schema
 3. Redeploy backend

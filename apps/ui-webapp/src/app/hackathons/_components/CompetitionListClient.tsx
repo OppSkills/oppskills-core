@@ -67,7 +67,7 @@ export default function CompetitionListClient({
       const typeMatch = filters.types.some(
         (type) =>
           comp.tags?.some((tag) => tag.includes(type)) ||
-          comp.title.includes(type)
+          comp.title.includes(type),
       );
       // Loose matching logic as per original file
     }
@@ -171,7 +171,7 @@ export default function CompetitionListClient({
                   <CompetitionCard key={comp.id} competition={comp} />
                 ) : (
                   <CompetitionListItem key={comp.id} competition={comp} />
-                )
+                ),
               )}
             </div>
           )}

@@ -25,7 +25,6 @@ const Home = () => {
         <UpcomingFeatures />
       </div>
       <div className="sm:px-6 lg:px-8 sm:pt-12 xl:px-25">
-
         <PromoPoster />
       </div>
     </>

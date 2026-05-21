@@ -36,7 +36,7 @@ model HackathonEntity {
   participantType          ParticipantType                         @default(INDIVIDUAL)
   locationType             LocationType?                           @map("location_type")
   locationAddress          String?                                 @map("location_address")
-  locationCity             String?                                 @map("location_city")
+  locationCoords           String?                                 @map("location_coords")
   locationVirtualLink      String?                                 @map("location_virtual_link")
   registrationDeadline     DateTime?                               @map("registration_deadline")
   externalRegistrationLink String?                                 @map("external_registration_link")

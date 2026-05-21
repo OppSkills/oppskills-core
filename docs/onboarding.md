@@ -38,17 +38,19 @@ Server Layout calls GET /user-accounts/me
 ### Database Entities
 
 #### UserEntity (updated)
+
 ```prisma
 model UserEntity {
   // ... existing fields
   onboarded  Boolean  @default(false)
-  
+
   // Onboarding profile (1:1 relation)
   onboardingProfile UserOnboardingProfileEntity?
 }
 ```
 
 #### CollegeEntity (new)
+
 ```prisma
 model CollegeEntity {
   id       String  @id          // UUID from import data
@@ -67,6 +69,7 @@ model CollegeEntity {
 ```
 
 #### UserOnboardingProfileEntity (new)
+
 ```prisma
 model UserOnboardingProfileEntity {
   id     String @id @default(cuid())
@@ -106,23 +109,25 @@ model UserOnboardingProfileEntity {
 
 ### Enums
 
-| Enum | Values |
-|------|--------|
-| `Gender` | MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY |
-| `UserCategory` | SCHOOL_STUDENT, COLLEGE_STUDENT, WORKING_PROFESSIONAL, FRESHER, PROFESSIONAL_SCHOOL_STUDENT |
-| `ExperienceLevel` | BEGINNER, INTERMEDIATE, ADVANCED, EXPERT |
-| `TeamPreference` | LOOKING_FOR_TEAM, HAVE_TEAM, OPEN_TO_EITHER, PREFER_SOLO |
+| Enum              | Values                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| `Gender`          | MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY                                                      |
+| `UserCategory`    | SCHOOL_STUDENT, COLLEGE_STUDENT, WORKING_PROFESSIONAL, FRESHER, PROFESSIONAL_SCHOOL_STUDENT |
+| `ExperienceLevel` | BEGINNER, INTERMEDIATE, ADVANCED, EXPERT                                                    |
+| `TeamPreference`  | LOOKING_FOR_TEAM, HAVE_TEAM, OPEN_TO_EITHER, PREFER_SOLO                                    |
 
 ## API Endpoints
 
 ### User Accounts
 
 #### GET /user-accounts/me
+
 Returns the current user's profile with onboarding status.
 
 **Authentication:** Required (Bearer token)
 
 **Response:**
+
 ```json
 {
   "id": "user_abc123",
@@ -148,11 +153,13 @@ Returns the current user's profile with onboarding status.
 ```
 
 #### PUT /user-accounts/onboarding
+
 Submit or update the onboarding profile. Automatically sets `onboarded = true`.
 
 **Authentication:** Required (Bearer token)
 
 **Request Body:**
+
 ```json
 {
   "gender": "MALE",
@@ -171,6 +178,7 @@ Submit or update the onboarding profile. Automatically sets `onboarded = true`.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -182,14 +190,17 @@ Submit or update the onboarding profile. Automatically sets `onboarded = true`.
 ### Colleges
 
 #### GET /colleges/search?q=...
+
 Search colleges by name for autocomplete.
 
 **Authentication:** Required (Bearer token)
 
 **Query Parameters:**
+
 - `q` (required): Search query (min 2 characters)
 
 **Response:**
+
 ```json
 [
   {
@@ -205,6 +216,7 @@ Search colleges by name for autocomplete.
 ```
 
 #### POST /colleges/bulk-import (Dev Only)
+
 Bulk import colleges from JSON data.
 
 **Authentication:** None (dev-only endpoint)
@@ -212,6 +224,7 @@ Bulk import colleges from JSON data.
 **⚠️ Security Note:** This endpoint is **blocked in production** (`NODE_ENV === 'production'`). It's intentionally unauthenticated for development convenience but should never be exposed publicly.
 
 **Request Body:**
+
 ```json
 {
   "colleges": [
@@ -230,6 +243,7 @@ Bulk import colleges from JSON data.
 ```
 
 **Response:**
+
 ```json
 {
   "imported": 150,
@@ -248,14 +262,14 @@ Server layouts for protected routes check onboarding status:
 // apps/ui-webapp/src/app/dashboard/layout.tsx
 export default async function DashboardLayout({ children }) {
   const { getToken, userId } = await auth();
-  
+
   if (!userId) redirect("/sign-in");
-  
+
   const token = await getToken();
   const me = await getMe(token);
-  
+
   if (!me.onboarded) redirect("/onboarding");
-  
+
   return <>{children}</>;
 }
 ```
@@ -264,25 +278,27 @@ export default async function DashboardLayout({ children }) {
 
 The onboarding page (`/onboarding`) is a 6-step wizard:
 
-| Step | Name | Required | Description |
-|------|------|----------|-------------|
-| 1 | Primary Identity | ✅ | Gender and user category |
-| 2 | Education/Work | ✅* | School/College/Work details based on category |
-| 3 | Location | ✅ | City, State, Country |
-| 4 | Interests & Skills | ❌ | Select from suggestions |
-| 5 | Experience Level | ❌ | Self-rated experience |
-| 6 | Team Preference | ❌ | Hackathon team preferences |
+| Step | Name               | Required | Description                                   |
+| ---- | ------------------ | -------- | --------------------------------------------- |
+| 1    | Primary Identity   | ✅       | Gender and user category                      |
+| 2    | Education/Work     | ✅\*     | School/College/Work details based on category |
+| 3    | Location           | ✅       | City, State, Country                          |
+| 4    | Interests & Skills | ❌       | Select from suggestions                       |
+| 5    | Experience Level   | ❌       | Self-rated experience                         |
+| 6    | Team Preference    | ❌       | Hackathon team preferences                    |
 
-*Step 2 requirements depend on selected user category
+\*Step 2 requirements depend on selected user category
 
 ### URL State Management
 
 Step is stored in URL query parameter using `nuqs`:
+
 - `/onboarding?step=1`
 - `/onboarding?step=2`
 - etc.
 
 This allows:
+
 - Browser back/forward navigation
 - Shareable/bookmarkable step links
 - Page refresh without losing progress
@@ -290,6 +306,7 @@ This allows:
 ### Layout Handling
 
 The onboarding page renders without:
+
 - Navigation bar
 - Footer
 - Sidebar
@@ -298,13 +315,13 @@ This creates a focused, distraction-free experience.
 
 ## User Categories & Conditional Fields
 
-| Category | Required Fields |
-|----------|-----------------|
-| SCHOOL_STUDENT | schoolName, schoolClass |
-| COLLEGE_STUDENT | collegeId (or collegeSkipped) |
-| PROFESSIONAL_SCHOOL_STUDENT | collegeId (or collegeSkipped) |
-| WORKING_PROFESSIONAL | None (companyName, jobTitle optional) |
-| FRESHER | None |
+| Category                    | Required Fields                       |
+| --------------------------- | ------------------------------------- |
+| SCHOOL_STUDENT              | schoolName, schoolClass               |
+| COLLEGE_STUDENT             | collegeId (or collegeSkipped)         |
+| PROFESSIONAL_SCHOOL_STUDENT | collegeId (or collegeSkipped)         |
+| WORKING_PROFESSIONAL        | None (companyName, jobTitle optional) |
+| FRESHER                     | None                                  |
 
 ## ClerkAuthGuard User Upsert
 
@@ -359,6 +376,7 @@ This ensures the user record exists before any `/me` or `/onboarding` API calls.
 ## Files Modified/Created
 
 ### Backend
+
 - `apps/backend/src/colleges/` (new module)
   - `colleges.module.ts`
   - `colleges.controller.ts`
@@ -369,16 +387,19 @@ This ensures the user record exists before any `/me` or `/onboarding` API calls.
 - `apps/backend/src/app.module.ts` (updated)
 
 ### Types
+
 - `packages/types/src/enums/index.ts` (updated)
 - `packages/types/src/dtos/backend/account/onboarding.dto.ts` (new)
 - `packages/types/src/dtos/backend/account/college.dto.ts` (new)
 - `packages/types/src/dtos/backend/account/index.ts` (updated)
 
 ### Database
+
 - `packages/database/prisma/schema.prisma` (updated)
 - Migration: `20251220131045_add_onboarding_colleges`
 
 ### Frontend
+
 - `apps/ui-webapp/src/app/onboarding/page.tsx` (new)
 - `apps/ui-webapp/src/app/dashboard/layout.tsx` (new)
 - `apps/ui-webapp/src/app/participants/layout.tsx` (new)

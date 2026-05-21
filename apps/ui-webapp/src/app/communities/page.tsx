@@ -46,17 +46,27 @@ export default function CommunitiesPage() {
           </h1>
 
           <p className="text-muted-foreground text-lg md:text-xl leading-relaxed max-w-2xl mx-auto inter">
-            We're building a vibrant space for hackers, learners, and dreamers to connect, collaborate, and grow together. Stay tuned for the ultimate community experience!
+            We're building a vibrant space for hackers, learners, and dreamers
+            to connect, collaborate, and grow together. Stay tuned for the
+            ultimate community experience!
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
-            <Button asChild size="lg" className="rounded-full px-8 h-14 text-base font-semibold group shadow-lg shadow-primary-500/20">
+            <Button
+              asChild
+              size="lg"
+              className="rounded-full px-8 h-14 text-base font-semibold group shadow-lg shadow-primary-500/20"
+            >
               <Link href="/">
                 <Home className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                 Back to Home
               </Link>
             </Button>
-            <Button variant="outline" size="lg" className="rounded-full px-8 h-14 text-base font-semibold border-primary/20 bg-primary/5 hover:bg-primary/10 group">
+            <Button
+              variant="outline"
+              size="lg"
+              className="rounded-full px-8 h-14 text-base font-semibold border-primary/20 bg-primary/5 hover:bg-primary/10 group"
+            >
               <Link href="/events" className="flex items-center">
                 Explore Events
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -73,18 +83,32 @@ export default function CommunitiesPage() {
 
       <style jsx>{`
         @keyframes float {
-          0% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-          100% { transform: translateY(0px); }
+          0% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-20px);
+          }
+          100% {
+            transform: translateY(0px);
+          }
         }
         .animate-float {
           animation: float 6s ease-in-out infinite;
         }
         @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
         }
         .animate-blob {
           animation: blob 7s infinite;

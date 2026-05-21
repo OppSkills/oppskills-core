@@ -34,8 +34,8 @@ export function getClerkErrorMessage(error: unknown, fallback: string): string {
     typeof longMessage === "string" && longMessage.trim().length > 0
       ? longMessage
       : typeof message === "string" && message.trim().length > 0
-      ? message
-      : fallback;
+        ? message
+        : fallback;
 
   return finalMessage;
 }
@@ -197,7 +197,11 @@ export function normalizeUrl(url: string | null | undefined): string {
   if (!url || typeof url !== "string") return "";
   const trimmed = url.trim();
   if (trimmed.length === 0) return "";
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("/")) {
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("/")
+  ) {
     return trimmed;
   }
   if (trimmed.startsWith("//")) {
@@ -216,12 +220,19 @@ export function isValidUrl(value: string | null | undefined): boolean {
   let url = trimmed;
   if (url.startsWith("//")) {
     url = `https:${url}`;
-  } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+  } else if (
+    !url.startsWith("http://") &&
+    !url.startsWith("https://") &&
+    !url.startsWith("/")
+  ) {
     url = `https://${url}`;
   }
   try {
     const parsed = new URL(url);
-    return parsed.hostname === "localhost" || (parsed.hostname.includes(".") && !parsed.hostname.endsWith("."));
+    return (
+      parsed.hostname === "localhost" ||
+      (parsed.hostname.includes(".") && !parsed.hostname.endsWith("."))
+    );
   } catch {
     return false;
   }

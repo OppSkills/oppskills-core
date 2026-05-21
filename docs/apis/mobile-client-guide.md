@@ -8,10 +8,10 @@ This is the mobile counterpart to the Next.js pattern: **TanStack Query hooks + 
 
 ## Mental model
 
-| Concern | Where it lives |
-|--------|----------------|
-| Sign-in, sign-up, email verification, OAuth, password reset, sessions | **Clerk** (`@clerk/clerk-expo`) |
-| User rows, onboarding profile, opportunities, payments | **OppSkills API** (Bearer JWT from Clerk) |
+| Concern                                                               | Where it lives                            |
+| --------------------------------------------------------------------- | ----------------------------------------- |
+| Sign-in, sign-up, email verification, OAuth, password reset, sessions | **Clerk** (`@clerk/clerk-expo`)           |
+| User rows, onboarding profile, opportunities, payments                | **OppSkills API** (Bearer JWT from Clerk) |
 
 The backend **does not** implement a custom email OTP or password store for end users. Anything that looks like “enter the code we emailed you” in product designs is implemented with **Clerk’s** verification strategies, not `POST /…/otp` on this API.
 
@@ -78,14 +78,14 @@ export function createOppskillsApi(getToken: () => Promise<string | null>) {
   ): Promise<T> {
     const { auth = true, headers, ...rest } = init;
     const h = new Headers(headers);
-    h.set('Accept', 'application/json');
-    if (rest.body && !h.has('Content-Type')) {
-      h.set('Content-Type', 'application/json');
+    h.set("Accept", "application/json");
+    if (rest.body && !h.has("Content-Type")) {
+      h.set("Content-Type", "application/json");
     }
     if (auth) {
       const token = await getToken();
-      if (!token) throw new Error('Not signed in');
-      h.set('Authorization', `Bearer ${token}`);
+      if (!token) throw new Error("Not signed in");
+      h.set("Authorization", `Bearer ${token}`);
     }
 
     const res = await fetch(`${base}${path}`, { ...rest, headers: h });
@@ -122,9 +122,9 @@ Centralize keys so invalidation stays correct when you add variables (e.g. user 
 
 ```typescript
 export const qk = {
-  me: ['me'] as const,
-  profile: ['user', 'profile'] as const,
-  collegeSearch: (q: string) => ['colleges', 'search', q] as const,
+  me: ["me"] as const,
+  profile: ["user", "profile"] as const,
+  collegeSearch: (q: string) => ["colleges", "search", q] as const,
 };
 ```
 
@@ -137,7 +137,7 @@ export const qk = {
 ```typescript
 useQuery({
   queryKey: qk.me,
-  queryFn: () => api.request('/user-accounts/me'),
+  queryFn: () => api.request("/user-accounts/me"),
   staleTime: 60_000,
 });
 ```
@@ -151,8 +151,8 @@ const qc = useQueryClient();
 
 const patchEducation = useMutation({
   mutationFn: (body: object) =>
-    api.request('/user-accounts/education', {
-      method: 'PATCH',
+    api.request("/user-accounts/education", {
+      method: "PATCH",
       body: JSON.stringify(body),
     }),
   onSuccess: () => {

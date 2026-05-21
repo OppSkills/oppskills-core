@@ -35,7 +35,10 @@ export async function fetchReferralTargetShareOg(
 ): Promise<ReferralShareOg | null> {
   try {
     if (entityType === "EVENT") {
-      const event = (await getPublicEventBySlug(slug)) as Record<string, unknown> | null;
+      const event = (await getPublicEventBySlug(slug)) as Record<
+        string,
+        unknown
+      > | null;
       if (!event) return null;
       const name = String(event.name ?? "Event");
       const description = event.description
@@ -50,7 +53,10 @@ export async function fetchReferralTargetShareOg(
     }
 
     if (entityType === "HACKATHON") {
-      const data = (await getPublicHackathonBySlug(slug)) as Record<string, unknown> | null;
+      const data = (await getPublicHackathonBySlug(slug)) as Record<
+        string,
+        unknown
+      > | null;
       if (!data) return null;
       const name = String(data.name ?? "Hackathon");
       const description = data.description
@@ -65,7 +71,10 @@ export async function fetchReferralTargetShareOg(
     }
 
     if (entityType === "FESTIVAL") {
-      const f = (await getFestivalBySlug(null, slug)) as Record<string, unknown> | null;
+      const f = (await getFestivalBySlug(null, slug)) as Record<
+        string,
+        unknown
+      > | null;
       if (!f) return null;
       const name = String(f.name ?? "Festival");
       const description = f.description

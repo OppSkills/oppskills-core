@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import {
   type TeamDetailResponse,
   leaveTeam,
-  removeMember
+  removeMember,
 } from "@/lib/api/teamApi";
 import { mapMaxSize } from "./transform";
 import { useAuth } from "@clerk/nextjs";
@@ -48,7 +48,9 @@ export function TeamDetailsCard({
 
   /** Create/join API responses may omit `members`; avoid crashing on .length / .map */
   const members = team.members ?? [];
-  const effectiveMaxSize = participantType ? mapMaxSize(participantType) : team.maxSize;
+  const effectiveMaxSize = participantType
+    ? mapMaxSize(participantType)
+    : team.maxSize;
   const isLeader = team.leaderId === currentUserId;
 
   const handleLeaveTeam = async () => {
@@ -72,7 +74,8 @@ export function TeamDetailsCard({
   };
 
   const handleKickMember = async (memberUserId: string, memberName: string) => {
-    if (!window.confirm(`Are you sure you want to kick ${memberName} out?`)) return;
+    if (!window.confirm(`Are you sure you want to kick ${memberName} out?`))
+      return;
 
     setIsActionLoading(true);
     try {
@@ -93,7 +96,8 @@ export function TeamDetailsCard({
 
   const handleShareTeam = () => {
     if (team.invitationCode) {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://oppskills.com";
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL || "https://oppskills.com";
       const link = `${baseUrl}/hackathons/${hackathonSlug}?registration=join&invitation=${team.invitationCode}`;
       navigator.clipboard.writeText(link);
       setIsCopied(true);
@@ -104,8 +108,15 @@ export function TeamDetailsCard({
 
   const renderMemberCard = (member: any, role: "Leader" | "Member") => {
     const user = member.user || member; // member.user exists for TeamMember, but leader is passed directly or as a user object
-    const displayName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email || "Unknown User";
-    const initials = (user.firstName?.[0] || user.email?.[0] || "U").toUpperCase();
+    const displayName =
+      `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+      user.email ||
+      "Unknown User";
+    const initials = (
+      user.firstName?.[0] ||
+      user.email?.[0] ||
+      "U"
+    ).toUpperCase();
     const isCurrentUser = user.id === currentUserId;
 
     return (
@@ -123,16 +134,24 @@ export function TeamDetailsCard({
               height={56}
               className="w-full h-full object-cover"
             />
-          ) : initials}
+          ) : (
+            initials
+          )}
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-center mb-1">
             <h5 className="text-lg font-medium text-neutral-900 truncate">
-              {displayName} {isCurrentUser && <span className="text-neutral-500 font-normal">(You)</span>}
+              {displayName}{" "}
+              {isCurrentUser && (
+                <span className="text-neutral-500 font-normal">(You)</span>
+              )}
             </h5>
-            <Badge className="h-4" variant={role === "Leader" ? "default" : "secondary"}>
+            <Badge
+              className="h-4"
+              variant={role === "Leader" ? "default" : "secondary"}
+            >
               {role === "Leader" ? "Leader" : "Member"}
             </Badge>
           </div>
@@ -167,8 +186,8 @@ export function TeamDetailsCard({
           <div className="flex items-start gap-2">
             <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
             <p className="leading-snug">
-              Your registration form is not complete. Finish it so organizers can
-              see your details — you will not be charged again.
+              Your registration form is not complete. Finish it so organizers
+              can see your details — you will not be charged again.
             </p>
           </div>
           <Button
@@ -190,7 +209,11 @@ export function TeamDetailsCard({
               {team.name} ({members.length + 1}/{effectiveMaxSize})
             </span>
           </p>
-          <Badge variant={isCopied ? "default" : "outline"} onClick={handleShareTeam} className="cursor-pointer hover:border-primary-600 hover:shadow-sm active:bg-primary-100 justify-center gap-2">
+          <Badge
+            variant={isCopied ? "default" : "outline"}
+            onClick={handleShareTeam}
+            className="cursor-pointer hover:border-primary-600 hover:shadow-sm active:bg-primary-100 justify-center gap-2"
+          >
             {isCopied ? (
               <>
                 <Check className="w-4 h-4" /> Copied!
@@ -219,8 +242,12 @@ export function TeamDetailsCard({
               <UserMinus className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-neutral-500 font-medium">Waiting for members...</p>
-              <p className="text-xs text-neutral-400">Use code {team.invitationCode} to invite</p>
+              <p className="text-neutral-500 font-medium">
+                Waiting for members...
+              </p>
+              <p className="text-xs text-neutral-400">
+                Use code {team.invitationCode} to invite
+              </p>
             </div>
           </div>
         )}

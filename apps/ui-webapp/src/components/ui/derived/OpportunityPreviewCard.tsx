@@ -36,8 +36,9 @@ export default function OpportunityPreviewCard({
 
   const entryFee = isFree
     ? "Free"
-    : `${currency === "INR" ? "₹" : currency} ${entryFeeAmount ? Number(entryFeeAmount).toLocaleString() : "0"
-    }`;
+    : `${currency === "INR" ? "₹" : currency} ${
+        entryFeeAmount ? Number(entryFeeAmount).toLocaleString() : "0"
+      }`;
 
   const topRightBadge = (
     <div className="bg-background/90 backdrop-blur-sm rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground shadow-sm">

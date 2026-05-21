@@ -27,39 +27,39 @@ Display **real event registrations (registered users)** on the Event dashboard r
 
 - Add a new authenticated endpoint to list registrations for a given event slug, restricted to **OWNER / MANAGER / ADMIN**:
 - Update [`/Users/harshit/Documents/freelance/oppskills-core/apps/backend/src/event/event.controller.ts`](/Users/harshit/Documents/freelance/oppskills-core/apps/backend/src/event/event.controller.ts)
-    - New route: `GET /events/by-slug/:slug/registrations`
-    - `@UseGuards(ClerkAuthGuard)`
-    - Validate `slug` and authenticated `userId`
+  - New route: `GET /events/by-slug/:slug/registrations`
+  - `@UseGuards(ClerkAuthGuard)`
+  - Validate `slug` and authenticated `userId`
 - Update [`/Users/harshit/Documents/freelance/oppskills-core/apps/backend/src/event/event.service.ts`](/Users/harshit/Documents/freelance/oppskills-core/apps/backend/src/event/event.service.ts)
-    - New service method `listEventRegistrationsBySlug(slug, requesterUserId)`
-    - Resolve event by `slug`, then enforce permission (reuse existing manager/admin/owner logic)
-    - Query `eventParticipantEntity.findMany({ where: { eventId }, include: { user: { select: { ... }, include: { onboardingProfile: { include: { college: true } } } }, submission: true }, orderBy: { joinedAt: "desc" } })`
-    - Map results to a response tailored for the dashboard table:
-    - `name`, `email`, `avatarUrl`
-    - `university` derived from onboarding (college/school/company)
-    - `location` derived from onboarding (city/state/country)
-    - `course` derived from onboarding (userCategory + year/jobTitle/etc.)
-    - `status`: `"Completed"` if `submission` exists else `"Incomplete"`
-    - `registeredOn`: ISO string from `joinedAt`
-    - Add **runtime validation** and clear error responses (404 event not found, 403 forbidden, etc.).
+  - New service method `listEventRegistrationsBySlug(slug, requesterUserId)`
+  - Resolve event by `slug`, then enforce permission (reuse existing manager/admin/owner logic)
+  - Query `eventParticipantEntity.findMany({ where: { eventId }, include: { user: { select: { ... }, include: { onboardingProfile: { include: { college: true } } } }, submission: true }, orderBy: { joinedAt: "desc" } })`
+  - Map results to a response tailored for the dashboard table:
+  - `name`, `email`, `avatarUrl`
+  - `university` derived from onboarding (college/school/company)
+  - `location` derived from onboarding (city/state/country)
+  - `course` derived from onboarding (userCategory + year/jobTitle/etc.)
+  - `status`: `"Completed"` if `submission` exists else `"Incomplete"`
+  - `registeredOn`: ISO string from `joinedAt`
+  - Add **runtime validation** and clear error responses (404 event not found, 403 forbidden, etc.).
 
 ## Frontend changes (replace mock table with live data)
 
 - Add a typed API wrapper for the new backend route:
 - Update [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/lib/api/eventApi.ts`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/lib/api/eventApi.ts)
-    - Add `getEventRegistrationsBySlug(token, slug): Promise<EventRegistrationsResponse>` (no `any`)
+  - Add `getEventRegistrationsBySlug(token, slug): Promise<EventRegistrationsResponse>` (no `any`)
 - Add a React Query hook:
 - Create [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/hooks/useEventRegistrationsBySlug.ts`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/hooks/useEventRegistrationsBySlug.ts)
-    - Uses Clerk `getToken()` + React Query, similar to existing `useEventBySlug`
+  - Uses Clerk `getToken()` + React Query, similar to existing `useEventBySlug`
 - Update the Event manage-registration page UI:
 - Update [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/manage-registration/page.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/manage-registration/page.tsx)
-    - Remove `MOCK_PARTICIPANTS`
-    - Fetch real registrations by `slug`
-    - Keep the existing table + modal UX, but:
-    - Populate `university/location/course/registeredOn` from the API
-    - Keep `Completed/Incomplete` tabs backed by real computed status
-    - Per your choice, **remove the role badge/field** (no team-leader concept in DB)
-    - Fix TypeScript strictness issues introduced by the mock page (notably: remove `any` usages in column types/state).
+  - Remove `MOCK_PARTICIPANTS`
+  - Fetch real registrations by `slug`
+  - Keep the existing table + modal UX, but:
+  - Populate `university/location/course/registeredOn` from the API
+  - Keep `Completed/Incomplete` tabs backed by real computed status
+  - Per your choice, **remove the role badge/field** (no team-leader concept in DB)
+  - Fix TypeScript strictness issues introduced by the mock page (notably: remove `any` usages in column types/state).
 
 ## Validation
 

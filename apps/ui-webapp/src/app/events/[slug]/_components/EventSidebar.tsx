@@ -2,13 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import {
-  MapPin,
-  Sparkles,
-  Users,
-  ChevronRight,
-  Clock,
-} from "lucide-react";
+import { MapPin, Sparkles, Users, ChevronRight, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { EventDetails } from "./types";
 import { ensureAbsoluteUrl } from "@/lib/utils";
@@ -138,7 +132,6 @@ export function EventSidebar({
             />
           ) : null}
 
-
           {/* Stats List */}
           <div className="space-y-4">
             {/* Team Size / Entry Type */}
@@ -181,7 +174,9 @@ export function EventSidebar({
                       )
                     : "Open until starts"}
                 </div>
-                <div className="text-xs text-neutral-500">Registration Deadline</div>
+                <div className="text-xs text-neutral-500">
+                  Registration Deadline
+                </div>
               </div>
             </div>
           </div>

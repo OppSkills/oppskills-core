@@ -154,7 +154,9 @@ export function HackathonRegistrationModal({
   const [values, setValues] = useState<Record<string, FieldValue>>({});
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<Record<string, { name: string; url: string }>>({});
+  const [uploadedFiles, setUploadedFiles] = useState<
+    Record<string, { name: string; url: string }>
+  >({});
 
   // Support all fields now that attachments are supported
   const supportedFields = fields;
@@ -180,7 +182,10 @@ export function HackathonRegistrationModal({
     }
   }, [isOpen, userData, fields]);
 
-  const handleFileSelect = async (fieldId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    fieldId: string,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -214,7 +219,7 @@ export function HackathonRegistrationModal({
         name: file.name,
       };
 
-      setUploadedFiles(prev => ({ ...prev, [fieldId]: fileData }));
+      setUploadedFiles((prev) => ({ ...prev, [fieldId]: fileData }));
       setValue(fieldId, presign.publicUrl);
 
       toast.success("Document uploaded successfully");
@@ -430,14 +435,14 @@ export function HackathonRegistrationModal({
 
       case "ATTACHMENTS": {
         const fileData = uploadedFiles[field.id];
-        
+
         return (
           <div key={field.id} className="space-y-2">
             <Label htmlFor={field.id} className="text-sm font-medium">
               {field.label}
               {field.required && <span className="text-red-500 ml-1">*</span>}
             </Label>
-            
+
             <div className="flex flex-col gap-3">
               {fileData ? (
                 <div className="flex items-center justify-between p-3 bg-primary-50 border border-primary-200 rounded-lg">

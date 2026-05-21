@@ -5,6 +5,7 @@ This guide will help you set up the necessary AWS IAM user and permissions for t
 ## Overview
 
 The GitHub Actions workflow needs AWS credentials to:
+
 - Push Docker images to Amazon ECR
 - Update ECS task definitions
 - Deploy to ECS service
@@ -59,9 +60,7 @@ The GitHub Actions workflow needs AWS credentials to:
     {
       "Sid": "PassRoleToECS",
       "Effect": "Allow",
-      "Action": [
-        "iam:PassRole"
-      ],
+      "Action": ["iam:PassRole"],
       "Resource": [
         "arn:aws:iam::443512646680:role/ecsTaskExecutionRole",
         "arn:aws:iam::443512646680:role/ecsTaskRole"
@@ -155,10 +154,7 @@ This role is used by ECS to pull images and send logs. Verify it has these permi
     },
     {
       "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
+      "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
       "Resource": "arn:aws:logs:us-east-1:443512646680:log-group:/ecs/*"
     }
   ]
@@ -175,16 +171,12 @@ This role is used by your application at runtime. It needs access to AWS Secrets
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": [
-        "secretsmanager:GetSecretValue"
-      ],
+      "Action": ["secretsmanager:GetSecretValue"],
       "Resource": "arn:aws:secretsmanager:us-east-1:443512646680:secret:oppskills-env-*"
     },
     {
       "Effect": "Allow",
-      "Action": [
-        "sts:GetCallerIdentity"
-      ],
+      "Action": ["sts:GetCallerIdentity"],
       "Resource": "*"
     }
   ]
@@ -206,16 +198,19 @@ Now that you have AWS credentials, add them to GitHub:
 Click **New repository secret** for each of the following:
 
 #### 1. AWS_ACCESS_KEY_ID
+
 - **Name**: `AWS_ACCESS_KEY_ID`
 - **Value**: Paste the Access Key ID from Step 4 above
 - Click **Add secret**
 
 #### 2. AWS_SECRET_ACCESS_KEY
+
 - **Name**: `AWS_SECRET_ACCESS_KEY`
 - **Value**: Paste the Secret Access Key from Step 4 above
 - Click **Add secret**
 
 #### 3. ECR_REPOSITORY
+
 - **Name**: `ECR_REPOSITORY`
 - **Value**: Your ECR repository name (e.g., `oppskills-backend`)
   - Just the repository name, not the full URI
@@ -225,6 +220,7 @@ Click **New repository secret** for each of the following:
 ### Step 3: Verify Secrets
 
 You should now see three secrets:
+
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 - `ECR_REPOSITORY`
@@ -276,24 +272,28 @@ git push origin main
 ### Error: "User is not authorized to perform: ecr:GetAuthorizationToken"
 
 **Solution**: The IAM user doesn't have ECR permissions. Verify:
+
 1. The policy is attached to the IAM user
 2. The policy includes all ECR actions listed above
 
 ### Error: "User is not authorized to perform: iam:PassRole"
 
 **Solution**: The IAM user needs PassRole permission. Verify:
+
 1. The PassRole statement in the policy includes your task execution and task role ARNs
 2. The ARNs match your actual role ARNs (check in ECS task definition)
 
 ### Error: "Unable to describe services"
 
 **Solution**: The IAM user needs ECS permissions:
+
 1. Verify the ECS policy statement is attached
 2. Check the cluster and service names match your configuration
 
 ### Error: "Access Denied" when running migrations
 
 **Solution**: This is likely an issue with the ECS task role, not the GitHub Actions IAM user:
+
 1. Verify the task role has `secretsmanager:GetSecretValue` permission
 2. Verify the secret name is exactly `oppskills-env`
 3. Check CloudWatch logs for more details:

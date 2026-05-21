@@ -73,7 +73,10 @@ export default function Page() {
   const { data: hackathonData } = useHackathonBySlug(slug ?? "");
   const hackathon = hackathonData as HackathonData | undefined;
 
-  const { data: payoutDetails, isLoading: payoutLoading } = usePayoutDetails(undefined, hackathon?.id);
+  const { data: payoutDetails, isLoading: payoutLoading } = usePayoutDetails(
+    undefined,
+    hackathon?.id,
+  );
   const upsertPayoutDetails = useUpsertPayoutDetails(undefined, hackathon?.id);
   const { data: earnings } = useHackathonEarnings(slug ?? "");
 
@@ -109,8 +112,6 @@ export default function Page() {
       setHasHydrated(true);
     }
   }, [hackathon, hasHydrated]);
-
-
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -202,14 +203,15 @@ export default function Page() {
 
   const handlePayoutDetailsSave = async (data: PayoutDetailsInput) => {
     try {
-      await upsertPayoutDetails.mutateAsync({ ...data, hackathonId: hackathon?.id });
+      await upsertPayoutDetails.mutateAsync({
+        ...data,
+        hackathonId: hackathon?.id,
+      });
       toast.success("Payout details saved successfully");
       setIsPayoutFormOpen(false);
     } catch (error) {
       console.error(error);
-      toast.error(
-        getApiErrorMessage(error, "Failed to save payout details"),
-      );
+      toast.error(getApiErrorMessage(error, "Failed to save payout details"));
     }
   };
 
@@ -222,8 +224,7 @@ export default function Page() {
     hackathon &&
     hackathon.status !== "COMPLETED" &&
     hackathon.status !== "CANCELLED";
-  const canEditPricing =
-    !!isPricingLifecycleEditable && !registrationStarted;
+  const canEditPricing = !!isPricingLifecycleEditable && !registrationStarted;
   const canManageTicketTiers = !!isPricingLifecycleEditable;
 
   return (

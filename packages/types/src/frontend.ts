@@ -202,5 +202,7 @@ export type {
 // Notifications
 // =====================
 export type { CreateNotificationDto } from "./dtos/backend/notification/schedule-notification.dto";
-export { ScheduleType, NotificationStatus } from "./dtos/backend/notification/schedule-notification.dto";
-
+export {
+  ScheduleType,
+  NotificationStatus,
+} from "./dtos/backend/notification/schedule-notification.dto";

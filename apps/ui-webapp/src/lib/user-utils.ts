@@ -4,7 +4,7 @@
 export function getInitials(
   firstName: string | null | undefined,
   lastName: string | null | undefined,
-  email: string
+  email: string,
 ): string {
   if (firstName && lastName) {
     return `${firstName[0]}${lastName[0]}`.toUpperCase();
@@ -24,7 +24,7 @@ export function getInitials(
 export function getDisplayName(
   firstName: string | null | undefined,
   lastName: string | null | undefined,
-  email: string
+  email: string,
 ): string {
   if (firstName && lastName) {
     return `${firstName} ${lastName}`;

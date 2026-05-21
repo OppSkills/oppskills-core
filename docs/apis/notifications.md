@@ -11,6 +11,7 @@ These endpoints are typically used in the Organizer Dashboard. If you are callin
 Organizers use these endpoints to broadcast alerts directly to their participants' in-app notification centers. The backend uses a background queue to ensure fast delivery.
 
 ### Schedule a Notification
+
 - **Endpoint:** `POST /notification/schedule`
 - **Usage:** Create a new announcement for an event or hackathon. You can send it instantly or schedule it for later.
 - **Request Body:**
@@ -44,10 +45,11 @@ Organizers use these endpoints to broadcast alerts directly to their participant
 - **React Native Example (TanStack Query):**
   ```typescript
   const scheduleNotification = useMutation({
-    mutationFn: (data) => apiClient.request('/notification/schedule', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    mutationFn: (data) =>
+      apiClient.request("/notification/schedule", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.campaigns(eventId) });
     },
@@ -55,7 +57,8 @@ Organizers use these endpoints to broadcast alerts directly to their participant
   ```
 
 ### List Campaigns
-- **Endpoints:** 
+
+- **Endpoints:**
   - `GET /notification/event/:eventId`
   - `GET /notification/hackathon/:hackathonId`
 - **Usage:** Fetch the history of all announcements sent for a specific listing.
@@ -92,9 +95,10 @@ Organizers use these endpoints to broadcast alerts directly to their participant
   ```
 
 ### Manage a Specific Campaign
-- **Get Details:** `GET /notification/:id` 
+
+- **Get Details:** `GET /notification/:id`
   - **Usage:** Fetch the full details and logs of a single campaign. Returns a single notification object as shown in the List Campaigns response.
-- **Cancel Campaign:** `DELETE /notification/:id` 
+- **Cancel Campaign:** `DELETE /notification/:id`
   - **Usage:** Stops a campaign from sending, but **only** works if its status is still `QUEUED`.
   - **Returns:** The deleted notification details.
 
@@ -105,6 +109,7 @@ Organizers use these endpoints to broadcast alerts directly to their participant
 These endpoints allow organizers to send raw emails (HTML or text) directly to participants' inboxes.
 
 ### Send a Direct Email
+
 - **Endpoint:** `POST /email/messages/direct`
 - **Usage:** Send a one-off transactional email to a single user.
 - **Request Body:**
@@ -128,8 +133,9 @@ These endpoints allow organizers to send raw emails (HTML or text) directly to p
   ```
 
 ### Send a Bulk Email Campaign
+
 - **Endpoint:** `POST /email/bulk`
-- **Usage:** Queue an email to be sent to *all* participants of an event or hackathon. The backend automatically processes this in the background.
+- **Usage:** Queue an email to be sent to _all_ participants of an event or hackathon. The backend automatically processes this in the background.
 - **Request Body:**
   ```json
   {
@@ -146,6 +152,7 @@ These endpoints allow organizers to send raw emails (HTML or text) directly to p
   ```
 
 ### Send Reminders (Incomplete Registrations)
+
 - **Endpoint:** `POST /email/incomplete-registration/:eventId`
 - **Usage:** Automatically find users who have paid for a ticket but haven't submitted their required forms, and email them a reminder.
 - **Returns:**

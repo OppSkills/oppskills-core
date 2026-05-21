@@ -21,12 +21,7 @@ import Link from "next/link";
 import { Confetti, Home, Rocket, Rocket2, UserSpeak } from "@solar-icons/react";
 import { NavUser } from "./nav-user";
 import { usePathname } from "next/navigation";
-import {
-  User,
-  Calendar,
-  Trophy,
-  Wallet
-} from "lucide-react";
+import { User, Calendar, Trophy, Wallet } from "lucide-react";
 
 const data = {
   navMain: [
@@ -93,7 +88,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const items = isProfile ? data.navProfile : data.navMain;
 
   return (
-    <Sidebar collapsible="icon" allowHoverExpand={true} {...props} className="border-neutral-300">
+    <Sidebar
+      collapsible="icon"
+      allowHoverExpand={true}
+      {...props}
+      className="border-neutral-300"
+    >
       <SidebarHeader className="border-b h-14 flex items-center justify-center border-neutral-300">
         <SidebarMenu>
           <SidebarMenuItem className="flex justify-center">

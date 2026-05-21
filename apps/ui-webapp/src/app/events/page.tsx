@@ -28,7 +28,7 @@ export default function EventsPage() {
       page: curPage,
       perPage,
     },
-    { enabled: true }
+    { enabled: true },
   );
 
   const events = data?.items ?? [];

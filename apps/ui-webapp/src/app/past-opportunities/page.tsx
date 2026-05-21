@@ -24,7 +24,8 @@ function deriveMode(item: PastOpportunityItem): string | undefined {
   if (!lt) return "Online";
   const l = lt.toUpperCase();
   if (l === "VIRTUAL" || l === "ONLINE") return "Online";
-  if (l === "PHYSICAL" || l === "OFFLINE" || l === "IN_PERSON") return "Offline";
+  if (l === "PHYSICAL" || l === "OFFLINE" || l === "IN_PERSON")
+    return "Offline";
   if (l === "HYBRID") return "Hybrid";
   return "Online";
 }
@@ -41,9 +42,7 @@ function toListingItem(item: PastOpportunityItem): ListingItem {
     status: item.status,
     locationType: (item as any).locationType ?? null,
     location:
-      (item as any).locationCity ??
-      (item as any).locationAddress ??
-      undefined,
+      (item as any).locationCity ?? (item as any).locationAddress ?? undefined,
     mode: deriveMode(item),
     isFree: item.isFree,
     entryFeeAmount: item.entryFeeAmount ?? null,
@@ -75,11 +74,7 @@ export default function PastEventsPage() {
   const [perPage, setPerPage] = useState(10);
   const [curPage, setCurPage] = useState(1);
 
-  const {
-    data,
-    isLoading,
-    error,
-  } = usePastOpportunities({
+  const { data, isLoading, error } = usePastOpportunities({
     ...filters,
     page: curPage,
     perPage,
@@ -89,7 +84,6 @@ export default function PastEventsPage() {
   const totalPages = data?.totalPages ?? 1;
   return (
     <div>
-
       <GenericListingPage
         items={items}
         isLoading={isLoading}

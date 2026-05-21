@@ -12,8 +12,7 @@ import {
   AltArrowDown as ChevronDown,
   UserSpeak as Users,
   Widget5,
-  Settings
-
+  Settings,
 } from "@solar-icons/react";
 
 import { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
@@ -101,7 +100,11 @@ export interface RegistrationSettingsData {
   collegeRestrictionEnabled: boolean;
   allowedCollegeIds: string[];
   allowedEmailDomains: string[];
-  collegeMatchMode: "PROFILE_ONLY" | "EMAIL_ONLY" | "EITHER_OR" | "BOTH_REQUIRED";
+  collegeMatchMode:
+    | "PROFILE_ONLY"
+    | "EMAIL_ONLY"
+    | "EITHER_OR"
+    | "BOTH_REQUIRED";
 }
 
 export interface Prize {
@@ -137,7 +140,6 @@ export interface AdditionalInfoData {
   contacts: Contact[];
   attachments: Attachment[];
 }
-
 
 export interface FormData {
   eventFestName: string;
@@ -178,7 +180,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function getString(
   obj: Record<string, unknown>,
-  key: string
+  key: string,
 ): string | undefined {
   const value = obj[key];
   return typeof value === "string" && value.trim().length > 0
@@ -208,7 +210,7 @@ function requireToken(token: string | null): string {
 }
 
 function toVisibilityValue(
-  label: string
+  label: string,
 ): "PUBLIC" | "PRIVATE" | "UNIVERSITY_ONLY" | undefined {
   if (label === "Public") return "PUBLIC";
   if (label === "Private") return "PRIVATE";
@@ -217,7 +219,7 @@ function toVisibilityValue(
 }
 
 function toHackathonTypeValue(
-  label: string
+  label: string,
 ):
   | "CODING_HACKATHON"
   | "IDEA_HACKATHON"
@@ -234,7 +236,7 @@ function toHackathonTypeValue(
 }
 
 function toParticipantTypeValue(
-  label: string
+  label: string,
 ):
   | "INDIVIDUAL"
   | "TEAM_OF_2"
@@ -306,7 +308,7 @@ function combineDateAndTimeToIso(date: Date, timeHHmm: string): string {
 }
 
 function mapCandidateTypesToEligibility(
-  input: ReadonlyArray<string>
+  input: ReadonlyArray<string>,
 ): HackathonAttendeeEligibilityValue[] {
   const out: HackathonAttendeeEligibilityValue[] = [];
   const add = (v: HackathonAttendeeEligibilityValue) => {
@@ -323,7 +325,7 @@ function mapCandidateTypesToEligibility(
 }
 
 function mapRegistrationQuestionsToRegistrationForm(
-  questions: ReadonlyArray<RegistrationQuestion>
+  questions: ReadonlyArray<RegistrationQuestion>,
 ): RegistrationFormDto {
   const typeMap: Record<
     RegistrationQuestion["type"],
@@ -375,7 +377,7 @@ function serializeRounds(value: ReadonlyArray<Round>): string {
 }
 
 function serializePrizeBreakdown(
-  value: ReadonlyArray<PrizeBreakdownDto>
+  value: ReadonlyArray<PrizeBreakdownDto>,
 ): string {
   return JSON.stringify(value);
 }
@@ -448,7 +450,7 @@ function formatPrizeAmount(amount: unknown): string {
 }
 
 function fromRegistrationFieldType(
-  value: string | undefined
+  value: string | undefined,
 ): RegistrationQuestion["type"] {
   const v = (value ?? "").toUpperCase();
   if (v === "PHONE_NO") return "Phone No.";
@@ -540,8 +542,8 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
   const location = locationVirtualLink
     ? locationVirtualLink
     : [locationAddress, locationCity]
-      .filter((v): v is string => typeof v === "string")
-      .join(", ");
+        .filter((v): v is string => typeof v === "string")
+        .join(", ");
 
   const roundsRaw = Array.isArray(hackathon["rounds"])
     ? (hackathon["rounds"] as ReadonlyArray<unknown>)
@@ -562,9 +564,9 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
         const allowedFileTypesRaw = submissionConfigRaw["allowedFileTypes"];
         const allowedFileTypes = Array.isArray(allowedFileTypesRaw)
           ? (allowedFileTypesRaw.filter(
-            (t): t is "pdf" | "ppt" | "image" =>
-              t === "pdf" || t === "ppt" || t === "image"
-          ) as ("pdf" | "ppt" | "image")[])
+              (t): t is "pdf" | "ppt" | "image" =>
+                t === "pdf" || t === "ppt" || t === "image",
+            ) as ("pdf" | "ppt" | "image")[])
           : [];
         const maxFileSizeBytes =
           typeof submissionConfigRaw["maxFileSizeBytes"] === "number"
@@ -572,7 +574,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
             : 10 * 1024 * 1024;
         const instructions = getString(
           submissionConfigRaw as Record<string, unknown>,
-          "instructions"
+          "instructions",
         );
         const maxFilesRaw = submissionConfigRaw["maxFiles"];
         const maxFiles =
@@ -633,7 +635,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
   const prizeDescriptionRaw = hackathon["prizeDescription"];
   const prizeDescription =
     isRecord(prizeDescriptionRaw) &&
-      typeof prizeDescriptionRaw["summary"] === "string"
+    typeof prizeDescriptionRaw["summary"] === "string"
       ? (prizeDescriptionRaw["summary"] as string)
       : "";
 
@@ -653,7 +655,13 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
       const required = f["required"];
 
       const isDefault = [
-        "name", "email", "phone no.", "gender", "school name", "college name", "company name"
+        "name",
+        "email",
+        "phone no.",
+        "gender",
+        "school name",
+        "college name",
+        "company name",
       ].includes(label.toLowerCase().trim());
 
       return {
@@ -664,8 +672,8 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
         fixed: isDefault,
         options: Array.isArray(f["options"])
           ? (f["options"] as ReadonlyArray<unknown>).filter(
-            (o): o is string => typeof o === "string"
-          )
+              (o): o is string => typeof o === "string",
+            )
           : undefined,
       };
     })
@@ -676,16 +684,16 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
   const contactPhone = getString(hackathon, "contactPhone") ?? "";
   const contacts: Contact[] =
     contactName.trim().length > 0 ||
-      contactEmail.trim().length > 0 ||
-      contactPhone.trim().length > 0
+    contactEmail.trim().length > 0 ||
+    contactPhone.trim().length > 0
       ? [
-        {
-          id: "contact-1",
-          name: contactName,
-          email: contactEmail,
-          phone: contactPhone,
-        },
-      ]
+          {
+            id: "contact-1",
+            name: contactName,
+            email: contactEmail,
+            phone: contactPhone,
+          },
+        ]
       : [];
 
   const attachmentsRaw = Array.isArray(hackathon["attachments"])
@@ -718,7 +726,7 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
     eventRegisterBy: registrationDeadline,
     hackathonType: fromHackathonType(getString(hackathon, "hackathonType")),
     participantType: fromParticipantType(
-      getString(hackathon, "participantType")
+      getString(hackathon, "participantType"),
     ),
     registrationQuestions,
     rounds,
@@ -780,7 +788,7 @@ export default function EditHackathonPage() {
     useState<boolean>(false);
   const [hackathonId, setHackathonId] = useState<string | null>(null);
   const lastSavedMaxTeamsRef = React.useRef<number | null | undefined>(
-    undefined
+    undefined,
   );
   const lastSavedRoundsSnapshotRef = React.useRef<string | null>(null);
   const savingRoundsSnapshotRef = React.useRef<string | null>(null);
@@ -854,7 +862,10 @@ export default function EditHackathonPage() {
     additionalInfo: { contacts: [], attachments: [] },
   }));
 
-  const hackathon = useMemo(() => extractHackathon(hackathonRaw), [hackathonRaw]);
+  const hackathon = useMemo(
+    () => extractHackathon(hackathonRaw),
+    [hackathonRaw],
+  );
   const isCompletedOrCancelled =
     hackathon?.status === "COMPLETED" || hackathon?.status === "CANCELLED";
 
@@ -880,7 +891,7 @@ export default function EditHackathonPage() {
       // Snapshots used to decide whether to call dedicated nested endpoints.
       const roundsSnapshot = serializeRounds(formData.rounds);
       const additionalInfoSnapshot = serializeAdditionalInfo(
-        formData.additionalInfo
+        formData.additionalInfo,
       );
 
       const base: UpdateHackathonDto = {
@@ -898,7 +909,11 @@ export default function EditHackathonPage() {
               let url = formData.eventThumbnail.trim();
               if (url.startsWith("//")) {
                 url = `https:${url}`;
-              } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+              } else if (
+                !url.startsWith("http://") &&
+                !url.startsWith("https://") &&
+                !url.startsWith("/")
+              ) {
                 url = `https://${url}`;
               }
               return url;
@@ -910,7 +925,7 @@ export default function EditHackathonPage() {
         participantType: toParticipantTypeValue(formData.participantType),
         location: toLocationDto(formData.eventLocation),
         attendeeEligibility: mapCandidateTypesToEligibility(
-          formData.registrationSettings.candidateTypes
+          formData.registrationSettings.candidateTypes,
         ),
         // Registration tab edits `registrationSettings.endDate` / `endTime`; deadline must use
         // those (with fallback to `eventRegisterBy`, which basic-details keeps in sync).
@@ -919,9 +934,9 @@ export default function EditHackathonPage() {
             formData.registrationSettings.endDate ?? formData.eventRegisterBy;
           return deadlineDate
             ? combineDateAndTimeToIso(
-              deadlineDate,
-              formData.registrationSettings.endTime,
-            )
+                deadlineDate,
+                formData.registrationSettings.endTime,
+              )
             : undefined;
         })(),
         // Registration tab edits `registrationSettings.eventDate` / `eventTime`; must not rely
@@ -960,8 +975,8 @@ export default function EditHackathonPage() {
         formData.registrationSettings.maxTeamsNoLimit === true
           ? null
           : typeof formData.registrationSettings.maxTeams === "number" &&
-            Number.isInteger(formData.registrationSettings.maxTeams) &&
-            formData.registrationSettings.maxTeams >= 1
+              Number.isInteger(formData.registrationSettings.maxTeams) &&
+              formData.registrationSettings.maxTeams >= 1
             ? formData.registrationSettings.maxTeams
             : undefined;
 
@@ -989,11 +1004,11 @@ export default function EditHackathonPage() {
             roundType: r.roundType,
             submissionConfig: r.submissionConfig?.enabled
               ? {
-                requiresFileUpload: true,
-                allowedFileTypes: r.submissionConfig.allowedFileTypes,
-                maxFileSizeBytes: r.submissionConfig.maxFileSizeBytes,
-                instructions: r.submissionConfig.instructions,
-              }
+                  requiresFileUpload: true,
+                  allowedFileTypes: r.submissionConfig.allowedFileTypes,
+                  maxFileSizeBytes: r.submissionConfig.maxFileSizeBytes,
+                  instructions: r.submissionConfig.instructions,
+                }
               : undefined,
           })),
         };
@@ -1002,10 +1017,10 @@ export default function EditHackathonPage() {
       }
 
       const customRegistrationQuestions = formData.registrationQuestions.filter(
-        (q) => q.fixed !== true && q.label.trim().length > 0
+        (q) => q.fixed !== true && q.label.trim().length > 0,
       );
       const registrationForm = mapRegistrationQuestionsToRegistrationForm(
-        customRegistrationQuestions
+        customRegistrationQuestions,
       );
       await updateHackathonRegistrationForm(token, hackathonId, {
         registrationForm,
@@ -1018,7 +1033,7 @@ export default function EditHackathonPage() {
       } = formData.prizes.list.reduce(
         (
           acc: { prizeItems: PrizeBreakdownDto[]; hasInvalidAmount: boolean },
-          p
+          p,
         ) => {
           const amount = parseCurrencyToDecimalString(p.amount);
           if (amount === null) {
@@ -1037,11 +1052,11 @@ export default function EditHackathonPage() {
             ],
           };
         },
-        { prizeItems: [], hasInvalidAmount: false }
+        { prizeItems: [], hasInvalidAmount: false },
       );
 
       const prizeBreakdownSnapshot = serializePrizeBreakdown(
-        prizeItemsResult.prizeItems
+        prizeItemsResult.prizeItems,
       );
       if (
         prizeItemsResult.hasInvalidAmount === false &&
@@ -1062,18 +1077,18 @@ export default function EditHackathonPage() {
         const payload: UpdateHackathonAdditionalInfoDto = {
           contact: first
             ? {
-              name: first.name.trim(),
-              email:
-                first.email.trim().length > 0
-                  ? first.email.trim()
-                  : undefined,
-              phone: first.phone.trim(),
-            }
+                name: first.name.trim(),
+                email:
+                  first.email.trim().length > 0
+                    ? first.email.trim()
+                    : undefined,
+                phone: first.phone.trim(),
+              }
             : {
-              name: "",
-              email: undefined,
-              phone: "",
-            },
+                name: "",
+                email: undefined,
+                phone: "",
+              },
           attachments: formData.additionalInfo.attachments.map((a) => ({
             storageKey: a.url ?? a.id,
             publicUrl: a.url,
@@ -1098,7 +1113,7 @@ export default function EditHackathonPage() {
   const savingSnapshotRef = React.useRef<string | null>(null);
   const lastSavedAtRef = React.useRef<number | null>(null);
   const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
-    null
+    null,
   );
   const saveQueuedRef = React.useRef<boolean>(false);
   const lastErrorToastAtRef = React.useRef<number>(0);
@@ -1199,7 +1214,7 @@ export default function EditHackathonPage() {
     lastSavedPrizeBreakdownSnapshotRef.current =
       serializePrizeBreakdown(initialPrizeItems);
     lastSavedAdditionalInfoSnapshotRef.current = serializeAdditionalInfo(
-      formData.additionalInfo
+      formData.additionalInfo,
     );
     lastSavedAtRef.current = Date.now();
     setAutoSaveStatus("saved");
@@ -1247,8 +1262,6 @@ export default function EditHackathonPage() {
     () => `edit-opp-banner-upload-${crypto.randomUUID()}`,
     [],
   );
-
-
 
   async function handleBannerSelected(file: File | null): Promise<void> {
     if (!file) return;
@@ -1320,7 +1333,10 @@ export default function EditHackathonPage() {
     );
   }
 
-  const registrationCount = hackathon && typeof (hackathon as any).registrationCount === "number" ? (hackathon as any).registrationCount : 0;
+  const registrationCount =
+    hackathon && typeof (hackathon as any).registrationCount === "number"
+      ? (hackathon as any).registrationCount
+      : 0;
   const isRegistrationStarted = registrationCount > 0;
 
   return (
@@ -1333,8 +1349,8 @@ export default function EditHackathonPage() {
               Editing disabled
             </span>
             <span className="text-xs text-amber-600">
-              This hackathon is {hackathon?.status?.toString().toLowerCase()}. Content can no longer be
-              edited.
+              This hackathon is {hackathon?.status?.toString().toLowerCase()}.
+              Content can no longer be edited.
             </span>
           </div>
         </div>
@@ -1381,7 +1397,8 @@ export default function EditHackathonPage() {
             <div className="text-sm font-bold poppins text-neutral-400 shrink-0">
               {autoSaveStatus === "saving" ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-primary-600" /> Saving...
+                  <Loader2 className="w-4 h-4 animate-spin text-primary-600" />{" "}
+                  Saving...
                 </span>
               ) : autoSaveStatus === "error" ? (
                 <span className="text-red-500">Save failed</span>
@@ -1392,7 +1409,10 @@ export default function EditHackathonPage() {
             <div className="flex-1 h-px bg-neutral-200" />
             <div className="text-sm font-medium poppins text-neutral-500 shrink-0">
               {typeof lastSavedAtRef.current === "number"
-                ? format(new Date(lastSavedAtRef.current), "do MMMM yyyy, hh:mm a")
+                ? format(
+                    new Date(lastSavedAtRef.current),
+                    "do MMMM yyyy, hh:mm a",
+                  )
                 : "Awaiting changes..."}
             </div>
           </div>
@@ -1405,7 +1425,9 @@ export default function EditHackathonPage() {
           <BasicDetails
             formData={formData}
             setFormData={setFormData}
-            registrationFormLocked={isCompletedOrCancelled || isRegistrationStarted}
+            registrationFormLocked={
+              isCompletedOrCancelled || isRegistrationStarted
+            }
             triggerSave={runSaveMutation}
           />
         )}
@@ -1419,10 +1441,7 @@ export default function EditHackathonPage() {
         )}
 
         {activeTab === "rounds-stages" && (
-          <RoundsAndStages
-            formData={formData}
-            setFormData={setFormData}
-          />
+          <RoundsAndStages formData={formData} setFormData={setFormData} />
         )}
 
         {activeTab === "prizes" && (
@@ -1432,7 +1451,6 @@ export default function EditHackathonPage() {
         {activeTab === "additional-info" && (
           <AdditionalInfo formData={formData} setFormData={setFormData} />
         )}
-
 
         {activeTab === "preview" && (
           <div className="w-full flex flex-col gap-4">

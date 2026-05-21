@@ -2,7 +2,19 @@
 
 import React from "react";
 import { RegistrationInputField } from "./RegistrationInputField";
-import { Users, ArrowRight, User, Upload, Link as LinkIcon, LogOut, CheckCircle2, ShieldCheck, UserPlus, Search, Info } from "lucide-react";
+import {
+  Users,
+  ArrowRight,
+  User,
+  Upload,
+  Link as LinkIcon,
+  LogOut,
+  CheckCircle2,
+  ShieldCheck,
+  UserPlus,
+  Search,
+  Info,
+} from "lucide-react";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TeamDetailResponse } from "@/lib/api/teamApi";
@@ -12,7 +24,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { JoinTeamFormContentProps } from "./RegistrationModal.types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { toast } from "sonner";
 import { isUploadField } from "@/lib/form-utils";
@@ -34,11 +52,11 @@ export function JoinTeamFormContent({
   slug,
 }: JoinTeamFormContentProps) {
   const matchingTeam = teams.find(
-    (t) => t.invitationCode?.toUpperCase() === invitationCode?.toUpperCase()
+    (t) => t.invitationCode?.toUpperCase() === invitationCode?.toUpperCase(),
   );
 
   const filteredTeams = teams.filter((team) =>
-    team.name.toLowerCase().includes(searchQuery.toLowerCase())
+    team.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleCopyLink = (e: React.MouseEvent, code: string) => {
@@ -87,7 +105,10 @@ export function JoinTeamFormContent({
                     size="icon"
                     variant="ghost"
                     className="h-9 w-9 rounded-full text-neutral-500 hover:text-primary-600 hover:bg-white transition-all duration-300"
-                    onClick={(e) => matchingTeam.invitationCode && handleCopyLink(e, matchingTeam.invitationCode)}
+                    onClick={(e) =>
+                      matchingTeam.invitationCode &&
+                      handleCopyLink(e, matchingTeam.invitationCode)
+                    }
                     title="Copy registration link"
                   >
                     <LinkIcon className="h-[18px] w-[18px]" />
@@ -112,7 +133,11 @@ export function JoinTeamFormContent({
                 <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/60 border border-white shadow-sm">
                   <div className="h-10 w-10 shrink-0 rounded-xl overflow-hidden bg-primary-50 border border-primary-100 p-0.5">
                     {matchingTeam.leader?.imageUrl ? (
-                      <img src={matchingTeam.leader.imageUrl} alt="leader" className="h-full w-full object-cover rounded-[10px]" />
+                      <img
+                        src={matchingTeam.leader.imageUrl}
+                        alt="leader"
+                        className="h-full w-full object-cover rounded-[10px]"
+                      />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-primary-600 text-white font-bold rounded-[10px]">
                         {matchingTeam.leader?.firstName?.[0]}
@@ -120,24 +145,32 @@ export function JoinTeamFormContent({
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest leading-none mb-1">Team Leader</p>
+                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest leading-none mb-1">
+                      Team Leader
+                    </p>
                     <p className="text-sm font-bold text-neutral-800 truncate">
-                      {matchingTeam.leader?.firstName} {matchingTeam.leader?.lastName}
+                      {matchingTeam.leader?.firstName}{" "}
+                      {matchingTeam.leader?.lastName}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex flex-col justify-center p-3 rounded-2xl bg-white/60 border border-white shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Members</p>
+                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                      Members
+                    </p>
                     <span className="text-xs font-black text-primary-600">
-                      {(matchingTeam.members?.length ?? 0) + 1} / {matchingTeam.maxSize}
+                      {(matchingTeam.members?.length ?? 0) + 1} /{" "}
+                      {matchingTeam.maxSize}
                     </span>
                   </div>
                   <div className="h-1.5 w-full bg-primary-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary-600 rounded-full transition-all duration-500"
-                      style={{ width: `${((matchingTeam.members?.length || 1) / matchingTeam.maxSize) * 100}%` }}
+                      style={{
+                        width: `${((matchingTeam.members?.length || 1) / matchingTeam.maxSize) * 100}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -154,7 +187,11 @@ export function JoinTeamFormContent({
                       className="h-10 w-10 rounded-full border-2 border-white bg-white shadow-md ring-2 ring-primary-50 overflow-hidden"
                     >
                       {member.user?.imageUrl ? (
-                        <img src={member.user.imageUrl} alt="member" className="h-full w-full object-cover" />
+                        <img
+                          src={member.user.imageUrl}
+                          alt="member"
+                          className="h-full w-full object-cover"
+                        />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-primary-500 text-xs font-black text-white">
                           {member.user?.firstName?.[0] || "?"}
@@ -171,7 +208,9 @@ export function JoinTeamFormContent({
 
                 <div className="flex items-center gap-2 rounded-full bg-primary-600 px-4 py-2 text-white shadow-lg shadow-primary-200">
                   <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-xs font-black uppercase tracking-wider">Ready to Join</span>
+                  <span className="text-xs font-black uppercase tracking-wider">
+                    Ready to Join
+                  </span>
                 </div>
               </div>
             </div>
@@ -213,10 +252,13 @@ export function JoinTeamFormContent({
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ delay: index * 0.05 }}
-                        onClick={() => team.invitationCode && onJoinTeam(team.invitationCode)}
+                        onClick={() =>
+                          team.invitationCode && onJoinTeam(team.invitationCode)
+                        }
                         className={cn(
                           "group relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border bg-neutral-50/50 hover:bg-white hover:border-primary-300 hover:shadow-lg hover:shadow-primary-600/5 cursor-pointer transition-all duration-300",
-                          invitationCode === team.invitationCode && "border-primary-600 bg-primary-50 shadow-md ring-1 ring-primary-600"
+                          invitationCode === team.invitationCode &&
+                            "border-primary-600 bg-primary-50 shadow-md ring-1 ring-primary-600",
                         )}
                       >
                         <div className="flex items-center gap-4">
@@ -229,7 +271,10 @@ export function JoinTeamFormContent({
                             </span>
                             <div className="flex items-center gap-2 text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
                               <User className="h-3 w-3" />
-                              <span className="truncate">Led by {team.leader?.firstName} {team.leader?.lastName}</span>
+                              <span className="truncate">
+                                Led by {team.leader?.firstName}{" "}
+                                {team.leader?.lastName}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -239,7 +284,9 @@ export function JoinTeamFormContent({
                             <span className="text-[10px] font-black text-primary-600 uppercase tracking-tighter px-2 py-0.5 bg-primary-100 rounded-full">
                               {(team.members?.length ?? 0) + 1} / {team.maxSize}
                             </span>
-                            <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5 sm:hidden">Members</span>
+                            <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5 sm:hidden">
+                              Members
+                            </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Button
@@ -247,7 +294,10 @@ export function JoinTeamFormContent({
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8 rounded-full text-neutral-400 hover:text-primary-600 hover:bg-primary-50 transition-all sm:opacity-0 group-hover:opacity-100"
-                              onClick={(e) => team.invitationCode && handleCopyLink(e, team.invitationCode)}
+                              onClick={(e) =>
+                                team.invitationCode &&
+                                handleCopyLink(e, team.invitationCode)
+                              }
                               title="Copy registration link"
                             >
                               <LinkIcon className="h-4 w-4" />
@@ -306,9 +356,7 @@ export function JoinTeamFormContent({
         const isUpload = isUploadField(field.type, field.label);
         const raw = answers[field.id];
         const value =
-          typeof raw === "string" || typeof raw === "number"
-            ? String(raw)
-            : "";
+          typeof raw === "string" || typeof raw === "number" ? String(raw) : "";
 
         if (isUpload) {
           const uploadedFile = uploadedFiles?.[field.id];
@@ -316,10 +364,14 @@ export function JoinTeamFormContent({
             <div key={field.id} className="space-y-2">
               <RegistrationInputField
                 label={field.label}
-                placeholder={uploadedFile ? uploadedFile.name : (field.placeholder || "Upload document")}
+                placeholder={
+                  uploadedFile
+                    ? uploadedFile.name
+                    : field.placeholder || "Upload document"
+                }
                 value={uploadedFile ? uploadedFile.name : ""}
                 readOnly
-                onChange={() => { }}
+                onChange={() => {}}
                 required={field.required}
                 suffix={
                   <div className="flex items-center gap-2 pr-0.5 h-full">
@@ -335,7 +387,11 @@ export function JoinTeamFormContent({
                       variant="default"
                       className="h-10 px-4 rounded-full transition-colors"
                       disabled={isUploading}
-                      onClick={() => document.getElementById(`file-upload-join-${field.id}`)?.click()}
+                      onClick={() =>
+                        document
+                          .getElementById(`file-upload-join-${field.id}`)
+                          ?.click()
+                      }
                     >
                       <Upload className="h-4 w-4 text-white" />
                     </Button>
@@ -354,7 +410,9 @@ export function JoinTeamFormContent({
             <div key={field.id} className="space-y-2">
               <Label className="text-neutral-500 font-medium ml-1">
                 {field.label}
-                {field.required && <span className="text-red-500 ml-1 font-bold">*</span>}
+                {field.required && (
+                  <span className="text-red-500 ml-1 font-bold">*</span>
+                )}
               </Label>
               <Select
                 value={selectValue}
@@ -362,11 +420,19 @@ export function JoinTeamFormContent({
                 required={field.required}
               >
                 <SelectTrigger className="h-14 rounded-full border-neutral-400 bg-neutral-100 px-6 w-full text-base focus:ring-1 focus:ring-primary-600 focus:border-primary-600">
-                  <SelectValue placeholder={field.placeholder || `Select ${field.label.toLowerCase()}`} />
+                  <SelectValue
+                    placeholder={
+                      field.placeholder || `Select ${field.label.toLowerCase()}`
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border-neutral-200">
                   {optionList.map((opt) => (
-                    <SelectItem key={opt} value={opt} className="rounded-xl px-4 py-2 cursor-pointer hover:bg-neutral-100 focus:bg-neutral-100">
+                    <SelectItem
+                      key={opt}
+                      value={opt}
+                      className="rounded-xl px-4 py-2 cursor-pointer hover:bg-neutral-100 focus:bg-neutral-100"
+                    >
                       {opt.replace(/_/g, " ")}
                     </SelectItem>
                   ))}
@@ -380,11 +446,21 @@ export function JoinTeamFormContent({
           <RegistrationInputField
             key={field.id}
             label={field.label}
-            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+            placeholder={
+              field.placeholder || `Enter ${field.label.toLowerCase()}`
+            }
             value={value}
             onChange={(e) => onUpdateAnswer(field.id, e.target.value)}
             required={field.required}
-            type={field.type === "EMAIL" ? "email" : field.type === "PHONE_NO" ? "tel" : field.type === "NUMBER" ? "number" : "text"}
+            type={
+              field.type === "EMAIL"
+                ? "email"
+                : field.type === "PHONE_NO"
+                  ? "tel"
+                  : field.type === "NUMBER"
+                    ? "number"
+                    : "text"
+            }
           />
         );
       })}

@@ -19,7 +19,7 @@ export function TagSection({
   initialTags,
   trendingTags,
   onSave,
-  placeholder = "Search..."
+  placeholder = "Search...",
 }: TagSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedLocal, setSelectedLocal] = useState<string[]>(initialTags);
@@ -31,9 +31,11 @@ export function TagSection({
 
   // Suggested tags: filter from trendingTags
   const suggestions = useMemo(() => {
-    const filtered = trendingTags.filter(tag => {
+    const filtered = trendingTags.filter((tag) => {
       const isMatch = tag.toLowerCase().includes(searchQuery.toLowerCase());
-      const isAlreadySelected = selectedLocal.some(s => s.toLowerCase() === tag.toLowerCase());
+      const isAlreadySelected = selectedLocal.some(
+        (s) => s.toLowerCase() === tag.toLowerCase(),
+      );
       return isMatch && !isAlreadySelected;
     });
     return filtered.slice(0, 10);
@@ -44,14 +46,14 @@ export function TagSection({
       toast.error(`You can select up to 20 ${title.toLowerCase()} at max.`);
       return;
     }
-    if (!selectedLocal.some(s => s.toLowerCase() === tag.toLowerCase())) {
-      setSelectedLocal(prev => [...prev, tag]);
+    if (!selectedLocal.some((s) => s.toLowerCase() === tag.toLowerCase())) {
+      setSelectedLocal((prev) => [...prev, tag]);
     }
     setSearchQuery("");
   };
 
   const handleRemoveTag = (tag: string) => {
-    setSelectedLocal(prev => prev.filter(s => s !== tag));
+    setSelectedLocal((prev) => prev.filter((s) => s !== tag));
   };
 
   const handleOtherSubmit = () => {
@@ -62,12 +64,12 @@ export function TagSection({
       toast.error(`You can select up to 20 ${title.toLowerCase()} at max.`);
       return;
     }
-    
+
     if (val.length > 20) {
       setError("Max 20 characters");
       return;
     }
-    
+
     if (!/^[a-zA-Z0-9\s\+\#\-\.\/]+$/.test(val)) {
       setError("Invalid characters");
       return;
@@ -125,22 +127,26 @@ export function TagSection({
         <div className="space-y-3">
           <p className="text-sm text-[#8B6ED8] font-medium">Selected</p>
           <div className="flex flex-wrap gap-3">
-            {selectedLocal.length > 0 ? selectedLocal.map((item, index) => (
-              <div
-                key={`selected-${index}`}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#6B4EAB] text-white rounded-[20px] text-[15px] font-medium animate-in fade-in zoom-in duration-200"
-              >
-                {item}
-                {isEditing && (
-                  <button 
-                    onClick={() => handleRemoveTag(item)}
-                    className="flex items-center justify-center border border-white rounded-full w-4 h-4 hover:bg-white/20 transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-            )) : <span className="text-neutral-400 text-sm">None selected.</span>}
+            {selectedLocal.length > 0 ? (
+              selectedLocal.map((item, index) => (
+                <div
+                  key={`selected-${index}`}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-[#6B4EAB] text-white rounded-[20px] text-[15px] font-medium animate-in fade-in zoom-in duration-200"
+                >
+                  {item}
+                  {isEditing && (
+                    <button
+                      onClick={() => handleRemoveTag(item)}
+                      className="flex items-center justify-center border border-white rounded-full w-4 h-4 hover:bg-white/20 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              ))
+            ) : (
+              <span className="text-neutral-400 text-sm">None selected.</span>
+            )}
           </div>
         </div>
 
@@ -158,9 +164,11 @@ export function TagSection({
 
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <p className="text-sm text-[#8B6ED8] font-medium">Suggestions</p>
+                <p className="text-sm text-[#8B6ED8] font-medium">
+                  Suggestions
+                </p>
                 {!showOtherInput && (
-                  <button 
+                  <button
                     onClick={() => setShowOtherInput(true)}
                     className="text-sm text-[#6B4EAB] hover:underline flex items-center gap-1"
                   >
@@ -180,22 +188,26 @@ export function TagSection({
                         setOtherValue(e.target.value);
                         if (error) setError(null);
                       }}
-                      onKeyDown={(e) => e.key === 'Enter' && handleOtherSubmit()}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && handleOtherSubmit()
+                      }
                       containerClassName={cn(
                         "bg-white h-12 py-0",
-                        error ? "border-red-500" : "border-neutral-300"
+                        error ? "border-red-500" : "border-neutral-300",
                       )}
                       autoFocus
                     />
-                    {error && <p className="text-red-500 text-xs mt-1 ml-4">{error}</p>}
+                    {error && (
+                      <p className="text-red-500 text-xs mt-1 ml-4">{error}</p>
+                    )}
                   </div>
-                  <button 
+                  <button
                     onClick={handleOtherSubmit}
                     className="px-6 h-12 bg-[#6B4EAB] text-white rounded-[28px] font-medium hover:bg-[#5A3F91] transition-colors"
                   >
                     Add
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       setShowOtherInput(false);
                       setOtherValue("");
@@ -219,7 +231,9 @@ export function TagSection({
                   </button>
                 ))}
                 {suggestions.length === 0 && searchQuery && !showOtherInput && (
-                  <p className="text-neutral-400 text-sm italic">No matches found.</p>
+                  <p className="text-neutral-400 text-sm italic">
+                    No matches found.
+                  </p>
                 )}
               </div>
             </div>

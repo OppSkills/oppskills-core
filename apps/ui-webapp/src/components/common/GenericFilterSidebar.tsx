@@ -23,7 +23,9 @@ export interface FilterOptions {
 
 interface GenericFilterSidebarProps {
   filters: FilterState;
-  setFilters: (filters: FilterState | ((prev: FilterState) => FilterState)) => void;
+  setFilters: (
+    filters: FilterState | ((prev: FilterState) => FilterState),
+  ) => void;
   options?: FilterOptions; // Now optional as we use fixed filters mainly
   className?: string;
 }
@@ -36,7 +38,7 @@ export function GenericFilterSidebar({
   const handleCheckboxChange = (
     category: keyof Omit<FilterState, "search" | "sort">,
     value: string,
-    checked: boolean | string
+    checked: boolean | string,
   ) => {
     setFilters((prev) => {
       const current = prev[category] as string[];
@@ -49,10 +51,10 @@ export function GenericFilterSidebar({
       return { ...prev, [category]: updated };
     });
   };
-  
+
   const handleRadioChange = (
     category: keyof Omit<FilterState, "search" | "sort">,
-    value: string
+    value: string,
   ) => {
     setFilters((prev) => ({
       ...prev,
@@ -75,7 +77,7 @@ export function GenericFilterSidebar({
   const renderCheckboxGroup = (
     title: string,
     category: keyof Omit<FilterState, "search" | "sort">,
-    items: string[]
+    items: string[],
   ) => {
     return (
       <div className="space-y-2">
@@ -108,13 +110,16 @@ export function GenericFilterSidebar({
   const renderRadioGroup = (
     title: string,
     category: keyof Omit<FilterState, "search" | "sort">,
-    items: string[]
+    items: string[],
   ) => {
     const value = (filters[category] as string[])[0] || "";
     return (
       <div className="space-y-4">
         <h3 className="font-bold text-neutral-900">{title}</h3>
-        <RadioGroup value={value} onValueChange={(val) => handleRadioChange(category, val)}>
+        <RadioGroup
+          value={value}
+          onValueChange={(val) => handleRadioChange(category, val)}
+        >
           <div className="space-y-3">
             {items.map((item) => (
               <div key={item} className="flex items-center space-x-3">

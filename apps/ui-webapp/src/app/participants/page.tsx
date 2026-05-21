@@ -44,64 +44,66 @@ export default function HackathonList() {
       className="w-full"
       fallback={<CardListFallback className="mt-8" />}
     >
-    <div className="max-w-4xl mx-auto mt-8 space-y-6">
-      {hackathons.map((row) => {
-        const id = row.id;
-        const title = row.name ?? "Untitled Hackathon";
-        const description = row.description ?? "";
-        const startDate = row.startDate ?? "";
-        const endDate = row.endDate ?? "";
-        const mode = row.mode ?? "";
-        const ownerId = row.owner?.id ?? "";
+      <div className="max-w-4xl mx-auto mt-8 space-y-6">
+        {hackathons.map((row) => {
+          const id = row.id;
+          const title = row.name ?? "Untitled Hackathon";
+          const description = row.description ?? "";
+          const startDate = row.startDate ?? "";
+          const endDate = row.endDate ?? "";
+          const mode = row.mode ?? "";
+          const ownerId = row.owner?.id ?? "";
 
-        const isOwner = typeof userId === "string" && ownerId === userId;
+          const isOwner = typeof userId === "string" && ownerId === userId;
 
-        return (
-          <Card key={id} className="shadow-md border border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-2xl font-semibold">{title}</CardTitle>
-              <p className="text-sm text-muted-foreground">{description}</p>
-            </CardHeader>
+          return (
+            <Card key={id} className="shadow-md border border-gray-200">
+              <CardHeader>
+                <CardTitle className="text-2xl font-semibold">
+                  {title}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">{description}</p>
+              </CardHeader>
 
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="font-medium">Start:</span>
-                <span>{startDate ? formatDate(startDate) : "TBD"}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="font-medium">End:</span>
-                <span>{endDate ? formatDate(endDate) : "TBD"}</span>
-              </div>
-              {mode && (
-                <Badge variant="outline" className="capitalize">
-                  {mode.toLowerCase()}
-                </Badge>
-              )}
-              <div className="flex gap-2 pt-2">
-                {isOwner ? (
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleViewClick(id)}
-                  >
-                    Manage
-                  </Button>
-                ) : (
-                  <Button onClick={() => handleRegisterClick(id)}>
-                    Register
-                  </Button>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium">Start:</span>
+                  <span>{startDate ? formatDate(startDate) : "TBD"}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium">End:</span>
+                  <span>{endDate ? formatDate(endDate) : "TBD"}</span>
+                </div>
+                {mode && (
+                  <Badge variant="outline" className="capitalize">
+                    {mode.toLowerCase()}
+                  </Badge>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+                <div className="flex gap-2 pt-2">
+                  {isOwner ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleViewClick(id)}
+                    >
+                      Manage
+                    </Button>
+                  ) : (
+                    <Button onClick={() => handleRegisterClick(id)}>
+                      Register
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
 
-      {!isLoading && hackathons.length === 0 && (
-        <p className="text-center text-muted-foreground py-8">
-          No hackathons available at the moment.
-        </p>
-      )}
-    </div>
+        {!isLoading && hackathons.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">
+            No hackathons available at the moment.
+          </p>
+        )}
+      </div>
     </BoneyardSkeleton>
   );
 }

@@ -30,7 +30,6 @@ export default function LayoutProvider({
   if (isOnboarding) {
     return (
       <main className="min-h-screen bg-neutral-200">
-
         {children as any}
         <Toaster position="bottom-right" duration={5000} richColors />
       </main>
@@ -83,13 +82,12 @@ export default function LayoutProvider({
 
   // Sync state synchronously during render if the route type (main vs detail) changes.
   // This prevents the one-frame flicker where the sidebar remains collapsed when navigating back to a main route.
-  const [prevHasSecondary, setPrevHasSecondary] = React.useState(hasSecondarySidebar);
+  const [prevHasSecondary, setPrevHasSecondary] =
+    React.useState(hasSecondarySidebar);
   if (hasSecondarySidebar !== prevHasSecondary) {
     setPrevHasSecondary(hasSecondarySidebar);
     setMainSidebarOpen(!hasSecondarySidebar);
   }
-
-
 
   // Mobile sidebar state management
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -100,7 +98,6 @@ export default function LayoutProvider({
   // Dashboard or Profile layout with dual-sidebar support
   if (isDashboard || isProfile) {
     return (
-
       <MobileNavigationProvider
         value={{
           mobileMenuOpen,
@@ -131,9 +128,7 @@ export default function LayoutProvider({
               if (open) setActiveMobileTab("main");
             }}
           >
-            <AppSidebar 
-              variant="sidebar" 
-            />
+            <AppSidebar variant="sidebar" />
 
             {/* Secondary sidebar - only visible on specific detailed pages */}
             {hasSecondarySidebar ? (
@@ -150,10 +145,12 @@ export default function LayoutProvider({
                     side="left"
                     variant="sidebar"
                     collapsible="icon"
-                    style={{
-                      "--sidebar-width": "12rem",
-                      left: "64px",
-                    } as React.CSSProperties}
+                    style={
+                      {
+                        "--sidebar-width": "12rem",
+                        left: "64px",
+                      } as React.CSSProperties
+                    }
                   />
                 )}
                 {isEventsDashboard && eventsSlug && (
@@ -162,10 +159,12 @@ export default function LayoutProvider({
                     side="left"
                     variant="sidebar"
                     collapsible="icon"
-                    style={{
-                      "--sidebar-width": "12rem",
-                      left: "64px",
-                    } as React.CSSProperties}
+                    style={
+                      {
+                        "--sidebar-width": "12rem",
+                        left: "64px",
+                      } as React.CSSProperties
+                    }
                   />
                 )}
                 {isFestivalsDashboard && festivalsSlug && (
@@ -174,29 +173,29 @@ export default function LayoutProvider({
                     side="left"
                     variant="sidebar"
                     collapsible="icon"
-                    style={{
-                      "--sidebar-width": "12rem",
-                      left: "64px",
-                    } as React.CSSProperties}
+                    style={
+                      {
+                        "--sidebar-width": "12rem",
+                        left: "64px",
+                      } as React.CSSProperties
+                    }
                   />
                 )}
                 <SidebarInset
                   className={cn("bg-background overflow-hidden h-svh")}
                 >
                   <SiteHeader />
-                  <div
-                    className="flex-1 flex min-h-0 overflow-y-auto w-full min-w-0 bg-background"
-                  >
-
+                  <div className="flex-1 flex min-h-0 overflow-y-auto w-full min-w-0 bg-background">
                     {children as any}
                   </div>
                 </SidebarInset>
               </SidebarContextProvider>
             ) : (
-              <SidebarInset className={cn("bg-background overflow-hidden h-svh")}>
+              <SidebarInset
+                className={cn("bg-background overflow-hidden h-svh")}
+              >
                 <SiteHeader />
                 <div className="flex flex-1 overflow-y-auto w-full min-w-0 bg-background">
-
                   {children as any}
                 </div>
               </SidebarInset>

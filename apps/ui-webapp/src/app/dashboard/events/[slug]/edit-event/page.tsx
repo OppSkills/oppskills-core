@@ -19,7 +19,9 @@ import { format } from "date-fns";
 import InputBlock from "@/components/ui/derived/InputBlock";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
 import { cn, normalizeUrl, isValidUrl } from "@/lib/utils";
-import RegistrationQuestionsModal, { RegistrationQuestion } from "@/components/ui/hackathon/RegistrationQuestionsModal";
+import RegistrationQuestionsModal, {
+  RegistrationQuestion,
+} from "@/components/ui/hackathon/RegistrationQuestionsModal";
 import BasicDetails from "./_components/BasicDetails";
 import RegistrationSettings from "./_components/RegistrationSettings";
 import AdditionalInfo from "./_components/AdditionalInfo";
@@ -52,10 +54,7 @@ const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
   { ssr: false },
 );
-import type {
-  UpdateEventDto,
-  EventLocationDto,
-} from "@oppskills/types";
+import type { UpdateEventDto, EventLocationDto } from "@oppskills/types";
 import {
   updateEvent,
   updateEventAdditionalInfo,
@@ -65,7 +64,15 @@ import {
 import { EventPreview } from "./_components/EventPreview";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
-import { CheckCircle, ClockCircle, Cup, DocumentText, MapPoint, Pen, UserCircle } from "@solar-icons/react";
+import {
+  CheckCircle,
+  ClockCircle,
+  Cup,
+  DocumentText,
+  MapPoint,
+  Pen,
+  UserCircle,
+} from "@solar-icons/react";
 
 // Types
 export interface RegistrationSettingsData {
@@ -120,7 +127,11 @@ export interface PassSettingsData {
   collegeRestrictionEnabled: boolean;
   allowedCollegeIds: string[];
   allowedEmailDomains: string[];
-  collegeMatchMode: "PROFILE_ONLY" | "EMAIL_ONLY" | "EITHER_OR" | "BOTH_REQUIRED";
+  collegeMatchMode:
+    | "PROFILE_ONLY"
+    | "EMAIL_ONLY"
+    | "EITHER_OR"
+    | "BOTH_REQUIRED";
 }
 
 export interface FormData {
@@ -249,8 +260,8 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
   const location = locationVirtualLink
     ? locationVirtualLink
     : [locationAddress, locationCity]
-      .filter((v): v is string => typeof v === "string")
-      .join(", ");
+        .filter((v): v is string => typeof v === "string")
+        .join(", ");
 
   // Map visibility from backend
   const visibilityRaw = getString(event, "visibility");
@@ -296,47 +307,47 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
   const contacts: Contact[] =
     contactName || contactEmail || contactPhone
       ? [
-        {
-          id: "primary",
-          name: contactName ?? "",
-          email: contactEmail ?? "",
-          phone: contactPhone ?? "",
-        },
-      ]
+          {
+            id: "primary",
+            name: contactName ?? "",
+            email: contactEmail ?? "",
+            phone: contactPhone ?? "",
+          },
+        ]
       : [];
 
   // Map attachments from backend
   const attachmentsRaw = event["attachments"];
   const attachments: Attachment[] = Array.isArray(attachmentsRaw)
     ? attachmentsRaw
-      .filter((a): a is Record<string, unknown> => isRecord(a))
-      .map((a) => ({
-        id: getString(a, "id") ?? crypto.randomUUID(),
-        title: getString(a, "fileName") ?? "Attachment",
-        type: getString(a, "mimeType") ?? "file",
-        url: getString(a, "publicUrl"),
-        size: typeof a["sizeBytes"] === "number" ? a["sizeBytes"] : undefined,
-        storageKey: getString(a, "storageKey") ?? undefined,
-      }))
+        .filter((a): a is Record<string, unknown> => isRecord(a))
+        .map((a) => ({
+          id: getString(a, "id") ?? crypto.randomUUID(),
+          title: getString(a, "fileName") ?? "Attachment",
+          type: getString(a, "mimeType") ?? "file",
+          url: getString(a, "publicUrl"),
+          size: typeof a["sizeBytes"] === "number" ? a["sizeBytes"] : undefined,
+          storageKey: getString(a, "storageKey") ?? undefined,
+        }))
     : [];
 
   // Map prizes from backend
   const prizeBreakdownRaw = event["prizeBreakdown"];
   const prizeList: Prize[] = Array.isArray(prizeBreakdownRaw)
     ? prizeBreakdownRaw
-      .filter((p): p is Record<string, unknown> => isRecord(p))
-      .map((p) => ({
-        id: getString(p, "id") ?? crypto.randomUUID(),
-        name: getString(p, "position") ?? "Winner",
-        amount: getString(p, "amount") ?? "0",
-        description: getString(p, "description") ?? "",
-      }))
+        .filter((p): p is Record<string, unknown> => isRecord(p))
+        .map((p) => ({
+          id: getString(p, "id") ?? crypto.randomUUID(),
+          name: getString(p, "position") ?? "Winner",
+          amount: getString(p, "amount") ?? "0",
+          description: getString(p, "description") ?? "",
+        }))
     : [];
 
   const prizeDescriptionRaw = event["prizeDescription"];
   const prizeDescription =
     isRecord(prizeDescriptionRaw) &&
-      typeof prizeDescriptionRaw["summary"] === "string"
+    typeof prizeDescriptionRaw["summary"] === "string"
       ? prizeDescriptionRaw["summary"]
       : typeof prizeDescriptionRaw === "string"
         ? prizeDescriptionRaw
@@ -367,23 +378,23 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
 
   const registrationQuestions: RegistrationQuestion[] = Array.isArray(fieldsRaw)
     ? fieldsRaw
-      .filter((f): f is Record<string, unknown> => isRecord(f))
-      .map((f, idx) => {
-        const label = getString(f, "label") ?? "";
-        const isFixed = fixedLabels.includes(label);
-        return {
-          id:
-            getString(f, "id") ??
-            (isFixed ? `fixed-${idx}` : `custom-${idx}-${Date.now()}`),
-          label,
-          type: backToUiTypeMap[getString(f, "type") ?? "TEXT"] ?? "Text",
-          required: typeof f["required"] === "boolean" ? f["required"] : true,
-          fixed: isFixed,
-          options: Array.isArray(f["options"])
-            ? f["options"].filter((o): o is string => typeof o === "string")
-            : undefined,
-        };
-      })
+        .filter((f): f is Record<string, unknown> => isRecord(f))
+        .map((f, idx) => {
+          const label = getString(f, "label") ?? "";
+          const isFixed = fixedLabels.includes(label);
+          return {
+            id:
+              getString(f, "id") ??
+              (isFixed ? `fixed-${idx}` : `custom-${idx}-${Date.now()}`),
+            label,
+            type: backToUiTypeMap[getString(f, "type") ?? "TEXT"] ?? "Text",
+            required: typeof f["required"] === "boolean" ? f["required"] : true,
+            fixed: isFixed,
+            options: Array.isArray(f["options"])
+              ? f["options"].filter((o): o is string => typeof o === "string")
+              : undefined,
+          };
+        })
     : [];
 
   return {
@@ -430,13 +441,13 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
           : false,
       allowedCollegeIds: Array.isArray(event["allowedCollegeIds"])
         ? event["allowedCollegeIds"].filter(
-          (id): id is string => typeof id === "string"
-        )
+            (id): id is string => typeof id === "string",
+          )
         : [],
       allowedEmailDomains: Array.isArray(event["allowedEmailDomains"])
         ? event["allowedEmailDomains"].filter(
-          (d): d is string => typeof d === "string"
-        )
+            (d): d is string => typeof d === "string",
+          )
         : [],
       collegeMatchMode:
         (getString(event, "collegeMatchMode") as
@@ -633,9 +644,10 @@ export default function EditEventPage() {
         Freshers: "FRESHERS",
         Professionals: "PROFESSIONALS",
       };
-      const attendeeEligibility = currentFormData.registrationSettings.candidateTypes
-        .map((t) => candidateTypeMap[t])
-        .filter((v): v is string => typeof v === "string");
+      const attendeeEligibility =
+        currentFormData.registrationSettings.candidateTypes
+          .map((t) => candidateTypeMap[t])
+          .filter((v): v is string => typeof v === "string");
 
       const payload: UpdateEventDto = {
         name:
@@ -647,23 +659,26 @@ export default function EditEventPage() {
             ? currentFormData.eventDescription
             : undefined,
         bannerImageUrl:
-          currentFormData.eventThumbnail && currentFormData.eventThumbnail.trim().length > 0
+          currentFormData.eventThumbnail &&
+          currentFormData.eventThumbnail.trim().length > 0
             ? normalizeUrl(currentFormData.eventThumbnail)
             : undefined,
         location: toLocationDto(currentFormData.eventLocation),
         registrationDeadline: (() => {
           const deadlineDate =
-            currentFormData.registrationSettings.endDate ?? currentFormData.eventRegisterBy;
+            currentFormData.registrationSettings.endDate ??
+            currentFormData.eventRegisterBy;
           return deadlineDate
             ? combineDateAndTimeToIso(
-              deadlineDate,
-              currentFormData.registrationSettings.endTime,
-            )
+                deadlineDate,
+                currentFormData.registrationSettings.endTime,
+              )
             : undefined;
         })(),
         startDate: (() => {
           const start =
-            currentFormData.registrationSettings.eventDate ?? currentFormData.eventDate;
+            currentFormData.registrationSettings.eventDate ??
+            currentFormData.eventDate;
           const time =
             currentFormData.registrationSettings.eventTime.trim().length > 0
               ? currentFormData.registrationSettings.eventTime
@@ -672,7 +687,8 @@ export default function EditEventPage() {
         })(),
         endDate: (() => {
           const start =
-            currentFormData.registrationSettings.eventDate ?? currentFormData.eventDate;
+            currentFormData.registrationSettings.eventDate ??
+            currentFormData.eventDate;
           const time =
             currentFormData.registrationSettings.eventTime.trim().length > 0
               ? currentFormData.registrationSettings.eventTime
@@ -713,7 +729,8 @@ export default function EditEventPage() {
         prizeCertificate: currentFormData.prizes.certificateProvided ?? false,
         // Pass Settings
         passSendingMode: currentFormData.passSettings.passSendingMode,
-        collegeRestrictionEnabled: currentFormData.passSettings.collegeRestrictionEnabled,
+        collegeRestrictionEnabled:
+          currentFormData.passSettings.collegeRestrictionEnabled,
         allowedCollegeIds: currentFormData.passSettings.allowedCollegeIds,
         allowedEmailDomains: currentFormData.passSettings.allowedEmailDomains,
         collegeMatchMode: currentFormData.passSettings.collegeMatchMode,
@@ -731,19 +748,21 @@ export default function EditEventPage() {
         const primaryContact = currentFormData.additionalInfo.contacts[0];
         const contact = primaryContact
           ? {
-            name: primaryContact.name || undefined,
-            email: primaryContact.email || undefined,
-            phone: primaryContact.phone || undefined,
-          }
+              name: primaryContact.name || undefined,
+              email: primaryContact.email || undefined,
+              phone: primaryContact.phone || undefined,
+            }
           : undefined;
 
-        const attachments = currentFormData.additionalInfo.attachments.map((a) => ({
-          storageKey: a.storageKey ?? a.id,
-          publicUrl: a.url,
-          fileName: a.title,
-          mimeType: a.mimeType || a.type,
-          sizeBytes: a.size,
-        }));
+        const attachments = currentFormData.additionalInfo.attachments.map(
+          (a) => ({
+            storageKey: a.storageKey ?? a.id,
+            publicUrl: a.url,
+            fileName: a.title,
+            mimeType: a.mimeType || a.type,
+            sizeBytes: a.size,
+          }),
+        );
 
         await updateEventAdditionalInfo(token, eventId, {
           additionalInfo: {
@@ -751,8 +770,7 @@ export default function EditEventPage() {
             attachments,
           },
         });
-        savingAdditionalInfoSnapshotRef.current =
-          currentAdditionalInfoSnapshot;
+        savingAdditionalInfoSnapshotRef.current = currentAdditionalInfoSnapshot;
       }
 
       const currentPrizesSnapshot = serializePrizes(currentFormData.prizes);
@@ -938,9 +956,6 @@ export default function EditEventPage() {
   // UI HELPERS
   // ============================================================================
 
-
-
-
   if (isLoadingEvent) {
     return (
       <div className="w-full flex flex-col items-center p-6 gap-6 bg-background">
@@ -964,7 +979,10 @@ export default function EditEventPage() {
   const isCompletedOrCancelled =
     eventStatus === "COMPLETED" || eventStatus === "CANCELLED";
 
-  const registrationCount = eventRaw && typeof (eventRaw as any).registrationCount === "number" ? (eventRaw as any).registrationCount : 0;
+  const registrationCount =
+    eventRaw && typeof (eventRaw as any).registrationCount === "number"
+      ? (eventRaw as any).registrationCount
+      : 0;
   const isRegistrationStarted = registrationCount > 0;
 
   return (
@@ -977,8 +995,8 @@ export default function EditEventPage() {
               Editing disabled
             </span>
             <span className="text-xs text-amber-600">
-              This event is {eventStatus.toLowerCase()}. Content can no longer be
-              edited.
+              This event is {eventStatus.toLowerCase()}. Content can no longer
+              be edited.
             </span>
           </div>
         </div>
@@ -1025,7 +1043,8 @@ export default function EditEventPage() {
             <div className="text-sm font-bold poppins text-neutral-400 shrink-0">
               {autoSaveStatus === "saving" ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-primary-600" /> Saving...
+                  <Loader2 className="w-4 h-4 animate-spin text-primary-600" />{" "}
+                  Saving...
                 </span>
               ) : autoSaveStatus === "error" ? (
                 <span className="text-red-500">Save failed</span>
@@ -1036,7 +1055,10 @@ export default function EditEventPage() {
             <div className="flex-1 h-px bg-neutral-200" />
             <div className="text-sm font-medium poppins text-neutral-500 shrink-0">
               {typeof lastSavedAtRef.current === "number"
-                ? format(new Date(lastSavedAtRef.current), "do MMMM yyyy, hh:mm a")
+                ? format(
+                    new Date(lastSavedAtRef.current),
+                    "do MMMM yyyy, hh:mm a",
+                  )
                 : "Awaiting changes..."}
             </div>
           </div>
@@ -1049,7 +1071,9 @@ export default function EditEventPage() {
           <BasicDetails
             formData={formData}
             setFormData={setFormData}
-            registrationFormLocked={isCompletedOrCancelled || isRegistrationStarted}
+            registrationFormLocked={
+              isCompletedOrCancelled || isRegistrationStarted
+            }
             triggerSave={runSaveMutation}
           />
         )}

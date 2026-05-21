@@ -24,18 +24,25 @@ export function ProfileInput({
 }: ProfileInputProps) {
   return (
     <div className={cn(label ? "space-y-2" : "", className)}>
-      {label && <label className="text-sm font-medium text-neutral-400">{label}</label>}
+      {label && (
+        <label className="text-sm font-medium text-neutral-400">{label}</label>
+      )}
       <div
         className={cn(
           "w-full border rounded-[28px] px-6 py-4 flex items-center justify-between transition-colors",
           isSelect && !props.disabled ? "cursor-pointer" : "",
-          props.disabled 
-            ? "bg-neutral-50 border-transparent" 
-            : containerClassName || "bg-[#f2f2f2] border-neutral-300"
+          props.disabled
+            ? "bg-neutral-50 border-transparent"
+            : containerClassName || "bg-[#f2f2f2] border-neutral-300",
         )}
       >
         {isSelect ? (
-          <span className={cn("text-lg", props.disabled ? "text-neutral-500" : "text-neutral-700")}>
+          <span
+            className={cn(
+              "text-lg",
+              props.disabled ? "text-neutral-500" : "text-neutral-700",
+            )}
+          >
             {value || defaultValue || placeholder}
           </span>
         ) : (

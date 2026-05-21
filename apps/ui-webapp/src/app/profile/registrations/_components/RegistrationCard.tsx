@@ -42,9 +42,15 @@ export function RegistrationCard({ registration }: RegistrationCardProps) {
                 {[
                   { title: "Registered On", value: registration.registeredOn },
                   { title: "By", value: registration.registeredBy },
-                  { title: "Team Name", value: registration.teamName }
+                  { title: "Team Name", value: registration.teamName },
                 ].map((item, i, arr) => (
-                  <div key={i} className={cn("flex items-center min-w-0", i === 2 && "hidden lg:flex")}>
+                  <div
+                    key={i}
+                    className={cn(
+                      "flex items-center min-w-0",
+                      i === 2 && "hidden lg:flex",
+                    )}
+                  >
                     <p className="text-neutral-700 font-medium text-xs truncate">
                       {item.title}:{" "}
                       <span className="text-neutral-600 font-normal">
@@ -54,7 +60,12 @@ export function RegistrationCard({ registration }: RegistrationCardProps) {
 
                     {/* Divider */}
                     {i < arr.length - 1 && (
-                      <div className={cn("mx-2 w-px h-3 bg-neutral-500 shrink-0", i === 1 && "hidden lg:block")} />
+                      <div
+                        className={cn(
+                          "mx-2 w-px h-3 bg-neutral-500 shrink-0",
+                          i === 1 && "hidden lg:block",
+                        )}
+                      />
                     )}
                   </div>
                 ))}
@@ -62,26 +73,30 @@ export function RegistrationCard({ registration }: RegistrationCardProps) {
 
               {/* Second Line (Deadline) */}
               <div className="mt-1 flex items-center max-w-full overflow-hidden">
-                {
-                  [
-                    { title: "Team Name", value: registration.teamName },
-                    { title: "Deadline", value: registration.deadline }
-                  ].map((item, i, arr) => (
-                    <div key={i} className={cn("items-center min-w-0", i === 0 && "flex lg:hidden")}>
-                      <p className="text-neutral-700 font-medium text-xs truncate">
-                        {item.title}:{" "}
-                        <span className="text-neutral-600 font-normal">
-                          {item.value}
-                        </span>
-                      </p>
+                {[
+                  { title: "Team Name", value: registration.teamName },
+                  { title: "Deadline", value: registration.deadline },
+                ].map((item, i, arr) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "items-center min-w-0",
+                      i === 0 && "flex lg:hidden",
+                    )}
+                  >
+                    <p className="text-neutral-700 font-medium text-xs truncate">
+                      {item.title}:{" "}
+                      <span className="text-neutral-600 font-normal">
+                        {item.value}
+                      </span>
+                    </p>
 
-                      {/* Divider */}
-                      {i < arr.length - 1 && (
-                        <div className="mx-2 w-px h-3 bg-neutral-500 shrink-0" />
-                      )}
-                    </div>
-                  ))
-                }
+                    {/* Divider */}
+                    {i < arr.length - 1 && (
+                      <div className="mx-2 w-px h-3 bg-neutral-500 shrink-0" />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

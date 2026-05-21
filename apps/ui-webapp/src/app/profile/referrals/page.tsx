@@ -28,7 +28,11 @@ import { Button } from "@/components/ui/button";
 
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
-import { getMyReferralPerformance, getMyReferredUsers, ReferralPerformanceItem } from "@/lib/api/referralApi";
+import {
+  getMyReferralPerformance,
+  getMyReferredUsers,
+  ReferralPerformanceItem,
+} from "@/lib/api/referralApi";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -41,9 +45,16 @@ const columnHelper = createColumnHelper<ReferralPerformanceItem>();
 
 export default function ReferralsPage() {
   const { getToken, isLoaded: isAuthLoaded } = useAuth();
-  const [selectedReferral, setSelectedReferral] = useState<{ id: string; title: string } | null>(null);
+  const [selectedReferral, setSelectedReferral] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
-  const { data: performanceData, isLoading, error } = useQuery({
+  const {
+    data: performanceData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["my-referral-performance"],
     enabled: isAuthLoaded,
     queryFn: async () => {
@@ -61,7 +72,9 @@ export default function ReferralsPage() {
       header: () => <div className="text-center w-full">S. No.</div>,
       cell: (info) => (
         <div className="text-center w-full">
-          <span className="text-neutral-500 font-medium">{info.row.index + 1}</span>
+          <span className="text-neutral-500 font-medium">
+            {info.row.index + 1}
+          </span>
         </div>
       ),
     }),
@@ -73,14 +86,20 @@ export default function ReferralsPage() {
       ),
       cell: (info) => {
         const row = info.row.original;
-        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+        const baseUrl =
+          typeof window !== "undefined" ? window.location.origin : "";
         const referralLink = `${baseUrl}/r/${row.code}`;
 
         return (
           <div className="flex items-center gap-4">
             <div className="relative w-20 h-12 rounded-lg overflow-hidden shrink-0 border border-neutral-200 bg-neutral-100 shadow-sm">
               {row.thumbnail ? (
-                <Image src={row.thumbnail} alt={row.title} fill className="object-cover" />
+                <Image
+                  src={row.thumbnail}
+                  alt={row.title}
+                  fill
+                  className="object-cover"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
                   <span className="text-white font-bold opacity-20 text-xl select-none">
@@ -90,10 +109,16 @@ export default function ReferralsPage() {
               )}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="font-bold text-neutral-800 truncate">{row.title}</span>
-              <span className="text-xs text-neutral-500">{row.organization}</span>
+              <span className="font-bold text-neutral-800 truncate">
+                {row.title}
+              </span>
+              <span className="text-xs text-neutral-500">
+                {row.organization}
+              </span>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] text-primary-600 underline truncate max-w-[120px]">{referralLink}</span>
+                <span className="text-[10px] text-primary-600 underline truncate max-w-[120px]">
+                  {referralLink}
+                </span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -131,7 +156,9 @@ export default function ReferralsPage() {
             <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-md text-xs font-bold whitespace-nowrap">
               {row.clicks} Clicks
             </div>
-            <span className="text-[10px] text-neutral-400 mt-1">{row.clicksLast24h} in last 24 hrs</span>
+            <span className="text-[10px] text-neutral-400 mt-1">
+              {row.clicksLast24h} in last 24 hrs
+            </span>
           </div>
         );
       },
@@ -149,7 +176,9 @@ export default function ReferralsPage() {
             <div className="bg-pink-100 text-pink-600 px-3 py-1 rounded-md text-xs font-bold whitespace-nowrap">
               {row.registrations} Registrations
             </div>
-            <span className="text-[10px] text-neutral-400 mt-1">{row.registrationsLast24h} in last 24 hrs</span>
+            <span className="text-[10px] text-neutral-400 mt-1">
+              {row.registrationsLast24h} in last 24 hrs
+            </span>
           </div>
         );
       },
@@ -218,15 +247,34 @@ export default function ReferralsPage() {
     return (
       <div className="w-full h-[400px] flex flex-col items-center justify-center text-center gap-4 bg-white rounded-3xl border border-neutral-200">
         <div className="p-4 rounded-full bg-red-50 text-red-500">
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <svg
+            className="w-8 h-8"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
           </svg>
         </div>
         <div>
-          <h3 className="text-xl font-bold text-neutral-800">Failed to load referrals</h3>
-          <p className="text-neutral-500 mt-1">Please try refreshing the page or contact support if the issue persists.</p>
+          <h3 className="text-xl font-bold text-neutral-800">
+            Failed to load referrals
+          </h3>
+          <p className="text-neutral-500 mt-1">
+            Please try refreshing the page or contact support if the issue
+            persists.
+          </p>
         </div>
-        <Button onClick={() => window.location.reload()} variant="outline" className="rounded-full">
+        <Button
+          onClick={() => window.location.reload()}
+          variant="outline"
+          className="rounded-full"
+        >
           Try Again
         </Button>
       </div>
@@ -255,7 +303,10 @@ export default function ReferralsPage() {
           <Table className="min-w-[800px]">
             <TableHeader className="bg-[#2D1F47]">
               {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                <TableRow
+                  key={headerGroup.id}
+                  className="hover:bg-transparent border-none"
+                >
                   {headerGroup.headers.map((header) => (
                     <TableHead
                       key={header.id}
@@ -264,9 +315,9 @@ export default function ReferralsPage() {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -277,20 +328,32 @@ export default function ReferralsPage() {
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    onClick={() => setSelectedReferral({ id: row.original.id, title: row.original.title })}
+                    onClick={() =>
+                      setSelectedReferral({
+                        id: row.original.id,
+                        title: row.original.title,
+                      })
+                    }
                     className="hover:bg-neutral-50 border-b border-neutral-100 last:border-none transition-all cursor-pointer group"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className="py-4 first:pl-8">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-32 text-center text-neutral-500">
-                    No referrals found. Start sharing opportunities to see them here!
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-32 text-center text-neutral-500"
+                  >
+                    No referrals found. Start sharing opportunities to see them
+                    here!
                   </TableCell>
                 </TableRow>
               )}

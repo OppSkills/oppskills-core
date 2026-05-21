@@ -28,8 +28,7 @@ function formatPriceLine(
   feeBearer: "ORGANISER" | "PARTICIPANT" | undefined,
 ): string {
   if (base <= 0) return "Free";
-  const fee =
-    feeBearer === "PARTICIPANT" ? participantProcessingFee(base) : 0;
+  const fee = feeBearer === "PARTICIPANT" ? participantProcessingFee(base) : 0;
   if (feeBearer === "PARTICIPANT" && fee > 0) {
     return `₹${base.toLocaleString("en-IN", { maximumFractionDigits: 2 })} + ₹${fee.toFixed(2)}`;
   }

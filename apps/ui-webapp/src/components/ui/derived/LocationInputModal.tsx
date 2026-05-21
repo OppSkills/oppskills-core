@@ -31,7 +31,7 @@ interface LocationInputModalProps {
 /**
  * A reusable location input modal that allows toggling between
  * Physical (Offline) and Virtual (Online) locations.
- * 
+ *
  * Supports "OFFLINE:" and "VIRTUAL:" prefixes for internal state management,
  * and automatically detects URLs as virtual.
  */
@@ -55,17 +55,23 @@ export default function LocationInputModal({
   useEffect(() => {
     if (isOpen) {
       const loc = value || "";
-      const isVirtual = loc.startsWith("VIRTUAL:") || (!loc.startsWith("OFFLINE:") && isValidUrl(loc));
+      const isVirtual =
+        loc.startsWith("VIRTUAL:") ||
+        (!loc.startsWith("OFFLINE:") && isValidUrl(loc));
       setTempMode(isVirtual ? "VIRTUAL" : "OFFLINE");
       setTempValue(
-        loc.startsWith("VIRTUAL:") ? loc.substring(8) : loc.startsWith("OFFLINE:") ? loc.substring(8) : loc
+        loc.startsWith("VIRTUAL:")
+          ? loc.substring(8)
+          : loc.startsWith("OFFLINE:")
+            ? loc.substring(8)
+            : loc,
       );
     }
   }, [isOpen, value]);
 
   const handleSave = () => {
     const trimmedVal = tempValue.trim();
-    
+
     if (tempMode === "VIRTUAL") {
       if (trimmedVal.length === 0) {
         toast.error("Virtual link cannot be empty.");
@@ -76,8 +82,8 @@ export default function LocationInputModal({
         return;
       }
     } else if (trimmedVal.length === 0) {
-        // We allow empty offline location if the user wants to clear it?
-        // Actually, most forms require it. But let's stay consistent with current behavior.
+      // We allow empty offline location if the user wants to clear it?
+      // Actually, most forms require it. But let's stay consistent with current behavior.
     }
 
     const prefix = tempMode === "VIRTUAL" ? "VIRTUAL:" : "OFFLINE:";
@@ -92,7 +98,7 @@ export default function LocationInputModal({
       : value.startsWith("VIRTUAL:")
         ? value.substring(8)
         : value
-    : (label || "Add Location");
+    : label || "Add Location";
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -112,7 +118,9 @@ export default function LocationInputModal({
       </DialogTrigger>
       <DialogContent className="sm:max-w-md bg-white border border-border rounded-xl p-6 shadow-lg animate-in fade-in zoom-in duration-200">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-foreground">{title}</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-foreground">
+            {title}
+          </DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-5 py-2">
           {/* Toggle Switch */}
@@ -124,7 +132,7 @@ export default function LocationInputModal({
                 "flex-1 py-2 text-sm font-semibold rounded-md transition-all",
                 tempMode === "OFFLINE"
                   ? "bg-white text-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-white/40"
+                  : "text-muted-foreground hover:bg-white/40",
               )}
             >
               Offline
@@ -136,7 +144,7 @@ export default function LocationInputModal({
                 "flex-1 py-2 text-sm font-semibold rounded-md transition-all",
                 tempMode === "VIRTUAL"
                   ? "bg-white text-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-white/40"
+                  : "text-muted-foreground hover:bg-white/40",
               )}
             >
               Virtual
@@ -146,7 +154,9 @@ export default function LocationInputModal({
           {/* Input Field */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-semibold text-foreground">
-              {tempMode === "VIRTUAL" ? "Virtual Meeting Link" : "Offline Venue Address"}
+              {tempMode === "VIRTUAL"
+                ? "Virtual Meeting Link"
+                : "Offline Venue Address"}
             </label>
             <input
               type="text"
@@ -159,7 +169,11 @@ export default function LocationInputModal({
                 }
               }}
               className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder={tempMode === "VIRTUAL" ? "e.g. https://zoom.us/j/..." : "e.g. Science City Auditorium, NY"}
+              placeholder={
+                tempMode === "VIRTUAL"
+                  ? "e.g. https://zoom.us/j/..."
+                  : "e.g. Science City Auditorium, NY"
+              }
               autoFocus
             />
           </div>

@@ -9,6 +9,7 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
 ## 1. Dashboard & Analytics
 
 ### Get Full Hackathon Context (`GET /hackathons/by-slug/:slug`)
+
 - **Usage:** Fetches the complete hackathon data, including all its configuration (rounds, prizes, forms).
 - **Returns:**
   ```json
@@ -27,15 +28,17 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
   ```
 
 ### Analytics
+
 - **General Stats:** `GET /analytics/hackathon/:slug/general`
   - Returns views, impressions, and total registration count.
 - **Detailed Trends:** `GET /analytics/hackathon/:slug/detailed`
   - Returns daily registration trends and demographics.
 
 ### React Native Example (TanStack Query)
+
 ```typescript
 const { data: hackathonDetails } = useQuery({
-  queryKey: ['hackathon', slug],
+  queryKey: ["hackathon", slug],
   queryFn: () => apiClient.request(`/hackathons/by-slug/${slug}`),
 });
 ```
@@ -45,6 +48,7 @@ const { data: hackathonDetails } = useQuery({
 ## 2. Manage Registrations & Teams
 
 ### View Teams
+
 - **List All Teams:** `GET /hackathons/by-slug/:slug/registrations`
   - **Returns:**
     ```json
@@ -62,6 +66,7 @@ const { data: hackathonDetails } = useQuery({
 - **Export Answers:** `GET /hackathons/by-slug/:slug/teams/:teamId/registration-answers`
 
 ### Qualify Teams for Rounds
+
 - **Qualify One Team:** `PUT /hackathons/by-slug/:slug/rounds/:roundId/teams/:teamId/qualification`
   - **Request Body:** `{ "qualified": true }`
   - **Returns:** `{ "success": true, "qualified": true }`
@@ -76,6 +81,7 @@ const { data: hackathonDetails } = useQuery({
   - **Returns:** `{ "success": true, "qualifiedCount": 2 }`
 
 ### Control Registration
+
 - **Pause Signups:** `PATCH /hackathons/:id/registration-paused`
   - **Request Body:** `{ "isRegistrationPaused": true }`
   - **Returns:** `{ "success": true, "isRegistrationPaused": true }`
@@ -85,6 +91,7 @@ const { data: hackathonDetails } = useQuery({
 ## 3. Edit Hackathon Configuration
 
 Update specific modules of the hackathon without resending the entire object.
+
 - **Basic Info:** `PUT /hackathons/:id`
   - **Request Body:**
     ```json
@@ -105,10 +112,12 @@ Update specific modules of the hackathon without resending the entire object.
 ## 4. Referrals & Roles
 
 ### Referrals
+
 - **List Campaigns:** `GET /referrals?opportunityId=...`
 - **Create Code:** `POST /referrals`
 
 ### Roles
+
 - **Manage Team:** `GET`, `POST`, `DELETE` at `/hackathons/:id/roles` (Assign co-managers or evaluators).
   - **Request Body (for POST):**
     ```json

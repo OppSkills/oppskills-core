@@ -29,10 +29,9 @@ export default function Auth({ onClose }: { onClose: () => void }) {
     authMode === "signup"
       ? "signup"
       : authMode === "forgot-password"
-      ? "forgot-password"
-      : "login";
+        ? "forgot-password"
+        : "login";
   const isSignUpOtpStep = currentMode === "signup" && registerStep === 2;
-
 
   const handleGoogleLogin = async () => {
     if (!isLoaded) return;
@@ -73,14 +72,10 @@ export default function Auth({ onClose }: { onClose: () => void }) {
         )}
 
         {/* Form Section */}
-        <div
-          className={`w-full md:w-[55%] h-full bg-background flex flex-col`}
-        >
+        <div className={`w-full md:w-[55%] h-full bg-background flex flex-col`}>
           <div className="flex-1 overflow-y-auto p-8">
             <div
-              className={`max-w-md mx-auto ${
-                isSignUpOtpStep ? "mt-12" : ""
-              }`}
+              className={`max-w-md mx-auto ${isSignUpOtpStep ? "mt-12" : ""}`}
             >
               {!isSignUpOtpStep && (
                 <>
@@ -89,15 +84,15 @@ export default function Auth({ onClose }: { onClose: () => void }) {
                       {currentMode === "login"
                         ? "Sign In"
                         : currentMode === "signup"
-                        ? "Sign Up"
-                        : "Reset Password"}
+                          ? "Sign Up"
+                          : "Reset Password"}
                     </h2>
                     <p className="text-neutral-700 py-2">
                       {currentMode === "login"
                         ? "Login to your account"
                         : currentMode === "signup"
-                        ? "Register now to take part in all the events"
-                        : "Enter your email to receive a reset code"}
+                          ? "Register now to take part in all the events"
+                          : "Enter your email to receive a reset code"}
                     </p>
                   </div>
                   {currentMode !== "forgot-password" && (
@@ -157,8 +152,8 @@ export default function Auth({ onClose }: { onClose: () => void }) {
                       </div>
                     </div>
                   )}
-                  </>
-                )}
+                </>
+              )}
 
               <div className={`container ${!isSignUpOtpStep ? "mt-4" : ""}`}>
                 {currentMode === "login" ? (

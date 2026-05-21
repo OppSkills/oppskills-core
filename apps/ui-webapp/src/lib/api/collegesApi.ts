@@ -9,7 +9,7 @@ const API = createApiClient("/colleges");
  */
 export async function searchColleges(
   token: string,
-  query: string
+  query: string,
 ): Promise<CollegeSearchResultDto[]> {
   const safeQuery = query.trim();
   if (safeQuery.length === 0) {
@@ -35,7 +35,7 @@ export async function searchColleges(
  */
 export async function getCollegesByIds(
   token: string,
-  ids: string[]
+  ids: string[],
 ): Promise<CollegeSearchResultDto[]> {
   if (ids.length === 0) {
     return [];

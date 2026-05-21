@@ -26,14 +26,14 @@ interface EducationData {
   cgpa: string | null;
 }
 
-export function EducationInfo({ data }: {
-  data: EducationData;
-}) {
+export function EducationInfo({ data }: { data: EducationData }) {
   const { getToken } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [collegeResults, setCollegeResults] = useState<{ id: string; name: string }[]>([]);
+  const [collegeResults, setCollegeResults] = useState<
+    { id: string; name: string }[]
+  >([]);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -51,14 +51,19 @@ export function EducationInfo({ data }: {
   const debouncedSearchTerm = useDebounce(formData.collegeName, 500);
 
   useEffect(() => {
-    if (debouncedSearchTerm && debouncedSearchTerm.length >= 2 && isEditing && !formData.collegeId) {
+    if (
+      debouncedSearchTerm &&
+      debouncedSearchTerm.length >= 2 &&
+      isEditing &&
+      !formData.collegeId
+    ) {
       const search = async () => {
         setIsSearching(true);
         try {
           const token = await getToken();
           if (!token) return;
           const results = await searchColleges(token, debouncedSearchTerm);
-          setCollegeResults(results.map(r => ({ id: r.id, name: r.name })));
+          setCollegeResults(results.map((r) => ({ id: r.id, name: r.name })));
           setShowResults(true);
         } catch (error) {
           console.error("Error searching colleges", error);
@@ -72,7 +77,17 @@ export function EducationInfo({ data }: {
     }
   }, [debouncedSearchTerm, isEditing, formData.collegeId, getToken]);
 
-  const COURSE_OPTIONS = ["BTech", "MTech", "BCA", "MCA", "BSc", "MSc", "BBA", "MBA", "PhD"];
+  const COURSE_OPTIONS = [
+    "BTech",
+    "MTech",
+    "BCA",
+    "MCA",
+    "BSc",
+    "MSc",
+    "BBA",
+    "MBA",
+    "PhD",
+  ];
   const SPECIALIZATION_OPTIONS = [
     "Computer Science Engg.",
     "Information Technology",
@@ -88,11 +103,16 @@ export function EducationInfo({ data }: {
   ];
 
   const currentYear = new Date().getFullYear();
-  const YEARS = Array.from({ length: 25 }, (_, i) => (currentYear - 10 + i).toString());
+  const YEARS = Array.from({ length: 25 }, (_, i) =>
+    (currentYear - 10 + i).toString(),
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         setShowResults(false);
       }
     };
@@ -142,7 +162,9 @@ export function EducationInfo({ data }: {
   return (
     <div className="bg-white p-6 lg:p-8 rounded-[32px] border border-neutral-200 shadow-sm relative w-full mt-6">
       <div className="flex justify-between items-start mb-6">
-        <h2 className="text-2xl font-semibold text-[#4A4A5A]">Education Info</h2>
+        <h2 className="text-2xl font-semibold text-[#4A4A5A]">
+          Education Info
+        </h2>
         <button
           onClick={handleSave}
           disabled={isSaving}
@@ -155,7 +177,9 @@ export function EducationInfo({ data }: {
           ) : (
             <Pencil className="w-4 h-4" />
           )}
-          <span className="font-medium text-sm">{isEditing ? "Save" : "Edit"}</span>
+          <span className="font-medium text-sm">
+            {isEditing ? "Save" : "Edit"}
+          </span>
         </button>
       </div>
 
@@ -168,7 +192,13 @@ export function EducationInfo({ data }: {
             onChange={(e) => handleCollegeChange(e.target.value)}
             disabled={!isEditing}
             placeholder="Search your college..."
-            icon={isEditing && isSearching ? <Loader2 className="w-5 h-5 animate-spin text-neutral-400" /> : <Search className="w-5 h-5 text-neutral-400" />}
+            icon={
+              isEditing && isSearching ? (
+                <Loader2 className="w-5 h-5 animate-spin text-neutral-400" />
+              ) : (
+                <Search className="w-5 h-5 text-neutral-400" />
+              )
+            }
           />
           {showResults && collegeResults.length > 0 && isEditing && (
             <div className="absolute z-50 w-full mt-1 bg-white border border-neutral-200 rounded-2xl shadow-lg max-h-60 overflow-y-auto">
@@ -177,7 +207,11 @@ export function EducationInfo({ data }: {
                   key={college.id}
                   className="w-full text-left px-6 py-3 hover:bg-neutral-50 transition-colors text-neutral-700"
                   onClick={() => {
-                    setFormData({ ...formData, collegeName: college.name, collegeId: college.id });
+                    setFormData({
+                      ...formData,
+                      collegeName: college.name,
+                      collegeId: college.id,
+                    });
                     setShowResults(false);
                   }}
                 >
@@ -191,20 +225,29 @@ export function EducationInfo({ data }: {
         {/* Course & Specialization */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-400">Course</label>
+            <label className="text-sm font-medium text-neutral-400">
+              Course
+            </label>
             <DropdownMenu>
               <DropdownMenuTrigger disabled={!isEditing} className="w-full">
                 <ProfileInput
                   value={formData.course || "Select Course"}
                   isSelect
-                  icon={isEditing ? <ChevronDown className="w-5 h-5 text-neutral-600" /> : undefined}
+                  icon={
+                    isEditing ? (
+                      <ChevronDown className="w-5 h-5 text-neutral-600" />
+                    ) : undefined
+                  }
                   disabled={!isEditing}
                   className="space-y-0"
                 />
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) max-h-60 overflow-y-auto">
                 {COURSE_OPTIONS.map((opt) => (
-                  <DropdownMenuItem key={opt} onClick={() => setFormData({ ...formData, course: opt })}>
+                  <DropdownMenuItem
+                    key={opt}
+                    onClick={() => setFormData({ ...formData, course: opt })}
+                  >
                     {opt}
                   </DropdownMenuItem>
                 ))}
@@ -213,20 +256,33 @@ export function EducationInfo({ data }: {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-400">Specialization</label>
+            <label className="text-sm font-medium text-neutral-400">
+              Specialization
+            </label>
             <DropdownMenu>
               <DropdownMenuTrigger disabled={!isEditing} className="w-full">
                 <ProfileInput
-                  value={formData.courseSpecialization || "Select Specialization"}
+                  value={
+                    formData.courseSpecialization || "Select Specialization"
+                  }
                   isSelect
-                  icon={isEditing ? <ChevronDown className="w-5 h-5 text-neutral-600" /> : undefined}
+                  icon={
+                    isEditing ? (
+                      <ChevronDown className="w-5 h-5 text-neutral-600" />
+                    ) : undefined
+                  }
                   disabled={!isEditing}
                   className="space-y-0"
                 />
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) max-h-60 overflow-y-auto">
                 {SPECIALIZATION_OPTIONS.map((opt) => (
-                  <DropdownMenuItem key={opt} onClick={() => setFormData({ ...formData, courseSpecialization: opt })}>
+                  <DropdownMenuItem
+                    key={opt}
+                    onClick={() =>
+                      setFormData({ ...formData, courseSpecialization: opt })
+                    }
+                  >
                     {opt}
                   </DropdownMenuItem>
                 ))}
@@ -238,20 +294,31 @@ export function EducationInfo({ data }: {
         {/* Start Year & End Year */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-400">Start Year</label>
+            <label className="text-sm font-medium text-neutral-400">
+              Start Year
+            </label>
             <DropdownMenu>
               <DropdownMenuTrigger disabled={!isEditing} className="w-full">
                 <ProfileInput
                   value={formData.startYear || "Select Year"}
                   isSelect
-                  icon={isEditing ? <ChevronDown className="w-5 h-5 text-neutral-600" /> : undefined}
+                  icon={
+                    isEditing ? (
+                      <ChevronDown className="w-5 h-5 text-neutral-600" />
+                    ) : undefined
+                  }
                   disabled={!isEditing}
                   className="space-y-0"
                 />
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) max-h-60 overflow-y-auto">
                 {YEARS.map((year) => (
-                  <DropdownMenuItem key={year} onClick={() => setFormData({ ...formData, startYear: year })}>
+                  <DropdownMenuItem
+                    key={year}
+                    onClick={() =>
+                      setFormData({ ...formData, startYear: year })
+                    }
+                  >
                     {year}
                   </DropdownMenuItem>
                 ))}
@@ -260,20 +327,31 @@ export function EducationInfo({ data }: {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-400">End Year</label>
+            <label className="text-sm font-medium text-neutral-400">
+              End Year
+            </label>
             <DropdownMenu>
               <DropdownMenuTrigger disabled={!isEditing} className="w-full">
                 <ProfileInput
                   value={formData.endYear?.toString() || "Select Year"}
                   isSelect
-                  icon={isEditing ? <ChevronDown className="w-5 h-5 text-neutral-600" /> : undefined}
+                  icon={
+                    isEditing ? (
+                      <ChevronDown className="w-5 h-5 text-neutral-600" />
+                    ) : undefined
+                  }
                   disabled={!isEditing}
                   className="space-y-0"
                 />
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) max-h-60 overflow-y-auto">
                 {YEARS.map((year) => (
-                  <DropdownMenuItem key={year} onClick={() => setFormData({ ...formData, endYear: Number(year) })}>
+                  <DropdownMenuItem
+                    key={year}
+                    onClick={() =>
+                      setFormData({ ...formData, endYear: Number(year) })
+                    }
+                  >
                     {year}
                   </DropdownMenuItem>
                 ))}
@@ -288,7 +366,9 @@ export function EducationInfo({ data }: {
             label="Roll Number"
             type="number"
             value={formData.rollNumber}
-            onChange={(e) => setFormData({ ...formData, rollNumber: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, rollNumber: e.target.value })
+            }
             disabled={!isEditing}
             placeholder="Enter numeric roll no"
           />

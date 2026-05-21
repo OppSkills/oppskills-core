@@ -100,29 +100,31 @@ export default function RegistrationQuestionsModal({
         options: ["Student", "Professional"],
       },
     ],
-    []
+    [],
   );
 
   const getCustomQuestions = (
-    input: RegistrationQuestion[] | undefined
+    input: RegistrationQuestion[] | undefined,
   ): RegistrationQuestion[] => {
     const list = Array.isArray(input) ? input : [];
-    
+
     // Create a set of lowercased labels from fixed questions to identify backend-populated static fields
-    const defaultLabels = new Set(defaultFixedQuestions.map((q) => q.label.toLowerCase()));
+    const defaultLabels = new Set(
+      defaultFixedQuestions.map((q) => q.label.toLowerCase()),
+    );
 
     return list.filter((q) => {
       // Ignore if explicitly marked fixed
       if (q.fixed) return false;
       // Also ignore if the label matches one of the default fixed questions (prevents duplication)
       if (defaultLabels.has(q.label.toLowerCase())) return false;
-      
+
       return true;
     });
   };
 
   const buildVisibleQuestions = (
-    custom: RegistrationQuestion[]
+    custom: RegistrationQuestion[],
   ): RegistrationQuestion[] => {
     return [...defaultFixedQuestions, ...custom];
   };
@@ -150,7 +152,7 @@ export default function RegistrationQuestionsModal({
   const initialNewQuestionType: QuestionType = "Text";
   const [newQuestionLabel, setNewQuestionLabel] = useState("");
   const [newQuestionType, setNewQuestionType] = useState<QuestionType>(
-    initialNewQuestionType
+    initialNewQuestionType,
   );
   const [newQuestionRequired, setNewQuestionRequired] =
     useState<boolean>(false);
@@ -197,7 +199,7 @@ export default function RegistrationQuestionsModal({
 
   const handleUpdateCustomQuestion = (
     id: string,
-    updates: Partial<RegistrationQuestion>
+    updates: Partial<RegistrationQuestion>,
   ) => {
     if (updates.type !== undefined && updates.type !== "Options") {
       setOptionDraftByQuestionId((prev) => {
@@ -216,7 +218,7 @@ export default function RegistrationQuestionsModal({
           next.options = [];
         }
         return next;
-      })
+      }),
     );
   };
 
@@ -229,7 +231,7 @@ export default function RegistrationQuestionsModal({
         const existing = Array.isArray(q.options) ? q.options : [];
         if (existing.includes(trimmed)) return q;
         return { ...q, options: [...existing, trimmed] };
-      })
+      }),
     );
     setOptionDraftByQuestionId((prev) => ({ ...prev, [questionId]: "" }));
   };
@@ -240,7 +242,7 @@ export default function RegistrationQuestionsModal({
         if (q.id !== questionId) return q;
         const existing = Array.isArray(q.options) ? q.options : [];
         return { ...q, options: existing.filter((o) => o !== option) };
-      })
+      }),
     );
   };
 
@@ -391,8 +393,8 @@ export default function RegistrationQuestionsModal({
                 {question.type === "Options" && (
                   <div className="pl-8 md:pl-8 mt-1 space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      Add each choice below, then press Enter or click Add. You can
-                      add as many options as you need.
+                      Add each choice below, then press Enter or click Add. You
+                      can add as many options as you need.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Input
@@ -421,7 +423,7 @@ export default function RegistrationQuestionsModal({
                         onClick={() =>
                           handleAddOption(
                             question.id,
-                            optionDraftByQuestionId[question.id] ?? ""
+                            optionDraftByQuestionId[question.id] ?? "",
                           )
                         }
                       >

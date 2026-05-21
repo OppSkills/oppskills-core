@@ -92,14 +92,16 @@ export function IncompleteRegistrationEmail({
           {/* Content */}
           <Section style={contentSection}>
             <Heading style={heading}>Hi {firstName || "there"} 👋</Heading>
-            <Heading style={subHeading}>Your Registration is Almost Complete!</Heading>
+            <Heading style={subHeading}>
+              Your Registration is Almost Complete!
+            </Heading>
 
             <Text style={paragraph}>
               {isFreeIncomplete ? (
                 <>
-                  You&apos;re on the list for <strong>{eventName}</strong>, but your
-                  registration form wasn&apos;t finished. We still need a few details
-                  from you.
+                  You&apos;re on the list for <strong>{eventName}</strong>, but
+                  your registration form wasn&apos;t finished. We still need a
+                  few details from you.
                 </>
               ) : (
                 <>
@@ -116,14 +118,14 @@ export function IncompleteRegistrationEmail({
               <Text style={alertText}>
                 {isFreeIncomplete ? (
                   <>
-                    Please complete your registration form to secure your spot. This is
-                    a <strong>free event</strong> — no payment required.
+                    Please complete your registration form to secure your spot.
+                    This is a <strong>free event</strong> — no payment required.
                   </>
                 ) : (
                   <>
                     Please complete your registration form to secure your spot.
-                    <strong> No additional payment is needed</strong> – just fill out the
-                    form!
+                    <strong> No additional payment is needed</strong> – just
+                    fill out the form!
                   </>
                 )}
               </Text>
@@ -189,7 +191,8 @@ export function IncompleteRegistrationEmail({
             </Section>
 
             <Text style={paragraph}>
-              Click the button below to complete your registration. It only takes a minute!
+              Click the button below to complete your registration. It only
+              takes a minute!
             </Text>
 
             <Section style={ctaSection}>
@@ -411,4 +414,3 @@ const linkStyle = {
   color: "#8c53dc",
   textDecoration: "underline",
 };
-

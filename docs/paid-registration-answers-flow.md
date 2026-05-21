@@ -19,11 +19,11 @@ The current design adds a **third, server-side copy** of the answers at **order 
 
 ## The three places answers can live (before they are “final”)
 
-| Layer | What it is | When it helps |
-|--------|------------|----------------|
-| **Browser (`localStorage`)** | A backup on the user’s device | Recovery if they return to the hackathon/event page within the TTL and your UI runs the recovery flow. |
-| **Server escrow (database)** | A row keyed by **Razorpay order id** with a JSON copy of answers | **Verify** can use it if the request body has no answers; **webhook** can trigger a server submit after capture. |
-| **Final registration tables** | Normal submission + answer rows | Source of truth for organizers and exports. |
+| Layer                         | What it is                                                       | When it helps                                                                                                    |
+| ----------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Browser (`localStorage`)**  | A backup on the user’s device                                    | Recovery if they return to the hackathon/event page within the TTL and your UI runs the recovery flow.           |
+| **Server escrow (database)**  | A row keyed by **Razorpay order id** with a JSON copy of answers | **Verify** can use it if the request body has no answers; **webhook** can trigger a server submit after capture. |
+| **Final registration tables** | Normal submission + answer rows                                  | Source of truth for organizers and exports.                                                                      |
 
 Nothing here **replaces** paying: escrow only stores answers **after** the user has already started checkout (create order). Charging is still entirely Razorpay + your payment rows.
 

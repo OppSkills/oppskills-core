@@ -151,6 +151,7 @@ apps/backend/
 **Location**: `/Users/harshit/Documents/freelance/oppskills-core/apps/backend/src/common/`
 
 **Exports**:
+
 - `ClerkAuthConfigService` - Environment configuration
 - `CacheService` - Redis caching
 - `AdminGuard` - Admin authorization
@@ -167,11 +168,12 @@ export class ClerkAuthConfigService {
   get redisHost(): string;
   get redisPort(): number;
   get redisPassword(): string;
-  get adminUserIds(): string[];  // Comma-separated Clerk user IDs
+  get adminUserIds(): string[]; // Comma-separated Clerk user IDs
 }
 ```
 
 **Key Configuration**:
+
 - Clerk authentication keys
 - Redis connection details
 - Admin user ID list
@@ -193,6 +195,7 @@ export class CacheService {
 ```
 
 **Features**:
+
 - Automatic reconnection on connection failure
 - Health check via periodic ping
 - Graceful degradation (logs warnings instead of crashing)
@@ -214,16 +217,17 @@ export class CacheService {
 
 ##### Endpoints
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/clerk-webhook` | None | Clerk webhook for user sync |
-| GET | `/search?q={query}` | Required | Search users by email |
+| Method | Path                | Auth     | Description                 |
+| ------ | ------------------- | -------- | --------------------------- |
+| POST   | `/clerk-webhook`    | None     | Clerk webhook for user sync |
+| GET    | `/search?q={query}` | Required | Search users by email       |
 
 ##### POST /clerk-webhook
 
 Handles Clerk webhook events for user synchronization.
 
 **Headers**:
+
 - `svix-id` - Webhook message ID
 - `svix-timestamp` - Webhook timestamp
 - `svix-signature` - HMAC signature for verification
@@ -231,11 +235,13 @@ Handles Clerk webhook events for user synchronization.
 **Request Body**: `ClerkWebhookRequestDto`
 
 **Supported Events**:
+
 - `user.created` - Creates new user in database
 - `user.updated` - Updates existing user
 - `user.deleted` - Deletes user from database
 
 **Example**:
+
 ```bash
 curl -X POST http://localhost:3001/user-accounts/clerk-webhook \
   -H "Content-Type: application/json" \
@@ -255,6 +261,7 @@ curl -X POST http://localhost:3001/user-accounts/clerk-webhook \
 ```
 
 **Security**:
+
 - Verifies webhook signature using HMAC SHA-256
 - Rejects requests with invalid signatures (401 Unauthorized)
 
@@ -263,11 +270,13 @@ curl -X POST http://localhost:3001/user-accounts/clerk-webhook \
 Search users by email for autocomplete/role assignment.
 
 **Query Parameters**:
+
 - `q` (required) - Search query (partial email, case-insensitive)
 
 **Response**: Array of matching users (max 10 results)
 
 **Example**:
+
 ```bash
 curl -X GET "http://localhost:3001/user-accounts/search?q=john" \
   -H "Authorization: Bearer <jwt-token>"
@@ -307,6 +316,7 @@ private async verifyWebhookSignature(
 ```
 
 **Business Logic**:
+
 - Ensures verified email before creating/updating users
 - Uses timing-safe comparison for signature verification
 - Returns up to 10 search results ordered by email
@@ -327,35 +337,35 @@ private async verifyWebhookSignature(
 
 ##### Core CRUD Endpoints
 
-| Method | Path | Description | Access |
-|--------|------|-------------|--------|
-| POST | `/` | Create hackathon (DRAFT) | Authenticated users |
-| GET | `/` | List all hackathons | All authenticated |
-| GET | `/my` | List my hackathons (owner/manager) | Authenticated users |
-| GET | `/:id` | Get hackathon by ID | All authenticated |
-| GET | `/by-slug/:slug` | Get hackathon by slug | All authenticated |
-| PUT | `/:id` | Update hackathon | Owner only |
-| DELETE | `/:id` | Delete hackathon | Owner only |
-| PATCH | `/:id/status` | Update lifecycle status | Owner only |
+| Method | Path             | Description                        | Access              |
+| ------ | ---------------- | ---------------------------------- | ------------------- |
+| POST   | `/`              | Create hackathon (DRAFT)           | Authenticated users |
+| GET    | `/`              | List all hackathons                | All authenticated   |
+| GET    | `/my`            | List my hackathons (owner/manager) | Authenticated users |
+| GET    | `/:id`           | Get hackathon by ID                | All authenticated   |
+| GET    | `/by-slug/:slug` | Get hackathon by slug              | All authenticated   |
+| PUT    | `/:id`           | Update hackathon                   | Owner only          |
+| DELETE | `/:id`           | Delete hackathon                   | Owner only          |
+| PATCH  | `/:id/status`    | Update lifecycle status            | Owner only          |
 
 ##### Nested Resource Endpoints
 
-| Method | Path | Description | Access |
-|--------|------|-------------|--------|
-| PUT | `/:id/rounds` | Replace all rounds | Owner only (DRAFT) |
-| PUT | `/:id/additional-info` | Update contact/attachments | Owner only (DRAFT) |
-| PUT | `/:id/registration-form` | Replace registration form | Owner only (DRAFT) |
-| PUT | `/:id/prize-breakdown` | Replace prize breakdown | Owner only (DRAFT) |
-| PUT | `/:id/max-teams` | Update max teams limit | Owner only (DRAFT) |
+| Method | Path                     | Description                | Access             |
+| ------ | ------------------------ | -------------------------- | ------------------ |
+| PUT    | `/:id/rounds`            | Replace all rounds         | Owner only (DRAFT) |
+| PUT    | `/:id/additional-info`   | Update contact/attachments | Owner only (DRAFT) |
+| PUT    | `/:id/registration-form` | Replace registration form  | Owner only (DRAFT) |
+| PUT    | `/:id/prize-breakdown`   | Replace prize breakdown    | Owner only (DRAFT) |
+| PUT    | `/:id/max-teams`         | Update max teams limit     | Owner only (DRAFT) |
 
 ##### Registration & Role Management
 
-| Method | Path | Description | Access |
-|--------|------|-------------|--------|
-| POST | `/:id/register` | Register for hackathon | Authenticated users |
-| GET | `/:id/roles` | Get all roles (owner/managers/evaluators) | All authenticated |
-| POST | `/:id/roles` | Add manager/evaluator | Owner/Admin only |
-| DELETE | `/:id/roles` | Remove manager/evaluator | Owner/Admin only |
+| Method | Path            | Description                               | Access              |
+| ------ | --------------- | ----------------------------------------- | ------------------- |
+| POST   | `/:id/register` | Register for hackathon                    | Authenticated users |
+| GET    | `/:id/roles`    | Get all roles (owner/managers/evaluators) | All authenticated   |
+| POST   | `/:id/roles`    | Add manager/evaluator                     | Owner/Admin only    |
+| DELETE | `/:id/roles`    | Remove manager/evaluator                  | Owner/Admin only    |
 
 ##### Example: Create Hackathon
 
@@ -384,6 +394,7 @@ curl -X POST http://localhost:3001/hackathons \
 ```
 
 **Response**:
+
 ```json
 {
   "message": "Hackathon created successfully (DRAFT).",
@@ -479,15 +490,15 @@ async removeHackathonRole(id: string, email: string, role: 'MANAGER' | 'EVALUATO
 
 ##### Endpoints
 
-| Method | Path | Description | Access |
-|--------|------|-------------|--------|
-| POST | `/` | Create festival | Authenticated users |
-| GET | `/` | List all festivals | All authenticated |
-| GET | `/:id` | Get festival by ID | All authenticated |
-| PUT | `/:id` | Update festival | Owner only |
-| DELETE | `/:id` | Delete festival | Owner only |
-| PATCH | `/:id/status` | Update lifecycle status | Owner only |
-| GET | `/:id/hackathons` | Get all hackathons in festival | All authenticated |
+| Method | Path              | Description                    | Access              |
+| ------ | ----------------- | ------------------------------ | ------------------- |
+| POST   | `/`               | Create festival                | Authenticated users |
+| GET    | `/`               | List all festivals             | All authenticated   |
+| GET    | `/:id`            | Get festival by ID             | All authenticated   |
+| PUT    | `/:id`            | Update festival                | Owner only          |
+| DELETE | `/:id`            | Delete festival                | Owner only          |
+| PATCH  | `/:id/status`     | Update lifecycle status        | Owner only          |
+| GET    | `/:id/hackathons` | Get all hackathons in festival | All authenticated   |
 
 ##### Example: Create Festival
 
@@ -513,6 +524,7 @@ curl -X POST http://localhost:3001/festivals \
 #### FestivalService
 
 **Key Features**:
+
 - Similar lifecycle management to hackathons (DRAFT → PUBLISHED → ONGOING → COMPLETED)
 - Owner-only access control
 - Slug generation from festival name
@@ -546,13 +558,13 @@ async getHackathonsUnderFestival(id: string): Promise<HackathonEntity[]>;
 
 ##### Endpoints
 
-| Method | Path | Description | Access |
-|--------|------|-------------|--------|
-| POST | `/create-team` | Create new team | Authenticated users |
-| GET | `/teams/:hackathonId` | List teams by hackathon | All authenticated |
-| GET | `/team/:teamId` | Get team details | All authenticated |
-| POST | `/join-team` | Join existing team | Authenticated users |
-| DELETE | `/leave-team/:teamId` | Leave a team | Team members |
+| Method | Path                  | Description             | Access              |
+| ------ | --------------------- | ----------------------- | ------------------- |
+| POST   | `/create-team`        | Create new team         | Authenticated users |
+| GET    | `/teams/:hackathonId` | List teams by hackathon | All authenticated   |
+| GET    | `/team/:teamId`       | Get team details        | All authenticated   |
+| POST   | `/join-team`          | Join existing team      | Authenticated users |
+| DELETE | `/leave-team/:teamId` | Leave a team            | Team members        |
 
 ##### Example: Create Team
 
@@ -568,6 +580,7 @@ curl -X POST http://localhost:3001/hackathons/create-team \
 ```
 
 **Response**:
+
 ```json
 {
   "id": "team-uuid",
@@ -595,6 +608,7 @@ curl -X POST http://localhost:3001/hackathons/join-team \
 #### TeamService
 
 **Key Features**:
+
 - Automatic invitation code generation
 - Team size limits enforcement
 - Leader cannot leave team (must disband)
@@ -626,16 +640,17 @@ async leaveTeam(teamId: string, userId: string): Promise<{ message: string }>;
 
 ##### Endpoints
 
-| Method | Path | Description | Access |
-|--------|------|-------------|--------|
-| POST | `/presign-image` | Generate presigned POST for image upload | Authenticated users |
-| POST | `/presign-document` | Generate presigned POST for document upload | Authenticated users |
+| Method | Path                | Description                                 | Access              |
+| ------ | ------------------- | ------------------------------------------- | ------------------- |
+| POST   | `/presign-image`    | Generate presigned POST for image upload    | Authenticated users |
+| POST   | `/presign-document` | Generate presigned POST for document upload | Authenticated users |
 
 ##### POST /presign-image
 
 Generate a presigned POST policy for uploading images directly to S3.
 
 **Request Body**: `PresignImageUploadDto`
+
 ```json
 {
   "purpose": "HACKATHON_BANNER",
@@ -644,17 +659,20 @@ Generate a presigned POST policy for uploading images directly to S3.
 ```
 
 **Purpose Values**:
+
 - `HACKATHON_BANNER` - Hackathon banner images
 - `EVENT_ATTACHMENT` - Event-related images
 - `OPPORTUNITY_ATTACHMENT` - Opportunity images
 
 **Supported MIME Types**:
+
 - `image/jpeg`
 - `image/png`
 - `image/webp`
 - `image/gif`
 
 **Response**:
+
 ```json
 {
   "uploadUrl": "https://oppskills-media.s3.amazonaws.com",
@@ -671,23 +689,25 @@ Generate a presigned POST policy for uploading images directly to S3.
 ```
 
 **Client Upload Flow**:
+
 1. Request presigned URL from backend
 2. Upload file directly to S3 using `uploadUrl` and `fields`
 3. Store `publicUrl` in hackathon/event record
 
 **Example with fetch**:
+
 ```javascript
 // 1. Get presigned URL
-const response = await fetch('http://localhost:3001/media/presign-image', {
-  method: 'POST',
+const response = await fetch("http://localhost:3001/media/presign-image", {
+  method: "POST",
   headers: {
-    'Authorization': 'Bearer <jwt>',
-    'Content-Type': 'application/json'
+    Authorization: "Bearer <jwt>",
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    purpose: 'HACKATHON_BANNER',
-    mimeType: 'image/png'
-  })
+    purpose: "HACKATHON_BANNER",
+    mimeType: "image/png",
+  }),
 });
 const { uploadUrl, fields, publicUrl } = await response.json();
 
@@ -696,11 +716,11 @@ const formData = new FormData();
 Object.entries(fields).forEach(([key, value]) => {
   formData.append(key, value);
 });
-formData.append('file', imageFile);
+formData.append("file", imageFile);
 
 await fetch(uploadUrl, {
-  method: 'POST',
-  body: formData
+  method: "POST",
+  body: formData,
 });
 
 // 3. Save publicUrl to backend
@@ -712,6 +732,7 @@ await updateHackathon({ bannerImageUrl: publicUrl });
 Generate presigned POST for document uploads (PDF, DOC, XLS, PPT).
 
 **Request Body**: `PresignDocumentUploadDto`
+
 ```json
 {
   "purpose": "EVENT_ATTACHMENT",
@@ -721,6 +742,7 @@ Generate presigned POST for document uploads (PDF, DOC, XLS, PPT).
 ```
 
 **Supported MIME Types**:
+
 - `application/pdf`
 - `application/msword`
 - `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
@@ -734,6 +756,7 @@ Generate presigned POST for document uploads (PDF, DOC, XLS, PPT).
 #### MediaService
 
 **Key Features**:
+
 - MIME type validation
 - File size limits (5MB for images, 10MB for documents)
 - UUID-based unique filenames
@@ -772,23 +795,26 @@ The backend uses **Clerk** for authentication via JWT tokens.
 **Purpose**: Validates JWT tokens and attaches user info to request.
 
 **Token Extraction**:
+
 1. **Authorization Header**: `Bearer <token>`
 2. **Query Parameter**: `?token=<token>` (fallback)
 
 **Verification Process**:
+
 ```typescript
 const sessionClaims = await verifyToken(token, {
   secretKey: this.configService.clerkSecretKey,
-  clockSkewInMs: 15000  // Allow 15s clock drift
+  clockSkewInMs: 15000, // Allow 15s clock drift
 });
 
-const userId = sessionClaims.sub;  // Extract user ID from JWT
+const userId = sessionClaims.sub; // Extract user ID from JWT
 const email = sessionClaims.email; // Extract email
 
 request.user = { id: userId, email };
 ```
 
 **Error Handling**:
+
 - Missing token → `401 Unauthorized`
 - Invalid token → `401 Unauthorized`
 - Expired token → `401 Unauthorized`
@@ -800,15 +826,18 @@ For local development/testing without Clerk:
 **Environment Variable**: `AUTH_BYPASS=true`
 
 **Headers**:
+
 - `x-user-id` - User ID
 - `x-user-email` - User email (optional, defaults to `{userId}@local.test`)
 
 **Security**:
+
 - Only works in `development` or `test` environments
 - Automatically rejected in production (logs security warning)
 - Auto-creates user in database if doesn't exist
 
 **Example**:
+
 ```bash
 curl -X GET http://localhost:3001/hackathons \
   -H "x-user-id: test-user-123" \
@@ -832,6 +861,7 @@ Defined in database schema (`UserEntity.accessLevel`):
 **Purpose**: Restricts endpoints to users with `ADMIN` access level.
 
 **Implementation**:
+
 ```typescript
 @Injectable()
 export class AdminGuard implements CanActivate {
@@ -840,15 +870,17 @@ export class AdminGuard implements CanActivate {
     const userId = request.user?.id;
 
     // Query database for access level (uses raw SQL for stability)
-    const rows = await prisma.$queryRaw<Array<{ access_level: AccessLevelValue }>>`
+    const rows = await prisma.$queryRaw<
+      Array<{ access_level: AccessLevelValue }>
+    >`
       SELECT "access_level"
       FROM "oppskills"."user"
       WHERE "id" = ${userId}
       LIMIT 1
     `;
 
-    if (rows[0]?.access_level !== 'ADMIN') {
-      throw new ForbiddenException('Admin access required.');
+    if (rows[0]?.access_level !== "ADMIN") {
+      throw new ForbiddenException("Admin access required.");
     }
 
     return true;
@@ -857,6 +889,7 @@ export class AdminGuard implements CanActivate {
 ```
 
 **Usage**:
+
 ```typescript
 @Post('admin-only-endpoint')
 @UseGuards(ClerkAuthGuard, AdminGuard)
@@ -868,6 +901,7 @@ async adminAction() {
 **Admin User Configuration**:
 
 Set admin user IDs in environment:
+
 ```bash
 ADMIN_USER_IDS=user_abc123,user_def456,user_ghi789
 ```
@@ -879,6 +913,7 @@ ADMIN_USER_IDS=user_abc123,user_def456,user_ghi789
 Most resources (hackathons, festivals, teams) use **owner-based authorization**:
 
 **Pattern**:
+
 ```typescript
 async updateHackathon(id: string, dto: UpdateHackathonDto, userId: string) {
   const hackathon = await prisma.hackathonEntity.findUnique({
@@ -899,6 +934,7 @@ async updateHackathon(id: string, dto: UpdateHackathonDto, userId: string) {
 ```
 
 **Access Rules**:
+
 - **Owner**: Full CRUD access
 - **Manager** (hackathons only): Can view and manage, shown in dashboard
 - **Other users**: Read-only access (public resources only)
@@ -914,24 +950,27 @@ The backend provides **interactive API documentation** via Swagger UI.
 **Access**: `http://localhost:3001/api-reference`
 
 **Configuration** (in `main.ts`):
+
 ```typescript
 const config = new DocumentBuilder()
-  .setTitle('OppSkills API')
-  .setDescription('OppSkills API Documentation - Manage hackathons, festivals, and teams')
-  .setVersion('1.0')
+  .setTitle("OppSkills API")
+  .setDescription(
+    "OppSkills API Documentation - Manage hackathons, festivals, and teams",
+  )
+  .setVersion("1.0")
   .addBearerAuth(
     {
-      type: 'http',
-      scheme: 'bearer',
-      bearerFormat: 'JWT',
-      description: 'Enter your Clerk JWT token',
+      type: "http",
+      scheme: "bearer",
+      bearerFormat: "JWT",
+      description: "Enter your Clerk JWT token",
     },
-    'clerk-auth',
+    "clerk-auth",
   )
   .build();
 
 const document = SwaggerModule.createDocument(app, config);
-SwaggerModule.setup('api-reference', app, document);
+SwaggerModule.setup("api-reference", app, document);
 ```
 
 ### API Decorators
@@ -939,16 +978,15 @@ SwaggerModule.setup('api-reference', app, document);
 Controllers use Swagger decorators for documentation:
 
 ```typescript
-@ApiTags('Hackathons')
-@ApiBearerAuth('clerk-auth')
-@Controller('hackathons')
+@ApiTags("Hackathons")
+@ApiBearerAuth("clerk-auth")
+@Controller("hackathons")
 export class HackathonController {
-
   @Post()
-  @ApiOperation({ summary: 'Create a new hackathon' })
+  @ApiOperation({ summary: "Create a new hackathon" })
   @ApiBody({ type: CreateHackathonDto })
-  @ApiResponse({ status: 201, description: 'Hackathon created successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 201, description: "Hackathon created successfully" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
   async createHackathon(@Body() dto: CreateHackathonDto) {
     // ...
   }
@@ -960,11 +998,13 @@ export class HackathonController {
 **Allowed Origins**:
 
 **Production**:
+
 - `https://oppskills.com`
 - `https://www.oppskills.com`
 - `https://app.oppskills.com`
 
 **Development** (includes production origins + localhost):
+
 - `http://localhost:3000`
 - `http://127.0.0.1:3000`
 
@@ -982,13 +1022,13 @@ NestJS provides built-in HTTP exceptions used throughout the backend:
 
 ```typescript
 import {
-  BadRequestException,      // 400
-  UnauthorizedException,     // 401
-  ForbiddenException,        // 403
-  NotFoundException,         // 404
-  ConflictException,         // 409
+  BadRequestException, // 400
+  UnauthorizedException, // 401
+  ForbiddenException, // 403
+  NotFoundException, // 404
+  ConflictException, // 409
   InternalServerErrorException, // 500
-} from '@nestjs/common';
+} from "@nestjs/common";
 ```
 
 ### Error Response Format
@@ -1008,12 +1048,13 @@ All errors follow NestJS standard format:
 Using `class-validator` with `ValidationPipe`:
 
 **Configuration** (in `main.ts`):
+
 ```typescript
 app.useGlobalPipes(
   new ValidationPipe({
-    whitelist: true,              // Strip unknown fields
-    forbidNonWhitelisted: true,   // Reject unknown fields
-    transform: true,              // Enable DTO transformation
+    whitelist: true, // Strip unknown fields
+    forbidNonWhitelisted: true, // Reject unknown fields
+    transform: true, // Enable DTO transformation
     transformOptions: {
       enableImplicitConversion: false,
     },
@@ -1022,6 +1063,7 @@ app.useGlobalPipes(
 ```
 
 **Validation Error Response**:
+
 ```json
 {
   "statusCode": 400,
@@ -1040,11 +1082,11 @@ app.useGlobalPipes(
 
 ```typescript
 const hackathon = await prisma.hackathonEntity.findUnique({
-  where: { id }
+  where: { id },
 });
 
 if (!hackathon) {
-  throw new NotFoundException('Hackathon not found');
+  throw new NotFoundException("Hackathon not found");
 }
 ```
 
@@ -1052,7 +1094,7 @@ if (!hackathon) {
 
 ```typescript
 if (hackathon.ownerId !== userId) {
-  throw new ForbiddenException('Only the owner can update this hackathon');
+  throw new ForbiddenException("Only the owner can update this hackathon");
 }
 ```
 
@@ -1060,7 +1102,7 @@ if (hackathon.ownerId !== userId) {
 
 ```typescript
 if (endDate.getTime() < startDate.getTime()) {
-  throw new BadRequestException('endDate must be >= startDate.');
+  throw new BadRequestException("endDate must be >= startDate.");
 }
 ```
 
@@ -1070,10 +1112,11 @@ if (endDate.getTime() < startDate.getTime()) {
 try {
   await prisma.hackathonEntity.create({ data });
 } catch (error) {
-  if (error.code === 'P2002') {  // Unique constraint violation
-    throw new ConflictException('A hackathon with this slug already exists');
+  if (error.code === "P2002") {
+    // Unique constraint violation
+    throw new ConflictException("A hackathon with this slug already exists");
   }
-  throw new InternalServerErrorException('Database error');
+  throw new InternalServerErrorException("Database error");
 }
 ```
 
@@ -1131,16 +1174,16 @@ The backend uses a **custom Winston-based logger** with New Relic integration.
 ### Usage
 
 ```typescript
-import { Logger } from 'src/_utils/logger';
+import { Logger } from "src/_utils/logger";
 
 export class MyService {
   private readonly logger = new Logger(MyService.name);
 
   async doSomething() {
-    this.logger.log('Starting operation');
-    this.logger.debug('Debug details:', { foo: 'bar' });
-    this.logger.warn('Warning message');
-    this.logger.error('Error occurred:', error);
+    this.logger.log("Starting operation");
+    this.logger.debug("Debug details:", { foo: "bar" });
+    this.logger.warn("Warning message");
+    this.logger.error("Error occurred:", error);
   }
 }
 ```
@@ -1148,6 +1191,7 @@ export class MyService {
 ### Log Output Format
 
 **Development**:
+
 ```json
 {
   "ts": "2025-01-15 10:30:45.123",
@@ -1167,13 +1211,13 @@ Set context for all logs within a request:
 
 ```typescript
 Logger.setContext({
-  userId: 'user_abc123',
-  correlationId: 'req-xyz',
-  operation: 'createHackathon'
+  userId: "user_abc123",
+  correlationId: "req-xyz",
+  operation: "createHackathon",
 });
 
 // All subsequent logs automatically include this context
-this.logger.info('Hackathon created');
+this.logger.info("Hackathon created");
 // Output: { ..., uid: 'user_abc123', correlationId: 'req-xyz', ... }
 ```
 
@@ -1183,8 +1227,8 @@ Control verbosity per service in development:
 
 ```typescript
 const logLevelMap: { [key: string]: string } = {
-  WorkerService: 'error',  // Only log errors
-  CacheService: 'error',   // Only log errors
+  WorkerService: "error", // Only log errors
+  CacheService: "error", // Only log errors
 };
 ```
 
@@ -1260,6 +1304,7 @@ pnpm test:debug
 ### Jest Configuration
 
 **Unit Tests** (`package.json`):
+
 ```json
 {
   "jest": {
@@ -1280,6 +1325,7 @@ pnpm test:debug
 ```
 
 **E2E Tests** (`test/jest-e2e.json`):
+
 ```json
 {
   "moduleFileExtensions": ["js", "json", "ts"],
@@ -1304,12 +1350,12 @@ pnpm test:debug
 
 ```typescript
 // test/app.e2e-spec.ts
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { AppModule } from './../src/app.module';
+import { Test, TestingModule } from "@nestjs/testing";
+import { INestApplication } from "@nestjs/common";
+import * as request from "supertest";
+import { AppModule } from "./../src/app.module";
 
-describe('AppController (e2e)', () => {
+describe("AppController (e2e)", () => {
   let app: INestApplication;
 
   beforeEach(async () => {
@@ -1321,11 +1367,11 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
+  it("/ (GET)", () => {
     return request(app.getHttpServer())
-      .get('/')
+      .get("/")
       .expect(200)
-      .expect('Hello World!');
+      .expect("Hello World!");
   });
 });
 ```
@@ -1384,24 +1430,27 @@ export class ClerkAuthConfigService {
   constructor(private readonly configService: ConfigService) {}
 
   get clerkWebhookSecret(): string {
-    return this.configService.get('CLERK_WEBHOOK_SECRET');
+    return this.configService.get("CLERK_WEBHOOK_SECRET");
   }
 
   get clerkSecretKey(): string {
-    return this.configService.get('CLERK_SECRET_KEY') || '';
+    return this.configService.get("CLERK_SECRET_KEY") || "";
   }
 
   get redisHost(): string {
-    return this.configService.get('REDISHOST', 'localhost');
+    return this.configService.get("REDISHOST", "localhost");
   }
 
   get redisPort(): number {
-    return this.configService.get('REDISPORT', 6379);
+    return this.configService.get("REDISPORT", 6379);
   }
 
   get adminUserIds(): string[] {
-    const raw = this.configService.get<string>('ADMIN_USER_IDS', '');
-    return raw.split(',').map(v => v.trim()).filter(v => v.length > 0);
+    const raw = this.configService.get<string>("ADMIN_USER_IDS", "");
+    return raw
+      .split(",")
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0);
   }
 }
 ```
@@ -1413,11 +1462,13 @@ Production secrets are loaded from **AWS Secrets Manager**:
 **File**: `load-secrets.mts` (in project root)
 
 **Behavior**:
+
 - Only runs when `NODE_ENV !== 'local'`
 - Uses IAM role credentials from container metadata
 - Loads secrets into environment variables before app starts
 
 **Usage**:
+
 ```bash
 # Start command in production
 node load-secrets.mjs && node dist/main.js
@@ -1462,8 +1513,9 @@ module-name/
 ### DTO Best Practices
 
 1. **Use class-validator** for validation:
+
    ```typescript
-   import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+   import { IsString, IsNotEmpty, IsOptional } from "class-validator";
 
    export class CreateHackathonDto {
      @IsString()
@@ -1477,11 +1529,12 @@ module-name/
    ```
 
 2. **Leverage Swagger decorators**:
+
    ```typescript
-   import { ApiProperty } from '@nestjs/swagger';
+   import { ApiProperty } from "@nestjs/swagger";
 
    export class CreateHackathonDto {
-     @ApiProperty({ description: 'Hackathon name', example: 'Tech Fest 2025' })
+     @ApiProperty({ description: "Hackathon name", example: "Tech Fest 2025" })
      @IsString()
      @IsNotEmpty()
      name: string;
@@ -1493,6 +1546,7 @@ module-name/
 ### Service Best Practices
 
 1. **Inject dependencies** via constructor:
+
    ```typescript
    @Injectable()
    export class HackathonService {
@@ -1504,13 +1558,15 @@ module-name/
    ```
 
 2. **Use Prisma client** from @oppskills/db:
+
    ```typescript
-   import { prisma } from '@oppskills/db';
+   import { prisma } from "@oppskills/db";
 
    const hackathon = await prisma.hackathonEntity.findUnique({ where: { id } });
    ```
 
 3. **Throw descriptive exceptions**:
+
    ```typescript
    if (!hackathon) {
      throw new NotFoundException(`Hackathon with ID ${id} not found`);
@@ -1525,13 +1581,15 @@ module-name/
 ### Controller Best Practices
 
 1. **Use guards for authentication**:
+
    ```typescript
    @UseGuards(ClerkAuthGuard)
-   @Controller('hackathons')
+   @Controller("hackathons")
    export class HackathonController {}
    ```
 
 2. **Extract user from request**:
+
    ```typescript
    async createHackathon(@Req() req: Request) {
      const userId = req.user?.id;
@@ -1551,20 +1609,22 @@ module-name/
 ### Database Access
 
 1. **Use Prisma Client** (never raw SQL unless necessary):
+
    ```typescript
    const hackathons = await prisma.hackathonEntity.findMany({
      where: { ownerId: userId },
-     include: { rounds: true, prizeBreakdown: true }
+     include: { rounds: true, prizeBreakdown: true },
    });
    ```
 
 2. **Handle unique constraints**:
+
    ```typescript
    try {
      await prisma.hackathonEntity.create({ data });
    } catch (error) {
-     if (error.code === 'P2002') {
-       throw new ConflictException('Duplicate entry');
+     if (error.code === "P2002") {
+       throw new ConflictException("Duplicate entry");
      }
      throw error;
    }
@@ -1587,8 +1647,8 @@ module-name/
    try {
      // operation
    } catch (error) {
-     this.logger.error('Operation failed:', error);
-     throw new InternalServerErrorException('Operation failed');
+     this.logger.error("Operation failed:", error);
+     throw new InternalServerErrorException("Operation failed");
    }
    ```
 
@@ -1598,7 +1658,7 @@ module-name/
 2. **Verify ownership** before mutations:
    ```typescript
    if (hackathon.ownerId !== userId) {
-     throw new ForbiddenException('Not authorized');
+     throw new ForbiddenException("Not authorized");
    }
    ```
 3. **Never expose sensitive data** in responses
@@ -1612,7 +1672,7 @@ module-name/
 2. **Select only needed fields**:
    ```typescript
    await prisma.hackathonEntity.findMany({
-     select: { id: true, name: true, slug: true }
+     select: { id: true, name: true, slug: true },
    });
    ```
 3. **Use Redis caching** for expensive queries (when enabled)
@@ -1647,27 +1707,27 @@ pnpm format                   # Format all code
 
 ### API Endpoints Summary
 
-| Module | Base Path | Auth Required | Key Endpoints |
-|--------|-----------|---------------|---------------|
-| App | `/` | No | `GET /` (health check) |
-| User Accounts | `/user-accounts` | Partial | `POST /clerk-webhook`, `GET /search` |
-| Hackathons | `/hackathons` | Yes | `POST /`, `GET /`, `GET /:id`, `PUT /:id`, `DELETE /:id` |
-| Festivals | `/festivals` | Yes | `POST /`, `GET /`, `GET /:id`, `PUT /:id`, `DELETE /:id` |
-| Teams | `/hackathons` | Yes | `POST /create-team`, `POST /join-team`, `DELETE /leave-team/:id` |
-| Media | `/media` | Yes | `POST /presign-image`, `POST /presign-document` |
+| Module        | Base Path        | Auth Required | Key Endpoints                                                    |
+| ------------- | ---------------- | ------------- | ---------------------------------------------------------------- |
+| App           | `/`              | No            | `GET /` (health check)                                           |
+| User Accounts | `/user-accounts` | Partial       | `POST /clerk-webhook`, `GET /search`                             |
+| Hackathons    | `/hackathons`    | Yes           | `POST /`, `GET /`, `GET /:id`, `PUT /:id`, `DELETE /:id`         |
+| Festivals     | `/festivals`     | Yes           | `POST /`, `GET /`, `GET /:id`, `PUT /:id`, `DELETE /:id`         |
+| Teams         | `/hackathons`    | Yes           | `POST /create-team`, `POST /join-team`, `DELETE /leave-team/:id` |
+| Media         | `/media`         | Yes           | `POST /presign-image`, `POST /presign-document`                  |
 
 ### HTTP Status Codes
 
-| Code | Meaning | When Used |
-|------|---------|-----------|
-| 200 | OK | Successful GET/PUT/DELETE |
-| 201 | Created | Successful POST |
-| 400 | Bad Request | Validation errors, invalid input |
-| 401 | Unauthorized | Missing/invalid JWT token |
-| 403 | Forbidden | Not owner/admin, insufficient permissions |
-| 404 | Not Found | Resource doesn't exist |
-| 409 | Conflict | Duplicate entry, constraint violation |
-| 500 | Internal Server Error | Unexpected server error |
+| Code | Meaning               | When Used                                 |
+| ---- | --------------------- | ----------------------------------------- |
+| 200  | OK                    | Successful GET/PUT/DELETE                 |
+| 201  | Created               | Successful POST                           |
+| 400  | Bad Request           | Validation errors, invalid input          |
+| 401  | Unauthorized          | Missing/invalid JWT token                 |
+| 403  | Forbidden             | Not owner/admin, insufficient permissions |
+| 404  | Not Found             | Resource doesn't exist                    |
+| 409  | Conflict              | Duplicate entry, constraint violation     |
+| 500  | Internal Server Error | Unexpected server error                   |
 
 ---
 
@@ -1676,6 +1736,7 @@ pnpm format                   # Format all code
 ### Dependencies
 
 **Core**:
+
 - `@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express` - NestJS framework
 - `@nestjs/config` - Configuration management
 - `@nestjs/swagger` - API documentation
@@ -1683,25 +1744,31 @@ pnpm format                   # Format all code
 - `@oppskills/types` - Shared types/DTOs (workspace package)
 
 **Authentication**:
+
 - `@clerk/backend` - Clerk JWT verification
 
 **Database & Caching**:
+
 - `ioredis` - Redis client
 
 **Validation**:
+
 - `class-validator` - DTO validation
 - `class-transformer` - DTO transformation
 
 **Storage**:
+
 - `@aws-sdk/client-s3` - S3 operations
 - `@aws-sdk/s3-presigned-post` - Presigned POST URLs
 
 **Logging**:
+
 - `winston` - Logging framework
 - `nest-winston` - NestJS Winston integration
 - `newrelic` - Application monitoring
 
 **Webhooks**:
+
 - `svix` - Webhook signature verification
 - `crypto` - HMAC signature verification
 
@@ -1717,12 +1784,14 @@ Instead of uploading files through the backend, we use **presigned POST** URLs:
 4. **Client stores public URL** in database via backend
 
 **Benefits**:
+
 - Reduces backend load (no file buffering)
 - Faster uploads (direct to S3)
 - Better scalability
 - Automatic CDN distribution
 
 **Security**:
+
 - Presigned URLs expire after 5 minutes
 - MIME type enforcement
 - File size limits (5MB images, 10MB docs)
@@ -1733,6 +1802,7 @@ Instead of uploading files through the backend, we use **presigned POST** URLs:
 **Custom Schema**: `oppskills` (not default `public`)
 
 **Key Tables**:
+
 - `user` - User accounts synced from Clerk
 - `hackathon` - Hackathon events
 - `festival` - Festival events (parent of hackathons)
@@ -1745,6 +1815,7 @@ Instead of uploading files through the backend, we use **presigned POST** URLs:
 - `hackathon_role` - Manager/evaluator assignments
 
 **Relationships**:
+
 - Festival → Hackathons (1:N)
 - Hackathon → Rounds (1:N)
 - Hackathon → Teams (1:N)

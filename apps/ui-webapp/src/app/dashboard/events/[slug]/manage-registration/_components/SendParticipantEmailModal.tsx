@@ -33,8 +33,9 @@ export default function SendParticipantEmailModal({
   const { getToken } = useAuth();
 
   const handleSend = async (content: string) => {
-    if (!participant || !eventDetails) throw new Error("Missing recipient or event details");
-    
+    if (!participant || !eventDetails)
+      throw new Error("Missing recipient or event details");
+
     const token = await getToken();
     if (!token) throw new Error("Not authenticated");
 
@@ -60,13 +61,16 @@ export default function SendParticipantEmailModal({
       description={
         <>
           This message will be sent to <strong>{participant.name}</strong>.
-          Personalization (e.g., "Hi {participant.name.split(" ")[0]}") will be applied automatically.
+          Personalization (e.g., "Hi {participant.name.split(" ")[0]}") will be
+          applied automatically.
         </>
       }
       templateNote={
         eventDetails && (
           <>
-            Your message will be wrapped in the official <strong>{eventDetails.name}</strong> template including links back to the event page.
+            Your message will be wrapped in the official{" "}
+            <strong>{eventDetails.name}</strong> template including links back
+            to the event page.
           </>
         )
       }

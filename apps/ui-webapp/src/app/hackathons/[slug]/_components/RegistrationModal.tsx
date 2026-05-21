@@ -1,15 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useQueryState } from "nuqs";
-import {
-  Users,
-  UserPlus,
-  Loader2,
-} from "lucide-react";
+import { Users, UserPlus, Loader2 } from "lucide-react";
 import Script from "next/script";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
@@ -57,7 +50,10 @@ import {
   clearPendingEventRegistration,
 } from "@/lib/registration/pendingHackathonRegistration";
 import { writeHackathonCheckoutIntent } from "@/lib/registration/hackathonCheckoutIntent";
-import type { RegistrationModalProps, RegistrationMode } from "./RegistrationModal.types";
+import type {
+  RegistrationModalProps,
+  RegistrationMode,
+} from "./RegistrationModal.types";
 import { CreateTeamFormContent } from "./CreateTeamFormContent";
 import { JoinTeamFormContent } from "./JoinTeamFormContent";
 import type { RegistrationField } from "@/lib/registration/mergeRegistrationFields";
@@ -68,7 +64,6 @@ declare global {
     Razorpay: any;
   }
 }
-
 
 /**
  * After payment, verifyPayment or the Razorpay webhook may already have created the team.
@@ -100,17 +95,23 @@ export function RegistrationModal({
   const { user } = useUser();
   const { getToken } = useAuth();
   const [registrationMode, setRegistrationMode] = useQueryState("registration");
-  const mode: RegistrationMode = registrationMode === "join" ? "JOIN" : "CREATE";
-  const setMode = (newMode: RegistrationMode) => setRegistrationMode(newMode.toLowerCase());
+  const mode: RegistrationMode =
+    registrationMode === "join" ? "JOIN" : "CREATE";
+  const setMode = (newMode: RegistrationMode) =>
+    setRegistrationMode(newMode.toLowerCase());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   // Form states
   const [teamName, setTeamName] = useState("");
   const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [uploadedFiles, setUploadedFiles] = useState<Record<string, { name: string; url: string }>>({});
+  const [uploadedFiles, setUploadedFiles] = useState<
+    Record<string, { name: string; url: string }>
+  >({});
   const [invitationCode, setInvitationCode] = useState("");
   const [discountCode, setDiscountCode] = useState("");
-  const [ticketTierId, setTicketTierId] = useState<string | undefined>(undefined);
+  const [ticketTierId, setTicketTierId] = useState<string | undefined>(
+    undefined,
+  );
   const [isOpenToggle, setIsOpenToggle] = useState(true);
 
   const selectedTierDisplayName = useMemo(() => {
@@ -127,15 +128,15 @@ export function RegistrationModal({
   const [teams, setTeams] = useState<TeamDetailResponse[]>([]);
   const [mergedFields, setMergedFields] = useState<RegistrationField[]>([]);
   const [fieldsReady, setFieldsReady] = useState(false);
-  const [onboardingProfile, setOnboardingProfile] = useState<
-    MeResponseDto["onboardingProfile"]
-  >(undefined);
+  const [onboardingProfile, setOnboardingProfile] =
+    useState<MeResponseDto["onboardingProfile"]>(undefined);
 
   const maxSize = mapMaxSize(competition.participantType || "");
-  const isIndividual = type === "EVENT" || competition.participantType === "INDIVIDUAL";
+  const isIndividual =
+    type === "EVENT" || competition.participantType === "INDIVIDUAL";
 
   const onUpdateAnswer = useCallback((fieldId: string, value: any) => {
-    setAnswers(prev => ({ ...prev, [fieldId]: value }));
+    setAnswers((prev) => ({ ...prev, [fieldId]: value }));
   }, []);
 
   // Reset form when modal opens/closes
@@ -180,7 +181,9 @@ export function RegistrationModal({
           setOnboardingProfile(profile ?? undefined);
 
           const merged = mergeDefaultAndCustomFields(
-            competition.registrationForm?.fields as RegistrationField[] | undefined,
+            competition.registrationForm?.fields as
+              | RegistrationField[]
+              | undefined,
             profile?.userCategory,
           );
           setMergedFields(merged);
@@ -248,7 +251,10 @@ export function RegistrationModal({
             }
           }
 
-          if ((type === "EVENT" || type === "HACKATHON") && prefillAnswers?.length) {
+          if (
+            (type === "EVENT" || type === "HACKATHON") &&
+            prefillAnswers?.length
+          ) {
             for (const row of prefillAnswers) {
               if (
                 row.fieldId &&
@@ -336,7 +342,7 @@ export function RegistrationModal({
           name: file.name,
         };
 
-        setUploadedFiles(prev => ({ ...prev, [fieldId]: fileData }));
+        setUploadedFiles((prev) => ({ ...prev, [fieldId]: fileData }));
         onUpdateAnswer(fieldId, presign.publicUrl);
 
         toast.success("Document uploaded successfully");
@@ -361,7 +367,7 @@ export function RegistrationModal({
       if (type === "EVENT") {
         const isPaidEvent =
           !competition.isFree &&
-          ((((competition as any).ticketTiers?.length ?? 0) > 0) ||
+          (((competition as any).ticketTiers?.length ?? 0) > 0 ||
             !!(competition as any).entryFeeAmount);
 
         if (isPaidEvent && !completionMode) {
@@ -438,7 +444,9 @@ export function RegistrationModal({
               router.push(`/events/${competition.slug}?registered=true`);
             } catch (err) {
               toast.dismiss(completingId);
-              toast.error(getApiErrorMessage(err, "Registration verification failed."));
+              toast.error(
+                getApiErrorMessage(err, "Registration verification failed."),
+              );
             }
           },
           prefill: {
@@ -502,19 +510,15 @@ export function RegistrationModal({
         (!!(competition as any).entryFeeAmount ||
           ((competition as any).ticketTiers?.length ?? 0) > 0)
       ) {
-        await saveHackathonRegistrationCheckoutDraft(
-          token,
-          competition.slug,
-          {
-            answers: formattedAnswers,
-            ticketTierId,
-            teamId: orderParams.teamId,
-            teamName: orderParams.teamName,
-            maxSize: orderParams.maxSize,
-            invitationCode: orderParams.invitationCode,
-            joinTeamId: orderParams.joinTeamId,
-          },
-        );
+        await saveHackathonRegistrationCheckoutDraft(token, competition.slug, {
+          answers: formattedAnswers,
+          ticketTierId,
+          teamId: orderParams.teamId,
+          teamName: orderParams.teamName,
+          maxSize: orderParams.maxSize,
+          invitationCode: orderParams.invitationCode,
+          joinTeamId: orderParams.joinTeamId,
+        });
         writeHackathonCheckoutIntent(competition.slug, {
           discountCode: orderParams.discountCode,
           ticketTierId,
@@ -543,7 +547,11 @@ export function RegistrationModal({
         return;
       }
 
-      const order = await createPaymentOrder(token, competition.slug, orderParams);
+      const order = await createPaymentOrder(
+        token,
+        competition.slug,
+        orderParams,
+      );
 
       if (order.zeroAmountPayment || order.amountPaise === 0) {
         let teamId = order.teamId;
@@ -632,7 +640,10 @@ export function RegistrationModal({
           const completingId = toast.loading("Completing your registration…");
           try {
             const verifyToken = await getToken();
-            if (!verifyToken) throw new Error("Authentication required. Please sign in and try again.");
+            if (!verifyToken)
+              throw new Error(
+                "Authentication required. Please sign in and try again.",
+              );
 
             await withRetry(() =>
               verifyPayment(verifyToken, competition.slug, {
@@ -643,9 +654,10 @@ export function RegistrationModal({
               }),
             );
 
-            const myUpdatedTeam = type === "HACKATHON"
-              ? await checkMyHackathonTeam(verifyToken, competition.id)
-              : null;
+            const myUpdatedTeam =
+              type === "HACKATHON"
+                ? await checkMyHackathonTeam(verifyToken, competition.id)
+                : null;
 
             toast.dismiss(completingId);
             toast.success("Registration successful!");
@@ -654,7 +666,10 @@ export function RegistrationModal({
               onSuccess?.(myUpdatedTeam);
             }
 
-            const redirectPath = type === "HACKATHON" ? `/hackathons/${competition.slug}` : `/events/${competition.slug}`;
+            const redirectPath =
+              type === "HACKATHON"
+                ? `/hackathons/${competition.slug}`
+                : `/events/${competition.slug}`;
             router.push(`${redirectPath}?registered=true`);
           } catch (err) {
             toast.dismiss(completingId);
@@ -743,7 +758,10 @@ export function RegistrationModal({
       if (mergedFields.length > 0 && filteredFormatted.length === 0) {
         console.warn(
           "[RegistrationModal] filteredFormatted is empty but mergedFields has entries",
-          { mergedFieldCount: mergedFields.length, answerKeys: Object.keys(answers) },
+          {
+            mergedFieldCount: mergedFields.length,
+            answerKeys: Object.keys(answers),
+          },
         );
         toast.error(
           "Registration form answers are missing. Please fill in the required fields.",
@@ -756,8 +774,7 @@ export function RegistrationModal({
       );
       const isPaidOpportunity =
         !competition.isFree &&
-        (!!(competition as any).entryFeeAmount ||
-          activeRegTiers.length > 0);
+        (!!(competition as any).entryFeeAmount || activeRegTiers.length > 0);
       if (isPaidOpportunity && activeRegTiers.length > 1 && !ticketTierId) {
         toast.error("Please select a ticket type before continuing.");
         return;
@@ -791,15 +808,8 @@ export function RegistrationModal({
       }
 
       if (completionMode && type === "HACKATHON") {
-        await submitRegistration(
-          token,
-          competition.slug,
-          filteredFormatted,
-        );
-        const myUpdatedTeam = await checkMyHackathonTeam(
-          token,
-          competition.id,
-        );
+        await submitRegistration(token, competition.slug, filteredFormatted);
+        const myUpdatedTeam = await checkMyHackathonTeam(token, competition.id);
         toast.success("Registration successful!");
         if (myUpdatedTeam) {
           onSuccess?.(myUpdatedTeam);
@@ -827,10 +837,15 @@ export function RegistrationModal({
       if (type === "EVENT") {
         if (competition.isFree) {
           writePendingEventRegistration(competition.slug, {
-            answers: filteredFormatted as Array<{ fieldId: string; value: string }>,
+            answers: filteredFormatted as Array<{
+              fieldId: string;
+              value: string;
+            }>,
             userId: user?.id,
           });
-          await joinEvent(token, competition.id, { answers: filteredFormatted });
+          await joinEvent(token, competition.id, {
+            answers: filteredFormatted,
+          });
           clearPendingEventRegistration(competition.slug);
           toast.success("Registration successful!");
           onSuccess?.(null);
@@ -874,7 +889,10 @@ export function RegistrationModal({
             answers: filteredFormatted,
           });
 
-          const myUpdatedTeam = await checkMyHackathonTeam(token, competition.id);
+          const myUpdatedTeam = await checkMyHackathonTeam(
+            token,
+            competition.id,
+          );
 
           toast.success("Joined team successfully!");
           if (myUpdatedTeam) {
@@ -948,15 +966,24 @@ export function RegistrationModal({
           {!isIndividual && !completionMode && (
             <div className="flex gap-3">
               {[
-                { title: "Create team", id: "CREATE" as RegistrationMode, icon: Users },
-                { title: "Join existing team", id: "JOIN" as RegistrationMode, icon: UserPlus },
+                {
+                  title: "Create team",
+                  id: "CREATE" as RegistrationMode,
+                  icon: Users,
+                },
+                {
+                  title: "Join existing team",
+                  id: "JOIN" as RegistrationMode,
+                  icon: UserPlus,
+                },
               ].map((e) => (
                 <button
                   key={e.id}
                   onClick={() => setMode(e.id)}
                   className={cn(
                     "flex py-3 items-center gap-2 sm:gap-4 text-primary-600 font-medium bg-primary-100/50 flex-1 rounded-full justify-center truncate transition-all",
-                    mode === e.id && "border-2 border-primary-600 bg-primary-100"
+                    mode === e.id &&
+                      "border-2 border-primary-600 bg-primary-100",
                   )}
                 >
                   <e.icon className="h-4 w-4" />
@@ -972,9 +999,7 @@ export function RegistrationModal({
           className="flex flex-col flex-1 overflow-y-auto relative scrollbar"
         >
           {/* Fields area */}
-          <div
-            className="px-6 py-2"
-          >
+          <div className="px-6 py-2">
             {completionMode && type === "HACKATHON" ? (
               <CreateTeamFormContent
                 fields={mergedFields}
@@ -1037,9 +1062,7 @@ export function RegistrationModal({
                 isFree={competition.isFree}
                 entryFeeAmount={competition.entryFeeAmount}
                 feeBearer={competition.feeBearer}
-                {...(type === "EVENT"
-                  ? {}
-                  : { discountCode, setDiscountCode })}
+                {...(type === "EVENT" ? {} : { discountCode, setDiscountCode })}
                 ticketTiers={competition.ticketTiers}
                 ticketTierId={ticketTierId}
                 setTicketTierId={setTicketTierId}
@@ -1115,7 +1138,11 @@ export function RegistrationModal({
                   (type === "HACKATHON" || type === "EVENT") ? (
                   "Submit registration"
                 ) : mode === "CREATE" ? (
-                  isIndividual ? "Register" : "Register as team"
+                  isIndividual ? (
+                    "Register"
+                  ) : (
+                    "Register as team"
+                  )
                 ) : (
                   "Join team"
                 )}

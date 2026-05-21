@@ -44,7 +44,7 @@ export class EventService {
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
     private readonly referralService: ReferralService,
-  ) { }
+  ) {}
 
   /**
    * Create an event as a user.
@@ -1590,7 +1590,7 @@ export class EventService {
             // Use field options, or default gender options for Gender field
             const effectiveOptions =
               field.label.toLowerCase() === 'gender' &&
-                (!field.options || field.options.length === 0)
+              (!field.options || field.options.length === 0)
                 ? DEFAULT_GENDER_OPTIONS
                 : field.options;
 
@@ -2155,8 +2155,7 @@ export class EventService {
     const awaitingCheckout =
       !!participant?.checkoutPending && !paymentCompleted;
 
-    let draftAnswers: Array<{ fieldId: string; value: unknown }> | null =
-      null;
+    let draftAnswers: Array<{ fieldId: string; value: unknown }> | null = null;
     if (awaitingCheckout) {
       const sub = await prisma.eventRegistrationSubmissionEntity.findFirst({
         where: { eventId, userId },
@@ -2324,14 +2323,14 @@ export class EventService {
       existingSubmission && existingSubmission._count.answers === 0
         ? existingSubmission.id
         : (
-          await prisma.eventRegistrationSubmissionEntity.create({
-            data: {
-              eventId,
-              userId,
-              participantId: participant.id,
-            },
-          })
-        ).id;
+            await prisma.eventRegistrationSubmissionEntity.create({
+              data: {
+                eventId,
+                userId,
+                participantId: participant.id,
+              },
+            })
+          ).id;
 
     if (mappedAnswers.length > 0) {
       const answerData = mappedAnswers.map((a) => ({

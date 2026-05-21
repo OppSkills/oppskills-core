@@ -13,7 +13,7 @@ import dynamic from "next/dynamic";
 
 const RichTextEditor = dynamic(
   () => import("@/components/ui/editor/RichtextEditor"),
-  { ssr: false }
+  { ssr: false },
 );
 
 interface DescriptionEditorModalProps {

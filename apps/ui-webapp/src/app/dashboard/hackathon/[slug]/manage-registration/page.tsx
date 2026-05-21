@@ -19,7 +19,10 @@ export default function Page() {
   const [take, setTake] = useState(10);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
 
-  const { data, isLoading, error } = useHackathonRegistrationsBySlug(slug, { page, take });
+  const { data, isLoading, error } = useHackathonRegistrationsBySlug(slug, {
+    page,
+    take,
+  });
 
   const [currentStage, setCurrentStage] = useState("All registrations");
 
@@ -54,9 +57,11 @@ export default function Page() {
   const stages = useMemo(() => {
     if (!data) return [];
 
-    const stagesList: Array<{ name: string; description: string; displayName?: string }> = [
-      { name: "All registrations", description: "All registered teams" },
-    ];
+    const stagesList: Array<{
+      name: string;
+      description: string;
+      displayName?: string;
+    }> = [{ name: "All registrations", description: "All registered teams" }];
 
     // Add rounds with counts
     for (const round of data.rounds) {
@@ -87,7 +92,9 @@ export default function Page() {
       } else {
         // For subsequent rounds, show teams that qualified for this round
         filteredTeams = data.teams.items.filter((team) => {
-          return team.roundQualifications?.[selectedRoundId]?.qualified === true;
+          return (
+            team.roundQualifications?.[selectedRoundId]?.qualified === true
+          );
         });
       }
     } else {
@@ -136,10 +143,12 @@ export default function Page() {
         // For absolute teams: Completed if memberCount >= maxSize
         if (team.minSize !== undefined) {
           // Range team
-          status = team.memberCount >= team.minSize ? "Completed" : "Incomplete";
+          status =
+            team.memberCount >= team.minSize ? "Completed" : "Incomplete";
         } else {
           // Absolute team (existing logic)
-          status = team.memberCount >= team.maxSize ? "Completed" : "Incomplete";
+          status =
+            team.memberCount >= team.maxSize ? "Completed" : "Incomplete";
         }
       }
 
@@ -186,7 +195,9 @@ export default function Page() {
       loading={isLoading || !data}
       name="dashboard-hackathon-manage-registration"
       className="w-full min-h-screen bg-background"
-      fallback={<TableBlockFallback className="min-h-screen bg-background p-8" />}
+      fallback={
+        <TableBlockFallback className="min-h-screen bg-background p-8" />
+      }
     >
       {data ? (
         <div className="w-full flex justify-center">

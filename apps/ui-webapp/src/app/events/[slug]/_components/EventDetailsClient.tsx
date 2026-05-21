@@ -244,10 +244,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     refetchRegistrationStatus,
   ]);
 
-  const TABS = [
-    "About Event",
-    "Contact Details"
-  ];
+  const TABS = ["About Event", "Contact Details"];
 
   const handleRegistration = async () => {
     if (!event) return;
@@ -276,7 +273,6 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     setIsModalOpen(true);
   };
 
-
   // Format dates
   const startDate = new Date(event.startDate);
   const endDate = new Date(event.endDate);
@@ -302,7 +298,9 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     }
   }
 
-  const formattedTime = isDateTBA ? "" : format(startDate, "h:mm a") + " Onwards";
+  const formattedTime = isDateTBA
+    ? ""
+    : format(startDate, "h:mm a") + " Onwards";
   const monthShort = isDateTBA ? "TBA" : format(startDate, "MMM");
   const dayNum = isDateTBA ? "—" : format(startDate, "dd");
 
@@ -320,9 +318,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             id: t.id,
             name: t.name,
             price:
-              typeof t.price === "number"
-                ? t.price
-                : Number(t.price ?? 0) || 0,
+              typeof t.price === "number" ? t.price : Number(t.price ?? 0) || 0,
             description: t.description?.trim() || "",
           }),
         )
@@ -341,12 +337,11 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
   const cardUser = user
     ? {
-      name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
-      email: user.primaryEmailAddress?.emailAddress || "",
-      avatar: user.imageUrl,
-    }
+        name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+        email: user.primaryEmailAddress?.emailAddress || "",
+        avatar: user.imageUrl,
+      }
     : undefined;
-
 
   const sidebarEvent: EventDetails = {
     id: event.id,
@@ -399,9 +394,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             isSignedIn && !!user?.id && isRegistrationStatusPending
           }
           isRegistered={!!registrationStatus?.isRegistered}
-          needsCompleteRegistration={
-            !!registrationStatus?.isPaidButIncomplete
-          }
+          needsCompleteRegistration={!!registrationStatus?.isPaidButIncomplete}
         />
       }
     />
@@ -420,9 +413,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             isSignedIn && !!user?.id && isRegistrationStatusPending
           }
           isRegistered={!!registrationStatus?.isRegistered}
-          needsCompleteRegistration={
-            !!registrationStatus?.isPaidButIncomplete
-          }
+          needsCompleteRegistration={!!registrationStatus?.isPaidButIncomplete}
         />
       </div>
     </div>
@@ -441,7 +432,6 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
       {/* Main Container - Full width with padding, no max-w constraint */}
       <div className="w-full px-0 sm:px-8 md:px-12 lg:px-16 xl:px-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
-
           {/* LEFT COLUMN: Sidebar (Like Hackathons) */}
           <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden rounded-2xl">
             <EventSidebar
@@ -458,7 +448,10 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             />
 
             {/* Contact Details (Hidden on desktop because it's usually in about or we can keep it here if sidebar is too long) */}
-            <div id="contact-details-desktop" className="scroll-mt-24 hidden lg:block">
+            <div
+              id="contact-details-desktop"
+              className="scroll-mt-24 hidden lg:block"
+            >
               {/* Optional: Add anything else here if needed */}
             </div>
           </div>
@@ -490,7 +483,9 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                     {event.description ? (
                       <div
                         className="html-content whitespace-pre-line wrap-break-words leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(event.description) }}
+                        dangerouslySetInnerHTML={{
+                          __html: DOMPurify.sanitize(event.description),
+                        }}
                       />
                     ) : (
                       <p>No description available.</p>
@@ -499,7 +494,8 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
 
                   {event.isRecruitmentEvent && (
                     <div className="mt-4 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm">
-                      This is a recruitment event. Registrants may be contacted for opportunities.
+                      This is a recruitment event. Registrants may be contacted
+                      for opportunities.
                     </div>
                   )}
                 </section>
@@ -539,7 +535,10 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             </div>
 
             {/* Contact Details Section (Always visible, at the bottom of main content) */}
-            <section id="contact-details" className="scroll-mt-24 space-y-6 pt-10">
+            <section
+              id="contact-details"
+              className="scroll-mt-24 space-y-6 pt-10"
+            >
               <h2 className="text-2xl font-bold text-foreground poppins">
                 Contact Details
               </h2>
@@ -567,29 +566,47 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                       {(() => {
                         const orgName =
                           event?.organizationName ?? event?.organization_name;
-                        const ownerName = [event?.owner?.firstName, event?.owner?.lastName]
+                        const ownerName = [
+                          event?.owner?.firstName,
+                          event?.owner?.lastName,
+                        ]
                           .filter(Boolean)
                           .join(" ");
                         return orgName || ownerName || "Organizer";
                       })()}
                     </h4>
                     {event.owner.email && (
-                      <p className="text-xs text-neutral-500 truncate">{event.owner.email}</p>
+                      <p className="text-xs text-neutral-500 truncate">
+                        {event.owner.email}
+                      </p>
                     )}
                   </div>
                 </div>
 
                 {/* Designated contact from Additional info (saved as contactName / contactEmail / contactPhone) */}
                 {(() => {
-                  const name = typeof event.contactName === "string" ? event.contactName.trim() : "";
-                  const email = typeof event.contactEmail === "string" ? event.contactEmail.trim() : "";
-                  const phone = typeof event.contactPhone === "string" ? event.contactPhone.trim() : "";
+                  const name =
+                    typeof event.contactName === "string"
+                      ? event.contactName.trim()
+                      : "";
+                  const email =
+                    typeof event.contactEmail === "string"
+                      ? event.contactEmail.trim()
+                      : "";
+                  const phone =
+                    typeof event.contactPhone === "string"
+                      ? event.contactPhone.trim()
+                      : "";
                   const hasContact = Boolean(name || email || phone);
                   if (!hasContact) return null;
                   return (
                     <div className="p-4 bg-[#FDF2FF] rounded-xl border border-purple-100 flex items-center gap-4 hover:border-purple-200 transition-colors">
                       <div className="w-12 h-12 rounded-full bg-[#5B2E63] text-background flex items-center justify-center font-bold text-lg shrink-0">
-                        {(name.charAt(0) || email.charAt(0) || "?").toUpperCase()}
+                        {(
+                          name.charAt(0) ||
+                          email.charAt(0) ||
+                          "?"
+                        ).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-500 mb-0.5">
@@ -599,10 +616,14 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                           {name || "Contact"}
                         </h4>
                         {phone ? (
-                          <p className="text-xs text-neutral-500 truncate">{phone}</p>
+                          <p className="text-xs text-neutral-500 truncate">
+                            {phone}
+                          </p>
                         ) : null}
                         {email ? (
-                          <p className="text-xs text-neutral-500 truncate">{email}</p>
+                          <p className="text-xs text-neutral-500 truncate">
+                            {email}
+                          </p>
                         ) : null}
                       </div>
                     </div>
@@ -614,7 +635,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         </div>
       </div>
 
-        <RegistrationModal
+      <RegistrationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         competition={event}

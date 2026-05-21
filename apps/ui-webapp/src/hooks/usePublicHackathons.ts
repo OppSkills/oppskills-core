@@ -1,4 +1,3 @@
-
 import {
   getPublicHackathons,
   type PublicHackathonListItem,
@@ -21,7 +20,7 @@ import { FilterState } from "@/components/common/GenericFilterSidebar";
 export function usePublicHackathons(
   festivalId?: string,
   filters?: FilterState,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useInfiniteQuery<
     {
@@ -48,7 +47,9 @@ export function usePublicHackathons(
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
+      return lastPage.page < lastPage.totalPages
+        ? lastPage.page + 1
+        : undefined;
     },
     enabled: options?.enabled,
   });
@@ -60,7 +61,7 @@ export function usePublicHackathons(
 export function useUpcomingHackathons(
   festivalId?: string,
   filters?: FilterState,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useInfiniteQuery<
     {
@@ -74,9 +75,8 @@ export function useUpcomingHackathons(
     queryKey: ["public-hackathons", "upcoming", festivalId, filters] as const,
     queryFn: async ({ pageParam = 1 }) => {
       // Import dynamically to avoid circular dependencies if any, or just ensure import is at top
-      const { getPublicUpcomingHackathons } = await import(
-        "@/lib/api/hackathonApi"
-      );
+      const { getPublicUpcomingHackathons } =
+        await import("@/lib/api/hackathonApi");
       return getPublicUpcomingHackathons({
         festival_id: festivalId,
         page: pageParam as number,
@@ -91,7 +91,9 @@ export function useUpcomingHackathons(
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
+      return lastPage.page < lastPage.totalPages
+        ? lastPage.page + 1
+        : undefined;
     },
     enabled: options?.enabled,
   });
@@ -104,7 +106,7 @@ import { useQuery } from "@tanstack/react-query";
  */
 export function usePublicHackathonsPaged(
   filters: FilterState & { page?: number; perPage?: number },
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery<
     {

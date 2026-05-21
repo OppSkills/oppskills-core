@@ -20,6 +20,7 @@ For detailed documentation, see the `docs/` folder:
 ## Project Overview
 
 OppSkills is a Turborepo monorepo managing hackathons, festivals, and teams. It consists of:
+
 - **Backend**: NestJS API (`apps/backend`)
 - **Frontend**: Next.js web app (`apps/ui-webapp`)
 - **Packages**: Shared database (`@oppskills/db`) and types (`@oppskills/types`)
@@ -27,6 +28,7 @@ OppSkills is a Turborepo monorepo managing hackathons, festivals, and teams. It 
 ## Essential Commands
 
 ### Development
+
 ```bash
 # Start all services
 pnpm dev
@@ -42,6 +44,7 @@ pnpm db:dev
 ```
 
 ### Database Management
+
 ```bash
 # Generate Prisma client
 pnpm db:generate
@@ -60,6 +63,7 @@ pnpm db:studio
 ```
 
 ### Building
+
 ```bash
 # Build all packages
 pnpm build
@@ -73,6 +77,7 @@ pnpm build --filter=@oppskills/types
 ```
 
 ### Testing (Backend)
+
 ```bash
 # Run all tests
 cd apps/backend && pnpm test
@@ -91,6 +96,7 @@ cd apps/backend && pnpm test:debug
 ```
 
 ### Linting & Formatting
+
 ```bash
 # Lint all packages
 pnpm lint
@@ -103,6 +109,7 @@ pnpm check-types
 ```
 
 ### Local Infrastructure
+
 ```bash
 # Start PostgreSQL and Redis via Docker
 docker compose up -d
@@ -112,6 +119,7 @@ docker compose up -d
 ```
 
 ### Webhook Development
+
 ```bash
 # Listen to Clerk webhooks (requires svix CLI)
 svix listen http://localhost:3001/user-accounts/clerk-webhook
@@ -122,6 +130,7 @@ svix listen http://localhost:3001/user-accounts/clerk-webhook
 ### Data Model Hierarchy
 
 The application uses a **hierarchical event structure**:
+
 - **Festivals** are top-level events (e.g., tech conferences)
 - **Hackathons** can be standalone OR belong to a festival
 - **Rounds** belong to hackathons (e.g., Round 1, Round 2, Finals)
@@ -129,6 +138,7 @@ The application uses a **hierarchical event structure**:
 - **Users** create events and join teams
 
 Key relationships:
+
 - `FestivalEntity` → has many `HackathonEntity` (via `festivalId`)
 - `HackathonEntity` → has many `RoundEntity`, `TeamEntity`, `PrizeBreakdownEntity`
 - `TeamEntity` → has many `TeamMemberEntity`
@@ -137,17 +147,20 @@ Key relationships:
 ### Authentication & Authorization
 
 **Clerk Integration:**
+
 - Primary authentication via Clerk (JWT tokens)
 - `ClerkAuthGuard` validates Bearer tokens or query param tokens
 - Extracts user from JWT `sub` claim and attaches to `request.user`
 - Webhook endpoint syncs Clerk user events to database
 
 **Auth Bypass (Development Only):**
+
 - Set `AUTH_BYPASS=true` in non-production environments
 - Pass `x-user-id` header to bypass Clerk (auto-creates users)
 - Security check prevents bypass in production
 
 **Authorization Levels:**
+
 - `AccessLevel.ADMIN` - Full system access
 - `AccessLevel.USER` - Standard user (default)
 - `AccessLevel.VIEWER` - Read-only access
@@ -156,6 +169,7 @@ Key relationships:
 ### Backend Structure
 
 **Module Organization:**
+
 - `UserAccountsModule` - Clerk webhook handling, user sync
 - `HackathonModule` - Hackathon CRUD, rounds, registration
 - `FestivalModule` - Festival CRUD
@@ -163,6 +177,7 @@ Key relationships:
 - `CommonModule` - Shared guards, config, caching (Redis)
 
 **Key Services:**
+
 - `ClerkAuthConfigService` - Environment config (Clerk, Redis, admin IDs)
 - `CacheService` - Redis-based caching layer
 - `HackathonService` - Complex business logic for hackathons
@@ -171,6 +186,7 @@ Key relationships:
 ### Frontend Structure
 
 Next.js app with:
+
 - App Router (`src/app/`)
 - Components (`src/components/`)
 - API integration via TanStack Query (`src/hooks/`)
@@ -180,12 +196,14 @@ Next.js app with:
 ### Shared Packages
 
 **@oppskills/db:**
+
 - Prisma client and schema
 - Single source of truth for database
 - Exports generated Prisma client
 - Uses `oppskills` PostgreSQL schema
 
 **@oppskills/types:**
+
 - Shared TypeScript types/DTOs
 - Uses `class-validator` and `class-transformer`
 - Imported by both frontend and backend
@@ -193,12 +211,14 @@ Next.js app with:
 ## Development Workflow
 
 ### Making Schema Changes
+
 1. Edit `packages/database/prisma/schema.prisma`
 2. Run `pnpm db:generate` to update Prisma client
 3. Run `pnpm db:push` (dev) or `pnpm db:migrate` (production-ready migration)
 4. Rebuild dependent packages: `pnpm build --filter=@oppskills/db`
 
 ### Adding New Features
+
 1. Update Prisma schema if database changes needed
 2. Add/update types in `packages/types/src/` if sharing between apps
 3. Implement backend logic in appropriate module (`apps/backend/src/`)
@@ -206,6 +226,7 @@ Next.js app with:
 5. Use TanStack Query for API calls on frontend
 
 ### Turbo Build Dependencies
+
 - `dev` tasks depend on `^build` (build dependencies first)
 - `build` tasks depend on `^build` (build in dependency order)
 - Database package must be built before backend
@@ -214,8 +235,9 @@ Next.js app with:
 ## Environment Variables
 
 **Backend (apps/backend/.env.local):**
+
 - `DATABASE_URL` - PostgreSQL connection string
-- `CLERK_SECRET_KEY` - Clerk secret key (sk_test_* or sk_live_*)
+- `CLERK_SECRET_KEY` - Clerk secret key (sk*test*_ or sk*live*_)
 - `CLERK_WEBHOOK_SECRET` - Clerk webhook signing secret
 - `REDISHOST` - Redis host (default: localhost)
 - `REDISPORT` - Redis port (default: 6379)
@@ -224,9 +246,11 @@ Next.js app with:
 - `AUTH_BYPASS` - Set to "true" to enable dev auth bypass
 
 **Database (packages/database/.env):**
+
 - `DATABASE_URL` - PostgreSQL connection string
 
 **Production Secrets:**
+
 - Loaded from AWS Secrets Manager via `load-secrets.mts`
 - Only runs when `NODE_ENV !== 'local'`
 - Uses IAM role credentials from container metadata
@@ -234,7 +258,9 @@ Next.js app with:
 ## Important Patterns
 
 ### Lifecycle Status
+
 Entities use `LifecycleStatus` enum:
+
 - `DRAFT` - Being created, not visible
 - `PUBLISHED` - Public and accepting registrations
 - `ONGOING` - Event is happening
@@ -242,19 +268,25 @@ Entities use `LifecycleStatus` enum:
 - `CANCELLED` - Event cancelled
 
 ### Visibility Control
+
 Hackathons support:
+
 - `PUBLIC` - Anyone can see and register
 - `PRIVATE` - Invitation only
 - `UNIVERSITY_ONLY` - Restricted to `allowedUniversities` list
 
 ### Location Handling
+
 Both festivals and hackathons store location as:
+
 - `locationType`: `PHYSICAL` or `VIRTUAL`
 - Physical: `locationAddress`, `locationCity`
 - Virtual: `locationVirtualLink`
 
 ### Registration Forms
+
 Hackathons can have optional `RegistrationFormEntity` with:
+
 - Custom fields via `RegistrationFieldEntity`
 - Field types: TEXT, PHONE_NO, EMAIL, NUMBER, ATTACHMENTS, OPTIONS
 - External form link support
@@ -275,7 +307,7 @@ Frontend runs on http://localhost:3000
 
 - Always run `pnpm db:generate` after schema changes
 - Build order matters: types/db → backend/frontend
-- Backend requires Redis for caching (configure via REDIS* env vars)
+- Backend requires Redis for caching (configure via REDIS\* env vars)
 - Clerk webhook needs proper signature verification in production
 - Auth bypass only works in development/test environments
 - Custom PostgreSQL schema name is "oppskills" (not "public")

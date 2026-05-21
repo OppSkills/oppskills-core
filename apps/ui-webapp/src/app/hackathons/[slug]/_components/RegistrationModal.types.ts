@@ -37,7 +37,10 @@ export interface CreateTeamFormContentProps {
   onUpdateAnswer: (fieldId: string, value: any) => void;
   teamName: string;
   setTeamName: (name: string) => void;
-  onFileSelect: (fieldId: string, e: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileSelect: (
+    fieldId: string,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => void;
   isUploading: boolean;
   uploadedFiles: Record<string, { name: string; url: string }>;
   isIndividual?: boolean;
@@ -69,7 +72,10 @@ export interface JoinTeamFormContentProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   onJoinTeam: (code: string) => void;
-  onFileSelect: (fieldId: string, e: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileSelect: (
+    fieldId: string,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => void;
   isUploading: boolean;
   uploadedFiles: Record<string, { name: string; url: string }>;
   slug: string;

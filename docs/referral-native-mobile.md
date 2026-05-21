@@ -13,13 +13,13 @@ Browser clients rely on the first-party cookie `oppskills_ref`, set when the use
 
 ## Endpoints (non-exhaustive; see `native-mobile-contract.ts` in `@oppskills/types`)
 
-| Method | Path | Body field |
-|--------|------|------------|
-| POST | `/hackathons/:slug/payment/order` | `referralCode?` |
-| POST | `/hackathons/:slug/payment/verify` | `referralCode?` |
-| POST | `/hackathons/:slug/teams/draft/join` | `referralCode?` |
-| POST | `/events/:slug/payment/order` | `referralCode?` |
-| POST | `/events/:slug/payment/verify` | `referralCode?` |
+| Method | Path                                 | Body field      |
+| ------ | ------------------------------------ | --------------- |
+| POST   | `/hackathons/:slug/payment/order`    | `referralCode?` |
+| POST   | `/hackathons/:slug/payment/verify`   | `referralCode?` |
+| POST   | `/hackathons/:slug/teams/draft/join` | `referralCode?` |
+| POST   | `/events/:slug/payment/order`        | `referralCode?` |
+| POST   | `/events/:slug/payment/verify`       | `referralCode?` |
 
 Use the same Clerk (or dev) auth headers as other authenticated calls.
 

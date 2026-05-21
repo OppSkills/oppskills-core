@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveReferralPublic, trackReferralClick } from "@/lib/api/referralApi";
+import {
+  resolveReferralPublic,
+  trackReferralClick,
+} from "@/lib/api/referralApi";
 import {
   buildReferralBridgeHtml,
   fetchReferralTargetShareOg,
@@ -37,20 +40,25 @@ export async function GET(
   const { code } = await props.params;
   const baseUrl = new URL("/", request.url);
   const origin = baseUrl.origin;
-  const canonicalReferralUrl = new URL(`/r/${encodeURIComponent(code)}`, baseUrl).toString();
+  const canonicalReferralUrl = new URL(
+    `/r/${encodeURIComponent(code)}`,
+    baseUrl,
+  ).toString();
 
   try {
     const resolved = await resolveReferralPublic(code);
     const redirectPath = destination(resolved.entityType, resolved.slug);
     const redirectTo = new URL(redirectPath, baseUrl).toString();
 
-    const entityOg = await fetchReferralTargetShareOg(resolved.entityType, resolved.slug);
-    const og =
-      entityOg ?? {
-        title: "OppSkills",
-        description: "College events, hackathons & competitions for students.",
-        imageUrl: new URL("/og_poster.png", origin).toString(),
-      };
+    const entityOg = await fetchReferralTargetShareOg(
+      resolved.entityType,
+      resolved.slug,
+    );
+    const og = entityOg ?? {
+      title: "OppSkills",
+      description: "College events, hackathons & competitions for students.",
+      imageUrl: new URL("/og_poster.png", origin).toString(),
+    };
 
     const html = buildReferralBridgeHtml({
       og,

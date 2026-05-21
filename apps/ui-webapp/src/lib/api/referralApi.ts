@@ -50,13 +50,23 @@ export async function createReferral(
 
 export async function listReferrals(
   token: string,
-  query: { entityType: ReferralEntityType; entityId: string; page?: number; pageSize?: number },
+  query: {
+    entityType: ReferralEntityType;
+    entityId: string;
+    page?: number;
+    pageSize?: number;
+  },
 ) {
   const res = await API.get("", {
     params: query,
     headers: buildAuthHeaders(token),
   });
-  return res.data as { data: ReferralListItem[]; total: number; page: number; pageSize: number };
+  return res.data as {
+    data: ReferralListItem[];
+    total: number;
+    page: number;
+    pageSize: number;
+  };
 }
 
 export async function getReferralAnalytics(
@@ -85,7 +95,12 @@ export async function getReferralRegistrations(
     params: { page, pageSize },
     headers: buildAuthHeaders(token),
   });
-  return res.data as { data: ReferredUser[]; total: number; page: number; pageSize: number };
+  return res.data as {
+    data: ReferredUser[];
+    total: number;
+    page: number;
+    pageSize: number;
+  };
 }
 
 export async function deleteReferral(token: string, id: string) {
@@ -129,7 +144,9 @@ export interface OrganizerReferrerDetails {
 }
 
 export async function getReferrerDetails(token: string, id: string) {
-  const res = await API.get(`/${id}/referrer-details`, { headers: buildAuthHeaders(token) });
+  const res = await API.get(`/${id}/referrer-details`, {
+    headers: buildAuthHeaders(token),
+  });
   return res.data as OrganizerReferrerDetails;
 }
 
@@ -152,12 +169,17 @@ export async function lookupReferrerUser(
 
 export async function resolveReferralPublic(code: string) {
   const res = await PUBLIC_API.get(`/resolve/${encodeURIComponent(code)}`);
-  return res.data as { entityType: ReferralEntityType; slug: string; isActive: boolean };
+  return res.data as {
+    entityType: ReferralEntityType;
+    slug: string;
+    isActive: boolean;
+  };
 }
 
-export async function trackReferralClick(
-  payload: { code: string; source?: string },
-) {
+export async function trackReferralClick(payload: {
+  code: string;
+  source?: string;
+}) {
   const res = await PUBLIC_API.post("/track-click", payload);
   return res.data;
 }

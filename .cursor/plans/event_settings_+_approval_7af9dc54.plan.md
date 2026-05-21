@@ -36,12 +36,12 @@ todos:
 
 ## Goal
 
-1) Add an organizer-facing settings page at `/dashboard/events/[slug]/settings`.2) Implement a platform-wide **approval workflow** for **Events + Hackathons + Festivals**:
+1. Add an organizer-facing settings page at `/dashboard/events/[slug]/settings`.2) Implement a platform-wide **approval workflow** for **Events + Hackathons + Festivals**:
 
 - Draft → “Submit for approval”
 - Admin approves → item becomes publicly listed
 
-3) Implement **Pause registrations** while remaining public (requires a dedicated flag).
+3. Implement **Pause registrations** while remaining public (requires a dedicated flag).
 
 ## Confirmed decisions
 
@@ -104,10 +104,10 @@ For each entity (events/hackathons/festivals):
 - `POST /<entity>/:id/submit-approval`
 - Permission: owner OR admin OR manager (match your existing event permission model; hackathon/festival may be owner/admin).
 - Behavior:
-    - Set `status` to `PUBLISHED` (if not already)
-    - Set `approvalStatus` to `PENDING`
-    - Set `approvalSubmittedAt = now()`
-    - Clear `approvalApprovedAt/RejectedAt` as needed
+  - Set `status` to `PUBLISHED` (if not already)
+  - Set `approvalStatus` to `PENDING`
+  - Set `approvalSubmittedAt = now()`
+  - Clear `approvalApprovedAt/RejectedAt` as needed
 
 ### Admin actions (no UI yet)
 
@@ -117,8 +117,8 @@ For each entity:
 - Permission: **admin only** (use existing admin detection with `ADMIN_USER_IDS`)
 - Body: `UpdateApprovalStatusDto`
 - Behavior:
-    - If approving: `approvalStatus=APPROVED`, set `approvalApprovedAt=now()`
-    - If rejecting: `approvalStatus=REJECTED`, set `approvalRejectedAt=now()`, store optional note
+  - If approving: `approvalStatus=APPROVED`, set `approvalApprovedAt=now()`
+  - If rejecting: `approvalStatus=REJECTED`, set `approvalRejectedAt=now()`, store optional note
 
 ### Pause registrations
 

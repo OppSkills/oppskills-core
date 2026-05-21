@@ -41,12 +41,16 @@ export function RegistrationTabs({
               "text-base font-medium transition-all relative pb-2 whitespace-nowrap xl:min-w-30 text-left",
               activeTab === tab.id
                 ? "text-primary-600"
-                : "text-neutral-700 hover:text-neutral-900"
+                : "text-neutral-700 hover:text-neutral-900",
             )}
           >
             {tab.label}
-            <div className={cn("absolute bottom-0 left-0 w-full h-[1.5px] rounded-full", activeTab === tab.id ? "bg-primary-600" : "bg-neutral-400")} />
-
+            <div
+              className={cn(
+                "absolute bottom-0 left-0 w-full h-[1.5px] rounded-full",
+                activeTab === tab.id ? "bg-primary-600" : "bg-neutral-400",
+              )}
+            />
           </button>
         ))}
       </div>

@@ -30,6 +30,7 @@ When a user registers for an event on `/events/:slug`, the following happens aut
 ## What Gets Logged
 
 ### Fixed Columns (always present):
+
 - `timestamp` - Registration timestamp (ISO format)
 - `eventId` - Event ID
 - `eventName` - Event name
@@ -39,6 +40,7 @@ When a user registers for an event on `/events/:slug`, the following happens aut
 - `submissionId` - Submission ID
 
 ### Question Columns (dynamic):
+
 - One column per registration form field
 - Format: `<Field Label> (<fieldId>)`
 - Examples:
@@ -99,13 +101,14 @@ After registering, check your backend console for:
 
 The 'Registrations' tab will be automatically created with headers like:
 
-| timestamp | eventId | eventName | userId | fullName | email | submissionId | Name (id) | Email (id) | ... |
-|-----------|---------|-----------|--------|----------|-------|--------------|-----------|------------|-----|
-| 2025-... | evt-123 | Test Event | usr-456 | John Doe | john@... | sub-789 | John Doe | john@... | ... |
+| timestamp | eventId | eventName  | userId  | fullName | email    | submissionId | Name (id) | Email (id) | ... |
+| --------- | ------- | ---------- | ------- | -------- | -------- | ------------ | --------- | ---------- | --- |
+| 2025-...  | evt-123 | Test Event | usr-456 | John Doe | john@... | sub-789      | John Doe  | john@...   | ... |
 
 ### Dynamic Header Management
 
 The service automatically:
+
 - **Creates the tab** if it doesn't exist
 - **Adds new headers** when new registration fields are added
 - **Maintains fixed column order** (timestamp, eventId, etc. always come first)
@@ -124,6 +127,7 @@ The service automatically:
 ### Issue: No logs appearing
 
 **Solution**:
+
 1. Check backend console for errors
 2. Verify event registration succeeded (check database)
 3. Run diagnostics: `curl http://localhost:3001/google-sheets/diagnostics`
@@ -131,6 +135,7 @@ The service automatically:
 ### Issue: Headers not aligned properly
 
 **Solution**:
+
 - The service automatically manages headers
 - If headers are misaligned, you can manually delete the 'Registrations' tab and it will be recreated
 - Fixed columns (timestamp, eventId, etc.) are always normalized to the beginning
@@ -138,15 +143,18 @@ The service automatically:
 ## Code Reference
 
 **Event Registration Flow**:
+
 - File: `apps/backend/src/event/event.service.ts`
 - Method: `joinEvent()` (line 744)
 - Google Sheets call: Line 1110
 
 **Google Sheets Logging**:
+
 - File: `apps/backend/src/event/event.service.ts`
 - Method: `logToGoogleSheets()` (lines 1122-1204)
 
 **Google Sheets Service**:
+
 - File: `apps/backend/src/google-sheets/google-sheets.service.ts`
 - Method: `appendRegistrationRow()` (lines 183-289)
 

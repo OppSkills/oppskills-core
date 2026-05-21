@@ -37,7 +37,7 @@ export default function ActionDropdown({
         <div
           className={cn(
             "p-2 rounded-full hover:bg-muted transition-colors border border-gray-300 cursor-pointer h-8 w-8 flex items-center justify-center",
-            className
+            className,
           )}
         >
           <MoreVertical className="w-4 h-4 text-muted-foreground" />
@@ -68,7 +68,10 @@ export default function ActionDropdown({
         )}
         {settingsHref && (
           <DropdownMenuItem asChild>
-            <Link href={settingsHref} className="w-full cursor-pointer flex items-center gap-2">
+            <Link
+              href={settingsHref}
+              className="w-full cursor-pointer flex items-center gap-2"
+            >
               <Settings className="w-4 h-4" />
               Settings
             </Link>

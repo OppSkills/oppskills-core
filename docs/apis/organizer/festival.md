@@ -9,6 +9,7 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
 ## 1. Dashboard & Detail
 
 ### List My Festivals (`GET /festivals/my`)
+
 - **Usage:** Fetches all festivals the user manages.
 - **Returns:**
   ```json
@@ -25,6 +26,7 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
   ```
 
 ### Get Festival Details (`GET /festivals/:id`)
+
 - **Usage:** Fetches the metadata, location, and the list of associated hackathons/events.
 - **Returns:**
   ```json
@@ -41,9 +43,10 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
   ```
 
 ### React Native Example (TanStack Query)
+
 ```typescript
 const { data: festival } = useQuery({
-  queryKey: ['festival', festivalId],
+  queryKey: ["festival", festivalId],
   queryFn: () => apiClient.request(`/festivals/${festivalId}`),
 });
 ```
@@ -75,14 +78,16 @@ Festivals are containers. You can list what is inside them.
 - **Delete Festival:** `DELETE /festivals/:id` (Soft deletes the festival).
 
 ### React Native Example
+
 ```typescript
 const updateStatus = useMutation({
-  mutationFn: (newStatus) => apiClient.request(`/festivals/${festivalId}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status: newStatus }),
-  }),
+  mutationFn: (newStatus) =>
+    apiClient.request(`/festivals/${festivalId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: newStatus }),
+    }),
   onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['festival', festivalId] });
+    queryClient.invalidateQueries({ queryKey: ["festival", festivalId] });
   },
 });
 ```

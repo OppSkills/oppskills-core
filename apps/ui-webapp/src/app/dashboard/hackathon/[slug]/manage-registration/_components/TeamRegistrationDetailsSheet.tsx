@@ -26,10 +26,19 @@ import { useQuery } from "@tanstack/react-query";
 import { getApiErrorMessage } from "@/lib/utils";
 import { getSafeToken } from "@/lib/auth-utils";
 import { EmptyState } from "@/components/common/EmptyState";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { RegistrationInfoCard } from "@/app/dashboard/_components/registration/RegistrationInfoCard";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
-import { CardListFallback, ProfileLikeFallback } from "@/components/boneyard/loading-fallbacks";
+import {
+  CardListFallback,
+  ProfileLikeFallback,
+} from "@/components/boneyard/loading-fallbacks";
 
 interface TeamRegistrationDetailsSheetProps {
   teamId: string | null;
@@ -50,10 +59,8 @@ export function TeamRegistrationDetailsSheet({
   } = teamById(teamId || "");
 
   const { data: registrationsData } = useHackathonRegistrationsBySlug(slug);
-  const { data: teamRegistrationData, isLoading: teamRegistrationLoading } = useHackathonTeamRegistration(
-    slug,
-    teamId,
-  );
+  const { data: teamRegistrationData, isLoading: teamRegistrationLoading } =
+    useHackathonTeamRegistration(slug, teamId);
   const [activeTab, setActiveTab] = useState<string>("");
 
   // Build round tabs from registrations data
@@ -201,7 +208,8 @@ export function TeamRegistrationDetailsSheet({
 
   // Find submission for selected round
   const selectedRoundSubmission = useMemo(() => {
-    if (!teamRegistrationData || activeTab === "members" || !teamId) return null;
+    if (!teamRegistrationData || activeTab === "members" || !teamId)
+      return null;
     const team = teamRegistrationData.team;
     if (!team || team.teamId !== teamId) return null;
     return team.roundSubmissions[activeTab] || null;
@@ -277,16 +285,18 @@ export function TeamRegistrationDetailsSheet({
                     <button
                       key={round.id}
                       onClick={() => setActiveTab(round.id)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold transition-all ${activeTab === round.id
-                        ? "bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/20"
-                        : "bg-white border-neutral-200 text-neutral-500 hover:bg-neutral-50"
-                        }`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold transition-all ${
+                        activeTab === round.id
+                          ? "bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/20"
+                          : "bg-white border-neutral-200 text-neutral-500 hover:bg-neutral-50"
+                      }`}
                     >
                       <div
-                        className={`flex items-center justify-center w-4 h-4 rounded-full text-[10px] border ${activeTab === round.id
-                          ? "border-white"
-                          : "border-neutral-300"
-                          }`}
+                        className={`flex items-center justify-center w-4 h-4 rounded-full text-[10px] border ${
+                          activeTab === round.id
+                            ? "border-white"
+                            : "border-neutral-300"
+                        }`}
                       >
                         {round.order + 1}
                       </div>
@@ -306,112 +316,118 @@ export function TeamRegistrationDetailsSheet({
                         <span className="text-xs text-neutral-400 inter font-medium">
                           {selectedRoundSubmission.submittedAt
                             ? new Date(
-                              selectedRoundSubmission.submittedAt,
-                            ).toLocaleString("en-IN", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                                selectedRoundSubmission.submittedAt,
+                              ).toLocaleString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
                             : "—"}
                         </span>
                       </div>
 
                       {selectedRoundSubmission.payload
                         ? (() => {
-                          const payload = selectedRoundSubmission.payload as Record<
-                            string,
-                            unknown
-                          >;
-                          const files = payload.files as
-                            | Array<{
-                              url?: string;
-                              publicUrl?: string;
-                              fileName?: string;
-                              name?: string;
-                              mimeType?: string;
-                              size?: number;
-                            }>
-                            | undefined;
-                          const fileUrl = (payload.fileUrl || payload.url) as
-                            | string
-                            | undefined;
-                          const fileName = payload.fileName as string | undefined;
+                            const payload =
+                              selectedRoundSubmission.payload as Record<
+                                string,
+                                unknown
+                              >;
+                            const files = payload.files as
+                              | Array<{
+                                  url?: string;
+                                  publicUrl?: string;
+                                  fileName?: string;
+                                  name?: string;
+                                  mimeType?: string;
+                                  size?: number;
+                                }>
+                              | undefined;
+                            const fileUrl = (payload.fileUrl || payload.url) as
+                              | string
+                              | undefined;
+                            const fileName = payload.fileName as
+                              | string
+                              | undefined;
 
-                          return (
-                            <div className="space-y-6">
-                              {Array.isArray(files) && files.length > 0 && (
-                                <div className="space-y-3">
-                                  <h3 className="font-bold text-neutral-800 poppins text-sm">
-                                    Submitted Files
-                                  </h3>
-                                  <div className="grid gap-3">
-                                    {files.map((file, index) => {
-                                      const url = file.url || file.publicUrl;
-                                      const name =
-                                        file.fileName ||
-                                        file.name ||
-                                        `File ${index + 1}`;
-                                      return (
-                                        <a
-                                          key={index}
-                                          href={url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-100 hover:border-primary-200 hover:bg-primary-50/30 transition-all group"
-                                        >
-                                          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-sm border border-neutral-100">
-                                            <FileText className="h-5 w-5 text-primary-500" />
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <p className="font-bold text-neutral-800 truncate text-sm inter">
-                                              {name}
-                                            </p>
-                                            {file.mimeType && (
-                                              <p className="text-[10px] text-neutral-400 font-medium inter">
-                                                {file.mimeType}
+                            return (
+                              <div className="space-y-6">
+                                {Array.isArray(files) && files.length > 0 && (
+                                  <div className="space-y-3">
+                                    <h3 className="font-bold text-neutral-800 poppins text-sm">
+                                      Submitted Files
+                                    </h3>
+                                    <div className="grid gap-3">
+                                      {files.map((file, index) => {
+                                        const url = file.url || file.publicUrl;
+                                        const name =
+                                          file.fileName ||
+                                          file.name ||
+                                          `File ${index + 1}`;
+                                        return (
+                                          <a
+                                            key={index}
+                                            href={url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-100 hover:border-primary-200 hover:bg-primary-50/30 transition-all group"
+                                          >
+                                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-sm border border-neutral-100">
+                                              <FileText className="h-5 w-5 text-primary-500" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="font-bold text-neutral-800 truncate text-sm inter">
+                                                {name}
                                               </p>
-                                            )}
-                                          </div>
-                                          <ExternalLink className="h-4 w-4 text-neutral-300 group-hover:text-primary-500 transition-colors" />
-                                        </a>
-                                      );
-                                    })}
+                                              {file.mimeType && (
+                                                <p className="text-[10px] text-neutral-400 font-medium inter">
+                                                  {file.mimeType}
+                                                </p>
+                                              )}
+                                            </div>
+                                            <ExternalLink className="h-4 w-4 text-neutral-300 group-hover:text-primary-500 transition-colors" />
+                                          </a>
+                                        );
+                                      })}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
 
-                              {!Array.isArray(files) && fileUrl && (
-                                <div className="space-y-3">
-                                  <h3 className="font-bold text-neutral-800 poppins text-sm">
-                                    Submitted File
-                                  </h3>
-                                  <a
-                                    href={fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-100 hover:border-primary-200 hover:bg-primary-50/30 transition-all group"
-                                  >
-                                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-sm border border-neutral-100">
-                                      <FileText className="h-5 w-5 text-primary-500" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-bold text-neutral-800 truncate text-sm inter">
-                                        {fileName || "Submission File"}
-                                      </p>
-                                    </div>
-                                    <Download className="h-4 w-4 text-neutral-300 group-hover:text-primary-500 transition-colors" />
-                                  </a>
-                                </div>
-                              )}
+                                {!Array.isArray(files) && fileUrl && (
+                                  <div className="space-y-3">
+                                    <h3 className="font-bold text-neutral-800 poppins text-sm">
+                                      Submitted File
+                                    </h3>
+                                    <a
+                                      href={fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-100 hover:border-primary-200 hover:bg-primary-50/30 transition-all group"
+                                    >
+                                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-sm border border-neutral-100">
+                                        <FileText className="h-5 w-5 text-primary-500" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-neutral-800 truncate text-sm inter">
+                                          {fileName || "Submission File"}
+                                        </p>
+                                      </div>
+                                      <Download className="h-4 w-4 text-neutral-300 group-hover:text-primary-500 transition-colors" />
+                                    </a>
+                                  </div>
+                                )}
 
-                              {Object.entries(payload).filter(
-                                ([key]) =>
-                                  !["files", "fileUrl", "url", "fileName"].includes(
-                                    key,
-                                  ),
-                              ).length > 0 && (
+                                {Object.entries(payload).filter(
+                                  ([key]) =>
+                                    ![
+                                      "files",
+                                      "fileUrl",
+                                      "url",
+                                      "fileName",
+                                    ].includes(key),
+                                ).length > 0 && (
                                   <div className="space-y-3">
                                     <h3 className="font-bold text-neutral-800 poppins text-sm">
                                       Additional Information
@@ -433,7 +449,9 @@ export function TeamRegistrationDetailsSheet({
                                             className="p-3 bg-neutral-50 rounded-2xl border border-neutral-100"
                                           >
                                             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider inter">
-                                              {key.replace(/([A-Z])/g, " $1").trim()}
+                                              {key
+                                                .replace(/([A-Z])/g, " $1")
+                                                .trim()}
                                             </p>
                                             <p className="text-neutral-800 mt-1 inter text-sm font-medium">
                                               {typeof value === "string"
@@ -445,9 +463,9 @@ export function TeamRegistrationDetailsSheet({
                                     </div>
                                   </div>
                                 )}
-                            </div>
-                          );
-                        })()
+                              </div>
+                            );
+                          })()
                         : null}
                     </div>
                   ) : (
@@ -463,6 +481,6 @@ export function TeamRegistrationDetailsSheet({
           </BoneyardSkeleton>
         </div>
       </SheetContent>
-    </Sheet >
+    </Sheet>
   );
 }

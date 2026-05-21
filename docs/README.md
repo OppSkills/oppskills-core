@@ -7,16 +7,19 @@ Welcome to the OppSkills platform documentation. This folder contains comprehens
 This documentation is organized into the following sections:
 
 ### Core Documentation
+
 - [Architecture Overview](./architecture.md) - System architecture, tech stack, and high-level design
 - [Development Guide](./development.md) - Local setup, commands, and development workflow
 - [Database Schema](./database.md) - Complete database schema, entities, relationships, and enums
 
 ### Application Layer
+
 - [Backend Documentation](./backend.md) - NestJS modules, services, controllers, and business logic
 - [Frontend Documentation](./frontend.md) - Next.js app structure, components, pages, and hooks
 - [API Reference](./api.md) - Complete API endpoints documentation
 
 ### Operations
+
 - [Authentication & Authorization](./authentication.md) - Clerk integration, auth guards, and role-based access
 - [Deployment Guide](./deployment.md) - Infrastructure, CI/CD, and production deployment
 - [Paid registration answers (escrow + flows)](./paid-registration-answers-flow.md) - How form answers sync with Razorpay and edge cases
@@ -51,6 +54,7 @@ OppSkills is a Turborepo monorepo for managing hackathons, festivals, and teams:
 ## Contributing
 
 When making changes:
+
 1. Always run `pnpm db:generate` after schema changes
 2. Follow the build order: types/db → backend/frontend
 3. Use `pnpm lint` and `pnpm format` before committing

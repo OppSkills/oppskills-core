@@ -4,7 +4,7 @@ import {
   IsOptional,
   IsDateString,
   IsNumberString,
-} from 'class-validator';
+} from "class-validator";
 
 export class MarkPayoutPaidDto {
   @IsString()

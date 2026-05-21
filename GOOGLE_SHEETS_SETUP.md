@@ -91,26 +91,31 @@ curl -X POST http://localhost:3001/google-sheets/test/registration \
 ## Troubleshooting
 
 ### Error: "Service not initialized"
+
 - Check that all three env variables are set
 - Restart the backend after changing .env.local
 
 ### Error: "The caller does not have permission"
+
 - Make sure you shared the spreadsheet with the service account email
 - The service account email must have Editor access
 
 ### Error: "Unable to parse range"
+
 - Check that the spreadsheet ID is correct
 - Make sure the tab name exists in your spreadsheet
 
 ### Private Key Format Issues
 
 If you get authentication errors, ensure your private key:
+
 - Starts with `-----BEGIN PRIVATE KEY-----`
 - Ends with `-----END PRIVATE KEY-----`
 - Has `\n` for newlines (the service automatically converts these)
 - Is wrapped in double quotes in the .env file
 
 Example from JSON:
+
 ```json
 {
   "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQE...\n-----END PRIVATE KEY-----\n"
@@ -124,6 +129,7 @@ Copy this EXACT value (including the `\n` characters) into your .env.local file.
 Your spreadsheet: https://docs.google.com/spreadsheets/d/1qV7JzLYbrI6KsGN_EqM1s8g6MP40uwayvd2GIwa7SYo/edit
 
 You need to:
+
 1. ✅ Spreadsheet ID is already configured
 2. ❌ Create a service account and get credentials
 3. ❌ Share the spreadsheet with the service account

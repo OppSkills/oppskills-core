@@ -13,7 +13,12 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { DateRangeFilter } from "./_components/DateRangeFilter";
-import { getOrganizerStats, getOrganizerRegistrationTrends, getTopListings, getHighestPerformingListings } from "@/lib/api/analyticsApi";
+import {
+  getOrganizerStats,
+  getOrganizerRegistrationTrends,
+  getTopListings,
+  getHighestPerformingListings,
+} from "@/lib/api/analyticsApi";
 import { cn } from "@/lib/utils";
 
 import {
@@ -120,17 +125,23 @@ export default function Page() {
   });
 
   // Fetch Highest Performing
-  const { data: highestPerformingRaw, isLoading: isHighestPerformingLoading } = useQuery({
-    queryKey: ["organizer-highest-performing"],
-    enabled: isAuthLoaded,
-    queryFn: async () => {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
-      return getHighestPerformingListings(token);
-    },
-  });
+  const { data: highestPerformingRaw, isLoading: isHighestPerformingLoading } =
+    useQuery({
+      queryKey: ["organizer-highest-performing"],
+      enabled: isAuthLoaded,
+      queryFn: async () => {
+        const token = await getToken();
+        if (!token) throw new Error("Not authenticated");
+        return getHighestPerformingListings(token);
+      },
+    });
 
-  const isLoading = !isUserLoaded || isStatsLoading || isTrendsLoading || isTopListingsLoading || isHighestPerformingLoading;
+  const isLoading =
+    !isUserLoaded ||
+    isStatsLoading ||
+    isTrendsLoading ||
+    isTopListingsLoading ||
+    isHighestPerformingLoading;
 
   // Process Stats for Cards
   const stats = statsRaw as OrganizerStats | undefined;
@@ -168,9 +179,14 @@ export default function Page() {
     },
   ];
 
-  const highestPerforming = highestPerformingRaw as HighestPerformingData | null;
-  const showEventAlert = highestPerforming?.event ? highestPerforming.event.tregistrations > 1000 : false;
-  const showHackathonAlert = highestPerforming?.hackathon ? highestPerforming.hackathon.tregistrations > 1000 : false;
+  const highestPerforming =
+    highestPerformingRaw as HighestPerformingData | null;
+  const showEventAlert = highestPerforming?.event
+    ? highestPerforming.event.tregistrations > 1000
+    : false;
+  const showHackathonAlert = highestPerforming?.hackathon
+    ? highestPerforming.hackathon.tregistrations > 1000
+    : false;
   const showAlerts = showEventAlert || showHackathonAlert;
 
   // Process Trends for Charts
@@ -178,19 +194,24 @@ export default function Page() {
 
   // 1. Registration Line Chart Data
   const registrationData = trends
-    ? Object.entries(trends.registrationTrend).map(([date, counts]) => ({
-      date,
-      events: counts.events,
-      hackathon: counts.hackathon,
-    })).sort((a, b) => {
-      // Simple string comparison for DD-MM-YYYY sort might fail if months wrap.
-      // Parsing date is safer, but assuming API returns standard format.
-      // Let's rely on API ordering (typically chronological) or parse if needed.
-      // For strict correctness, let's parse.
-      const [d1, m1, y1] = a.date.split("-").map(Number);
-      const [d2, m2, y2] = b.date.split("-").map(Number);
-      return new Date(y1, m1 - 1, d1).getTime() - new Date(y2, m2 - 1, d2).getTime();
-    })
+    ? Object.entries(trends.registrationTrend)
+        .map(([date, counts]) => ({
+          date,
+          events: counts.events,
+          hackathon: counts.hackathon,
+        }))
+        .sort((a, b) => {
+          // Simple string comparison for DD-MM-YYYY sort might fail if months wrap.
+          // Parsing date is safer, but assuming API returns standard format.
+          // Let's rely on API ordering (typically chronological) or parse if needed.
+          // For strict correctness, let's parse.
+          const [d1, m1, y1] = a.date.split("-").map(Number);
+          const [d2, m2, y2] = b.date.split("-").map(Number);
+          return (
+            new Date(y1, m1 - 1, d1).getTime() -
+            new Date(y2, m2 - 1, d2).getTime()
+          );
+        })
     : [];
 
   const registrationLines = [
@@ -202,15 +223,20 @@ export default function Page() {
   // User requested line chart for gender as well.
   // We can just use the provided api data which is gender trends by date.
   const genderChartData = trends
-    ? Object.entries(trends.genderRegistrationTrend).map(([date, counts]) => ({
-      date,
-      male: counts.male,
-      female: counts.female,
-    })).sort((a, b) => {
-      const [d1, m1, y1] = a.date.split("-").map(Number);
-      const [d2, m2, y2] = b.date.split("-").map(Number);
-      return new Date(y1, m1 - 1, d1).getTime() - new Date(y2, m2 - 1, d2).getTime();
-    })
+    ? Object.entries(trends.genderRegistrationTrend)
+        .map(([date, counts]) => ({
+          date,
+          male: counts.male,
+          female: counts.female,
+        }))
+        .sort((a, b) => {
+          const [d1, m1, y1] = a.date.split("-").map(Number);
+          const [d2, m2, y2] = b.date.split("-").map(Number);
+          return (
+            new Date(y1, m1 - 1, d1).getTime() -
+            new Date(y2, m2 - 1, d2).getTime()
+          );
+        })
     : [];
 
   const genderLines = [
@@ -218,8 +244,13 @@ export default function Page() {
     { key: "female", color: "#ec4899", label: "Female" },
   ];
 
-
-  if (isLoading && !stats && !trends && !topListingsRaw && !highestPerformingRaw) {
+  if (
+    isLoading &&
+    !stats &&
+    !trends &&
+    !topListingsRaw &&
+    !highestPerformingRaw
+  ) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#FAFAFA]">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
@@ -272,7 +303,7 @@ export default function Page() {
             <RegistrationLineChart
               data={registrationData}
               lines={registrationLines}
-              title={`Registration Trends (${period.replace('_', ' ')})`}
+              title={`Registration Trends (${period.replace("_", " ")})`}
             />
           </MotionItem>
           <MotionItem className="w-full">
@@ -280,7 +311,7 @@ export default function Page() {
             <RegistrationLineChart
               data={genderChartData}
               lines={genderLines}
-              title={`Gender Registration Trends (${period.replace('_', ' ')})`}
+              title={`Gender Registration Trends (${period.replace("_", " ")})`}
             />
           </MotionItem>
         </MotionContainer>
@@ -288,7 +319,7 @@ export default function Page() {
         {/* Bottom Row: Recent Listings and Alerts */}
         <MotionContainer className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full pb-10">
           <MotionItem>
-            <RecentListing data={topListingsRaw as ListingItem[] || []} />
+            <RecentListing data={(topListingsRaw as ListingItem[]) || []} />
           </MotionItem>
           {/* {showAlerts && (
             <MotionItem className="w-full">

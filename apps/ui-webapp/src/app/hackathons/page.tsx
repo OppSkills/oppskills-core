@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 
-import {
-  usePublicHackathonsPaged,
-} from "@/hooks/usePublicHackathons";
+import { usePublicHackathonsPaged } from "@/hooks/usePublicHackathons";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import { FilterState } from "@/components/common/GenericFilterSidebar";
 import { ListingItem } from "@/components/common/ListingCard";
@@ -29,7 +27,7 @@ export default function CompetitionsPage() {
       page: curPage,
       perPage,
     },
-    { enabled: true }
+    { enabled: true },
   );
 
   const hackathons = data?.items ?? [];

@@ -1,9 +1,5 @@
 "use client";
-import {
-  FileEdit,
-  Calendar as CalendarIcon,
-  Users,
-} from "lucide-react";
+import { FileEdit, Calendar as CalendarIcon, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +29,14 @@ import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
-import { ClockCircle, DocumentText, MapPoint, MagicStick2, Earth, AltArrowDown as SolarChevronDown } from "@solar-icons/react";
+import {
+  ClockCircle,
+  DocumentText,
+  MapPoint,
+  MagicStick2,
+  Earth,
+  AltArrowDown as SolarChevronDown,
+} from "@solar-icons/react";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
 import InputBlock from "@/components/ui/derived/InputBlock";
 import LocationInputModal from "@/components/ui/derived/LocationInputModal";
@@ -58,8 +61,10 @@ export default function BasicDetails({
 }: BasicDetailsProps) {
   const { getToken } = useAuth();
   const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
-  const bannerInputId = useMemo(() => `edit-hackathon-banner-upload-${crypto.randomUUID()}`, []);
-
+  const bannerInputId = useMemo(
+    () => `edit-hackathon-banner-upload-${crypto.randomUUID()}`,
+    [],
+  );
 
   async function handleBannerSelected(file: File | null): Promise<void> {
     if (!file) return;
@@ -133,7 +138,14 @@ export default function BasicDetails({
             <DropdownMenuContent className="w-[300px]">
               <DropdownMenuLabel>Type</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setFormData({ ...formData, eventFestName: "Individual Hackathon" })}>
+              <DropdownMenuItem
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    eventFestName: "Individual Hackathon",
+                  })
+                }
+              >
                 Individual Hackathon
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -150,8 +162,20 @@ export default function BasicDetails({
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-[200px]">
-              <DropdownMenuItem onClick={() => setFormData({ ...formData, eventFestVisibility: "Public" })}>Public</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFormData({ ...formData, eventFestVisibility: "Private" })}>Private</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  setFormData({ ...formData, eventFestVisibility: "Public" })
+                }
+              >
+                Public
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  setFormData({ ...formData, eventFestVisibility: "Private" })
+                }
+              >
+                Private
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -162,7 +186,9 @@ export default function BasicDetails({
             label={
               <input
                 value={formData.eventName}
-                onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, eventName: e.target.value })
+                }
                 className="text-2xl md:text-3xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50 w-full text-foreground"
                 placeholder="Hackathon Name"
               />
@@ -178,7 +204,15 @@ export default function BasicDetails({
               <div className="h-full">
                 <InputBlock
                   icon={<CalendarIcon className="w-6 h-6" />}
-                  label={formData.eventDate ? formData.eventDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Start Date"}
+                  label={
+                    formData.eventDate
+                      ? formData.eventDate.toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "Start Date"
+                  }
                   subLabel="Hackathon Start"
                 />
               </div>
@@ -187,7 +221,16 @@ export default function BasicDetails({
               <Calendar
                 mode="single"
                 selected={formData.eventDate}
-                onSelect={(date) => setFormData(prev => ({ ...prev, eventDate: date, registrationSettings: { ...prev.registrationSettings, eventDate: date } }))}
+                onSelect={(date) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    eventDate: date,
+                    registrationSettings: {
+                      ...prev.registrationSettings,
+                      eventDate: date,
+                    },
+                  }))
+                }
                 initialFocus
               />
             </PopoverContent>
@@ -199,7 +242,16 @@ export default function BasicDetails({
               <input
                 type="time"
                 value={formData.eventTimeFrom}
-                onChange={(e) => setFormData(prev => ({ ...prev, eventTimeFrom: e.target.value, registrationSettings: { ...prev.registrationSettings, eventTime: e.target.value } }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    eventTimeFrom: e.target.value,
+                    registrationSettings: {
+                      ...prev.registrationSettings,
+                      eventTime: e.target.value,
+                    },
+                  }))
+                }
                 className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
               />
             }
@@ -213,7 +265,15 @@ export default function BasicDetails({
               <div className="h-full">
                 <InputBlock
                   icon={<CalendarIcon className="w-6 h-6" />}
-                  label={formData.eventEndDate ? formData.eventEndDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "End Date (Optional)"}
+                  label={
+                    formData.eventEndDate
+                      ? formData.eventEndDate.toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "End Date (Optional)"
+                  }
                   subLabel="Hackathon End"
                 />
               </div>
@@ -222,7 +282,16 @@ export default function BasicDetails({
               <Calendar
                 mode="single"
                 selected={formData.eventEndDate}
-                onSelect={(date) => setFormData(prev => ({ ...prev, eventEndDate: date, registrationSettings: { ...prev.registrationSettings, endDate: date } }))}
+                onSelect={(date) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    eventEndDate: date,
+                    registrationSettings: {
+                      ...prev.registrationSettings,
+                      endDate: date,
+                    },
+                  }))
+                }
                 initialFocus
               />
             </PopoverContent>
@@ -234,7 +303,16 @@ export default function BasicDetails({
               <input
                 type="time"
                 value={formData.eventTimeTo || ""}
-                onChange={(e) => setFormData(prev => ({ ...prev, eventTimeTo: e.target.value, registrationSettings: { ...prev.registrationSettings, endTime: e.target.value } }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    eventTimeTo: e.target.value,
+                    registrationSettings: {
+                      ...prev.registrationSettings,
+                      endTime: e.target.value,
+                    },
+                  }))
+                }
                 className="bg-transparent border-none p-0 text-lg font-medium focus:ring-0 outline-none text-foreground w-full cursor-pointer"
                 placeholder="End Time"
               />
@@ -245,7 +323,9 @@ export default function BasicDetails({
 
         <LocationInputModal
           value={formData.eventLocation}
-          onChange={(val) => setFormData((prev) => ({ ...prev, eventLocation: val }))}
+          onChange={(val) =>
+            setFormData((prev) => ({ ...prev, eventLocation: val }))
+          }
           label="Add Location"
           subLabel="Offline or Virtual"
         />
@@ -255,17 +335,29 @@ export default function BasicDetails({
             <div className="h-full">
               <InputBlock
                 icon={<DocumentText className="w-6 h-6" />}
-                label={formData.eventDescription ? "Description" : "Add Description"}
-                subLabel={formData.eventDescription ? formData.eventDescription.replace(/<[^>]*>?/gm, "").substring(0, 50) + "..." : "Details about the hackathon"}
+                label={
+                  formData.eventDescription ? "Description" : "Add Description"
+                }
+                subLabel={
+                  formData.eventDescription
+                    ? formData.eventDescription
+                        .replace(/<[^>]*>?/gm, "")
+                        .substring(0, 50) + "..."
+                    : "Details about the hackathon"
+                }
               />
             </div>
           </DialogTrigger>
           <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-            <DialogHeader><DialogTitle>Description</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>Description</DialogTitle>
+            </DialogHeader>
             <div className="flex-1 overflow-hidden border rounded-md">
               <RichTextEditor
                 value={formData.eventDescription}
-                onChange={(content) => setFormData({ ...formData, eventDescription: content })}
+                onChange={(content) =>
+                  setFormData({ ...formData, eventDescription: content })
+                }
               />
             </div>
           </DialogContent>
@@ -283,9 +375,18 @@ export default function BasicDetails({
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              {["Coding Hackathon", "Idea Hackathon", "Open Hackathon"].map(t => (
-                <DropdownMenuItem key={t} onClick={() => setFormData({ ...formData, hackathonType: t })}>{t}</DropdownMenuItem>
-              ))}
+              {["Coding Hackathon", "Idea Hackathon", "Open Hackathon"].map(
+                (t) => (
+                  <DropdownMenuItem
+                    key={t}
+                    onClick={() =>
+                      setFormData({ ...formData, hackathonType: t })
+                    }
+                  >
+                    {t}
+                  </DropdownMenuItem>
+                ),
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -300,8 +401,23 @@ export default function BasicDetails({
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="max-h-60 overflow-y-auto">
-              {["Individual", "Team of 2", "Team of 3", "Team of 4", "Team of 5", "Team of 2-4", "Team of 3-5"].map(t => (
-                <DropdownMenuItem key={t} onClick={() => setFormData({ ...formData, participantType: t })}>{t}</DropdownMenuItem>
+              {[
+                "Individual",
+                "Team of 2",
+                "Team of 3",
+                "Team of 4",
+                "Team of 5",
+                "Team of 2-4",
+                "Team of 3-5",
+              ].map((t) => (
+                <DropdownMenuItem
+                  key={t}
+                  onClick={() =>
+                    setFormData({ ...formData, participantType: t })
+                  }
+                >
+                  {t}
+                </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>

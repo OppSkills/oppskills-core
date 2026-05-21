@@ -221,7 +221,7 @@ export default function TalentPipelinePage() {
   React.useEffect(() => {
     if (!searchTerm.trim()) return setTableData(data);
     const filteredData = data.filter((item) =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()),
     );
     setTableData(filteredData);
   }, [searchTerm]);
@@ -291,7 +291,7 @@ export default function TalentPipelinePage() {
                   <div
                     key={header.id}
                     className={cn(
-                      "text-sm text-foreground"
+                      "text-sm text-foreground",
                       // Alignments based on column ID if needed, though handled in cells
                     )}
                   >
@@ -299,7 +299,7 @@ export default function TalentPipelinePage() {
                       ? null
                       : flexRender(
                           header.column.columnDef.header,
-                          header.getContext()
+                          header.getContext(),
                         )}
                   </div>
                 ))}
@@ -314,7 +314,7 @@ export default function TalentPipelinePage() {
                 key={row.id}
                 className={cn(
                   "grid grid-cols-[60px_1.8fr_1.2fr_1.2fr_1.8fr_1.8fr] gap-4 p-5 items-center border-b border-border last:border-0 hover:bg-muted/5 transition-colors",
-                  "h-auto"
+                  "h-auto",
                 )}
               >
                 {row.getVisibleCells().map((cell) => (

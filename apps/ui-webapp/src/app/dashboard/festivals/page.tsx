@@ -25,14 +25,24 @@ export default function FestivalsDashboardPage() {
 
       const res: any = await getMyFestivals(token, { page, take });
 
-      const items = Array.isArray(res.items) ? res.items : (Array.isArray(res) ? res : []);
+      const items = Array.isArray(res.items)
+        ? res.items
+        : Array.isArray(res)
+          ? res
+          : [];
 
       const rows: FestivalItem[] = items.map((item: any) => {
         const events = item.events || [];
         const hackathons = item.hackathons || [];
 
-        const eventCandidates = events.reduce((sum: number, e: any) => sum + (e.registrationCount || 0), 0);
-        const competitionCandidates = hackathons.reduce((sum: number, h: any) => sum + (h.registrationCount || 0), 0);
+        const eventCandidates = events.reduce(
+          (sum: number, e: any) => sum + (e.registrationCount || 0),
+          0,
+        );
+        const competitionCandidates = hackathons.reduce(
+          (sum: number, h: any) => sum + (h.registrationCount || 0),
+          0,
+        );
         const totalCandidates = eventCandidates + competitionCandidates;
 
         return {
@@ -72,7 +82,9 @@ export default function FestivalsDashboardPage() {
     <div className="flex flex-col gap-6 p-6 min-h-screen bg-neutral-100 w-full overflow-x-hidden">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-neutral-900">Festivals ({data.length})</h1>
+        <h1 className="text-2xl font-bold text-neutral-900">
+          Festivals ({data.length})
+        </h1>
       </div>
 
       {/* Table Section */}

@@ -881,15 +881,14 @@ export class EventPaymentService {
       fieldId: string;
       value: string | number | string[];
     }> =
-      fromEscrow?.length ?? 0
+      (fromEscrow?.length ?? 0)
         ? fromEscrow!.map((a) => ({
             fieldId: a.fieldId,
             value: a.value,
           }))
         : [];
 
-    const base =
-      fromSubmission.length > 0 ? fromSubmission : fromEscrowMapped;
+    const base = fromSubmission.length > 0 ? fromSubmission : fromEscrowMapped;
 
     if (bodyAnswers?.length) {
       const merged = new Map<string, string | number | string[]>();

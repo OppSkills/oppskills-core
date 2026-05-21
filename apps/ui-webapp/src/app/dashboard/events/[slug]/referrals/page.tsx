@@ -7,61 +7,64 @@ import { ReferralAnalyticsCards } from "@/app/dashboard/_components/referrals/Re
 import { ReferralsAnalyticsLoader } from "@/app/dashboard/_components/referrals/ReferralsAnalyticsLoader";
 
 async function getEventData(token: string, slug: string) {
-    try {
-        const event = (await getEventBySlug(token, slug)) as { name: string; id: string };
-        return event;
-    } catch (e) {
-        return { name: "Event", id: "" };
-    }
+  try {
+    const event = (await getEventBySlug(token, slug)) as {
+      name: string;
+      id: string;
+    };
+    return event;
+  } catch (e) {
+    return { name: "Event", id: "" };
+  }
 }
 
 export default async function ReferralsPage(props: {
-    params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-    const params = await props.params;
-    const { slug } = params;
-    const { getToken } = await auth();
-    const token = (await getToken()) || "";
+  const params = await props.params;
+  const { slug } = params;
+  const { getToken } = await auth();
+  const token = (await getToken()) || "";
 
-    const event = await getEventData(token, slug);
+  const event = await getEventData(token, slug);
 
-    return (
-        <div className="flex justify-center w-full min-h-screen bg-[#FAFAFA]">
-            <div className="w-full p-4 lg:p-6 flex flex-col gap-8">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
-                    <div className="left space-y-2">
-                        <h1 className="font-bold text-3xl md:text-4xl text-foreground">
-                            {event.name}
-                        </h1>
-                        <p className="text-muted-foreground text-sm font-medium">
-                            View all the Referral details about Event
-                        </p>
-                    </div>
-                    <div className="right self-end md:self-auto w-full sm:w-auto">
-                        <AddReferrerButton entityType="EVENT" entityId={event.id} />
-                    </div>
-                </div>
-
-                {/* Analytics Cards */}
-                <Suspense fallback={<ReferralsAnalyticsLoader />}>
-                    <ReferralAnalyticsCards
-                        entityType="EVENT"
-                        entityId={event.id}
-                        slug={slug}
-                        itemName={event.name}
-                    />
-                </Suspense>
-
-                {/* Referrals Table */}
-                <div className="w-full">
-                    <ReferralsTable
-                        baseUrl={`/dashboard/events/${slug}/referrals`}
-                        entityType="EVENT"
-                        entityId={event.id}
-                    />
-                </div>
-            </div>
+  return (
+    <div className="flex justify-center w-full min-h-screen bg-[#FAFAFA]">
+      <div className="w-full p-4 lg:p-6 flex flex-col gap-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
+          <div className="left space-y-2">
+            <h1 className="font-bold text-3xl md:text-4xl text-foreground">
+              {event.name}
+            </h1>
+            <p className="text-muted-foreground text-sm font-medium">
+              View all the Referral details about Event
+            </p>
+          </div>
+          <div className="right self-end md:self-auto w-full sm:w-auto">
+            <AddReferrerButton entityType="EVENT" entityId={event.id} />
+          </div>
         </div>
-    );
+
+        {/* Analytics Cards */}
+        <Suspense fallback={<ReferralsAnalyticsLoader />}>
+          <ReferralAnalyticsCards
+            entityType="EVENT"
+            entityId={event.id}
+            slug={slug}
+            itemName={event.name}
+          />
+        </Suspense>
+
+        {/* Referrals Table */}
+        <div className="w-full">
+          <ReferralsTable
+            baseUrl={`/dashboard/events/${slug}/referrals`}
+            entityType="EVENT"
+            entityId={event.id}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -103,7 +103,7 @@ export interface HackathonApiData {
 function mapRoundStatus(
   startsAt: string,
   endsAt: string,
-  status?: string
+  status?: string,
 ): RoundStatus {
   const now = new Date();
   const start = new Date(startsAt);
@@ -200,7 +200,10 @@ function mapPrizeIcon(position: number): "trophy" | "coin" | "gift" | "star" {
  * Formats a date to Indian Standard Time (IST, UTC+5:30)
  * Format: MMM d, yyyy h:mm a (e.g., Apr 8, 2026 9:00 AM)
  */
-export function formatToIST(dateInput: string | Date, formatType: "datetime" | "date" | "time" | "short_month" | "day" = "datetime"): string {
+export function formatToIST(
+  dateInput: string | Date,
+  formatType: "datetime" | "date" | "time" | "short_month" | "day" = "datetime",
+): string {
   const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
   if (isNaN(date.getTime())) return "";
 
@@ -217,7 +220,7 @@ export function formatToIST(dateInput: string | Date, formatType: "datetime" | "
       day: "2-digit",
     }).format(date);
   }
-  
+
   if (formatType === "date") {
     return new Intl.DateTimeFormat("en-US", {
       timeZone: "Asia/Kolkata",
@@ -247,8 +250,9 @@ export function formatToIST(dateInput: string | Date, formatType: "datetime" | "
     hour12: true,
   }).formatToParts(date);
 
-  const getPart = (type: string) => parts.find((p) => p.type === type)?.value || "";
-  
+  const getPart = (type: string) =>
+    parts.find((p) => p.type === type)?.value || "";
+
   // Construct "MMM d, yyyy h:mm a (IST)"
   return `${getPart("month")} ${getPart("day")}, ${getPart("year")} ${getPart("hour")}:${getPart("minute")} ${getPart("dayPeriod")} (IST)`;
 }
@@ -279,10 +283,10 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
     roundType: (r.roundType as any) ?? "ONLINE",
     submissionConfig: r.submissionConfig
       ? {
-        ...r.submissionConfig,
-        enabled:
-          r.submissionConfig.enabled ?? r.submissionConfig.requiresFileUpload,
-      }
+          ...r.submissionConfig,
+          enabled:
+            r.submissionConfig.enabled ?? r.submissionConfig.requiresFileUpload,
+        }
       : undefined,
   }));
 
@@ -303,10 +307,10 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
   const prizes: Prize[] = data.prizeBreakdown.map((p, index) => {
     const amountValue = p.amount ?? 0;
     const positionNum = Number(p.position) || 0;
-    
+
     // For the first three prizes, use fixed icons/images based on their order in the array
     const rank = index + 1;
-    
+
     return {
       id: p.id,
       title:
@@ -336,7 +340,7 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
   const hasParticipation = prizes.some(
     (p) =>
       p.title?.toLowerCase().includes("participation") ||
-      p.description?.toLowerCase().includes("participation")
+      p.description?.toLowerCase().includes("participation"),
   );
 
   if (data.prizeCertificate && !hasParticipation) {
@@ -369,7 +373,7 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
       data.hackathonType
         .replace(/_/g, " ")
         .toLowerCase()
-        .replace(/\b\w/g, (c) => c.toUpperCase())
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
     );
   }
   if (data.mode) {
@@ -423,10 +427,10 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
     contact:
       data.contactName || data.contactEmail || data.contactPhone
         ? {
-          name: data.contactName || "",
-          email: data.contactEmail || "",
-          phone: data.contactPhone || "",
-        }
+            name: data.contactName || "",
+            email: data.contactEmail || "",
+            phone: data.contactPhone || "",
+          }
         : undefined,
     attachments: attachments.length > 0 ? attachments : undefined,
     createdAt: data.createdAt,

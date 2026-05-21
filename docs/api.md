@@ -1,6 +1,7 @@
 # OppSkills API Documentation
 
 ## Table of Contents
+
 - [Overview](#overview)
 - [Base URL](#base-url)
 - [Authentication](apis/auth.md)
@@ -49,6 +50,7 @@ Documentation for authentication, user profiles, and authorization roles has bee
 3. [Onboarding API](apis/onboarding.md) — Accepted payloads (`CreateOnboardingDto` and related PATCH bodies).
 
 This includes:
+
 - Clerk JWT authentication details
 - Sign In / Sign Up flow
 - Generating tokens (Client/Server/Manual)
@@ -56,7 +58,7 @@ This includes:
 - Onboarding workflow
 - Development auth bypass
 
-*Note: Role management (Admin, Manager, Evaluator) for specific opportunities is covered in the [Organizer API](apis/organizer.md).*
+_Note: Role management (Admin, Manager, Evaluator) for specific opportunities is covered in the [Organizer API](apis/organizer.md)._
 
 ---
 
@@ -68,11 +70,11 @@ Events (hackathons and festivals) follow a lifecycle status pattern:
 
 ```typescript
 type LifecycleStatus =
-  | "DRAFT"       // Being created, not publicly visible
-  | "PUBLISHED"   // Public and accepting registrations
-  | "ONGOING"     // Event is currently happening
-  | "COMPLETED"   // Event has finished
-  | "CANCELLED"   // Event was cancelled
+  | "DRAFT" // Being created, not publicly visible
+  | "PUBLISHED" // Public and accepting registrations
+  | "ONGOING" // Event is currently happening
+  | "COMPLETED" // Event has finished
+  | "CANCELLED"; // Event was cancelled
 ```
 
 ### Visibility Control
@@ -81,9 +83,9 @@ Hackathons support three visibility levels:
 
 ```typescript
 type Visibility =
-  | "PUBLIC"          // Anyone can see and register
-  | "PRIVATE"         // Invitation only
-  | "UNIVERSITY_ONLY" // Restricted to allowedUniversities list
+  | "PUBLIC" // Anyone can see and register
+  | "PRIVATE" // Invitation only
+  | "UNIVERSITY_ONLY"; // Restricted to allowedUniversities list
 ```
 
 ### Location Handling
@@ -109,6 +111,7 @@ Currently, most list endpoints return all results. Future versions may implement
 ### Date Formats
 
 All dates use ISO 8601 format:
+
 ```
 2025-03-15T10:00:00Z
 ```
@@ -129,15 +132,15 @@ The API uses standard HTTP status codes and returns errors in the following form
 
 ### Common HTTP Status Codes
 
-| Status Code | Description |
-|-------------|-------------|
-| 200 | OK - Request succeeded |
-| 201 | Created - Resource created successfully |
-| 400 | Bad Request - Invalid input data |
-| 401 | Unauthorized - Missing or invalid authentication token |
-| 403 | Forbidden - Insufficient permissions |
-| 404 | Not Found - Resource doesn't exist |
-| 500 | Internal Server Error - Server-side error |
+| Status Code | Description                                            |
+| ----------- | ------------------------------------------------------ |
+| 200         | OK - Request succeeded                                 |
+| 201         | Created - Resource created successfully                |
+| 400         | Bad Request - Invalid input data                       |
+| 401         | Unauthorized - Missing or invalid authentication token |
+| 403         | Forbidden - Insufficient permissions                   |
+| 404         | Not Found - Resource doesn't exist                     |
+| 500         | Internal Server Error - Server-side error              |
 
 ---
 
@@ -164,21 +167,25 @@ Documentation for organizer-wide metrics, registration trends, and opportunity-s
 ### Health Check
 
 #### Get API Root
+
 ```http
 GET /
 ```
 
 **Response:**
+
 ```
 welcome to oppskills-core backend
 ```
 
 #### Health Check
+
 ```http
 GET /health
 ```
 
 **Response:**
+
 ```json
 {
   "status": "ok",
@@ -201,6 +208,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "name": "Tech Innovation Hackathon 2025",
@@ -275,6 +283,7 @@ Content-Type: application/json
 ```
 
 **Response (201):**
+
 ```json
 {
   "message": "Hackathon created successfully (DRAFT).",
@@ -310,9 +319,11 @@ Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `festival_id` (optional): Filter hackathons by festival ID
 
 **Response (200):**
+
 ```json
 [
   {
@@ -342,6 +353,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 [
   {
@@ -373,6 +385,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -439,6 +452,7 @@ Authorization: Bearer <token>
 ```
 
 **Example:**
+
 ```http
 GET /hackathons/by-slug/tech-innovation-2025
 ```
@@ -458,6 +472,7 @@ Content-Type: application/json
 ```
 
 **Request Body:** (All fields optional)
+
 ```json
 {
   "name": "Updated Hackathon Name",
@@ -469,6 +484,7 @@ Content-Type: application/json
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -479,6 +495,7 @@ Content-Type: application/json
 ```
 
 **Error Responses:**
+
 - `403 Forbidden`: Not the owner
 - `404 Not Found`: Hackathon not found
 
@@ -495,6 +512,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "status": "PUBLISHED"
@@ -502,6 +520,7 @@ Content-Type: application/json
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -523,6 +542,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "rounds": [
@@ -554,6 +574,7 @@ Content-Type: application/json
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Hackathon rounds updated successfully.",
@@ -565,6 +586,7 @@ Content-Type: application/json
 ```
 
 **Error Responses:**
+
 - `403 Forbidden`: Not the owner or not in DRAFT status
 
 ---
@@ -580,6 +602,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "contact": {
@@ -600,6 +623,7 @@ Content-Type: application/json
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Hackathon additional info updated successfully.",
@@ -623,6 +647,7 @@ Content-Type: application/json
 ```
 
 **Request Body (External Form):**
+
 ```json
 {
   "registrationForm": {
@@ -632,6 +657,7 @@ Content-Type: application/json
 ```
 
 **Request Body (Internal Form):**
+
 ```json
 {
   "registrationForm": {
@@ -665,6 +691,7 @@ Content-Type: application/json
 **Field Types:** `TEXT`, `PHONE_NO`, `EMAIL`, `NUMBER`, `ATTACHMENTS`, `OPTIONS`
 
 **Response (200):**
+
 ```json
 {
   "message": "Hackathon registration form updated successfully.",
@@ -688,6 +715,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "prizeBreakdown": [
@@ -711,6 +739,7 @@ Content-Type: application/json
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Hackathon prize breakdown updated successfully.",
@@ -734,6 +763,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "maxTeams": 100
@@ -741,6 +771,7 @@ Content-Type: application/json
 ```
 
 Set to `null` for unlimited teams:
+
 ```json
 {
   "maxTeams": null
@@ -748,6 +779,7 @@ Set to `null` for unlimited teams:
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Hackathon max teams updated successfully.",
@@ -770,6 +802,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Hackathon deleted successfully"
@@ -777,6 +810,7 @@ Authorization: Bearer <token>
 ```
 
 **Error Responses:**
+
 - `403 Forbidden`: Not the owner
 - `404 Not Found`: Hackathon not found
 
@@ -792,6 +826,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (201):**
+
 ```json
 {
   "message": "Successfully registered for hackathon",
@@ -801,6 +836,7 @@ Authorization: Bearer <token>
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Already registered or registration closed
 
 ---
@@ -815,6 +851,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "owner": {
@@ -862,6 +899,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "email": "manager@example.com",
@@ -872,6 +910,7 @@ Content-Type: application/json
 **Roles:** `MANAGER` | `EVALUATOR`
 
 **Response (201):**
+
 ```json
 {
   "message": "Role MANAGER added successfully for user manager@example.com",
@@ -880,6 +919,7 @@ Content-Type: application/json
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: User not found or invalid input
 - `403 Forbidden`: Only owner or admin can add roles
 - `404 Not Found`: Hackathon not found
@@ -897,6 +937,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "email": "manager@example.com",
@@ -905,6 +946,7 @@ Content-Type: application/json
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Role MANAGER removed successfully for user manager@example.com"
@@ -912,6 +954,7 @@ Content-Type: application/json
 ```
 
 **Error Responses:**
+
 - `403 Forbidden`: Only owner or admin can remove roles
 - `404 Not Found`: Hackathon or role not found
 
@@ -932,6 +975,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "name": "Tech Meetup 2025",
@@ -952,6 +996,7 @@ Content-Type: application/json
 ```
 
 **Response (201):**
+
 ```json
 {
   "message": "Event created successfully (DRAFT).",
@@ -977,9 +1022,11 @@ GET /events?festival_id=<uuid>
 ```
 
 **Query Parameters:**
+
 - `festival_id` (optional): Filter events by festival ID
 
 **Response (200):**
+
 ```json
 [
   {
@@ -1008,6 +1055,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 [
   {
@@ -1033,6 +1081,7 @@ GET /events/:id
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "clxx123abc",
@@ -1080,6 +1129,7 @@ GET /events/by-slug/:slug
 ```
 
 **Example:**
+
 ```http
 GET /events/by-slug/tech-meetup-2025
 ```
@@ -1099,6 +1149,7 @@ Content-Type: application/json
 ```
 
 **Request Body:** (All fields optional)
+
 ```json
 {
   "name": "Updated Meetup Name",
@@ -1110,6 +1161,7 @@ Content-Type: application/json
 **Response (200):** Updated event object
 
 **Error Responses:**
+
 - `403 Forbidden`: Not the owner/admin/manager or not in DRAFT status
 - `404 Not Found`: Event not found
 
@@ -1126,6 +1178,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "status": "PUBLISHED"
@@ -1133,6 +1186,7 @@ Content-Type: application/json
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "clxx123abc",
@@ -1153,6 +1207,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Event deleted successfully."
@@ -1171,6 +1226,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (201):**
+
 ```json
 {
   "message": "Successfully joined the event."
@@ -1178,6 +1234,7 @@ Authorization: Bearer <token>
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Event not accepting registrations, deadline passed, or at full capacity
 - `409 Conflict`: Already joined
 
@@ -1193,6 +1250,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Successfully left the event."
@@ -1200,6 +1258,7 @@ Authorization: Bearer <token>
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Not a participant or event is completed/cancelled
 
 ---
@@ -1213,6 +1272,7 @@ GET /events/:id/roles
 ```
 
 **Response (200):**
+
 ```json
 {
   "owner": {
@@ -1250,6 +1310,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "email": "manager@example.com",
@@ -1258,6 +1319,7 @@ Content-Type: application/json
 ```
 
 **Response (201):**
+
 ```json
 {
   "message": "Role MANAGER added successfully.",
@@ -1274,6 +1336,7 @@ Content-Type: application/json
 **Role Values:** `MANAGER`, `EVALUATOR`
 
 **Error Responses:**
+
 - `403 Forbidden`: Only owner or admin can assign roles
 - `404 Not Found`: Event or user not found
 - `409 Conflict`: User already has this role
@@ -1291,6 +1354,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "email": "manager@example.com",
@@ -1299,6 +1363,7 @@ Content-Type: application/json
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Role MANAGER removed successfully."
@@ -1306,6 +1371,7 @@ Content-Type: application/json
 ```
 
 **Error Responses:**
+
 - `403 Forbidden`: Only owner or admin can remove roles
 - `404 Not Found`: Event or role not found
 
@@ -1324,6 +1390,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "name": "TechFest 2025 - Innovation Conference",
@@ -1344,6 +1411,7 @@ Content-Type: application/json
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440002",
@@ -1366,6 +1434,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 [
   {
@@ -1393,6 +1462,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440002",
@@ -1434,6 +1504,7 @@ Content-Type: application/json
 ```
 
 **Request Body:** (All fields optional)
+
 ```json
 {
   "name": "Updated Festival Name",
@@ -1444,6 +1515,7 @@ Content-Type: application/json
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440002",
@@ -1454,6 +1526,7 @@ Content-Type: application/json
 ```
 
 **Error Responses:**
+
 - `403 Forbidden`: Not the owner
 - `404 Not Found`: Festival not found
 
@@ -1470,6 +1543,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "status": "PUBLISHED"
@@ -1479,6 +1553,7 @@ Content-Type: application/json
 **Status Values:** `DRAFT`, `PUBLISHED`, `ONGOING`, `COMPLETED`, `CANCELLED`
 
 **Response (200):**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440002",
@@ -1499,6 +1574,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Festival deleted successfully"
@@ -1506,6 +1582,7 @@ Authorization: Bearer <token>
 ```
 
 **Error Responses:**
+
 - `403 Forbidden`: Not the owner
 - `404 Not Found`: Festival not found
 
@@ -1521,6 +1598,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 [
   {
@@ -1550,6 +1628,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "name": "Code Warriors",
@@ -1559,6 +1638,7 @@ Content-Type: application/json
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440001",
@@ -1572,6 +1652,7 @@ Content-Type: application/json
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Invalid input or team limit reached
 
 ---
@@ -1586,6 +1667,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 [
   {
@@ -1625,6 +1707,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440001",
@@ -1651,6 +1734,7 @@ Authorization: Bearer <token>
 ```
 
 **Error Response:**
+
 - `404 Not Found`: Team not found
 
 ---
@@ -1666,6 +1750,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "teamId": "550e8400-e29b-41d4-a716-446655440001"
@@ -1673,6 +1758,7 @@ Content-Type: application/json
 ```
 
 **Response (201):**
+
 ```json
 {
   "message": "Successfully joined team",
@@ -1682,6 +1768,7 @@ Content-Type: application/json
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Team full or already a member
 - `404 Not Found`: Team not found
 
@@ -1697,6 +1784,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Successfully left team"
@@ -1704,6 +1792,7 @@ Authorization: Bearer <token>
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Not a team member or team leader cannot leave
 - `404 Not Found`: Team not found
 
@@ -1724,6 +1813,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "purpose": "HACKATHON_BANNER",
@@ -1734,12 +1824,14 @@ Content-Type: application/json
 **Purpose Values:** `HACKATHON_BANNER`, `EVENT_ATTACHMENT`, `OPPORTUNITY_ATTACHMENT`
 
 **Supported Image MIME Types:**
+
 - `image/jpeg`
 - `image/png`
 - `image/webp`
 - `image/gif`
 
 **Response (201):**
+
 ```json
 {
   "uploadUrl": "https://oppskills-media.s3.amazonaws.com",
@@ -1762,20 +1854,22 @@ Content-Type: application/json
 3. Client stores the `publicUrl` in the hackathon/festival record
 
 **Example Upload (using fetch):**
+
 ```javascript
 const formData = new FormData();
 Object.entries(response.fields).forEach(([key, value]) => {
   formData.append(key, value);
 });
-formData.append('file', imageFile);
+formData.append("file", imageFile);
 
 await fetch(response.uploadUrl, {
-  method: 'POST',
-  body: formData
+  method: "POST",
+  body: formData,
 });
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Unsupported MIME type or invalid purpose
 
 ---
@@ -1791,6 +1885,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "purpose": "EVENT_ATTACHMENT",
@@ -1802,6 +1897,7 @@ Content-Type: application/json
 **Purpose Values:** `EVENT_ATTACHMENT`, `OPPORTUNITY_ATTACHMENT`
 
 **Supported Document MIME Types:**
+
 - `application/pdf`
 - `application/msword`
 - `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
@@ -1811,6 +1907,7 @@ Content-Type: application/json
 - `application/vnd.openxmlformats-officedocument.presentationml.presentation`
 
 **Response (201):**
+
 ```json
 {
   "uploadUrl": "https://oppskills-media.s3.amazonaws.com",
@@ -1827,6 +1924,7 @@ Content-Type: application/json
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Unsupported MIME type or invalid purpose
 
 ---

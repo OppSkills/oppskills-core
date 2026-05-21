@@ -56,10 +56,10 @@ export class RateLimitGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // ── 1. Check @SkipRateLimit() on handler or controller ──────────────────
-    const skip = this.reflector.getAllAndOverride<boolean>(SKIP_RATE_LIMIT_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const skip = this.reflector.getAllAndOverride<boolean>(
+      SKIP_RATE_LIMIT_KEY,
+      [context.getHandler(), context.getClass()],
+    );
     if (skip) return true;
 
     const redis = this.cacheService.tryGetClient();

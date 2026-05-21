@@ -8,12 +8,20 @@ import { Button } from "@/components/ui/button";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { CardListFallback } from "@/components/boneyard/loading-fallbacks";
 
-export const ReferredUsersTable = memo(function ReferredUsersTable({ referralId }: { referralId: string }) {
+export const ReferredUsersTable = memo(function ReferredUsersTable({
+  referralId,
+}: {
+  referralId: string;
+}) {
   const [page, setPage] = useState(1);
   const pageSize = 10;
-  
-  const { data, isLoading } = useReferralRegistrations(referralId, page, pageSize);
-  const users = useMemo(() => (data?.data ?? []), [data?.data]);
+
+  const { data, isLoading } = useReferralRegistrations(
+    referralId,
+    page,
+    pageSize,
+  );
+  const users = useMemo(() => data?.data ?? [], [data?.data]);
 
   return (
     <BoneyardSkeleton
@@ -34,7 +42,7 @@ export const ReferredUsersTable = memo(function ReferredUsersTable({ referralId 
               <UserProfileCard key={user.id} user={user} />
             ))}
           </div>
-          
+
           {/* Basic Pagination Controls */}
           {data && data.total > data.pageSize && (
             <div className="flex items-center justify-between py-4 border-t border-neutral-200 mt-4 px-2">
@@ -46,7 +54,7 @@ export const ReferredUsersTable = memo(function ReferredUsersTable({ referralId 
                   variant="outline"
                   size="sm"
                   disabled={data.page <= 1}
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
                 >
                   Previous
                 </Button>
@@ -54,7 +62,7 @@ export const ReferredUsersTable = memo(function ReferredUsersTable({ referralId 
                   variant="outline"
                   size="sm"
                   disabled={data.page >= Math.ceil(data.total / data.pageSize)}
-                  onClick={() => setPage(p => p + 1)}
+                  onClick={() => setPage((p) => p + 1)}
                 >
                   Next
                 </Button>

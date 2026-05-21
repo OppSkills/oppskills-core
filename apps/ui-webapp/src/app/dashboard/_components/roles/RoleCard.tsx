@@ -35,14 +35,18 @@ export function RoleCard({
     <div
       className={cn(
         "flex flex-col sm:flex-row items-center justify-between p-3 rounded-lg border transition-all w-full",
-        "bg-primary-100 border-primary-500 shadow-sm hover:shadow-md"
+        "bg-primary-100 border-primary-500 shadow-sm hover:shadow-md",
       )}
     >
       <div className="flex items-center gap-4 w-full sm:w-auto">
         {/* Avatar */}
         <div className="flex items-center justify-center w-14 h-14 rounded-full bg-[#1A1625] text-white font-bold text-lg shrink-0 overflow-hidden">
           {imageUrl ? (
-            <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+            <img
+              src={imageUrl}
+              alt={name}
+              className="w-full h-full object-cover"
+            />
           ) : (
             getInitials(name)
           )}
@@ -58,7 +62,9 @@ export function RoleCard({
                 <span className="hidden sm:inline text-neutral-400">|</span>
               </>
             )}
-            <span className="truncate max-w-[200px] sm:max-w-none">{email}</span>
+            <span className="truncate max-w-[200px] sm:max-w-none">
+              {email}
+            </span>
           </div>
         </div>
       </div>
@@ -70,7 +76,9 @@ export function RoleCard({
           disabled={isOwner}
           className={cn(
             "flex items-center gap-2 text-xs font-medium transition-colors md:pr-4 cursor-pointer",
-            isOwner ? "text-neutral-400 cursor-not-allowed" : "text-primary-700 hover:text-primary-600 "
+            isOwner
+              ? "text-neutral-400 cursor-not-allowed"
+              : "text-primary-700 hover:text-primary-600 ",
           )}
         >
           <TrashBinTrash className="w-4 h-4" />
@@ -80,4 +88,3 @@ export function RoleCard({
     </div>
   );
 }
-

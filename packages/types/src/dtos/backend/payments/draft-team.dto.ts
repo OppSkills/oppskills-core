@@ -5,7 +5,7 @@ import {
   Min,
   Max,
   IsNotEmpty,
-} from 'class-validator';
+} from "class-validator";
 
 export class CreateDraftTeamDto {
   @IsString()

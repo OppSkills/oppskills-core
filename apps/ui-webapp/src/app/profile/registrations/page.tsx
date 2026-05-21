@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useState, useMemo, useEffect } from "react";
 import { RegistrationTabs } from "./_components/RegistrationTabs";
 import { RegistrationCard } from "./_components/RegistrationCard";
@@ -33,16 +33,23 @@ export default function RegistrationsPage() {
     fetchRegistrations();
   }, [getToken]);
 
-  const counts = useMemo(() => ({
-    all: registrations.length,
-    events: registrations.filter((r) => r.opportunityType === "event").length,
-    competitions: registrations.filter((r) => r.opportunityType === "hackathon").length,
-  }), [registrations]);
+  const counts = useMemo(
+    () => ({
+      all: registrations.length,
+      events: registrations.filter((r) => r.opportunityType === "event").length,
+      competitions: registrations.filter(
+        (r) => r.opportunityType === "hackathon",
+      ).length,
+    }),
+    [registrations],
+  );
 
   const filteredRegistrations = useMemo(() => {
     return registrations.filter((reg) => {
-      const matchesTab = activeTab === "all" || reg.opportunityType === activeTab;
-      const matchesSearch = reg.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      const matchesTab =
+        activeTab === "all" || reg.opportunityType === activeTab;
+      const matchesSearch =
+        reg.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         reg.teamName.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesTab && matchesSearch;
     });
@@ -79,11 +86,19 @@ export default function RegistrationsPage() {
                 width={300}
                 height={300}
               />
-              <p className="text-neutral-800">You haven’t registered in any {activeTab === "all" ? "Competition, Event or Festival" : activeTab === "event" ? "Event" : "Competition"} till now.</p>
+              <p className="text-neutral-800">
+                You haven’t registered in any{" "}
+                {activeTab === "all"
+                  ? "Competition, Event or Festival"
+                  : activeTab === "event"
+                    ? "Event"
+                    : "Competition"}{" "}
+                till now.
+              </p>
             </div>
           )}
         </div>
       </div>
-    </BoneyardSkeleton >
+    </BoneyardSkeleton>
   );
 }

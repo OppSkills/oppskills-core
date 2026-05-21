@@ -143,8 +143,7 @@ async function finalizeZeroAmountHackathonRegistration(
 export default function HackathonCheckoutClient({ slug }: { slug: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tierFromUrl =
-    searchParams.get("tier") ?? undefined;
+  const tierFromUrl = searchParams.get("tier") ?? undefined;
   const { getToken, isSignedIn } = useAuth();
   const { user } = useUser();
 
@@ -178,7 +177,9 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
     if (!i) {
       setIntentMissing(true);
       setIntent(null);
-      toast.info("Nothing to pay here — open Register from the hackathon page.");
+      toast.info(
+        "Nothing to pay here — open Register from the hackathon page.",
+      );
       router.replace(`/hackathons/${slug}`);
       return;
     }
@@ -274,11 +275,19 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
       const o = await createPaymentOrder(token, slug, orderParams);
 
       if (o.zeroAmountPayment || o.amountPaise === 0) {
-        await finalizeZeroAmountHackathonRegistration(token, slug, o, intent, pub);
+        await finalizeZeroAmountHackathonRegistration(
+          token,
+          slug,
+          o,
+          intent,
+          pub,
+        );
         clearHackathonCheckoutIntent(slug);
         clearPendingHackathonRegistration(slug);
         toast.success("Registration successful!");
-        router.replace(`/hackathons/${encodeURIComponent(slug)}?registered=true`);
+        router.replace(
+          `/hackathons/${encodeURIComponent(slug)}?registered=true`,
+        );
         return;
       }
 
@@ -340,7 +349,9 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
         toast.success("Payment confirmed — you are registered!");
         clearHackathonCheckoutIntent(slug);
         clearPendingHackathonRegistration(slug);
-        router.replace(`/hackathons/${encodeURIComponent(slug)}?registered=true`);
+        router.replace(
+          `/hackathons/${encodeURIComponent(slug)}?registered=true`,
+        );
       } catch (e) {
         setCheckoutError(
           getApiErrorMessage(
@@ -441,20 +452,15 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
     orderLoading || !order || phase === "processing" || payFlowActive;
   const payBusy = payFlowActive || phase === "processing";
 
-  const original = Number(
-    order?.originalAmount ?? order?.baseAmount ?? 0,
-  );
+  const original = Number(order?.originalAmount ?? order?.baseAmount ?? 0);
   const discount =
     order?.discountAmount != null ? Number(order.discountAmount) : 0;
   const afterDiscount = Number(
     order?.finalAmount ?? order?.baseAmount ?? Math.max(0, original - discount),
   );
   const proc =
-    order?.processingFeeAmount != null
-      ? Number(order.processingFeeAmount)
-      : 0;
-  const totalCharged =
-    order?.amountPaise != null ? order.amountPaise / 100 : 0;
+    order?.processingFeeAmount != null ? Number(order.processingFeeAmount) : 0;
+  const totalCharged = order?.amountPaise != null ? order.amountPaise / 100 : 0;
 
   const gatewaySplit =
     feeBearer === "PARTICIPANT" && proc > 0
@@ -550,14 +556,18 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
             <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight truncate">
               {hackathonTitle || "…"}
             </h1>
-            <p className="text-sm text-neutral-600 truncate">{hackathonSubtitle}</p>
+            <p className="text-sm text-neutral-600 truncate">
+              {hackathonSubtitle}
+            </p>
           </div>
         </header>
 
         <div className="grid gap-6 lg:grid-cols-12 lg:gap-8 items-start">
           <div className="lg:col-span-7 space-y-6">
             <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
-              <h2 className="text-base font-bold text-neutral-900">Ticket(s)</h2>
+              <h2 className="text-base font-bold text-neutral-900">
+                Ticket(s)
+              </h2>
               <p className="text-sm text-neutral-600 mt-1 mb-4">
                 The fee is shown in the summary. You can apply a coupon on the
                 right before paying.
@@ -715,7 +725,9 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
                           {afterDiscount.toFixed(2)} {order.currency || "INR"}
                         </span>
                       </div>
-                      {feeBearer === "PARTICIPANT" && proc > 0 && gatewaySplit ? (
+                      {feeBearer === "PARTICIPANT" &&
+                      proc > 0 &&
+                      gatewaySplit ? (
                         <>
                           <div className="flex justify-between px-3 py-2 bg-neutral-50 border-t border-neutral-100 text-xs">
                             <span className="text-neutral-600">
@@ -791,9 +803,9 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
                 <CheckoutTrustFooter />
 
                 <p className="text-[10px] text-center text-neutral-500 leading-snug">
-                  Razorpay opens after you confirm. Complete payment in the secure
-                  window; this page will show success or an error when verification
-                  finishes.
+                  Razorpay opens after you confirm. Complete payment in the
+                  secure window; this page will show success or an error when
+                  verification finishes.
                 </p>
               </div>
             </div>

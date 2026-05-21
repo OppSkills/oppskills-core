@@ -12,6 +12,7 @@ This document provides comprehensive documentation of the OppSkills database sch
 ## Enums
 
 ### AccessLevel
+
 User access control levels for internal system permissions.
 
 ```prisma
@@ -23,6 +24,7 @@ enum AccessLevel {
 ```
 
 ### LifecycleStatus
+
 Lifecycle stages for events (hackathons and festivals).
 
 ```prisma
@@ -36,11 +38,13 @@ enum LifecycleStatus {
 ```
 
 **State Machine**:
+
 - `DRAFT` → `PUBLISHED` → `ONGOING` → `COMPLETED`
 - Any status can transition to `CANCELLED`
 - `COMPLETED` and `CANCELLED` are terminal states
 
 ### Visibility
+
 Access control for hackathons.
 
 ```prisma
@@ -52,6 +56,7 @@ enum Visibility {
 ```
 
 ### HackathonMode
+
 Participation mode for hackathons.
 
 ```prisma
@@ -63,6 +68,7 @@ enum HackathonMode {
 ```
 
 ### HackathonType
+
 Category of hackathon.
 
 ```prisma
@@ -76,6 +82,7 @@ enum HackathonType {
 ```
 
 ### ParticipantType
+
 Team size configuration.
 
 ```prisma
@@ -91,6 +98,7 @@ enum ParticipantType {
 ```
 
 ### LocationType
+
 Event location type.
 
 ```prisma
@@ -101,6 +109,7 @@ enum LocationType {
 ```
 
 ### RoundStatus
+
 Status of hackathon rounds.
 
 ```prisma
@@ -112,6 +121,7 @@ enum RoundStatus {
 ```
 
 ### RegistrationFieldType
+
 Custom registration form field types.
 
 ```prisma
@@ -126,6 +136,7 @@ enum RegistrationFieldType {
 ```
 
 ### HackathonAttendeeEligibility
+
 Eligibility criteria for participants (multi-select).
 
 ```prisma
@@ -139,6 +150,7 @@ enum HackathonAttendeeEligibility {
 ```
 
 ### HackathonRoundType
+
 Type of hackathon round.
 
 ```prisma
@@ -150,6 +162,7 @@ enum HackathonRoundType {
 ```
 
 ### HackathonUserRole
+
 Per-hackathon role assignments.
 
 ```prisma
@@ -162,6 +175,7 @@ enum HackathonUserRole {
 ## Core Entities
 
 ### UserEntity
+
 Central user model synced from Clerk.
 
 ```prisma
@@ -188,12 +202,14 @@ model UserEntity {
 ```
 
 **Key Points**:
+
 - `id` is Clerk user ID (not auto-generated)
 - Synced via Clerk webhook (`/user-accounts/clerk-webhook`)
 - `accessLevel` used for admin access (ADMIN users configured via `ADMIN_USER_IDS`)
 - Soft-deleted in webhook if Clerk user is deleted
 
 ### FestivalEntity
+
 Top-level event container (e.g., tech conferences).
 
 ```prisma
@@ -238,12 +254,14 @@ model FestivalEntity {
 ```
 
 **Key Points**:
+
 - Can contain multiple hackathons
 - Slug must be unique
 - Location can be PHYSICAL or VIRTUAL
 - Lifecycle managed via `status` field
 
 ### HackathonEntity
+
 Core event model (standalone or festival-nested).
 
 ```prisma
@@ -336,6 +354,7 @@ model HackathonEntity {
 ```
 
 **Key Points**:
+
 - Can be standalone (`festivalId = null`) or festival-nested
 - Slug auto-generated from name with uniqueness guarantee
 - Default rounds (3) auto-generated if not provided
@@ -344,6 +363,7 @@ model HackathonEntity {
 - Max teams limit enforced at team creation
 
 ### RoundEntity
+
 Hackathon stages (e.g., Round 1, Finals).
 
 ```prisma
@@ -381,12 +401,14 @@ model RoundEntity {
 ```
 
 **Key Points**:
+
 - Each round has unique `order` within a hackathon
 - Timeline (`startsAt`, `endsAt`) must fit within hackathon dates
 - `submissionConfig` stores JSON for file upload rules, instructions, etc.
 - Default: 3 rounds auto-generated if not provided
 
 **Example submissionConfig**:
+
 ```json
 {
   "requiresFileUpload": true,
@@ -399,6 +421,7 @@ model RoundEntity {
 ```
 
 ### RegistrationFormEntity
+
 Custom registration form configuration.
 
 ```prisma
@@ -422,12 +445,14 @@ model RegistrationFormEntity {
 ```
 
 **Key Points**:
+
 - One per hackathon (1:1 relationship)
 - Can use `externalFormLink` for third-party forms
 - Or use custom `fields` for built-in forms
 - Fields can be both (external + custom)
 
 ### RegistrationFieldEntity
+
 Custom registration form fields.
 
 ```prisma
@@ -453,6 +478,7 @@ model RegistrationFieldEntity {
 ```
 
 **Example Custom Field**:
+
 ```typescript
 {
   label: "T-Shirt Size",
@@ -465,6 +491,7 @@ model RegistrationFieldEntity {
 ```
 
 ### PrizeBreakdownEntity
+
 Prize distribution details.
 
 ```prisma
@@ -486,15 +513,17 @@ model PrizeBreakdownEntity {
 ```
 
 **Example Prize Breakdown**:
+
 ```typescript
 [
   { position: "1st Place", amount: 100000, description: "Grand Prize" },
   { position: "2nd Place", amount: 50000, description: "Runner Up" },
-  { position: "Best Innovation", amount: 25000, description: "Special Award" }
-]
+  { position: "Best Innovation", amount: 25000, description: "Special Award" },
+];
 ```
 
 ### TeamEntity
+
 Team registration for hackathons.
 
 ```prisma
@@ -521,11 +550,13 @@ model TeamEntity {
 ```
 
 **Constraints**:
+
 - Hackathon owner cannot create teams in own hackathon
 - Max teams limit (`hackathon.maxTeams`) enforced at creation
 - Team size limit (`maxSize`) enforced at join time
 
 ### TeamMemberEntity
+
 Team membership (many-to-many: users ↔ teams).
 
 ```prisma
@@ -545,11 +576,13 @@ model TeamMemberEntity {
 ```
 
 **Constraints**:
+
 - User can only join a team once (unique constraint)
 - Leader cannot join their own team as member
 - Cannot join if team is full (`members.length >= team.maxSize`)
 
 ### HackathonAttachmentEntity
+
 File attachments for hackathons (S3-ready).
 
 ```prisma
@@ -575,12 +608,14 @@ model HackathonAttachmentEntity {
 ```
 
 **Upload Flow**:
+
 1. Frontend requests presigned URL: `POST /media/presign-document-upload`
 2. Backend generates S3 presigned POST
 3. Frontend uploads directly to S3
 4. Frontend stores `publicUrl` in database
 
 ### HackathonUserRoleEntity
+
 Per-hackathon role assignments (managers, evaluators).
 
 ```prisma
@@ -605,6 +640,7 @@ model HackathonUserRoleEntity {
 ```
 
 **Key Points**:
+
 - Assigned via email lookup: `GET /user-accounts/search?q=email`
 - Owner cannot be assigned manager/evaluator role
 - Idempotent: Adding existing role returns success
@@ -642,12 +678,14 @@ RegistrationFormEntity (1:N)
 ## Indexes
 
 Prisma automatically creates indexes for:
+
 - `@id` fields (primary keys)
 - `@unique` fields (unique constraints)
 - Foreign keys (`@relation` fields)
 - Composite keys (`@@unique`, `@@id`)
 
 **Manual Indexes** (if needed, add to schema):
+
 ```prisma
 @@index([status]) // For filtering by status
 @@index([startDate, endDate]) // For date range queries
@@ -657,11 +695,13 @@ Prisma automatically creates indexes for:
 ## Database Connection
 
 ### Local Development
+
 ```env
 DATABASE_URL="postgresql://oppskills:oppskills@localhost:5434/oppskills?schema=oppskills"
 ```
 
 ### Production
+
 ```env
 DATABASE_URL="postgresql://user:password@host:5432/database?schema=oppskills&sslmode=require"
 ```
@@ -671,6 +711,7 @@ DATABASE_URL="postgresql://user:password@host:5432/database?schema=oppskills&ssl
 ## Migrations
 
 ### Development Workflow
+
 ```bash
 # Edit schema.prisma
 vim packages/database/prisma/schema.prisma
@@ -683,6 +724,7 @@ pnpm db:push
 ```
 
 ### Production Workflow
+
 ```bash
 # Edit schema.prisma
 vim packages/database/prisma/schema.prisma
@@ -700,50 +742,54 @@ pnpm db:migrate:deploy
 ## Common Queries
 
 ### Get Hackathons with Rounds
+
 ```typescript
 const hackathons = await prisma.hackathonEntity.findMany({
   include: {
     rounds: {
-      orderBy: { order: 'asc' }
+      orderBy: { order: "asc" },
     },
     owner: true,
-    festival: true
-  }
+    festival: true,
+  },
 });
 ```
 
 ### Get Team with Members
+
 ```typescript
 const team = await prisma.teamEntity.findUnique({
   where: { id: teamId },
   include: {
     leader: true,
     members: {
-      include: { user: true }
+      include: { user: true },
     },
-    hackathon: true
-  }
+    hackathon: true,
+  },
 });
 ```
 
 ### Get User's Hackathons (Owned + Managed)
+
 ```typescript
 const hackathons = await prisma.hackathonEntity.findMany({
   where: {
     OR: [
       { ownerId: userId },
-      { userRoles: { some: { userId, role: 'MANAGER' } } }
-    ]
+      { userRoles: { some: { userId, role: "MANAGER" } } },
+    ],
   },
   include: {
     rounds: true,
     teams: true,
-    userRoles: { include: { user: true } }
-  }
+    userRoles: { include: { user: true } },
+  },
 });
 ```
 
 ### Create Hackathon with Nested Data
+
 ```typescript
 const hackathon = await prisma.hackathonEntity.create({
   data: {
@@ -760,24 +806,43 @@ const hackathon = await prisma.hackathonEntity.create({
     locationCity: "San Francisco",
     rounds: {
       create: [
-        { name: "Round 1", order: 0, startsAt: new Date("2025-06-01"), endsAt: new Date("2025-06-01"), roundType: "ONLINE" },
-        { name: "Round 2", order: 1, startsAt: new Date("2025-06-02"), endsAt: new Date("2025-06-02"), roundType: "OFFLINE" },
-        { name: "Finals", order: 2, startsAt: new Date("2025-06-03"), endsAt: new Date("2025-06-03"), roundType: "PRESENTATION" }
-      ]
+        {
+          name: "Round 1",
+          order: 0,
+          startsAt: new Date("2025-06-01"),
+          endsAt: new Date("2025-06-01"),
+          roundType: "ONLINE",
+        },
+        {
+          name: "Round 2",
+          order: 1,
+          startsAt: new Date("2025-06-02"),
+          endsAt: new Date("2025-06-02"),
+          roundType: "OFFLINE",
+        },
+        {
+          name: "Finals",
+          order: 2,
+          startsAt: new Date("2025-06-03"),
+          endsAt: new Date("2025-06-03"),
+          roundType: "PRESENTATION",
+        },
+      ],
     },
     prizeBreakdown: {
       create: [
         { position: "1st Place", amount: 100000, description: "Grand Prize" },
-        { position: "2nd Place", amount: 50000, description: "Runner Up" }
-      ]
-    }
-  }
+        { position: "2nd Place", amount: 50000, description: "Runner Up" },
+      ],
+    },
+  },
 });
 ```
 
 ## Schema Evolution Best Practices
 
 ### Adding Optional Fields
+
 ```prisma
 // Safe: Won't break existing data
 model HackathonEntity {
@@ -786,6 +851,7 @@ model HackathonEntity {
 ```
 
 ### Adding Required Fields
+
 ```prisma
 // Risky: Requires default value or data backfill
 model HackathonEntity {
@@ -794,6 +860,7 @@ model HackathonEntity {
 ```
 
 ### Renaming Fields
+
 ```prisma
 // Use @map to preserve DB column name
 model HackathonEntity {
@@ -802,6 +869,7 @@ model HackathonEntity {
 ```
 
 ### Deleting Fields
+
 ```bash
 # 1. Deploy migration removing field from code
 # 2. Wait for all app instances to update
@@ -811,6 +879,7 @@ model HackathonEntity {
 ## Data Validation Rules
 
 ### Business Constraints (Enforced in Code)
+
 - Hackathon owner cannot create teams in own hackathon
 - Max teams limit enforced at team creation
 - Team size limit enforced at join
@@ -819,6 +888,7 @@ model HackathonEntity {
 - UNIVERSITY_ONLY requires `allowedUniversities` array
 
 ### Database Constraints (Enforced in Schema)
+
 - Unique slugs for hackathons and festivals
 - Unique email for users
 - Unique (userId, teamId) for team members
@@ -830,51 +900,59 @@ model HackathonEntity {
 ## Performance Tips
 
 ### Query Optimization
+
 ```typescript
 // BAD: N+1 query problem
 const hackathons = await prisma.hackathonEntity.findMany();
 for (const h of hackathons) {
-  const rounds = await prisma.roundEntity.findMany({ where: { hackathonId: h.id } });
+  const rounds = await prisma.roundEntity.findMany({
+    where: { hackathonId: h.id },
+  });
 }
 
 // GOOD: Use include
 const hackathons = await prisma.hackathonEntity.findMany({
-  include: { rounds: true }
+  include: { rounds: true },
 });
 ```
 
 ### Pagination
+
 ```typescript
 // For large datasets
 const hackathons = await prisma.hackathonEntity.findMany({
   take: 20,
   skip: (page - 1) * 20,
-  orderBy: { createdAt: 'desc' }
+  orderBy: { createdAt: "desc" },
 });
 ```
 
 ### Counting
+
 ```typescript
 // For total count with pagination
 const [hackathons, total] = await prisma.$transaction([
   prisma.hackathonEntity.findMany({ take: 20, skip: 0 }),
-  prisma.hackathonEntity.count()
+  prisma.hackathonEntity.count(),
 ]);
 ```
 
 ## Backup & Recovery
 
 ### Local Backup
+
 ```bash
 docker exec oppskills-postgres pg_dump -U oppskills oppskills > backup.sql
 ```
 
 ### Restore Backup
+
 ```bash
 docker exec -i oppskills-postgres psql -U oppskills oppskills < backup.sql
 ```
 
 ### Production Backup
+
 - Use AWS RDS automated backups
 - Point-in-time recovery (PITR)
 - Manual snapshots before major changes

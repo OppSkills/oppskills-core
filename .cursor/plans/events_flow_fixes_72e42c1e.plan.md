@@ -96,30 +96,30 @@ todos:
 
 - **Backend**
 - Add **public** endpoints:
-    - `GET /events/public` (list published + approved)
-    - `GET /events/public/by-slug/:slug`
-    - `GET /events/public/:id`
+  - `GET /events/public` (list published + approved)
+  - `GET /events/public/by-slug/:slug`
+  - `GET /events/public/:id`
 - Public endpoints must:
-    - Filter to `status in (PUBLISHED, ONGOING)` and `approvalStatus = APPROVED`
-    - Return a **sanitized shape** (no `participants`, no role lists, no emails beyond owner contact if you want it public)
+  - Filter to `status in (PUBLISHED, ONGOING)` and `approvalStatus = APPROVED`
+  - Return a **sanitized shape** (no `participants`, no role lists, no emails beyond owner contact if you want it public)
 - Convert existing endpoints to **dashboard (auth) endpoints**:
-    - `GET /events/by-slug/:slug` → `@UseGuards(ClerkAuthGuard)`
-    - `GET /events/:id` → `@UseGuards(ClerkAuthGuard)`
-    - `GET /events/:id/roles` → `@UseGuards(ClerkAuthGuard)` and enforce owner/manager/admin access
+  - `GET /events/by-slug/:slug` → `@UseGuards(ClerkAuthGuard)`
+  - `GET /events/:id` → `@UseGuards(ClerkAuthGuard)`
+  - `GET /events/:id/roles` → `@UseGuards(ClerkAuthGuard)` and enforce owner/manager/admin access
 - **Frontend**
 - Update public pages/hooks to use `/events/public/*`:
-    - `getPublicEventBySlug()` in [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/lib/api/eventApi.ts`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/lib/api/eventApi.ts)
-    - [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/hooks/usePublicEventBySlug.ts`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/hooks/usePublicEventBySlug.ts)
+  - `getPublicEventBySlug()` in [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/lib/api/eventApi.ts`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/lib/api/eventApi.ts)
+  - [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/hooks/usePublicEventBySlug.ts`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/hooks/usePublicEventBySlug.ts)
 
 ### 2) Make edit-event limited for non-DRAFT events (avoid autosave failures)
 
 - Update [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx)
 - Read event `status` + `approvalStatus` from `eventRaw`.
 - If not DRAFT:
-    - Allow editing only the fields the backend allows (basic info changes).
-    - Disable/hide DRAFT-only sections (registration form, prizes, additional info, maxUsers).
-    - Prevent calling DRAFT-only endpoints.
-    - Show an inline banner explaining the restriction and point to Settings for lifecycle/approval.
+  - Allow editing only the fields the backend allows (basic info changes).
+  - Disable/hide DRAFT-only sections (registration form, prizes, additional info, maxUsers).
+  - Prevent calling DRAFT-only endpoints.
+  - Show an inline banner explaining the restriction and point to Settings for lifecycle/approval.
 - Update [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/_components/BasicDetails.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/_components/BasicDetails.tsx)
 - Remove or repurpose the **dead** “List Event” button to link to Settings → “Submit for approval”.
 
@@ -138,8 +138,8 @@ todos:
 - Make the switch either display-only or actually toggle `isRegistrationPaused` (we’ll keep it display-only unless you ask otherwise).
 - Tickets + Notifications pages:
 - Add a clear banner “Not implemented yet—data is not saved” on:
-    - [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/tickets/page.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/tickets/page.tsx)
-    - [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/notifications/page.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/notifications/page.tsx)
+  - [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/tickets/page.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/tickets/page.tsx)
+  - [`/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/notifications/page.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/events/[slug]/notifications/page.tsx)
 
 ### 5) Fix create-event time loss (align organizer create with edit-event)
 

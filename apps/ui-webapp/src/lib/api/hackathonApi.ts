@@ -192,7 +192,7 @@ export async function getHackathons(token: string): Promise<unknown> {
  */
 export async function getMyHackathons(
   token: string,
-  params: { page?: number; take?: number } = {}
+  params: { page?: number; take?: number } = {},
 ): Promise<{
   items: any[];
   total: number;
@@ -200,9 +200,9 @@ export async function getMyHackathons(
   take: number;
   totalPages: number;
 }> {
-  const res = await API.get("/my", { 
+  const res = await API.get("/my", {
     headers: buildAuthHeaders(token),
-    params 
+    params,
   });
   return res.data;
 }

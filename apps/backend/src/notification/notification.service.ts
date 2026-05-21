@@ -14,7 +14,7 @@ export class NotificationService {
   constructor(
     private readonly notificationQueue: NotificationQueue,
     private readonly notificationWorker: NotificationWorker,
-  ) { }
+  ) {}
 
   /**
    * Asserts that a user has edit/management permission for the targeted event or hackathon.
@@ -24,7 +24,11 @@ export class NotificationService {
     userId: string,
     eventSlugOrId?: string,
     hackathonSlugOrId?: string,
-  ): Promise<{ id: string; type: 'event' | 'hackathon'; recipientCount: number }> {
+  ): Promise<{
+    id: string;
+    type: 'event' | 'hackathon';
+    recipientCount: number;
+  }> {
     if (eventSlugOrId && hackathonSlugOrId) {
       throw new BadRequestException(
         'Both event and hackathon identifiers cannot be provided together.',
@@ -97,11 +101,12 @@ export class NotificationService {
    * Schedules or creates a new notification campaign.
    */
   async scheduleNotification(dto: CreateNotificationDto, userId: string) {
-    const { id, type, recipientCount } = await this.assertEventOrHackathonAccess(
-      userId,
-      dto.eventId || dto.eventSlug,
-      dto.hackathonId || dto.hackathonSlug,
-    );
+    const { id, type, recipientCount } =
+      await this.assertEventOrHackathonAccess(
+        userId,
+        dto.eventId || dto.eventSlug,
+        dto.hackathonId || dto.hackathonSlug,
+      );
 
     const actualEventId = type === 'event' ? id : undefined;
     const actualHackathonId = type === 'hackathon' ? id : undefined;
@@ -130,7 +135,9 @@ export class NotificationService {
     // Each active job has a time window: from jobStart to jobEnd
     const windows = activeJobs
       .map((job) => {
-        const start = job.scheduledAt ? new Date(job.scheduledAt) : new Date(job.createdAt);
+        const start = job.scheduledAt
+          ? new Date(job.scheduledAt)
+          : new Date(job.createdAt);
         const end = job.expectedFinishAt
           ? new Date(job.expectedFinishAt)
           : new Date(start.getTime() + 5 * 60 * 1000);
@@ -192,7 +199,6 @@ export class NotificationService {
       },
     });
 
-
     return notification;
   }
 
@@ -242,7 +248,10 @@ export class NotificationService {
   /**
    * Lists all notifications scheduled for a specific hackathon.
    */
-  async listNotificationsForHackathon(hackathonSlugOrId: string, userId: string) {
+  async listNotificationsForHackathon(
+    hackathonSlugOrId: string,
+    userId: string,
+  ) {
     const { id: hackathonId } = await this.assertEventOrHackathonAccess(
       userId,
       undefined,

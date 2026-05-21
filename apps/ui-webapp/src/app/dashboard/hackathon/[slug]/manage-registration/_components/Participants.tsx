@@ -126,11 +126,16 @@ export default function Participants({
 
   const filteredByStatus = React.useMemo(() => {
     if (filterStatus === "all") return data;
-    return data.filter((item) => item.status && item.status.toLowerCase() === filterStatus);
+    return data.filter(
+      (item) => item.status && item.status.toLowerCase() === filterStatus,
+    );
   }, [data, filterStatus]);
 
   const handleEmailSuccess = (result: any) => {
-    setSuccessAlert(result.message || `Email has been processed to all the members of ${selectedTeamForEmail?.name}`);
+    setSuccessAlert(
+      result.message ||
+        `Email has been processed to all the members of ${selectedTeamForEmail?.name}`,
+    );
     setTimeout(() => setSuccessAlert(null), 10000); // Hide after 10 seconds
   };
 
@@ -178,14 +183,20 @@ export default function Participants({
         // 1. Leader
         rows.push({
           "Team Name": p.teamName,
-          "Name": [p.leaderFirstName, p.leaderLastName].filter(Boolean).join(" ") || "—",
-          "Email": p.email,
+          Name:
+            [p.leaderFirstName, p.leaderLastName].filter(Boolean).join(" ") ||
+            "—",
+          Email: p.email,
           "Mobile Number": p.leaderPhone || "",
           "Participant Type": "Leader",
-          "University": p.university || "—",
+          University: p.university || "—",
           "Team Registration Status": p.status,
           "Team Created At": p.teamCreatedAt
-            ? formatInTimeZone(new Date(p.teamCreatedAt), "Asia/Kolkata", "dd/MM/yyyy HH:mm:ss")
+            ? formatInTimeZone(
+                new Date(p.teamCreatedAt),
+                "Asia/Kolkata",
+                "dd/MM/yyyy HH:mm:ss",
+              )
             : "—",
         });
 
@@ -193,14 +204,18 @@ export default function Participants({
         p.teamMembers.forEach((m) => {
           rows.push({
             "Team Name": p.teamName,
-            "Name": [m.firstName, m.lastName].filter(Boolean).join(" ") || "—",
-            "Email": m.email,
+            Name: [m.firstName, m.lastName].filter(Boolean).join(" ") || "—",
+            Email: m.email,
             "Mobile Number": m.phone || "",
             "Participant Type": "Member",
-            "University": "—", // Currently not in HackathonTeamMemberExport
+            University: "—", // Currently not in HackathonTeamMemberExport
             "Team Registration Status": p.status,
             "Team Created At": p.teamCreatedAt
-              ? formatInTimeZone(new Date(p.teamCreatedAt), "Asia/Kolkata", "dd/MM/yyyy HH:mm:ss")
+              ? formatInTimeZone(
+                  new Date(p.teamCreatedAt),
+                  "Asia/Kolkata",
+                  "dd/MM/yyyy HH:mm:ss",
+                )
               : "—",
           });
         });
@@ -212,7 +227,9 @@ export default function Participants({
         sheetName: "Teams",
       });
 
-      toast.success(`Exported ${rows.length} team${rows.length === 1 ? "" : "s"}`);
+      toast.success(
+        `Exported ${rows.length} team${rows.length === 1 ? "" : "s"}`,
+      );
     } catch (err) {
       console.error("[handleExportParticipants]", err);
       toast.error("Export failed. Please try again.");
@@ -252,7 +269,10 @@ export default function Participants({
           return (
             <div className="flex gap-4 py-2">
               <Avatar className="h-12 w-12">
-                <AvatarImage src={ensureAbsoluteUrl(avatarUrl) || undefined} alt={teamName} />
+                <AvatarImage
+                  src={ensureAbsoluteUrl(avatarUrl) || undefined}
+                  alt={teamName}
+                />
                 <AvatarFallback>
                   {teamName.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
@@ -272,8 +292,12 @@ export default function Participants({
                     {memberCount} Members Joined
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground break-all">{email}</span>
-                <span className="text-xs text-muted-foreground">{leaderPhone}</span>
+                <span className="text-xs text-muted-foreground break-all">
+                  {email}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {leaderPhone}
+                </span>
               </div>
             </div>
           );
@@ -299,10 +323,11 @@ export default function Participants({
           return (
             <div className="flex justify-center">
               <span
-                className={`rounded-xs px-4 py-1 text-xs ${status === "Completed"
-                  ? "bg-primary/10 text-primary"
-                  : "bg-destructive/10 text-destructive-foreground"
-                  }`}
+                className={`rounded-xs px-4 py-1 text-xs ${
+                  status === "Completed"
+                    ? "bg-primary/10 text-primary"
+                    : "bg-destructive/10 text-destructive-foreground"
+                }`}
               >
                 {status}
               </span>
@@ -353,12 +378,13 @@ export default function Participants({
                   </Button>
                   {qualStatus && (
                     <span
-                      className={`ml-1 px-2 py-0.5 rounded-full text-xs border ${qualStatus === "Qualified"
-                        ? "border-green-200 bg-green-50 text-green-700"
-                        : qualStatus === "Not Qualified"
-                          ? "border-red-200 bg-red-50 text-red-700"
-                          : "border-yellow-200 bg-yellow-50 text-yellow-700"
-                        }`}
+                      className={`ml-1 px-2 py-0.5 rounded-full text-xs border ${
+                        qualStatus === "Qualified"
+                          ? "border-green-200 bg-green-50 text-green-700"
+                          : qualStatus === "Not Qualified"
+                            ? "border-red-200 bg-red-50 text-red-700"
+                            : "border-yellow-200 bg-yellow-50 text-yellow-700"
+                      }`}
                     >
                       {qualStatus}
                     </span>
@@ -376,9 +402,7 @@ export default function Participants({
       {
         id: "emailTeam",
         header: () => (
-          <div className="text-center text-primary-foreground">
-            Email
-          </div>
+          <div className="text-center text-primary-foreground">Email</div>
         ),
         cell: ({ row }) => (
           <div className="flex justify-center">
@@ -450,13 +474,14 @@ export default function Participants({
         <div className="flex items-center gap-2">
           {(() => {
             const total = data.length;
-            const completedCount = data.filter((d) => d.status === 'Completed').length;
-            const incompleteCount = data.filter((d) => d.status === 'Incomplete').length;
+            const completedCount = data.filter(
+              (d) => d.status === "Completed",
+            ).length;
+            const incompleteCount = data.filter(
+              (d) => d.status === "Incomplete",
+            ).length;
             return (
-              <Select
-                value={filterStatus}
-                onValueChange={setFilterStatus}
-              >
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="w-[200px] h-10 rounded-full bg-primary-50 border-primary-100 text-foreground font-medium focus:ring-1 focus:ring-primary/20">
                   <div className="flex items-center gap-2">
                     <ListFilter className="w-4 h-4 text-primary-500" />
@@ -464,9 +489,15 @@ export default function Participants({
                   </div>
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-border shadow-lg">
-                  <SelectItem value="all" className="rounded-lg">All Registrations ({total})</SelectItem>
-                  <SelectItem value="completed" className="rounded-lg">Completed ({completedCount})</SelectItem>
-                  <SelectItem value="incomplete" className="rounded-lg">Incomplete ({incompleteCount})</SelectItem>
+                  <SelectItem value="all" className="rounded-lg">
+                    All Registrations ({total})
+                  </SelectItem>
+                  <SelectItem value="completed" className="rounded-lg">
+                    Completed ({completedCount})
+                  </SelectItem>
+                  <SelectItem value="incomplete" className="rounded-lg">
+                    Incomplete ({incompleteCount})
+                  </SelectItem>
                 </SelectContent>
               </Select>
             );
@@ -508,7 +539,10 @@ export default function Participants({
                 <Table className="min-w-[1000px] w-full border border-neutral-300">
                   <TableHeader className="bg-primary-800">
                     {table.getHeaderGroups().map((group) => (
-                      <TableRow key={group.id} className="hover:bg-transparent border-none">
+                      <TableRow
+                        key={group.id}
+                        className="hover:bg-transparent border-none"
+                      >
                         {group.headers.map((header) => (
                           <TableHead
                             key={header.id}
@@ -534,7 +568,10 @@ export default function Participants({
                         }}
                       >
                         {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} className="py-4 px-4 border-r border-neutral-300 last:border-r-0">
+                          <TableCell
+                            key={cell.id}
+                            className="py-4 px-4 border-r border-neutral-300 last:border-r-0"
+                          >
                             {flexRender(
                               cell.column.columnDef.cell,
                               cell.getContext(),
@@ -559,7 +596,11 @@ export default function Participants({
           ) : (
             <EmptyState
               title="No registrations found"
-              description={globalFilter ? `No teams matching "${globalFilter}" found.` : "No team registrations to display for this criteria."}
+              description={
+                globalFilter
+                  ? `No teams matching "${globalFilter}" found.`
+                  : "No team registrations to display for this criteria."
+              }
               className="py-20"
             />
           )}

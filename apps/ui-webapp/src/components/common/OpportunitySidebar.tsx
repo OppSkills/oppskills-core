@@ -68,7 +68,6 @@ export function OpportunitySidebar({
   onActionClick,
   myTeam,
 }: OpportunitySidebarProps) {
-
   // Check if registration is closed
   const isRegistrationClosed =
     data.isRegistrationPaused ||
@@ -135,9 +134,10 @@ export function OpportunitySidebar({
     const baseAmount = data.entryFeeAmount || 0;
     const isPaid = data.isFree === false && baseAmount > 0;
     const processingFee = Math.ceil(baseAmount * 0.0236 * 100) / 100;
-    const totalAmount = data.feeBearer === "PARTICIPANT"
-      ? baseAmount + processingFee
-      : baseAmount;
+    const totalAmount =
+      data.feeBearer === "PARTICIPANT"
+        ? baseAmount + processingFee
+        : baseAmount;
     const currency = data.currency || "INR";
     const registerLabel = isPaid
       ? `Register for ${currency} ${totalAmount.toFixed(2)}`
@@ -157,7 +157,8 @@ export function OpportunitySidebar({
           {isPaid && data.feeBearer === "PARTICIPANT" && (
             <div className="text-center space-y-0.5">
               <p className="text-xs text-neutral-500">
-                ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)} Transaction Charges
+                ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)}{" "}
+                Transaction Charges
               </p>
             </div>
           )}
@@ -205,7 +206,8 @@ export function OpportunitySidebar({
         {isPaid && data.feeBearer === "PARTICIPANT" && !isActionLoading && (
           <div className="text-center space-y-0.5">
             <p className="text-xs text-neutral-500">
-              ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)} Transaction Charges
+              ₹{baseAmount.toFixed(2)} + ₹{processingFee.toFixed(2)} Transaction
+              Charges
             </p>
           </div>
         )}
@@ -228,14 +230,17 @@ export function OpportunitySidebar({
 
       {/* Banner */}
       <div className="relative aspect-16/10 w-full overflow-hidden rounded-2xl shadow-sm border border-neutral-100">
-        {!data.thumbnail ?
+        {!data.thumbnail ? (
           <Image
             src={data.thumbnail}
             alt={data.title}
             fill
             className="object-cover"
             priority
-          /> : "vijay"}
+          />
+        ) : (
+          "vijay"
+        )}
       </div>
 
       {/* Info Card */}
@@ -259,7 +264,9 @@ export function OpportunitySidebar({
               <h4 className="font-semibold text-neutral-900 text-[15px]">
                 {(() => {
                   if (data.startDate && data.endDate) {
-                    const isSameDay = data.startDate.toDateString() === data.endDate.toDateString();
+                    const isSameDay =
+                      data.startDate.toDateString() ===
+                      data.endDate.toDateString();
                     if (isSameDay) {
                       return format(data.startDate, "EEEE, d MMMM yyyy");
                     } else {
@@ -270,8 +277,8 @@ export function OpportunitySidebar({
                 })()}
               </h4>
               <p className="text-sm text-neutral-500">
-                {data.startDate && data.endDate ?
-                  `${format(data.startDate, "h:mm a")} - ${format(data.endDate, "h:mm a")}`
+                {data.startDate && data.endDate
+                  ? `${format(data.startDate, "h:mm a")} - ${format(data.endDate, "h:mm a")}`
                   : "Time TBD"}
               </p>
             </div>
@@ -315,8 +322,15 @@ export function OpportunitySidebar({
                   {myTeam.leader && (
                     <div className="w-8 h-8 rounded-full border-2 border-white bg-green-600 flex items-center justify-center text-white text-xs font-medium overflow-hidden">
                       {myTeam.leader.imageUrl ? (
-                        <Image src={myTeam.leader.imageUrl} alt="Leader" width={32} height={32} />
-                      ) : (myTeam.leader.firstName?.[0] || "L").toUpperCase()}
+                        <Image
+                          src={myTeam.leader.imageUrl}
+                          alt="Leader"
+                          width={32}
+                          height={32}
+                        />
+                      ) : (
+                        (myTeam.leader.firstName?.[0] || "L").toUpperCase()
+                      )}
                     </div>
                   )}
                 </div>
@@ -341,7 +355,10 @@ export function OpportunitySidebar({
               </div>
               <div>
                 <div className="font-semibold text-neutral-900 text-sm">
-                  {data.participantTypeLabel || (data.type === "HACKATHON" ? "Team Participation" : "Individual Entry")}
+                  {data.participantTypeLabel ||
+                    (data.type === "HACKATHON"
+                      ? "Team Participation"
+                      : "Individual Entry")}
                 </div>
                 <div className="text-xs text-neutral-500">Participation</div>
               </div>
@@ -354,7 +371,13 @@ export function OpportunitySidebar({
               </div>
               <div>
                 <div className="font-semibold text-neutral-900 text-sm">
-                  {(data.impressions || getDeterministicPseudoImpressions(data.registrationCount, data.createdAt)).toLocaleString()}
+                  {(
+                    data.impressions ||
+                    getDeterministicPseudoImpressions(
+                      data.registrationCount,
+                      data.createdAt,
+                    )
+                  ).toLocaleString()}
                 </div>
                 <div className="text-xs text-neutral-500">Impressions</div>
               </div>
@@ -375,7 +398,9 @@ export function OpportunitySidebar({
                   >
                     {data.websiteUrl.replace(/^https?:\/\//, "")}
                   </a>
-                  <div className="text-xs text-neutral-500">Official Website</div>
+                  <div className="text-xs text-neutral-500">
+                    Official Website
+                  </div>
                 </div>
               </div>
             ) : (
@@ -387,7 +412,9 @@ export function OpportunitySidebar({
                   <div className="font-semibold text-neutral-900 text-sm">
                     {data.registrationDeadline || "Open"}
                   </div>
-                  <div className="text-xs text-neutral-500">Registration Deadline</div>
+                  <div className="text-xs text-neutral-500">
+                    Registration Deadline
+                  </div>
                 </div>
               </div>
             )}

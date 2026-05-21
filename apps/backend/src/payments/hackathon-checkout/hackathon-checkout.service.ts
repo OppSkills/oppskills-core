@@ -61,7 +61,9 @@ export class HackathonCheckoutService {
     userId: string,
     message: string,
   ): Promise<void> {
-    if (!(await this.canManageHackathonPayments(hackathonId, ownerId, userId))) {
+    if (
+      !(await this.canManageHackathonPayments(hackathonId, ownerId, userId))
+    ) {
       throw new ForbiddenException(message);
     }
   }

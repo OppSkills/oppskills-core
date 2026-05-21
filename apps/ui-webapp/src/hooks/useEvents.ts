@@ -1,8 +1,4 @@
-
-import {
-  getPublicEvents,
-  getPublicUpcomingEvents,
-} from "@/lib/api/eventApi";
+import { getPublicEvents, getPublicUpcomingEvents } from "@/lib/api/eventApi";
 import { getPublicPastOpportunities } from "@/lib/api/opportunityApi";
 
 /**
@@ -74,7 +70,7 @@ import { FilterState } from "@/components/common/GenericFilterSidebar";
 export function useEvents(
   festivalId?: string,
   filters?: FilterState,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useInfiniteQuery<
     { items: EventListItem[]; totalPages: number; total: number; page: number },
@@ -96,7 +92,9 @@ export function useEvents(
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
+      return lastPage.page < lastPage.totalPages
+        ? lastPage.page + 1
+        : undefined;
     },
     enabled: options?.enabled,
   });
@@ -108,7 +106,7 @@ export function useEvents(
 export function useUpcomingEvents(
   festivalId?: string,
   filters?: FilterState,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useInfiniteQuery<
     { items: EventListItem[]; totalPages: number; total: number; page: number },
@@ -130,7 +128,9 @@ export function useUpcomingEvents(
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
+      return lastPage.page < lastPage.totalPages
+        ? lastPage.page + 1
+        : undefined;
     },
     enabled: options?.enabled,
   });
@@ -161,7 +161,7 @@ export interface PastOpportunitiesPage {
 export function usePastEvents(
   festivalId?: string,
   filters?: FilterState,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useInfiniteQuery<PastOpportunitiesPage, Error>({
     queryKey: ["events", "past", festivalId, filters] as const,
@@ -175,7 +175,9 @@ export function usePastEvents(
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
+      return lastPage.page < lastPage.totalPages
+        ? lastPage.page + 1
+        : undefined;
     },
     enabled: options?.enabled,
   });
@@ -188,7 +190,7 @@ import { useQuery } from "@tanstack/react-query";
 
 export function usePastOpportunities(
   filters: FilterState & { page?: number; perPage?: number },
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery<PastOpportunitiesPage, Error>({
     queryKey: ["events", "past", "paged", filters] as const,
@@ -209,7 +211,7 @@ export function usePastOpportunities(
  */
 export function usePublicEventsPaged(
   filters: FilterState & { page?: number; perPage?: number },
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery<
     { items: EventListItem[]; totalPages: number; total: number; page: number },

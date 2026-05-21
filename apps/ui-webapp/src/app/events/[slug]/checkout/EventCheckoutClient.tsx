@@ -12,12 +12,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, useUser } from "@clerk/nextjs";
-import {
-  Landmark,
-  Loader2,
-  Percent,
-  Ticket,
-} from "lucide-react";
+import { Landmark, Loader2, Percent, Ticket } from "lucide-react";
 import { toast } from "sonner";
 import {
   checkMyRegistration,
@@ -116,7 +111,9 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
       }
 
       if (tierFromUrl && Array.isArray(pub.ticketTiers)) {
-        const t = pub.ticketTiers.find((x: { id: string }) => x.id === tierFromUrl);
+        const t = pub.ticketTiers.find(
+          (x: { id: string }) => x.id === tierFromUrl,
+        );
         if (t) {
           setTierLabel(t.name || "Ticket");
           setTierHint(
@@ -289,14 +286,12 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
   const payBusy = payFlowActive || phase === "processing";
 
   const original = Number(order?.originalAmount ?? 0);
-  const discount = order?.discountAmount != null ? Number(order.discountAmount) : 0;
+  const discount =
+    order?.discountAmount != null ? Number(order.discountAmount) : 0;
   const afterDiscount = Number(order?.finalAmount ?? 0);
   const proc =
-    order?.processingFeeAmount != null
-      ? Number(order.processingFeeAmount)
-      : 0;
-  const totalCharged =
-    order?.amountPaise != null ? order.amountPaise / 100 : 0;
+    order?.processingFeeAmount != null ? Number(order.processingFeeAmount) : 0;
+  const totalCharged = order?.amountPaise != null ? order.amountPaise / 100 : 0;
 
   /** Razorpay-style split for display when participant pays gateway (2% + 18% GST on fee). */
   const gatewaySplit =
@@ -396,10 +391,12 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
         <div className="grid gap-6 lg:grid-cols-12 lg:gap-8 items-start">
           <div className="lg:col-span-7 space-y-6">
             <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
-              <h2 className="text-base font-bold text-neutral-900">Ticket(s)</h2>
+              <h2 className="text-base font-bold text-neutral-900">
+                Ticket(s)
+              </h2>
               <p className="text-sm text-neutral-600 mt-1 mb-4">
-                The ticket amount is shown in the summary. You can apply a coupon
-                code on the right to get a discount.
+                The ticket amount is shown in the summary. You can apply a
+                coupon code on the right to get a discount.
               </p>
               <div className="flex gap-3 rounded-xl border border-neutral-200 bg-neutral-50/80 p-4">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-800">
@@ -449,12 +446,7 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
                 role="radiogroup"
                 aria-label="Payment method"
               >
-                {payRow(
-                  "upi",
-                  "UPI",
-                  <UpiLogoRow />,
-                  methodPickDisabled,
-                )}
+                {payRow("upi", "UPI", <UpiLogoRow />, methodPickDisabled)}
                 {payRow(
                   "wallet",
                   "Wallet",
@@ -559,7 +551,9 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
                           {afterDiscount.toFixed(2)} {order.currency || "INR"}
                         </span>
                       </div>
-                      {feeBearer === "PARTICIPANT" && proc > 0 && gatewaySplit ? (
+                      {feeBearer === "PARTICIPANT" &&
+                      proc > 0 &&
+                      gatewaySplit ? (
                         <>
                           <div className="flex justify-between px-3 py-2 bg-neutral-50 border-t border-neutral-100 text-xs">
                             <span className="text-neutral-600">
@@ -635,9 +629,9 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
                 <CheckoutTrustFooter />
 
                 <p className="text-[10px] text-center text-neutral-500 leading-snug">
-                  Razorpay opens after you confirm. Complete payment in the secure
-                  window; this page will show success or an error when verification
-                  finishes.
+                  Razorpay opens after you confirm. Complete payment in the
+                  secure window; this page will show success or an error when
+                  verification finishes.
                 </p>
               </div>
             </div>

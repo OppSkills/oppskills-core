@@ -10,7 +10,8 @@ import { getOppSkillsStyledQrOptions } from "@/lib/oppSkillsStyledQrOptions";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function parseSize(param: string | null): number {
   const n = parseInt(param ?? "1024", 10);
@@ -54,7 +55,9 @@ export async function GET(request: NextRequest) {
     if (raw == null) {
       return new NextResponse("Failed to render QR", { status: 500 });
     }
-    const svg = Buffer.isBuffer(raw) ? raw : Buffer.from(await (raw as Blob).arrayBuffer());
+    const svg = Buffer.isBuffer(raw)
+      ? raw
+      : Buffer.from(await (raw as Blob).arrayBuffer());
     png = await sharp(svg, { density: 300 }).png().toBuffer();
   } catch (e) {
     console.error("styled-png", e);

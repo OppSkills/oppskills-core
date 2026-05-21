@@ -27,14 +27,14 @@ export default function AnalyticCard({
         type === "highlight"
           ? "bg-[radial-gradient(circle_at_top_left,var(--color-primary-700)_0%,var(--color-primary-900)_70%)] text-primary-foreground"
           : "bg-background lg:bg-linear-to-l lg:from-primary-100 lg:to-neutral-100",
-        className
+        className,
       )}
     >
       <div className="flex flex-col gap-2 md:gap-4 justify-between h-full">
         <div className="flex flex-col gap-2 md:gap-4">
           <p
             className={cn(
-              type === "highlight" ? "text-neutral-100" : "text-primary-900"
+              type === "highlight" ? "text-neutral-100" : "text-primary-900",
             )}
           >
             {title}
@@ -49,12 +49,15 @@ export default function AnalyticCard({
             <p
               className={cn(
                 "text-xs font-medium",
-                type === "normal" ? "text-primary-700" : "text-primary-100"
+                type === "normal" ? "text-primary-700" : "text-primary-100",
               )}
             >
               {badge}
             </p>
-            <Badge variant={type === "highlight" ? "default" : "gradient"} className="min-w-auto px-3 text-primary-100">
+            <Badge
+              variant={type === "highlight" ? "default" : "gradient"}
+              className="min-w-auto px-3 text-primary-100"
+            >
               {badgeValue}
             </Badge>
           </div>

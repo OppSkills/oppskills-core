@@ -15,10 +15,13 @@ export async function getFestivals(token: string | null): Promise<unknown> {
 /**
  * Lists festivals organized by the current user.
  */
-export async function getMyFestivals(token: string, params?: { page?: number; take?: number }): Promise<any> {
-  const res = await API.get("/my", { 
+export async function getMyFestivals(
+  token: string,
+  params?: { page?: number; take?: number },
+): Promise<any> {
+  const res = await API.get("/my", {
     headers: buildAuthHeaders(token),
-    params
+    params,
   });
   return res.data;
 }
@@ -26,7 +29,10 @@ export async function getMyFestivals(token: string, params?: { page?: number; ta
 /**
  * Creates a new festival.
  */
-export async function createFestival(token: string, data: CreateFestivalDto): Promise<unknown> {
+export async function createFestival(
+  token: string,
+  data: CreateFestivalDto,
+): Promise<unknown> {
   const res = await API.post("", data, { headers: buildAuthHeaders(token) });
   return res.data as unknown;
 }
@@ -39,7 +45,9 @@ export async function updateFestival(
   id: string,
   data: UpdateFestivalDto,
 ): Promise<unknown> {
-  const res = await API.put(`/${id}`, data, { headers: buildAuthHeaders(token) });
+  const res = await API.put(`/${id}`, data, {
+    headers: buildAuthHeaders(token),
+  });
   return res.data as unknown;
 }
 
@@ -62,7 +70,10 @@ export async function updateFestivalStatus(
 /**
  * Deletes a festival.
  */
-export async function deleteFestival(token: string, id: string): Promise<unknown> {
+export async function deleteFestival(
+  token: string,
+  id: string,
+): Promise<unknown> {
   const res = await API.delete(`/${id}`, { headers: buildAuthHeaders(token) });
   return res.data as unknown;
 }
@@ -70,10 +81,11 @@ export async function deleteFestival(token: string, id: string): Promise<unknown
 /**
  * Gets a festival by slug.
  */
-export async function getFestivalBySlug(token: string | null, slug: string): Promise<unknown> {
+export async function getFestivalBySlug(
+  token: string | null,
+  slug: string,
+): Promise<unknown> {
   const headers = token ? buildAuthHeaders(token) : {};
   const res = await API.get(`/slug/${slug}`, { headers });
   return res.data as unknown;
 }
-
-

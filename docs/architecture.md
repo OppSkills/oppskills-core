@@ -82,6 +82,7 @@ oppskills-core/
 ## Tech Stack
 
 ### Frontend
+
 - **Framework**: Next.js 16.0.7 (App Router, Turbopack)
 - **UI Library**: React 19.2.1
 - **Styling**: Tailwind CSS 4 + Radix UI primitives
@@ -94,6 +95,7 @@ oppskills-core/
 - **URL State**: nuqs 2.8.5
 
 ### Backend
+
 - **Framework**: NestJS 11
 - **Language**: TypeScript 5.8.3
 - **Validation**: class-validator + class-transformer
@@ -103,6 +105,7 @@ oppskills-core/
 - **Authentication**: Clerk JWT verification
 
 ### Database & Infrastructure
+
 - **Database**: PostgreSQL (custom schema: "oppskills")
 - **Cache**: Redis
 - **File Storage**: AWS S3 + CloudFront CDN
@@ -114,6 +117,7 @@ oppskills-core/
   - Backend: AWS EC2 (Docker)
 
 ### Build Tools
+
 - **Monorepo**: Turborepo 2.5.1
 - **Package Manager**: pnpm 10.5.2
 - **Node Version**: >=18
@@ -234,6 +238,7 @@ HackathonEntity (Can be standalone or festival-nested)
 ## Module Architecture (Backend)
 
 ### CommonModule
+
 - **Purpose**: Shared services and guards
 - **Exports**:
   - `ClerkAuthConfigService` - Environment configuration
@@ -242,6 +247,7 @@ HackathonEntity (Can be standalone or festival-nested)
   - `CacheService` - Redis caching layer
 
 ### UserAccountsModule
+
 - **Purpose**: User management and Clerk integration
 - **Features**:
   - Clerk webhook handler (user.created, user.updated, user.deleted)
@@ -249,6 +255,7 @@ HackathonEntity (Can be standalone or festival-nested)
   - Signature verification (Svix HMAC)
 
 ### HackathonModule
+
 - **Purpose**: Hackathon CRUD and management
 - **Features**:
   - Full lifecycle management (DRAFT → PUBLISHED → ONGOING → COMPLETED)
@@ -257,6 +264,7 @@ HackathonEntity (Can be standalone or festival-nested)
   - Registration handling
 
 ### FestivalModule
+
 - **Purpose**: Festival CRUD
 - **Features**:
   - Festival creation and management
@@ -264,6 +272,7 @@ HackathonEntity (Can be standalone or festival-nested)
   - Lifecycle management
 
 ### TeamModule
+
 - **Purpose**: Team creation and membership
 - **Features**:
   - Team creation with max teams enforcement
@@ -271,6 +280,7 @@ HackathonEntity (Can be standalone or festival-nested)
   - Leader and member management
 
 ### MediaModule
+
 - **Purpose**: File upload orchestration
 - **Features**:
   - S3 presigned POST generation
@@ -326,11 +336,13 @@ HackathonEntity (Can be standalone or festival-nested)
 ## Security Architecture
 
 ### Authentication Layers
+
 1. **Clerk JWT**: Primary authentication via Bearer tokens
 2. **Auth Bypass**: Development-only mode (x-user-id header)
 3. **Webhook Verification**: HMAC signature validation (Svix)
 
 ### Authorization Model
+
 - **Admin**: Full system access (configured via `ADMIN_USER_IDS`)
 - **Owner**: Full control over owned resources
 - **Manager**: Can edit hackathons in DRAFT status
@@ -338,6 +350,7 @@ HackathonEntity (Can be standalone or festival-nested)
 - **User**: Standard user permissions
 
 ### Request Security
+
 - **CORS**: Production domains whitelisted
 - **Validation**: Global ValidationPipe + class-validator
 - **SQL Injection**: Parameterized queries (Prisma)
@@ -361,6 +374,7 @@ apps/ui-webapp (build) ──────────────────┘
 ```
 
 **Dev Mode Dependencies**:
+
 - All `dev` tasks depend on `^build` (build dependencies first)
 - Database package must be built before backend
 - Types package should be built before other packages
@@ -368,11 +382,13 @@ apps/ui-webapp (build) ──────────────────┘
 ## Caching Strategy
 
 ### Backend Cache (Redis)
+
 - **Purpose**: API response caching, session storage (future)
 - **Implementation**: CacheService with JSON support
 - **Status**: Infrastructure ready, not actively used yet
 
 ### Frontend Cache (TanStack Query)
+
 - **Purpose**: API response caching, optimistic updates
 - **Features**:
   - Automatic background refetching
@@ -382,12 +398,14 @@ apps/ui-webapp (build) ──────────────────┘
 ## API Design Patterns
 
 ### RESTful Conventions
+
 - **Resources**: `/hackathons`, `/festivals`, `/teams`
 - **Nested Resources**: `/hackathons/:id/rounds`
 - **Actions**: `/hackathons/:id/register`
 - **Status Updates**: `PATCH /hackathons/:id/status`
 
 ### Response Format
+
 ```typescript
 // Success (200/201)
 {
@@ -405,6 +423,7 @@ apps/ui-webapp (build) ──────────────────┘
 ```
 
 ### Authentication Header
+
 ```
 Authorization: Bearer <clerk-jwt-token>
 ```
@@ -412,31 +431,37 @@ Authorization: Bearer <clerk-jwt-token>
 ## Key Design Decisions
 
 ### 1. Monorepo Strategy
+
 - **Decision**: Turborepo with separate apps + shared packages
 - **Rationale**: Type safety, code reuse, atomic changes
 - **Trade-off**: Build complexity vs. maintainability
 
 ### 2. Database ORM
+
 - **Decision**: Prisma over TypeORM/Sequelize
 - **Rationale**: Type safety, migrations, introspection
 - **Trade-off**: Performance vs. developer experience
 
 ### 3. Authentication Provider
+
 - **Decision**: Clerk over Auth0/Cognito
 - **Rationale**: Developer experience, built-in UI, webhooks
 - **Trade-off**: Vendor lock-in vs. time to market
 
 ### 4. File Upload Strategy
+
 - **Decision**: Presigned URLs over direct upload
 - **Rationale**: Scalability, reduced backend load
 - **Trade-off**: Complexity vs. performance
 
 ### 5. Frontend State Management
+
 - **Decision**: TanStack Query over Redux
 - **Rationale**: Server state management, caching, less boilerplate
 - **Trade-off**: Not suitable for complex client state
 
 ### 6. API Style
+
 - **Decision**: REST over GraphQL
 - **Rationale**: Simplicity, caching, tooling maturity
 - **Trade-off**: Overfetching vs. complexity
@@ -444,18 +469,21 @@ Authorization: Bearer <clerk-jwt-token>
 ## Performance Considerations
 
 ### Backend Optimizations
+
 - **Database Indexes**: On foreign keys, slug, email
 - **Connection Pooling**: Prisma default (limit: 10)
 - **Redis Caching**: Infrastructure ready for high-traffic endpoints
 - **Direct S3 Uploads**: Bypass backend for large files
 
 ### Frontend Optimizations
+
 - **Code Splitting**: Next.js automatic route-based splitting
 - **Image Optimization**: Next.js Image component
 - **CDN**: CloudFront for static assets
 - **Prefetching**: TanStack Query background fetching
 
 ### Future Scalability
+
 - **Pagination**: Not implemented (needed for large datasets)
 - **Rate Limiting**: Not implemented (needed for production)
 - **Database Sharding**: Not needed yet (vertical scaling sufficient)
@@ -487,12 +515,14 @@ Authorization: Bearer <clerk-jwt-token>
 ## Monitoring & Observability
 
 ### Current State
+
 - **Logging**: Console.log (basic)
 - **Error Tracking**: Not implemented
 - **Metrics**: Not implemented
 - **Health Checks**: Redis ping (basic)
 
 ### Production Readiness
+
 - **Recommendation**: Add Sentry for error tracking
 - **Recommendation**: Add structured logging (Winston, Pino)
 - **Recommendation**: Add APM (New Relic, DataDog)

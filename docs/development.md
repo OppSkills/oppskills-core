@@ -5,6 +5,7 @@ This guide covers everything you need to develop locally on the OppSkills platfo
 ## Prerequisites
 
 ### Required Software
+
 - **Node.js**: >= 18.x (LTS recommended)
 - **pnpm**: 10.5.2 or higher
   ```bash
@@ -14,6 +15,7 @@ This guide covers everything you need to develop locally on the OppSkills platfo
 - **Git**: For version control
 
 ### Optional Tools
+
 - **Svix CLI**: For testing Clerk webhooks
   ```bash
   npm install -g svix-cli
@@ -23,12 +25,14 @@ This guide covers everything you need to develop locally on the OppSkills platfo
 ## Initial Setup
 
 ### 1. Clone Repository
+
 ```bash
 git clone <repository-url>
 cd oppskills-core
 ```
 
 ### 2. Install Dependencies
+
 ```bash
 pnpm install
 ```
@@ -36,15 +40,18 @@ pnpm install
 This installs dependencies for all packages in the monorepo.
 
 ### 3. Start Infrastructure
+
 ```bash
 docker compose up -d
 ```
 
 This starts:
+
 - **PostgreSQL**: port 5434
 - **Redis**: port 6380
 
 Verify containers are running:
+
 ```bash
 docker ps
 ```
@@ -52,6 +59,7 @@ docker ps
 ### 4. Configure Environment Variables
 
 #### Backend (`apps/backend/.env.local`)
+
 ```env
 # Database
 DATABASE_URL="postgresql://oppskills:oppskills@localhost:5434/oppskills?schema=oppskills"
@@ -84,11 +92,13 @@ RESEND_FROM_EMAIL="OppSkills <noreply@oppskills.com>"
 ```
 
 #### Database (`packages/database/.env`)
+
 ```env
 DATABASE_URL="postgresql://oppskills:oppskills@localhost:5434/oppskills?schema=oppskills"
 ```
 
 #### Frontend (`apps/ui-webapp/.env.local`)
+
 ```env
 # API URL
 NEXT_PUBLIC_API_URL="http://localhost:3001"
@@ -105,16 +115,19 @@ NEXT_PUBLIC_POSTHOG_HOST="https://us.i.posthog.com" # Optional, defaults to US i
 ### 5. Set Up Database
 
 Generate Prisma client:
+
 ```bash
 pnpm db:generate
 ```
 
 Push schema to database (development):
+
 ```bash
 pnpm db:push
 ```
 
 Or create a migration (production-ready):
+
 ```bash
 pnpm db:migrate
 ```
@@ -122,11 +135,13 @@ pnpm db:migrate
 ### 6. Start Development Servers
 
 Start all services:
+
 ```bash
 pnpm dev
 ```
 
 Or start individually:
+
 ```bash
 # Backend only (port 3001)
 pnpm dev:backend
@@ -258,16 +273,19 @@ docker compose down -v
 ### Making Schema Changes
 
 1. Edit the schema:
+
    ```bash
    vim packages/database/prisma/schema.prisma
    ```
 
 2. Generate Prisma client:
+
    ```bash
    pnpm db:generate
    ```
 
 3. Push changes (dev) or create migration (prod):
+
    ```bash
    # Development
    pnpm db:push
@@ -277,6 +295,7 @@ docker compose down -v
    ```
 
 4. Rebuild dependent packages:
+
    ```bash
    pnpm build --filter=@oppskills/db
    ```
@@ -286,6 +305,7 @@ docker compose down -v
 ### Adding a New Feature
 
 1. **Update Prisma schema** (if database changes needed):
+
    ```prisma
    // packages/database/prisma/schema.prisma
    model NewEntity {
@@ -296,12 +316,14 @@ docker compose down -v
    ```
 
 2. **Generate Prisma client**:
+
    ```bash
    pnpm db:generate
    pnpm db:push
    ```
 
 3. **Add/update types** (if sharing between apps):
+
    ```typescript
    // packages/types/src/dtos/backend/new-entity/create-new-entity.dto.ts
    export class CreateNewEntityDto {
@@ -312,6 +334,7 @@ docker compose down -v
    ```
 
 4. **Implement backend logic**:
+
    ```typescript
    // apps/backend/src/new-entity/new-entity.module.ts
    @Module({
@@ -322,6 +345,7 @@ docker compose down -v
    ```
 
 5. **Create frontend components/pages**:
+
    ```typescript
    // apps/ui-webapp/src/app/dashboard/new-entity/page.tsx
    export default function NewEntityPage() {
@@ -330,11 +354,15 @@ docker compose down -v
    ```
 
 6. **Add API client functions**:
+
    ```typescript
    // apps/ui-webapp/src/lib/api/newEntityApi.ts
-   export const createNewEntity = async (token: string, data: CreateNewEntityDto) => {
-     const client = createApiClient('/new-entities');
-     return client.post('/', data, { headers: buildAuthHeaders(token) });
+   export const createNewEntity = async (
+     token: string,
+     data: CreateNewEntityDto,
+   ) => {
+     const client = createApiClient("/new-entities");
+     return client.post("/", data, { headers: buildAuthHeaders(token) });
    };
    ```
 
@@ -362,6 +390,7 @@ apps/ui-webapp (build)
 ```
 
 **Important**: Always rebuild dependent packages after changes:
+
 ```bash
 # After types change
 pnpm build --filter=@oppskills/types
@@ -376,11 +405,13 @@ pnpm build --filter=@oppskills/db
 ### Backend API Testing
 
 #### Using Swagger UI
+
 1. Navigate to http://localhost:3001/api-reference
 2. Click "Authorize" and enter Clerk JWT token
 3. Test endpoints directly in the UI
 
 #### Using curl
+
 ```bash
 # Get all hackathons
 curl -H "Authorization: Bearer YOUR_CLERK_JWT" \
@@ -395,6 +426,7 @@ curl -X POST \
 ```
 
 #### Using Auth Bypass (Development Only)
+
 ```bash
 # Set AUTH_BYPASS=true in apps/backend/.env.local
 
@@ -415,11 +447,13 @@ curl -H "x-user-id: test-user-123" \
 #### Clerk Webhooks (User Events)
 
 1. Install Svix CLI:
+
    ```bash
    npm install -g svix-cli
    ```
 
 2. Start webhook listener:
+
    ```bash
    svix listen http://localhost:3001/user-accounts/clerk-webhook
    ```
@@ -439,6 +473,7 @@ curl -H "x-user-id: test-user-123" \
 ### Backend Debugging (VS Code)
 
 Create `.vscode/launch.json`:
+
 ```json
 {
   "version": "0.2.0",
@@ -462,6 +497,7 @@ Create `.vscode/launch.json`:
 ### Frontend Debugging
 
 Use React DevTools and browser DevTools:
+
 - **React DevTools**: Install browser extension
 - **TanStack Query DevTools**: Automatically enabled in dev mode
 - **Network Tab**: Monitor API calls
@@ -469,12 +505,15 @@ Use React DevTools and browser DevTools:
 ### Database Debugging
 
 #### Prisma Studio
+
 ```bash
 pnpm db:studio
 ```
+
 Visual database browser on http://localhost:3008
 
 #### Direct SQL
+
 ```bash
 docker exec -it oppskills-postgres psql -U oppskills -d oppskills
 
@@ -485,7 +524,9 @@ SELECT * FROM "UserEntity";
 ```
 
 #### Prisma Query Logs
+
 Add to `packages/database/prisma/schema.prisma`:
+
 ```prisma
 generator client {
   provider = "prisma-client-js"
@@ -496,6 +537,7 @@ generator client {
 ### Redis Debugging
 
 Connect to Redis CLI:
+
 ```bash
 docker exec -it oppskills-redis redis-cli -p 6380
 
@@ -508,13 +550,17 @@ FLUSHALL         # Clear all keys (WARNING!)
 ## Common Issues & Solutions
 
 ### Issue: Prisma Client Not Generated
+
 **Solution**:
+
 ```bash
 pnpm db:generate
 ```
 
 ### Issue: Database Schema Mismatch
+
 **Solution**:
+
 ```bash
 pnpm db:push  # Dev
 # OR
@@ -522,7 +568,9 @@ pnpm db:migrate  # Production
 ```
 
 ### Issue: Port Already in Use
+
 **Solution**:
+
 ```bash
 # Find process using port
 lsof -i :3001  # Backend
@@ -533,7 +581,9 @@ kill -9 <PID>
 ```
 
 ### Issue: Docker Containers Not Starting
+
 **Solution**:
+
 ```bash
 docker compose down
 docker compose up -d
@@ -541,13 +591,17 @@ docker compose logs
 ```
 
 ### Issue: Auth Bypass Not Working
+
 **Solution**:
+
 - Verify `AUTH_BYPASS=true` in `apps/backend/.env.local`
 - Ensure you're not in production environment
 - Use `x-user-id` header instead of `Authorization` header
 
 ### Issue: Type Errors After Schema Change
+
 **Solution**:
+
 ```bash
 pnpm db:generate
 pnpm build --filter=@oppskills/db
@@ -555,13 +609,17 @@ pnpm build --filter=@oppskills/types
 ```
 
 ### Issue: Frontend API Calls Failing
+
 **Solution**:
+
 1. Verify `NEXT_PUBLIC_API_URL` in `apps/ui-webapp/.env.local`
 2. Check backend is running: `curl http://localhost:3001`
 3. Check CORS settings in `apps/backend/src/main.ts`
 
 ### Issue: Migrations Failing
+
 **Solution**:
+
 ```bash
 # Reset and reapply migrations (WARNING: deletes data!)
 cd packages/database
@@ -573,6 +631,7 @@ pnpm prisma migrate reset
 ## Performance Tips
 
 ### Fast Rebuilds
+
 ```bash
 # Use Turbo cache
 pnpm build --filter=backend  # Only rebuild backend
@@ -582,6 +641,7 @@ rm -rf .turbo
 ```
 
 ### Fast Database Resets
+
 ```bash
 # Use db:push in development (no migration files)
 pnpm db:push
@@ -591,6 +651,7 @@ pnpm db:migrate
 ```
 
 ### Fast Frontend Hot Reload
+
 - Next.js 16 uses Turbopack by default (faster than Webpack)
 - Avoid importing large libraries on every page
 - Use dynamic imports for heavy components
@@ -598,11 +659,13 @@ pnpm db:migrate
 ## Environment-Specific Workflows
 
 ### Local Development
+
 - Use `AUTH_BYPASS=true` for fast testing
 - Use `pnpm db:push` for quick schema changes
 - Use Docker Compose for infrastructure
 
 ### Staging/Production
+
 - Never use `AUTH_BYPASS`
 - Always use `pnpm db:migrate` for schema changes
 - Use managed services (RDS, ElastiCache, S3)
@@ -620,6 +683,7 @@ pnpm db:migrate
 ## Git Workflow
 
 ### Branch Naming
+
 ```
 feature/add-new-entity
 fix/authentication-bug
@@ -628,6 +692,7 @@ docs/api-reference
 ```
 
 ### Commit Messages
+
 ```
 feat: add new entity module
 fix: resolve authentication bug
@@ -638,6 +703,7 @@ test: add unit tests for service
 ```
 
 ### Pull Request Process
+
 1. Create feature branch from `main`
 2. Make changes and commit
 3. Push to GitHub
@@ -666,6 +732,7 @@ test: add unit tests for service
 ## Package Scripts Reference
 
 ### Root Level
+
 ```bash
 pnpm dev                # Start all dev servers
 pnpm build              # Build all packages
@@ -679,6 +746,7 @@ pnpm db:studio          # Open Prisma Studio
 ```
 
 ### Backend (`apps/backend/`)
+
 ```bash
 pnpm start              # Start production build
 pnpm start:dev          # Start watch mode (nodemon)
@@ -690,6 +758,7 @@ pnpm test:e2e           # Run e2e tests
 ```
 
 ### Frontend (`apps/ui-webapp/`)
+
 ```bash
 pnpm dev                # Start dev server (Turbopack)
 pnpm build              # Build for production

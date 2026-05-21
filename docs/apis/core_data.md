@@ -28,17 +28,19 @@ These endpoints provide an autocomplete list of colleges to keep user profile da
 These endpoints provide the data required to render charts and metric cards on the Organizer Dashboard.
 
 ### Specific Event or Hackathon Stats
-- **General Stats:** 
-  - `GET /analytics/event/:slug/general` 
+
+- **General Stats:**
+  - `GET /analytics/event/:slug/general`
   - `GET /analytics/hackathon/:slug/general`
   - **Usage:** Fetches basic numbers like total page views and total registrations for a single listing.
 
-- **Detailed Stats (Charts):** 
+- **Detailed Stats (Charts):**
   - `GET /analytics/event/:slug/detailed?period=30d&from=YYYY-MM-DD&to=YYYY-MM-DD`
   - `GET /analytics/hackathon/:slug/detailed?period=30d&from=YYYY-MM-DD&to=YYYY-MM-DD`
   - **Usage:** Fetches time-series data for line charts or bar graphs. You must provide `period`, `from`, and `to` query parameters.
 
 ### Global Organizer Stats (All listings combined)
+
 - `GET /analytics/organizer-stats` - High-level metrics across all of the organizer's active listings.
 - `GET /analytics/organizer-trends` - Time-series data for overall registration growth.
 - `GET /analytics/organizer-top-listings` - A ranked list of the organizer's most popular events.
@@ -65,13 +67,13 @@ These endpoints allow users to express interest in upcoming features before they
 
 These endpoints are used internally to test and debug the automated Google Sheets export feature (which automatically syncs new registrations to an organizer's Google Sheet).
 
-- **Check Connection:** `GET /google-sheets/status` and `GET /google-sheets/diagnostics` 
+- **Check Connection:** `GET /google-sheets/status` and `GET /google-sheets/diagnostics`
   - **Usage:** Check if the OppSkills Google Service Account is correctly authenticated.
-- **Test Row Insert:** `POST /google-sheets/test/append-row` 
+- **Test Row Insert:** `POST /google-sheets/test/append-row`
   - **Usage:** Test inserting dummy data into a target spreadsheet.
-- **Check Headers:** `GET` / `POST /google-sheets/test/headers/:tabName` 
+- **Check Headers:** `GET` / `POST /google-sheets/test/headers/:tabName`
   - **Usage:** Check or set the column headers in a specific tab.
-- **Create Tab:** `POST /google-sheets/test/ensure-tab/:tabName` 
+- **Create Tab:** `POST /google-sheets/test/ensure-tab/:tabName`
   - **Usage:** Make sure a specific tab exists in the spreadsheet.
-- **End-to-End Test:** `POST /google-sheets/test/registration` 
+- **End-to-End Test:** `POST /google-sheets/test/registration`
   - **Usage:** Simulate a full end-to-end user registration syncing directly to the sheet.

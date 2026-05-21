@@ -12,21 +12,24 @@ export interface HighestPerformingData {
   hackathon: HighestPerformingItem | null;
 }
 
-export default function Alerts({ data }: { data: HighestPerformingData | null }) {
-
+export default function Alerts({
+  data,
+}: {
+  data: HighestPerformingData | null;
+}) {
   const items = [];
   if (data?.event && data.event.tregistrations > 1000) {
     items.push({
       ...data.event,
       type: "Event",
-      message: `Your event is doing great, it got ${data.event.tregistrations} registrations.`
+      message: `Your event is doing great, it got ${data.event.tregistrations} registrations.`,
     });
   }
   if (data?.hackathon && data.hackathon.tregistrations > 1000) {
     items.push({
       ...data.hackathon,
       type: "Hackathon",
-      message: `Your hackathon is doing great, it got ${data.hackathon.tregistrations} registrations.`
+      message: `Your hackathon is doing great, it got ${data.hackathon.tregistrations} registrations.`,
     });
   }
 

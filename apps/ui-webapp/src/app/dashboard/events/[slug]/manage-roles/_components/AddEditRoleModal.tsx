@@ -24,10 +24,7 @@ import {
 } from "@/components/ui/popover";
 import { useState, useEffect, useMemo } from "react";
 import { Loader2, CheckIcon, ChevronsUpDownIcon, UserIcon } from "lucide-react";
-import {
-  looksLikeCompleteEmail,
-  useUserSearch,
-} from "@/hooks/useUserSearch";
+import { looksLikeCompleteEmail, useUserSearch } from "@/hooks/useUserSearch";
 import { type UserSearchResult } from "@/lib/api/usersApi";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -63,7 +60,9 @@ export default function AddRoleModal({
   ownerId,
 }: AddRoleModalProps) {
   const [comboboxOpen, setComboboxOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(
+    null,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -158,9 +157,7 @@ export default function AddRoleModal({
                       <span className="truncate">{selectedUser.email}</span>
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">
-                      Add by email…
-                    </span>
+                    <span className="text-muted-foreground">Add by email…</span>
                   )}
                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -211,7 +208,7 @@ export default function AddRoleModal({
                                 "h-4 w-4",
                                 selectedUser?.id === user.id
                                   ? "opacity-100"
-                                  : "opacity-0"
+                                  : "opacity-0",
                               )}
                             />
                             {user.imageUrl ? (

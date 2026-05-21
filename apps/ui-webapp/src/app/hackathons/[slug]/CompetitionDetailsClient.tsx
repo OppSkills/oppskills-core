@@ -27,7 +27,10 @@ import { AlertTriangle } from "lucide-react";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { HackathonDetailFallback } from "@/components/boneyard/loading-fallbacks";
 import { useAuth } from "@clerk/nextjs";
-import { transformApiData, type HackathonApiData } from "./_components/transform";
+import {
+  transformApiData,
+  type HackathonApiData,
+} from "./_components/transform";
 import { verifyPayment } from "@/lib/api/paymentsApi";
 import { withRetry } from "@/lib/utils/retry";
 import { toast } from "sonner";
@@ -50,7 +53,7 @@ export function CompetitionDetailsClient({
   const { getToken, isSignedIn, userId } = useAuth();
   const hackathonRzpVerifyTriedRef = useRef(false);
   const [competition, setCompetition] = useState<CompetitionDetails | null>(
-    initialData || null
+    initialData || null,
   );
   const [isLoading, setIsLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
@@ -156,14 +159,14 @@ export function CompetitionDetailsClient({
             if (token) {
               const data = (await getHackathonBySlug(
                 token,
-                slug
+                slug,
               )) as HackathonApiData;
               setCompetition(transformApiData(data));
               console.log("competition data", transformApiData(data));
               setIsDraft(true);
               return;
             }
-          } catch { }
+          } catch {}
         }
         console.error("Failed to fetch competition:", publicErr);
         setError("Competition not found or not available.");
@@ -277,7 +280,8 @@ export function CompetitionDetailsClient({
                 setCurTab={setCurTab}
                 hasRounds={competition.rounds.length > 0}
                 hasAttachments={
-                  !!competition.attachments && competition.attachments.length > 0
+                  !!competition.attachments &&
+                  competition.attachments.length > 0
                 }
                 title={competition.title}
                 slug={competition.slug}
@@ -302,8 +306,6 @@ export function CompetitionDetailsClient({
                 <section id="details" className="scroll-mt-24">
                   <AboutSection content={competition.about} />
                 </section>
-
-
 
                 <section className="scroll-mt-24">
                   <Organizers

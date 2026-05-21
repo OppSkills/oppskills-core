@@ -252,7 +252,8 @@ export function SubmissionModal({
                     type="file"
                     className="hidden"
                     accept={
-                      allowedTypesFromConfig && allowedTypesFromConfig.length > 0
+                      allowedTypesFromConfig &&
+                      allowedTypesFromConfig.length > 0
                         ? allowedTypesFromConfig
                             .map((t) => `.${t.toLowerCase()}`)
                             .join(",")

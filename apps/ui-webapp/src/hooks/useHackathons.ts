@@ -36,7 +36,8 @@ export function useHackathons() {
       const token = requireToken(await getToken());
       return createHackathon(token, payload);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["hackathons"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["hackathons"] }),
   });
 
   const update = useMutation({
@@ -44,7 +45,8 @@ export function useHackathons() {
       const token = requireToken(await getToken());
       return updateHackathon(token, payload.id, payload.data);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["hackathons"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["hackathons"] }),
   });
 
   const remove = useMutation({
@@ -52,7 +54,8 @@ export function useHackathons() {
       const token = requireToken(await getToken());
       return deleteHackathon(token, id);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["hackathons"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["hackathons"] }),
   });
 
   const register = useMutation({
@@ -60,7 +63,8 @@ export function useHackathons() {
       const token = requireToken(await getToken());
       return registerForHackathon(token, id);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["hackathons"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["hackathons"] }),
   });
 
   return { data, isLoading, error, create, update, remove, register };

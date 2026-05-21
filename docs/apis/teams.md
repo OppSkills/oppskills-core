@@ -9,36 +9,40 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
 ## 1. Creating and Joining
 
 ### Create a Team (`POST /hackathons/create-team`)
+
 - **Usage:** Creates a new team and makes the current user the leader.
-- **Request Body:** 
+- **Request Body:**
   ```json
-  { 
-    "hackathonId": "hack_123", 
-    "teamName": "Byte Busters" 
+  {
+    "hackathonId": "hack_123",
+    "teamName": "Byte Busters"
   }
   ```
 - **Returns:** The created team object, including the `id` and `inviteCode`.
 
 ### React Native Example (TanStack Query)
+
 ```typescript
 const createTeam = useMutation({
-  mutationFn: (data) => apiClient.request('/hackathons/create-team', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
+  mutationFn: (data) =>
+    apiClient.request("/hackathons/create-team", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['my-team', hackathonId] });
+    queryClient.invalidateQueries({ queryKey: ["my-team", hackathonId] });
   },
 });
 ```
 
 ### Join an Existing Team (`POST /hackathons/join-team`)
+
 - **Usage:** Adds the user to an existing team.
-- **Request Body:** 
+- **Request Body:**
   ```json
-  { 
-    "teamId": "team_abc", 
-    "inviteCode": "XYZ789" 
+  {
+    "teamId": "team_abc",
+    "inviteCode": "XYZ789"
   }
   ```
 - **Returns:** `{ "success": true }`
@@ -55,19 +59,19 @@ const createTeam = useMutation({
       "name": "Byte Busters",
       "inviteCode": "XYZ789",
       "leaderId": "user_123",
-      "members": [
-        { "id": "user_123", "name": "John Doe", "role": "LEADER" }
-      ]
+      "members": [{ "id": "user_123", "name": "John Doe", "role": "LEADER" }]
     }
     ```
 - **Get Specific Team:** `GET /hackathons/team/:teamId` (Gets team members and details).
 - **List All Teams (Leaderboard):** `GET /hackathons/teams/:hackathonId`
 
 ### React Native Example
+
 ```typescript
 const { data: myTeam } = useQuery({
-  queryKey: ['my-team', hackathonId],
-  queryFn: () => apiClient.request(`/hackathons/my-team?hackathonId=${hackathonId}`),
+  queryKey: ["my-team", hackathonId],
+  queryFn: () =>
+    apiClient.request(`/hackathons/my-team?hackathonId=${hackathonId}`),
 });
 ```
 
@@ -84,4 +88,5 @@ const { data: myTeam } = useQuery({
 ## 4. Checkout / Draft Teams
 
 When users pay for a team ticket, they build a "draft" team first before they are officially registered.
+
 - **Draft Endpoints:** `POST /hackathons/:slug/teams/draft`, `POST .../draft/join`, `DELETE .../draft/leave`.

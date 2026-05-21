@@ -17,7 +17,7 @@ export function useMobileNavigation() {
   const context = React.useContext(MobileNavigationContext);
   if (!context) {
     throw new Error(
-      "useMobileNavigation must be used within a MobileNavigationProvider"
+      "useMobileNavigation must be used within a MobileNavigationProvider",
     );
   }
   return context;

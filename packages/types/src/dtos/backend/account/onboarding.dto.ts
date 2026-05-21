@@ -59,7 +59,7 @@ export class CreateOnboardingDto {
         UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT,
       ].includes(o.userCategory) &&
       !o.collegeSkipped &&
-      !o.collegeId
+      !o.collegeId,
   )
   @IsString()
   @IsNotEmpty()
@@ -72,7 +72,7 @@ export class CreateOnboardingDto {
         UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT,
       ].includes(o.userCategory) &&
       !o.collegeSkipped &&
-      !o.collegeName
+      !o.collegeName,
   )
   @IsString()
   @IsNotEmpty()
@@ -82,7 +82,7 @@ export class CreateOnboardingDto {
     [
       UserCategoryValue.COLLEGE_STUDENT,
       UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT,
-    ].includes(o.userCategory)
+    ].includes(o.userCategory),
   )
   @IsString()
   @IsOptional()
@@ -92,7 +92,7 @@ export class CreateOnboardingDto {
     [
       UserCategoryValue.COLLEGE_STUDENT,
       UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT,
-    ].includes(o.userCategory)
+    ].includes(o.userCategory),
   )
   @IsInt()
   @Min(1900)

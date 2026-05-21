@@ -1,11 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  useUser,
-  useClerk,
-  SignOutButton,
-} from "@clerk/nextjs";
+import { useUser, useClerk, SignOutButton } from "@clerk/nextjs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +32,10 @@ export function UserAccountButton() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0">
+        <Button
+          variant="ghost"
+          className="relative h-10 w-10 rounded-full p-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+        >
           <Avatar className="h-10 w-10 border-2 border-primary-100 transition-all hover:border-primary-300">
             <AvatarImage src={user.imageUrl} alt={user.fullName || "User"} />
             <AvatarFallback className="bg-primary-50 text-primary-700 font-medium">
@@ -46,7 +45,11 @@ export function UserAccountButton() {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" forceMount className="min-w-64 md:min-w-80 border-neutral-200 rounded-2xl">
+      <DropdownMenuContent
+        align="end"
+        forceMount
+        className="min-w-64 md:min-w-80 border-neutral-200 rounded-2xl"
+      >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1 p-2">
             <p className="text-sm font-semibold leading-none text-neutral-900">

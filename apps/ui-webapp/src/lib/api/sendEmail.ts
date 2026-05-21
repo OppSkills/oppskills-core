@@ -31,7 +31,7 @@ export interface ApiResponse {
 
 export async function sendEmail(
   token: string | null,
-  payload: SendDirectMessagePayload
+  payload: SendDirectMessagePayload,
 ): Promise<ApiResponse> {
   if (!token) {
     const errorMsg = "User is not authenticated";
@@ -46,7 +46,7 @@ export async function sendEmail(
 
 export async function sendBulkEmail(
   token: string | null,
-  payload: SendBulkEmailPayload
+  payload: SendBulkEmailPayload,
 ): Promise<ApiResponse> {
   if (!token) {
     const errorMsg = "User is not authenticated";
@@ -61,9 +61,10 @@ export async function sendBulkEmail(
     hackathonSlug: payload.hackathonSlug || undefined,
     content: payload.htmlBody,
     scheduleType: payload.scheduledAt ? "CUSTOM" : "IMMEDIATELY",
-    scheduledAt: payload.scheduledAt ? new Date(payload.scheduledAt).toISOString() : undefined,
+    scheduledAt: payload.scheduledAt
+      ? new Date(payload.scheduledAt).toISOString()
+      : undefined,
   };
-
 
   const res = await NOTIFICATION_API.post("/schedule", mappedPayload, {
     headers: buildAuthHeaders(token),

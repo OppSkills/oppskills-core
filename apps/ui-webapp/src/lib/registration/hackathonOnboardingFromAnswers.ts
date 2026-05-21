@@ -1,8 +1,5 @@
 import type { CreateOnboardingDto, MeResponseDto } from "@oppskills/types";
-import {
-  GenderValue,
-  UserCategoryValue,
-} from "@oppskills/types/enums";
+import { GenderValue, UserCategoryValue } from "@oppskills/types/enums";
 
 type OnboardingProfile = NonNullable<MeResponseDto["onboardingProfile"]>;
 
@@ -58,8 +55,10 @@ export function buildCreateOnboardingDtoFromRegistration(args: {
   if (profile?.teamPreference) {
     dto.teamPreference = profile.teamPreference;
   }
-  if (profile?.locationCity) dto.locationCity = profile.locationCity ?? undefined;
-  if (profile?.locationState) dto.locationState = profile.locationState ?? undefined;
+  if (profile?.locationCity)
+    dto.locationCity = profile.locationCity ?? undefined;
+  if (profile?.locationState)
+    dto.locationState = profile.locationState ?? undefined;
   if (profile?.locationCountry) {
     dto.locationCountry = profile.locationCountry ?? undefined;
   }
@@ -67,9 +66,7 @@ export function buildCreateOnboardingDtoFromRegistration(args: {
   switch (userCategory) {
     case UserCategoryValue.SCHOOL_STUDENT: {
       const schoolName =
-        (answers["default-school-name"] as string) ||
-        profile?.schoolName ||
-        "";
+        (answers["default-school-name"] as string) || profile?.schoolName || "";
       const schoolClass =
         (answers["default-school-class"] as string) ||
         profile?.schoolClass ||

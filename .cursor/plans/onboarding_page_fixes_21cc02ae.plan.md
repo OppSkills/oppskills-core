@@ -23,6 +23,7 @@ todos:
 ### Backend is enforcing rules that conflict with the shared DTO
 
 In `apps/backend/src/user-accounts/user-accounts.service.ts` (`validateOnboardingData()`):
+
 - **WORKING_PROFESSIONAL** currently requires `collegeId` unless `collegeSkipped=true`.
   - This matches your reported bug: selecting “Work” still forces college.
 - **SCHOOL_STUDENT** currently requires `schoolAddress`, but the DTO marks it optional.
@@ -32,6 +33,7 @@ In `apps/backend/src/user-accounts/user-accounts.service.ts` (`validateOnboardin
 ### Frontend can’t satisfy current backend rules for Working Professionals
 
 In `apps/ui-landing/src/app/onboarding/page.tsx`:
+
 - For `WORKING_PROFESSIONAL`, the UI shows only `companyName` + `jobTitle`.
 - There is **no way to set `collegeSkipped=true`** in that branch (the “My college is not listed” checkbox only appears for college categories).
 - Default `collegeSkipped` is `false`, so current backend rejects professionals without a college.
@@ -50,6 +52,7 @@ In `apps/ui-landing/src/app/onboarding/page.tsx`:
 **File**: `apps/backend/src/user-accounts/user-accounts.service.ts`
 
 Update `validateOnboardingData()` category rules:
+
 - **SCHOOL_STUDENT**:
   - Require `schoolName` and `schoolClass`.
   - Make `schoolAddress` optional (remove the hard requirement).
@@ -70,6 +73,7 @@ This change should stop the incorrect “college id required” error for profes
 **File**: `apps/ui-landing/src/app/onboarding/page.tsx`
 
 Add a small effect on `userCategory` change:
+
 - When switching to `WORKING_PROFESSIONAL`, clear `collegeId`, `collegeName`, and set `collegeSkipped=false`.
 - When switching away from college categories, clear college-only fields.
 - When switching away from school category, clear school-only fields.
@@ -81,6 +85,7 @@ This avoids cases where a user previously selected a college, then switches to �
 **File**: `apps/ui-landing/src/app/onboarding/page.tsx`
 
 Update `validateCurrentStep()`:
+
 - **SCHOOL_STUDENT**: keep requiring only `schoolName` + `schoolClass` (address optional).
 - **COLLEGE_STUDENT / PROFESSIONAL_SCHOOL_STUDENT**: keep requiring `collegeId` unless skipped.
 - **WORKING_PROFESSIONAL / FRESHER**: no education requirement.
@@ -96,4 +101,3 @@ Update `validateCurrentStep()`:
   - Without address should still submit successfully.
 - **Switching categories**:
   - Select college + pick a college → switch to working professional → submit → should not complain about college.
-

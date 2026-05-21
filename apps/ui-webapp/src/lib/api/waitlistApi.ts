@@ -1,6 +1,6 @@
-import { createApiClient, buildAuthHeaders } from './apiClient';
+import { createApiClient, buildAuthHeaders } from "./apiClient";
 
-const API = createApiClient('/waitlist');
+const API = createApiClient("/waitlist");
 
 export interface AddToWaitlistResponse {
   success: boolean;
@@ -20,7 +20,7 @@ export async function addToWaitlist(
 ): Promise<AddToWaitlistResponse> {
   try {
     const res = await API.post(
-      '/',
+      "/",
       { feature },
       {
         headers: buildAuthHeaders(token),
@@ -28,8 +28,8 @@ export async function addToWaitlist(
     );
     return res.data as AddToWaitlistResponse;
   } catch (error) {
-    console.error('Error adding to waitlist:', error);
-    throw new Error('Failed to add to waitlist. Please try again.');
+    console.error("Error adding to waitlist:", error);
+    throw new Error("Failed to add to waitlist. Please try again.");
   }
 }
 
@@ -46,8 +46,7 @@ export async function checkWaitlistStatus(
     });
     return res.data as WaitlistStatusResponse;
   } catch (error) {
-    console.error('Error checking waitlist status:', error);
-    throw new Error('Failed to check waitlist status. Please try again.');
+    console.error("Error checking waitlist status:", error);
+    throw new Error("Failed to check waitlist status. Please try again.");
   }
 }
-
