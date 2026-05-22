@@ -34,6 +34,7 @@ import {
   UpiLogoRow,
   WalletLogoRow,
 } from "@/components/checkout/PaymentMethodLogos";
+import { isInvalidDiscountCodeMessage } from "@/components/checkout/coupon";
 import {
   type PayMethod,
   razorpayMethodBlock,
@@ -166,6 +167,7 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
   const [order, setOrder] = useState<any>(null);
   const [orderLoading, setOrderLoading] = useState(true);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const [phase, setPhase] = useState<"idle" | "processing">("idle");
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PayMethod | null>(null);
@@ -202,6 +204,22 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
     if (!intent) return;
     setOrderLoading(true);
     setOrderError(null);
+    setCouponError(null);
+
+    const buildOrderParams = (discountCode?: string) => ({
+      discountCode,
+      ticketTierId: tierFromUrl ?? intent.ticketTierId,
+      teamId: intent.teamId,
+      teamName: intent.teamName,
+      maxSize: intent.maxSize,
+      invitationCode: intent.invitationCode,
+      joinTeamId: intent.joinTeamId,
+      answers:
+        intent.answers && intent.answers.length > 0
+          ? intent.answers
+          : undefined,
+    });
+
     try {
       const token = await getToken();
       if (!token) {
@@ -248,28 +266,9 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
         setFeeBearer(pub.feeBearer);
       }
 
-      const orderParams: {
-        discountCode?: string;
-        ticketTierId?: string;
-        teamId?: string;
-        teamName?: string;
-        maxSize?: number;
-        invitationCode?: string;
-        joinTeamId?: string;
-        answers?: Array<{ fieldId: string; value: string }>;
-      } = {
-        discountCode: appliedDiscount ?? intent.discountCode,
-        ticketTierId: tierFromUrl ?? intent.ticketTierId,
-        teamId: intent.teamId,
-        teamName: intent.teamName,
-        maxSize: intent.maxSize,
-        invitationCode: intent.invitationCode,
-        joinTeamId: intent.joinTeamId,
-        answers:
-          intent.answers && intent.answers.length > 0
-            ? intent.answers
-            : undefined,
-      };
+      const orderParams = buildOrderParams(
+        appliedDiscount ?? intent.discountCode,
+      );
 
       const o = await createPaymentOrder(token, slug, orderParams);
 
@@ -284,7 +283,28 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
 
       setOrder(o);
     } catch (e) {
-      setOrderError(getApiErrorMessage(e, "Could not load checkout."));
+      const msg = getApiErrorMessage(e, "Could not load checkout.");
+      const discountAttempted = appliedDiscount ?? intent.discountCode;
+      if (discountAttempted && isInvalidDiscountCodeMessage(msg)) {
+        setCouponError(msg);
+        try {
+          const token = await getToken();
+          if (token) {
+            const o = await createPaymentOrder(
+              token,
+              slug,
+              buildOrderParams(undefined),
+            );
+            if (!(o.zeroAmountPayment || o.amountPaise === 0)) {
+              setOrder(o);
+            }
+          }
+        } catch {
+          /* keep previous order if baseline refresh fails */
+        }
+      } else {
+        setOrderError(msg);
+      }
     } finally {
       setOrderLoading(false);
     }
@@ -654,9 +674,10 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
                   <Input
                     placeholder="Enter coupon code"
                     value={discountInput}
-                    onChange={(e) =>
-                      setDiscountInput(e.target.value.toUpperCase())
-                    }
+                    onChange={(e) => {
+                      setDiscountInput(e.target.value.toUpperCase());
+                      setCouponError(null);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -679,6 +700,9 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
                     Apply coupon
                   </Button>
                 </div>
+                {couponError ? (
+                  <p className="text-sm text-red-600 -mt-2">{couponError}</p>
+                ) : null}
 
                 <div>
                   <h3 className="text-sm font-bold text-neutral-900 mb-2">
@@ -689,8 +713,6 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
                       <Loader2 className="h-5 w-5 animate-spin" />
                       Calculating…
                     </div>
-                  ) : orderError ? (
-                    <p className="text-sm text-red-600 py-2">{orderError}</p>
                   ) : order ? (
                     <div className="rounded-lg border border-neutral-200 overflow-hidden text-sm">
                       <div className="flex justify-between px-3 py-2 bg-white">
@@ -701,7 +723,12 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
                       </div>
                       {discount > 0 ? (
                         <div className="flex justify-between px-3 py-2 bg-emerald-50/60 border-t border-neutral-100">
-                          <span className="text-emerald-800">Discount</span>
+                          <span className="text-emerald-800">
+                            Coupon
+                            {(appliedDiscount ?? intent.discountCode)
+                              ? ` (${appliedDiscount ?? intent.discountCode})`
+                              : ""}
+                          </span>
                           <span className="tabular-nums font-medium text-emerald-800">
                             − {discount.toFixed(2)} {order.currency || "INR"}
                           </span>
@@ -753,6 +780,8 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
                         </span>
                       </div>
                     </div>
+                  ) : orderError ? (
+                    <p className="text-sm text-red-600 py-2">{orderError}</p>
                   ) : null}
                 </div>
 
