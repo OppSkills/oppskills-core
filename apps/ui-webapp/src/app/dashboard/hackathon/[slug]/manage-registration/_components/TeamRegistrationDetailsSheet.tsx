@@ -101,7 +101,7 @@ export function TeamRegistrationDetailsSheet({
   ): string => {
     if (!profile) return "—";
     const parts = [
-      profile.locationCity,
+      profile.locationCoords,
       profile.locationState,
       profile.locationCountry,
     ].filter(Boolean);

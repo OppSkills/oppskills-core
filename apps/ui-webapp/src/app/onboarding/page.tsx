@@ -89,7 +89,7 @@ interface OnboardingFormData {
   companyName: string;
   jobTitle: string;
   // Step 3
-  locationCity: string;
+  locationCoords: string;
   locationState: string;
   locationCountry: string;
   // Step 4
@@ -282,7 +282,7 @@ export default function OnboardingPage() {
       collegeSkipped: false,
       companyName: "",
       jobTitle: "",
-      locationCity: "",
+      locationCoords: "",
       locationState: "",
       locationCountry: "India",
       interests: [] as string[],
@@ -391,8 +391,8 @@ export default function OnboardingPage() {
         if (parsed.companyName)
           form.setFieldValue("companyName", parsed.companyName);
         if (parsed.jobTitle) form.setFieldValue("jobTitle", parsed.jobTitle);
-        if (parsed.locationCity)
-          form.setFieldValue("locationCity", parsed.locationCity);
+        if (parsed.locationCoords)
+          form.setFieldValue("locationCoords", parsed.locationCoords);
         if (parsed.locationState)
           form.setFieldValue("locationState", parsed.locationState);
         if (parsed.locationCountry)
@@ -481,7 +481,7 @@ export default function OnboardingPage() {
         collegeSkipped: data.collegeSkipped,
         companyName: data.companyName || undefined,
         jobTitle: data.jobTitle || undefined,
-        locationCity: data.locationCity,
+        locationCoords: data.locationCoords,
         locationState: data.locationState,
         locationCountry: data.locationCountry,
         interests: data.interests,
@@ -527,7 +527,7 @@ export default function OnboardingPage() {
         return true;
       case 3:
         return (
-          !!values.locationCity &&
+          !!values.locationCoords &&
           !!values.locationState &&
           !!values.locationCountry
         );
@@ -979,7 +979,7 @@ export default function OnboardingPage() {
             {/* Step 3: Location */}
             {currentStep === 3 && (
               <FieldGroup>
-                <form.Field name="locationCity">
+                <form.Field name="locationCoords">
                   {(field) => (
                     <Field>
                       <FieldLabel>City *</FieldLabel>

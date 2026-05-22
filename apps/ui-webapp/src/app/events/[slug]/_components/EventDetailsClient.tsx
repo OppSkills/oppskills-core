@@ -63,7 +63,7 @@ function getInitials(
  */
 function formatLocation(event: {
   locationType: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationAddress: string | null;
   locationVirtualLink: string | null;
 }): { venueName: string; venueAddress: string } {
@@ -76,7 +76,7 @@ function formatLocation(event: {
 
   return {
     venueName: event.locationAddress || "TBA",
-    venueAddress: event.locationCity || "",
+    venueAddress: event.locationCoords || "",
   };
 }
 
@@ -377,7 +377,9 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     !!registrationStatus?.isRegistered ||
     !!registrationStatus?.isPaidButIncomplete;
 
-  const mainRegistrationCard = showPageTierPicker ? (
+  const isPendingRegistration = !!registrationStatus?.isPaidButIncomplete;
+
+  const mainRegistrationCard = (showPageTierPicker && !isPendingRegistration) ? (
     <TicketTierRegistrationPicker
       ticketTiers={pageTicketTiers}
       feeBearer={event.feeBearer}
@@ -642,7 +644,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         type="EVENT"
         completionMode={!!registrationStatus?.isPaidButIncomplete}
         pageSelectedTicketTierId={pageSelectedTierId}
-        omitTicketTierSection={showPageTierPicker}
+        omitTicketTierSection={showPageTierPicker || isPendingRegistration}
         prefillAnswers={registrationStatus?.draftAnswers ?? undefined}
         onSuccess={async () => {
           await refetchRegistrationStatus();

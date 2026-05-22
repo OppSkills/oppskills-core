@@ -538,10 +538,10 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
 
   const locationVirtualLink = getString(hackathon, "locationVirtualLink");
   const locationAddress = getString(hackathon, "locationAddress");
-  const locationCity = getString(hackathon, "locationCity");
+  const locationCoords = getString(hackathon, "locationCoords");
   const location = locationVirtualLink
     ? locationVirtualLink
-    : [locationAddress, locationCity]
+    : [locationAddress, locationCoords]
         .filter((v): v is string => typeof v === "string")
         .join(", ");
 

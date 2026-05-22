@@ -20,7 +20,7 @@ export interface HackathonApiData {
   approvalStatus?: string;
   mode: string;
   locationType: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationAddress: string | null;
   locationVirtualLink: string | null;
   hackathonType: string;
@@ -98,6 +98,16 @@ export interface HackathonApiData {
       placeholder: string | null;
     }>;
   } | null;
+  ticketTiers?: Array<{
+    id: string;
+    name: string;
+    description?: string | null;
+    price?: unknown;
+    currency?: string | null;
+    capacity?: number | null;
+    isActive?: boolean;
+    order?: number | null;
+  }>;
 }
 
 function mapRoundStatus(
@@ -263,9 +273,11 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
 
   let location = "Online";
   if (data.locationType === "PHYSICAL" || data.locationType === "OFFLINE") {
-    location = data.locationCity || data.locationAddress || "In-Person";
+    location = data.locationCoords || data.locationAddress || "In-Person";
   } else if (data.locationType === "HYBRID") {
-    location = data.locationCity ? `${data.locationCity} + Online` : "Hybrid";
+    location = data.locationCoords
+      ? `${data.locationCoords} + Online`
+      : "Hybrid";
   }
 
   const dateRange =
@@ -407,7 +419,7 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
       data.locationType === "VIRTUAL"
         ? "Online Event"
         : data.organizationName || undefined,
-    venueAddress: data.locationAddress || data.locationCity || undefined,
+    venueAddress: data.locationAddress || data.locationCoords || undefined,
     teamSize: mapTeamSize(data.participantType),
     impressions: data.impressions ?? 0,
     registrationDeadline,
@@ -424,6 +436,7 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
     chargeMode: data.chargeMode,
     currency: data.currency,
     feeBearer: data.feeBearer,
+    ticketTiers: data.ticketTiers ?? [],
     contact:
       data.contactName || data.contactEmail || data.contactPhone
         ? {

@@ -103,7 +103,7 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
         pub.organizationName ||
         pub.organization_name ||
         [pub.owner?.firstName, pub.owner?.lastName].filter(Boolean).join(" ") ||
-        pub.locationCity ||
+        pub.locationCoords ||
         "";
       setEventSubtitle(org || "Event registration");
       if (pub.bannerImageUrl) {

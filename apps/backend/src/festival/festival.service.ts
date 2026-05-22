@@ -39,7 +39,7 @@ export class FestivalService {
 
         locationType: dto.location?.type,
         locationAddress: dto.location?.address,
-        locationCity: dto.location?.city,
+        locationCoords: dto.location?.city,
         locationVirtualLink: dto.location?.virtualLink,
 
         startDate,
@@ -73,7 +73,7 @@ export class FestivalService {
         endDate: true,
         status: true,
         locationType: true,
-        locationCity: true,
+        locationCoords: true,
         organizationName: true,
         organizationLogoUrl: true,
         hackathons: {
@@ -259,7 +259,7 @@ export class FestivalService {
 
         locationType: dto.location?.type,
         locationAddress: dto.location?.address,
-        locationCity: dto.location?.city,
+        locationCoords: dto.location?.city,
         locationVirtualLink: dto.location?.virtualLink,
 
         startDate,

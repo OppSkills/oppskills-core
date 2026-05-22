@@ -80,7 +80,7 @@ export class EventService {
 
         locationType: dto.location?.type,
         locationAddress: dto.location?.address,
-        locationCity: dto.location?.city,
+        locationCoords: dto.location?.city,
         locationVirtualLink: dto.location?.virtualLink,
 
         registrationDeadline,
@@ -151,7 +151,7 @@ export class EventService {
         OR: [
           { name: { contains: input.search, mode: 'insensitive' } },
           { description: { contains: input.search, mode: 'insensitive' } },
-          { locationCity: { contains: input.search, mode: 'insensitive' } },
+          { locationCoords: { contains: input.search, mode: 'insensitive' } },
         ],
       });
     }
@@ -338,7 +338,7 @@ export class EventService {
           status: true,
           approvalStatus: true,
           locationType: true,
-          locationCity: true,
+          locationCoords: true,
           locationAddress: true,
           locationVirtualLink: true,
           isFree: true,
@@ -432,7 +432,7 @@ export class EventService {
         status: true,
         approvalStatus: true,
         locationType: true,
-        locationCity: true,
+        locationCoords: true,
         locationAddress: true,
         locationVirtualLink: true,
         isFree: true,
@@ -542,7 +542,7 @@ export class EventService {
         status: true,
         approvalStatus: true,
         locationType: true,
-        locationCity: true,
+        locationCoords: true,
         locationAddress: true,
         locationVirtualLink: true,
         isFree: true,
@@ -1002,7 +1002,7 @@ export class EventService {
 
       locationType: dto.location?.type,
       locationAddress: dto.location?.address,
-      locationCity: dto.location?.city,
+      locationCoords: dto.location?.city,
       locationVirtualLink: dto.location?.virtualLink,
 
       registrationDeadline,
@@ -1135,7 +1135,7 @@ export class EventService {
         eventType: true,
         locationType: true,
         locationAddress: true,
-        locationCity: true,
+        locationCoords: true,
         locationVirtualLink: true,
         ownerId: true,
         festivalId: true,
@@ -1766,7 +1766,7 @@ export class EventService {
     // Build location string
     let eventLocation: string | undefined;
     if (event.locationType === 'PHYSICAL') {
-      eventLocation = [event.locationAddress, event.locationCity]
+      eventLocation = [event.locationAddress, event.locationCoords]
         .filter(Boolean)
         .join(', ');
     } else if (event.locationType === 'VIRTUAL' && event.locationVirtualLink) {
@@ -2509,7 +2509,7 @@ export class EventService {
                   companyName: true,
                   jobTitle: true,
                   collegeCurrentYear: true,
-                  locationCity: true,
+                  locationCoords: true,
                   locationState: true,
                   locationCountry: true,
                   college: {
@@ -2590,7 +2590,7 @@ export class EventService {
       let location = '';
       if (profile) {
         const parts: string[] = [];
-        if (profile.locationCity) parts.push(profile.locationCity);
+        if (profile.locationCoords) parts.push(profile.locationCoords);
         if (profile.locationState) parts.push(profile.locationState);
         if (profile.locationCountry) parts.push(profile.locationCountry);
         location = parts.join(', ');

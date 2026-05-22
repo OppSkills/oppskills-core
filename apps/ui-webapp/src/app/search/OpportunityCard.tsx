@@ -5,6 +5,7 @@ import React from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import { formatCount } from "@/lib/tools";
 import { formatListingEntryFee } from "@/lib/formatListingEntryFee";
+import { normalizeUrl } from "@/lib/utils";
 
 interface OpportunityCardProps {
   opportunity: {
@@ -53,7 +54,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
         <div className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-neutral-100">
           {opportunity.bannerImageUrl ? (
             <Image
-              src={opportunity.bannerImageUrl}
+              src={normalizeUrl(opportunity.bannerImageUrl)}
               alt={opportunity.name}
               fill
               className="object-cover"

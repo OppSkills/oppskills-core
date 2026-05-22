@@ -17,7 +17,7 @@ export interface EventListItem {
   registrationDeadline: string | null;
   status: string;
   locationType: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationAddress: string | null;
   locationVirtualLink: string | null;
   isFree: boolean;

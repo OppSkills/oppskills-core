@@ -53,7 +53,7 @@ Add new models (names can be adjusted, but plan assumes these):
 - **`EventEntity`**
 - Core: `id`, `slug` (unique), `name`, `description`, `startDate`, `endDate`, `status: LifecycleStatus`
 - Festival link: `festivalId?` → `FestivalEntity`
-- Location (reuse existing denormalized fields): `locationType`, `locationAddress`, `locationCity`, `locationVirtualLink`
+- Location (reuse existing denormalized fields): `locationType`, `locationAddress`, `locationCoords`, `locationVirtualLink`
 - Pricing: `isFree`, `entryFeeAmount Decimal?`, `currency`
 - Capacity: `maxUsers Int?`, `registrationCount Int @default(0)` (or `participantCount`—we’ll pick one and standardize)
 - Ownership: `ownerId` → `UserEntity`

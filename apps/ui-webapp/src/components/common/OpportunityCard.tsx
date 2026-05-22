@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { cn, normalizeUrl } from "@/lib/utils";
 import { formatCount } from "@/lib/tools";
 
 export interface OpportunityCardProps {
@@ -66,7 +66,7 @@ export function OpportunityCard({
         >
           {imageSrc ? (
             <Image
-              src={imageSrc}
+              src={normalizeUrl(imageSrc)}
               alt={title}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"

@@ -7,7 +7,8 @@ dotenv.config({ path: envPath });
 
 async function verifyEndpoint() {
   console.log('--- Testing Recommendation Location Autocomplete Endpoint ---');
-  const url = 'http://localhost:3001/recommendation/location/autocomplete?q=GCET';
+  const url =
+    'http://localhost:3001/recommendation/location/autocomplete?q=GCET';
   console.log(`Sending GET request to: ${url}`);
 
   try {
@@ -18,12 +19,18 @@ async function verifyEndpoint() {
       },
     });
 
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
     console.log(`HTTP Status: ${response.status}`);
     console.log('Response Headers (Rate-Limit info):');
-    console.log(`  X-RateLimit-Limit: ${response.headers.get('X-RateLimit-Limit')}`);
-    console.log(`  X-RateLimit-Remaining: ${response.headers.get('X-RateLimit-Remaining')}`);
-    console.log(`  X-RateLimit-Reset: ${response.headers.get('X-RateLimit-Reset')}`);
+    console.log(
+      `  X-RateLimit-Limit: ${response.headers.get('X-RateLimit-Limit')}`,
+    );
+    console.log(
+      `  X-RateLimit-Remaining: ${response.headers.get('X-RateLimit-Remaining')}`,
+    );
+    console.log(
+      `  X-RateLimit-Reset: ${response.headers.get('X-RateLimit-Reset')}`,
+    );
 
     if (response.ok) {
       console.log('✅ Suggestions retrieved successfully:');

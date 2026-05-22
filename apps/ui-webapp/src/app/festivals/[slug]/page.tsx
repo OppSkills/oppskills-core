@@ -122,7 +122,7 @@ export default async function FestivalPage({ params }: Props) {
             name: festival.locationAddress || "TBD",
             address: {
               "@type": "PostalAddress",
-              addressLocality: festival.locationCity,
+              addressLocality: festival.locationCoords,
               addressCountry: "IN",
             },
           },

@@ -10,7 +10,7 @@ model FestivalEntity {
   websiteUrl          String?           @map("website_url")
   locationType        LocationType?     @map("location_type")
   locationAddress     String?           @map("location_address")
-  locationCity        String?           @map("location_city")
+  locationCoords        String?           @map("location_city")
   locationVirtualLink String?           @map("location_virtual_link")
   startDate           DateTime          @map("start_date")
   endDate             DateTime          @map("end_date")

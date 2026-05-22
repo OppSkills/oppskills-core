@@ -221,7 +221,7 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
         pub.organizationName ||
         pub.organization_name ||
         [pub.owner?.firstName, pub.owner?.lastName].filter(Boolean).join(" ") ||
-        pub.locationCity ||
+        pub.locationCoords ||
         "";
       setHackathonSubtitle(org || "Hackathon registration");
       if (pub.bannerImageUrl || pub.coverImageUrl) {

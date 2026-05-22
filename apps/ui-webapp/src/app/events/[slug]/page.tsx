@@ -110,7 +110,7 @@ export default async function EventPage({ params }: Props) {
             name: event.locationAddress || "TBA",
             address: {
               "@type": "PostalAddress",
-              addressLocality: event.locationCity,
+              addressLocality: event.locationCoords,
               addressCountry: "IN",
             },
           },

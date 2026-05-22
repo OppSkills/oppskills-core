@@ -22,7 +22,7 @@ type HackathonReminderRow = {
   endDate: Date;
   locationType: string | null;
   locationAddress: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationVirtualLink: string | null;
   payerEmail: string;
   firstName: string | null;
@@ -38,7 +38,7 @@ type EventReminderRow = {
   endDate: Date;
   locationType: string | null;
   locationAddress: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationVirtualLink: string | null;
   payerEmail: string;
   firstName: string | null;
@@ -54,7 +54,7 @@ type FreeEventReminderRow = {
   endDate: Date;
   locationType: string | null;
   locationAddress: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationVirtualLink: string | null;
   payerEmail: string;
   firstName: string | null;
@@ -64,15 +64,15 @@ type FreeEventReminderRow = {
 export function formatListingLocation(params: {
   locationType: string | null;
   locationAddress: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationVirtualLink: string | null;
 }): string {
   const t = params.locationType;
   if (t === 'VIRTUAL') {
     return 'Online';
   }
-  if (params.locationCity || params.locationAddress) {
-    return [params.locationAddress, params.locationCity]
+  if (params.locationCoords || params.locationAddress) {
+    return [params.locationAddress, params.locationCoords]
       .filter(Boolean)
       .join(', ');
   }
@@ -153,7 +153,7 @@ export class IncompleteRegistrationReminderService {
           h."endDate" AS "endDate",
           h.location_type::text AS "locationType",
           h.location_address AS "locationAddress",
-          h.location_city AS "locationCity",
+          h.location_city AS "locationCoords",
           h.location_virtual_link AS "locationVirtualLink",
           u.email AS "payerEmail",
           u."firstName" AS "firstName",
@@ -194,7 +194,7 @@ export class IncompleteRegistrationReminderService {
           e.end_date AS "endDate",
           e.location_type::text AS "locationType",
           e.location_address AS "locationAddress",
-          e.location_city AS "locationCity",
+          e.location_city AS "locationCoords",
           e.location_virtual_link AS "locationVirtualLink",
           u.email AS "payerEmail",
           u."firstName" AS "firstName",
@@ -236,7 +236,7 @@ export class IncompleteRegistrationReminderService {
           e.end_date AS "endDate",
           e.location_type::text AS "locationType",
           e.location_address AS "locationAddress",
-          e.location_city AS "locationCity",
+          e.location_city AS "locationCoords",
           e.location_virtual_link AS "locationVirtualLink",
           u.email AS "payerEmail",
           u."firstName" AS "firstName",
@@ -287,7 +287,7 @@ export class IncompleteRegistrationReminderService {
       const eventLocation = formatListingLocation({
         locationType: row.locationType,
         locationAddress: row.locationAddress,
-        locationCity: row.locationCity,
+        locationCoords: row.locationCoords,
         locationVirtualLink: row.locationVirtualLink,
       });
 
@@ -344,7 +344,7 @@ export class IncompleteRegistrationReminderService {
       const eventLocation = formatListingLocation({
         locationType: row.locationType,
         locationAddress: row.locationAddress,
-        locationCity: row.locationCity,
+        locationCoords: row.locationCoords,
         locationVirtualLink: row.locationVirtualLink,
       });
 
@@ -403,7 +403,7 @@ export class IncompleteRegistrationReminderService {
       const eventLocation = formatListingLocation({
         locationType: row.locationType,
         locationAddress: row.locationAddress,
-        locationCity: row.locationCity,
+        locationCoords: row.locationCoords,
         locationVirtualLink: row.locationVirtualLink,
       });
 

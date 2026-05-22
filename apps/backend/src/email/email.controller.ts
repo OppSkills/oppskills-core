@@ -276,8 +276,8 @@ export class EmailController {
     const locType = event.locationType as string | null;
     if (locType === 'ONLINE' || locType === 'VIRTUAL') {
       eventLocation = 'Online';
-    } else if (event.locationCity || event.locationAddress) {
-      eventLocation = [event.locationAddress, event.locationCity]
+    } else if (event.locationCoords || event.locationAddress) {
+      eventLocation = [event.locationAddress, event.locationCoords]
         .filter(Boolean)
         .join(', ');
     }

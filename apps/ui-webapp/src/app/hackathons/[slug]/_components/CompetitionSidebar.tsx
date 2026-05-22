@@ -78,10 +78,27 @@ export function CompetitionSidebar({
   const isOrganizer =
     !!user && !!competition.organizers?.some((o) => o.id === user.id);
 
+  // Synthetic free-tier used when isFree=false but no real tiers are configured.
+  // id='__free__' is never sent to the backend; we strip it before checkout.
+  const SYNTHETIC_FREE_TIER = {
+    id: '__free__',
+    name: 'Free Ticket',
+    description: 'No entry fee required',
+    price: 0,
+    isActive: true,
+  };
+
   const sidebarActiveTiers = useMemo(
     () => getActiveRegistrationTiers(competition.ticketTiers),
     [competition.ticketTiers],
   );
+
+  // What we actually display: real tiers if any, otherwise a synthetic free one.
+  const displayTiers =
+    !competition.isFree && sidebarActiveTiers.length === 0
+      ? [SYNTHETIC_FREE_TIER]
+      : sidebarActiveTiers;
+
   const [pageSelectedTierId, setPageSelectedTierId] = useState<string | null>(
     null,
   );
@@ -92,10 +109,15 @@ export function CompetitionSidebar({
     !!registrationStatus?.hasSubmitted &&
     (!!competition.isFree || !!registrationStatus.paymentCompleted);
   const needsCompleteRegistration =
-    hasTeam &&
-    registrationStatus?.canCompleteRegistrationWithoutPayment === true;
+    hasTeam && !isFullyRegistered;
+
 
   useEffect(() => {
+    if (!competition.isFree && sidebarActiveTiers.length === 0) {
+      // Synthetic free-ticket: auto-select the placeholder.
+      setPageSelectedTierId('__free__');
+      return;
+    }
     if (sidebarActiveTiers.length === 0) {
       setPageSelectedTierId(null);
       return;
@@ -117,6 +139,7 @@ export function CompetitionSidebar({
     });
   }, [
     competition.id,
+    competition.isFree,
     sidebarActiveTiers,
     hackathonRegistrationCompleteForDisplay,
     registrationStatus?.ticketTierId,
@@ -176,7 +199,8 @@ export function CompetitionSidebar({
         setRegistrationStatus(status);
 
         const canComplete =
-          !!team && status?.canCompleteRegistrationWithoutPayment === true;
+          !!team && !status?.hasSubmitted;
+
 
         if (team && registration) {
           if (status?.hasSubmitted) {
@@ -361,8 +385,12 @@ export function CompetitionSidebar({
         return;
       }
 
-      if (sidebarActiveTiers.length > 1 && !pageSelectedTierId) {
-        toast.error("Please select a ticket type first.");
+      // Block only if multiple real tiers exist and none is chosen yet.
+      if (
+        sidebarActiveTiers.length > 1 &&
+        (!pageSelectedTierId || pageSelectedTierId === '__free__')
+      ) {
+        toast.error('Please select a ticket type first.');
         return;
       }
 
@@ -489,18 +517,21 @@ export function CompetitionSidebar({
         ? rawEntryFee
         : Number(rawEntryFee ?? 0) || 0;
 
+    const isSyntheticFree = pageSelectedTierId === '__free__';
     const tierSelected =
-      sidebarActiveTiers.length > 0 && pageSelectedTierId
+      sidebarActiveTiers.length > 0 && pageSelectedTierId && !isSyntheticFree
         ? sidebarActiveTiers.find((t) => t.id === pageSelectedTierId)
         : undefined;
     const tierBase = tierSelected
-      ? typeof tierSelected.price === "number"
+      ? typeof tierSelected.price === 'number'
         ? tierSelected.price
         : Number(tierSelected.price ?? 0) || 0
-      : null;
+      : isSyntheticFree
+        ? 0
+        : null;
 
     const baseAmount =
-      sidebarActiveTiers.length > 0 && tierBase !== null ? tierBase : entryBase;
+      tierBase !== null ? tierBase : entryBase;
 
     const isPaid = competition.isFree === false && baseAmount > 0;
     const processingFee = Math.ceil(baseAmount * 0.0236 * 100) / 100;
@@ -572,14 +603,14 @@ export function CompetitionSidebar({
     );
   };
 
-  const showHackathonTierPicker =
-    !competition.isFree && sidebarActiveTiers.length > 0;
+  // When isFree=false, always show the tier picker (synthetic free tier when no real ones).
+  const showHackathonTierPicker = !competition.isFree;
 
   const registrationMainColumn = (
     <>
-      {showHackathonTierPicker ? (
+      {showHackathonTierPicker && !needsCompleteRegistration ? (
         <TicketTierRegistrationPicker
-          ticketTiers={sidebarActiveTiers}
+          ticketTiers={displayTiers}
           feeBearer={competition.feeBearer}
           selectedTierId={pageSelectedTierId}
           onSelectTier={(id) => setPageSelectedTierId(id)}
@@ -912,8 +943,13 @@ export function CompetitionSidebar({
         completionMode={isCompletionFlow}
         pageSelectedTicketTierId={pageSelectedTierId}
         omitTicketTierSection={
-          !competition.isFree && sidebarActiveTiers.length > 0
+          needsCompleteRegistration
+            ? (registrationStatus?.paymentCompleted ?? false)
+            : (!competition.isFree && sidebarActiveTiers.length > 0)
         }
+        paymentCompleted={registrationStatus?.paymentCompleted ?? false}
+        teamId={registrationStatus?.teamId || myTeam?.id || undefined}
+        isLeader={registrationStatus?.isLeader || myTeam?.leaderId === user?.id || undefined}
         prefillAnswers={registrationStatus?.draftAnswers ?? undefined}
         onSuccess={async (updatedTeam) => {
           setMyTeam(updatedTeam);

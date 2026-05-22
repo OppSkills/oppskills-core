@@ -35,7 +35,7 @@ export interface UserOnboardedEventPayload {
   email: string;
   firstName?: string;
   userCategory?: string;
-  locationCity?: string;
+  locationCoords?: string;
 }
 
 /**

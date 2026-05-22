@@ -90,6 +90,9 @@ export function RegistrationModal({
   pageSelectedTicketTierId = null,
   omitTicketTierSection = false,
   prefillAnswers,
+  paymentCompleted = false,
+  teamId,
+  isLeader,
 }: RegistrationModalProps) {
   const router = useRouter();
   const { user } = useUser();
@@ -503,16 +506,13 @@ export function RegistrationModal({
         }
       }
 
-      if (
-        type === "HACKATHON" &&
-        !completionMode &&
-        !competition.isFree &&
-        (!!(competition as any).entryFeeAmount ||
-          ((competition as any).ticketTiers?.length ?? 0) > 0)
-      ) {
+      if (type === "HACKATHON" && (!completionMode || !paymentCompleted) && !competition.isFree) {
+        // Strip synthetic '__free__' id before sending to backend.
+        const realTierId =
+          ticketTierId && ticketTierId !== '__free__' ? ticketTierId : undefined;
         await saveHackathonRegistrationCheckoutDraft(token, competition.slug, {
           answers: formattedAnswers,
-          ticketTierId,
+          ticketTierId: realTierId,
           teamId: orderParams.teamId,
           teamName: orderParams.teamName,
           maxSize: orderParams.maxSize,
@@ -521,7 +521,7 @@ export function RegistrationModal({
         });
         writeHackathonCheckoutIntent(competition.slug, {
           discountCode: orderParams.discountCode,
-          ticketTierId,
+          ticketTierId: realTierId,
           teamId: orderParams.teamId,
           teamName: orderParams.teamName,
           maxSize: orderParams.maxSize,
@@ -534,15 +534,15 @@ export function RegistrationModal({
           maxSize,
           invitationCode: opts.invitationCode,
           joinTeamId: orderParams.joinTeamId,
-          ticketTierId,
+          ticketTierId: realTierId,
           userId: user?.id,
         });
-        toast.success("Saved. Continue to secure checkout.");
+        toast.success('Saved. Continue to secure checkout.');
         onClose();
         const tierQ =
-          ticketTierId != null
-            ? `?tier=${encodeURIComponent(ticketTierId)}`
-            : "";
+          realTierId != null
+            ? `?tier=${encodeURIComponent(realTierId)}`
+            : '';
         router.push(`/hackathons/${competition.slug}/checkout${tierQ}`);
         return;
       }
@@ -772,11 +772,15 @@ export function RegistrationModal({
       const activeRegTiers = (competition.ticketTiers ?? []).filter(
         (t: { isActive?: boolean }) => t.isActive !== false,
       );
-      const isPaidOpportunity =
-        !competition.isFree &&
-        (!!(competition as any).entryFeeAmount || activeRegTiers.length > 0);
-      if (isPaidOpportunity && activeRegTiers.length > 1 && !ticketTierId) {
-        toast.error("Please select a ticket type before continuing.");
+      // isFree=false always goes through ticket/payment flow (even ₹0).
+      const isPaidOpportunity = !competition.isFree;
+      // Block only when user has NOT chosen among multiple real tiers.
+      if (
+        isPaidOpportunity &&
+        activeRegTiers.length > 1 &&
+        (!ticketTierId || ticketTierId === '__free__')
+      ) {
+        toast.error('Please select a ticket type before continuing.');
         return;
       }
 
@@ -808,6 +812,13 @@ export function RegistrationModal({
       }
 
       if (completionMode && type === "HACKATHON") {
+        if (!paymentCompleted && !competition.isFree) {
+          await processPayment(token, teamName, filteredFormatted, {
+            teamId: teamId,
+            invitationCode: isLeader ? undefined : invitationCode || undefined,
+          });
+          return;
+        }
         await submitRegistration(token, competition.slug, filteredFormatted);
         const myUpdatedTeam = await checkMyHackathonTeam(token, competition.id);
         toast.success("Registration successful!");
@@ -943,6 +954,15 @@ export function RegistrationModal({
     }
   };
 
+  const isPaidWithTier =
+    !competition.isFree &&
+    (!completionMode || !paymentCompleted) &&
+    !!ticketTierId &&
+    (competition.ticketTiers ?? []).some(
+      (t: { id: string; isActive?: boolean }) =>
+        t.id === ticketTierId && t.isActive !== false,
+    );
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
@@ -1023,6 +1043,7 @@ export function RegistrationModal({
                 setIsOpenToggle={setIsOpenToggle}
                 type={type}
                 completionMode
+                paymentCompleted={paymentCompleted}
                 omitTicketTierSection={omitTicketTierSection}
               />
             ) : completionMode && type === "EVENT" ? (
@@ -1046,6 +1067,7 @@ export function RegistrationModal({
                 setIsOpenToggle={setIsOpenToggle}
                 type={type}
                 completionMode
+                paymentCompleted={paymentCompleted}
                 omitTicketTierSection={omitTicketTierSection}
               />
             ) : mode === "CREATE" ? (
@@ -1137,6 +1159,8 @@ export function RegistrationModal({
                 ) : completionMode &&
                   (type === "HACKATHON" || type === "EVENT") ? (
                   "Submit registration"
+                ) : isPaidWithTier ? (
+                  "Continue to payment"
                 ) : mode === "CREATE" ? (
                   isIndividual ? (
                     "Register"

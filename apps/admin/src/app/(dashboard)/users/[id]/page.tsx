@@ -56,7 +56,7 @@ interface UserDetailData {
       collegePassoutYear?: number;
       companyName?: string;
       jobTitle?: string;
-      locationCity?: string;
+      locationCoords?: string;
       locationState?: string;
       locationCountry?: string;
       interests: string[];
@@ -305,7 +305,7 @@ export default function UserDetailPage() {
                     </div>
                   )}
 
-                  {(user.onboardingProfile.locationCity ||
+                  {(user.onboardingProfile.locationCoords ||
                     user.onboardingProfile.locationCountry) && (
                     <div className="flex items-start gap-4 p-3 rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors">
                       <div className="p-2 bg-background rounded-md shadow-sm border border-border/50">
@@ -317,7 +317,7 @@ export default function UserDetailPage() {
                         </p>
                         <p className="text-sm font-semibold text-gray-900">
                           {[
-                            user.onboardingProfile.locationCity,
+                            user.onboardingProfile.locationCoords,
                             user.onboardingProfile.locationState,
                             user.onboardingProfile.locationCountry,
                           ]

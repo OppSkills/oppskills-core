@@ -5,7 +5,7 @@ import { Registration } from "./registration-types";
 import { RegistrationStepper } from "./RegistrationStepper";
 
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn, normalizeUrl } from "@/lib/utils";
 
 interface RegistrationCardProps {
   registration: Registration;
@@ -20,7 +20,7 @@ export function RegistrationCard({ registration }: RegistrationCardProps) {
         {/* Banner */}
         <div className="w-full xl:w-[280px] h-[180px] shrink-0 relative rounded-2xl overflow-hidden">
           <Image
-            src={registration.bannerUrl}
+            src={normalizeUrl(registration.bannerUrl)}
             alt={registration.title}
             fill
             className="object-cover transition-transform duration-500 group-hover/card:scale-110"

@@ -11,13 +11,14 @@ console.log('--- Google Places API Autocomplete Test ---');
 console.log(`Loading env from: ${envPath}`);
 
 if (!apiKey) {
-  console.error('Error: GOOGLE_MAP_API environment variable is not defined in .env.local.');
+  console.error(
+    'Error: GOOGLE_MAP_API environment variable is not defined in .env.local.',
+  );
   process.exit(1);
 }
 
-const maskedKey = apiKey.length > 8 
-  ? `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}` 
-  : '***';
+const maskedKey =
+  apiKey.length > 8 ? `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}` : '***';
 console.log(`API Key detected: ${maskedKey}`);
 
 const query = 'GCET';
@@ -37,7 +38,7 @@ async function testPlacesNewApi() {
       body: JSON.stringify({ input: query }),
     });
 
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
 
     if (!response.ok) {
       console.error(`❌ HTTP Error! Status: ${response.status}`);
@@ -50,7 +51,9 @@ async function testPlacesNewApi() {
       data.suggestions.forEach((item: any, index: number) => {
         const pred = item.placePrediction;
         if (pred) {
-          console.log(`[${index + 1}] ${pred.text?.text || pred.structuredFormat?.mainText?.text}`);
+          console.log(
+            `[${index + 1}] ${pred.text?.text || pred.structuredFormat?.mainText?.text}`,
+          );
           console.log(`    Place ID: ${pred.placeId}`);
           if (pred.types) {
             console.log(`    Types: ${pred.types.join(', ')}`);
@@ -77,7 +80,7 @@ async function testLegacyPlacesApi() {
 
   try {
     const response = await fetch(url);
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
 
     if (!response.ok) {
       console.error(`❌ HTTP Error! Status: ${response.status}`);
@@ -112,7 +115,7 @@ async function testGeocodingApi() {
 
   try {
     const response = await fetch(url);
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
 
     if (!response.ok) {
       console.error(`❌ HTTP Error! Status: ${response.status}`);
@@ -123,7 +126,9 @@ async function testGeocodingApi() {
       console.log('✅ Success! Geocoding result found:\n');
       data.results.forEach((result: any, index: number) => {
         console.log(`[${index + 1}] ${result.formatted_address}`);
-        console.log(`    Location: Lat ${result.geometry?.location?.lat}, Lng ${result.geometry?.location?.lng}`);
+        console.log(
+          `    Location: Lat ${result.geometry?.location?.lat}, Lng ${result.geometry?.location?.lng}`,
+        );
         console.log(`    Place ID: ${result.place_id}`);
         console.log('');
       });
@@ -146,7 +151,7 @@ async function runTests() {
   const pNew = await testPlacesNewApi();
   const pLegacy = await testLegacyPlacesApi();
   const geocode = await testGeocodingApi();
-  
+
   console.log('\n--- Diagnostics Summary ---');
   console.log(`Places API (New):    ${pNew ? '✅ WORKED' : '❌ FAILED'}`);
   console.log(`Places API (Legacy): ${pLegacy ? '✅ WORKED' : '❌ FAILED'}`);

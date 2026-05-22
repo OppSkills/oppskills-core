@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { normalizeUrl } from "@/lib/utils";
 import { format, isSameDay, isSameYear } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { CompetitionCard } from "@/components/landingpage/_components/CompetitionCard";
@@ -69,7 +70,7 @@ export default function FestivalDetailsClient({
   };
 
   const formattedDate = formatDateRange(festival.startDate, festival.endDate);
-  const locationText = festival.locationCity || "TBD";
+  const locationText = festival.locationCoords || "TBD";
 
   // Month/Day for the calendar icon
   const startDateObj = new Date(festival.startDate);
@@ -87,7 +88,7 @@ export default function FestivalDetailsClient({
             {festival.posterImageUrl && (
               <div className="relative m-0 lg:mb-4 aspect-video w-full overflow-hidden lg:rounded-3xl shadow-sm">
                 <Image
-                  src={festival.posterImageUrl}
+                  src={normalizeUrl(festival.posterImageUrl)}
                   alt={festival.name}
                   fill
                   className="object-cover"
@@ -242,7 +243,7 @@ export default function FestivalDetailsClient({
                     <div className="flex items-center gap-4">
                       {festival.organizationLogoUrl ? (
                         <Image
-                          src={festival.organizationLogoUrl}
+                          src={normalizeUrl(festival.organizationLogoUrl)}
                           alt={festival.organizationName || "Organizer"}
                           width={64}
                           height={64}

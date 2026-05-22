@@ -113,25 +113,29 @@ export class HackathonCheckoutService {
       throw new NotFoundException('Hackathon not found');
     }
 
+    // isFree=true: caller should not reach here, but handle gracefully.
     if (hackathon.isFree) {
-      throw new BadRequestException(
-        'This hackathon is free, no payment required',
-      );
+      return {
+        paymentId: null,
+        razorpayKeyId: null,
+        razorpayOrderId: null,
+        amountPaise: 0,
+        currency: hackathon.currency || 'INR',
+        hackathonName: hackathon.name,
+        zeroAmountPayment: true,
+        teamId: null,
+        alreadyPaid: false,
+      };
     }
 
     const activeTierCount = await prisma.ticketTierEntity.count({
       where: { hackathonId: hackathon.id, isActive: true },
     });
 
-    if (!hackathon.entryFeeAmount && activeTierCount === 0) {
-      throw new BadRequestException('Entry fee not configured');
-    }
-
-    if (!hackathon.registrationDeadline) {
-      throw new BadRequestException(
-        'Registration deadline required for paid hackathons',
-      );
-    }
+    // isFree=false with no tiers and no flat fee → synthetic "Free Ticket" path.
+    // Ignore any ticketTierId the frontend might have sent for the synthetic tier.
+    const hasFlatFee = !!hackathon.entryFeeAmount;
+    const effectiveTierCount = activeTierCount;
 
     if (hackathon.status !== 'PUBLISHED' && hackathon.status !== 'ONGOING') {
       throw new BadRequestException('Registration is not open');
@@ -145,12 +149,11 @@ export class HackathonCheckoutService {
       throw new BadRequestException('Registration is paused');
     }
 
-    if (new Date() > hackathon.registrationDeadline) {
-      throw new BadRequestException('Registration deadline has passed');
-    }
-
+    // Resolve fee: tier price > flat fee > 0 (synthetic free ticket)
     let registrationFee: Decimal;
-    if (activeTierCount > 0) {
+    let resolvedTicketTierId: string | undefined;
+
+    if (effectiveTierCount > 0) {
       if (!params.ticketTierId) {
         throw new BadRequestException('Please select a ticket type');
       }
@@ -183,13 +186,31 @@ export class HackathonCheckoutService {
         }
       }
       registrationFee = new Decimal(tier.price);
-    } else {
-      if (params.ticketTierId) {
-        throw new BadRequestException(
-          'Ticket type is not used for this hackathon',
-        );
-      }
+      resolvedTicketTierId = tier.id;
+    } else if (hasFlatFee) {
+      // Legacy flat-fee path (no tiers, entryFeeAmount set)
+      resolvedTicketTierId = undefined;
       registrationFee = new Decimal(hackathon.entryFeeAmount || 0);
+    } else {
+      // Synthetic free-ticket: isFree=false but no tiers and no flat fee.
+      // Frontend shows a "Free Ticket" card; we complete the flow as a zero-amount payment.
+      resolvedTicketTierId = undefined;
+      registrationFee = new Decimal(0);
+    }
+
+    // Registration deadline guard: only required when a real (non-zero) payment will be charged.
+    const willChargeRealMoney = registrationFee.greaterThan(0);
+    if (willChargeRealMoney && !hackathon.registrationDeadline) {
+      throw new BadRequestException(
+        'Registration deadline required for paid hackathons',
+      );
+    }
+    if (
+      willChargeRealMoney &&
+      hackathon.registrationDeadline &&
+      new Date() > hackathon.registrationDeadline
+    ) {
+      throw new BadRequestException('Registration deadline has passed');
     }
 
     const chargeMode = hackathon.chargeMode || HackathonChargeMode.PER_TEAM;
@@ -331,7 +352,7 @@ export class HackathonCheckoutService {
           organizerId: hackathon.ownerId,
           payerUserId: params.userId,
           teamId,
-          ticketTierId: params.ticketTierId ?? null,
+          ticketTierId: resolvedTicketTierId ?? null,
           currency: hackathon.currency || 'INR',
           grossAmount: new Decimal(0),
           platformFeeAmount: new Decimal(0),
@@ -466,7 +487,7 @@ export class HackathonCheckoutService {
           organizerId: hackathon.ownerId,
           payerUserId: params.userId,
           teamId,
-          ticketTierId: params.ticketTierId,
+          ticketTierId: resolvedTicketTierId ?? null,
           currency: hackathon.currency || 'INR',
           grossAmount: new Decimal(0),
           platformFeeAmount: new Decimal(0),
@@ -553,7 +574,7 @@ export class HackathonCheckoutService {
         organizerId: hackathon.ownerId,
         payerUserId: params.userId,
         teamId,
-        ticketTierId: params.ticketTierId,
+        ticketTierId: resolvedTicketTierId ?? null,
         currency: hackathon.currency || 'INR',
         grossAmount: registrationFee,
         platformFeeAmount: gatewayFee,
@@ -620,9 +641,10 @@ export class HackathonCheckoutService {
         params.hackathonSlug,
       );
 
+    // isFree=true callers should use the free registration path, but we handle gracefully.
     if (hackathon.isFree) {
       throw new BadRequestException(
-        'This hackathon is free, no paid checkout draft is required',
+        'This hackathon is free — use the direct registration path instead.',
       );
     }
 
@@ -630,12 +652,12 @@ export class HackathonCheckoutService {
       where: { hackathonId: hackathon.id, isActive: true },
     });
 
-    if (!hackathon.entryFeeAmount && activeTierCount === 0) {
-      throw new BadRequestException('Entry fee not configured');
-    }
+    // Allow isFree=false with no tiers — the synthetic Free Ticket path still
+    // needs a draft saved so answers are persisted before checkout.
+    const hasFlatFee = !!hackathon.entryFeeAmount;
 
     if (activeTierCount > 0) {
-      if (!params.ticketTierId) {
+      if (!params.ticketTierId || params.ticketTierId === '__free__') {
         throw new BadRequestException('Please select a ticket type');
       }
       const tier = await prisma.ticketTierEntity.findFirst({
@@ -650,10 +672,11 @@ export class HackathonCheckoutService {
           'Invalid or inactive ticket tier selected',
         );
       }
-    } else if (params.ticketTierId) {
-      throw new BadRequestException(
-        'Ticket type is not used for this hackathon',
-      );
+    } else if (hasFlatFee) {
+      // Legacy flat-fee: no tier required.
+    } else {
+      // Synthetic free-ticket path: no tiers, no flat fee — allowed.
+      // ticketTierId is ignored (may be undefined or '__free__').
     }
 
     const chargeMode = hackathon.chargeMode || HackathonChargeMode.PER_TEAM;

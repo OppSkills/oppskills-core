@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Calendar, Trophy } from "lucide-react";
 import { Badge } from "./ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, normalizeUrl } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -146,7 +146,7 @@ export const NavbarSearch = ({ query, isOpen, onClose }: NavbarSearchProps) => {
                           <div className="relative h-12 w-12 rounded-lg overflow-hidden shrink-0 bg-neutral-100 border">
                             {item.thumbnail ? (
                               <Image
-                                src={item.thumbnail}
+                                src={normalizeUrl(item.thumbnail)}
                                 alt={item.title}
                                 fill
                                 className="object-cover group-hover:scale-105 transition-transform duration-300"

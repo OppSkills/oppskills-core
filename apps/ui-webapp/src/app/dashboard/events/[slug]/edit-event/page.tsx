@@ -256,10 +256,10 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
 
   const locationVirtualLink = getString(event, "locationVirtualLink");
   const locationAddress = getString(event, "locationAddress");
-  const locationCity = getString(event, "locationCity");
+  const locationCoords = getString(event, "locationCoords");
   const location = locationVirtualLink
     ? locationVirtualLink
-    : [locationAddress, locationCity]
+    : [locationAddress, locationCoords]
         .filter((v): v is string => typeof v === "string")
         .join(", ");
 

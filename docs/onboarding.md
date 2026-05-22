@@ -91,7 +91,7 @@ model UserOnboardingProfileEntity {
   jobTitle           String?
 
   // Step 3: Location
-  locationCity    String
+  locationCoords    String
   locationState   String
   locationCountry String
 
@@ -141,7 +141,7 @@ Returns the current user's profile with onboarding status.
     "gender": "MALE",
     "userCategory": "COLLEGE_STUDENT",
     "collegeId": "college_xyz",
-    "locationCity": "Mumbai",
+    "locationCoords": "Mumbai",
     "locationState": "Maharashtra",
     "locationCountry": "India",
     "interests": ["Web Development", "AI/ML"],
@@ -167,7 +167,7 @@ Submit or update the onboarding profile. Automatically sets `onboarded = true`.
   "collegeId": "college_xyz",
   "collegeCurrentYear": "3rd",
   "collegePassoutYear": 2025,
-  "locationCity": "Mumbai",
+  "locationCoords": "Mumbai",
   "locationState": "Maharashtra",
   "locationCountry": "India",
   "interests": ["Web Development", "AI/ML"],
