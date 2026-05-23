@@ -121,6 +121,15 @@ export class EventLocationDto {
   @IsOptional()
   @IsUrl()
   virtualLink?: string;
+
+  /** Google Place ID. */
+  @ApiPropertyOptional({
+    description: "Google Place ID for resolving coordinates",
+    example: "ChIJ2V-Az5xs3zkR65a6CB1q2wY",
+  })
+  @IsOptional()
+  @IsString()
+  placeId?: string;
 }
 
 /**

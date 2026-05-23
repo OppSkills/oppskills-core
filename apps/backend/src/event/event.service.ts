@@ -23,6 +23,7 @@ import type { EventJoinedEventPayload } from '../email/email.events';
 import { AnalyticsService } from 'src/analytics/analytics.service';
 import { ReferralService } from 'src/referral/referral.service';
 import { ReferralEntityTypeDto } from '@oppskills/types';
+import { LocationService } from 'src/recommendation/location/location.service';
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 type LifecycleStatus =
@@ -44,6 +45,7 @@ export class EventService {
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
     private readonly referralService: ReferralService,
+    private readonly locationService: LocationService,
   ) {}
 
   /**
@@ -66,6 +68,18 @@ export class EventService {
       ? this.parseDate(dto.registrationDeadline, 'registrationDeadline')
       : null;
 
+    let locationCoords = dto.location?.city;
+    if (dto.location?.placeId) {
+      try {
+        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        if (resolved) {
+          locationCoords = resolved;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+      }
+    }
+
     return prisma.eventEntity.create({
       data: {
         slug,
@@ -80,7 +94,7 @@ export class EventService {
 
         locationType: dto.location?.type,
         locationAddress: dto.location?.address,
-        locationCoords: dto.location?.city,
+        locationCoords,
         locationVirtualLink: dto.location?.virtualLink,
 
         registrationDeadline,
@@ -989,6 +1003,18 @@ export class EventService {
       ? this.parseDate(dto.registrationDeadline, 'registrationDeadline')
       : undefined;
 
+    let locationCoords = dto.location?.city;
+    if (dto.location?.placeId) {
+      try {
+        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        if (resolved) {
+          locationCoords = resolved;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+      }
+    }
+
     // Build update data
     const updateData: Record<string, unknown> = {
       slug,
@@ -1002,7 +1028,7 @@ export class EventService {
 
       locationType: dto.location?.type,
       locationAddress: dto.location?.address,
-      locationCoords: dto.location?.city,
+      locationCoords,
       locationVirtualLink: dto.location?.virtualLink,
 
       registrationDeadline,

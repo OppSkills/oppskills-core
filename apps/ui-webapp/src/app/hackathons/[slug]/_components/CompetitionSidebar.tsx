@@ -39,6 +39,7 @@ import {
 } from "@/lib/registration/pendingHackathonRegistration";
 import { TeamDetailsCard } from "./TeamDetailsCard";
 import { getApiErrorMessage } from "@/lib/utils";
+import { getGoogleMapsUrl } from "@/lib/utils";
 import { formatToIST, isSameDayInIST } from "@/lib/date-utils";
 import type { CompetitionDetails } from "./types";
 import { RegistrationModal } from "./RegistrationModal";
@@ -800,9 +801,26 @@ export function CompetitionSidebar({
               <h4 className="font-semibold text-neutral-900  text-[15px]">
                 {competition.venueName || "College/University Name"}
               </h4>
-              <p className="text-sm text-neutral-500">
-                {competition.venueAddress || "City, State"}
-              </p>
+              {(() => {
+                const mapsUrl = getGoogleMapsUrl(competition.locationCoords);
+                const addressText = competition.venueAddress || "City, State";
+                return mapsUrl ? (
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline decoration-neutral-400 block"
+                  >
+                    <p className="text-sm text-neutral-500">
+                      {addressText}
+                    </p>
+                  </a>
+                ) : (
+                  <p className="text-sm text-neutral-500">
+                    {addressText}
+                  </p>
+                );
+              })()}
             </div>
           </div>
 

@@ -24,6 +24,7 @@ import { EmailService } from 'src/email/email.service';
 import { Inject, forwardRef } from '@nestjs/common';
 import { DELETED_RESOURCE_OWNER_ID } from '../_utils/constants';
 import { sanitizeHtmlContent } from '../_utils/html-sanitizer.utils';
+import { LocationService } from 'src/recommendation/location/location.service';
 
 const BASE_DEFAULT_FIELDS = [
   {
@@ -151,6 +152,7 @@ export class HackathonService {
     private readonly analyticsService: AnalyticsService,
     @Inject(forwardRef(() => EmailService))
     private readonly emailService: EmailService,
+    private readonly locationService: LocationService,
   ) {}
 
   async createHackathon(dto: CreateHackathonDto, userId: string) {
@@ -206,6 +208,18 @@ export class HackathonService {
         ? dto.attendeeEligibility
         : DEFAULT_ATTENDEE_ELIGIBILITY;
 
+    let locationCoords = dto.location?.city;
+    if (dto.location?.placeId) {
+      try {
+        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        if (resolved) {
+          locationCoords = resolved;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+      }
+    }
+
     try {
       const hackathon = await prisma.hackathonEntity.create({
         data: {
@@ -226,7 +240,7 @@ export class HackathonService {
 
           locationType: dto.location?.type,
           locationAddress: dto.location?.address,
-          locationCoords: dto.location?.city,
+          locationCoords,
           locationVirtualLink: dto.location?.virtualLink,
 
           registrationDeadline: dto.registrationDeadline
@@ -1201,6 +1215,18 @@ export class HackathonService {
       ? await this.buildHackathonSlug(dto.slug, name, id)
       : undefined;
 
+    let locationCoords = dto.location?.city;
+    if (dto.location?.placeId) {
+      try {
+        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        if (resolved) {
+          locationCoords = resolved;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+      }
+    }
+
     return prisma.hackathonEntity.update({
       where: { id },
       data: {
@@ -1219,7 +1245,7 @@ export class HackathonService {
 
         locationType: dto.location?.type,
         locationAddress: dto.location?.address,
-        locationCoords: dto.location?.city,
+        locationCoords,
         locationVirtualLink: dto.location?.virtualLink,
 
         registrationDeadline: dto.registrationDeadline

@@ -273,10 +273,10 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
 
   let location = "Online";
   if (data.locationType === "PHYSICAL" || data.locationType === "OFFLINE") {
-    location = data.locationCoords || data.locationAddress || "In-Person";
+    location = data.locationAddress || "In-Person";
   } else if (data.locationType === "HYBRID") {
-    location = data.locationCoords
-      ? `${data.locationCoords} + Online`
+    location = data.locationAddress
+      ? `${data.locationAddress} + Online`
       : "Hybrid";
   }
 
@@ -419,7 +419,8 @@ export function transformApiData(data: HackathonApiData): CompetitionDetails {
       data.locationType === "VIRTUAL"
         ? "Online Event"
         : data.organizationName || undefined,
-    venueAddress: data.locationAddress || data.locationCoords || undefined,
+    venueAddress: data.locationAddress || undefined,
+    locationCoords: data.locationCoords || null,
     teamSize: mapTeamSize(data.participantType),
     impressions: data.impressions ?? 0,
     registrationDeadline,

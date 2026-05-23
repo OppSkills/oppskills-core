@@ -53,10 +53,11 @@ import {
   ExperienceLevelValue,
   TeamPreferenceValue,
 } from "@oppskills/types/enums";
-import type { CreateOnboardingDto } from "@oppskills/types";
+import type { CreateOnboardingDto, LocationSuggestionDto } from "@oppskills/types";
 
 import { submitOnboarding, getMe } from "@/lib/api/usersApi";
 import { searchColleges } from "@/lib/api/collegesApi";
+import { autocompleteLocation } from "@/lib/api/recommendationApi";
 import {
   Loader2,
   User,
@@ -92,6 +93,7 @@ interface OnboardingFormData {
   locationCoords: string;
   locationState: string;
   locationCountry: string;
+  locationPlaceId?: string;
   // Step 4
   interests: string[];
   skills: string[];
@@ -235,6 +237,15 @@ export default function OnboardingPage() {
   const [isSearchingColleges, setIsSearchingColleges] = useState(false);
   const [collegeComboboxOpen, setCollegeComboboxOpen] = useState(false);
 
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestionDto[]>([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [focusedLocationIndex, setFocusedLocationIndex] = useState(-1);
+  const [debouncedLocationQuery, setDebouncedLocationQuery] = useState("");
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
+  const ignoreLocationQueryRef = useRef("");
+  const isSelectingLocationRef = useRef(false);
+
   useEffect(() => {
     async function checkAlreadyOnboarded() {
       if (!isLoaded) return;
@@ -285,6 +296,7 @@ export default function OnboardingPage() {
       locationCoords: "",
       locationState: "",
       locationCountry: "India",
+      locationPlaceId: "",
       interests: [] as string[],
       skills: [] as string[],
       experienceLevel: "" as ExperienceLevelValue | "",
@@ -294,6 +306,121 @@ export default function OnboardingPage() {
       await handleFinalSubmit(value);
     },
   });
+
+  // Debounce the locationCoords input
+  const cityValue = form.state.values.locationCoords;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedLocationQuery(cityValue || "");
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [cityValue]);
+
+  // Fetch location suggestions
+  useEffect(() => {
+    const trimmed = debouncedLocationQuery.trim();
+    if (trimmed.length < 2 || trimmed === ignoreLocationQueryRef.current) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    let active = true;
+    async function fetchSuggestions() {
+      setIsSearchingLocation(true);
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const res = await autocompleteLocation(token, trimmed);
+        if (active) {
+          setLocationSuggestions(res);
+          setFocusedLocationIndex(-1);
+          setShowLocationDropdown(true);
+        }
+      } catch (err) {
+        console.error("Failed to load suggestions:", err);
+      } finally {
+        if (active) {
+          setIsSearchingLocation(false);
+        }
+      }
+    }
+
+    fetchSuggestions();
+    return () => {
+      active = false;
+    };
+  }, [debouncedLocationQuery, getToken]);
+
+  // Handle click outside location suggestions dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        locationDropdownRef.current &&
+        !locationDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowLocationDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleSelectLocationSuggestion = (suggestion: LocationSuggestionDto) => {
+    isSelectingLocationRef.current = true;
+    form.setFieldValue("locationCoords", suggestion.mainText);
+    form.setFieldValue("locationPlaceId", suggestion.placeId);
+    ignoreLocationQueryRef.current = suggestion.mainText;
+
+    // Parse state and country from secondaryText
+    const parts = (suggestion.secondaryText || "").split(",").map(p => p.trim()).filter(Boolean);
+    let parsedState = "";
+    let parsedCountry = "India";
+    if (parts.length >= 2) {
+      parsedCountry = parts[parts.length - 1];
+      parsedState = parts[parts.length - 2];
+    } else if (parts.length === 1) {
+      parsedCountry = parts[0];
+    }
+
+    form.setFieldValue("locationState", parsedState);
+    form.setFieldValue("locationCountry", parsedCountry);
+
+    setLocationSuggestions([]);
+    setShowLocationDropdown(false);
+    setFocusedLocationIndex(-1);
+
+    setTimeout(() => {
+      isSelectingLocationRef.current = false;
+    }, 100);
+  };
+
+  const handleLocationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      showLocationDropdown &&
+      (locationSuggestions.length > 0 || isSearchingLocation)
+    ) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setFocusedLocationIndex((prev) => (prev + 1) % (locationSuggestions.length || 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setFocusedLocationIndex(
+          (prev) =>
+            (prev - 1 + (locationSuggestions.length || 1)) % (locationSuggestions.length || 1),
+        );
+      } else if (e.key === "Enter") {
+        if (focusedLocationIndex >= 0 && focusedLocationIndex < locationSuggestions.length) {
+          e.preventDefault();
+          handleSelectLocationSuggestion(locationSuggestions[focusedLocationIndex]);
+        }
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setShowLocationDropdown(false);
+      }
+    }
+  };
 
   // LocalStorage key for persisting form data
   const STORAGE_KEY = "oppskills_onboarding_form";
@@ -397,6 +524,8 @@ export default function OnboardingPage() {
           form.setFieldValue("locationState", parsed.locationState);
         if (parsed.locationCountry)
           form.setFieldValue("locationCountry", parsed.locationCountry);
+        if (parsed.locationPlaceId)
+          form.setFieldValue("locationPlaceId", parsed.locationPlaceId);
         if (parsed.interests) form.setFieldValue("interests", parsed.interests);
         if (parsed.skills) form.setFieldValue("skills", parsed.skills);
         if (parsed.experienceLevel)
@@ -484,6 +613,7 @@ export default function OnboardingPage() {
         locationCoords: data.locationCoords,
         locationState: data.locationState,
         locationCountry: data.locationCountry,
+        locationPlaceId: data.locationPlaceId || undefined,
         interests: data.interests,
         skills: data.skills,
         experienceLevel:
@@ -983,11 +1113,57 @@ export default function OnboardingPage() {
                   {(field) => (
                     <Field>
                       <FieldLabel>City *</FieldLabel>
-                      <Input
-                        value={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Enter your city"
-                      />
+                      <div className="relative" ref={locationDropdownRef}>
+                        <Input
+                          value={field.state.value}
+                          onChange={(e) => {
+                            field.handleChange(e.target.value);
+                            setShowLocationDropdown(true);
+                            ignoreLocationQueryRef.current = "";
+                            form.setFieldValue("locationPlaceId", "");
+                          }}
+                          onFocus={() => {
+                            if (!isSelectingLocationRef.current) {
+                              setShowLocationDropdown(true);
+                            }
+                          }}
+                          onKeyDown={handleLocationKeyDown}
+                          placeholder="Enter your city"
+                          autoComplete="off"
+                        />
+                        {showLocationDropdown &&
+                          (locationSuggestions.length > 0 || isSearchingLocation) && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg max-h-60 overflow-y-auto divide-y divide-neutral-100 animate-in fade-in slide-in-from-top-1 duration-150">
+                              {isSearchingLocation ? (
+                                <div className="p-3 text-xs text-muted-foreground text-center">
+                                  Searching locations...
+                                </div>
+                              ) : (
+                                locationSuggestions.map((suggestion, index) => (
+                                  <button
+                                    type="button"
+                                    key={suggestion.placeId}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => handleSelectLocationSuggestion(suggestion)}
+                                    onMouseEnter={() => setFocusedLocationIndex(index)}
+                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex flex-col gap-0.5 ${
+                                      focusedLocationIndex === index
+                                        ? "bg-violet-50 text-violet-900"
+                                        : "text-foreground hover:bg-neutral-50"
+                                    }`}
+                                  >
+                                    <span className="font-medium">
+                                      {suggestion.mainText}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground line-clamp-1">
+                                      {suggestion.secondaryText}
+                                    </span>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                      </div>
                     </Field>
                   )}
                 </form.Field>

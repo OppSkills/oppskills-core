@@ -128,6 +128,10 @@ export class CreateOnboardingDto {
   @IsOptional()
   locationCountry?: string;
 
+  @IsString()
+  @IsOptional()
+  locationPlaceId?: string;
+
   // Step 4: Interests and Skills
   @IsArray()
   @IsString({ each: true })
@@ -215,6 +219,10 @@ export class UpdateOnboardingDto {
   @IsString()
   @IsOptional()
   locationCountry?: string;
+
+  @IsString()
+  @IsOptional()
+  locationPlaceId?: string;
 
   @IsArray()
   @IsString({ each: true })

@@ -104,4 +104,61 @@ export class LocationService {
       );
     }
   }
+
+  /**
+   * Retrieves latitude and longitude coordinates for a given place ID.
+   *
+   * @param placeId The place ID to retrieve coordinates for
+   * @returns A string in the format "lat,lng" or null if not found/error.
+   */
+  async getPlaceCoords(placeId: string): Promise<string | null> {
+    const trimmedId = placeId ? placeId.trim() : '';
+    if (!trimmedId) {
+      return null;
+    }
+
+    if (!this.apiKey) {
+      this.logger.error(
+        'GOOGLE_MAP_API is not defined in the environment variables.',
+      );
+      return null;
+    }
+
+    const url = `https://places.googleapis.com/v1/places/${trimmedId}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'X-Goog-Api-Key': this.apiKey,
+          'X-Goog-FieldMask': 'location',
+        },
+      });
+
+      const data = (await response.json()) as {
+        location?: { latitude?: number; longitude?: number };
+      };
+
+      if (!response.ok) {
+        this.logger.error(
+          `Google Places Details API error (Status: ${response.status}): ${JSON.stringify(data)}`,
+        );
+        return null;
+      }
+
+      if (
+        data.location?.latitude !== undefined &&
+        data.location?.longitude !== undefined
+      ) {
+        return `${data.location.latitude},${data.location.longitude}`;
+      }
+
+      return null;
+    } catch (error) {
+      this.logger.error(
+        `Unexpected error during getPlaceCoords: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return null;
+    }
+  }
 }

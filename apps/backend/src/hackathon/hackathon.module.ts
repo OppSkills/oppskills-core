@@ -6,9 +6,15 @@ import { HackathonController } from './hackathon.controller';
 import { HackathonPublicController } from './hackathon-public.controller';
 import { AnalyticsModule } from 'src/analytics/analytics.module';
 import { EmailModule } from 'src/email/email.module';
+import { LocationModule } from 'src/recommendation/location/location.module';
 
 @Module({
-  imports: [TeamModule, AnalyticsModule, forwardRef(() => EmailModule)],
+  imports: [
+    TeamModule,
+    AnalyticsModule,
+    forwardRef(() => EmailModule),
+    LocationModule,
+  ],
   controllers: [HackathonPublicController, HackathonController],
   providers: [HackathonService],
   exports: [HackathonService],

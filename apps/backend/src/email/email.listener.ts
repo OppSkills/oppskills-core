@@ -55,7 +55,7 @@ export class EmailListener {
     private readonly emailService: EmailService,
     @Inject(forwardRef(() => EventPassService))
     private readonly eventPassService: EventPassService,
-  ) {}
+  ) { }
 
   @OnEvent(EMAIL_EVENTS.USER_CREATED)
   async handleUserCreated(payload: UserCreatedEventPayload): Promise<void> {

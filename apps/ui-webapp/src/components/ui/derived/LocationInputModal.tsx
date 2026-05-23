@@ -20,7 +20,7 @@ import type { LocationSuggestionDto } from "@oppskills/types";
 
 interface LocationInputModalProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, placeId?: string) => void;
   title?: string;
   label?: string;
   subLabel?: string;
@@ -60,11 +60,15 @@ export default function LocationInputModal({
   // Location suggestions state
   const { getToken } = useAuth();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isSelectingRef = useRef(false);
   const [suggestions, setSuggestions] = useState<LocationSuggestionDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  const [lastSelected, setLastSelected] = useState("");
+  const ignoreQueryRef = useRef("");
+  // Track the placeId of the currently selected suggestion
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | undefined>(undefined);
 
   const debouncedQuery = useDebounce(tempValue, 400);
 
@@ -82,10 +86,12 @@ export default function LocationInputModal({
           ? loc.substring(8)
           : loc;
       setTempValue(val);
-      setLastSelected(val);
+      ignoreQueryRef.current = val;
       setSuggestions([]);
       setShowDropdown(false);
       setFocusedIndex(-1);
+      // Reset selected place id when modal re-opens
+      setSelectedPlaceId(undefined);
     }
   }, [isOpen, value]);
 
@@ -118,7 +124,7 @@ export default function LocationInputModal({
       return;
     }
 
-    if (trimmed === lastSelected) {
+    if (trimmed === ignoreQueryRef.current) {
       return;
     }
 
@@ -149,7 +155,7 @@ export default function LocationInputModal({
     return () => {
       active = false;
     };
-  }, [debouncedQuery, tempMode, getToken, lastSelected]);
+  }, [debouncedQuery, tempMode, getToken]);
 
   const handleSave = () => {
     const trimmedVal = tempValue.trim();
@@ -166,16 +172,47 @@ export default function LocationInputModal({
     }
 
     const prefix = tempMode === "VIRTUAL" ? "VIRTUAL:" : "OFFLINE:";
-    onChange(prefix + trimmedVal);
+    // For OFFLINE locations, pass along the placeId if a suggestion was selected
+    onChange(prefix + trimmedVal, tempMode === "OFFLINE" ? selectedPlaceId : undefined);
     setIsOpen(false);
     toast.success("Location updated successfully.");
   };
 
   const handleSelectSuggestion = (suggestion: LocationSuggestionDto) => {
+    isSelectingRef.current = true;
     setTempValue(suggestion.description);
-    setLastSelected(suggestion.description);
+    ignoreQueryRef.current = suggestion.description;
+    // Store the placeId of the selected suggestion
+    setSelectedPlaceId(suggestion.placeId);
+    setSuggestions([]);
     setShowDropdown(false);
     setFocusedIndex(-1);
+    inputRef.current?.focus();
+    setTimeout(() => {
+      isSelectingRef.current = false;
+    }, 100);
+  };
+
+  const handleFocus = async () => {
+    if (!isSelectingRef.current) {
+      setShowDropdown(true);
+      const trimmed = tempValue.trim();
+      if (trimmed.length >= 2 && suggestions.length === 0) {
+        setIsLoading(true);
+        try {
+          const token = await getToken();
+          if (token) {
+            const res = await autocompleteLocation(token, trimmed);
+            setSuggestions(res);
+            setFocusedIndex(-1);
+          }
+        } catch (err) {
+          console.error("Failed to load suggestions on focus:", err);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -279,13 +316,17 @@ export default function LocationInputModal({
             </label>
             <div className="relative">
               <input
+                ref={inputRef}
                 type="text"
                 value={tempValue}
                 onChange={(e) => {
                   setTempValue(e.target.value);
                   setShowDropdown(true);
+                  ignoreQueryRef.current = "";
+                  // User typed manually — clear the selected placeId
+                  setSelectedPlaceId(undefined);
                 }}
-                onFocus={() => setShowDropdown(true)}
+                onFocus={handleFocus}
                 onKeyDown={handleKeyDown}
                 className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder={
@@ -309,6 +350,7 @@ export default function LocationInputModal({
                         <button
                           type="button"
                           key={suggestion.placeId}
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => handleSelectSuggestion(suggestion)}
                           onMouseEnter={() => setFocusedIndex(index)}
                           className={cn(

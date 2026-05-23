@@ -19,6 +19,7 @@ import {
   UserOnboardedEventPayload,
 } from 'src/email/email.events';
 import { CollegesService } from 'src/colleges/colleges.service';
+import { LocationService } from 'src/recommendation/location/location.service';
 
 @Injectable()
 export class UserAccountsService {
@@ -28,6 +29,7 @@ export class UserAccountsService {
     private readonly clerkAuthConfigService: ClerkAuthConfigService,
     private readonly eventEmitter: EventEmitter2,
     private readonly collegesService: CollegesService,
+    private readonly locationService: LocationService,
   ) {}
 
   async create({
@@ -333,6 +335,18 @@ export class UserAccountsService {
    * Validates conditional fields and upserts the profile.
    */
   async submitOnboarding(userId: string, data: CreateOnboardingDto) {
+    // Resolve placeId coordinates if provided
+    if (data.locationPlaceId) {
+      try {
+        const coords = await this.locationService.getPlaceCoords(data.locationPlaceId);
+        if (coords) {
+          data.locationCoords = coords;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to resolve placeId coords: ${data.locationPlaceId}`, error);
+      }
+    }
+
     // Resolve college if passing name instead of ID
     if (
       !data.collegeSkipped &&

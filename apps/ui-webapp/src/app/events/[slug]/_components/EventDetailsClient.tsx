@@ -66,17 +66,19 @@ function formatLocation(event: {
   locationCoords: string | null;
   locationAddress: string | null;
   locationVirtualLink: string | null;
-}): { venueName: string; venueAddress: string } {
+}): { venueName: string; venueAddress: string; locationCoords?: string | null } {
   if (event.locationType === "VIRTUAL" || event.locationType === "ONLINE") {
     return {
       venueName: "Virtual Event",
       venueAddress: event.locationVirtualLink || "Online",
+      locationCoords: null,
     };
   }
 
   return {
     venueName: event.locationAddress || "TBA",
-    venueAddress: event.locationCoords || "",
+    venueAddress: event.locationAddress || "",
+    locationCoords: event.locationCoords || null,
   };
 }
 
@@ -352,6 +354,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     time: formattedTime,
     venueName: venueName,
     venueAddress: venueAddress,
+    locationCoords: event.locationCoords || null,
     startDate: event.startDate,
     endDate: event.endDate,
     tickets: tickets,

@@ -153,6 +153,8 @@ export interface FormData {
    */
   eventEndDate: Date | undefined;
   eventLocation: string;
+  /** Place ID from Google autocomplete suggestion — set when user picks from dropdown */
+  eventLocationPlaceId?: string;
   eventTimeFrom: string;
   /**
    * Optional end time (HH:mm).
@@ -270,12 +272,12 @@ function toParticipantTypeValue(
   return undefined;
 }
 
-function toLocationDto(input: string): HackathonLocationDto | undefined {
+function toLocationDto(input: string, placeId?: string): HackathonLocationDto | undefined {
   const trimmed = input.trim();
   if (trimmed.length === 0) return undefined;
 
   if (trimmed.startsWith("OFFLINE:")) {
-    return { type: "PHYSICAL", address: trimmed.substring(8).trim() };
+    return { type: "PHYSICAL", address: trimmed.substring(8).trim(), placeId };
   }
   if (trimmed.startsWith("VIRTUAL:")) {
     return { type: "VIRTUAL", virtualLink: trimmed.substring(8).trim() };
@@ -284,7 +286,7 @@ function toLocationDto(input: string): HackathonLocationDto | undefined {
   if (isValidUrl(trimmed)) {
     return { type: "VIRTUAL", virtualLink: normalizeUrl(trimmed) };
   }
-  return { type: "PHYSICAL", address: trimmed };
+  return { type: "PHYSICAL", address: trimmed, placeId };
 }
 
 function toModeValue(locationInput: string): HackathonModeValue {
@@ -538,12 +540,10 @@ function mapHackathonToFormData(hackathon: Record<string, unknown>): FormData {
 
   const locationVirtualLink = getString(hackathon, "locationVirtualLink");
   const locationAddress = getString(hackathon, "locationAddress");
-  const locationCoords = getString(hackathon, "locationCoords");
+  // Use address for display; never join raw coords into the location string
   const location = locationVirtualLink
     ? locationVirtualLink
-    : [locationAddress, locationCoords]
-        .filter((v): v is string => typeof v === "string")
-        .join(", ");
+    : (locationAddress ?? "");
 
   const roundsRaw = Array.isArray(hackathon["rounds"])
     ? (hackathon["rounds"] as ReadonlyArray<unknown>)
@@ -923,7 +923,7 @@ export default function EditHackathonPage() {
         visibility: toVisibilityValue(formData.eventFestVisibility),
         hackathonType: toHackathonTypeValue(formData.hackathonType),
         participantType: toParticipantTypeValue(formData.participantType),
-        location: toLocationDto(formData.eventLocation),
+        location: toLocationDto(formData.eventLocation, formData.eventLocationPlaceId),
         attendeeEligibility: mapCandidateTypesToEligibility(
           formData.registrationSettings.candidateTypes,
         ),

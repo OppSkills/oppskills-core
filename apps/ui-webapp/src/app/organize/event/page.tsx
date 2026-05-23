@@ -126,6 +126,7 @@ export default function Page() {
       eventStartDate: undefined as Date | undefined,
       eventEndDate: undefined as Date | undefined,
       eventLocation: "",
+      eventLocationPlaceId: undefined as string | undefined,
       eventTimeFrom: "10:00",
       eventDescription: "",
       eventThumbnail: "",
@@ -250,12 +251,13 @@ export default function Page() {
 
   function toLocationDto(
     input: string,
+    placeId?: string,
   ): EventLocationDto | FestivalLocationDto | undefined {
     const trimmed = input.trim();
     if (trimmed.length === 0) return undefined;
 
     if (trimmed.startsWith("OFFLINE:")) {
-      return { type: "PHYSICAL", address: trimmed.substring(8).trim() };
+      return { type: "PHYSICAL", address: trimmed.substring(8).trim(), placeId };
     }
     if (trimmed.startsWith("VIRTUAL:")) {
       return { type: "VIRTUAL", virtualLink: trimmed.substring(8).trim() };
@@ -274,7 +276,7 @@ export default function Page() {
       }
       return { type: "VIRTUAL", virtualLink: url };
     }
-    return { type: "PHYSICAL", address: trimmed };
+    return { type: "PHYSICAL", address: trimmed, placeId };
   }
 
   function formatTime(time: string | undefined): string {
@@ -499,7 +501,7 @@ export default function Page() {
           values.eventEndDate,
           values.eventTimeFrom,
         ),
-        location: toLocationDto(values.eventLocation) as
+        location: toLocationDto(values.eventLocation, values.eventLocationPlaceId) as
           | EventLocationDto
           | undefined,
         registrationDeadline: values.eventRegisterBy
@@ -813,7 +815,10 @@ export default function Page() {
                 children={(loc) => (
                   <LocationInputModal
                     value={loc}
-                    onChange={(val) => form.setFieldValue("eventLocation", val)}
+                    onChange={(val, placeId) => {
+                      form.setFieldValue("eventLocation", val);
+                      form.setFieldValue("eventLocationPlaceId", placeId);
+                    }}
                     label="Add Event Location"
                     subLabel="Offline location or virtual link"
                   />

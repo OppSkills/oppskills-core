@@ -5,7 +5,7 @@ import Link from "next/link";
 import { MapPin, Sparkles, Users, ChevronRight, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { EventDetails } from "./types";
-import { ensureAbsoluteUrl } from "@/lib/utils";
+import { ensureAbsoluteUrl, isLocationCoords, getGoogleMapsUrl } from "@/lib/utils";
 import { EventRegisterCta } from "./EventRegisterCta";
 
 interface EventSidebarProps {
@@ -116,9 +116,26 @@ export function EventSidebar({
               <h4 className="font-semibold text-neutral-900 text-[15px]">
                 {event.venueName || "Venue Name"}
               </h4>
-              <p className="text-sm text-neutral-500">
-                {event.venueAddress || "Location Address"}
-              </p>
+              {(() => {
+                const mapsUrl = getGoogleMapsUrl(event.locationCoords);
+                const addressText = event.venueAddress || "Location Address";
+                return mapsUrl ? (
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline decoration-neutral-400 block"
+                  >
+                    <p className="text-sm text-neutral-500">
+                      {addressText}
+                    </p>
+                  </a>
+                ) : (
+                  <p className="text-sm text-neutral-500">
+                    {addressText}
+                  </p>
+                );
+              })()}
             </div>
           </div>
 
