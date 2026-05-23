@@ -74,7 +74,9 @@ export class LocationService {
       if (!response.ok) {
         let errorMsg = `Google Places API error (Status: ${response.status}): ${JSON.stringify(data)}`;
         if (response.status === 403) {
-          errorMsg += ' - Ensure "Places API (New)" is enabled in Google Cloud Console and that the API Key is allowed to call it. Also verify that the API Key is not restricted by HTTP Referrers, as server-to-server requests from NestJS will be blocked. (Consider using a separate unrestricted or IP-restricted key for the backend).';
+          errorMsg += ' - Attempting fallback to Legacy Google Places Autocomplete API...';
+          this.logger.warn(errorMsg);
+          return this.fetchLegacyAutocomplete(trimmedQuery);
         }
         this.logger.error(errorMsg);
         throw new InternalServerErrorException(
@@ -105,18 +107,10 @@ export class LocationService {
       if (error instanceof InternalServerErrorException) {
         throw error;
       }
-      if (error instanceof Error && error.name === 'AbortError') {
-        this.logger.error('Google Places API autocomplete request timed out after 5 seconds.');
-        throw new InternalServerErrorException(
-          'Request to location suggestions provider timed out.',
-        );
-      }
-      this.logger.error(
-        `Unexpected error during location autocomplete: ${error instanceof Error ? error.message : String(error)}`,
+      this.logger.warn(
+        `Error during location autocomplete with Places API (New): ${error instanceof Error ? error.message : String(error)}. Attempting legacy fallback...`,
       );
-      throw new InternalServerErrorException(
-        'An unexpected error occurred while processing location suggestions.',
-      );
+      return this.fetchLegacyAutocomplete(trimmedQuery);
     } finally {
       clearTimeout(timeoutId);
     }
@@ -159,7 +153,9 @@ export class LocationService {
       if (!response.ok) {
         let errorMsg = `Google Places Details API error (Status: ${response.status}): ${JSON.stringify(data)}`;
         if (response.status === 403) {
-          errorMsg += ' - Ensure "Places API (New)" is enabled in Google Cloud Console and that the API Key is allowed to call it. Also verify that the API Key is not restricted by HTTP Referrers, as server-to-server requests from NestJS will be blocked. (Consider using a separate unrestricted or IP-restricted key for the backend).';
+          errorMsg += ' - Attempting fallback to Legacy Google Place Details API...';
+          this.logger.warn(errorMsg);
+          return this.fetchLegacyPlaceCoords(trimmedId);
         }
         this.logger.error(errorMsg);
         return null;
@@ -174,13 +170,103 @@ export class LocationService {
 
       return null;
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        this.logger.error(`Google Places details request for placeId ${trimmedId} timed out after 5 seconds.`);
-      } else {
-        this.logger.error(
-          `Unexpected error during getPlaceCoords: ${error instanceof Error ? error.message : String(error)}`,
-        );
+      this.logger.warn(
+        `Error during getPlaceCoords with Places API (New): ${error instanceof Error ? error.message : String(error)}. Attempting legacy fallback...`,
+      );
+      return this.fetchLegacyPlaceCoords(trimmedId);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  private async fetchLegacyAutocomplete(
+    query: string,
+  ): Promise<LocationSuggestionDto[]> {
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${this.apiKey}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      const data = (await response.json()) as {
+        predictions?: Array<{
+          description?: string;
+          place_id?: string;
+          types?: string[];
+          structured_formatting?: {
+            main_text?: string;
+            secondary_text?: string;
+          };
+        }>;
+        status: string;
+        error_message?: string;
+      };
+
+      if (!response.ok || (data.status !== 'OK' && data.status !== 'ZERO_RESULTS')) {
+        let errorMsg = `Google Legacy Places Autocomplete API error (Status: ${data.status}): ${data.error_message || 'Unknown error'}`;
+        if (data.status === 'REQUEST_DENIED') {
+          errorMsg += ' - If the error mentions referer restrictions, note that server-to-server requests from NestJS will be blocked. Consider using a separate unrestricted or IP-restricted key for the backend.';
+        }
+        this.logger.error(errorMsg);
+        return [];
       }
+
+      const predictions = data.predictions || [];
+      return predictions.map((pred) => ({
+        description: pred.description || '',
+        placeId: pred.place_id || '',
+        types: pred.types || [],
+        mainText: pred.structured_formatting?.main_text || '',
+        secondaryText: pred.structured_formatting?.secondary_text || '',
+      }));
+    } catch (err) {
+      this.logger.error(
+        `Error calling Legacy Autocomplete: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return [];
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  private async fetchLegacyPlaceCoords(placeId: string): Promise<string | null> {
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=geometry&key=${this.apiKey}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      const data = (await response.json()) as {
+        result?: {
+          geometry?: {
+            location?: {
+              lat?: number;
+              lng?: number;
+            };
+          };
+        };
+        status: string;
+        error_message?: string;
+      };
+
+      if (!response.ok || data.status !== 'OK') {
+        let errorMsg = `Google Legacy Places Details API error (Status: ${data.status}): ${data.error_message || 'Unknown error'}`;
+        if (data.status === 'REQUEST_DENIED') {
+          errorMsg += ' - If the error mentions referer restrictions, note that server-to-server requests from NestJS will be blocked. Consider using a separate unrestricted or IP-restricted key for the backend.';
+        }
+        this.logger.error(errorMsg);
+        return null;
+      }
+
+      const loc = data.result?.geometry?.location;
+      if (loc && loc.lat !== undefined && loc.lng !== undefined) {
+        return `${loc.lat},${loc.lng}`;
+      }
+      return null;
+    } catch (err) {
+      this.logger.error(
+        `Error calling Legacy Place Details: ${err instanceof Error ? err.message : String(err)}`,
+      );
       return null;
     } finally {
       clearTimeout(timeoutId);
