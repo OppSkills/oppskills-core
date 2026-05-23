@@ -72,9 +72,11 @@ export class LocationService {
       const data = (await response.json()) as GoogleAutocompleteResponse;
 
       if (!response.ok) {
-        this.logger.error(
-          `Google Places API error (Status: ${response.status}): ${JSON.stringify(data)}`,
-        );
+        let errorMsg = `Google Places API error (Status: ${response.status}): ${JSON.stringify(data)}`;
+        if (response.status === 403) {
+          errorMsg += ' - Ensure "Places API (New)" is enabled in Google Cloud Console and that the API Key is allowed to call it. Also verify that the API Key is not restricted by HTTP Referrers, as server-to-server requests from NestJS will be blocked. (Consider using a separate unrestricted or IP-restricted key for the backend).';
+        }
+        this.logger.error(errorMsg);
         throw new InternalServerErrorException(
           'Failed to retrieve location autocomplete suggestions from provider.',
         );
@@ -155,9 +157,11 @@ export class LocationService {
       };
 
       if (!response.ok) {
-        this.logger.error(
-          `Google Places Details API error (Status: ${response.status}): ${JSON.stringify(data)}`,
-        );
+        let errorMsg = `Google Places Details API error (Status: ${response.status}): ${JSON.stringify(data)}`;
+        if (response.status === 403) {
+          errorMsg += ' - Ensure "Places API (New)" is enabled in Google Cloud Console and that the API Key is allowed to call it. Also verify that the API Key is not restricted by HTTP Referrers, as server-to-server requests from NestJS will be blocked. (Consider using a separate unrestricted or IP-restricted key for the backend).';
+        }
+        this.logger.error(errorMsg);
         return null;
       }
 
