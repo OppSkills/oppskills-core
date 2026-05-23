@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { EventTabs } from "./EventTabs";
+import { GoogleMap } from "@/components/common/GoogleMap";
 import { RegistrationModal } from "@/app/hackathons/[slug]/_components/RegistrationModal";
 import { EventSidebar } from "./EventSidebar";
 import { EventRegisterCta } from "./EventRegisterCta";
@@ -44,6 +45,7 @@ type EventData = any; // We'll let it be any for now to avoid huge type duplicat
 
 interface EventDetailsClientProps {
   event: EventData; // Hydrated from server
+  googleMapApiKey?: string;
 }
 
 /**
@@ -82,7 +84,7 @@ function formatLocation(event: {
   };
 }
 
-export default function EventDetailsClient({ event }: EventDetailsClientProps) {
+export default function EventDetailsClient({ event, googleMapApiKey }: EventDetailsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isSignedIn, getToken } = useAuth();
@@ -246,7 +248,14 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     refetchRegistrationStatus,
   ]);
 
-  const TABS = ["About Event", "Contact Details"];
+  const TABS = useMemo(() => {
+    const list = ["About Event"];
+    if (googleMapApiKey && event.locationCoords) {
+      list.push("Location");
+    }
+    list.push("Contact Details");
+    return list;
+  }, [googleMapApiKey, event.locationCoords]);
 
   const handleRegistration = async () => {
     if (!event) return;
@@ -536,6 +545,14 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                 </section>
 
                 {/* Placeholder for Speaker Tab if we add it */}
+                {googleMapApiKey && event.locationCoords && (
+                  <section id="location" className="scroll-mt-24 space-y-4">
+                    <h2 className="text-2xl font-bold text-foreground poppins">
+                      Location
+                    </h2>
+                    <GoogleMap apiKey={googleMapApiKey} coords={event.locationCoords} />
+                  </section>
+                )}
               </div>
             </div>
 

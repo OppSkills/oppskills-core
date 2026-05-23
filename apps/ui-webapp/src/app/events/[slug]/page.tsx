@@ -133,7 +133,10 @@ export default async function EventPage({ params }: Props) {
   return (
     <>
       <JsonLd data={eventSchema} />
-      <EventDetailsClient event={event} />
+      <EventDetailsClient
+        event={event}
+        googleMapApiKey={process.env.GOOGLE_MAP_API}
+      />
     </>
   );
 }
