@@ -335,18 +335,6 @@ export class UserAccountsService {
    * Validates conditional fields and upserts the profile.
    */
   async submitOnboarding(userId: string, data: CreateOnboardingDto) {
-    // Resolve placeId coordinates if provided
-    if (data.locationPlaceId) {
-      try {
-        const coords = await this.locationService.getPlaceCoords(data.locationPlaceId);
-        if (coords) {
-          data.locationCoords = coords;
-        }
-      } catch (error) {
-        this.logger.warn(`Failed to resolve placeId coords: ${data.locationPlaceId}`, error);
-      }
-    }
-
     // Resolve college if passing name instead of ID
     if (
       !data.collegeSkipped &&

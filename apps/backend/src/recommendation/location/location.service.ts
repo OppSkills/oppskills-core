@@ -23,9 +23,16 @@ interface GoogleAutocompleteResponse {
 export class LocationService {
   private readonly logger = new Logger(LocationService.name);
   private readonly apiKey: string | undefined;
+  private readonly isApiKeyConfigured: boolean;
 
   constructor(private readonly configService: ConfigService) {
     this.apiKey = this.configService.get<string>('GOOGLE_MAP_API');
+    this.isApiKeyConfigured = !!this.apiKey?.trim();
+    if (!this.isApiKeyConfigured) {
+      this.logger.warn(
+        'GOOGLE_MAP_API is not configured. Location autocomplete suggestions and coordinate resolution will be disabled.',
+      );
+    }
   }
 
   /**
@@ -41,25 +48,25 @@ export class LocationService {
       return [];
     }
 
-    if (!this.apiKey) {
-      this.logger.error(
-        'GOOGLE_MAP_API is not defined in the environment variables.',
-      );
+    if (!this.isApiKeyConfigured) {
       throw new InternalServerErrorException(
         'Location auto-suggest service is currently misconfigured.',
       );
     }
 
     const url = 'https://places.googleapis.com/v1/places:autocomplete';
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Goog-Api-Key': this.apiKey,
+          'X-Goog-Api-Key': this.apiKey!,
         },
         body: JSON.stringify({ input: trimmedQuery }),
+        signal: controller.signal,
       });
 
       const data = (await response.json()) as GoogleAutocompleteResponse;
@@ -96,12 +103,20 @@ export class LocationService {
       if (error instanceof InternalServerErrorException) {
         throw error;
       }
+      if (error instanceof Error && error.name === 'AbortError') {
+        this.logger.error('Google Places API autocomplete request timed out after 5 seconds.');
+        throw new InternalServerErrorException(
+          'Request to location suggestions provider timed out.',
+        );
+      }
       this.logger.error(
         `Unexpected error during location autocomplete: ${error instanceof Error ? error.message : String(error)}`,
       );
       throw new InternalServerErrorException(
         'An unexpected error occurred while processing location suggestions.',
       );
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -117,22 +132,22 @@ export class LocationService {
       return null;
     }
 
-    if (!this.apiKey) {
-      this.logger.error(
-        'GOOGLE_MAP_API is not defined in the environment variables.',
-      );
+    if (!this.isApiKeyConfigured) {
       return null;
     }
 
-    const url = `https://places.googleapis.com/v1/places/${trimmedId}`;
+    const url = `https://places.googleapis.com/v1/places/${encodeURIComponent(trimmedId)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     try {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'X-Goog-Api-Key': this.apiKey,
+          'X-Goog-Api-Key': this.apiKey!,
           'X-Goog-FieldMask': 'location',
         },
+        signal: controller.signal,
       });
 
       const data = (await response.json()) as {
@@ -155,10 +170,16 @@ export class LocationService {
 
       return null;
     } catch (error) {
-      this.logger.error(
-        `Unexpected error during getPlaceCoords: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      if (error instanceof Error && error.name === 'AbortError') {
+        this.logger.error(`Google Places details request for placeId ${trimmedId} timed out after 5 seconds.`);
+      } else {
+        this.logger.error(
+          `Unexpected error during getPlaceCoords: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
       return null;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 }
