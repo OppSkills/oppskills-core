@@ -256,23 +256,30 @@ export function stripHtml(html: string | null | undefined): string {
 }
 
 /**
- * Returns true if the string looks like raw GPS coordinates stored in `lat,lng` format.
+ * Returns true if the string looks like raw GPS coordinates stored in `lat,lng` or `lat,lng,placeId` format.
  * We never want to render such strings directly to users.
  */
 export function isLocationCoords(value: string | null | undefined): boolean {
   if (!value || typeof value !== "string") return false;
-  // Match optional whitespace around a decimal latitude and longitude
-  return /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(value.trim());
+  const parts = value.split(",").map((p) => p.trim());
+  if (parts.length < 2 || parts.length > 3) return false;
+  const latNum = Number(parts[0]);
+  const lngNum = Number(parts[1]);
+  return !isNaN(latNum) && !isNaN(lngNum);
 }
 
 /**
- * Converts a "lat,lng" coordinates string into a Google Maps search URL so the
+ * Converts a "lat,lng" or "lat,lng,placeId" coordinates string into a Google Maps search URL so the
  * user gets a clickable map link rather than raw numbers.
  *
  * Returns null if the input does not look like coordinates.
  */
 export function getGoogleMapsUrl(coords: string | null | undefined): string | null {
   if (!isLocationCoords(coords)) return null;
-  const encoded = encodeURIComponent(coords!.trim());
-  return `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+  const parts = coords!.split(",").map((p) => p.trim());
+  const [lat, lng, placeId] = parts;
+  if (placeId) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lat + "," + lng)}&query_place_id=${encodeURIComponent(placeId)}`;
+  }
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lat + "," + lng)}`;
 }

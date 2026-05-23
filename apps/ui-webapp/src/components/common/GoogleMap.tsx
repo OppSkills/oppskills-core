@@ -11,14 +11,22 @@ export function GoogleMap({ apiKey, coords, className }: GoogleMapProps) {
     return null;
   }
 
-  // Ensure it matches the coords format "lat,lng"
+  // Ensure it matches the coords format "lat,lng" or "lat,lng,placeId"
   const cleanCoords = coords.trim();
-  if (!/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(cleanCoords)) {
+  const parts = cleanCoords.split(",").map((p) => p.trim());
+  const [lat, lng, placeId] = parts;
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  if (isNaN(latNum) || isNaN(lngNum)) {
     return null;
   }
 
-  const encodedCoords = encodeURIComponent(cleanCoords);
-  const embedUrl = `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodedCoords}`;
+  let qValue = `${lat},${lng}`;
+  if (placeId) {
+    qValue = `place_id:${placeId}`;
+  }
+  const encodedQ = encodeURIComponent(qValue);
+  const embedUrl = `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodedQ}`;
 
   return (
     <div

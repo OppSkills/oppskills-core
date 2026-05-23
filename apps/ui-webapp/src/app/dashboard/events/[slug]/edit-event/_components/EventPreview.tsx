@@ -80,6 +80,7 @@ function formatLocation(event: {
   locationCoords: string | null;
   locationAddress: string | null;
   locationVirtualLink: string | null;
+  organizationName?: string | null;
 }): { venueName: string; venueAddress: string } {
   if (event.locationType === "VIRTUAL" || event.locationType === "ONLINE") {
     return {
@@ -89,8 +90,8 @@ function formatLocation(event: {
   }
 
   return {
-    venueName: event.locationAddress || "TBA",
-    venueAddress: event.locationCoords || "",
+    venueName: event.organizationName || "Venue Name",
+    venueAddress: event.locationAddress || "TBA",
   };
 }
 
