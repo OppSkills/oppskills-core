@@ -165,7 +165,7 @@ export class LocationService {
         data.location?.latitude !== undefined &&
         data.location?.longitude !== undefined
       ) {
-        return `${data.location.latitude},${data.location.longitude}`;
+        return `${data.location.latitude},${data.location.longitude},${trimmedId}`;
       }
 
       return null;
@@ -260,7 +260,7 @@ export class LocationService {
 
       const loc = data.result?.geometry?.location;
       if (loc && loc.lat !== undefined && loc.lng !== undefined) {
-        return `${loc.lat},${loc.lng}`;
+        return `${loc.lat},${loc.lng},${placeId.trim()}`;
       }
       return null;
     } catch (err) {

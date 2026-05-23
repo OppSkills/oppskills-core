@@ -118,7 +118,7 @@ describe('LocationService', () => {
         }),
       );
 
-      expect(result).toBe('28.4594965,77.4984261');
+      expect(result).toBe('28.4594965,77.4984261,place_123');
     });
 
     it('should return null if fetch fails', async () => {

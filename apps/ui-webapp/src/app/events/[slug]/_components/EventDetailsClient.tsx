@@ -68,6 +68,7 @@ function formatLocation(event: {
   locationCoords: string | null;
   locationAddress: string | null;
   locationVirtualLink: string | null;
+  organizationName?: string | null;
 }): { venueName: string; venueAddress: string; locationCoords?: string | null } {
   if (event.locationType === "VIRTUAL" || event.locationType === "ONLINE") {
     return {
@@ -78,8 +79,8 @@ function formatLocation(event: {
   }
 
   return {
-    venueName: event.locationAddress || "TBA",
-    venueAddress: event.locationAddress || "",
+    venueName: event.organizationName || "Venue Name",
+    venueAddress: event.locationAddress || "TBA",
     locationCoords: event.locationCoords || null,
   };
 }
@@ -249,11 +250,10 @@ export default function EventDetailsClient({ event, googleMapApiKey }: EventDeta
   ]);
 
   const TABS = useMemo(() => {
-    const list = ["About Event"];
+    const list = ["About Event", "Contact Details"];
     if (googleMapApiKey && event.locationCoords) {
       list.push("Location");
     }
-    list.push("Contact Details");
     return list;
   }, [googleMapApiKey, event.locationCoords]);
 
@@ -543,16 +543,6 @@ export default function EventDetailsClient({ event, googleMapApiKey }: EventDeta
                     </div>
                   )}
                 </section>
-
-                {/* Placeholder for Speaker Tab if we add it */}
-                {googleMapApiKey && event.locationCoords && (
-                  <section id="location" className="scroll-mt-24 space-y-4">
-                    <h2 className="text-2xl font-bold text-foreground poppins">
-                      Location
-                    </h2>
-                    <GoogleMap apiKey={googleMapApiKey} coords={event.locationCoords} />
-                  </section>
-                )}
               </div>
             </div>
 
@@ -653,6 +643,15 @@ export default function EventDetailsClient({ event, googleMapApiKey }: EventDeta
                 })()}
               </div>
             </section>
+
+            {googleMapApiKey && event.locationCoords && (
+              <section id="location" className="scroll-mt-24 space-y-4 pt-10">
+                <h2 className="text-2xl font-bold text-foreground poppins">
+                  Location
+                </h2>
+                <GoogleMap apiKey={googleMapApiKey} coords={event.locationCoords} />
+              </section>
+            )}
           </div>
         </div>
       </div>
