@@ -57,17 +57,16 @@ todos:
 
 - **Onboarding flow**
 - Steps:
-
-    1. PrimaryIdentity (required)
-    2. EducationWorkDetails (required)
-    3. Location (required)
-    4. InterestsAndSkills (required)
-    5. ExperienceLevel (optional)
-    6. TeamPreference (optional)
+  1. PrimaryIdentity (required)
+  2. EducationWorkDetails (required)
+  3. Location (required)
+  4. InterestsAndSkills (required)
+  5. ExperienceLevel (optional)
+  6. TeamPreference (optional)
 
 - **Primary identity fields**: gender (required; includes `PREFER_NOT_TO_SAY`), user category (required)
 - **User categories**: `SCHOOL_STUDENT`, `COLLEGE_STUDENT`, `WORKING_PROFESSIONAL`, `FRESHER`, `PROFESSIONAL_SCHOOL_STUDENT`
-    - Fresher = recent graduate not currently working
+  - Fresher = recent graduate not currently working
 - **Location**: city + state + country (required)
 - **College create**: removed for now (search + select only)
 - **Post-login behavior**
@@ -82,23 +81,23 @@ todos:
 - Update [`packages/database/prisma/schema.prisma`](/Users/harshit/Documents/freelance/oppskills-core/packages/database/prisma/schema.prisma)
 - Add `UserEntity.onboarded Boolean @default(false)`
 - Add `CollegeEntity`
-    - `id String @id` (UUID from your JSON)
-    - `name String`
-    - `country String`
-    - `state String`
-    - `city String`
-    - `address String`
-    - `website String?`
-    - `logo String?`
-    - Index: `@@index([name])`, `@@index([city])`, `@@index([state])`
+  - `id String @id` (UUID from your JSON)
+  - `name String`
+  - `country String`
+  - `state String`
+  - `city String`
+  - `address String`
+  - `website String?`
+  - `logo String?`
+  - Index: `@@index([name])`, `@@index([city])`, `@@index([state])`
 - Add `UserOnboardingProfileEntity` (1:1 with `UserEntity`) including:
-    - `gender`, `userCategory`
-    - School: `schoolName`, `schoolClass`, `schoolAddress`
-    - College: `collegeId` (FK to `CollegeEntity`), `collegeCurrentYear`, `collegePassoutYear`, `collegeSkipped`
-    - Location: `locationCity`, `locationState`, `locationCountry`
-    - Interests: `interests String[]`
-    - Skills: `skills String[]`
-    - Optional: `experienceLevel`, `teamPreference`
+  - `gender`, `userCategory`
+  - School: `schoolName`, `schoolClass`, `schoolAddress`
+  - College: `collegeId` (FK to `CollegeEntity`), `collegeCurrentYear`, `collegePassoutYear`, `collegeSkipped`
+  - Location: `locationCoords`, `locationState`, `locationCountry`
+  - Interests: `interests String[]`
+  - Skills: `skills String[]`
+  - Optional: `experienceLevel`, `teamPreference`
 
 ## Shared types (`@oppskills/types`)
 
@@ -118,13 +117,13 @@ todos:
 
 - **User accounts**
 - [`apps/backend/src/user-accounts/user-accounts.controller.ts`](/Users/harshit/Documents/freelance/oppskills-core/apps/backend/src/user-accounts/user-accounts.controller.ts)
-    - `GET /user-accounts/me` (auth) → includes `onboarded` and onboarding profile
-    - `PUT /user-accounts/onboarding` (auth) → validates conditional fields, upserts profile, sets `onboarded=true`
+  - `GET /user-accounts/me` (auth) → includes `onboarded` and onboarding profile
+  - `PUT /user-accounts/onboarding` (auth) → validates conditional fields, upserts profile, sets `onboarded=true`
 - **Colleges** (new module)
 - `GET /colleges/search?q=...` (auth) → returns top matches for combobox (case-insensitive name contains)
 - `POST /colleges/bulk-import` (NO auth; dev-only)
-    - Reject if `NODE_ENV === "production"`
-    - Accepts JSON array of college rows; upsert by `id`
+  - Reject if `NODE_ENV === "production"`
+  - Accepts JSON array of college rows; upsert by `id`
 
 ## Frontend (Next.js)
 
@@ -136,7 +135,7 @@ todos:
 - Implements multi-step wizard; on submit calls `PUT /user-accounts/onboarding`.
 - Also Check LayoutProvider this /onboarding should not use sidebar or header or footer, it should a simple page with dialog style thing. use nuqs where possible.
 - For form use tanstack-form and use shadcn field comp. these are the docs for all the stuff https://ui.shadcn.com/docs/forms/tanstack-form
-https://tanstack.com/form/latest/docs/framework/react/guides/basic-concepts
+  https://tanstack.com/form/latest/docs/framework/react/guides/basic-concepts
 - Add protected-route gating using server layouts:
 - [`apps/ui-landing/src/app/dashboard/layout.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/dashboard/layout.tsx)
 - [`apps/ui-landing/src/app/participants/layout.tsx`](/Users/harshit/Documents/freelance/oppskills-core/apps/ui-landing/src/app/participants/layout.tsx)

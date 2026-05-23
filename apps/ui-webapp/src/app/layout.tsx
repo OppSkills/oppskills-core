@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Urbanist } from "next/font/google";
-import localFont from "next/font/local"
+import localFont from "next/font/local";
 import { SITE_URL } from "@/lib/constants";
 
 import "./globals.css";
@@ -17,7 +17,6 @@ import LayoutProvider from "@/components/layout-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Suspense } from "react";
 import { PostHogProvider } from "@/components/posthog-provider";
-
 
 const urbanist = Urbanist({
   variable: "--font-urbanist",

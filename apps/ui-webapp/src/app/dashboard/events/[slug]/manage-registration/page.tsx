@@ -27,7 +27,14 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEventRegistrationsBySlug } from "@/hooks/useEventRegistrationsBySlug";
-import { getParticipantRegistrationAnswers, getBulkParticipantRegistrationAnswers, getEventBySlug, approveParticipant, bulkApproveParticipants, markParticipantAttendance } from "@/lib/api/eventApi";
+import {
+  getParticipantRegistrationAnswers,
+  getBulkParticipantRegistrationAnswers,
+  getEventBySlug,
+  approveParticipant,
+  bulkApproveParticipants,
+  markParticipantAttendance,
+} from "@/lib/api/eventApi";
 import { useEventTicketTiers } from "@/hooks/usePayments";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -115,7 +122,7 @@ const StatusBadge = ({ status }: { status: RegistrationStatus }) => {
     <div
       className={cn(
         "px-3 py-1.5 rounded-lg inline-flex items-center justify-center min-w-[80px]",
-        styles
+        styles,
       )}
     >
       {status}
@@ -147,11 +154,14 @@ export default function ManageRegistrationPage() {
   >("All");
   const [tierFilter, setTierFilter] = useState<string>("All");
   const [emailRecipient, setEmailRecipient] = useState<Participant | null>(
-    null
+    null,
   );
-  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [selectedParticipant, setSelectedParticipant] =
+    useState<Participant | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [markingAttendanceId, setMarkingAttendanceId] = useState<string | null>(null);
+  const [markingAttendanceId, setMarkingAttendanceId] = useState<string | null>(
+    null,
+  );
   const [isExporting, setIsExporting] = useState(false);
   const [successAlert, setSuccessAlert] = useState<string | null>(null);
 
@@ -172,7 +182,11 @@ export default function ManageRegistrationPage() {
       if (!slug) return null;
       const token = await getToken();
       if (!token) return null;
-      return (await getEventBySlug(token, slug)) as { id: string; slug: string; name: string };
+      return (await getEventBySlug(token, slug)) as {
+        id: string;
+        slug: string;
+        name: string;
+      };
     },
     enabled: !!slug,
   });
@@ -203,77 +217,92 @@ export default function ManageRegistrationPage() {
     }));
   }, [registrations]);
 
-  const handleApprove = useCallback(async (participantId: string) => {
-    if (!slug) return;
+  const handleApprove = useCallback(
+    async (participantId: string) => {
+      if (!slug) return;
 
-    setApprovingId(participantId);
-    try {
-      const token = await getToken();
-      if (!token) {
-        toast.error("Authentication required");
-        return;
+      setApprovingId(participantId);
+      try {
+        const token = await getToken();
+        if (!token) {
+          toast.error("Authentication required");
+          return;
+        }
+
+        await approveParticipant(token, slug, participantId);
+        toast.success("Participant approved! Event pass is being sent.");
+
+        // Refresh the list
+        queryClient.invalidateQueries({
+          queryKey: ["event-registrations-by-slug", slug],
+        });
+      } catch (error) {
+        console.error("Error approving participant:", error);
+        toast.error("Failed to approve participant");
+      } finally {
+        setApprovingId(null);
       }
+    },
+    [slug, getToken, queryClient],
+  );
 
-      await approveParticipant(token, slug, participantId);
-      toast.success("Participant approved! Event pass is being sent.");
+  const handleMarkAttendance = useCallback(
+    async (participantId: string) => {
+      if (!eventDetails?.id) return;
 
-      // Refresh the list
-      queryClient.invalidateQueries({ queryKey: ['event-registrations-by-slug', slug] });
-    } catch (error) {
-      console.error('Error approving participant:', error);
-      toast.error("Failed to approve participant");
-    } finally {
-      setApprovingId(null);
-    }
-  }, [slug, getToken, queryClient]);
+      setMarkingAttendanceId(participantId);
+      try {
+        const token = await getToken();
+        if (!token) {
+          toast.error("Authentication required");
+          return;
+        }
 
-  const handleMarkAttendance = useCallback(async (participantId: string) => {
-    if (!eventDetails?.id) return;
+        await markParticipantAttendance(token, eventDetails.id, participantId);
+        toast.success("Attendance marked successfully!");
 
-    setMarkingAttendanceId(participantId);
-    try {
-      const token = await getToken();
-      if (!token) {
-        toast.error("Authentication required");
-        return;
+        // Refresh the list
+        queryClient.invalidateQueries({
+          queryKey: ["event-registrations-by-slug", slug],
+        });
+      } catch (error) {
+        console.error("Error marking attendance:", error);
+        toast.error("Failed to mark attendance");
+      } finally {
+        setMarkingAttendanceId(null);
       }
-
-      await markParticipantAttendance(token, eventDetails.id, participantId);
-      toast.success("Attendance marked successfully!");
-
-      // Refresh the list
-      queryClient.invalidateQueries({ queryKey: ['event-registrations-by-slug', slug] });
-    } catch (error) {
-      console.error('Error marking attendance:', error);
-      toast.error("Failed to mark attendance");
-    } finally {
-      setMarkingAttendanceId(null);
-    }
-  }, [slug, eventDetails?.id, getToken, queryClient]);
-
-  const { mutate: handleBulkApprove, isPending: isBulkApproving } = useMutation({
-    mutationFn: async (participantIds: string[]) => {
-      const token = await getToken();
-      if (!token || !slug) throw new Error("Missing requirements");
-      return bulkApproveParticipants(token, slug, participantIds);
     },
-    onSuccess: () => {
-      toast.success("Selected participants approved! Passes are being sent.");
-      setRowSelection({});
-      queryClient.invalidateQueries({ queryKey: ['event-registrations-by-slug', slug] });
-    },
-    onError: (err) => {
-      console.error("Bulk approval error:", err);
-      toast.error("Failed to approve participants");
-    }
-  });
+    [slug, eventDetails?.id, getToken, queryClient],
+  );
 
+  const { mutate: handleBulkApprove, isPending: isBulkApproving } = useMutation(
+    {
+      mutationFn: async (participantIds: string[]) => {
+        const token = await getToken();
+        if (!token || !slug) throw new Error("Missing requirements");
+        return bulkApproveParticipants(token, slug, participantIds);
+      },
+      onSuccess: () => {
+        toast.success("Selected participants approved! Passes are being sent.");
+        setRowSelection({});
+        queryClient.invalidateQueries({
+          queryKey: ["event-registrations-by-slug", slug],
+        });
+      },
+      onError: (err) => {
+        console.error("Bulk approval error:", err);
+        toast.error("Failed to approve participants");
+      },
+    },
+  );
 
   const filteredData = useMemo(() => {
     let result = data;
     if (activeTab === "Pending") result = result.filter((p) => !p.approved);
-    else if (activeTab === "Approved") result = result.filter((p) => p.approved);
-    else if (activeTab !== "All") result = result.filter((p) => p.status === activeTab);
+    else if (activeTab === "Approved")
+      result = result.filter((p) => p.approved);
+    else if (activeTab !== "All")
+      result = result.filter((p) => p.status === activeTab);
 
     if (tierFilter !== "All") {
       result = result.filter((p) => p.ticketTierId === tierFilter);
@@ -334,7 +363,11 @@ export default function ManageRegistrationPage() {
             onClick={() => setSelectedParticipant(info.row.original)}
           >
             <Avatar className="w-10 h-10 group-hover/name:ring-2 group-hover/name:ring-primary-500 transition-all">
-              <AvatarImage src={ensureAbsoluteUrl(info.row.original.avatarUrl) || undefined} />
+              <AvatarImage
+                src={
+                  ensureAbsoluteUrl(info.row.original.avatarUrl) || undefined
+                }
+              />
               <AvatarFallback>
                 {String(info.getValue()).charAt(0)}
               </AvatarFallback>
@@ -367,29 +400,36 @@ export default function ManageRegistrationPage() {
           </div>
         ),
       },
-      ...(hasMultipleTiers ? [{
-        id: "ticketTier" as const,
-        accessorKey: "ticketTierName" as const,
-        header: () => (
-          <div className="flex items-center gap-1 justify-center">
-            Ticket Tier
-          </div>
-        ),
-        cell: ({ row }: any) => {
-          const tierName = row.original.ticketTierName;
-          return (
-            <div className="flex justify-center">
-              {tierName ? (
-                <Badge variant="outline" className="bg-primary-50 text-primary-700 border-primary-200 whitespace-nowrap text-xs font-semibold">
-                  {tierName}
-                </Badge>
-              ) : (
-                <span className="text-neutral-400 text-xs">—</span>
-              )}
-            </div>
-          );
-        },
-      }] as ColumnDef<Participant>[] : []),
+      ...(hasMultipleTiers
+        ? ([
+            {
+              id: "ticketTier" as const,
+              accessorKey: "ticketTierName" as const,
+              header: () => (
+                <div className="flex items-center gap-1 justify-center">
+                  Ticket Tier
+                </div>
+              ),
+              cell: ({ row }: any) => {
+                const tierName = row.original.ticketTierName;
+                return (
+                  <div className="flex justify-center">
+                    {tierName ? (
+                      <Badge
+                        variant="outline"
+                        className="bg-primary-50 text-primary-700 border-primary-200 whitespace-nowrap text-xs font-semibold"
+                      >
+                        {tierName}
+                      </Badge>
+                    ) : (
+                      <span className="text-neutral-400 text-xs">—</span>
+                    )}
+                  </div>
+                );
+              },
+            },
+          ] as ColumnDef<Participant>[])
+        : []),
       {
         accessorKey: "passEmailSent",
         header: "Pass Status",
@@ -398,13 +438,19 @@ export default function ManageRegistrationPage() {
 
           if (sent) {
             return (
-              <Badge variant="outline" className="bg-accent-green-100 text-accent-green-500 border-none whitespace-nowrap p-1 rounded-sm">
+              <Badge
+                variant="outline"
+                className="bg-accent-green-100 text-accent-green-500 border-none whitespace-nowrap p-1 rounded-sm"
+              >
                 Pass Sent
               </Badge>
             );
           } else {
             return (
-              <Badge variant="outline" className="bg-accent-pink-100 text-accent-pink-500 border-none hover:bg-accent-pink-100 whitespace-nowrap">
+              <Badge
+                variant="outline"
+                className="bg-accent-pink-100 text-accent-pink-500 border-none hover:bg-accent-pink-100 whitespace-nowrap"
+              >
                 Not Sent
               </Badge>
             );
@@ -422,7 +468,10 @@ export default function ManageRegistrationPage() {
           return (
             <div className="flex items-center justify-center gap-2">
               {isAttended ? (
-                <Badge variant="outline" className="bg-accent-green-100 text-accent-green-500 border-none whitespace-nowrap py-1 rounded-sm">
+                <Badge
+                  variant="outline"
+                  className="bg-accent-green-100 text-accent-green-500 border-none whitespace-nowrap py-1 rounded-sm"
+                >
                   Already Presented
                 </Badge>
               ) : (
@@ -434,21 +483,30 @@ export default function ManageRegistrationPage() {
                     handleMarkAttendance(participant.id);
                   }}
                   disabled={isMarking || !participant.approved}
-                  title={!participant.approved ? "Approve participant first" : "Mark as present"}
+                  title={
+                    !participant.approved
+                      ? "Approve participant first"
+                      : "Mark as present"
+                  }
                 >
                   {isMarking ? (
                     <>
-                      <Loader2 className="w-3 h-3 animate-spin mr-1" /> Marking...
+                      <Loader2 className="w-3 h-3 animate-spin mr-1" />{" "}
+                      Marking...
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-3 h-3" />Mark present
+                      <CheckCircle className="w-3 h-3" />
+                      Mark present
                     </>
                   )}
                 </Button>
               )}
 
-              <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+              <div
+                className="flex items-center"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {!participant.approved && (
                   <Button
                     size="sm"
@@ -460,7 +518,7 @@ export default function ManageRegistrationPage() {
                     {approvingId === participant.id ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
                     ) : (
-                      'Approve'
+                      "Approve"
                     )}
                   </Button>
                 )}
@@ -475,7 +533,10 @@ export default function ManageRegistrationPage() {
         cell: ({ row }) => {
           const participant = row.original;
           return (
-            <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="flex justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
               <Button
                 variant="ghost"
                 size="sm"
@@ -490,7 +551,15 @@ export default function ManageRegistrationPage() {
         },
       },
     ],
-    [data.length, approvingId, markingAttendanceId, handleApprove, handleMarkAttendance, slug, hasMultipleTiers]
+    [
+      data.length,
+      approvingId,
+      markingAttendanceId,
+      handleApprove,
+      handleMarkAttendance,
+      slug,
+      hasMultipleTiers,
+    ],
   );
 
   const table = useReactTable({
@@ -510,7 +579,9 @@ export default function ManageRegistrationPage() {
   });
 
   const selectedRows = table.getSelectedRowModel().rows;
-  const canBulkApprove = selectedRows.length > 0 && selectedRows.every(row => !row.original.approved);
+  const canBulkApprove =
+    selectedRows.length > 0 &&
+    selectedRows.every((row) => !row.original.approved);
   const selectedCount = selectedRows.length;
 
   const handleExportRegistrations = useCallback(async () => {
@@ -533,7 +604,10 @@ export default function ManageRegistrationPage() {
       }
 
       // Fetch per-participant answers in bulk for performance
-      const allAnswersResults = await getBulkParticipantRegistrationAnswers(token, slug);
+      const allAnswersResults = await getBulkParticipantRegistrationAnswers(
+        token,
+        slug,
+      );
 
       // Create a map by participant ID for quick lookup
       const answersByParticipantId = new Map<string, any>();
@@ -550,45 +624,48 @@ export default function ManageRegistrationPage() {
       });
 
       const rows = data.map((p) => {
-        const base: Record<string, string | number | boolean | null | undefined> = {
-          "Name": p.name,
-          "Email": p.email,
-          "Gender": p.gender ?? "",
-          "University": p.university || "",
-          "Course": p.course || "",
-          "Location": p.location || "",
-          "Status": p.status,
+        const base: Record<
+          string,
+          string | number | boolean | null | undefined
+        > = {
+          Name: p.name,
+          Email: p.email,
+          Gender: p.gender ?? "",
+          University: p.university || "",
+          Course: p.course || "",
+          Location: p.location || "",
+          Status: p.status,
           "Registered On": p.registeredOn
             ? new Date(p.registeredOn).toLocaleString("en-US", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
             : "",
-          "Approved": p.approved ? "Yes" : "No",
+          Approved: p.approved ? "Yes" : "No",
           "Pass Sent": p.passEmailSent ? "Yes" : "No",
           "Pass Sent At": p.passEmailSentAt
             ? new Date(p.passEmailSentAt).toLocaleString("en-US", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
             : "",
           "Approved At": p.approvedAt
             ? new Date(p.approvedAt).toLocaleString("en-US", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
             : "",
         };
 
@@ -600,7 +677,9 @@ export default function ManageRegistrationPage() {
             }
             const field = ans.fields.find((f: any) => f.label === label);
             if (field) {
-              const answer = ans.answers.find((a: any) => a.fieldId === field.id);
+              const answer = ans.answers.find(
+                (a: any) => a.fieldId === field.id,
+              );
               const val = answer?.value;
               base[label] = Array.isArray(val)
                 ? val.join(", ")
@@ -630,7 +709,9 @@ export default function ManageRegistrationPage() {
       });
 
       toast.dismiss(exportToastId);
-      toast.success(`Exported ${rows.length} registration${rows.length === 1 ? "" : "s"}`);
+      toast.success(
+        `Exported ${rows.length} registration${rows.length === 1 ? "" : "s"}`,
+      );
     } catch (err) {
       console.error("[handleExportRegistrations]", err);
       toast.dismiss(exportToastId);
@@ -639,8 +720,6 @@ export default function ManageRegistrationPage() {
       setIsExporting(false);
     }
   }, [slug, data, getToken]);
-
-
 
   // Error state
   if (!isLoading && error) {
@@ -701,10 +780,10 @@ export default function ManageRegistrationPage() {
           eventDetails={
             eventDetails
               ? {
-                id: eventDetails.id,
-                slug: eventDetails.slug,
-                name: eventDetails.name,
-              }
+                  id: eventDetails.id,
+                  slug: eventDetails.slug,
+                  name: eventDetails.name,
+                }
               : null
           }
         />
@@ -721,9 +800,7 @@ export default function ManageRegistrationPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <Select
               value={activeTab}
-              onValueChange={(value) =>
-                setActiveTab(value as any)
-              }
+              onValueChange={(value) => setActiveTab(value as any)}
             >
               <SelectTrigger className="w-[200px] h-10 rounded-full bg-primary-50 border-primary-100 text-foreground font-medium focus:ring-1 focus:ring-primary/20">
                 <div className="flex items-center gap-2">
@@ -732,11 +809,21 @@ export default function ManageRegistrationPage() {
                 </div>
               </SelectTrigger>
               <SelectContent className="rounded-xl border-border shadow-lg">
-                <SelectItem value="All" className="rounded-lg">All Registrations ({data.length})</SelectItem>
-                <SelectItem value="Completed" className="rounded-lg">Completed ({completedCount})</SelectItem>
-                <SelectItem value="Incomplete" className="rounded-lg">Incomplete ({incompleteCount})</SelectItem>
-                <SelectItem value="Pending" className="rounded-lg">Pending Approval ({pendingCount})</SelectItem>
-                <SelectItem value="Approved" className="rounded-lg">Approved ({approvedCount})</SelectItem>
+                <SelectItem value="All" className="rounded-lg">
+                  All Registrations ({data.length})
+                </SelectItem>
+                <SelectItem value="Completed" className="rounded-lg">
+                  Completed ({completedCount})
+                </SelectItem>
+                <SelectItem value="Incomplete" className="rounded-lg">
+                  Incomplete ({incompleteCount})
+                </SelectItem>
+                <SelectItem value="Pending" className="rounded-lg">
+                  Pending Approval ({pendingCount})
+                </SelectItem>
+                <SelectItem value="Approved" className="rounded-lg">
+                  Approved ({approvedCount})
+                </SelectItem>
               </SelectContent>
             </Select>
 
@@ -749,9 +836,15 @@ export default function ManageRegistrationPage() {
                   </div>
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-border shadow-lg">
-                  <SelectItem value="All" className="rounded-lg">All Tiers</SelectItem>
+                  <SelectItem value="All" className="rounded-lg">
+                    All Tiers
+                  </SelectItem>
                   {ticketTiers.map((tier: any) => (
-                    <SelectItem key={tier.id} value={tier.id} className="rounded-lg">
+                    <SelectItem
+                      key={tier.id}
+                      value={tier.id}
+                      className="rounded-lg"
+                    >
                       {tier.name}
                     </SelectItem>
                   ))}
@@ -777,7 +870,9 @@ export default function ManageRegistrationPage() {
                 variant="default"
                 size="sm"
                 className="bg-primary-600 hover:bg-primary-700 text-white rounded-full px-4 flex items-center gap-2 animate-in zoom-in duration-200"
-                onClick={() => handleBulkApprove(selectedRows.map(r => r.original.id))}
+                onClick={() =>
+                  handleBulkApprove(selectedRows.map((r) => r.original.id))
+                }
                 disabled={isBulkApproving}
               >
                 {isBulkApproving ? (
@@ -785,7 +880,9 @@ export default function ManageRegistrationPage() {
                 ) : (
                   <Check className="w-4 h-4" />
                 )}
-                {isBulkApproving ? "Approving..." : `Approve All (${selectedCount})`}
+                {isBulkApproving
+                  ? "Approving..."
+                  : `Approve All (${selectedCount})`}
               </Button>
             )}
 
@@ -812,19 +909,26 @@ export default function ManageRegistrationPage() {
             <Table className="min-w-[1000px] w-full border border-neutral-300">
               <TableHeader className="bg-primary-800">
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                  <TableRow
+                    key={headerGroup.id}
+                    className="hover:bg-transparent border-none"
+                  >
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
                         className="text-neutral-100 font-normal text-sm whitespace-nowrap py-3 border-r border-white/30 last:border-r-0"
                       >
-                        <div className={header.id === 'name' ? 'text-left' : 'text-center'}>
+                        <div
+                          className={
+                            header.id === "name" ? "text-left" : "text-center"
+                          }
+                        >
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
                         </div>
                       </TableHead>
                     ))}
@@ -843,8 +947,17 @@ export default function ManageRegistrationPage() {
                           key={cell.id}
                           className="py-4 px-4 border-r border-neutral-300 last:border-r-0"
                         >
-                          <div className={cell.column.id === 'name' ? 'text-left' : 'text-center'}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          <div
+                            className={
+                              cell.column.id === "name"
+                                ? "text-left"
+                                : "text-center"
+                            }
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
                           </div>
                         </TableCell>
                       ))}
@@ -852,7 +965,10 @@ export default function ManageRegistrationPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
                       No results.
                     </TableCell>
                   </TableRow>

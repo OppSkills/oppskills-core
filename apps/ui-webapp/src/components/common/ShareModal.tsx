@@ -139,7 +139,10 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="max-w-[90vw] sm:max-w-sm p-0 overflow-hidden border-none bg-background rounded-3xl!">
+      <DialogContent
+        showCloseButton={false}
+        className="max-w-[90vw] sm:max-w-sm p-0 overflow-hidden border-none bg-background rounded-3xl!"
+      >
         <div className="relative">
           <DialogHeader className="mb-6 bg-neutral-300 px-6 py-4 flex flex-row justify-between items-center">
             <div className="flex justify-between items-start w-full">
@@ -148,7 +151,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   Share {title}
                 </DialogTitle>
                 <DialogClose asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-neutral-100 transition-all active:scale-95">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full h-10 w-10 hover:bg-neutral-100 transition-all active:scale-95"
+                  >
                     <IconX size={24} />
                   </Button>
                 </DialogClose>
@@ -159,21 +166,25 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           {/* Share Grid */}
           <div className="grid grid-cols-4 gap-4 px-4 sm:px-6">
             {shareOptions.map((option) => (
-              <div key={option.name} className="flex w-full flex-col gap-2 justify-center items-center group cursor-pointer relative" onClick={option.onClick}>
+              <div
+                key={option.name}
+                className="flex w-full flex-col gap-2 justify-center items-center group cursor-pointer relative"
+                onClick={option.onClick}
+              >
                 {"isHot" in option && option.isHot && (
                   <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ 
+                    animate={{
                       scale: [1, 1.1, 1],
-                      opacity: 1 
+                      opacity: 1,
                     }}
                     transition={{
                       scale: {
                         repeat: Infinity,
                         duration: 1.5,
-                        ease: "easeInOut"
+                        ease: "easeInOut",
                       },
-                      opacity: { duration: 0.2 }
+                      opacity: { duration: 0.2 },
                     }}
                     className="absolute -top-1 -right-1 z-10 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-red-500 to-orange-500 text-[10px] font-bold text-white shadow-sm border border-white/20"
                   >
@@ -183,18 +194,23 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                 <div className="flex justify-center items-center w-12 h-12 rounded-full bg-neutral-200 border border-neutral-200 group-hover:border-primary transition-colors group-hover:bg-primary/10 text-neutral-700">
                   {option.icon}
                 </div>
-                <p className="text-sm font-medium text-neutral-900 group-hover:text-primary transition-colors">{option.name}</p>
+                <p className="text-sm font-medium text-neutral-900 group-hover:text-primary transition-colors">
+                  {option.name}
+                </p>
               </div>
             ))}
           </div>
 
           {/* Link Display Section */}
           <div className="mt-8 space-y-3 px-6 pb-6">
-            <p className="text-base text-neutral-900">
-              Copy Link
-            </p>
+            <p className="text-base text-neutral-900">Copy Link</p>
             <div className="flex items-center gap-2 p-2 rounded-full border bg-neutral-50 hover:bg-neutral-100 transition-colors group">
-              <input type="text" readOnly value={link} className="flex-1 text-neutral-600 px-2 bg-transparent text-sm outline-none border-0 outline-0 truncate" />
+              <input
+                type="text"
+                readOnly
+                value={link}
+                className="flex-1 text-neutral-600 px-2 bg-transparent text-sm outline-none border-0 outline-0 truncate"
+              />
               <Button
                 size="sm"
                 variant="ghost"

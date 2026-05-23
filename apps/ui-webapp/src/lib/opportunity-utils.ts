@@ -8,7 +8,7 @@
  */
 export function getDeterministicPseudoImpressions(
   registrationCount: number | null | undefined,
-  createdAt: string | Date | undefined
+  createdAt: string | Date | undefined,
 ): number {
   if (!registrationCount || registrationCount <= 0) return 0;
   if (!createdAt) return registrationCount * 2; // Simple fallback
@@ -18,7 +18,7 @@ export function getDeterministicPseudoImpressions(
 
   const hoursOld = Math.max(
     1,
-    Math.floor((now - createdTime) / (1000 * 60 * 60))
+    Math.floor((now - createdTime) / (1000 * 60 * 60)),
   );
 
   const registrationBase = registrationCount * 6;

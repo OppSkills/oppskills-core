@@ -59,7 +59,7 @@ export class CreateOnboardingDto {
         UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT,
       ].includes(o.userCategory) &&
       !o.collegeSkipped &&
-      !o.collegeId
+      !o.collegeId,
   )
   @IsString()
   @IsNotEmpty()
@@ -72,7 +72,7 @@ export class CreateOnboardingDto {
         UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT,
       ].includes(o.userCategory) &&
       !o.collegeSkipped &&
-      !o.collegeName
+      !o.collegeName,
   )
   @IsString()
   @IsNotEmpty()
@@ -82,7 +82,7 @@ export class CreateOnboardingDto {
     [
       UserCategoryValue.COLLEGE_STUDENT,
       UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT,
-    ].includes(o.userCategory)
+    ].includes(o.userCategory),
   )
   @IsString()
   @IsOptional()
@@ -92,7 +92,7 @@ export class CreateOnboardingDto {
     [
       UserCategoryValue.COLLEGE_STUDENT,
       UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT,
-    ].includes(o.userCategory)
+    ].includes(o.userCategory),
   )
   @IsInt()
   @Min(1900)
@@ -118,7 +118,7 @@ export class CreateOnboardingDto {
   // Step 3: Location (optional — e.g. event registration flow without location step)
   @IsString()
   @IsOptional()
-  locationCity?: string;
+  locationCoords?: string;
 
   @IsString()
   @IsOptional()
@@ -127,6 +127,10 @@ export class CreateOnboardingDto {
   @IsString()
   @IsOptional()
   locationCountry?: string;
+
+  @IsString()
+  @IsOptional()
+  locationPlaceId?: string;
 
   // Step 4: Interests and Skills
   @IsArray()
@@ -206,7 +210,7 @@ export class UpdateOnboardingDto {
 
   @IsString()
   @IsOptional()
-  locationCity?: string;
+  locationCoords?: string;
 
   @IsString()
   @IsOptional()
@@ -215,6 +219,10 @@ export class UpdateOnboardingDto {
   @IsString()
   @IsOptional()
   locationCountry?: string;
+
+  @IsString()
+  @IsOptional()
+  locationPlaceId?: string;
 
   @IsArray()
   @IsString({ each: true })
@@ -258,7 +266,7 @@ export interface OnboardingProfileResponseDto {
   collegeSkipped: boolean;
   companyName?: string | null;
   jobTitle?: string | null;
-  locationCity?: string | null;
+  locationCoords?: string | null;
   locationState?: string | null;
   locationCountry?: string | null;
   interests: string[];

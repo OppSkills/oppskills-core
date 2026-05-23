@@ -73,9 +73,7 @@ import type {
   ParticipantTypeValue,
   VisibilityValue,
 } from "@oppskills/types";
-import {
-  createHackathon,
-} from "@/lib/api/hackathonApi";
+import { createHackathon } from "@/lib/api/hackathonApi";
 import { getMyFestivals } from "@/lib/api/festivalApi";
 import CreateFestivalModal from "@/components/ui/derived/CreateFestivalModal";
 import { presignImageUpload } from "@/lib/api/mediaApi";
@@ -94,8 +92,6 @@ export default function Page() {
   const selectedFestivalIdRef = useRef<string | undefined>(undefined);
   const [formCompleted, setFormCompleted] = useState(false);
 
-
-
   interface FormData {
     eventFestName: string;
     festivalId?: string;
@@ -104,6 +100,7 @@ export default function Page() {
     eventStartDate: Date | undefined;
     eventEndDate: Date | undefined;
     eventLocation: string;
+    eventLocationPlaceId: string | undefined;
     eventTimeFrom: string;
     eventDescription: string;
     eventThumbnail: string;
@@ -121,6 +118,7 @@ export default function Page() {
     eventStartDate: undefined,
     eventEndDate: undefined,
     eventLocation: "",
+    eventLocationPlaceId: undefined,
     eventTimeFrom: "12:00",
     eventDescription: "",
     eventThumbnail: "",
@@ -216,7 +214,11 @@ export default function Page() {
     let url = trimmed;
     if (url.startsWith("//")) {
       url = `https:${url}`;
-    } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+    } else if (
+      !url.startsWith("http://") &&
+      !url.startsWith("https://") &&
+      !url.startsWith("/")
+    ) {
       url = `https://${url}`;
     }
     try {
@@ -351,12 +353,13 @@ export default function Page() {
    */
   function toLocationDto(
     input: string,
+    placeId?: string,
   ): HackathonLocationDto | FestivalLocationDto | undefined {
     const trimmed = input.trim();
     if (trimmed.length === 0) return undefined;
 
     if (trimmed.startsWith("OFFLINE:")) {
-      return { type: "PHYSICAL", address: trimmed.substring(8).trim() };
+      return { type: "PHYSICAL", address: trimmed.substring(8).trim(), placeId };
     }
     if (trimmed.startsWith("VIRTUAL:")) {
       return { type: "VIRTUAL", virtualLink: trimmed.substring(8).trim() };
@@ -366,12 +369,16 @@ export default function Page() {
       let url = trimmed;
       if (url.startsWith("//")) {
         url = `https:${url}`;
-      } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+      } else if (
+        !url.startsWith("http://") &&
+        !url.startsWith("https://") &&
+        !url.startsWith("/")
+      ) {
         url = `https://${url}`;
       }
       return { type: "VIRTUAL", virtualLink: url };
     }
-    return { type: "PHYSICAL", address: trimmed };
+    return { type: "PHYSICAL", address: trimmed, placeId };
   }
 
   /**
@@ -498,7 +505,7 @@ export default function Page() {
           <BannerUploader
             imageUrl={
               typeof formData.eventThumbnail === "string" &&
-                formData.eventThumbnail.trim().length > 0
+              formData.eventThumbnail.trim().length > 0
                 ? formData.eventThumbnail.trim()
                 : "/tmp/hackathon.jpg"
             }
@@ -785,7 +792,9 @@ export default function Page() {
             <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4">
               <LocationInputModal
                 value={formData.eventLocation}
-                onChange={(val) => setFormData({ ...formData, eventLocation: val })}
+                onChange={(val, placeId) =>
+                  setFormData({ ...formData, eventLocation: val, eventLocationPlaceId: placeId })
+                }
                 label="Add Hackathon Location"
                 subLabel="Offline location or virtual link"
               />
@@ -845,7 +854,7 @@ export default function Page() {
                   subLabel={
                     formData.eventDescription
                       ? formData.eventDescription.replace(/<[^>]*>?/gm, "") +
-                      (formData.eventDescription.length > 50 ? "..." : "")
+                        (formData.eventDescription.length > 50 ? "..." : "")
                       : undefined
                   }
                   className="h-full"
@@ -1052,7 +1061,11 @@ export default function Page() {
                           let url = formData.eventThumbnail.trim();
                           if (url.startsWith("//")) {
                             url = `https:${url}`;
-                          } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+                          } else if (
+                            !url.startsWith("http://") &&
+                            !url.startsWith("https://") &&
+                            !url.startsWith("/")
+                          ) {
                             url = `https://${url}`;
                           }
                           return url;
@@ -1066,7 +1079,7 @@ export default function Page() {
                     participantType: toParticipantTypeValue(
                       formData.participantType,
                     ),
-                    location: toLocationDto(formData.eventLocation) as
+                    location: toLocationDto(formData.eventLocation, formData.eventLocationPlaceId) as
                       | HackathonLocationDto
                       | undefined,
                     registrationDeadline: toIsoDateOnly(

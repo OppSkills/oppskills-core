@@ -326,7 +326,9 @@ export default function OpportunitySettingsPage({
                     {getStatusBadge(hackathon.status)}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-neutral-500 font-medium">Approval:</span>
+                    <span className="text-sm text-neutral-500 font-medium">
+                      Approval:
+                    </span>
                     {getApprovalBadge(hackathon.approvalStatus)}
                   </div>
                 </div>
@@ -356,8 +358,8 @@ export default function OpportunitySettingsPage({
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
                     <p className="text-sm text-yellow-800 flex items-center gap-2 inter font-medium">
                       <Clock className="w-4 h-4" />
-                      Published — awaiting admin approval. Registrations stay closed
-                      until an admin approves.
+                      Published — awaiting admin approval. Registrations stay
+                      closed until an admin approves.
                     </p>
                   </div>
                 )}
@@ -387,8 +389,8 @@ export default function OpportunitySettingsPage({
 
                 {isPendingApproval && (
                   <p className="text-sm text-neutral-500 inter">
-                    Published — waiting for an admin to approve. Registrations open
-                    after approval.
+                    Published — waiting for an admin to approve. Registrations
+                    open after approval.
                   </p>
                 )}
 
@@ -403,52 +405,55 @@ export default function OpportunitySettingsPage({
             {/* Registration Control */}
             {(hackathon.status === "PUBLISHED" ||
               hackathon.status === "ONGOING") && (
-                <Container
-                  heading="Registration Control"
-                  description="Pause registrations while keeping the opportunity publicly visible"
-                >
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between bg-primary-50/20 p-4 rounded-xl border border-primary-100">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="pause-registrations" className="text-base font-bold poppins">
-                          Pause Registrations
-                        </Label>
-                        <p className="text-sm text-neutral-500 inter">
-                          {hackathon.isRegistrationPaused
-                            ? "Registrations are currently paused"
-                            : "Registrations are open"}
-                        </p>
-                      </div>
-                      <Switch
-                        id="pause-registrations"
-                        checked={hackathon.isRegistrationPaused ?? false}
-                        onCheckedChange={(checked) =>
-                          toggleRegistrationPauseMutation.mutate(checked)
-                        }
-                        disabled={toggleRegistrationPauseMutation.isPending}
-                      />
+              <Container
+                heading="Registration Control"
+                description="Pause registrations while keeping the opportunity publicly visible"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between bg-primary-50/20 p-4 rounded-xl border border-primary-100">
+                    <div className="space-y-0.5">
+                      <Label
+                        htmlFor="pause-registrations"
+                        className="text-base font-bold poppins"
+                      >
+                        Pause Registrations
+                      </Label>
+                      <p className="text-sm text-neutral-500 inter">
+                        {hackathon.isRegistrationPaused
+                          ? "Registrations are currently paused"
+                          : "Registrations are open"}
+                      </p>
                     </div>
-
-                    {hackathon.isRegistrationPaused && (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-2">
-                        <Pause className="w-4 h-4 text-yellow-700" />
-                        <p className="text-sm text-yellow-800 inter font-medium">
-                          New registrations are blocked. Toggle off to resume.
-                        </p>
-                      </div>
-                    )}
-
-                    {!hackathon.isRegistrationPaused && (
-                      <div className="p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
-                        <Play className="w-4 h-4 text-green-700" />
-                        <p className="text-sm text-green-800 inter font-medium">
-                          Registrations are open and accepting participants.
-                        </p>
-                      </div>
-                    )}
+                    <Switch
+                      id="pause-registrations"
+                      checked={hackathon.isRegistrationPaused ?? false}
+                      onCheckedChange={(checked) =>
+                        toggleRegistrationPauseMutation.mutate(checked)
+                      }
+                      disabled={toggleRegistrationPauseMutation.isPending}
+                    />
                   </div>
-                </Container>
-              )}
+
+                  {hackathon.isRegistrationPaused && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-2">
+                      <Pause className="w-4 h-4 text-yellow-700" />
+                      <p className="text-sm text-yellow-800 inter font-medium">
+                        New registrations are blocked. Toggle off to resume.
+                      </p>
+                    </div>
+                  )}
+
+                  {!hackathon.isRegistrationPaused && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+                      <Play className="w-4 h-4 text-green-700" />
+                      <p className="text-sm text-green-800 inter font-medium">
+                        Registrations are open and accepting participants.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Container>
+            )}
 
             {/* Status Actions */}
             {!isTerminal && (
@@ -459,37 +464,41 @@ export default function OpportunitySettingsPage({
                 <div className="flex flex-wrap gap-3 pt-2">
                   {(hackathon.status === "PUBLISHED" ||
                     hackathon.status === "ONGOING") && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="rounded-full font-bold border-primary-100 text-primary-600 hover:bg-primary-50"
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="rounded-full font-bold border-primary-100 text-primary-600 hover:bg-primary-50"
+                        >
+                          <Undo2 className="w-4 h-4 mr-2" />
+                          Move to Draft
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-2xl border-primary-100">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="poppins font-black text-2xl">
+                            Move to Draft?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="inter">
+                            This will unpublish your opportunity and move it
+                            back to draft status. The opportunity will no longer
+                            be visible to the public.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="rounded-full">
+                            Keep Published
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => updateStatusMutation.mutate("DRAFT")}
+                            className="rounded-full bg-primary-500 hover:bg-primary-600"
                           >
-                            <Undo2 className="w-4 h-4 mr-2" />
                             Move to Draft
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="rounded-2xl border-primary-100">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="poppins font-black text-2xl">Move to Draft?</AlertDialogTitle>
-                            <AlertDialogDescription className="inter">
-                              This will unpublish your opportunity and move it back to
-                              draft status. The opportunity will no longer be visible
-                              to the public.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="rounded-full">Keep Published</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => updateStatusMutation.mutate("DRAFT")}
-                              className="rounded-full bg-primary-500 hover:bg-primary-600"
-                            >
-                              Move to Draft
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
 
                   {hackathon.status === "PUBLISHED" &&
                     hackathon.approvalStatus === "APPROVED" && (
@@ -528,15 +537,22 @@ export default function OpportunitySettingsPage({
                     </AlertDialogTrigger>
                     <AlertDialogContent className="rounded-2xl border-amber-100">
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="poppins font-black text-2xl">Cancel Opportunity?</AlertDialogTitle>
+                        <AlertDialogTitle className="poppins font-black text-2xl">
+                          Cancel Opportunity?
+                        </AlertDialogTitle>
                         <AlertDialogDescription className="inter">
-                          This will mark the opportunity as cancelled. This action cannot be undone.
+                          This will mark the opportunity as cancelled. This
+                          action cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-full">Keep Opportunity</AlertDialogCancel>
+                        <AlertDialogCancel className="rounded-full">
+                          Keep Opportunity
+                        </AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => updateStatusMutation.mutate("CANCELLED")}
+                          onClick={() =>
+                            updateStatusMutation.mutate("CANCELLED")
+                          }
                           className="rounded-full bg-amber-600 hover:bg-amber-700"
                         >
                           Cancel Opportunity
@@ -557,27 +573,37 @@ export default function OpportunitySettingsPage({
               <div className="space-y-4 pt-2">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="rounded-full font-bold px-8">
+                    <Button
+                      variant="destructive"
+                      className="rounded-full font-bold px-8"
+                    >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Delete Opportunity
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent className="rounded-2xl border-red-100">
                     <AlertDialogHeader>
-                      <AlertDialogTitle className="poppins font-black text-2xl text-red-600">Delete Opportunity?</AlertDialogTitle>
+                      <AlertDialogTitle className="poppins font-black text-2xl text-red-600">
+                        Delete Opportunity?
+                      </AlertDialogTitle>
                       <AlertDialogDescription className="space-y-4 inter">
                         <p>
                           This action is permanent and cannot be undone. All
                           data will be permanently deleted.
                         </p>
                         <div className="bg-red-50 p-4 rounded-xl border border-red-100">
-                          <Label htmlFor="confirm-delete" className="text-sm font-bold text-red-800 mb-2 block">
+                          <Label
+                            htmlFor="confirm-delete"
+                            className="text-sm font-bold text-red-800 mb-2 block"
+                          >
                             Type <strong>{hackathon.name}</strong> to confirm:
                           </Label>
                           <Input
                             id="confirm-delete"
                             value={deleteConfirmation}
-                            onChange={(e) => setDeleteConfirmation(e.target.value)}
+                            onChange={(e) =>
+                              setDeleteConfirmation(e.target.value)
+                            }
                             placeholder={hackathon.name}
                             className="mt-2 bg-white rounded-xl border-red-200 focus:ring-red-500"
                           />
@@ -585,7 +611,10 @@ export default function OpportunitySettingsPage({
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel onClick={() => setDeleteConfirmation("")} className="rounded-full">
+                      <AlertDialogCancel
+                        onClick={() => setDeleteConfirmation("")}
+                        className="rounded-full"
+                      >
                         Cancel
                       </AlertDialogCancel>
                       <AlertDialogAction
@@ -606,7 +635,8 @@ export default function OpportunitySettingsPage({
                 </AlertDialog>
 
                 <p className="text-xs text-neutral-400 inter">
-                  Deleting this opportunity will permanently remove all associated records and data.
+                  Deleting this opportunity will permanently remove all
+                  associated records and data.
                 </p>
               </div>
             </Container>

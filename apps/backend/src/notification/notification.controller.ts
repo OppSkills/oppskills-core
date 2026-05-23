@@ -9,7 +9,12 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Request } from 'express';
 import { ClerkAuthGuard } from '../common/clerk-auth.guard';
 import { CreateNotificationDto } from '@oppskills/types';
@@ -33,7 +38,10 @@ export class NotificationController {
   @ApiOperation({
     summary: 'Schedule/Request a new notification for an event or hackathon',
   })
-  @ApiResponse({ status: 201, description: 'Notification scheduled successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Notification scheduled successfully',
+  })
   @ApiResponse({ status: 400, description: 'Invalid payload provided' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -63,7 +71,10 @@ export class NotificationController {
       throw new BadRequestException('User ID is required.');
     }
     const validEventId = assertNonEmptyId(eventId, 'eventId');
-    return this.notificationService.listNotificationsForEvent(validEventId, userId);
+    return this.notificationService.listNotificationsForEvent(
+      validEventId,
+      userId,
+    );
   }
 
   @Get('hackathon/:hackathonId')
@@ -103,7 +114,10 @@ export class NotificationController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete or cancel a notification by its ID' })
-  @ApiResponse({ status: 200, description: 'Notification deleted successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification deleted successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Notification not found' })

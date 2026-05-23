@@ -1,8 +1,22 @@
 "use client";
 
 import * as React from "react";
-import { addDays, format, startOfToday, startOfYesterday, startOfWeek, startOfMonth, startOfYear, isSameDay } from "date-fns";
-import { Calendar as CalendarIcon, ChevronDown, Filter, Zap } from "lucide-react";
+import {
+  addDays,
+  format,
+  startOfToday,
+  startOfYesterday,
+  startOfWeek,
+  startOfMonth,
+  startOfYear,
+  isSameDay,
+} from "date-fns";
+import {
+  Calendar as CalendarIcon,
+  ChevronDown,
+  Filter,
+  Zap,
+} from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
@@ -32,9 +46,9 @@ export function DateRangeFilter({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const currentPeriod = searchParams.get('period') || 'all_time';
-  const currentFrom = searchParams.get('from');
-  const currentTo = searchParams.get('to');
+  const currentPeriod = searchParams.get("period") || "all_time";
+  const currentFrom = searchParams.get("from");
+  const currentTo = searchParams.get("to");
 
   const [date, setDate] = React.useState<DateRange | undefined>(() => {
     if (currentFrom && currentTo) {
@@ -44,7 +58,9 @@ export function DateRangeFilter({
   });
 
   const [tempDate, setTempDate] = React.useState<DateRange | undefined>(date);
-  const [tempPeriod, setTempPeriod] = React.useState<string | null>(currentPeriod);
+  const [tempPeriod, setTempPeriod] = React.useState<string | null>(
+    currentPeriod,
+  );
 
   const [isOpen, setIsOpen] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
@@ -75,13 +91,13 @@ export function DateRangeFilter({
     const params = new URLSearchParams(searchParams.toString());
 
     if (tempPeriod) {
-      params.set('period', tempPeriod);
-      params.delete('from');
-      params.delete('to');
+      params.set("period", tempPeriod);
+      params.delete("from");
+      params.delete("to");
     } else if (tempDate?.from && tempDate?.to) {
-      params.delete('period');
-      params.set('from', format(tempDate.from, "yyyy-MM-dd"));
-      params.set('to', format(tempDate.to, "yyyy-MM-dd"));
+      params.delete("period");
+      params.set("from", format(tempDate.from, "yyyy-MM-dd"));
+      params.set("to", format(tempDate.to, "yyyy-MM-dd"));
     }
 
     router.push(`${pathname}?${params.toString()}`);
@@ -94,9 +110,9 @@ export function DateRangeFilter({
   };
 
   const displayLabel = () => {
-    if (currentPeriod && currentPeriod !== 'custom') {
-      const found = SHORTHANDS.find(s => s.value === currentPeriod);
-      return found ? found.label : currentPeriod.replace('_', ' ');
+    if (currentPeriod && currentPeriod !== "custom") {
+      const found = SHORTHANDS.find((s) => s.value === currentPeriod);
+      return found ? found.label : currentPeriod.replace("_", " ");
     }
     if (currentFrom && currentTo) {
       return `${format(new Date(currentFrom), "MMM dd")} - ${format(new Date(currentTo), "MMM dd")}`;
@@ -113,7 +129,7 @@ export function DateRangeFilter({
             variant={"outline"}
             className={cn(
               "w-fit justify-start text-left font-normal h-10 px-4 border-primary/20 hover:border-primary/50 transition-all duration-300 rounded-full bg-background/50 backdrop-blur-sm shadow-sm hover:shadow-md group",
-              !date && !currentPeriod && "text-muted-foreground"
+              !date && !currentPeriod && "text-muted-foreground",
             )}
           >
             <CalendarIcon className="mr-0 sm:mr-2 h-4 w-4 text-primary group-hover:scale-110 transition-transform duration-300" />
@@ -123,7 +139,12 @@ export function DateRangeFilter({
             <span className="inline-block sm:hidden font-medium ml-2 text-xs">
               {displayLabel()}
             </span>
-            <ChevronDown className={cn("ml-2 h-4 w-4 text-muted-foreground transition-transform duration-300", isOpen && "rotate-180")} />
+            <ChevronDown
+              className={cn(
+                "ml-2 h-4 w-4 text-muted-foreground transition-transform duration-300",
+                isOpen && "rotate-180",
+              )}
+            />
           </Button>
         </PopoverTrigger>
         <PopoverContent
@@ -143,7 +164,9 @@ export function DateRangeFilter({
               >
                 {/* Left Sidebar: Shorthands */}
                 <div className="w-full md:w-36 border-b md:border-b-0 md:border-r border-primary/10 p-2 flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible scrollbar-hide">
-                  <p className="hidden md:block text-xs uppercase font-bold text-muted-foreground px-2 mb-2 tracking-widest">Presets</p>
+                  <p className="hidden md:block text-xs uppercase font-bold text-muted-foreground px-2 mb-2 tracking-widest">
+                    Presets
+                  </p>
                   {SHORTHANDS.map((s) => (
                     <Button
                       key={s.value}
@@ -151,11 +174,20 @@ export function DateRangeFilter({
                       size="sm"
                       className={cn(
                         "justify-start text-xs h-9 px-3 rounded-lg transition-all",
-                        tempPeriod === s.value ? "bg-primary/10 text-primary font-bold" : "hover:bg-primary/5"
+                        tempPeriod === s.value
+                          ? "bg-primary/10 text-primary font-bold"
+                          : "hover:bg-primary/5",
                       )}
                       onClick={() => handleShorthandClick(s.value)}
                     >
-                      <Zap className={cn("mr-2 h-3 w-3", tempPeriod === s.value ? "text-primary" : "text-muted-foreground opacity-50")} />
+                      <Zap
+                        className={cn(
+                          "mr-2 h-3 w-3",
+                          tempPeriod === s.value
+                            ? "text-primary"
+                            : "text-muted-foreground opacity-50",
+                        )}
+                      />
                       {s.label}
                     </Button>
                   ))}
@@ -171,12 +203,20 @@ export function DateRangeFilter({
                       </h4>
                       {tempDate?.from && (
                         <p className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-widest">
-                          {tempDate.to ? `${format(tempDate.from, "MMM dd")} - ${format(tempDate.to, "MMM dd")}` : format(tempDate.from, "MMM dd")}
+                          {tempDate.to
+                            ? `${format(tempDate.from, "MMM dd")} - ${format(tempDate.to, "MMM dd")}`
+                            : format(tempDate.from, "MMM dd")}
                         </p>
                       )}
                     </div>
 
-                    <div className={cn("overflow-x-auto scrollbar-hide transition-opacity duration-300", tempPeriod === 'all_time' && "opacity-50 pointer-events-none")}>
+                    <div
+                      className={cn(
+                        "overflow-x-auto scrollbar-hide transition-opacity duration-300",
+                        tempPeriod === "all_time" &&
+                          "opacity-50 pointer-events-none",
+                      )}
+                    >
                       <Calendar
                         initialFocus
                         mode="range"
@@ -190,12 +230,18 @@ export function DateRangeFilter({
                         disabled={{ after: new Date() }}
                         className="rounded-lg [--cell-size:32px]"
                         classNames={{
-                          months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                          day_range_start: "bg-primary text-primary-foreground rounded-l-full !important",
-                          day_range_end: "bg-primary text-primary-foreground rounded-r-full !important",
-                          day_range_middle: "bg-primary/10 text-accent-foreground rounded-none !important",
-                          day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                          day_today: "bg-accent/50 text-accent-foreground font-bold",
+                          months:
+                            "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                          day_range_start:
+                            "bg-primary text-primary-foreground rounded-l-full !important",
+                          day_range_end:
+                            "bg-primary text-primary-foreground rounded-r-full !important",
+                          day_range_middle:
+                            "bg-primary/10 text-accent-foreground rounded-none !important",
+                          day_selected:
+                            "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                          day_today:
+                            "bg-accent/50 text-accent-foreground font-bold",
                         }}
                       />
                     </div>
@@ -215,7 +261,9 @@ export function DateRangeFilter({
                       size="sm"
                       className="text-xs px-6 h-9 rounded-lg shadow-lg"
                       onClick={handleApply}
-                      disabled={!tempPeriod && (!tempDate?.from || !tempDate?.to)}
+                      disabled={
+                        !tempPeriod && (!tempDate?.from || !tempDate?.to)
+                      }
                     >
                       Apply Filter
                     </Button>

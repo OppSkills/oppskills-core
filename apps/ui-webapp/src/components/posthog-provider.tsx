@@ -20,7 +20,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     if (!posthogKey) {
       if (process.env.NODE_ENV === "development") {
         console.warn(
-          "PostHog: NEXT_PUBLIC_POSTHOG_KEY is not set. PostHog analytics will be disabled."
+          "PostHog: NEXT_PUBLIC_POSTHOG_KEY is not set. PostHog analytics will be disabled.",
         );
       }
       return;
@@ -38,9 +38,8 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
      * main thread (seen as ~9s scripting in Performance). Disable replay on
      * dashboard routes; events/analytics still work via capture + identify.
      */
-    const disableSessionRecordingOnDashboard = window.location.pathname.startsWith(
-      "/dashboard",
-    );
+    const disableSessionRecordingOnDashboard =
+      window.location.pathname.startsWith("/dashboard");
 
     posthog.init(posthogKey, {
       api_host: posthogHost || "https://us.i.posthog.com",
@@ -53,7 +52,10 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
           console.log("PostHog initialized successfully");
         }
         // Remote config can re-enable replay; enforce off on dashboard after init.
-        if (window.location.pathname.startsWith("/dashboard") && ph.sessionRecordingStarted()) {
+        if (
+          window.location.pathname.startsWith("/dashboard") &&
+          ph.sessionRecordingStarted()
+        ) {
           ph.stopSessionRecording();
         }
       },

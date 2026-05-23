@@ -7,10 +7,5 @@ export default async function NotificationsPage(props: {
   const params = await props.params;
   const slug = params?.slug;
 
-  return (
-    <SendNotification
-      type="event"
-      slug={slug}
-    />
-  );
+  return <SendNotification type="event" slug={slug} />;
 }

@@ -41,7 +41,7 @@ export const ReferralAnalyticsCards = memo(function ReferralAnalyticsCards({
 
     const userEmail = user.primaryEmailAddress?.emailAddress.toLowerCase();
     const myReferral = referralsData.data.find(
-      (r) => r.referrer.email.toLowerCase() === userEmail
+      (r) => r.referrer.email.toLowerCase() === userEmail,
     );
     return myReferral?.code;
   }, [referralCode, user, referralsData]);

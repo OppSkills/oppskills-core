@@ -9,14 +9,16 @@ import { Suspense } from "react";
  */
 function SSOCallbackContent() {
   const searchParams = useSearchParams();
-  
+
   // Get the redirect URL from search params, or fallback to "/"
   return (
     <AuthenticateWithRedirectCallback
-      {...(searchParams.get("redirect_url") ? {
-        afterSignInUrl: searchParams.get("redirect_url") as string,
-        afterSignUpUrl: searchParams.get("redirect_url") as string
-      } : {})}
+      {...(searchParams.get("redirect_url")
+        ? {
+            afterSignInUrl: searchParams.get("redirect_url") as string,
+            afterSignUpUrl: searchParams.get("redirect_url") as string,
+          }
+        : {})}
       /**
        * When Clerk sign-up requires additional info (e.g. username is required),
        * route the user back into our app instead of Clerk-hosted completion UI.

@@ -6,21 +6,22 @@ OppSkills is a high-performance, scalable platform designed for organizing, disc
 
 ## 🚀 Tech Stack
 
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | [Next.js 16](https://nextjs.org/), React 19, Tailwind CSS 4, TanStack Query |
-| **Backend** | [NestJS 11](https://nestjs.com/), Node.js, Express |
-| **Database** | [Prisma 6](https://www.prisma.io/), PostgreSQL (via Docker) |
-| **Caching/Bus** | [Redis](https://redis.io/) (via Docker) |
-| **Auth** | [Clerk](https://clerk.com/) |
-| **Webhooks** | [Svix](https://www.svix.com/) |
-| **Monorepo** | [Turborepo](https://turbo.build/repo) |
+| Layer           | Technologies                                                                |
+| :-------------- | :-------------------------------------------------------------------------- |
+| **Frontend**    | [Next.js 16](https://nextjs.org/), React 19, Tailwind CSS 4, TanStack Query |
+| **Backend**     | [NestJS 11](https://nestjs.com/), Node.js, Express                          |
+| **Database**    | [Prisma 6](https://www.prisma.io/), PostgreSQL (via Docker)                 |
+| **Caching/Bus** | [Redis](https://redis.io/) (via Docker)                                     |
+| **Auth**        | [Clerk](https://clerk.com/)                                                 |
+| **Webhooks**    | [Svix](https://www.svix.com/)                                               |
+| **Monorepo**    | [Turborepo](https://turbo.build/repo)                                       |
 
 ---
 
 ## ⚙️ Prerequisites
 
 Ensure you have the following installed before starting:
+
 - **Node.js**: >= 18.x (LTS recommended)
 - **pnpm**: >= 10.5.2 (`npm install -g pnpm`)
 - **Docker Desktop**: Required for PostgreSQL and Redis
@@ -31,22 +32,27 @@ Ensure you have the following installed before starting:
 ## 🛠️ Getting Started
 
 ### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/OppSkills/oppskills-core
 cd oppskills-core
 ```
 
 ### 2. Install Dependencies
+
 ```bash
 pnpm install
 ```
 
 ### 3. Spin Up Infrastructure
+
 OppSkills uses Docker to manage local database and caching services.
+
 ```bash
 docker compose up -d
 ```
-*This starts **PostgreSQL** (port 5434) and **Redis** (port 6380).*
+
+_This starts **PostgreSQL** (port 5434) and **Redis** (port 6380)._
 
 ---
 
@@ -55,6 +61,7 @@ docker compose up -d
 You need to set up `.env.local` files for the backend and frontend. Use the templates below:
 
 ### Backend (`apps/backend/.env.local`)
+
 ```env
 DATABASE_URL="postgresql://oppskills:oppskills@localhost:5434/oppskills?schema=oppskills"
 CLERK_SECRET_KEY="sk_test_..."
@@ -64,6 +71,7 @@ REDISPORT="6380"
 ```
 
 ### Frontend (`apps/ui-webapp/.env.local`)
+
 ```env
 NEXT_PUBLIC_API_URL="http://localhost:3001"
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
@@ -85,6 +93,7 @@ Once your infrastructure is running, initialize the database:
 ## 📡 Webhooks & Svix
 
 To test Clerk user synchronization webhooks locally:
+
 1. Install Svix CLI: `npm install -g svix-cli`
 2. Start the listener:
    ```bash
@@ -97,19 +106,22 @@ To test Clerk user synchronization webhooks locally:
 ## 💻 Development Workflow
 
 ### Start All Services
+
 ```bash
 pnpm dev
 ```
+
 - **UI Webapp**: [http://localhost:3000](http://localhost:3000)
 - **Backend API**: [http://localhost:3001](http://localhost:3001)
 - **API Reference**: [http://localhost:3001/api-reference](http://localhost:3001/api-reference)
 
 ### Essential Commands
-| Command | Description |
-| :--- | :--- |
-| `pnpm build` | Build all projects in order |
-| `pnpm lint` | Run ESLint across the monorepo |
-| `pnpm format` | Format code using Prettier |
+
+| Command            | Description                    |
+| :----------------- | :----------------------------- |
+| `pnpm build`       | Build all projects in order    |
+| `pnpm lint`        | Run ESLint across the monorepo |
+| `pnpm format`      | Format code using Prettier     |
 | `pnpm check-types` | Run TypeScript compiler checks |
 
 ---
@@ -125,17 +137,18 @@ pnpm dev
 
 OppSkills utilizes a shared-nothing-architecture where possible, but leverages standard packages for core cross-cutting concerns:
 
-| Package | Purpose | Core Technologies |
-| :--- | :--- | :--- |
-| **`@oppskills/db`** | Single source of truth for the database schema and Prisma Client. | Prisma 6, PostgreSQL |
-| **`@oppskills/types`** | Shared DTOs, Enums, and TypeScript interfaces for full-stack type safety. | TypeScript, class-validator |
-| **`@oppskills/emails`** | Modular email templates used for automated platform notifications. | React Email, Resend |
+| Package                 | Purpose                                                                   | Core Technologies           |
+| :---------------------- | :------------------------------------------------------------------------ | :-------------------------- |
+| **`@oppskills/db`**     | Single source of truth for the database schema and Prisma Client.         | Prisma 6, PostgreSQL        |
+| **`@oppskills/types`**  | Shared DTOs, Enums, and TypeScript interfaces for full-stack type safety. | TypeScript, class-validator |
+| **`@oppskills/emails`** | Modular email templates used for automated platform notifications.        | React Email, Resend         |
 
 ---
 
 ## 📖 Documentation
 
 For detailed guides, please refer to the `docs/` directory:
+
 - [Architecture Overview](docs/architecture.md)
 - [Comprehensive Development Guide](docs/development.md)
 - [API Reference](docs/api.md)

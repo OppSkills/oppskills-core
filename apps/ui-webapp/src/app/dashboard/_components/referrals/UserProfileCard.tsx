@@ -1,6 +1,12 @@
 import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Building2, Mail, MapPin, GraduationCap, PencilLine } from "lucide-react";
+import {
+  Building2,
+  Mail,
+  MapPin,
+  GraduationCap,
+  PencilLine,
+} from "lucide-react";
 
 import { formatDateTime } from "@/lib/utils/date";
 
@@ -17,7 +23,6 @@ interface UserProfileCardProps {
 }
 
 export function UserProfileCard({ user }: UserProfileCardProps) {
-
   return (
     <div className="flex flex-col gap-4 p-5 sm:p-6 rounded-2xl bg-white border border-neutral-200 shadow-sm">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">

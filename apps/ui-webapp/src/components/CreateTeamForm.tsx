@@ -233,7 +233,7 @@ export function CreateTeamForm({
     const defaultLabels = new Set(
       defaultFields.map((f) => f.label.toLowerCase()),
     );
-    
+
     // Also filter out all identity fields (school/college/company) from custom fields
     // since we add the appropriate one based on userCategory
     const identityFieldLabels = new Set([
@@ -241,10 +241,11 @@ export function CreateTeamForm({
       "college name",
       "company name",
     ]);
-    
+
     const filteredCustomFields = customFields.filter(
-      (f) => !defaultLabels.has(f.label.toLowerCase()) &&
-             !identityFieldLabels.has(f.label.toLowerCase()),
+      (f) =>
+        !defaultLabels.has(f.label.toLowerCase()) &&
+        !identityFieldLabels.has(f.label.toLowerCase()),
     );
 
     const mergedFields = [...defaultFields, ...filteredCustomFields].sort(
@@ -642,7 +643,9 @@ export function CreateTeamForm({
                   <div className="flex justify-between items-start text-neutral-500 mt-1 gap-2">
                     <div className="min-w-0">
                       <span>Transaction Charges</span>
-                      <p className="text-xs text-neutral-400 mt-0.5">Charged by payment partners to process your transaction.</p>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        Charged by payment partners to process your transaction.
+                      </p>
                     </div>
                     <span className="shrink-0">₹{fee.toFixed(2)}</span>
                   </div>

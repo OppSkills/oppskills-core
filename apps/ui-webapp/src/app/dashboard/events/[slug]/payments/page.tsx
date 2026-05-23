@@ -21,10 +21,7 @@ import {
   IndianRupee,
 } from "lucide-react";
 import PayoutDetailsForm from "@/components/ui/payment-side/PayoutDetailsForm";
-import {
-  usePayoutDetails,
-  useUpsertPayoutDetails,
-} from "@/hooks/usePayments";
+import { usePayoutDetails, useUpsertPayoutDetails } from "@/hooks/usePayments";
 import {
   useEventEarnings,
   useUpdateEventPricing,
@@ -89,7 +86,9 @@ export default function Page() {
     enabled: !!slug,
   });
 
-  const { data: payoutDetails, isLoading: payoutLoading } = usePayoutDetails(eventData?.id);
+  const { data: payoutDetails, isLoading: payoutLoading } = usePayoutDetails(
+    eventData?.id,
+  );
   const upsertPayoutDetails = useUpsertPayoutDetails(eventData?.id);
   const { data: earnings } = useEventEarnings(slug ?? "");
   const updatePricing = useUpdateEventPricing(slug ?? "");
@@ -123,8 +122,6 @@ export default function Page() {
       setHasHydrated(true);
     }
   }, [eventData, hasHydrated, getToken]);
-
-
 
   const runSaveMutation = useCallback((): void => {
     if (updatePricing.isPending) {
@@ -166,7 +163,9 @@ export default function Page() {
         onError: (err) => {
           setAutoSaveStatus("error");
           savingSnapshotRef.current = null;
-          toast.error(getApiErrorMessage(err, "Failed to save pricing settings"));
+          toast.error(
+            getApiErrorMessage(err, "Failed to save pricing settings"),
+          );
         },
       },
     );
@@ -208,14 +207,15 @@ export default function Page() {
 
   const handlePayoutDetailsSave = async (data: PayoutDetailsInput) => {
     try {
-      await upsertPayoutDetails.mutateAsync({ ...data, eventId: eventData?.id });
+      await upsertPayoutDetails.mutateAsync({
+        ...data,
+        eventId: eventData?.id,
+      });
       toast.success("Payout details saved successfully");
       setIsPayoutFormOpen(false);
     } catch (error) {
       console.error(error);
-      toast.error(
-        getApiErrorMessage(error, "Failed to save payout details"),
-      );
+      toast.error(getApiErrorMessage(error, "Failed to save payout details"));
     }
   };
 
@@ -224,8 +224,7 @@ export default function Page() {
     eventData &&
     eventData.status !== "COMPLETED" &&
     eventData.status !== "CANCELLED";
-  const canEditPricing =
-    !!isPricingLifecycleEditable && !registrationStarted;
+  const canEditPricing = !!isPricingLifecycleEditable && !registrationStarted;
   const canManageTicketTiers = !!isPricingLifecycleEditable;
 
   return (
@@ -252,5 +251,3 @@ export default function Page() {
     </div>
   );
 }
-
-

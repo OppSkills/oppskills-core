@@ -21,10 +21,16 @@ export default function AboutPage() {
 
           <div className="flex flex-col gap-6 max-w-2xl">
             <p className="text-neutral-600 text-lg md:text-xl leading-relaxed inter font-normal">
-              Oppskills is a skill-first opportunity platform designed to bridge the gap between learning and real-world exposure. We help students and early professionals discover, register for, and participate in meaningful opportunities that actually build careers—not just certificates.
+              Oppskills is a skill-first opportunity platform designed to bridge
+              the gap between learning and real-world exposure. We help students
+              and early professionals discover, register for, and participate in
+              meaningful opportunities that actually build careers—not just
+              certificates.
             </p>
             <p className="text-neutral-600 text-lg md:text-xl leading-relaxed inter font-normal">
-              From hackathons and workshops to internships, bootcamps, and community-driven events, Oppskills brings everything into one structured, accessible ecosystem.
+              From hackathons and workshops to internships, bootcamps, and
+              community-driven events, Oppskills brings everything into one
+              structured, accessible ecosystem.
             </p>
           </div>
         </div>
@@ -53,7 +59,9 @@ export default function AboutPage() {
           </CardHeader>
           <CardContent>
             <p className="text-neutral-600 text-lg leading-relaxed inter">
-              To empower students and early professionals by connecting them with skill-driven, credible opportunities that enable real-world learning, practical experience, and career growth.
+              To empower students and early professionals by connecting them
+              with skill-driven, credible opportunities that enable real-world
+              learning, practical experience, and career growth.
             </p>
           </CardContent>
         </Card>
@@ -66,7 +74,9 @@ export default function AboutPage() {
           </CardHeader>
           <CardContent>
             <p className="text-neutral-600 text-lg leading-relaxed inter">
-              To build a future where skills define success, and every learner has equal access to opportunities that transform potential into impact.
+              To build a future where skills define success, and every learner
+              has equal access to opportunities that transform potential into
+              impact.
             </p>
           </CardContent>
         </Card>
@@ -76,7 +86,6 @@ export default function AboutPage() {
         <UpcomingFeatures />
         <PromoPoster />
       </div>
-
     </div>
   );
 }

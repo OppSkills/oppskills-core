@@ -1,6 +1,6 @@
 # Onboarding API
 
-This guide explains how to complete a user's profile during the onboarding flow. 
+This guide explains how to complete a user's profile during the onboarding flow.
 
 For mobile (React Native) integrations, use the `apiClient.request` and TanStack Query patterns from the `mobile-client-guide.md`.
 
@@ -14,12 +14,14 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
   - `COLLEGE_STUDENT` needs `collegeId` or `collegeName` (unless `collegeSkipped` is true).
 
 ### React Native Example (TanStack Query)
+
 ```typescript
 const submitOnboarding = useMutation({
-  mutationFn: (data) => apiClient.request('/user-accounts/onboarding', {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
+  mutationFn: (data) =>
+    apiClient.request("/user-accounts/onboarding", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
   onSuccess: () => {
     // Refresh the user profile so the app knows they are onboarded
     queryClient.invalidateQueries({ queryKey: queryKeys.me });
@@ -28,6 +30,7 @@ const submitOnboarding = useMutation({
 ```
 
 ### Full Payload Example
+
 ```json
 {
   "gender": "MALE", // MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY
@@ -37,7 +40,7 @@ const submitOnboarding = useMutation({
   "collegeCurrentYear": "3rd Year",
   "collegePassoutYear": 2026,
   "collegeSkipped": false,
-  "locationCity": "Mumbai",
+  "locationCoords": "Mumbai",
   "locationState": "Maharashtra",
   "locationCountry": "India",
   "skills": ["React"],
@@ -51,13 +54,15 @@ const submitOnboarding = useMutation({
 
 ## 2. Partial Profile Updates
 
-You can update specific sections of a user's profile at any time. 
+You can update specific sections of a user's profile at any time.
 
 ### Update Basic Info (`PATCH /user-accounts/profile`)
+
 - **Usage:** Update names, gender, or category.
 - **Body:** `{ "firstName": "John", "lastName": "Doe", "gender": "MALE" }`
 
 ### Update Education (`PATCH /user-accounts/education`)
+
 - **Usage:** Update college, course, or grades.
 - **Body:**
   ```json
@@ -73,6 +78,7 @@ You can update specific sections of a user's profile at any time.
   ```
 
 ### Update Skills or Interests
+
 - **Skills:** `PATCH /user-accounts/skills` -> `{ "skills": ["React", "TypeScript"] }`
 - **Interests:** `PATCH /user-accounts/interests` -> `{ "interests": ["Open Source"] }`
 
@@ -81,15 +87,17 @@ You can update specific sections of a user's profile at any time.
 ## 3. Getting the Profile
 
 ### Fetch Current User (`GET /user-accounts/me`)
+
 - **Usage:** The first thing your app should do after login. It returns `onboarded` (true/false) to help you route the user.
 - **React Native Example:**
   ```typescript
   const { data: user } = useQuery({
     queryKey: queryKeys.me,
-    queryFn: () => apiClient.request('/user-accounts/me'),
-    staleTime: 60000, 
+    queryFn: () => apiClient.request("/user-accounts/me"),
+    staleTime: 60000,
   });
   ```
 
 ### Search Colleges (`GET /colleges/search?q=...`)
+
 - **Usage:** Powers the autocomplete dropdown when users search for their college during onboarding.

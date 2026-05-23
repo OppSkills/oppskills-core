@@ -43,7 +43,7 @@ export function ParticipantDirectMessage({
             <Heading style={heading}>Hi {firstName || "Participant"},</Heading>
 
             <Text style={subText}>
-              You have a new message from the organizer of{' '}
+              You have a new message from the organizer of{" "}
               <Link href={eventLink} style={link}>
                 {eventName}
               </Link>
@@ -51,9 +51,9 @@ export function ParticipantDirectMessage({
             </Text>
 
             <Section style={messageContainer}>
-              <div 
+              <div
                 style={messageBody}
-                dangerouslySetInnerHTML={{ __html: htmlBody }} 
+                dangerouslySetInnerHTML={{ __html: htmlBody }}
               />
             </Section>
 
@@ -113,18 +113,18 @@ const link = {
 };
 
 const messageContainer = {
-    backgroundColor: "#f9fafb",
-    borderRadius: "8px",
-    padding: "24px",
-    marginBottom: "24px",
-    border: "1px solid #f3f4f6",
+  backgroundColor: "#f9fafb",
+  borderRadius: "8px",
+  padding: "24px",
+  marginBottom: "24px",
+  border: "1px solid #f3f4f6",
 };
 
 const messageBody = {
-    fontSize: "16px",
-    lineHeight: "26px",
-    color: "#111827",
-    margin: "0",
+  fontSize: "16px",
+  lineHeight: "26px",
+  color: "#111827",
+  margin: "0",
 };
 
 const footerNote = {

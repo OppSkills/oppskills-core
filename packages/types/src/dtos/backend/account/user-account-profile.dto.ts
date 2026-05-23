@@ -1,14 +1,7 @@
-import { Type } from 'class-transformer';
-import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-} from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { GenderValue, UserCategoryValue } from '../../../enums';
+import { Type } from "class-transformer";
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { GenderValue, UserCategoryValue } from "../../../enums";
 
 /** PATCH `/user-accounts/profile` — partial identity + onboarding-aligned enum fields */
 export class UpdateProfileDto {
@@ -41,7 +34,8 @@ export class UpdateEducationDto {
   collegeId?: string | null;
 
   @ApiPropertyOptional({
-    description: 'College display name when collegeId is not set (resolution path)',
+    description:
+      "College display name when collegeId is not set (resolution path)",
   })
   @IsOptional()
   @IsString()

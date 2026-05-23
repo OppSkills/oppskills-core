@@ -27,7 +27,9 @@ export class CreateReferralDto {
   @IsString()
   entityId: string;
 
-  @ApiProperty({ description: "Exact email of existing user to assign as referrer" })
+  @ApiProperty({
+    description: "Exact email of existing user to assign as referrer",
+  })
   @IsEmail()
   referrerEmail: string;
 

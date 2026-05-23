@@ -44,9 +44,9 @@ export function HackathonJoinInviteContent() {
   const [preview, setPreview] = useState<TeamInvitePreviewResponse | null>(
     null,
   );
-  const [previewError, setPreviewError] = useState<"invalid" | "network" | null>(
-    null,
-  );
+  const [previewError, setPreviewError] = useState<
+    "invalid" | "network" | null
+  >(null);
   const [hackathon, setHackathon] = useState<HackathonPublic | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(true);
   const [existingTeam, setExistingTeam] = useState<boolean | null>(null);
@@ -154,10 +154,7 @@ export function HackathonJoinInviteContent() {
   };
 
   const canAttemptJoin =
-    preview &&
-    preview.registrationOpen &&
-    !preview.teamFull &&
-    hackathon?.id;
+    preview && preview.registrationOpen && !preview.teamFull && hackathon?.id;
 
   const handleContinue = () => {
     if (!canAttemptJoin || !hackathon) return;
@@ -247,8 +244,8 @@ export function HackathonJoinInviteContent() {
 
       {preview.teamFull && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          This team is full. Ask the leader for another team or create your
-          own from the competition page.
+          This team is full. Ask the leader for another team or create your own
+          from the competition page.
         </div>
       )}
 

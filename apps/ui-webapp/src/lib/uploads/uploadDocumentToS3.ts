@@ -27,7 +27,7 @@ export async function uploadDocumentToS3PresignedPost(input: {
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(
-      `S3 document upload failed (${res.status}). ${text.trim().length > 0 ? text : ""}`
+      `S3 document upload failed (${res.status}). ${text.trim().length > 0 ? text : ""}`,
     );
   }
 }

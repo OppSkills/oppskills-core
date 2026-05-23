@@ -2,7 +2,14 @@
 
 import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pencil, ShieldCheck, ChevronDown, Check, Loader2, Camera } from "lucide-react";
+import {
+  Pencil,
+  ShieldCheck,
+  ChevronDown,
+  Check,
+  Loader2,
+  Camera,
+} from "lucide-react";
 import { ProfileInput } from "./profile-input";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { updateProfile } from "@/lib/api/usersApi";
@@ -39,7 +46,10 @@ const CATEGORY_OPTIONS = [
   { label: "College Student", value: "COLLEGE_STUDENT" },
   { label: "Working Professional", value: "WORKING_PROFESSIONAL" },
   { label: "Fresher", value: "FRESHER" },
-  { label: "Professional School Student", value: "PROFESSIONAL_SCHOOL_STUDENT" },
+  {
+    label: "Professional School Student",
+    value: "PROFESSIONAL_SCHOOL_STUDENT",
+  },
 ];
 
 export function PersonalInfo({ data }: PersonalInfoProps) {
@@ -59,7 +69,9 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
 
   if (!data) return null;
 
-  const initials = `${formData.firstName?.charAt(0) || ""}${formData.lastName?.charAt(0) || ""}`.toUpperCase() || "U";
+  const initials =
+    `${formData.firstName?.charAt(0) || ""}${formData.lastName?.charAt(0) || ""}`.toUpperCase() ||
+    "U";
 
   const handleSave = async () => {
     if (!isEditing) {
@@ -75,9 +87,7 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
       await updateProfile(token, {
         firstName: formData.firstName || undefined,
         lastName: formData.lastName || undefined,
-        ...(formData.gender
-          ? { gender: formData.gender as GenderValue }
-          : {}),
+        ...(formData.gender ? { gender: formData.gender as GenderValue } : {}),
         ...(formData.userCategory
           ? { userCategory: formData.userCategory as UserCategoryValue }
           : {}),
@@ -113,7 +123,9 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
     try {
       if (!user) throw new Error("User not found");
       await user.setProfileImage({ file });
-      toast.success("Profile picture updated successfully", { id: loadingToast });
+      toast.success("Profile picture updated successfully", {
+        id: loadingToast,
+      });
     } catch (error) {
       console.error("Failed to update profile picture", error);
       toast.error("Failed to update profile picture", { id: loadingToast });
@@ -124,7 +136,10 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
     }
   };
 
-  const getLabel = (options: { label: string; value: string }[], value: string) => {
+  const getLabel = (
+    options: { label: string; value: string }[],
+    value: string,
+  ) => {
     return options.find((opt) => opt.value === value)?.label || "Select";
   };
 
@@ -144,7 +159,9 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
           ) : (
             <Pencil className="w-4 h-4" />
           )}
-          <span className="font-medium text-sm">{isEditing ? "Save" : "Edit"}</span>
+          <span className="font-medium text-sm">
+            {isEditing ? "Save" : "Edit"}
+          </span>
         </button>
       </div>
 
@@ -152,7 +169,10 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
         {/* Avatar Section */}
         <div className="relative self-center lg:self-start shrink-0 group">
           <Avatar className="h-40 w-40 shadow-sm rounded-full border-[6px] border-white relative overflow-hidden">
-            <AvatarImage src={user?.imageUrl || data.imageUrl || undefined} className="object-cover" />
+            <AvatarImage
+              src={user?.imageUrl || data.imageUrl || undefined}
+              className="object-cover"
+            />
             <AvatarFallback className="text-4xl font-bold bg-primary-100 text-primary-600 uppercase">
               {initials}
             </AvatarFallback>
@@ -163,7 +183,9 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
               disabled={isUploading || !isUserLoaded}
               className={cn(
                 "absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white transition-opacity duration-300",
-                isUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                isUploading
+                  ? "opacity-100"
+                  : "opacity-0 group-hover:opacity-100",
               )}
             >
               {isUploading ? (
@@ -171,7 +193,9 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
               ) : (
                 <>
                   <Camera className="w-8 h-8 mb-1" />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider">Change Photo</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider">
+                    Change Photo
+                  </span>
                 </>
               )}
             </button>
@@ -194,14 +218,18 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
             <ProfileInput
               label="First Name"
               value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, firstName: e.target.value })
+              }
               disabled={!isEditing}
               placeholder="First Name"
             />
             <ProfileInput
               label="Last Name"
               value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, lastName: e.target.value })
+              }
               disabled={!isEditing}
               placeholder="Last Name"
             />
@@ -214,20 +242,32 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
               type="email"
               defaultValue={data.email || ""}
               disabled={true}
-              icon={<ShieldCheck className="w-6 h-6 text-[#6B4EAB] shrink-0" fill="#6B4EAB" stroke="white" />}
+              icon={
+                <ShieldCheck
+                  className="w-6 h-6 text-[#6B4EAB] shrink-0"
+                  fill="#6B4EAB"
+                  stroke="white"
+                />
+              }
             />
           )}
 
           {/* Gender & User Type */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-neutral-400">Gender</label>
+              <label className="text-sm font-medium text-neutral-400">
+                Gender
+              </label>
               <DropdownMenu>
                 <DropdownMenuTrigger disabled={!isEditing} className="w-full">
                   <ProfileInput
                     defaultValue={getLabel(GENDER_OPTIONS, formData.gender)}
                     isSelect
-                    icon={isEditing ? <ChevronDown className="w-5 h-5 text-neutral-600" /> : undefined}
+                    icon={
+                      isEditing ? (
+                        <ChevronDown className="w-5 h-5 text-neutral-600" />
+                      ) : undefined
+                    }
                     disabled={!isEditing}
                     className="space-y-0"
                   />
@@ -236,7 +276,9 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
                   {GENDER_OPTIONS.map((opt) => (
                     <DropdownMenuItem
                       key={opt.value}
-                      onClick={() => setFormData({ ...formData, gender: opt.value })}
+                      onClick={() =>
+                        setFormData({ ...formData, gender: opt.value })
+                      }
                     >
                       {opt.label}
                     </DropdownMenuItem>
@@ -246,13 +288,22 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-neutral-400">User Type</label>
+              <label className="text-sm font-medium text-neutral-400">
+                User Type
+              </label>
               <DropdownMenu>
                 <DropdownMenuTrigger disabled={!isEditing} className="w-full">
                   <ProfileInput
-                    defaultValue={getLabel(CATEGORY_OPTIONS, formData.userCategory)}
+                    defaultValue={getLabel(
+                      CATEGORY_OPTIONS,
+                      formData.userCategory,
+                    )}
                     isSelect
-                    icon={isEditing ? <ChevronDown className="w-5 h-5 text-neutral-600" /> : undefined}
+                    icon={
+                      isEditing ? (
+                        <ChevronDown className="w-5 h-5 text-neutral-600" />
+                      ) : undefined
+                    }
                     disabled={!isEditing}
                     className="space-y-0"
                   />
@@ -261,7 +312,9 @@ export function PersonalInfo({ data }: PersonalInfoProps) {
                   {CATEGORY_OPTIONS.map((opt) => (
                     <DropdownMenuItem
                       key={opt.value}
-                      onClick={() => setFormData({ ...formData, userCategory: opt.value })}
+                      onClick={() =>
+                        setFormData({ ...formData, userCategory: opt.value })
+                      }
                     >
                       {opt.label}
                     </DropdownMenuItem>

@@ -12,7 +12,7 @@ model EventEntity {
   festivalId                String?                             @map("festival_id")
   locationType              LocationType?                       @map("location_type")
   locationAddress           String?                             @map("location_address")
-  locationCity              String?                             @map("location_city")
+  locationCoords            String?                             @map("location_coords")
   locationVirtualLink       String?                             @map("location_virtual_link")
   isFree                    Boolean                             @default(true) @map("is_free")
   entryFeeAmount            Decimal?                            @map("entry_fee_amount") @db.Decimal(12, 2)

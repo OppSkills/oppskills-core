@@ -10,6 +10,7 @@ const ALL_TABS = [
   { id: "details", label: "Details" },
   { id: "attachments", label: "Attachments" },
   { id: "prizes", label: "Prizes" },
+  { id: "location", label: "Location" },
 ];
 
 interface CompetitionTabsProps {
@@ -17,6 +18,7 @@ interface CompetitionTabsProps {
   hasRounds?: boolean;
   hasPrizes?: boolean;
   hasAttachments?: boolean;
+  hasLocation?: boolean;
   title?: string;
   slug?: string;
 }
@@ -26,6 +28,7 @@ export function CompetitionTabs({
   hasRounds = true,
   hasPrizes = true,
   hasAttachments = false,
+  hasLocation = false,
   title,
   slug,
 }: CompetitionTabsProps) {
@@ -35,9 +38,10 @@ export function CompetitionTabs({
       if (tab.id === "rounds" && !hasRounds) return false;
       if (tab.id === "prizes" && !hasPrizes) return false;
       if (tab.id === "attachments" && !hasAttachments) return false;
+      if (tab.id === "location" && !hasLocation) return false;
       return true;
     });
-  }, [hasRounds, hasPrizes, hasAttachments]);
+  }, [hasRounds, hasPrizes, hasAttachments, hasLocation]);
 
   const defaultTab = hasRounds ? "rounds" : "details";
 
@@ -63,7 +67,7 @@ export function CompetitionTabs({
                   "pb-3 text-sm sm:text-base font-semibold transition-colors relative",
                   isActive
                     ? "text-primary-600 border-b-2 border-primary-600"
-                    : "text-neutral-500 hover:text-neutral-800"
+                    : "text-neutral-500 hover:text-neutral-800",
                 )}
               >
                 {tab.label}

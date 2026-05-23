@@ -6,20 +6,20 @@ import {
   ValidateNested,
   IsNotEmpty,
   IsObject,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export enum BusinessType {
-  INDIVIDUAL = 'individual',
-  PARTNERSHIP = 'partnership',
-  PRIVATE_LIMITED = 'private_limited',
-  PUBLIC_LIMITED = 'public_limited',
-  LLP = 'llp',
-  NGO = 'ngo',
-  TRUST = 'trust',
-  SOCIETY = 'society',
-  NOT_YET_REGISTERED = 'not_yet_registered',
-  PROPRIETORSHIP = 'proprietorship',
+  INDIVIDUAL = "individual",
+  PARTNERSHIP = "partnership",
+  PRIVATE_LIMITED = "private_limited",
+  PUBLIC_LIMITED = "public_limited",
+  LLP = "llp",
+  NGO = "ngo",
+  TRUST = "trust",
+  SOCIETY = "society",
+  NOT_YET_REGISTERED = "not_yet_registered",
+  PROPRIETORSHIP = "proprietorship",
 }
 
 class AddressDto {

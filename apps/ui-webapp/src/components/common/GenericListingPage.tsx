@@ -1,16 +1,18 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
-import { SlidersHorizontal, Loader2, ChevronUp, ChevronDown } from "lucide-react";
+import {
+  SlidersHorizontal,
+  Loader2,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { ListingGridFallback } from "@/components/boneyard/loading-fallbacks";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ListingCard, ListingItem } from "./ListingCard";
-import {
-  GenericFilterSidebar,
-  FilterState,
-} from "./GenericFilterSidebar";
+import { GenericFilterSidebar, FilterState } from "./GenericFilterSidebar";
 import {
   Select,
   SelectContent,
@@ -29,17 +31,19 @@ interface GenericListingPageProps {
   hasMore?: boolean;
   isFetchingNextPage?: boolean;
   filters?: FilterState;
-  setFilters?: (filters: FilterState | ((prev: FilterState) => FilterState)) => void;
+  setFilters?: (
+    filters: FilterState | ((prev: FilterState) => FilterState),
+  ) => void;
   title?: string;
   description?: string;
   showPagination?: boolean;
   pagination?: {
-    setPerPage: (value: number) => void
-    perPage: number
-    curPage: number
-    totalPages: number
-    onPageChange: (value: number) => void
-  }
+    setPerPage: (value: number) => void;
+    perPage: number;
+    curPage: number;
+    totalPages: number;
+    onPageChange: (value: number) => void;
+  };
 }
 
 export function GenericListingPage({
@@ -57,7 +61,9 @@ export function GenericListingPage({
   pagination,
 }: GenericListingPageProps) {
   const [curSort, setCurSort] = useState(filters?.sort || "recently_added");
-  const [curSortOrder, setCurSortOrder] = useState<"asc" | "desc">(filters?.sortOrder || "desc");
+  const [curSortOrder, setCurSortOrder] = useState<"asc" | "desc">(
+    filters?.sortOrder || "desc",
+  );
 
   // Sync curSort from filters.sort (e.g. from Clear Filters)
   useEffect(() => {
@@ -71,8 +77,16 @@ export function GenericListingPage({
 
   // Sync sort to filters if it changes from UI
   useEffect(() => {
-    if (filters && setFilters && (filters.sort !== curSort || filters.sortOrder !== curSortOrder)) {
-      setFilters((prev) => ({ ...prev, sort: curSort, sortOrder: curSortOrder }));
+    if (
+      filters &&
+      setFilters &&
+      (filters.sort !== curSort || filters.sortOrder !== curSortOrder)
+    ) {
+      setFilters((prev) => ({
+        ...prev,
+        sort: curSort,
+        sortOrder: curSortOrder,
+      }));
     }
   }, [curSort, curSortOrder, filters, setFilters]);
 
@@ -94,11 +108,7 @@ export function GenericListingPage({
         <h1 className="text-3xl font-bold text-neutral-900 md:text-4xl">
           {title || "Opportunities"}
         </h1>
-        {description && (
-          <p className="mt-2 text-neutral-600">
-            {description}
-          </p>
-        )}
+        {description && <p className="mt-2 text-neutral-600">{description}</p>}
       </div>
 
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -128,10 +138,7 @@ export function GenericListingPage({
         {filters && setFilters && (
           <aside className="hidden min-w-40 max-w-64 shrink-0 lg:block">
             <div className="sticky top-20 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              <GenericFilterSidebar
-                filters={filters}
-                setFilters={setFilters}
-              />
+              <GenericFilterSidebar filters={filters} setFilters={setFilters} />
             </div>
           </aside>
         )}
@@ -154,7 +161,9 @@ export function GenericListingPage({
               <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed text-center">
                 <h3 className="text-lg font-semibold">No items found</h3>
                 <p className="text-sm text-muted-foreground">
-                  {filters ? "Try adjusting your filters." : "Check back later for new items."}
+                  {filters
+                    ? "Try adjusting your filters."
+                    : "Check back later for new items."}
                 </p>
                 {filters && setFilters && (
                   <Button
@@ -178,36 +187,39 @@ export function GenericListingPage({
             ) : (
               <div className="flex w-full gap-6 flex-col">
                 <div className="flex flex-col md:flex-row gap-4 sm:gap-0 w-full justify-between">
-                  <p className="text-sm text-neutral-900 font-medium">Showing {items.length} Results</p>
+                  <p className="text-sm text-neutral-900 font-medium">
+                    Showing {items.length} Results
+                  </p>
                   {filters && setFilters && (
                     <div className="flex items-center gap-4">
                       <p className="font-medium">Sort:</p>
 
                       {/* Desktop Sort List */}
                       <div className="hidden sm:flex gap-3 text-neutral-700 select-none">
-                        {
-                          [
-                            "Most Relevant",
-                            "Submission Date",
-                            "Recently Added",
-                            "Price Amount"
-                          ].map((e) => {
-                            const id = e.toLowerCase().replaceAll(" ", "_")
-                            const isActive = curSort === id;
-                            return (
-                              <div
-                                key={id}
-                                className={`flex items-center gap-1 cursor-pointer select-none transition-colors ${isActive ? "text-primary-600 font-bold" : "text-neutral-700 hover:text-primary-600"}`}
-                                onClick={() => handleSortClick(id)}
-                              >
-                                <p>{e}</p>
-                                {isActive && (
-                                  curSortOrder === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                                )}
-                              </div>
-                            )
-                          })
-                        }
+                        {[
+                          "Most Relevant",
+                          "Submission Date",
+                          "Recently Added",
+                          "Price Amount",
+                        ].map((e) => {
+                          const id = e.toLowerCase().replaceAll(" ", "_");
+                          const isActive = curSort === id;
+                          return (
+                            <div
+                              key={id}
+                              className={`flex items-center gap-1 cursor-pointer select-none transition-colors ${isActive ? "text-primary-600 font-bold" : "text-neutral-700 hover:text-primary-600"}`}
+                              onClick={() => handleSortClick(id)}
+                            >
+                              <p>{e}</p>
+                              {isActive &&
+                                (curSortOrder === "asc" ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                ))}
+                            </div>
+                          );
+                        })}
                       </div>
 
                       {/* Mobile Sort Dropdown */}
@@ -218,10 +230,18 @@ export function GenericListingPage({
                               <SelectValue placeholder="Sort by" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="most_relevant">Most Relevant</SelectItem>
-                              <SelectItem value="submission_date">Submission Date</SelectItem>
-                              <SelectItem value="recently_added">Recently Added</SelectItem>
-                              <SelectItem value="price_amount">Price Amount</SelectItem>
+                              <SelectItem value="most_relevant">
+                                Most Relevant
+                              </SelectItem>
+                              <SelectItem value="submission_date">
+                                Submission Date
+                              </SelectItem>
+                              <SelectItem value="recently_added">
+                                Recently Added
+                              </SelectItem>
+                              <SelectItem value="price_amount">
+                                Price Amount
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -229,7 +249,11 @@ export function GenericListingPage({
                           variant="outline"
                           size="icon"
                           className="h-10 w-10 shrink-0"
-                          onClick={() => setCurSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))}
+                          onClick={() =>
+                            setCurSortOrder((prev) =>
+                              prev === "asc" ? "desc" : "asc",
+                            )
+                          }
                         >
                           {curSortOrder === "asc" ? (
                             <ChevronUp className="h-4 w-4" />

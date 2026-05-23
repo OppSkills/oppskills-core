@@ -35,10 +35,13 @@ export function ManageRolesLayout({
   onDeleteRole,
   skeletonName = "manage-roles",
 }: ManageRolesLayoutProps) {
-  const [activeTab, setActiveTab] = useState<"Manager" | "Evaluator">("Manager");
+  const [activeTab, setActiveTab] = useState<"Manager" | "Evaluator">(
+    "Manager",
+  );
 
   const formatDisplayName = (user: RoleUser): string => {
-    if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`;
+    if (user.firstName && user.lastName)
+      return `${user.firstName} ${user.lastName}`;
     return user.firstName || user.lastName || user.email.split("@")[0];
   };
 
@@ -55,7 +58,8 @@ export function ManageRolesLayout({
         <div className="flex flex-col gap-10">
           {/* Header Description */}
           <p className="text-neutral-700 text-lg">
-            Manage user roles, set permissions, and control access for a secure system.
+            Manage user roles, set permissions, and control access for a secure
+            system.
           </p>
 
           {/* Owner Section */}
@@ -84,14 +88,18 @@ export function ManageRolesLayout({
                     "relative px-4 py-3 text-base transition-all flex items-center gap-2",
                     activeTab === tab
                       ? "text-primary-600"
-                      : "text-neutral-600 hover:text-primary-600"
+                      : "text-neutral-600 hover:text-primary-600",
                   )}
                 >
                   {tab}s
-                  <span className={cn(
-                    "flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold",
-                    activeTab === tab ? "bg-primary-100 text-primary-600" : "bg-neutral-100 text-neutral-600"
-                  )}>
+                  <span
+                    className={cn(
+                      "flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold",
+                      activeTab === tab
+                        ? "bg-primary-100 text-primary-600"
+                        : "bg-neutral-100 text-neutral-600",
+                    )}
+                  >
                     {tab === "Manager" ? managers.length : evaluators.length}
                   </span>
                   {activeTab === tab && (
@@ -140,9 +148,12 @@ export function ManageRolesLayout({
                     />
                   </div>
                   <div className="flex flex-col items-center gap-2 text-center max-w-sm">
-                    <h3 className="text-xl font-black text-neutral-900">No {activeTab.toLowerCase()}(s) have been assigned yet</h3>
+                    <h3 className="text-xl font-black text-neutral-900">
+                      No {activeTab.toLowerCase()}(s) have been assigned yet
+                    </h3>
                     <p className="text-neutral-700 text-base">
-                      {activeTab.toLowerCase()} will have complete access to event they can do edits on your behalf.
+                      {activeTab.toLowerCase()} will have complete access to
+                      event they can do edits on your behalf.
                     </p>
                   </div>
                   <button

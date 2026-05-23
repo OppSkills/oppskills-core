@@ -3,11 +3,7 @@
 import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  FileText,
-  ExternalLink,
-  X,
-} from "lucide-react";
+import { FileText, ExternalLink, X } from "lucide-react";
 import { EmptyState } from "@/components/common/EmptyState";
 
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
@@ -107,7 +103,9 @@ export function RegistrationAnswersView({
               </h3>
               <div className="grid gap-3">
                 {respondents.map((respondent) => {
-                  const answer = respondent.answers.find((a) => a.fieldId === field.id);
+                  const answer = respondent.answers.find(
+                    (a) => a.fieldId === field.id,
+                  );
                   return (
                     <div
                       key={respondent.userId}
@@ -128,7 +126,10 @@ export function RegistrationAnswersView({
                               {respondent.name}
                             </span>
                             {respondent.isLeader && (
-                              <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider py-0 px-2 h-5">
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px] uppercase font-bold tracking-wider py-0 px-2 h-5"
+                              >
                                 Leader
                               </Badge>
                             )}
@@ -136,16 +137,22 @@ export function RegistrationAnswersView({
                         )}
                         <div className="text-sm text-foreground inter leading-relaxed">
                           {field.type === "ATTACHMENTS" &&
-                            answer?.value &&
-                            typeof answer.value === "string" ? (
+                          answer?.value &&
+                          typeof answer.value === "string" ? (
                             isImageFile(answer.value) ? (
                               <div
                                 className="relative group cursor-pointer w-fit"
-                                onClick={() => setSelectedImage(ensureAbsoluteUrl(answer.value as string))}
+                                onClick={() =>
+                                  setSelectedImage(
+                                    ensureAbsoluteUrl(answer.value as string),
+                                  )
+                                }
                               >
                                 <div className="h-32 w-48 rounded-xl overflow-hidden border border-border bg-muted flex items-center justify-center group-hover:scale-[1.02] transition-all duration-200 shadow-md">
                                   <img
-                                    src={ensureAbsoluteUrl(answer.value as string)}
+                                    src={ensureAbsoluteUrl(
+                                      answer.value as string,
+                                    )}
                                     alt={field.label}
                                     className="w-full h-full object-cover"
                                   />
@@ -169,7 +176,9 @@ export function RegistrationAnswersView({
                               </a>
                             )
                           ) : (
-                            <div className="whitespace-pre-wrap">{formatAnswerValue(answer?.value)}</div>
+                            <div className="whitespace-pre-wrap">
+                              {formatAnswerValue(answer?.value)}
+                            </div>
                           )}
                         </div>
                       </div>

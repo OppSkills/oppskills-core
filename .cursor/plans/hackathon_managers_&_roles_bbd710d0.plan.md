@@ -45,13 +45,13 @@ todos:
 - Add a new join model to represent per-hackathon roles.
 - **Enum**: `HackathonUserRole` with values `MANAGER`, `EVALUATOR`.
 - **Model**: `HackathonUserRoleEntity` with:
-    - `id` (cuid)
-    - `hackathonId` → `HackathonEntity`
-    - `userId` → `UserEntity`
-    - `role` → `HackathonUserRole`
-    - `createdAt`
-    - `createdById` → `UserEntity` (who assigned the role)
-    - Unique constraint: `@@unique([hackathonId, userId, role])`
+  - `id` (cuid)
+  - `hackathonId` → `HackathonEntity`
+  - `userId` → `UserEntity`
+  - `role` → `HackathonUserRole`
+  - `createdAt`
+  - `createdById` → `UserEntity` (who assigned the role)
+  - Unique constraint: `@@unique([hackathonId, userId, role])`
 - Update `HackathonEntity` and `UserEntity` relations to include this mapping.
 
 Files:
@@ -68,10 +68,10 @@ Add a small “roles” API under hackathons:
 - Body: `{ email: string, role: "MANAGER" | "EVALUATOR" }`
 - Looks up `UserEntity` by **email** (your chosen identifier).
 - Validates:
-    - email is non-empty and normalized
-    - user exists in DB (otherwise `400`)
-    - cannot add the owner as manager/evaluator (optional but recommended)
-    - idempotent behavior on duplicates (either no-op or return 409; we’ll pick one and keep it consistent)
+  - email is non-empty and normalized
+  - user exists in DB (otherwise `400`)
+  - cannot add the owner as manager/evaluator (optional but recommended)
+  - idempotent behavior on duplicates (either no-op or return 409; we’ll pick one and keep it consistent)
 - Only **owner/admin** can call.
 - `DELETE /hackathons/:id/roles`
 - Query/body: `{ email: string, role: ... }` (we’ll pick one convention)
@@ -90,7 +90,7 @@ Centralize authorization so it’s hard to miss:
 - Add helper methods in `HackathonService`:
 - `isHackathonManager(hackathonId: string, userId: string): Promise<boolean>`
 - `assertHackathonWritableByUser(hackathonId: string, userId: string): Promise<HackathonEntity>`
-    - **Writable** = owner OR admin OR manager
+  - **Writable** = owner OR admin OR manager
 - Keep `deleteHackathon` check as **owner OR admin only** (explicitly NOT managers).
 - Replace existing owner/admin checks in edit/update endpoints (and internal asserts like `assertHackathonEditableByUser`) to use the new “writable” check.
 

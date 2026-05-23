@@ -17,7 +17,9 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
     this.worker = new Worker(
       'notification',
       async (job) => {
-        logger.info(`Starting job: ${job.id}, Notification ID: ${job.data.notificationId}`);
+        logger.info(
+          `Starting job: ${job.id}, Notification ID: ${job.data.notificationId}`,
+        );
         await processNotification(job.data.notificationId);
       },
       {
@@ -27,22 +29,32 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
     );
 
     this.worker.on('active', (job) => {
-      logger.info(`Notification job ${job.id} became active.`, { jobId: job.id, data: job.data });
-    });
-
-    this.worker.on('completed', (job) => {
-      logger.info(`Notification job ${job.id} completed successfully.`, { jobId: job.id });
-    });
-
-    this.worker.on('failed', (job, err) => {
-      logger.error(`Notification job ${job?.id || 'unknown'} failed. Error: ${err.message}`, {
-        jobId: job?.id,
-        error: err,
+      logger.info(`Notification job ${job.id} became active.`, {
+        jobId: job.id,
+        data: job.data,
       });
     });
 
+    this.worker.on('completed', (job) => {
+      logger.info(`Notification job ${job.id} completed successfully.`, {
+        jobId: job.id,
+      });
+    });
+
+    this.worker.on('failed', (job, err) => {
+      logger.error(
+        `Notification job ${job?.id || 'unknown'} failed. Error: ${err.message}`,
+        {
+          jobId: job?.id,
+          error: err,
+        },
+      );
+    });
+
     this.worker.on('error', (err) => {
-      logger.error(`Notification worker encountered an error: ${err.message}`, { error: err });
+      logger.error(`Notification worker encountered an error: ${err.message}`, {
+        error: err,
+      });
     });
   }
 

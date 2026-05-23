@@ -23,7 +23,9 @@ describe('HackathonCheckoutService (registration reliability)', () => {
   };
   const registrationSubmitService = {
     getRegistrationStatus: jest.fn(),
-    ensureRegistrationAnswersAfterPayment: jest.fn().mockResolvedValue(undefined),
+    ensureRegistrationAnswersAfterPayment: jest
+      .fn()
+      .mockResolvedValue(undefined),
   };
   const paymentEscrowService = {
     loadAnswersForVerify: jest.fn(),
@@ -41,7 +43,10 @@ describe('HackathonCheckoutService (registration reliability)', () => {
         { provide: RazorpayService, useValue: razorpayService },
         { provide: PaymentsRouteService, useValue: paymentsRouteService },
         { provide: DraftTeamService, useValue: draftTeamService },
-        { provide: RegistrationSubmitService, useValue: registrationSubmitService },
+        {
+          provide: RegistrationSubmitService,
+          useValue: registrationSubmitService,
+        },
         {
           provide: PaymentRegistrationEscrowService,
           useValue: paymentEscrowService,
@@ -69,12 +74,12 @@ describe('HackathonCheckoutService (registration reliability)', () => {
       [{ fieldId: 'f-a', value: 'fromBody' }],
     );
 
-    expect(out.find((x: { fieldId: string }) => x.fieldId === 'f-a')?.value).toBe(
-      'fromBody',
-    );
-    expect(out.find((x: { fieldId: string }) => x.fieldId === 'f-b')?.value).toBe(
-      'onlyDb',
-    );
+    expect(
+      out.find((x: { fieldId: string }) => x.fieldId === 'f-a')?.value,
+    ).toBe('fromBody');
+    expect(
+      out.find((x: { fieldId: string }) => x.fieldId === 'f-b')?.value,
+    ).toBe('onlyDb');
   });
 
   it('PER_USER capture uses payment.teamId when Razorpay notes omit join context', async () => {

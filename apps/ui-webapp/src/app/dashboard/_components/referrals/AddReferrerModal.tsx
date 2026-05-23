@@ -16,7 +16,11 @@ import { Switch } from "@/components/ui/switch";
 import { X, Loader2, Check, BadgeCheck } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useUser } from "@clerk/nextjs";
-import { useCreateReferral, useReferrerLookup, useReferrals } from "@/hooks/useReferrals";
+import {
+  useCreateReferral,
+  useReferrerLookup,
+  useReferrals,
+} from "@/hooks/useReferrals";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import type { ReferralEntityType } from "@/lib/api/referralApi";
@@ -62,9 +66,12 @@ export const AddReferrerModal = memo(function AddReferrerModal({
   const { user: currentUser } = useUser();
   const { data: referralsData } = useReferrals(entityType, entityId);
 
-  const currentUserEmail = currentUser?.primaryEmailAddress?.emailAddress?.toLowerCase();
+  const currentUserEmail =
+    currentUser?.primaryEmailAddress?.emailAddress?.toLowerCase();
   const alreadyExistingEmails = useMemo(() => {
-    return new Set(referralsData?.data.map((r) => r.referrer.email.toLowerCase()) || []);
+    return new Set(
+      referralsData?.data.map((r) => r.referrer.email.toLowerCase()) || [],
+    );
   }, [referralsData]);
 
   const isSelfReferral = useMemo(() => {
@@ -106,7 +113,11 @@ export const AddReferrerModal = memo(function AddReferrerModal({
               Add Referrer
             </DialogTitle>
             <DialogClose asChild>
-              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-neutral-200 transition-all active:scale-95 m-0!">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full h-8 w-8 hover:bg-neutral-200 transition-all active:scale-95 m-0!"
+              >
                 <X size={20} className="text-neutral-600" />
               </Button>
             </DialogClose>
@@ -115,7 +126,10 @@ export const AddReferrerModal = memo(function AddReferrerModal({
           {/* Form Body */}
           <div className="px-4 md:px-6 pt-8 pb-4 space-y-2 bg-white">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs font-medium text-neutral-700">
+              <Label
+                htmlFor="email"
+                className="text-xs font-medium text-neutral-700"
+              >
                 Official Email *
               </Label>
               <Input
@@ -140,7 +154,11 @@ export const AddReferrerModal = memo(function AddReferrerModal({
                   <div className="p-1 rounded-full bg-red-100">
                     <X size={14} />
                   </div>
-                  <p>{lookup.error instanceof Error ? lookup.error.message : "User not found"}</p>
+                  <p>
+                    {lookup.error instanceof Error
+                      ? lookup.error.message
+                      : "User not found"}
+                  </p>
                 </div>
               )}
 
@@ -154,49 +172,73 @@ export const AddReferrerModal = memo(function AddReferrerModal({
                       ? "bg-[#4C3E73]/5 border-[#4C3E73] ring-1 ring-[#4C3E73]/30 shadow-md"
                       : isInvalidSelection
                         ? "bg-neutral-50/30 border-neutral-100 opacity-60 cursor-not-allowed"
-                        : "bg-neutral-50/50 border-neutral-200 hover:border-neutral-300 hover:bg-neutral-100/50 hover:shadow-sm"
+                        : "bg-neutral-50/50 border-neutral-200 hover:border-neutral-300 hover:bg-neutral-100/50 hover:shadow-sm",
                   )}
-                  onClick={() => !isInvalidSelection && setSelectedEmail(lookup.data.email)}
+                  onClick={() =>
+                    !isInvalidSelection && setSelectedEmail(lookup.data.email)
+                  }
                 >
                   {/* Subtle background glow for selected state */}
-                  {selectedEmail === lookup.data.email && !isInvalidSelection && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#4C3E73]/5 to-transparent pointer-events-none" />
-                  )}
+                  {selectedEmail === lookup.data.email &&
+                    !isInvalidSelection && (
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#4C3E73]/5 to-transparent pointer-events-none" />
+                    )}
 
                   <div className="relative">
-                    <Avatar className={cn(
-                      "w-12 h-12 border-2 border-white shadow-sm ring-1",
-                      isInvalidSelection ? "ring-neutral-100 grayscale-[0.5]" : "ring-neutral-200"
-                    )}>
+                    <Avatar
+                      className={cn(
+                        "w-12 h-12 border-2 border-white shadow-sm ring-1",
+                        isInvalidSelection
+                          ? "ring-neutral-100 grayscale-[0.5]"
+                          : "ring-neutral-200",
+                      )}
+                    >
                       <AvatarImage src={lookup.data.imageUrl ?? ""} />
                       <AvatarFallback className="bg-neutral-200 text-neutral-600 font-bold">
-                        {(lookup.data.firstName?.[0] || lookup.data.email[0]).toUpperCase()}
+                        {(
+                          lookup.data.firstName?.[0] || lookup.data.email[0]
+                        ).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    {selectedEmail === lookup.data.email && !isInvalidSelection && (
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#10B981] border-2 border-white flex items-center justify-center shadow-sm">
-                        <Check size={12} className="text-white stroke-[3]" />
-                      </div>
-                    )}
+                    {selectedEmail === lookup.data.email &&
+                      !isInvalidSelection && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#10B981] border-2 border-white flex items-center justify-center shadow-sm">
+                          <Check size={12} className="text-white stroke-[3]" />
+                        </div>
+                      )}
                   </div>
 
                   <div className="text-left flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className={cn(
-                        "text-base font-bold truncate",
-                        isInvalidSelection ? "text-neutral-400" : "text-neutral-900"
-                      )}>
-                        {[lookup.data.firstName, lookup.data.lastName].filter(Boolean).join(" ") || "User"}
+                      <p
+                        className={cn(
+                          "text-base font-bold truncate",
+                          isInvalidSelection
+                            ? "text-neutral-400"
+                            : "text-neutral-900",
+                        )}
+                      >
+                        {[lookup.data.firstName, lookup.data.lastName]
+                          .filter(Boolean)
+                          .join(" ") || "User"}
                       </p>
-                      {!isInvalidSelection && <BadgeCheck size={16} className="text-blue-500 fill-blue-50" />}
+                      {!isInvalidSelection && (
+                        <BadgeCheck
+                          size={16}
+                          className="text-blue-500 fill-blue-50"
+                        />
+                      )}
                     </div>
-                    <p className="text-sm text-neutral-500 truncate">{lookup.data.email}</p>
+                    <p className="text-sm text-neutral-500 truncate">
+                      {lookup.data.email}
+                    </p>
 
-                    {selectedEmail === lookup.data.email && !isInvalidSelection && (
-                      <span className="inline-block mt-1 text-[10px] uppercase tracking-wider font-bold text-[#4C3E73]">
-                        Selected
-                      </span>
-                    )}
+                    {selectedEmail === lookup.data.email &&
+                      !isInvalidSelection && (
+                        <span className="inline-block mt-1 text-[10px] uppercase tracking-wider font-bold text-[#4C3E73]">
+                          Selected
+                        </span>
+                      )}
 
                     {isSelfReferral && (
                       <span className="inline-block mt-1 text-[10px] uppercase tracking-wider font-bold text-amber-600">
@@ -212,15 +254,21 @@ export const AddReferrerModal = memo(function AddReferrerModal({
                   </div>
 
                   <div className="flex flex-col items-end gap-1">
-                    <span className={cn(
-                      "text-[10px] font-medium px-2 py-0.5 rounded-full border",
-                      isSelfReferral
-                        ? "bg-amber-50 text-amber-600 border-amber-100"
+                    <span
+                      className={cn(
+                        "text-[10px] font-medium px-2 py-0.5 rounded-full border",
+                        isSelfReferral
+                          ? "bg-amber-50 text-amber-600 border-amber-100"
+                          : isDuplicate
+                            ? "bg-red-50 text-red-600 border-red-100"
+                            : "bg-neutral-100 text-neutral-600 border-neutral-200",
+                      )}
+                    >
+                      {isSelfReferral
+                        ? "Invalid"
                         : isDuplicate
-                          ? "bg-red-50 text-red-600 border-red-100"
-                          : "bg-neutral-100 text-neutral-600 border-neutral-200"
-                    )}>
-                      {isSelfReferral ? "Invalid" : isDuplicate ? "Exists" : "Found"}
+                          ? "Exists"
+                          : "Found"}
                     </span>
                   </div>
                 </button>
@@ -228,7 +276,10 @@ export const AddReferrerModal = memo(function AddReferrerModal({
             </div>
 
             <div className="flex items-center justify-between py-2">
-              <Label htmlFor="send-email" className="text-base font-medium text-neutral-700 cursor-pointer">
+              <Label
+                htmlFor="send-email"
+                className="text-base font-medium text-neutral-700 cursor-pointer"
+              >
                 Send Email to the Referrer
               </Label>
               <Switch
@@ -244,7 +295,13 @@ export const AddReferrerModal = memo(function AddReferrerModal({
           <DialogFooter className="bg-neutral-300 px-6 py-5 sm:rounded-b-3xl">
             <Button
               onClick={onAddReferrer}
-              disabled={createReferral.isPending || !isEmailValid || !lookup.data || lookup.isFetching || isInvalidSelection}
+              disabled={
+                createReferral.isPending ||
+                !isEmailValid ||
+                !lookup.data ||
+                lookup.isFetching ||
+                isInvalidSelection
+              }
               className="rounded-full px-8 h-12 bg-[#4C3E73] hover:bg-[#3D315C] text-white font-semibold text-lg shadow-lg transition-all active:scale-95"
             >
               Add Referrer

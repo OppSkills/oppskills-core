@@ -257,7 +257,6 @@ export default function ValidatePassPage() {
 
               {/* Status Badge */}
               <div className="flex items-center justify-center w-full">
-
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/20 dark:bg-amber-900/40 border border-amber-500/30 dark:border-amber-400/20 mb-4">
                   <div className="w-2 h-2 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
                   <span className="text-xs font-black tracking-widest text-amber-700 dark:text-amber-300 uppercase">
@@ -265,8 +264,6 @@ export default function ValidatePassPage() {
                   </span>
                 </div>
               </div>
-
-
 
               {/* Details Card */}
               <div className="mt-2 p-4 rounded-xl bg-background/60 dark:bg-background/40 backdrop-blur-sm border border-amber-200/50 dark:border-amber-800/50 shadow-inner">

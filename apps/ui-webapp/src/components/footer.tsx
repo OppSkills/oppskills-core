@@ -12,7 +12,9 @@ interface FooterLink {
 }
 
 interface SocialLink {
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>> | React.ComponentType<any>;
+  icon:
+    | React.ComponentType<React.SVGProps<SVGSVGElement>>
+    | React.ComponentType<any>;
   href: string;
   label: string;
   type?: "internal" | "external";
@@ -55,8 +57,8 @@ const Footer = () => {
       icon: IconBrandThreads,
       href: "https://www.threads.net/@oppskills.global",
       label: "Threads",
-      type: "external"
-    }
+      type: "external",
+    },
   ];
 
   return (
@@ -169,7 +171,11 @@ const Footer = () => {
                       className="w-10 h-10 flex items-center justify-center rounded-full bg-background/10 hover:bg-background/20 transition-colors text-background"
                       aria-label={social.label}
                     >
-                      {social.type === "external" ? <social.icon /> : <Icon className="w-5 h-5" />}
+                      {social.type === "external" ? (
+                        <social.icon />
+                      ) : (
+                        <Icon className="w-5 h-5" />
+                      )}
                     </a>
                   );
                 })}

@@ -77,8 +77,9 @@ export function EventPassPendingEmail({
             <Heading style={subHeading}>Registration Pending</Heading>
 
             <Text style={paragraph}>
-              Your registration for <strong>{eventName}</strong> has been received. 
-              Our team is currently reviewing it, and we will notify you once it is confirmed.
+              Your registration for <strong>{eventName}</strong> has been
+              received. Our team is currently reviewing it, and we will notify
+              you once it is confirmed.
             </Text>
 
             {/* Event Pass Card */}
@@ -150,10 +151,7 @@ export function EventPassPendingEmail({
             </Section> */}
 
             <Section style={ctaSection}>
-              <Link
-                href={`${baseUrl}/events/${eventSlug}`}
-                style={ctaButton}
-              >
+              <Link href={`${baseUrl}/events/${eventSlug}`} style={ctaButton}>
                 View Event Details ↗
               </Link>
             </Section>

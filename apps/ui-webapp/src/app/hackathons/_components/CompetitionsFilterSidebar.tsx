@@ -32,7 +32,7 @@ export function CompetitionsFilterSidebar({
   const handleCheckboxChange = (
     category: keyof Omit<FilterState, "search">,
     value: string,
-    checked: boolean | string
+    checked: boolean | string,
   ) => {
     setFilters((prev) => {
       const current = prev[category] as string[];

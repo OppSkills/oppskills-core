@@ -6,7 +6,7 @@ import {
   IsInt,
   Min,
   MaxLength,
-} from 'class-validator';
+} from "class-validator";
 
 export class CreateTicketTierDto {
   @IsString()

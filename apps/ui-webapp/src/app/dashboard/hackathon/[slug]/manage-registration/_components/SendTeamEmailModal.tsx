@@ -45,13 +45,16 @@ export default function SendTeamEmailModal({
       title={`Send Email to ${teamName}`}
       description={
         <>
-          This message will be sent to <strong>all members</strong> of the team in {hackathonName}.
-          Individual personalization (e.g., "Hi [FirstName]") will be applied automatically.
+          This message will be sent to <strong>all members</strong> of the team
+          in {hackathonName}. Individual personalization (e.g., "Hi
+          [FirstName]") will be applied automatically.
         </>
       }
       templateNote={
         <>
-          Your message will be wrapped in the official <strong>{hackathonName}</strong> template including links back to the hackathon page.
+          Your message will be wrapped in the official{" "}
+          <strong>{hackathonName}</strong> template including links back to the
+          hackathon page.
         </>
       }
       sendFn={handleSend}

@@ -22,8 +22,10 @@ import {
  */
 export const eventPaymentKeys = {
   all: ["event-payments"] as const,
-  earnings: (slug: string) => [...eventPaymentKeys.all, "earnings", slug] as const,
-  discountCodes: (slug: string) => [...eventPaymentKeys.all, "discount-codes", slug] as const,
+  earnings: (slug: string) =>
+    [...eventPaymentKeys.all, "earnings", slug] as const,
+  discountCodes: (slug: string) =>
+    [...eventPaymentKeys.all, "discount-codes", slug] as const,
 };
 
 /**
@@ -153,4 +155,3 @@ export function useUpdateEventPricing(slug: string) {
     },
   });
 }
-

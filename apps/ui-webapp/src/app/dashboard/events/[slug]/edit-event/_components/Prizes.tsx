@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Container } from "@/app/dashboard/_components/Container";
 
-
 interface PrizesProps {
   formData: FormData;
   setFormData: (data: React.SetStateAction<FormData>) => void;
@@ -49,7 +48,9 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
 
   const handleUpdatePrize = (id: string, updates: Partial<Prize>) => {
     updatePrizes({
-      list: formData.prizes.list.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+      list: formData.prizes.list.map((p) =>
+        p.id === id ? { ...p, ...updates } : p,
+      ),
     });
   };
 
@@ -96,7 +97,7 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                 "px-8 py-2 rounded-full border text-sm transition-all inter font-semibold",
                 formData.prizes.certificateProvided === true
                   ? "bg-primary-100 text-primary-600 border-primary-500 shadow-sm"
-                  : "bg-background text-neutral-500 border-border hover:bg-muted"
+                  : "bg-background text-neutral-500 border-border hover:bg-muted",
               )}
             >
               Yes
@@ -107,7 +108,7 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                 "px-8 py-2 rounded-full border text-sm transition-all inter font-semibold",
                 formData.prizes.certificateProvided === false
                   ? "bg-primary-100 text-primary-600 border-primary-500 shadow-sm"
-                  : "bg-background text-neutral-500 border-border hover:bg-muted"
+                  : "bg-background text-neutral-500 border-border hover:bg-muted",
               )}
             >
               No
@@ -142,35 +143,53 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                   "flex flex-col p-4 rounded-xl transition-all border",
                   editingId === prize.id
                     ? "bg-white border-primary-500 shadow-md ring-1 ring-primary-500"
-                    : "bg-primary-50/30 border-primary-100 hover:border-primary-300"
+                    : "bg-primary-50/30 border-primary-100 hover:border-primary-300",
                 )}
               >
                 {editingId === prize.id ? (
                   <div className="flex flex-col gap-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <Label className="text-xs font-bold text-neutral-500 inter uppercase tracking-wider">Prize Name</Label>
+                        <Label className="text-xs font-bold text-neutral-500 inter uppercase tracking-wider">
+                          Prize Name
+                        </Label>
                         <Input
                           value={prize.name}
-                          onChange={(e) => handleUpdatePrize(prize.id, { name: e.target.value })}
+                          onChange={(e) =>
+                            handleUpdatePrize(prize.id, {
+                              name: e.target.value,
+                            })
+                          }
                           className="rounded-lg h-9 inter"
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs font-bold text-neutral-500 inter uppercase tracking-wider">Amount (₹)</Label>
+                        <Label className="text-xs font-bold text-neutral-500 inter uppercase tracking-wider">
+                          Amount (₹)
+                        </Label>
                         <Input
                           value={prize.amount}
-                          onChange={(e) => handleUpdatePrize(prize.id, { amount: e.target.value })}
+                          onChange={(e) =>
+                            handleUpdatePrize(prize.id, {
+                              amount: e.target.value,
+                            })
+                          }
                           className="rounded-lg h-9 inter"
                           placeholder="e.g., 5000"
                         />
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold text-neutral-500 inter uppercase tracking-wider">Description</Label>
+                      <Label className="text-xs font-bold text-neutral-500 inter uppercase tracking-wider">
+                        Description
+                      </Label>
                       <Input
                         value={prize.description}
-                        onChange={(e) => handleUpdatePrize(prize.id, { description: e.target.value })}
+                        onChange={(e) =>
+                          handleUpdatePrize(prize.id, {
+                            description: e.target.value,
+                          })
+                        }
                         className="rounded-lg h-9 inter"
                         placeholder="e.g., Cash prize for winners"
                       />
@@ -193,7 +212,9 @@ export default function Prizes({ formData, setFormData }: PrizesProps) {
                         <Trophy className="w-6 h-6" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-base text-neutral-800 poppins">{prize.name}</h4>
+                        <h4 className="font-bold text-base text-neutral-800 poppins">
+                          {prize.name}
+                        </h4>
                         <p className="text-sm text-neutral-600 inter">
                           ₹ {prize.amount} • {prize.description}
                         </p>

@@ -28,7 +28,12 @@ export function EmptyState({
     >
       <div
         className="relative mb-6"
-        style={{ width: imageSize, height: imageSize, maxWidth: '100%', aspectRatio: '1/1' }}
+        style={{
+          width: imageSize,
+          height: imageSize,
+          maxWidth: "100%",
+          aspectRatio: "1/1",
+        }}
       >
         <Image
           src="/illustrations/no_data.svg"

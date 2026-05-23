@@ -875,7 +875,7 @@ export class AnalyticsService {
         description: true,
         bannerImageUrl: true,
         organizationName: true,
-        locationCity: true,
+        locationCoords: true,
         registrationCount: true,
         participants: {
           where: { approved: true },
@@ -906,7 +906,7 @@ export class AnalyticsService {
         description: true,
         bannerImageUrl: true,
         organizationName: true,
-        locationCity: true,
+        locationCoords: true,
         registrationCount: true,
         teams: {
           select: { id: true },
@@ -931,7 +931,7 @@ export class AnalyticsService {
       thumbnail: e.bannerImageUrl,
       description: stripHtml(e.description),
       organization: e.organizationName || 'OppSkills',
-      location: e.locationCity || 'Remote',
+      location: e.locationCoords || 'Remote',
       applied: e.registrationCount ?? 0,
       tregistrations: e.registrationCount ?? 0,
       finalized: e.participants?.length ?? 0,
@@ -944,7 +944,7 @@ export class AnalyticsService {
       thumbnail: h.bannerImageUrl,
       description: stripHtml(h.description),
       organization: h.organizationName || 'OppSkills',
-      location: h.locationCity || 'Remote',
+      location: h.locationCoords || 'Remote',
       applied: h.registrationCount ?? 0,
       tregistrations: h.registrationCount ?? 0,
       finalized: h.registrationCount ?? 0, // For hackathons, Applied = Finalized as requested

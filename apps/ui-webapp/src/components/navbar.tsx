@@ -2,7 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, PlusCircle, Search, Trophy, Calendar, Loader2 } from "lucide-react";
+import {
+  Menu,
+  X,
+  PlusCircle,
+  Search,
+  Trophy,
+  Calendar,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import {
@@ -114,7 +122,10 @@ const Navbar = () => {
         {/* --- RIGHT SIDE ACTIONS --- */}
         <div className="flex items-center gap-3">
           <div className="hidden xl:flex items-center justify-center relative search-input-container">
-            <form onSubmit={handleSearch} className="relative w-full max-w-[300px]">
+            <form
+              onSubmit={handleSearch}
+              className="relative w-full max-w-[300px]"
+            >
               <Input
                 type="text"
                 placeholder="Search"
@@ -138,10 +149,10 @@ const Navbar = () => {
                 )}
               </button>
             </form>
-            <NavbarSearch 
-              query={searchQuery} 
-              isOpen={isSearchFocused} 
-              onClose={() => setIsSearchFocused(false)} 
+            <NavbarSearch
+              query={searchQuery}
+              isOpen={isSearchFocused}
+              onClose={() => setIsSearchFocused(false)}
             />
           </div>
 
@@ -158,7 +169,10 @@ const Navbar = () => {
                       Host
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 rounded-xl border-neutral-200 mt-1">
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-48 rounded-xl border-neutral-200 mt-1"
+                  >
                     <Link href="/organize/hackathon">
                       <DropdownMenuItem className="cursor-pointer py-3 focus:bg-primary-50 focus:text-primary-700">
                         <Trophy className="mr-2.5 h-4 w-4 text-neutral-500" />
@@ -200,10 +214,12 @@ const Navbar = () => {
 
       {/* --- MOBILE MENU --- */}
       {isOpen && (
-        <div className={cn(
-          "lg:hidden pt-4 pb-6 space-y-4 animate-in slide-in-from-top-5 fixed inset-x-0 top-[72px] bottom-0 bg-neutral-100 z-40 overflow-y-auto px-4",
-          isSearchingMobile && "bg-white"
-        )}>
+        <div
+          className={cn(
+            "lg:hidden pt-4 pb-6 space-y-4 animate-in slide-in-from-top-5 fixed inset-x-0 top-[72px] bottom-0 bg-neutral-100 z-40 overflow-y-auto px-4",
+            isSearchingMobile && "bg-white",
+          )}
+        >
           {/* Mobile Search */}
           <div className="mb-4 relative search-input-container">
             <form onSubmit={handleSearch} className="relative w-full">
@@ -230,10 +246,10 @@ const Navbar = () => {
                 )}
               </button>
             </form>
-            <NavbarSearch 
-              query={searchQuery} 
-              isOpen={isSearchFocused} 
-              onClose={() => setIsSearchFocused(false)} 
+            <NavbarSearch
+              query={searchQuery}
+              isOpen={isSearchFocused}
+              onClose={() => setIsSearchFocused(false)}
             />
           </div>
 
@@ -248,7 +264,9 @@ const Navbar = () => {
                     href={link.href}
                     className={cn(
                       "px-4 py-4 text-xl font-semibold rounded-2xl transition-colors",
-                      active ? "bg-primary-50 text-primary-700" : "text-neutral-700 hover:bg-neutral-200"
+                      active
+                        ? "bg-primary-50 text-primary-700"
+                        : "text-neutral-700 hover:bg-neutral-200",
                     )}
                     onClick={() => setIsOpen(false)}
                   >
@@ -259,17 +277,27 @@ const Navbar = () => {
 
               <div className="mt-6 pt-6 border-t border-neutral-200 space-y-4">
                 <SignedIn>
-                   <div className="space-y-4">
-                      <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest px-4">Organize</p>
-                      <Link href="/organize/hackathon" onClick={() => setIsOpen(false)} className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-200">
-                        <Trophy className="w-6 h-6 text-neutral-500" />
-                        <span className="text-xl font-semibold">Hackathon</span>
-                      </Link>
-                      <Link href="/organize/event" onClick={() => setIsOpen(false)} className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-200">
-                        <Calendar className="w-6 h-6 text-neutral-500" />
-                        <span className="text-xl font-semibold">Event</span>
-                      </Link>
-                   </div>
+                  <div className="space-y-4">
+                    <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest px-4">
+                      Organize
+                    </p>
+                    <Link
+                      href="/organize/hackathon"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-200"
+                    >
+                      <Trophy className="w-6 h-6 text-neutral-500" />
+                      <span className="text-xl font-semibold">Hackathon</span>
+                    </Link>
+                    <Link
+                      href="/organize/event"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-neutral-200"
+                    >
+                      <Calendar className="w-6 h-6 text-neutral-500" />
+                      <span className="text-xl font-semibold">Event</span>
+                    </Link>
+                  </div>
                 </SignedIn>
 
                 <SignedOut>
@@ -288,8 +316,6 @@ const Navbar = () => {
           )}
         </div>
       )}
-
-
 
       {authMode && <Auth onClose={() => setAuthMode(null)} />}
     </nav>

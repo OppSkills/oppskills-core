@@ -6,7 +6,10 @@ import { Suspense } from "react";
 import { Clock1, Loader2 } from "lucide-react";
 
 import { currentUser, auth } from "@clerk/nextjs/server";
-import { getHackathonGeneralStats, getHackathonDetailedStats } from "@/lib/api/analyticsApi";
+import {
+  getHackathonGeneralStats,
+  getHackathonDetailedStats,
+} from "@/lib/api/analyticsApi";
 import { getHackathonBySlug } from "@/lib/api/hackathonApi";
 import GenderDiversityChart from "@/app/dashboard/_components/GenderDiversityChart";
 import ImpressionsChart from "@/app/dashboard/_components/ImpressionsChart";
@@ -54,10 +57,19 @@ async function AnalyticsSection({
   from?: string;
   to?: string;
 }) {
-  let stats: InternalStats = { registrations: 0, periodRegistrations: 0, impressions: 0, views: 0 };
+  let stats: InternalStats = {
+    registrations: 0,
+    periodRegistrations: 0,
+    impressions: 0,
+    views: 0,
+  };
 
   try {
-    const rawStats = await getHackathonGeneralStats(token, slug, { period, from, to });
+    const rawStats = await getHackathonGeneralStats(token, slug, {
+      period,
+      from,
+      to,
+    });
     if (rawStats) {
       stats = {
         registrations: Number(rawStats.registrations) || 0,
@@ -70,7 +82,12 @@ async function AnalyticsSection({
     console.error(`Failed to fetch Hackathon analytics:`, error);
   }
 
-  const { registrations: totalRegistrations, periodRegistrations, impressions, views } = stats;
+  const {
+    registrations: totalRegistrations,
+    periodRegistrations,
+    impressions,
+    views,
+  } = stats;
 
   let ctrRatio = impressions > 0 ? views / impressions : 0;
   if (ctrRatio > 1) ctrRatio = 1;
@@ -161,7 +178,11 @@ async function DetailedAnalyticsSection({
   let chartsData = { registrations: [], gender: {} };
 
   try {
-    const rawStats = await getHackathonDetailedStats(token, slug, { period, from, to });
+    const rawStats = await getHackathonDetailedStats(token, slug, {
+      period,
+      from,
+      to,
+    });
     if (rawStats) {
       chartsData = {
         registrations: rawStats.registrations || [],
@@ -185,10 +206,7 @@ async function DetailedAnalyticsSection({
 }
 
 // Helper to fetch details
-async function getHackathonName(
-  token: string,
-  slug: string
-): Promise<string> {
+async function getHackathonName(token: string, slug: string): Promise<string> {
   try {
     const hackathon = (await getHackathonBySlug(token, slug)) as {
       name: string;

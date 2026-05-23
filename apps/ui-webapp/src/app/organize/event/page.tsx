@@ -87,8 +87,6 @@ export default function Page() {
   // UI COMPONENTS
   // ============================================================================
 
-
-
   // ============================================================================
   // ZOD SCHEMA
   // ============================================================================
@@ -128,6 +126,7 @@ export default function Page() {
       eventStartDate: undefined as Date | undefined,
       eventEndDate: undefined as Date | undefined,
       eventLocation: "",
+      eventLocationPlaceId: undefined as string | undefined,
       eventTimeFrom: "10:00",
       eventDescription: "",
       eventThumbnail: "",
@@ -161,7 +160,7 @@ export default function Page() {
 
   type FestivalListItem = { id: string; name: string };
   const [festivals, setFestivals] = useState<ReadonlyArray<FestivalListItem>>(
-    []
+    [],
   );
   const [isLoadingFestivals, setIsLoadingFestivals] = useState(false);
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
@@ -169,7 +168,7 @@ export default function Page() {
 
   const bannerInputId = useMemo(
     () => `organizer-banner-upload-${crypto.randomUUID()}`,
-    []
+    [],
   );
 
   // LocalStorage persistence
@@ -200,7 +199,7 @@ export default function Page() {
   }
 
   function extractFestivalList(
-    input: unknown
+    input: unknown,
   ): ReadonlyArray<FestivalListItem> {
     const listRaw = Array.isArray(input)
       ? input
@@ -226,7 +225,11 @@ export default function Page() {
     let url = trimmed;
     if (url.startsWith("//")) {
       url = `https:${url}`;
-    } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+    } else if (
+      !url.startsWith("http://") &&
+      !url.startsWith("https://") &&
+      !url.startsWith("/")
+    ) {
       url = `https://${url}`;
     }
     try {
@@ -247,13 +250,14 @@ export default function Page() {
   }
 
   function toLocationDto(
-    input: string
+    input: string,
+    placeId?: string,
   ): EventLocationDto | FestivalLocationDto | undefined {
     const trimmed = input.trim();
     if (trimmed.length === 0) return undefined;
 
     if (trimmed.startsWith("OFFLINE:")) {
-      return { type: "PHYSICAL", address: trimmed.substring(8).trim() };
+      return { type: "PHYSICAL", address: trimmed.substring(8).trim(), placeId };
     }
     if (trimmed.startsWith("VIRTUAL:")) {
       return { type: "VIRTUAL", virtualLink: trimmed.substring(8).trim() };
@@ -263,12 +267,16 @@ export default function Page() {
       let url = trimmed;
       if (url.startsWith("//")) {
         url = `https:${url}`;
-      } else if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+      } else if (
+        !url.startsWith("http://") &&
+        !url.startsWith("https://") &&
+        !url.startsWith("/")
+      ) {
         url = `https://${url}`;
       }
       return { type: "VIRTUAL", virtualLink: url };
     }
-    return { type: "PHYSICAL", address: trimmed };
+    return { type: "PHYSICAL", address: trimmed, placeId };
   }
 
   function formatTime(time: string | undefined): string {
@@ -335,7 +343,7 @@ export default function Page() {
         setIsUploadingBanner(false);
       }
     },
-    [getToken, isUploadingBanner, form]
+    [getToken, isUploadingBanner, form],
   );
 
   // ============================================================================
@@ -364,12 +372,11 @@ export default function Page() {
         if (parsed.eventRegisterBy)
           form.setFieldValue(
             "eventRegisterBy",
-            new Date(parsed.eventRegisterBy)
+            new Date(parsed.eventRegisterBy),
           );
         if (parsed.organizationName)
           form.setFieldValue("organizationName", parsed.organizationName);
-        if (parsed.maxUsers)
-          form.setFieldValue("maxUsers", parsed.maxUsers);
+        if (parsed.maxUsers) form.setFieldValue("maxUsers", parsed.maxUsers);
         if (typeof parsed.isFree === "boolean")
           form.setFieldValue("isFree", parsed.isFree);
         if (parsed.entryFeeAmount)
@@ -392,7 +399,7 @@ export default function Page() {
           eventStartDate: values.eventStartDate?.toISOString(),
           eventEndDate: values.eventEndDate?.toISOString(),
           eventRegisterBy: values.eventRegisterBy?.toISOString(),
-        })
+        }),
       );
     } catch (err) {
       console.error("Error saving form:", err);
@@ -488,13 +495,13 @@ export default function Page() {
           : undefined,
         startDate: combineDateAndTimeToIso(
           values.eventStartDate,
-          values.eventTimeFrom
+          values.eventTimeFrom,
         ),
         endDate: combineDateAndTimeToIso(
           values.eventEndDate,
-          values.eventTimeFrom
+          values.eventTimeFrom,
         ),
-        location: toLocationDto(values.eventLocation) as
+        location: toLocationDto(values.eventLocation, values.eventLocationPlaceId) as
           | EventLocationDto
           | undefined,
         registrationDeadline: values.eventRegisterBy
@@ -515,7 +522,7 @@ export default function Page() {
       const eventId = extractEventId(created);
       if (!eventId) {
         toast.error(
-          "Event was created but we couldn't read its id from the server response."
+          "Event was created but we couldn't read its id from the server response.",
         );
         return;
       }
@@ -554,7 +561,7 @@ export default function Page() {
                 <BannerUploader
                   imageUrl={
                     typeof values.eventThumbnail === "string" &&
-                      values.eventThumbnail.trim().length > 0
+                    values.eventThumbnail.trim().length > 0
                       ? values.eventThumbnail.trim()
                       : "/tmp/hackathon.jpg"
                   }
@@ -684,7 +691,6 @@ export default function Page() {
 
           {/* Form Grid */}
           <div className="flex flex-col gap-4">
-
             {/* ROW 1: Name and Date */}
             <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4 min-w-0">
               <div className="flex items-center min-h-[100px]">
@@ -708,7 +714,10 @@ export default function Page() {
                         children={(values) => (
                           <InputBlock
                             icon={<CalendarIcon className="w-6 h-6" />}
-                            label={formatDateRange(values.eventStartDate, values.eventEndDate)}
+                            label={formatDateRange(
+                              values.eventStartDate,
+                              values.eventEndDate,
+                            )}
                             subLabel="Event Date"
                             className="h-full"
                           />
@@ -725,37 +734,63 @@ export default function Page() {
                     </DialogHeader>
                     <div className="flex flex-col md:flex-row gap-8 justify-center items-start py-4">
                       <form.Subscribe
-                        selector={state => state.values}
+                        selector={(state) => state.values}
                         children={(values) => (
                           <>
                             <div className="space-y-2">
-                              <label className="text-sm font-medium">Start Date</label>
+                              <label className="text-sm font-medium">
+                                Start Date
+                              </label>
                               <div className="border rounded-md p-2">
                                 <Calendar
                                   mode="single"
                                   selected={values.eventStartDate}
                                   onSelect={(date) => {
-                                    if (date && values.eventEndDate && date > values.eventEndDate) {
-                                      form.setFieldValue("eventStartDate", date);
-                                      form.setFieldValue("eventEndDate", undefined);
+                                    if (
+                                      date &&
+                                      values.eventEndDate &&
+                                      date > values.eventEndDate
+                                    ) {
+                                      form.setFieldValue(
+                                        "eventStartDate",
+                                        date,
+                                      );
+                                      form.setFieldValue(
+                                        "eventEndDate",
+                                        undefined,
+                                      );
                                     } else {
-                                      form.setFieldValue("eventStartDate", date);
+                                      form.setFieldValue(
+                                        "eventStartDate",
+                                        date,
+                                      );
                                     }
                                   }}
                                 />
                               </div>
                             </div>
                             <div className="space-y-2">
-                              <label className="text-sm font-medium">End Date</label>
+                              <label className="text-sm font-medium">
+                                End Date
+                              </label>
                               <div className="border rounded-md p-2">
                                 <Calendar
                                   mode="single"
                                   selected={values.eventEndDate}
                                   onSelect={(date) => {
-                                    if (date && values.eventStartDate && date < values.eventStartDate) return;
+                                    if (
+                                      date &&
+                                      values.eventStartDate &&
+                                      date < values.eventStartDate
+                                    )
+                                      return;
                                     form.setFieldValue("eventEndDate", date);
                                   }}
-                                  disabled={(date) => values.eventStartDate ? date < values.eventStartDate : false}
+                                  disabled={(date) =>
+                                    values.eventStartDate
+                                      ? date < values.eventStartDate
+                                      : false
+                                  }
                                 />
                               </div>
                             </div>
@@ -780,7 +815,10 @@ export default function Page() {
                 children={(loc) => (
                   <LocationInputModal
                     value={loc}
-                    onChange={(val) => form.setFieldValue("eventLocation", val)}
+                    onChange={(val, placeId) => {
+                      form.setFieldValue("eventLocation", val);
+                      form.setFieldValue("eventLocationPlaceId", placeId);
+                    }}
                     label="Add Event Location"
                     subLabel="Offline location or virtual link"
                   />
@@ -819,7 +857,9 @@ export default function Page() {
                         children={(time) => (
                           <TimePicker
                             value={time}
-                            onChange={(val) => form.setFieldValue("eventTimeFrom", val)}
+                            onChange={(val) =>
+                              form.setFieldValue("eventTimeFrom", val)
+                            }
                           />
                         )}
                       />
@@ -835,17 +875,21 @@ export default function Page() {
             </div>
 
             {/* ROW 3: Description Modal */}
-            <div onClick={() => setShowDescriptionModal(true)} className="cursor-pointer">
+            <div
+              onClick={() => setShowDescriptionModal(true)}
+              className="cursor-pointer"
+            >
               <div className="h-full min-w-0">
                 <form.Subscribe
-                  selector={state => state.values.eventDescription}
+                  selector={(state) => state.values.eventDescription}
                   children={(desc) => (
                     <InputBlock
                       icon={<AlignLeft className="w-6 h-6" />}
                       label={desc ? "Description" : "Add Description"}
                       subLabel={
                         desc
-                          ? desc.replace(/<[^>]*>?/gm, "") + (desc.length > 50 ? "..." : "")
+                          ? desc.replace(/<[^>]*>?/gm, "") +
+                            (desc.length > 50 ? "..." : "")
                           : undefined
                       }
                       className="h-full"
@@ -856,7 +900,7 @@ export default function Page() {
             </div>
 
             <form.Subscribe
-              selector={state => state.values.eventDescription}
+              selector={(state) => state.values.eventDescription}
               children={(desc) => (
                 <DescriptionEditorModal
                   open={showDescriptionModal}
@@ -875,8 +919,8 @@ export default function Page() {
                 <DialogTrigger asChild>
                   <div className="h-full min-w-0">
                     <form.Subscribe
-                      selector={state => state.values.maxUsers}
-                      children={max => (
+                      selector={(state) => state.values.maxUsers}
+                      children={(max) => (
                         <InputBlock
                           icon={<Users className="w-5 h-5" />}
                           label={max ? `${max} Users` : "Unlimited Users"}
@@ -894,18 +938,28 @@ export default function Page() {
                   <div className="py-4 flex flex-col gap-3">
                     <Label>Max Attendees</Label>
                     <form.Field name="maxUsers">
-                      {field => (
+                      {(field) => (
                         <Input
                           type="number"
                           min={1}
                           value={field.state.value ?? ""}
-                          onChange={e => field.handleChange(e.target.value ? Number(e.target.value) : undefined)}
+                          onChange={(e) =>
+                            field.handleChange(
+                              e.target.value
+                                ? Number(e.target.value)
+                                : undefined,
+                            )
+                          }
                           placeholder="Leave empty for unlimited"
                         />
                       )}
                     </form.Field>
                   </div>
-                  <DialogFooter><DialogClose asChild><Button>Save</Button></DialogClose></DialogFooter>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button>Save</Button>
+                    </DialogClose>
+                  </DialogFooter>
                 </DialogContent>
               </Dialog>
 
@@ -914,8 +968,8 @@ export default function Page() {
                 <DialogTrigger asChild>
                   <div className="h-full min-w-0">
                     <form.Subscribe
-                      selector={state => state.values.organizationName}
-                      children={name => (
+                      selector={(state) => state.values.organizationName}
+                      children={(name) => (
                         <InputBlock
                           icon={<Building2 className="w-5 h-5" />}
                           label={name || "Organization Name"}
@@ -933,16 +987,20 @@ export default function Page() {
                   <div className="py-4 flex flex-col gap-3">
                     <Label>Organization Name</Label>
                     <form.Field name="organizationName">
-                      {field => (
+                      {(field) => (
                         <Input
                           value={field.state.value}
-                          onChange={e => field.handleChange(e.target.value)}
+                          onChange={(e) => field.handleChange(e.target.value)}
                           placeholder="e.g. Coding Club"
                         />
                       )}
                     </form.Field>
                   </div>
-                  <DialogFooter><DialogClose asChild><Button>Save</Button></DialogClose></DialogFooter>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button>Save</Button>
+                    </DialogClose>
+                  </DialogFooter>
                 </DialogContent>
               </Dialog>
 
@@ -951,8 +1009,8 @@ export default function Page() {
                 <PopoverTrigger asChild>
                   <div className="h-full min-w-0">
                     <form.Subscribe
-                      selector={state => state.values.eventRegisterBy}
-                      children={date => (
+                      selector={(state) => state.values.eventRegisterBy}
+                      children={(date) => (
                         <InputBlock
                           icon={<CalendarDays className="w-5 h-5" />}
                           label={date ? format(date, "PPP") : "Select Date"}
@@ -965,12 +1023,14 @@ export default function Page() {
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <form.Subscribe
-                    selector={state => state.values.eventRegisterBy}
-                    children={date => (
+                    selector={(state) => state.values.eventRegisterBy}
+                    children={(date) => (
                       <Calendar
                         mode="single"
                         selected={date}
-                        onSelect={(d) => form.setFieldValue("eventRegisterBy", d)}
+                        onSelect={(d) =>
+                          form.setFieldValue("eventRegisterBy", d)
+                        }
                         initialFocus
                       />
                     )}
@@ -983,11 +1043,15 @@ export default function Page() {
                 <DialogTrigger asChild>
                   <div className="h-full min-w-0">
                     <form.Subscribe
-                      selector={state => state.values}
-                      children={vals => (
+                      selector={(state) => state.values}
+                      children={(vals) => (
                         <InputBlock
                           icon={<Banknote className="w-5 h-5" />}
-                          label={vals.isFree ? "Free Event" : `${vals.currency} ${vals.entryFeeAmount}`}
+                          label={
+                            vals.isFree
+                              ? "Free Event"
+                              : `${vals.currency} ${vals.entryFeeAmount}`
+                          }
                           subLabel="Ticketing"
                           className="h-full"
                         />
@@ -1001,17 +1065,27 @@ export default function Page() {
                   </DialogHeader>
                   <div className="py-4 flex flex-col gap-4">
                     <form.Subscribe
-                      selector={s => s.values.isFree}
-                      children={isFree => (
+                      selector={(s) => s.values.isFree}
+                      children={(isFree) => (
                         <div className="flex bg-muted rounded-lg p-1">
                           <button
-                            className={cn("flex-1 py-2 text-sm font-medium rounded-md transition-all", isFree ? "bg-background shadow" : "text-muted-foreground")}
+                            className={cn(
+                              "flex-1 py-2 text-sm font-medium rounded-md transition-all",
+                              isFree
+                                ? "bg-background shadow"
+                                : "text-muted-foreground",
+                            )}
                             onClick={() => form.setFieldValue("isFree", true)}
                           >
                             Free
                           </button>
                           <button
-                            className={cn("flex-1 py-2 text-sm font-medium rounded-md transition-all", !isFree ? "bg-background shadow" : "text-muted-foreground")}
+                            className={cn(
+                              "flex-1 py-2 text-sm font-medium rounded-md transition-all",
+                              !isFree
+                                ? "bg-background shadow"
+                                : "text-muted-foreground",
+                            )}
                             onClick={() => form.setFieldValue("isFree", false)}
                           >
                             Paid
@@ -1021,33 +1095,45 @@ export default function Page() {
                     />
 
                     <form.Subscribe
-                      selector={s => s.values}
-                      children={vals => !vals.isFree && (
-                        <div className="flex gap-2">
-                          <div className="w-24 flex flex-col gap-2">
-                            <Label>Currency</Label>
-                            <Input
-                              value={vals.currency}
-                              onChange={e => form.setFieldValue("currency", e.target.value)}
-                            />
+                      selector={(s) => s.values}
+                      children={(vals) =>
+                        !vals.isFree && (
+                          <div className="flex gap-2">
+                            <div className="w-24 flex flex-col gap-2">
+                              <Label>Currency</Label>
+                              <Input
+                                value={vals.currency}
+                                onChange={(e) =>
+                                  form.setFieldValue("currency", e.target.value)
+                                }
+                              />
+                            </div>
+                            <div className="flex-1 flex flex-col gap-2">
+                              <Label>Amount</Label>
+                              <Input
+                                type="number"
+                                value={vals.entryFeeAmount}
+                                onChange={(e) =>
+                                  form.setFieldValue(
+                                    "entryFeeAmount",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="0.00"
+                              />
+                            </div>
                           </div>
-                          <div className="flex-1 flex flex-col gap-2">
-                            <Label>Amount</Label>
-                            <Input
-                              type="number"
-                              value={vals.entryFeeAmount}
-                              onChange={e => form.setFieldValue("entryFeeAmount", e.target.value)}
-                              placeholder="0.00"
-                            />
-                          </div>
-                        </div>
-                      )}
+                        )
+                      }
                     />
                   </div>
-                  <DialogFooter><DialogClose asChild><Button>Save</Button></DialogClose></DialogFooter>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button>Save</Button>
+                    </DialogClose>
+                  </DialogFooter>
                 </DialogContent>
               </Dialog>
-
             </div>
 
             {/* Submit Button */}

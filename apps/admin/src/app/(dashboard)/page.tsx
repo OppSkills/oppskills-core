@@ -5,7 +5,13 @@ import { AdminLogsCard } from "@/components/admin-panel/admin-logs-card";
 import { StatsDetailModal } from "@/components/admin-panel/stats-detail-modal";
 import { getMe } from "@/lib/api/actions";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Users, DollarSign, Calendar, Activity, Zap } from "lucide-react";
 import { getDashboardOverview } from "@/lib/api/dashboard";
 import { Loader2 } from "lucide-react";
@@ -54,13 +60,22 @@ export default function DashboardPage() {
 
   const [selectedStat, setSelectedStat] = useState<{
     title: string;
-    details: { label: string; value: string | number; subValue?: string; trend?: string }[];
+    details: {
+      label: string;
+      value: string | number;
+      subValue?: string;
+      trend?: string;
+    }[];
   } | null>(null);
 
   useEffect(() => {
     Promise.all([
-      getMe().then(res => setUser(res.data)).catch(err => console.error(err)),
-      getDashboardOverview().then(res => setStats(res.data)).catch(err => console.error(err))
+      getMe()
+        .then((res) => setUser(res.data))
+        .catch((err) => console.error(err)),
+      getDashboardOverview()
+        .then((res) => setStats(res.data))
+        .catch((err) => console.error(err)),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -71,93 +86,117 @@ export default function DashboardPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
-  const handleStatClick = (type: 'users' | 'revenue' | 'hackathon' | 'event') => {
+  const handleStatClick = (
+    type: "users" | "revenue" | "hackathon" | "event",
+  ) => {
     if (!stats) return;
 
-    let details: { label: string; value: string | number; subValue?: string; trend?: string }[] = [];
+    let details: {
+      label: string;
+      value: string | number;
+      subValue?: string;
+      trend?: string;
+    }[] = [];
     let title = "";
 
     switch (type) {
-      case 'users':
+      case "users":
         title = "User Statistics";
         details = [
           {
             label: "Total Users",
             value: stats.userStats.total,
-            subValue: "All registered users"
+            subValue: "All registered users",
           },
           {
             label: "New This Month",
             value: stats.users.thisMonth,
-            trend: calculateChange(stats.users.thisMonth, stats.users.lastMonth),
-            subValue: "vs Last Month"
+            trend: calculateChange(
+              stats.users.thisMonth,
+              stats.users.lastMonth,
+            ),
+            subValue: "vs Last Month",
           },
           {
             label: "New This Year",
             value: stats.userStats.thisyear, // Note: lowercase 'thisyear' in interface
-            subValue: `Last Year: ${stats.userStats.lastYear}`
-          }
+            subValue: `Last Year: ${stats.userStats.lastYear}`,
+          },
         ];
         break;
-      case 'revenue':
+      case "revenue":
         title = "Revenue Overview";
         details = [
           {
             label: "Total Revenue",
-            value: formatCurrency(stats.revenue.hackathon.total + stats.revenue.event.total),
-            subValue: "Combined Hackathons & Events"
+            value: formatCurrency(
+              stats.revenue.hackathon.total + stats.revenue.event.total,
+            ),
+            subValue: "Combined Hackathons & Events",
           },
           {
             label: "Hackathon Revenue",
             value: formatCurrency(stats.revenue.hackathon.total),
-            trend: calculateChange(stats.revenue.hackathon.thisYear, stats.revenue.hackathon.lastYear),
-            subValue: `This Year: ${formatCurrency(stats.revenue.hackathon.thisYear)}`
+            trend: calculateChange(
+              stats.revenue.hackathon.thisYear,
+              stats.revenue.hackathon.lastYear,
+            ),
+            subValue: `This Year: ${formatCurrency(stats.revenue.hackathon.thisYear)}`,
           },
           {
             label: "Event Revenue",
             value: formatCurrency(stats.revenue.event.total),
-            trend: calculateChange(stats.revenue.event.thisYear, stats.revenue.event.lastYear),
-            subValue: `This Year: ${formatCurrency(stats.revenue.event.thisYear)}`
-          }
+            trend: calculateChange(
+              stats.revenue.event.thisYear,
+              stats.revenue.event.lastYear,
+            ),
+            subValue: `This Year: ${formatCurrency(stats.revenue.event.thisYear)}`,
+          },
         ];
         break;
-      case 'hackathon':
+      case "hackathon":
         title = "Hackathon Statistics";
         details = [
           {
             label: "Active Hackathons",
             value: stats.activeEntities.hackathon.total,
-            subValue: "Currently running"
+            subValue: "Currently running",
           },
           {
             label: "Created This Month",
             value: stats.activeEntities.hackathon.thisMonth,
-            trend: calculateChange(stats.activeEntities.hackathon.thisMonth, stats.activeEntities.hackathon.lastMonth),
-            subValue: "vs Last Month"
-          }
+            trend: calculateChange(
+              stats.activeEntities.hackathon.thisMonth,
+              stats.activeEntities.hackathon.lastMonth,
+            ),
+            subValue: "vs Last Month",
+          },
         ];
         break;
-      case 'event':
+      case "event":
         title = "Event Statistics";
         details = [
           {
             label: "Active Events",
             value: stats.activeEntities.event.total,
-            subValue: "Currently running"
+            subValue: "Currently running",
           },
           {
             label: "Created This Month",
             value: stats.activeEntities.event.thisMonth,
-            trend: calculateChange(stats.activeEntities.event.thisMonth, stats.activeEntities.event.lastMonth),
-            subValue: "vs Last Month"
-          }
+            trend: calculateChange(
+              stats.activeEntities.event.thisMonth,
+              stats.activeEntities.event.lastMonth,
+            ),
+            subValue: "vs Last Month",
+          },
         ];
         break;
     }
@@ -173,45 +212,58 @@ export default function DashboardPage() {
     );
   }
 
-  const statCards = stats ? [
-    {
-      title: "Total Users",
-      value: stats.userStats.total.toString(),
-      change: calculateChange(stats.users.thisMonth, stats.users.lastMonth),
-      icon: Users,
-      onClick: () => handleStatClick('users')
-    },
-    {
-      title: "Total Revenue",
-      value: formatCurrency(stats.revenue.hackathon.total + stats.revenue.event.total),
-      change: calculateChange(
-        stats.revenue.hackathon.thisYear + stats.revenue.event.thisYear,
-        stats.revenue.hackathon.lastYear + stats.revenue.event.lastYear
-      ),
-      icon: DollarSign,
-      onClick: () => handleStatClick('revenue')
-    },
-    {
-      title: "Active Hackathons",
-      value: stats.activeEntities.hackathon.total.toString(),
-      change: calculateChange(stats.activeEntities.hackathon.thisMonth, stats.activeEntities.hackathon.lastMonth),
-      icon: Zap,
-      onClick: () => handleStatClick('hackathon')
-    },
-    {
-      title: "Active Events",
-      value: stats.activeEntities.event.total.toString(),
-      change: calculateChange(stats.activeEntities.event.thisMonth, stats.activeEntities.event.lastMonth),
-      icon: Calendar,
-      onClick: () => handleStatClick('event')
-    }
-  ] : [];
+  const statCards = stats
+    ? [
+        {
+          title: "Total Users",
+          value: stats.userStats.total.toString(),
+          change: calculateChange(stats.users.thisMonth, stats.users.lastMonth),
+          icon: Users,
+          onClick: () => handleStatClick("users"),
+        },
+        {
+          title: "Total Revenue",
+          value: formatCurrency(
+            stats.revenue.hackathon.total + stats.revenue.event.total,
+          ),
+          change: calculateChange(
+            stats.revenue.hackathon.thisYear + stats.revenue.event.thisYear,
+            stats.revenue.hackathon.lastYear + stats.revenue.event.lastYear,
+          ),
+          icon: DollarSign,
+          onClick: () => handleStatClick("revenue"),
+        },
+        {
+          title: "Active Hackathons",
+          value: stats.activeEntities.hackathon.total.toString(),
+          change: calculateChange(
+            stats.activeEntities.hackathon.thisMonth,
+            stats.activeEntities.hackathon.lastMonth,
+          ),
+          icon: Zap,
+          onClick: () => handleStatClick("hackathon"),
+        },
+        {
+          title: "Active Events",
+          value: stats.activeEntities.event.total.toString(),
+          change: calculateChange(
+            stats.activeEntities.event.thisMonth,
+            stats.activeEntities.event.lastMonth,
+          ),
+          icon: Calendar,
+          onClick: () => handleStatClick("event"),
+        },
+      ]
+    : [];
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-2">Welcome back, {user?.name || 'Admin'}. Here is what is happening today.</p>
+        <p className="text-gray-500 mt-2">
+          Welcome back, {user?.name || "Admin"}. Here is what is happening
+          today.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -254,7 +306,9 @@ export default function DashboardPage() {
                 <div className="p-4 rounded-full bg-primary/5">
                   <Activity className="h-8 w-8 text-primary/40 animate-pulse" />
                 </div>
-                <p className="text-sm font-medium text-muted-foreground italic">Financial analytics visualization coming soon</p>
+                <p className="text-sm font-medium text-muted-foreground italic">
+                  Financial analytics visualization coming soon
+                </p>
               </div>
             </CardContent>
           </Card>

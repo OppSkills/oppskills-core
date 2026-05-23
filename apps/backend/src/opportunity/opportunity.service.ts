@@ -33,7 +33,7 @@ export class OpportunityService {
   constructor(
     private readonly eventService: EventService,
     private readonly hackathonService: HackathonService,
-  ) { }
+  ) {}
 
   /**
    * List past public opportunities (Deadline < Now).
@@ -212,12 +212,7 @@ export class OpportunityService {
         tierNums.length > 0 ? Math.min(...tierNums) : null;
       const highestTicketPrice =
         tierNums.length > 0 ? Math.max(...tierNums) : null;
-      const {
-        views: _v,
-        impressions: _i,
-        ticketTiers: _t,
-        ...rest
-      } = item;
+      const { views: _v, impressions: _i, ticketTiers: _t, ...rest } = item;
       return { ...rest, lowestTicketPrice, highestTicketPrice };
     };
 

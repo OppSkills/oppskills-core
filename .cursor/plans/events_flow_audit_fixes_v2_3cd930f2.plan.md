@@ -37,6 +37,7 @@ todos:
 ### 1) Dashboard “limited editing mode” is incomplete (still calls DRAFT-only endpoints)
 
 In `apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx`, the UI shows a banner for non-DRAFT events, but autosave still triggers:
+
 - `updateEventAdditionalInfo()`
 - `updateEventPrizeBreakdown()`
 - `updateEventRegistrationForm()`
@@ -57,6 +58,7 @@ Those backend endpoints are DRAFT-only (enforced by `assertEventEditableByUser()
 In `apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx`, the mapping for prizes and registration questions uses string casts for types (e.g. `attendeeEligibility as ...`, `visibility as ...`), and registration form updates currently always send `fields` without considering `externalFormLink`.
 
 **Required fix**: Tighten mapping:
+
 - Only send enum values that are known valid.
 - Preserve `externalFormLink` when fields aren’t intended to overwrite it.
 - In non-DRAFT mode, block registration form updates entirely.
@@ -64,6 +66,7 @@ In `apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx`, the ma
 ### 4) Google Sheets logging is still “single answers column” and on Sheet1
 
 Backend logging is currently:
+
 - Triggered after join: `EventService.joinEvent()` calls `logToGoogleSheets(eventId, userId, answers ?? [])`.
 - Writes 5 columns into `Sheet1!A1`: timestamp, event name, user name, email, and a single formatted answers string.
 
@@ -82,10 +85,12 @@ Current backend behavior loads `registrationFields` only if `answers.length > 0`
 ### A) Fix edit-event limited mode correctly (frontend)
 
 **Files**:
+
 - `apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/page.tsx`
 - `apps/ui-landing/src/app/dashboard/events/[slug]/edit-event/_components/BasicDetails.tsx`
 
 **Work**:
+
 - Detect non-DRAFT (already tracked via `eventStatus`).
 - When non-DRAFT:
   - Disable/hide tabs that rely on DRAFT-only endpoints: `registration-settings`, `prizes`, `additional-info` (and anything else that triggers nested updates).
@@ -98,9 +103,11 @@ Current backend behavior loads `registrationFields` only if `answers.length > 0`
 ### B) Fix dashboard registration open/closed logic
 
 **File**:
+
 - `apps/ui-landing/src/app/dashboard/events/page.tsx`
 
 **Work**:
+
 - Update `isRegistrationOpen()` to match backend join rules:
   - Open only when status is **PUBLISHED or ONGOING**
   - approvalStatus must be **APPROVED**
@@ -112,9 +119,11 @@ Current backend behavior loads `registrationFields` only if `answers.length > 0`
 ### C) Enforce required answers on join (backend)
 
 **Files**:
+
 - `apps/backend/src/event/event.service.ts`
 
 **Work**:
+
 - In `joinEvent(eventId, userId, answers)`:
   - Always fetch `eventRegistrationFormEntity` + fields for the event (or at least when a form exists).
   - If form has any `required: true` fields:
@@ -127,16 +136,19 @@ Current backend behavior loads `registrationFields` only if `answers.length > 0`
 ### D) Upgrade Google Sheets logging to “one column per question” with auto headers
 
 **Files**:
+
 - `apps/backend/src/event/event.service.ts` (log payload building)
 - `apps/backend/src/google-sheets/google-sheets.service.ts` (extend API)
 
 **Target behavior**:
+
 - Use tab **`Registrations`**.
 - Row 1 is the header row.
 - On first write, create headers.
 - If registration form fields change, extend headers by adding new question columns (never reorder existing columns).
 
 **Proposed columns**:
+
 - Fixed columns first:
   - `timestamp`
   - `eventId`
@@ -149,6 +161,7 @@ Current backend behavior loads `registrationFields` only if `answers.length > 0`
   - Prefer `questionLabel (fieldId)` to avoid collisions when labels repeat.
 
 **Implementation sketch**:
+
 - Add GoogleSheetsService helpers:
   - `getRow(range)` to read header row
   - `updateRow(range, values)` to write headers
@@ -192,4 +205,3 @@ sequenceDiagram
 
 - Public endpoints currently include `contactName/contactEmail/contactPhone` and you confirmed that’s desired.
 - `apps/ui-landing/src/hooks/useEvents.ts` currently defines `owner.email` in the list item type, but the public API doesn’t return owner email. Adjust type to match actual response (or add a mapping layer). This is a likely TS/runtime mismatch.
-

@@ -121,6 +121,15 @@ export class EventLocationDto {
   @IsOptional()
   @IsUrl()
   virtualLink?: string;
+
+  /** Google Place ID. */
+  @ApiPropertyOptional({
+    description: "Google Place ID for resolving coordinates",
+    example: "ChIJ2V-Az5xs3zkR65a6CB1q2wY",
+  })
+  @IsOptional()
+  @IsString()
+  placeId?: string;
 }
 
 /**
@@ -947,7 +956,8 @@ export class EventRegistrationAnswerDto {
   fieldId: string;
 
   @ApiProperty({
-    description: "The answer value - string for TEXT/EMAIL/PHONE_NO, number for NUMBER, string[] for OPTIONS",
+    description:
+      "The answer value - string for TEXT/EMAIL/PHONE_NO, number for NUMBER, string[] for OPTIONS",
     oneOf: [
       { type: "string" },
       { type: "number" },
@@ -964,7 +974,8 @@ export class EventRegistrationAnswerDto {
  */
 export class JoinEventDto {
   @ApiPropertyOptional({
-    description: "Array of answers to registration form fields (required if event has registration form)",
+    description:
+      "Array of answers to registration form fields (required if event has registration form)",
     type: [EventRegistrationAnswerDto],
   })
   @IsOptional()
@@ -1009,4 +1020,3 @@ export interface EventParticipantWithStatus {
   passEmailSentAt?: string;
   approvedAt?: string;
 }
-

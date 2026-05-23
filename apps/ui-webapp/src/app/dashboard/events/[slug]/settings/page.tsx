@@ -282,8 +282,12 @@ export default function EventSettingsPage({
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="font-black text-2xl md:text-3xl poppins">{event.name}</h1>
-              <p className="text-sm text-muted-foreground inter">Event Settings</p>
+              <h1 className="font-black text-2xl md:text-3xl poppins">
+                {event.name}
+              </h1>
+              <p className="text-sm text-muted-foreground inter">
+                Event Settings
+              </p>
             </div>
           </div>
 
@@ -302,7 +306,9 @@ export default function EventSettingsPage({
                     {getStatusBadge(event.status)}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-neutral-500 font-medium">Approval:</span>
+                    <span className="text-sm text-neutral-500 font-medium">
+                      Approval:
+                    </span>
                     {getApprovalBadge(event.approvalStatus)}
                   </div>
                 </div>
@@ -331,8 +337,8 @@ export default function EventSettingsPage({
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
                     <p className="text-sm text-yellow-800 flex items-center gap-2 inter font-medium">
                       <Clock className="w-4 h-4" />
-                      Published — awaiting admin approval. Registrations stay closed
-                      until an admin approves.
+                      Published — awaiting admin approval. Registrations stay
+                      closed until an admin approves.
                     </p>
                   </div>
                 )}
@@ -362,8 +368,8 @@ export default function EventSettingsPage({
 
                 {isPendingApproval && (
                   <p className="text-sm text-neutral-500 inter">
-                    Published — waiting for an admin to approve. Registrations open
-                    after approval.
+                    Published — waiting for an admin to approve. Registrations
+                    open after approval.
                   </p>
                 )}
 
@@ -384,7 +390,10 @@ export default function EventSettingsPage({
                 <div className="space-y-4">
                   <div className="flex items-center justify-between bg-primary-50/20 p-4 rounded-xl border border-primary-100">
                     <div className="space-y-0.5">
-                      <Label htmlFor="pause-registrations" className="text-base font-bold poppins">
+                      <Label
+                        htmlFor="pause-registrations"
+                        className="text-base font-bold poppins"
+                      >
                         Pause Registrations
                       </Label>
                       <p className="text-sm text-neutral-500 inter">
@@ -431,7 +440,8 @@ export default function EventSettingsPage({
                 description="Change the lifecycle status of your event"
               >
                 <div className="flex flex-wrap gap-3 pt-2">
-                  {(event.status === "PUBLISHED" || event.status === "ONGOING") && (
+                  {(event.status === "PUBLISHED" ||
+                    event.status === "ONGOING") && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
@@ -444,14 +454,19 @@ export default function EventSettingsPage({
                       </AlertDialogTrigger>
                       <AlertDialogContent className="rounded-2xl border-primary-100">
                         <AlertDialogHeader>
-                          <AlertDialogTitle className="poppins font-black text-2xl">Move to Draft?</AlertDialogTitle>
+                          <AlertDialogTitle className="poppins font-black text-2xl">
+                            Move to Draft?
+                          </AlertDialogTitle>
                           <AlertDialogDescription className="inter">
-                            This will unpublish your event and move it back to draft
-                            status. The event will no longer be visible to the public.
+                            This will unpublish your event and move it back to
+                            draft status. The event will no longer be visible to
+                            the public.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel className="rounded-full">Keep Published</AlertDialogCancel>
+                          <AlertDialogCancel className="rounded-full">
+                            Keep Published
+                          </AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => updateStatusMutation.mutate("DRAFT")}
                             className="rounded-full bg-primary-500 hover:bg-primary-600"
@@ -500,15 +515,22 @@ export default function EventSettingsPage({
                     </AlertDialogTrigger>
                     <AlertDialogContent className="rounded-2xl border-amber-100">
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="poppins font-black text-2xl">Cancel Event?</AlertDialogTitle>
+                        <AlertDialogTitle className="poppins font-black text-2xl">
+                          Cancel Event?
+                        </AlertDialogTitle>
                         <AlertDialogDescription className="inter">
-                          This will mark the event as cancelled. This action cannot be undone.
+                          This will mark the event as cancelled. This action
+                          cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-full">Keep Event</AlertDialogCancel>
+                        <AlertDialogCancel className="rounded-full">
+                          Keep Event
+                        </AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => updateStatusMutation.mutate("CANCELLED")}
+                          onClick={() =>
+                            updateStatusMutation.mutate("CANCELLED")
+                          }
                           className="rounded-full bg-amber-600 hover:bg-amber-700"
                         >
                           Cancel Event
@@ -529,27 +551,37 @@ export default function EventSettingsPage({
               <div className="space-y-4 pt-2">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="rounded-full font-bold px-8">
+                    <Button
+                      variant="destructive"
+                      className="rounded-full font-bold px-8"
+                    >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Delete Event
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent className="rounded-2xl border-red-100">
                     <AlertDialogHeader>
-                      <AlertDialogTitle className="poppins font-black text-2xl text-red-600">Delete Event?</AlertDialogTitle>
+                      <AlertDialogTitle className="poppins font-black text-2xl text-red-600">
+                        Delete Event?
+                      </AlertDialogTitle>
                       <AlertDialogDescription className="space-y-4 inter">
                         <p>
                           This action is permanent and cannot be undone. All
                           data will be permanently deleted.
                         </p>
                         <div className="bg-red-50 p-4 rounded-xl border border-red-100">
-                          <Label htmlFor="confirm-delete" className="text-sm font-bold text-red-800 mb-2 block">
+                          <Label
+                            htmlFor="confirm-delete"
+                            className="text-sm font-bold text-red-800 mb-2 block"
+                          >
                             Type <strong>{event.name}</strong> to confirm:
                           </Label>
                           <Input
                             id="confirm-delete"
                             value={deleteConfirmation}
-                            onChange={(e) => setDeleteConfirmation(e.target.value)}
+                            onChange={(e) =>
+                              setDeleteConfirmation(e.target.value)
+                            }
                             placeholder={event.name}
                             className="mt-2 bg-white rounded-xl border-red-200 focus:ring-red-500"
                           />
@@ -557,7 +589,10 @@ export default function EventSettingsPage({
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel onClick={() => setDeleteConfirmation("")} className="rounded-full">
+                      <AlertDialogCancel
+                        onClick={() => setDeleteConfirmation("")}
+                        className="rounded-full"
+                      >
                         Cancel
                       </AlertDialogCancel>
                       <AlertDialogAction
@@ -578,7 +613,8 @@ export default function EventSettingsPage({
                 </AlertDialog>
 
                 <p className="text-xs text-neutral-400 inter">
-                  Deleting this event will permanently remove all associated records and data.
+                  Deleting this event will permanently remove all associated
+                  records and data.
                 </p>
               </div>
             </Container>

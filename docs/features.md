@@ -22,17 +22,18 @@ This document provides a comprehensive overview of all key features and business
 ## 1. Hackathon Lifecycle Management
 
 ### Overview
+
 Hackathons follow a strict lifecycle with well-defined states and transition rules enforced at the business logic layer.
 
 ### Lifecycle States
 
-| State | Description | User Actions Allowed |
-|-------|-------------|---------------------|
-| **DRAFT** | Initial state when creating a hackathon | Edit all fields, add rounds, update prizes, update registration form |
-| **PUBLISHED** | Hackathon is visible and accepting registrations | View, register, no edits allowed |
-| **ONGOING** | Event is currently happening | View only |
-| **COMPLETED** | Event has finished | View only (terminal state) |
-| **CANCELLED** | Event was cancelled | View only (terminal state) |
+| State         | Description                                      | User Actions Allowed                                                 |
+| ------------- | ------------------------------------------------ | -------------------------------------------------------------------- |
+| **DRAFT**     | Initial state when creating a hackathon          | Edit all fields, add rounds, update prizes, update registration form |
+| **PUBLISHED** | Hackathon is visible and accepting registrations | View, register, no edits allowed                                     |
+| **ONGOING**   | Event is currently happening                     | View only                                                            |
+| **COMPLETED** | Event has finished                               | View only (terminal state)                                           |
+| **CANCELLED** | Event was cancelled                              | View only (terminal state)                                           |
 
 ### State Transitions
 
@@ -45,6 +46,7 @@ CANCELLED CANCELLED CANCELLED
 ```
 
 **Allowed Transitions:**
+
 - `DRAFT` can transition to: `PUBLISHED`, `CANCELLED`
 - `PUBLISHED` can transition to: `ONGOING`, `CANCELLED`
 - `ONGOING` can transition to: `COMPLETED`, `CANCELLED`
@@ -62,11 +64,13 @@ CANCELLED CANCELLED CANCELLED
 
 **Service:** `HackathonService`
 **Methods:**
+
 - `createHackathon()` - Creates hackathon in DRAFT state
 - `updateHackathonStatus()` - Changes lifecycle status with validation
 - `assertLifecycleTransitionAllowed()` - Validates state transitions
 
 **Database Schema:**
+
 ```prisma
 enum LifecycleStatus {
   DRAFT
@@ -87,17 +91,18 @@ model HackathonEntity {
 ## 2. Role-Based Access Control
 
 ### Overview
+
 The platform implements a multi-layered authorization system with global access levels and per-hackathon roles.
 
 ### Global Access Levels
 
 Defined in the `AccessLevel` enum:
 
-| Level | Permissions | Use Case |
-|-------|-------------|----------|
-| **ADMIN** | Full system access, can edit/delete any hackathon or festival | System administrators |
-| **USER** | Can create and manage own hackathons/festivals | Default for all users |
-| **VIEWER** | Read-only access | Future use |
+| Level      | Permissions                                                   | Use Case              |
+| ---------- | ------------------------------------------------------------- | --------------------- |
+| **ADMIN**  | Full system access, can edit/delete any hackathon or festival | System administrators |
+| **USER**   | Can create and manage own hackathons/festivals                | Default for all users |
+| **VIEWER** | Read-only access                                              | Future use            |
 
 Admin users are configured via the `ADMIN_USER_IDS` environment variable (comma-separated Clerk user IDs).
 
@@ -105,15 +110,16 @@ Admin users are configured via the `ADMIN_USER_IDS` environment variable (comma-
 
 Hackathon owners can assign additional roles to users:
 
-| Role | Permissions | Management |
-|------|-------------|-----------|
-| **OWNER** | Full control (edit, delete, manage roles) | Set at creation, cannot be changed |
-| **MANAGER** | Can edit hackathon (when DRAFT), view dashboard | Added/removed by owner or admin |
-| **EVALUATOR** | Reserved for future evaluation features | Added/removed by owner or admin |
+| Role          | Permissions                                     | Management                         |
+| ------------- | ----------------------------------------------- | ---------------------------------- |
+| **OWNER**     | Full control (edit, delete, manage roles)       | Set at creation, cannot be changed |
+| **MANAGER**   | Can edit hackathon (when DRAFT), view dashboard | Added/removed by owner or admin    |
+| **EVALUATOR** | Reserved for future evaluation features         | Added/removed by owner or admin    |
 
 ### Role Assignment
 
 **Adding Roles:**
+
 - Only owner or admin can add managers/evaluators
 - Users are identified by email address
 - Email lookup is case-insensitive
@@ -121,6 +127,7 @@ Hackathon owners can assign additional roles to users:
 - Idempotent operation (adding existing role returns success)
 
 **Removing Roles:**
+
 - Only owner or admin can remove managers/evaluators
 - Identified by email address
 - Returns error if user doesn't have the specified role
@@ -128,6 +135,7 @@ Hackathon owners can assign additional roles to users:
 ### Dashboard Visibility
 
 The `listMyHackathons()` method returns hackathons where the user is:
+
 - The owner, OR
 - A manager
 
@@ -136,6 +144,7 @@ Evaluators are intentionally excluded from dashboard listing (future feature).
 ### Permission Checking
 
 **Edit Permissions:**
+
 ```typescript
 // User can edit if:
 // 1. They are the owner, OR
@@ -144,6 +153,7 @@ Evaluators are intentionally excluded from dashboard listing (future feature).
 ```
 
 **Delete Permissions:**
+
 ```typescript
 // User can delete if:
 // 1. They are the owner, OR
@@ -154,6 +164,7 @@ Evaluators are intentionally excluded from dashboard listing (future feature).
 
 **Service:** `HackathonService`
 **Methods:**
+
 - `getHackathonRoles()` - Get all roles for a hackathon (owner + managers + evaluators)
 - `addHackathonRole()` - Add a manager or evaluator
 - `removeHackathonRole()` - Remove a manager or evaluator
@@ -161,6 +172,7 @@ Evaluators are intentionally excluded from dashboard listing (future feature).
 - `isAdminUser()` - Check if user has ADMIN access level
 
 **Database Schema:**
+
 ```prisma
 model HackathonUserRoleEntity {
   id          String
@@ -183,16 +195,19 @@ enum HackathonUserRole {
 ## 3. Team Management
 
 ### Overview
+
 Teams allow multiple participants to collaborate in a hackathon. The platform enforces team size limits and prevents conflicts.
 
 ### Team Creation
 
 **Process:**
+
 1. User creates a team for a specific hackathon
 2. Creator becomes the team leader
 3. Team has a maximum size defined by the organizer
 
 **Business Rules:**
+
 - Hackathon must exist
 - Hackathon owner cannot create a team in their own hackathon
 - If hackathon has `maxTeams` limit, enforce it (null = unlimited)
@@ -217,11 +232,13 @@ enum ParticipantType {
 ### Joining Teams
 
 **Process:**
+
 1. User requests to join an existing team
 2. System validates eligibility
 3. User is added as a team member
 
 **Business Rules:**
+
 - Team must exist
 - Team must not be full (`members.length < maxSize`)
 - Team leader cannot join their own team
@@ -231,17 +248,20 @@ enum ParticipantType {
 ### Leaving Teams
 
 **Process:**
+
 1. Team member requests to leave
 2. System removes membership
 3. Team size is reduced
 
 **Business Rules:**
+
 - User must be a member of the team
 - Team leader cannot leave via this method (would need to delete team)
 
 ### Maximum Teams Limit
 
 Hackathon organizers can limit total number of teams:
+
 - Set via `maxTeams` field on hackathon
 - `null` = unlimited teams
 - When limit is reached, new team creation is blocked
@@ -251,6 +271,7 @@ Hackathon organizers can limit total number of teams:
 
 **Service:** `TeamService`
 **Methods:**
+
 - `createTeam()` - Create a new team with leader
 - `joinTeam()` - Add user as team member
 - `leaveTeam()` - Remove user from team
@@ -258,6 +279,7 @@ Hackathon organizers can limit total number of teams:
 - `getTeamById()` - Get team details with members
 
 **Database Schema:**
+
 ```prisma
 model TeamEntity {
   id          String
@@ -283,16 +305,19 @@ model TeamMemberEntity {
 ## 4. Registration Forms
 
 ### Overview
+
 Hackathons can have custom registration forms with flexible field types, or use external form links.
 
 ### Registration Form Options
 
 **Option 1: Internal Custom Form**
+
 - Create custom fields with various types
 - Full control over field configuration
 - Data collected within the platform
 
 **Option 2: External Form Link**
+
 - Provide URL to external form (Google Forms, Typeform, etc.)
 - When external link is set, internal fields are cleared
 - Simpler for organizers already using external tools
@@ -314,23 +339,25 @@ enum RegistrationFieldType {
 
 Each field supports:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `label` | String | Field label/question |
-| `type` | RegistrationFieldType | Input type |
-| `required` | Boolean | Whether field is mandatory |
-| `order` | Integer | Display order (must be unique per form) |
-| `options` | String[] | Choices for OPTIONS type |
-| `placeholder` | String? | Placeholder text |
+| Property      | Type                  | Description                             |
+| ------------- | --------------------- | --------------------------------------- |
+| `label`       | String                | Field label/question                    |
+| `type`        | RegistrationFieldType | Input type                              |
+| `required`    | Boolean               | Whether field is mandatory              |
+| `order`       | Integer               | Display order (must be unique per form) |
+| `options`     | String[]              | Choices for OPTIONS type                |
+| `placeholder` | String?               | Placeholder text                        |
 
 ### Form Management
 
 **Creating/Updating Form:**
+
 - Only available when hackathon is in DRAFT status
 - Can be updated via dedicated endpoint: `PUT /hackathons/:id/registration-form`
 - Form replacement is atomic (delete old fields, create new ones in transaction)
 
 **Validation Rules:**
+
 - Field order values must be unique within a form
 - If external form link is provided, internal fields are automatically cleared
 - Empty fields array clears all custom fields
@@ -338,6 +365,7 @@ Each field supports:
 ### Form Storage
 
 **Database Schema:**
+
 ```prisma
 model RegistrationFormEntity {
   id               String
@@ -366,6 +394,7 @@ model RegistrationFieldEntity {
 **Method:** `updateHackathonRegistrationForm()`
 
 **Workflow:**
+
 1. Validate hackathon is editable (DRAFT status, proper permissions)
 2. Validate field order uniqueness
 3. Upsert registration form
@@ -377,6 +406,7 @@ model RegistrationFieldEntity {
 ## 5. Round Management
 
 ### Overview
+
 Hackathons are divided into rounds, each with specific timelines, types, and submission configurations.
 
 ### Round Types
@@ -395,15 +425,15 @@ Different round types may require different submission configurations.
 
 Each round includes:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | String | Round name (e.g., "Round 1", "Finals") |
-| `description` | String? | Optional description |
-| `startsAt` | DateTime | When round begins |
-| `endsAt` | DateTime | When round ends |
-| `order` | Integer | Display order (must be unique per hackathon) |
-| `roundType` | HackathonRoundType | Type of round |
-| `submissionConfig` | JSON? | Custom submission requirements |
+| Field              | Type               | Description                                  |
+| ------------------ | ------------------ | -------------------------------------------- |
+| `name`             | String             | Round name (e.g., "Round 1", "Finals")       |
+| `description`      | String?            | Optional description                         |
+| `startsAt`         | DateTime           | When round begins                            |
+| `endsAt`           | DateTime           | When round ends                              |
+| `order`            | Integer            | Display order (must be unique per hackathon) |
+| `roundType`        | HackathonRoundType | Type of round                                |
+| `submissionConfig` | JSON?              | Custom submission requirements               |
 
 ### Round Status
 
@@ -422,6 +452,7 @@ Status can be updated based on current time and round dates.
 ### Default Round Generation
 
 When creating a hackathon without specifying rounds:
+
 1. System generates 3 default rounds
 2. Timeline is evenly split between hackathon start and end dates
 3. Rounds are named "Round 1", "Round 2", "Round 3"
@@ -429,6 +460,7 @@ When creating a hackathon without specifying rounds:
 5. Each round gets sequential order: 0, 1, 2
 
 **Calculation:**
+
 ```typescript
 totalDuration = endDate - startDate
 roundDuration = totalDuration / 3
@@ -441,12 +473,14 @@ Round 3: startDate + (2 * roundDuration) → endDate
 ### Round Management
 
 **Updating Rounds:**
+
 - Only when hackathon is in DRAFT status
 - Dedicated endpoint: `PUT /hackathons/:id/rounds`
 - Full replacement (delete all existing rounds, create new ones)
 - Transaction-based for data consistency
 
 **Validation:**
+
 - Each round's `endsAt` must be >= `startsAt`
 - Order values should be unique (enforced by DB)
 
@@ -475,10 +509,12 @@ Schema is flexible to accommodate different hackathon types.
 
 **Service:** `HackathonService`
 **Methods:**
+
 - `updateHackathonRounds()` - Replace all rounds
 - `generateDefaultRounds()` - Create default 3-round structure
 
 **Database Schema:**
+
 ```prisma
 model RoundEntity {
   id               String
@@ -501,16 +537,19 @@ model RoundEntity {
 ## 6. Prize Management
 
 ### Overview
+
 Hackathons can define prizes with flexible structures supporting multiple winners and prize tiers.
 
 ### Prize Configuration
 
 **Prize Total Worth:**
+
 - `prizeTotalWorthAmount` - Overall prize pool amount
 - `currency` - Currency code (default: "INR")
 - Displayed as aggregate prize pool
 
 **Prize Breakdown:**
+
 - Detailed breakdown by position/tier
 - Multiple winners supported
 - Each entry includes amount and description
@@ -519,13 +558,14 @@ Hackathons can define prizes with flexible structures supporting multiple winner
 
 Each prize entry contains:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `position` | String | Prize tier (e.g., "1st Place", "Best Design") |
-| `amount` | Decimal | Prize amount (up to 12 digits, 2 decimal places) |
-| `description` | String? | Additional prize details |
+| Field         | Type    | Description                                      |
+| ------------- | ------- | ------------------------------------------------ |
+| `position`    | String  | Prize tier (e.g., "1st Place", "Best Design")    |
+| `amount`      | Decimal | Prize amount (up to 12 digits, 2 decimal places) |
+| `description` | String? | Additional prize details                         |
 
 **Example:**
+
 ```json
 [
   {
@@ -549,10 +589,12 @@ Each prize entry contains:
 ### Additional Prize Features
 
 **Prize Description (JSON):**
+
 - `prizeDescription` - Rich JSON field for detailed prize information
 - Can include structured data like perks, sponsorships, etc.
 
 **Certificate:**
+
 - `prizeCertificate` - Boolean flag
 - Indicates if winners receive certificates
 - Default: false
@@ -560,12 +602,14 @@ Each prize entry contains:
 ### Prize Management
 
 **Updating Prizes:**
+
 - Only when hackathon is in DRAFT status
 - Dedicated endpoint: `PUT /hackathons/:id/prize-breakdown`
 - Full replacement of prize list
 - Transaction-based update
 
 **Validation:**
+
 - All amounts must be valid finite numbers
 - Amounts are stored as Decimal(12,2) for precision
 - Empty array clears all prize breakdowns
@@ -576,6 +620,7 @@ Each prize entry contains:
 **Method:** `updateHackathonPrizeBreakdown()`
 
 **Database Schema:**
+
 ```prisma
 model HackathonEntity {
   prizeTotalWorthAmount Decimal?  @db.Decimal(12, 2)
@@ -599,6 +644,7 @@ model PrizeBreakdownEntity {
 ## 7. Festival Hierarchy
 
 ### Overview
+
 Festivals are top-level events that can contain multiple hackathons, enabling organizers to run multi-event conferences or competitions.
 
 ### Hierarchy Structure
@@ -613,22 +659,26 @@ Festival (e.g., "TechFest 2025")
 ### Festival Features
 
 **Core Information:**
+
 - Name, description, slug (URL-friendly identifier)
 - Poster image URL
 - Website URL
 - Start and end dates
 
 **Location:**
+
 - Same location system as hackathons
 - Can be PHYSICAL or VIRTUAL
 - Shared location information across all hackathons (optional)
 
 **Organization:**
+
 - Organizer ID (festival creator)
 - Organization name and logo
 - Multiple hackathons under single organization
 
 **Lifecycle:**
+
 - Same lifecycle states as hackathons (DRAFT → PUBLISHED → ONGOING → COMPLETED)
 - Same transition rules and terminal states
 - Managed independently from child hackathons
@@ -636,17 +686,20 @@ Festival (e.g., "TechFest 2025")
 ### Hackathon-Festival Relationship
 
 **Standalone Hackathons:**
+
 - `festivalId` is null
 - Independent event
 - Most common use case
 
 **Festival Hackathons:**
+
 - `festivalId` references parent festival
 - Can inherit festival organization info
 - Listed under festival
 - Deletion: When festival is deleted, hackathons' `festivalId` is set to null (not cascade deleted)
 
 **Querying:**
+
 - List all festivals: `GET /festivals`
 - List hackathons under festival: `GET /festivals/:id/hackathons`
 - List hackathons with optional festival filter: `GET /hackathons?festivalId=xxx`
@@ -654,16 +707,19 @@ Festival (e.g., "TechFest 2025")
 ### Festival Management
 
 **Creation:**
+
 - Any authenticated user can create a festival
 - Creator becomes the organizer
 - Starts in DRAFT status
 
 **Permissions:**
+
 - Organizer can edit/delete festival
 - Admin users can edit/delete any festival
 - Same permission model as hackathons
 
 **Slug Generation:**
+
 - Auto-generated from name or custom slug
 - Unique constraint enforced
 - Collision resolution via random suffix
@@ -679,6 +735,7 @@ Festival (e.g., "TechFest 2025")
 
 **Service:** `FestivalService`
 **Methods:**
+
 - `createFestival()` - Create new festival
 - `updateFestival()` - Update festival details
 - `deleteFestival()` - Delete festival (sets hackathons' festivalId to null)
@@ -686,6 +743,7 @@ Festival (e.g., "TechFest 2025")
 - `getHackathonsUnderFestival()` - List child hackathons
 
 **Database Schema:**
+
 ```prisma
 model FestivalEntity {
   id                  String
@@ -698,7 +756,7 @@ model FestivalEntity {
   // Location
   locationType        LocationType?
   locationAddress     String?
-  locationCity        String?
+  locationCoords        String?
   locationVirtualLink String?
 
   // Dates
@@ -728,6 +786,7 @@ model HackathonEntity {
 ## 8. File Uploads (S3 Presigned URLs)
 
 ### Overview
+
 The platform uses S3 presigned POST URLs for secure, direct client-to-S3 uploads, eliminating the need to proxy large files through the backend.
 
 ### Upload Flow
@@ -740,12 +799,14 @@ The platform uses S3 presigned POST URLs for secure, direct client-to-S3 uploads
 ### Supported File Types
 
 **Images:**
+
 - JPEG (`image/jpeg`)
 - PNG (`image/png`)
 - WebP (`image/webp`)
 - Max size: 10MB (configurable via `MEDIA_MAX_UPLOAD_BYTES`)
 
 **Documents:**
+
 - PDF (`application/pdf`)
 - Microsoft Word (`.doc`, `.docx`)
 - Microsoft Excel (`.xls`, `.xlsx`)
@@ -757,15 +818,18 @@ The platform uses S3 presigned POST URLs for secure, direct client-to-S3 uploads
 ### Upload Purposes
 
 **Image Uploads:**
+
 - `HACKATHON_BANNER` - Banner images for hackathons
 
 **Document Uploads:**
+
 - `EVENT_ATTACHMENT` - Documents attached to hackathons
 - `OPPORTUNITY_ATTACHMENT` - Documents for other opportunities
 
 ### Presigned URL Structure
 
 **Response Format:**
+
 ```json
 {
   "uploadUrl": "https://oppskills-media.s3.amazonaws.com",
@@ -786,18 +850,19 @@ The platform uses S3 presigned POST URLs for secure, direct client-to-S3 uploads
 ```
 
 **Client Upload Process:**
+
 ```javascript
 // 1. Get presigned URL from backend
-const response = await fetch('/media/presign-image', {
-  method: 'POST',
+const response = await fetch("/media/presign-image", {
+  method: "POST",
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    purpose: 'HACKATHON_BANNER',
-    mimeType: 'image/jpeg'
-  })
+    purpose: "HACKATHON_BANNER",
+    mimeType: "image/jpeg",
+  }),
 });
 
 const { uploadUrl, fields, publicUrl } = await response.json();
@@ -807,40 +872,43 @@ const formData = new FormData();
 Object.entries(fields).forEach(([key, value]) => {
   formData.append(key, value);
 });
-formData.append('file', imageFile);
+formData.append("file", imageFile);
 
 await fetch(uploadUrl, {
-  method: 'POST',
-  body: formData
+  method: "POST",
+  body: formData,
 });
 
 // 3. Store publicUrl in database
-await fetch('/hackathons/123', {
-  method: 'PUT',
+await fetch("/hackathons/123", {
+  method: "PUT",
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    bannerImageUrl: publicUrl
-  })
+    bannerImageUrl: publicUrl,
+  }),
 });
 ```
 
 ### Object Key Structure
 
 **Images:**
+
 ```
 public/hackathon-banners/{encodedUserId}/{uuid}.{ext}
 ```
 
 **Documents:**
+
 ```
 public/event-attachments/{encodedUserId}/{sanitizedFileName}-{uuid}.{ext}
 public/opportunity-attachments/{encodedUserId}/{sanitizedFileName}-{uuid}.{ext}
 ```
 
 **Key Features:**
+
 - UUID ensures uniqueness
 - User ID for organization/access control
 - Sanitized filenames (alphanumeric, dash, underscore only)
@@ -849,12 +917,14 @@ public/opportunity-attachments/{encodedUserId}/{sanitizedFileName}-{uuid}.{ext}
 ### Security & Validation
 
 **Presigned POST Constraints:**
+
 - Expires after 60 seconds
 - Content-Length-Range enforced (1 byte to maxBytes)
 - Content-Type must match exactly
 - Success action status 201 (returns metadata on success)
 
 **Backend Validation:**
+
 - MIME type allowlist checked
 - File size limits enforced
 - User authentication required
@@ -863,6 +933,7 @@ public/opportunity-attachments/{encodedUserId}/{sanitizedFileName}-{uuid}.{ext}
 ### CDN & Public URLs
 
 **CloudFront Distribution:**
+
 - Backend generates public URLs with CloudFront domain
 - Configured via `MEDIA_CLOUDFRONT_BASE_URL` env var
 - Provides global CDN for fast access
@@ -871,12 +942,14 @@ public/opportunity-attachments/{encodedUserId}/{sanitizedFileName}-{uuid}.{ext}
 ### Attachment Management
 
 **Hackathon Attachments:**
+
 - Stored in `HackathonAttachmentEntity` table
 - Tracks storage key, public URL, filename, MIME type, size
 - Can be bulk replaced via `PUT /hackathons/:id/additional-info`
 - Cascade deleted when hackathon is deleted
 
 **Attachment Structure:**
+
 ```prisma
 model HackathonAttachmentEntity {
   id          String
@@ -892,11 +965,13 @@ model HackathonAttachmentEntity {
 ### Environment Configuration
 
 **Required Variables:**
+
 - `MEDIA_S3_BUCKET` - S3 bucket name
 - `MEDIA_CLOUDFRONT_BASE_URL` - CloudFront distribution URL
 - `AWS_REGION` - AWS region (default: us-east-1)
 
 **Optional Variables:**
+
 - `MEDIA_MAX_UPLOAD_BYTES` - Image max size (default: 10MB)
 - `MEDIA_MAX_DOCUMENT_UPLOAD_BYTES` - Document max size (default: 100MB)
 - `MEDIA_ALLOWED_IMAGE_MIME_TYPES` - Comma-separated image MIME types
@@ -906,11 +981,13 @@ model HackathonAttachmentEntity {
 
 **Service:** `MediaService`
 **Methods:**
+
 - `presignImageUpload()` - Generate presigned POST for images
 - `presignDocumentUpload()` - Generate presigned POST for documents
 
 **Controller:** `MediaController`
 **Endpoints:**
+
 - `POST /media/presign-image` - Request image upload URL
 - `POST /media/presign-document` - Request document upload URL
 
@@ -919,6 +996,7 @@ model HackathonAttachmentEntity {
 ## 9. Visibility Control
 
 ### Overview
+
 Hackathons support three visibility levels to control who can view and register for events.
 
 ### Visibility Levels
@@ -934,6 +1012,7 @@ enum Visibility {
 ### PUBLIC Visibility
 
 **Characteristics:**
+
 - Default visibility level
 - Anyone can view the hackathon
 - Open registration (subject to team limits)
@@ -941,6 +1020,7 @@ enum Visibility {
 - No restrictions on who can participate
 
 **Use Cases:**
+
 - Public hackathons
 - Open competitions
 - Community events
@@ -948,18 +1028,21 @@ enum Visibility {
 ### PRIVATE Visibility
 
 **Characteristics:**
+
 - Invitation-only access
 - Not listed in public directories
 - Registration requires special access/code
 - Controlled participant list
 
 **Use Cases:**
+
 - Internal company hackathons
 - Invite-only events
 - Closed beta competitions
 - VIP events
 
 **Future Implementation:**
+
 - Invitation code system
 - Allowlist of participant emails
 - Access token requirement
@@ -967,6 +1050,7 @@ enum Visibility {
 ### UNIVERSITY_ONLY Visibility
 
 **Characteristics:**
+
 - Restricted to students from specific universities
 - Requires `allowedUniversities` array to be populated
 - Verification of university affiliation (future)
@@ -974,21 +1058,24 @@ enum Visibility {
 
 **Validation:**
 When visibility is set to `UNIVERSITY_ONLY`:
+
 ```typescript
-if (visibility === 'UNIVERSITY_ONLY' && allowedUniversities.length === 0) {
+if (visibility === "UNIVERSITY_ONLY" && allowedUniversities.length === 0) {
   throw new BadRequestException(
-    'allowedUniversities must be provided when visibility is UNIVERSITY_ONLY.'
+    "allowedUniversities must be provided when visibility is UNIVERSITY_ONLY.",
   );
 }
 ```
 
 **Use Cases:**
+
 - Inter-university competitions
 - University-specific events
 - Educational hackathons
 - Student-only challenges
 
 **Example:**
+
 ```json
 {
   "visibility": "UNIVERSITY_ONLY",
@@ -1015,12 +1102,10 @@ enum HackathonAttendeeEligibility {
 ```
 
 This is a multi-select field allowing combinations like:
+
 ```json
 {
-  "attendeeEligibility": [
-    "COLLEGE_STUDENTS",
-    "FRESHERS"
-  ]
+  "attendeeEligibility": ["COLLEGE_STUDENTS", "FRESHERS"]
 }
 ```
 
@@ -1031,6 +1116,7 @@ Default: `["EVERYONE_CAN_APPLY"]`
 **Validation:** `HackathonService.assertUniversityRestrictionValid()`
 
 **Database Schema:**
+
 ```prisma
 model HackathonEntity {
   visibility          Visibility @default(PUBLIC)
@@ -1044,20 +1130,24 @@ model HackathonEntity {
 ## 10. Business Rules and Constraints
 
 ### Overview
+
 The platform enforces numerous business rules to maintain data integrity and prevent invalid states.
 
 ### Date and Time Constraints
 
 **Hackathon Dates:**
+
 - `endDate` must be >= `startDate`
 - Validated at creation and update
 - Both dates are required
 
 **Round Dates:**
+
 - Each round's `endsAt` must be >= `startsAt`
 - Rounds should fit within hackathon timeline (not enforced, allows flexibility)
 
 **Registration Deadline:**
+
 - Optional field
 - Should be before hackathon `startDate` (recommended, not enforced)
 - After deadline, registration should be closed (future implementation)
@@ -1065,15 +1155,17 @@ The platform enforces numerous business rules to maintain data integrity and pre
 ### Location Validation
 
 **PHYSICAL Location:**
+
 ```typescript
 // Required fields:
 - locationType: 'PHYSICAL'
 - locationAddress: non-empty string
 // Optional:
-- locationCity: string
+- locationCoords: string
 ```
 
 **VIRTUAL Location:**
+
 ```typescript
 // Required fields:
 - locationType: 'VIRTUAL'
@@ -1081,18 +1173,21 @@ The platform enforces numerous business rules to maintain data integrity and pre
 ```
 
 **Validation Logic:**
+
 - Enforced at hackathon and festival creation/update
 - Missing required fields throw `BadRequestException`
 
 ### Pricing Constraints
 
 **Free Events:**
+
 ```typescript
-isFree: true
+isFree: true;
 // No entry fee required
 ```
 
 **Paid Events:**
+
 ```typescript
 isFree: false
 entryFeeAmount: required, non-empty string
@@ -1105,11 +1200,13 @@ When `isFree` is false, `entryFeeAmount` must be provided.
 ### Ownership and Permission Rules
 
 **Hackathon Owner Restrictions:**
+
 - Cannot create a team in their own hackathon
 - Cannot register for their own hackathon
 - Cannot be assigned as manager/evaluator (already has full access)
 
 **Edit Restrictions:**
+
 - Only editable in DRAFT status
 - Nested updates (rounds, prizes, forms) require dedicated endpoints
 - Main update endpoint blocks nested updates
@@ -1117,11 +1214,13 @@ When `isFree` is false, `entryFeeAmount` must be provided.
 ### Team Constraints
 
 **Team Creation:**
+
 - Leader cannot be hackathon owner
 - Must respect `maxTeams` limit (if set)
 - Team size must match hackathon `participantType`
 
 **Team Membership:**
+
 - User cannot join team twice (enforced by DB unique constraint)
 - Team cannot exceed `maxSize`
 - Leader cannot join their own team
@@ -1129,17 +1228,20 @@ When `isFree` is false, `entryFeeAmount` must be provided.
 ### Slug Generation
 
 **Uniqueness:**
+
 - Hackathon and festival slugs must be unique
 - Auto-generated from name or custom slug
 - Collision resolution via 6-character random suffix
 
 **Format:**
+
 - Lowercase
 - Alphanumeric and hyphens only
 - Leading/trailing hyphens removed
 - Consecutive hyphens replaced with single hyphen
 
 **Example:**
+
 ```
 "My Awesome Hackathon 2025!"
   → "my-awesome-hackathon-2025"
@@ -1149,29 +1251,35 @@ When `isFree` is false, `entryFeeAmount` must be provided.
 ### Field Uniqueness Constraints
 
 **Registration Form:**
+
 - Field `order` must be unique per form
 - Enforced at validation and DB level
 
 **Rounds:**
+
 - Round `order` must be unique per hackathon
 - Enforced by DB unique constraint
 
 **Team Membership:**
+
 - User can only join each team once
 - Enforced by DB unique constraint `[userId, teamId]`
 
 **Hackathon User Roles:**
+
 - User can have each role only once per hackathon
 - Enforced by DB unique constraint `[hackathonId, userId, role]`
 
 ### Data Integrity Rules
 
 **Cascading Deletes:**
+
 - Delete hackathon → cascade delete rounds, teams, attachments, roles
 - Delete team → cascade delete team members
 - Delete user → cascade delete their roles (but hackathons become ownerless - should set to null)
 
 **Null Handling:**
+
 - Delete festival → hackathon `festivalId` set to null (not cascade)
 - Delete user → festival `organizerId` set to null
 
@@ -1179,6 +1287,7 @@ When `isFree` is false, `entryFeeAmount` must be provided.
 
 **Atomic Operations:**
 All these operations use database transactions:
+
 - Round replacement
 - Prize breakdown update
 - Registration form update
@@ -1189,6 +1298,7 @@ Ensures either all changes succeed or all are rolled back.
 ### Default Values
 
 **Hackathon Defaults:**
+
 ```typescript
 {
   status: 'DRAFT',
@@ -1207,6 +1317,7 @@ Ensures either all changes succeed or all are rolled back.
 ```
 
 **Round Defaults:**
+
 ```typescript
 {
   status: 'UPCOMING',
@@ -1216,6 +1327,7 @@ Ensures either all changes succeed or all are rolled back.
 ```
 
 **Registration Field Defaults:**
+
 ```typescript
 {
   required: false,
@@ -1225,19 +1337,19 @@ Ensures either all changes succeed or all are rolled back.
 
 ### Validation Summary
 
-| Constraint | Enforcement | Error Type |
-|------------|-------------|------------|
-| Date ranges | Service layer | BadRequestException |
-| Location fields | Service layer | BadRequestException |
-| Pricing rules | Service layer | BadRequestException |
-| University restrictions | Service layer | BadRequestException |
-| Slug uniqueness | Service + DB | ConflictException (P2002) |
-| Field order uniqueness | Service + DB | BadRequestException / DB error |
-| Team size limits | Service layer | ForbiddenException |
-| Team membership | DB constraint | Unique violation |
-| Ownership restrictions | Service layer | ForbiddenException |
-| Lifecycle transitions | Service layer | ForbiddenException |
-| Permission checks | Service layer | ForbiddenException |
+| Constraint              | Enforcement   | Error Type                     |
+| ----------------------- | ------------- | ------------------------------ |
+| Date ranges             | Service layer | BadRequestException            |
+| Location fields         | Service layer | BadRequestException            |
+| Pricing rules           | Service layer | BadRequestException            |
+| University restrictions | Service layer | BadRequestException            |
+| Slug uniqueness         | Service + DB  | ConflictException (P2002)      |
+| Field order uniqueness  | Service + DB  | BadRequestException / DB error |
+| Team size limits        | Service layer | ForbiddenException             |
+| Team membership         | DB constraint | Unique violation               |
+| Ownership restrictions  | Service layer | ForbiddenException             |
+| Lifecycle transitions   | Service layer | ForbiddenException             |
+| Permission checks       | Service layer | ForbiddenException             |
 
 ---
 
@@ -1272,6 +1384,7 @@ Ensures either all changes succeed or all are rolled back.
 ### Service Methods Quick Reference
 
 **HackathonService:**
+
 - CRUD: `createHackathon`, `listHackathons`, `getHackathonById`, `updateHackathon`, `deleteHackathon`
 - Nested Updates: `updateHackathonRounds`, `updateHackathonPrizeBreakdown`, `updateHackathonRegistrationForm`, `updateHackathonAdditionalInfo`, `updateHackathonMaxTeams`
 - Lifecycle: `updateHackathonStatus`
@@ -1279,15 +1392,18 @@ Ensures either all changes succeed or all are rolled back.
 - Roles: `getHackathonRoles`, `addHackathonRole`, `removeHackathonRole`
 
 **FestivalService:**
+
 - CRUD: `createFestival`, `listFestivals`, `getFestivalById`, `updateFestival`, `deleteFestival`
 - Lifecycle: `updateFestivalStatus`
 - Hierarchy: `getHackathonsUnderFestival`
 
 **TeamService:**
+
 - CRUD: `createTeam`, `getTeamsByHackathon`, `getTeamById`
 - Membership: `joinTeam`, `leaveTeam`
 
 **MediaService:**
+
 - Uploads: `presignImageUpload`, `presignDocumentUpload`
 
 ---
@@ -1298,6 +1414,7 @@ Ensures either all changes succeed or all are rolled back.
 **Last Updated:** 2025-12-20
 **Maintainers:** OppSkills Platform Team
 **Related Documentation:**
+
 - `/CLAUDE.md` - Development guide
 - `/packages/database/prisma/schema.prisma` - Database schema
 - `/packages/types/src/enums/` - TypeScript type definitions

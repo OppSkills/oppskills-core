@@ -6,10 +6,7 @@ import {
 } from '@prisma/client';
 
 jest.mock('@oppskills/db', () => {
-  const prismaClient = jest.requireActual('@prisma/client') as Record<
-    string,
-    unknown
-  >;
+  const prismaClient = jest.requireActual('@prisma/client');
   return {
     ...prismaClient,
     prisma: {

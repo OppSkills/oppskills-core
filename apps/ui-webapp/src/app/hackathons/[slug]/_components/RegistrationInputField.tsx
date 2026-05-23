@@ -44,11 +44,7 @@ export function RegistrationInputField({
           required={required}
           className="h-14 rounded-full border-neutral-400 bg-neutral-100 px-6"
         />
-        {suffix && (
-          <div className="absolute right-2 top-2 h-10">
-            {suffix}
-          </div>
-        )}
+        {suffix && <div className="absolute right-2 top-2 h-10">{suffix}</div>}
       </div>
     </div>
   );

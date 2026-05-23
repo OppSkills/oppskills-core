@@ -292,7 +292,7 @@ export function JoinTeamList({
     const defaultLabels = new Set(
       defaultFields.map((f) => f.label.toLowerCase()),
     );
-    
+
     // Also filter out all identity fields (school/college/company) from custom fields
     // since we add the appropriate one based on userCategory
     const identityFieldLabels = new Set([
@@ -300,10 +300,11 @@ export function JoinTeamList({
       "college name",
       "company name",
     ]);
-    
+
     const filteredCustomFields = customFields.filter(
-      (f) => !defaultLabels.has(f.label.toLowerCase()) &&
-             !identityFieldLabels.has(f.label.toLowerCase()),
+      (f) =>
+        !defaultLabels.has(f.label.toLowerCase()) &&
+        !identityFieldLabels.has(f.label.toLowerCase()),
     );
 
     const mergedFields = [...defaultFields, ...filteredCustomFields].sort(
@@ -452,7 +453,9 @@ export function JoinTeamList({
       }
 
       if (!razorpayOrderId) {
-        throw new Error("Payment initialization failed (missing Razorpay order id)");
+        throw new Error(
+          "Payment initialization failed (missing Razorpay order id)",
+        );
       }
 
       // Ensure Razorpay script is loaded
@@ -618,23 +621,23 @@ export function JoinTeamList({
           // So we can join draft team first, then submit registration (backend validates)
           try {
             await joinDraftTeam(token, hackathonSlug, { teamId });
-          const formattedAnswers = answers.map((a) => ({
-            fieldId: a.fieldId,
-            value: String(a.value),
-          }));
-          await submitRegistration(token, hackathonSlug, formattedAnswers);
+            const formattedAnswers = answers.map((a) => ({
+              fieldId: a.fieldId,
+              value: String(a.value),
+            }));
+            await submitRegistration(token, hackathonSlug, formattedAnswers);
 
             const team = teams.find((t) => t.id === teamId);
             setJoinedTeamName(team?.name || "the team");
-          setIsSuccess(true);
-          toast.success("Successfully joined!");
+            setIsSuccess(true);
+            toast.success("Successfully joined!");
 
-          setTimeout(() => {
-            router.push(`/hackathons/${hackathonSlug}`);
-          }, 2000);
+            setTimeout(() => {
+              router.push(`/hackathons/${hackathonSlug}`);
+            }, 2000);
 
-          setJoiningTeamId(null);
-          setShowRegistrationModal(false);
+            setJoiningTeamId(null);
+            setShowRegistrationModal(false);
           } catch (error: unknown) {
             // If payment validation fails, user is not in team
             const message =
@@ -713,22 +716,22 @@ export function JoinTeamList({
           // The backend will validate payment when submitting registration
           try {
             await joinDraftTeam(token, hackathonSlug, { invitationCode: code });
-          const formattedAnswers = answers.map((a) => ({
-            fieldId: a.fieldId,
-            value: String(a.value),
-          }));
-          await submitRegistration(token, hackathonSlug, formattedAnswers);
+            const formattedAnswers = answers.map((a) => ({
+              fieldId: a.fieldId,
+              value: String(a.value),
+            }));
+            await submitRegistration(token, hackathonSlug, formattedAnswers);
 
             setJoinedTeamName("the team");
-          setIsSuccess(true);
-          toast.success("Successfully joined!");
+            setIsSuccess(true);
+            toast.success("Successfully joined!");
 
-          setTimeout(() => {
-            router.push(`/hackathons/${hackathonSlug}`);
-          }, 2000);
+            setTimeout(() => {
+              router.push(`/hackathons/${hackathonSlug}`);
+            }, 2000);
 
-          setIsJoiningByCode(false);
-          setShowRegistrationModal(false);
+            setIsJoiningByCode(false);
+            setShowRegistrationModal(false);
           } catch (error: unknown) {
             // If payment validation fails, user is not in team
             const message =
@@ -804,7 +807,9 @@ export function JoinTeamList({
                   <div className="flex justify-between items-start text-neutral-500 mt-1 gap-2">
                     <div className="min-w-0">
                       <span>Transaction Charges</span>
-                      <p className="text-xs text-neutral-400 mt-0.5">Charged by payment partners to process your transaction.</p>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        Charged by payment partners to process your transaction.
+                      </p>
                     </div>
                     <span className="shrink-0">₹{fee.toFixed(2)}</span>
                   </div>

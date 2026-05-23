@@ -1,6 +1,7 @@
 # Frontend Documentation
 
 ## Table of Contents
+
 1. [Architecture Overview](#architecture-overview)
 2. [App Router Structure](#app-router-structure)
 3. [Components Organization](#components-organization)
@@ -74,11 +75,13 @@ apps/ui-webapp/src/
 ### Public Routes
 
 #### `/` - Landing Page
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/page.tsx`
 - **Purpose**: Main landing page with hero, features, and CTAs
 - **Components**: Hero sections, event listings, testimonials
 
 #### `/competitions/[slug]` - Competition Details
+
 - **Files**:
   - `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/competitions/[slug]/page.tsx`
   - Components in `_components/` folder
@@ -91,14 +94,17 @@ apps/ui-webapp/src/
   - Registration sidebar
 
 #### `/festivals` - Festival Listing
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/festivals/page.tsx`
 - **Purpose**: Browse all festivals
 
 #### `/participants` - Participants View
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/participants/page.tsx`
 - **Purpose**: Participant portal
 
 #### `/team-register` - Team Registration
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/team-register/page.tsx`
 - **Purpose**: Register team for hackathon
 - **Features**: Team creation, member invites
@@ -106,6 +112,7 @@ apps/ui-webapp/src/
 ### Organizer Routes (Dashboard)
 
 #### `/dashboard` - Dashboard Home
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/page.tsx`
 - **Purpose**: Overview of managed events
 - **Features**:
@@ -117,14 +124,17 @@ apps/ui-webapp/src/
   - Alerts
 
 #### `/dashboard/hackathon` - Opportunities List
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/page.tsx`
 - **Purpose**: List all hackathons/opportunities managed by user
 
 #### `/dashboard/hackathon/[slug]` - Opportunity Dashboard
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/page.tsx`
 - **Purpose**: Individual opportunity management hub
 
 #### `/dashboard/hackathon/[slug]/edit-opportunity` - Edit Hackathon
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/edit-opportunity/page.tsx`
 - **Purpose**: Comprehensive hackathon editor with tabs
 - **Features**:
@@ -141,6 +151,7 @@ apps/ui-webapp/src/
   - Form validation and error handling
 
 #### `/dashboard/hackathon/[slug]/manage-roles` - Manage Roles
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/manage-roles/page.tsx`
 - **Purpose**: Assign managers and evaluators to hackathon
 - **Features**:
@@ -152,6 +163,7 @@ apps/ui-webapp/src/
   - Role cards with avatar, name, email
 
 #### `/dashboard/hackathon/[slug]/manage-registration` - Manage Registrations
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/manage-registration/page.tsx`
 - **Purpose**: View and manage team registrations
 - **Features**:
@@ -160,6 +172,7 @@ apps/ui-webapp/src/
   - Team approval workflow
 
 #### `/dashboard/hackathon/[slug]/manage-registration/[teamID]` - Team Details
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/manage-registration/[teamID]/page.tsx`
 - **Purpose**: View individual team details
 - **Features**:
@@ -169,46 +182,56 @@ apps/ui-webapp/src/
   - Presentation submission
 
 #### `/dashboard/hackathon/[slug]/payments` - Payments
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/payments/page.tsx`
 - **Purpose**: Manage payments and tickets for events
 
 #### `/dashboard/hackathon/[slug]/send-notifications` - Send Notifications
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/hackathon/[slug]/send-notifications/page.tsx`
 - **Purpose**: Send notifications to participants
 
 #### `/dashboard/events` - Events (Festivals)
+
 - **Purpose**: Manage festival events
 - **Similar structure** to opportunities with edit, roles, registration, notifications
 
 #### `/dashboard/talent-pipeline` - Talent Pipeline
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/talent-pipeline/page.tsx`
 - **Purpose**: Manage talent pipeline
 
 #### `/dashboard/session` - Session Management
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/dashboard/session/page.tsx`
 - **Purpose**: Session-related features
 
 ### Organize Routes
 
 #### `/organize` - Organize Home
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/organize/page.tsx`
 - **Purpose**: Landing page for organizers
 
 #### `/organize/hackathon` - Create Opportunity
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/organize/hackathon/page.tsx`
 - **Purpose**: Create new hackathon/opportunity
 
 #### `/organize/event` - Create Event
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/organize/event/page.tsx`
 - **Purpose**: Create new festival/event
 
 ### Auth Routes
 
 #### `/sso-callback` - SSO Callback
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/sso-callback/page.tsx`
 - **Purpose**: Handle Clerk SSO callbacks
 
 #### `/complete-profile` - Complete Profile
+
 - **File**: `/Users/harshit/Documents/freelance/oppskills-core/apps/ui-webapp/src/app/complete-profile/page.tsx`
 - **Purpose**: Post-signup profile completion
 
@@ -219,7 +242,9 @@ apps/ui-webapp/src/
 ### UI Components (`/components/ui/`)
 
 #### Radix UI Primitives
+
 Pre-built, accessible components based on Radix UI:
+
 - `avatar.tsx` - User avatars
 - `badge.tsx` - Status badges
 - `button.tsx` - Buttons with variants
@@ -243,18 +268,23 @@ Pre-built, accessible components based on Radix UI:
 - `sonner.tsx` - Toast notifications
 
 #### Derived Components (`/components/ui/derived/`)
+
 Custom components built on top of primitives:
+
 - `FloatingInput.tsx` - Floating label inputs
 - `MotionWrapper.tsx` - Framer Motion wrappers
 - `EventCard.tsx` - Event display cards
 - `DescriptionEditorModal.tsx` - Rich text editor modal
 
 #### Editor Components (`/components/ui/editor/`)
+
 Rich text editing with Tiptap:
+
 - `RichtextEditor.tsx` - Main editor component
 - `Toolbar.tsx` - Editor toolbar with formatting controls
 
 **Features**:
+
 - Bold, italic, underline, strikethrough
 - Headings (H1-H6)
 - Lists (ordered/unordered)
@@ -265,6 +295,7 @@ Rich text editing with Tiptap:
 - Custom prose styling
 
 #### Hackathon Components (`/components/ui/hackathon/`)
+
 - `Input.tsx` - Hackathon-specific inputs
 - `RegistrationQuestionsModal.tsx` - Dynamic form builder for registration questions
   - Drag-and-drop reordering (Framer Motion Reorder)
@@ -274,6 +305,7 @@ Rich text editing with Tiptap:
   - Options field management (add/remove options)
 
 #### Payment Components (`/components/ui/payment-side/`)
+
 - `PaymentFormModal.tsx` - Payment form
 - `create-ticket-modal.tsx` - Ticket creation
 
@@ -290,18 +322,22 @@ Rich text editing with Tiptap:
 ### Feature Components
 
 #### Team Components
+
 - `CreateTeamForm.tsx` - Team creation form
 - `JoinTeamList.tsx` - List of teams to join
 
 #### Auth Components (`/components/auth/`)
+
 - Clerk-based authentication flows
 
 #### Landing Page Components (`/components/landingpage/`)
+
 - Hero sections
 - Feature highlights
 - Testimonials
 
 ### Root Components
+
 - `navbar.tsx` - Navigation bar
 - `footer.tsx` - Site footer
 - `layout-provider.tsx` - Layout context provider
@@ -319,17 +355,20 @@ The frontend uses a centralized API client pattern with Axios and TanStack Query
 #### API Client (`/lib/api/apiClient.ts`)
 
 **Environment Configuration**:
+
 ```typescript
 // Defaults to http://localhost:3001 in development
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 ```
 
 **Key Functions**:
+
 - `getApiRootUrl()` - Normalizes API base URL
 - `createApiClient(resourcePath)` - Creates Axios instance for resource
 - `buildAuthHeaders(token)` - Builds Bearer token headers
 
 **Example**:
+
 ```typescript
 const API = createApiClient("/hackathons");
 const headers = buildAuthHeaders(token);
@@ -341,6 +380,7 @@ const response = await API.get("/", { headers });
 ##### Hackathon API (`/lib/api/hackathonApi.ts`)
 
 **Endpoints**:
+
 - `getHackathons(token)` - Get all hackathons
 - `getMyHackathons(token)` - Get user's hackathons (owned + manager role)
 - `getHackathonById(token, id)` - Get by ID
@@ -356,38 +396,44 @@ const response = await API.get("/", { headers });
 - `registerForHackathon(token, id)` - Register user
 
 **Role Management**:
+
 - `getHackathonRoles(token, id)` - Get all roles
 - `addHackathonRole(token, id, data)` - Add manager/evaluator
 - `removeHackathonRole(token, id, data)` - Remove role
 
 ##### Festival API (`/lib/api/festivalApi.ts`)
+
 Similar structure for festival management.
 
 ##### Team API (`/lib/api/teamApi.ts`)
+
 Team creation, joining, and management.
 
 ##### Media API (`/lib/api/mediaApi.ts`)
 
 **Presigned Uploads**:
+
 ```typescript
 presignImageUpload(token, {
   purpose: "HACKATHON_BANNER",
-  mimeType: "image/png"
-})
+  mimeType: "image/png",
+});
 
 presignDocumentUpload(token, {
   purpose: "OPPORTUNITY_ATTACHMENT",
   mimeType: "application/pdf",
-  fileName: "attachment.pdf"
-})
+  fileName: "attachment.pdf",
+});
 ```
 
 **Upload Purposes**:
+
 - `HACKATHON_BANNER` - Hackathon banner images
 - `EVENT_ATTACHMENT` - Event attachments
 - `OPPORTUNITY_ATTACHMENT` - Opportunity attachments
 
 ##### Users API (`/lib/api/usersApi.ts`)
+
 User search and management.
 
 ### Custom Hooks
@@ -413,6 +459,7 @@ await register.mutateAsync("123");
 ```
 
 **Features**:
+
 - Automatic query invalidation on mutations
 - Auth token management
 - Error handling
@@ -425,6 +472,7 @@ const { data, isLoading, error } = useHackathonBySlug(slug);
 ```
 
 **Features**:
+
 - Only runs when slug is provided
 - Cached queries with `queryKey: ["hackathon", slug]`
 
@@ -442,17 +490,18 @@ const removeMutation = useRemoveHackathonRoleMutation(hackathonId);
 // Add role
 await addMutation.mutateAsync({
   email: "user@example.com",
-  role: "MANAGER"
+  role: "MANAGER",
 });
 
 // Remove role
 await removeMutation.mutateAsync({
   email: "user@example.com",
-  role: "EVALUATOR"
+  role: "EVALUATOR",
 });
 ```
 
 **Features**:
+
 - Separate queries for fetch vs mutations
 - Automatic cache invalidation
 - Role types: `MANAGER`, `EVALUATOR`
@@ -503,19 +552,19 @@ export default function ClientProviders({ children }) {
 
 ```typescript
 // Single resource by ID
-["hackathon", id]
-
-// Single resource by slug
-["hackathon", "by-slug", slug]
-
-// Collection
-["hackathons"]
-
-// Nested resource
-["hackathon-roles", hackathonId]
-
-// User-specific
-["my-hackathons"]
+["hackathon", id][
+  // Single resource by slug
+  ("hackathon", "by-slug", slug)
+][
+  // Collection
+  "hackathons"
+][
+  // Nested resource
+  ("hackathon-roles", hackathonId)
+][
+  // User-specific
+  "my-hackathons"
+];
 ```
 
 #### Cache Invalidation
@@ -548,6 +597,7 @@ const [activeTab, setActiveTab] = useQueryState("tab", {
 ```
 
 **Use Cases**:
+
 - Tab navigation (`?tab=basic-details`)
 - Filters
 - Pagination
@@ -556,6 +606,7 @@ const [activeTab, setActiveTab] = useQueryState("tab", {
 ### Local Component State
 
 Standard React `useState` and `useReducer` for UI-only state:
+
 - Form inputs
 - Modal open/close
 - Accordion expand/collapse
@@ -564,12 +615,15 @@ Standard React `useState` and `useReducer` for UI-only state:
 ### Context API
 
 #### Layout Context (`layout-provider.tsx`)
+
 Manages layout state (sidebar, mobile nav).
 
 #### Mobile Navigation Context (`mobile-navigation-context.tsx`)
+
 Mobile-specific navigation state.
 
 #### Theme Context (`theme-provider.tsx`)
+
 Dark/light theme management via `next-themes`.
 
 ### Authentication State (Clerk)
@@ -597,6 +651,7 @@ The frontend uses **Tailwind CSS 4** with custom theming.
 #### Configuration
 
 **Global Styles** (`/src/app/globals.css`):
+
 ```css
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -609,20 +664,22 @@ The frontend uses **Tailwind CSS 4** with custom theming.
 ```
 
 **Custom Colors**:
+
 ```css
 :root {
-  --primary: #9500d5;           /* Purple */
+  --primary: #9500d5; /* Purple */
   --primary-foreground: #ffffff;
-  --secondary: #eaccf7;          /* Light purple */
-  --surface: #ededed;            /* Light gray */
+  --secondary: #eaccf7; /* Light purple */
+  --surface: #ededed; /* Light gray */
   --muted: #f5e6fb;
-  --accent: #ffef99;             /* Yellow */
-  --destructive: #ffd0d0;        /* Light red */
+  --accent: #ffef99; /* Yellow */
+  --destructive: #ffd0d0; /* Light red */
   --border: #c3bfc4;
 }
 ```
 
 **Custom Color Palette**:
+
 - Primary shades: 100-900
 - Neutral shades: 100-900
 - UI colors: success, error, warning, info
@@ -631,12 +688,14 @@ The frontend uses **Tailwind CSS 4** with custom theming.
 #### Typography
 
 **Fonts**:
+
 - **Inter** - Body text (via Google Fonts)
 - **Poppins** - Headings (via Google Fonts)
 - **Kaushan Script** - Decorative (via Google Fonts)
 - **Dancing Script** - Decorative (via Google Fonts)
 
 **Font Variables**:
+
 ```tsx
 const inter = Inter({
   variable: "--font-inter",
@@ -651,12 +710,18 @@ const poppins = Poppins({
 ```
 
 **Usage**:
+
 ```css
 body {
   font-family: var(--font-inter);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-poppins);
   font-weight: 600;
 }
@@ -665,13 +730,21 @@ h1, h2, h3, h4, h5, h6 {
 #### Utility Classes
 
 **Custom Utilities**:
+
 ```css
-.line-clamp-1 { /* Single line truncation */ }
-.line-clamp-2 { /* Two line truncation */ }
-.line-clamp-4 { /* Four line truncation */ }
+.line-clamp-1 {
+  /* Single line truncation */
+}
+.line-clamp-2 {
+  /* Two line truncation */
+}
+.line-clamp-4 {
+  /* Four line truncation */
+}
 ```
 
 **Animation Classes** (via `tw-animate-css`):
+
 - Fade in/out
 - Slide in/out
 - Bounce
@@ -681,6 +754,7 @@ h1, h2, h3, h4, h5, h6 {
 #### Component Styling Pattern
 
 **Using `cn()` utility**:
+
 ```typescript
 import { cn } from "@/lib/utils";
 
@@ -696,6 +770,7 @@ import { cn } from "@/lib/utils";
 ```
 
 **`cn()` function** (`/lib/utils.ts`):
+
 ```typescript
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -713,7 +788,7 @@ Radix components use CSS variables for theming:
 
 ```css
 :root {
-  --radius: 0.625rem;  /* 10px */
+  --radius: 0.625rem; /* 10px */
 }
 
 /* Sidebar colors */
@@ -736,10 +811,11 @@ import { ThemeProvider } from "@/components/theme-provider";
   disableTransitionOnChange
 >
   {children}
-</ThemeProvider>
+</ThemeProvider>;
 ```
 
 **Usage**:
+
 ```css
 .dark {
   --background: #000000;
@@ -751,6 +827,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 ### Rich Text Editor Styling
 
 **Tiptap ProseMirror styles** (in `globals.css`):
+
 ```css
 .ProseMirror {
   outline: none;
@@ -775,6 +852,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 ### Responsive Design
 
 **Breakpoints** (Tailwind defaults):
+
 - `sm`: 640px
 - `md`: 768px
 - `lg`: 1024px
@@ -782,17 +860,17 @@ import { ThemeProvider } from "@/components/theme-provider";
 - `2xl`: 1536px
 
 **Example**:
+
 ```tsx
 <div className="w-full p-2 sm:p-4 md:p-6 lg:p-10">
-  <h1 className="text-xl md:text-2xl lg:text-3xl">
-    Responsive Heading
-  </h1>
+  <h1 className="text-xl md:text-2xl lg:text-3xl">Responsive Heading</h1>
 </div>
 ```
 
 ### Animations
 
 **Framer Motion**:
+
 ```tsx
 import { motion } from "framer-motion";
 
@@ -802,18 +880,23 @@ import { motion } from "framer-motion";
   transition={{ duration: 0.3 }}
 >
   Content
-</motion.div>
+</motion.div>;
 ```
 
 **CSS Animations**:
+
 ```css
 .animate-scroll {
   animation: scroll 30s linear infinite;
 }
 
 @keyframes scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(calc(-50% - 0.75rem)); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-50% - 0.75rem));
+  }
 }
 ```
 
@@ -848,7 +931,9 @@ const [formData, setFormData] = useState<FormData>({
 **Debounced Auto-save** (900ms delay):
 
 ```typescript
-const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "dirty" | "saving" | "saved" | "error">("idle");
+const [autoSaveStatus, setAutoSaveStatus] = useState<
+  "idle" | "dirty" | "saving" | "saved" | "error"
+>("idle");
 
 useEffect(() => {
   if (!hasHydratedFromBackend) return;
@@ -872,10 +957,11 @@ useEffect(() => {
 ```
 
 **Save Queue** (handles concurrent edits):
+
 ```typescript
 const runSaveMutation = () => {
   if (saveMutation.isPending) {
-    saveQueuedRef.current = true;  // Queue save
+    saveQueuedRef.current = true; // Queue save
     return;
   }
 
@@ -883,20 +969,27 @@ const runSaveMutation = () => {
     onSuccess: () => {
       if (saveQueuedRef.current) {
         saveQueuedRef.current = false;
-        setTimeout(() => runSaveMutation(), 0);  // Flush queue
+        setTimeout(() => runSaveMutation(), 0); // Flush queue
       }
-    }
+    },
   });
 };
 ```
 
 **Status Indicator**:
+
 ```tsx
 <div className="text-xs font-medium">
   {autoSaveStatus === "saving" && <span className="text-primary">Saving…</span>}
-  {autoSaveStatus === "dirty" && <span className="text-amber-600">Unsaved changes</span>}
-  {autoSaveStatus === "error" && <span className="text-destructive-foreground">Autosave error</span>}
-  {autoSaveStatus === "saved" && <span className="text-emerald-600">Saved</span>}
+  {autoSaveStatus === "dirty" && (
+    <span className="text-amber-600">Unsaved changes</span>
+  )}
+  {autoSaveStatus === "error" && (
+    <span className="text-destructive-foreground">Autosave error</span>
+  )}
+  {autoSaveStatus === "saved" && (
+    <span className="text-emerald-600">Saved</span>
+  )}
 </div>
 ```
 
@@ -911,8 +1004,10 @@ import { FloatingLabelInput } from "@/components/ui/derived/FloatingInput";
   id="eventName"
   label="Event Name"
   value={formData.eventName}
-  onChange={(e) => setFormData(prev => ({ ...prev, eventName: e.target.value }))}
-/>
+  onChange={(e) =>
+    setFormData((prev) => ({ ...prev, eventName: e.target.value }))
+  }
+/>;
 ```
 
 Features animated floating labels on focus.
@@ -920,7 +1015,13 @@ Features animated floating labels on focus.
 #### Select Dropdown
 
 ```tsx
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 <Select value={value} onValueChange={setValue}>
   <SelectTrigger>
@@ -930,7 +1031,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
     <SelectItem value="option1">Option 1</SelectItem>
     <SelectItem value="option2">Option 2</SelectItem>
   </SelectContent>
-</Select>
+</Select>;
 ```
 
 #### Date Picker
@@ -945,13 +1046,9 @@ import { Calendar } from "@/components/ui/calendar";
     </Button>
   </PopoverTrigger>
   <PopoverContent>
-    <Calendar
-      mode="single"
-      selected={date}
-      onSelect={setDate}
-    />
+    <Calendar mode="single" selected={date} onSelect={setDate} />
   </PopoverContent>
-</Popover>
+</Popover>;
 ```
 
 #### Rich Text Editor
@@ -961,12 +1058,15 @@ import RichTextEditor from "@/components/ui/editor/RichtextEditor";
 
 <RichTextEditor
   value={formData.eventDescription}
-  onChange={(html) => setFormData(prev => ({ ...prev, eventDescription: html }))}
+  onChange={(html) =>
+    setFormData((prev) => ({ ...prev, eventDescription: html }))
+  }
   placeholder="Enter event description..."
-/>
+/>;
 ```
 
 **Supported Formatting**:
+
 - Headings (H1-H6)
 - Bold, italic, underline, strikethrough
 - Lists (ordered/unordered)
@@ -979,6 +1079,7 @@ import RichTextEditor from "@/components/ui/editor/RichtextEditor";
 #### Client-side Validation
 
 **Type Guards**:
+
 ```typescript
 function isValidUrl(value: string): boolean {
   try {
@@ -991,6 +1092,7 @@ function isValidUrl(value: string): boolean {
 ```
 
 **Required Field Checks**:
+
 ```typescript
 if (!formData.eventName.trim()) {
   toast.error("Event name is required");
@@ -999,6 +1101,7 @@ if (!formData.eventName.trim()) {
 ```
 
 **Date Validation**:
+
 ```typescript
 if (formData.eventDate && formData.eventEndDate) {
   if (formData.eventEndDate < formData.eventDate) {
@@ -1013,6 +1116,7 @@ if (formData.eventDate && formData.eventEndDate) {
 Backend validates using `class-validator` DTOs from `@oppskills/types`.
 
 **Example DTO** (shared package):
+
 ```typescript
 import { IsString, IsOptional, IsEnum } from "class-validator";
 
@@ -1032,23 +1136,21 @@ export class UpdateHackathonDto {
 #### Registration Questions Modal
 
 **Drag-and-drop reorderable questions**:
+
 ```tsx
 import { Reorder } from "framer-motion";
 
-<Reorder.Group
-  axis="y"
-  values={customQuestions}
-  onReorder={handleReorder}
->
+<Reorder.Group axis="y" values={customQuestions} onReorder={handleReorder}>
   {customQuestions.map((question) => (
     <Reorder.Item key={question.id} value={question}>
       {/* Question editor */}
     </Reorder.Item>
   ))}
-</Reorder.Group>
+</Reorder.Group>;
 ```
 
 **Question Types**:
+
 - Text
 - Number
 - Phone No.
@@ -1057,6 +1159,7 @@ import { Reorder } from "framer-motion";
 - Options (with sub-options)
 
 **Features**:
+
 - Add/remove questions
 - Reorder via drag-and-drop
 - Required toggle
@@ -1094,6 +1197,7 @@ The frontend uses **presigned S3 uploads** for secure, direct-to-S3 file uploads
 #### Image Upload
 
 **1. Request Presigned URL**:
+
 ```typescript
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { useAuth } from "@clerk/nextjs";
@@ -1108,6 +1212,7 @@ const presignData = await presignImageUpload(token, {
 ```
 
 **Response**:
+
 ```typescript
 {
   uploadUrl: "https://s3.amazonaws.com/bucket-name",
@@ -1124,6 +1229,7 @@ const presignData = await presignImageUpload(token, {
 ```
 
 **2. Upload to S3**:
+
 ```typescript
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 
@@ -1134,10 +1240,11 @@ await uploadImageToS3PresignedPost({
 ```
 
 **3. Use Public URL**:
+
 ```typescript
-setFormData(prev => ({
+setFormData((prev) => ({
   ...prev,
-  eventThumbnail: presignData.publicUrl
+  eventThumbnail: presignData.publicUrl,
 }));
 ```
 
@@ -1197,6 +1304,7 @@ Similar implementation for documents.
 ### File Input Component
 
 **Example usage**:
+
 ```tsx
 const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];
@@ -1259,27 +1367,32 @@ const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 Defined in `mediaApi.ts`:
 
 **Images**:
+
 - `HACKATHON_BANNER` - Hackathon banner images (5MB limit)
 
 **Documents**:
+
 - `EVENT_ATTACHMENT` - Event attachments
 - `OPPORTUNITY_ATTACHMENT` - Opportunity attachments
 
 ### File Size Limits
 
 Configured on backend, returned in `presignData.maxBytes`:
+
 - Images: 5MB
 - Documents: 10MB (typical)
 
 ### Accepted File Types
 
 **Images**:
+
 - JPEG (`image/jpeg`)
 - PNG (`image/png`)
 - WebP (`image/webp`)
 - GIF (`image/gif`)
 
 **Documents**:
+
 - PDF (`application/pdf`)
 - Word (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`)
 - Excel (`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`)
@@ -1319,9 +1432,15 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   return () => URL.revokeObjectURL(url);
 };
 
-{preview && (
-  <img src={preview} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
-)}
+{
+  preview && (
+    <img
+      src={preview}
+      alt="Preview"
+      className="w-full h-48 object-cover rounded-lg"
+    />
+  );
+}
 ```
 
 ---
@@ -1331,6 +1450,7 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 ### Performance
 
 1. **Code Splitting**: Use dynamic imports for large components
+
    ```tsx
    const HeavyComponent = dynamic(() => import("./HeavyComponent"), {
      loading: () => <Skeleton />,
@@ -1338,6 +1458,7 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
    ```
 
 2. **Image Optimization**: Use Next.js `<Image>` component
+
    ```tsx
    import Image from "next/image";
 
@@ -1347,7 +1468,7 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
      width={800}
      height={600}
      priority={isAboveFold}
-   />
+   />;
    ```
 
 3. **Query Caching**: Leverage TanStack Query's built-in caching
@@ -1355,7 +1476,7 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
    useQuery({
      queryKey: ["hackathons"],
      queryFn: getHackathons,
-     staleTime: 5 * 60 * 1000,  // 5 minutes
+     staleTime: 5 * 60 * 1000, // 5 minutes
    });
    ```
 
@@ -1402,6 +1523,7 @@ Frontend runs on **http://localhost:3000**
 ### Environment Variables
 
 Required in `.env.local`:
+
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
@@ -1409,6 +1531,7 @@ CLERK_SECRET_KEY=sk_test_...
 ```
 
 Optional (for analytics):
+
 ```bash
 # PostHog Analytics
 NEXT_PUBLIC_POSTHOG_KEY=phc_... # Get from PostHog project settings
@@ -1445,18 +1568,23 @@ pnpm check-types
 ### Common Issues
 
 **Issue**: "NEXT_PUBLIC_API_URL is not set"
+
 - **Solution**: Add `NEXT_PUBLIC_API_URL` to `.env.local`
 
 **Issue**: "Not authenticated" errors
+
 - **Solution**: Check Clerk configuration and ensure user is signed in
 
 **Issue**: Upload fails with 403
+
 - **Solution**: Verify backend is returning correct presigned URL
 
 **Issue**: Auto-save not working
+
 - **Solution**: Check browser console for errors, verify backend is running
 
 **Issue**: Styles not applying
+
 - **Solution**: Restart dev server (Tailwind CSS 4 requires rebuild)
 
 ---

@@ -19,4 +19,3 @@ export interface Registration {
   stages: RegistrationStage[];
   isComplete: boolean;
 }
-

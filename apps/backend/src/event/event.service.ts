@@ -23,6 +23,7 @@ import type { EventJoinedEventPayload } from '../email/email.events';
 import { AnalyticsService } from 'src/analytics/analytics.service';
 import { ReferralService } from 'src/referral/referral.service';
 import { ReferralEntityTypeDto } from '@oppskills/types';
+import { LocationService } from 'src/recommendation/location/location.service';
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 type LifecycleStatus =
@@ -44,7 +45,8 @@ export class EventService {
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
     private readonly referralService: ReferralService,
-  ) { }
+    private readonly locationService: LocationService,
+  ) {}
 
   /**
    * Create an event as a user.
@@ -66,6 +68,18 @@ export class EventService {
       ? this.parseDate(dto.registrationDeadline, 'registrationDeadline')
       : null;
 
+    let locationCoords = dto.location?.city;
+    if (dto.location?.placeId) {
+      try {
+        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        if (resolved) {
+          locationCoords = resolved;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+      }
+    }
+
     return prisma.eventEntity.create({
       data: {
         slug,
@@ -80,7 +94,7 @@ export class EventService {
 
         locationType: dto.location?.type,
         locationAddress: dto.location?.address,
-        locationCity: dto.location?.city,
+        locationCoords,
         locationVirtualLink: dto.location?.virtualLink,
 
         registrationDeadline,
@@ -151,7 +165,7 @@ export class EventService {
         OR: [
           { name: { contains: input.search, mode: 'insensitive' } },
           { description: { contains: input.search, mode: 'insensitive' } },
-          { locationCity: { contains: input.search, mode: 'insensitive' } },
+          { locationCoords: { contains: input.search, mode: 'insensitive' } },
         ],
       });
     }
@@ -338,7 +352,7 @@ export class EventService {
           status: true,
           approvalStatus: true,
           locationType: true,
-          locationCity: true,
+          locationCoords: true,
           locationAddress: true,
           locationVirtualLink: true,
           isFree: true,
@@ -432,7 +446,7 @@ export class EventService {
         status: true,
         approvalStatus: true,
         locationType: true,
-        locationCity: true,
+        locationCoords: true,
         locationAddress: true,
         locationVirtualLink: true,
         isFree: true,
@@ -542,7 +556,7 @@ export class EventService {
         status: true,
         approvalStatus: true,
         locationType: true,
-        locationCity: true,
+        locationCoords: true,
         locationAddress: true,
         locationVirtualLink: true,
         isFree: true,
@@ -989,6 +1003,18 @@ export class EventService {
       ? this.parseDate(dto.registrationDeadline, 'registrationDeadline')
       : undefined;
 
+    let locationCoords = dto.location?.city;
+    if (dto.location?.placeId) {
+      try {
+        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        if (resolved) {
+          locationCoords = resolved;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+      }
+    }
+
     // Build update data
     const updateData: Record<string, unknown> = {
       slug,
@@ -1002,7 +1028,7 @@ export class EventService {
 
       locationType: dto.location?.type,
       locationAddress: dto.location?.address,
-      locationCity: dto.location?.city,
+      locationCoords,
       locationVirtualLink: dto.location?.virtualLink,
 
       registrationDeadline,
@@ -1135,7 +1161,7 @@ export class EventService {
         eventType: true,
         locationType: true,
         locationAddress: true,
-        locationCity: true,
+        locationCoords: true,
         locationVirtualLink: true,
         ownerId: true,
         festivalId: true,
@@ -1590,7 +1616,7 @@ export class EventService {
             // Use field options, or default gender options for Gender field
             const effectiveOptions =
               field.label.toLowerCase() === 'gender' &&
-                (!field.options || field.options.length === 0)
+              (!field.options || field.options.length === 0)
                 ? DEFAULT_GENDER_OPTIONS
                 : field.options;
 
@@ -1766,7 +1792,7 @@ export class EventService {
     // Build location string
     let eventLocation: string | undefined;
     if (event.locationType === 'PHYSICAL') {
-      eventLocation = [event.locationAddress, event.locationCity]
+      eventLocation = [event.locationAddress, event.locationCoords]
         .filter(Boolean)
         .join(', ');
     } else if (event.locationType === 'VIRTUAL' && event.locationVirtualLink) {
@@ -2155,8 +2181,7 @@ export class EventService {
     const awaitingCheckout =
       !!participant?.checkoutPending && !paymentCompleted;
 
-    let draftAnswers: Array<{ fieldId: string; value: unknown }> | null =
-      null;
+    let draftAnswers: Array<{ fieldId: string; value: unknown }> | null = null;
     if (awaitingCheckout) {
       const sub = await prisma.eventRegistrationSubmissionEntity.findFirst({
         where: { eventId, userId },
@@ -2324,14 +2349,14 @@ export class EventService {
       existingSubmission && existingSubmission._count.answers === 0
         ? existingSubmission.id
         : (
-          await prisma.eventRegistrationSubmissionEntity.create({
-            data: {
-              eventId,
-              userId,
-              participantId: participant.id,
-            },
-          })
-        ).id;
+            await prisma.eventRegistrationSubmissionEntity.create({
+              data: {
+                eventId,
+                userId,
+                participantId: participant.id,
+              },
+            })
+          ).id;
 
     if (mappedAnswers.length > 0) {
       const answerData = mappedAnswers.map((a) => ({
@@ -2510,7 +2535,7 @@ export class EventService {
                   companyName: true,
                   jobTitle: true,
                   collegeCurrentYear: true,
-                  locationCity: true,
+                  locationCoords: true,
                   locationState: true,
                   locationCountry: true,
                   college: {
@@ -2591,7 +2616,7 @@ export class EventService {
       let location = '';
       if (profile) {
         const parts: string[] = [];
-        if (profile.locationCity) parts.push(profile.locationCity);
+        if (profile.locationCoords) parts.push(profile.locationCoords);
         if (profile.locationState) parts.push(profile.locationState);
         if (profile.locationCountry) parts.push(profile.locationCountry);
         location = parts.join(', ');

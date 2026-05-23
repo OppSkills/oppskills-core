@@ -6,7 +6,9 @@ export function CommunityJoinCard() {
   return (
     <div className="w-full bg-white rounded-3xl p-5 lg:p-6 border-2 border-neutral-300 flex flex-col min-h-[400px] shadow-sm relative overflow-hidden group cursor-pointer hover:border-primary-400 transition-all duration-300">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-2xl font-bold text-foreground tracking-tight">Community</h2>
+        <h2 className="text-2xl font-bold text-foreground tracking-tight">
+          Community
+        </h2>
       </div>
 
       <div className="flex-1 relative w-full rounded-2xl overflow-hidden bg-neutral-50/50">

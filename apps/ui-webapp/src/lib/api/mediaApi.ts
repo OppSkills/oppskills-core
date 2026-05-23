@@ -57,7 +57,7 @@ function requireNumber(obj: Record<string, unknown>, key: string): number {
 
 function requireStringRecord(
   obj: Record<string, unknown>,
-  key: string
+  key: string,
 ): Readonly<Record<string, string>> {
   const value = obj[key];
   if (!isRecord(value)) {
@@ -76,7 +76,7 @@ function requireStringRecord(
 
 export async function presignImageUpload(
   token: string,
-  data: PresignImageUploadRequest
+  data: PresignImageUploadRequest,
 ): Promise<PresignImageUploadResponse> {
   const res = await API.post("/presign-image", data, {
     headers: buildAuthHeaders(token),
@@ -101,7 +101,7 @@ export async function presignImageUpload(
  */
 export async function presignDocumentUpload(
   token: string,
-  data: PresignDocumentUploadRequest
+  data: PresignDocumentUploadRequest,
 ): Promise<PresignDocumentUploadResponse> {
   const res = await API.post("/presign-document", data, {
     headers: buildAuthHeaders(token),

@@ -23,7 +23,6 @@ import { useQuery } from "@tanstack/react-query";
 import { searchColleges, getCollegesByIds } from "@/lib/api/collegesApi";
 import { Container } from "@/app/dashboard/_components/Container";
 
-
 interface PassSettingsProps {
   formData: FormData;
   setFormData: (data: React.SetStateAction<FormData>) => void;
@@ -36,7 +35,9 @@ export default function PassSettings({
   const { getToken } = useAuth();
   const [collegeSearch, setCollegeSearch] = useState("");
   // Store college ID -> name mapping for selected colleges
-  const [collegeNamesMap, setCollegeNamesMap] = useState<Record<string, string>>({});
+  const [collegeNamesMap, setCollegeNamesMap] = useState<
+    Record<string, string>
+  >({});
   // Track which IDs we're currently fetching to avoid duplicate requests
   const fetchingRef = useRef<Set<string>>(new Set());
 
@@ -58,7 +59,7 @@ export default function PassSettings({
 
       // Find IDs that don't have names and aren't currently being fetched
       const missingIds = selectedIds.filter(
-        (id) => !collegeNamesMap[id] && !fetchingRef.current.has(id)
+        (id) => !collegeNamesMap[id] && !fetchingRef.current.has(id),
       );
       if (missingIds.length === 0) return;
 
@@ -87,9 +88,7 @@ export default function PassSettings({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.passSettings.allowedCollegeIds]); // Only depend on selected IDs
 
-  const updatePassSettings = (
-    updates: Partial<FormData["passSettings"]>
-  ) => {
+  const updatePassSettings = (updates: Partial<FormData["passSettings"]>) => {
     setFormData((prev) => ({
       ...prev,
       passSettings: {
@@ -118,7 +117,7 @@ export default function PassSettings({
   const removeCollege = (collegeId: string) => {
     updatePassSettings({
       allowedCollegeIds: formData.passSettings.allowedCollegeIds.filter(
-        (id) => id !== collegeId
+        (id) => id !== collegeId,
       ),
     });
     // Remove the college name from the mapping
@@ -131,7 +130,10 @@ export default function PassSettings({
 
   const addEmailDomain = (domain: string) => {
     const trimmed = domain.trim();
-    if (trimmed && !formData.passSettings.allowedEmailDomains.includes(trimmed)) {
+    if (
+      trimmed &&
+      !formData.passSettings.allowedEmailDomains.includes(trimmed)
+    ) {
       updatePassSettings({
         allowedEmailDomains: [
           ...formData.passSettings.allowedEmailDomains,
@@ -144,7 +146,7 @@ export default function PassSettings({
   const removeEmailDomain = (domain: string) => {
     updatePassSettings({
       allowedEmailDomains: formData.passSettings.allowedEmailDomains.filter(
-        (d) => d !== domain
+        (d) => d !== domain,
       ),
     });
   };
@@ -169,7 +171,9 @@ export default function PassSettings({
       <div className="space-y-6 py-2">
         {/* Pass Sending Mode */}
         <div className="space-y-4">
-          <Label className="text-base font-bold poppins text-neutral-800">Pass Sending Mode</Label>
+          <Label className="text-base font-bold poppins text-neutral-800">
+            Pass Sending Mode
+          </Label>
           <RadioGroup
             value={formData.passSettings.passSendingMode}
             onValueChange={(value) =>
@@ -179,25 +183,43 @@ export default function PassSettings({
             }
             className="flex flex-col gap-3"
           >
-            <div className={cn(
-              "flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
-              formData.passSettings.passSendingMode === "IMMEDIATE"
-                ? "bg-primary-50/30 border-primary-200"
-                : "border-transparent hover:bg-neutral-50"
-            )}>
-              <RadioGroupItem value="IMMEDIATE" id="immediate" className="border-primary-500 text-primary-600" />
-              <Label htmlFor="immediate" className="font-medium text-neutral-700 cursor-pointer inter">
+            <div
+              className={cn(
+                "flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
+                formData.passSettings.passSendingMode === "IMMEDIATE"
+                  ? "bg-primary-50/30 border-primary-200"
+                  : "border-transparent hover:bg-neutral-50",
+              )}
+            >
+              <RadioGroupItem
+                value="IMMEDIATE"
+                id="immediate"
+                className="border-primary-500 text-primary-600"
+              />
+              <Label
+                htmlFor="immediate"
+                className="font-medium text-neutral-700 cursor-pointer inter"
+              >
                 Send pass immediately after registration
               </Label>
             </div>
-            <div className={cn(
-              "flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
-              formData.passSettings.passSendingMode === "APPROVAL"
-                ? "bg-primary-50/30 border-primary-200"
-                : "border-transparent hover:bg-neutral-50"
-            )}>
-              <RadioGroupItem value="APPROVAL" id="approval" className="border-primary-500 text-primary-600" />
-              <Label htmlFor="approval" className="font-medium text-neutral-700 cursor-pointer inter">
+            <div
+              className={cn(
+                "flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
+                formData.passSettings.passSendingMode === "APPROVAL"
+                  ? "bg-primary-50/30 border-primary-200"
+                  : "border-transparent hover:bg-neutral-50",
+              )}
+            >
+              <RadioGroupItem
+                value="APPROVAL"
+                id="approval"
+                className="border-primary-500 text-primary-600"
+              />
+              <Label
+                htmlFor="approval"
+                className="font-medium text-neutral-700 cursor-pointer inter"
+              >
                 Send pass after organizer approval
               </Label>
             </div>
@@ -261,10 +283,7 @@ export default function PassSettings({
                   }
                 }
 
-                if (
-                  !isMissingCriteria &&
-                  collegeMatchMode === "EITHER_OR"
-                ) {
+                if (!isMissingCriteria && collegeMatchMode === "EITHER_OR") {
                   if (!hasColleges && !hasDomains) {
                     isMissingCriteria = true;
                     message =
@@ -285,7 +304,9 @@ export default function PassSettings({
 
               {/* Match Mode */}
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">Verification Method</Label>
+                <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">
+                  Verification Method
+                </Label>
                 <Select
                   value={formData.passSettings.collegeMatchMode}
                   onValueChange={(value) =>
@@ -317,7 +338,9 @@ export default function PassSettings({
               {/* Allowed Colleges */}
               {profileMatchingEnabled && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">Allowed Colleges</Label>
+                  <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">
+                    Allowed Colleges
+                  </Label>
                   <Input
                     placeholder="Search colleges..."
                     value={collegeSearch}
@@ -332,7 +355,10 @@ export default function PassSettings({
                           className="p-3 hover:bg-primary-50 rounded-lg cursor-pointer transition-colors text-sm inter font-medium text-neutral-700"
                           onClick={() => addCollege(college.id, college.name)}
                         >
-                          {college.name} • <span className="text-neutral-400 font-normal">{college.city}, {college.state}</span>
+                          {college.name} •{" "}
+                          <span className="text-neutral-400 font-normal">
+                            {college.city}, {college.state}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -340,20 +366,27 @@ export default function PassSettings({
                   {/* Selected Colleges */}
                   {formData.passSettings.allowedCollegeIds.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
-                      {formData.passSettings.allowedCollegeIds.map((collegeId) => {
-                        const collegeName = collegeNamesMap[collegeId] || collegeId;
-                        return (
-                          <Badge key={collegeId} variant="secondary" className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all">
-                            {collegeName}
-                            <button
-                              onClick={() => removeCollege(collegeId)}
-                              className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
+                      {formData.passSettings.allowedCollegeIds.map(
+                        (collegeId) => {
+                          const collegeName =
+                            collegeNamesMap[collegeId] || collegeId;
+                          return (
+                            <Badge
+                              key={collegeId}
+                              variant="secondary"
+                              className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all"
                             >
-                              ×
-                            </button>
-                          </Badge>
-                        );
-                      })}
+                              {collegeName}
+                              <button
+                                onClick={() => removeCollege(collegeId)}
+                                className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          );
+                        },
+                      )}
                     </div>
                   )}
                 </div>
@@ -362,7 +395,9 @@ export default function PassSettings({
               {/* Email Domains */}
               {emailMatchingEnabled && (
                 <div className="space-y-3">
-                  <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">Allowed Email Domains</Label>
+                  <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">
+                    Allowed Email Domains
+                  </Label>
                   <div className="text-xs text-neutral-400 inter italic">
                     Enter email domains (e.g., galgotiascollege.edu)
                   </div>
@@ -400,17 +435,23 @@ export default function PassSettings({
                   {/* Selected Domains */}
                   {formData.passSettings.allowedEmailDomains.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {formData.passSettings.allowedEmailDomains.map((domain) => (
-                        <Badge key={domain} variant="secondary" className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all">
-                          @{domain}
-                          <button
-                            onClick={() => removeEmailDomain(domain)}
-                            className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
+                      {formData.passSettings.allowedEmailDomains.map(
+                        (domain) => (
+                          <Badge
+                            key={domain}
+                            variant="secondary"
+                            className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all"
                           >
-                            ×
-                          </button>
-                        </Badge>
-                      ))}
+                            @{domain}
+                            <button
+                              onClick={() => removeEmailDomain(domain)}
+                              className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        ),
+                      )}
                     </div>
                   )}
                 </div>
@@ -422,4 +463,3 @@ export default function PassSettings({
     </Container>
   );
 }
-

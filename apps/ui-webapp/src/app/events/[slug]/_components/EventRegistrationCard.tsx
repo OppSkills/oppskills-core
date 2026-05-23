@@ -158,9 +158,7 @@ export function EventRegistrationCard({
     return (
       <div className="w-full bg-background rounded-lg overflow-hidden border-[0.5px] border-neutral-400 shadow-sm">
         <div className="bg-primary-100 px-3 py-2">
-          <h3 className="text-neutral-700 text-lg">
-            Registration
-          </h3>
+          <h3 className="text-neutral-700 text-lg">Registration</h3>
         </div>
         <div className="p-4 space-y-6">
           <p className="text-neutral-700 text-base">
@@ -191,13 +189,15 @@ export function EventRegistrationCard({
           )}
 
           <div>
-            {
-              isDeadlineExceeded ? <Button
+            {isDeadlineExceeded ? (
+              <Button
                 className="w-full bg-zinc-400 text-white rounded-full h-[52px] font-semibold text-base shadow-sm cursor-not-allowed"
                 disabled
               >
                 Registration Closed
-              </Button> : <Button
+              </Button>
+            ) : (
+              <Button
                 size={"lg"}
                 className="w-full text-neutral-100 rounded-full text-base font-medium py-6"
                 onClick={onRegister}
@@ -209,9 +209,8 @@ export function EventRegistrationCard({
                     ? "One Click RSVP"
                     : "Sign In to Register"}
               </Button>
-            }
+            )}
           </div>
-
         </div>
       </div>
     );
@@ -236,22 +235,26 @@ export function EventRegistrationCard({
                 ? ticket.price
                 : Number(ticket.price ?? 0) || 0;
             const processingFee =
-              basePrice > 0
-                ? Math.ceil(basePrice * 0.0236 * 100) / 100
-                : 0;
+              basePrice > 0 ? Math.ceil(basePrice * 0.0236 * 100) / 100 : 0;
             const totalWithFee = basePrice + processingFee;
 
             return (
               <div
                 key={ticket.id}
-                onClick={isDeadlineExceeded ? undefined : () => handleTicketSelect(ticket.id)}
+                onClick={
+                  isDeadlineExceeded
+                    ? undefined
+                    : () => handleTicketSelect(ticket.id)
+                }
                 className={cn(
                   "rounded-lg border p-4 transition-all duration-200 relative",
-                  isDeadlineExceeded ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+                  isDeadlineExceeded
+                    ? "cursor-not-allowed opacity-60"
+                    : "cursor-pointer",
                   isSelected
                     ? "border-primary-600 bg-primary-100  ring-1 ring-primary-600"
                     : "border-neutral-200 bg-transparent",
-                  !isDeadlineExceeded && "hover:border-neutral-300"
+                  !isDeadlineExceeded && "hover:border-neutral-300",
                 )}
               >
                 <div className="flex justify-between items-start mb-2">
@@ -269,8 +272,14 @@ export function EventRegistrationCard({
                           ₹ {totalWithFee.toFixed(2)}
                         </div>
                         <div className="text-sm text-neutral-500 mt-0.5 space-y-0.5">
-                          <span>₹ {basePrice.toFixed(2)} + ₹ {processingFee.toFixed(2)} Transaction Charges</span>
-                          <p className="text-xs text-neutral-400">Charged by payment partners to process your transaction.</p>
+                          <span>
+                            ₹ {basePrice.toFixed(2)} + ₹{" "}
+                            {processingFee.toFixed(2)} Transaction Charges
+                          </span>
+                          <p className="text-xs text-neutral-400">
+                            Charged by payment partners to process your
+                            transaction.
+                          </p>
                         </div>
                       </div>
                     ) : (

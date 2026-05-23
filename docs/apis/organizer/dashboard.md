@@ -1,6 +1,6 @@
 # Dashboard Analytics API
 
-This guide covers how to fetch analytics and metrics for the organizer dashboard. 
+This guide covers how to fetch analytics and metrics for the organizer dashboard.
 
 For mobile (React Native) integrations, use the `apiClient.request` and TanStack Query patterns from the `mobile-client-guide.md`.
 
@@ -11,6 +11,7 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
 Fetch high-level stats across all the events and hackathons the organizer manages.
 
 ### Organizer Overview (`GET /analytics/organizer-stats`)
+
 - **Usage:** Shows total participants, views, and impressions across all listings.
 - **Parameters:** `period` (`today`, `this_week`, `this_month`, `all_time`) or custom `from`/`to` dates.
 - **Returns:**
@@ -31,15 +32,18 @@ Fetch high-level stats across all the events and hackathons the organizer manage
   ```
 
 ### React Native Example (TanStack Query)
+
 ```typescript
 const { data: stats } = useQuery({
-  queryKey: ['organizer', 'stats', period],
-  queryFn: () => apiClient.request(`/analytics/organizer-stats?period=${period}`),
+  queryKey: ["organizer", "stats", period],
+  queryFn: () =>
+    apiClient.request(`/analytics/organizer-stats?period=${period}`),
   staleTime: 60000,
 });
 ```
 
 ### Registration Trends (`GET /analytics/organizer-trends`)
+
 - **Usage:** Shows daily registration counts and gender distribution to plot charts.
 - **Returns:**
   ```json
@@ -47,9 +51,7 @@ const { data: stats } = useQuery({
     "registrationTrend": [
       { "date": "01-05-2025", "events": 10, "hackathon": 5 }
     ],
-    "genderTrend": [
-      { "date": "01-05-2025", "male": 8, "female": 7 }
-    ]
+    "genderTrend": [{ "date": "01-05-2025", "male": 8, "female": 7 }]
   }
   ```
 
@@ -60,6 +62,7 @@ const { data: stats } = useQuery({
 Get metrics for a single hackathon or event.
 
 ### General Stats
+
 - **Endpoint:** `GET /analytics/{type}/:slug/general` (where `{type}` is `hackathon` or `event`)
 - **Usage:** Fetches views, impressions, and total registrations for this specific listing.
 - **Returns:**
@@ -73,6 +76,7 @@ Get metrics for a single hackathon or event.
   ```
 
 ### Detailed Stats
+
 - **Endpoint:** `GET /analytics/{type}/:slug/detailed`
 - **Usage:** Fetches daily trends and demographic breakdowns for this specific listing.
 - **Returns:**

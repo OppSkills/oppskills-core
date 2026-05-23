@@ -61,7 +61,9 @@ export default function Login({
         toast.error("Verification is not complete yet. Please try again.");
       }
     } catch (err: unknown) {
-      setSecondFactorError(getClerkErrorMessage(err, "Invalid verification code"));
+      setSecondFactorError(
+        getClerkErrorMessage(err, "Invalid verification code"),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +90,7 @@ export default function Login({
         await completeSignIn(result.createdSessionId);
       } else if (result.status === "needs_second_factor") {
         const supportsEmailCode = (result.supportedSecondFactors || []).some(
-          (factor) => factor.strategy === "email_code"
+          (factor) => factor.strategy === "email_code",
         );
         if (supportsEmailCode) {
           await signIn.prepareSecondFactor({ strategy: "email_code" });
@@ -96,15 +98,17 @@ export default function Login({
           toast.info("Verification code sent to your email");
         } else {
           toast.error(
-            "Your account requires multi-factor verification not supported in this form."
+            "Your account requires multi-factor verification not supported in this form.",
           );
         }
       } else if (result.status === "needs_first_factor") {
         toast.error(
-          "This account may not have a password yet. Continue with Google or add a password from profile."
+          "This account may not have a password yet. Continue with Google or add a password from profile.",
         );
       } else {
-        toast.error("Sign in could not be completed. Please try another method.");
+        toast.error(
+          "Sign in could not be completed. Please try another method.",
+        );
       }
     } catch (err: unknown) {
       console.log("Login error", err);

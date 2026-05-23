@@ -54,7 +54,10 @@ export default function RoundsAndStages({
   // Scroll to edit card when editing starts
   useEffect(() => {
     if (editingRoundId && editCardRef.current) {
-      editCardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      editCardRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
     }
   }, [editingRoundId]);
 
@@ -103,8 +106,14 @@ export default function RoundsAndStages({
     // Ensure dates are valid Date objects
     const validatedRound: Round = {
       ...tempRoundData,
-      startDate: tempRoundData.startDate instanceof Date ? tempRoundData.startDate : new Date(tempRoundData.startDate),
-      endDate: tempRoundData.endDate instanceof Date ? tempRoundData.endDate : new Date(tempRoundData.endDate),
+      startDate:
+        tempRoundData.startDate instanceof Date
+          ? tempRoundData.startDate
+          : new Date(tempRoundData.startDate),
+      endDate:
+        tempRoundData.endDate instanceof Date
+          ? tempRoundData.endDate
+          : new Date(tempRoundData.endDate),
     };
 
     setFormData((prev) => {
@@ -285,12 +294,15 @@ export default function RoundsAndStages({
                                 className={cn(
                                   "w-full justify-start text-left font-normal",
                                   !tempRoundData.startDate &&
-                                  "text-muted-foreground",
+                                    "text-muted-foreground",
                                 )}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {tempRoundData.startDate ? (
-                                  formatToIST(tempRoundData.startDate, { formatType: "full_date", showSuffix: false })
+                                  formatToIST(tempRoundData.startDate, {
+                                    formatType: "full_date",
+                                    showSuffix: false,
+                                  })
                                 ) : (
                                   <span>Pick a date</span>
                                 )}
@@ -336,12 +348,15 @@ export default function RoundsAndStages({
                                 className={cn(
                                   "w-full justify-start text-left font-normal",
                                   !tempRoundData.endDate &&
-                                  "text-muted-foreground",
+                                    "text-muted-foreground",
                                 )}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {tempRoundData.endDate ? (
-                                  formatToIST(tempRoundData.endDate, { formatType: "full_date", showSuffix: false })
+                                  formatToIST(tempRoundData.endDate, {
+                                    formatType: "full_date",
+                                    showSuffix: false,
+                                  })
                                 ) : (
                                   <span>Pick a date</span>
                                 )}
@@ -589,8 +604,11 @@ export default function RoundsAndStages({
                             Starts
                           </div>
                           <div className="text-sm font-medium whitespace-nowrap">
-                            {formatToIST(round.startDate, { formatType: "full_date", showSuffix: false })},{" "}
-                            {round.startTime}
+                            {formatToIST(round.startDate, {
+                              formatType: "full_date",
+                              showSuffix: false,
+                            })}
+                            , {round.startTime}
                           </div>
                         </div>
                         <div className="bg-secondary/30 rounded-lg px-4 py-2 text-center border border-secondary/50">
@@ -598,8 +616,11 @@ export default function RoundsAndStages({
                             Ends
                           </div>
                           <div className="text-sm font-medium whitespace-nowrap">
-                            {formatToIST(round.endDate, { formatType: "full_date", showSuffix: false })},{" "}
-                            {round.endTime}
+                            {formatToIST(round.endDate, {
+                              formatType: "full_date",
+                              showSuffix: false,
+                            })}
+                            , {round.endTime}
                           </div>
                         </div>
                       </div>
@@ -716,7 +737,7 @@ export default function RoundsAndStages({
                               className={cn(
                                 "w-full justify-start text-left font-normal",
                                 !tempRoundData.startDate &&
-                                "text-muted-foreground",
+                                  "text-muted-foreground",
                               )}
                             >
                               <CalendarIcon className="mr-2 h-4 w-4" />
@@ -765,7 +786,7 @@ export default function RoundsAndStages({
                               className={cn(
                                 "w-full justify-start text-left font-normal",
                                 !tempRoundData.endDate &&
-                                "text-muted-foreground",
+                                  "text-muted-foreground",
                               )}
                             >
                               <CalendarIcon className="mr-2 h-4 w-4" />
@@ -833,7 +854,9 @@ export default function RoundsAndStages({
                         </span>
                       </div>
                       <Switch
-                        checked={tempRoundData.submissionConfig?.enabled ?? false}
+                        checked={
+                          tempRoundData.submissionConfig?.enabled ?? false
+                        }
                         onCheckedChange={(checked) =>
                           setTempRoundData({
                             ...tempRoundData,

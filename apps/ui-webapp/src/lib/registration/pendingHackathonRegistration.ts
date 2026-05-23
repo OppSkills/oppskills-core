@@ -54,7 +54,10 @@ export const pendingEventRegistrationKey = (slug: string) =>
 
 export function readPendingEventRegistration(
   slug: string,
-): Pick<PendingHackathonRegistrationPayload, "v" | "answers" | "userId" | "ts"> | null {
+): Pick<
+  PendingHackathonRegistrationPayload,
+  "v" | "answers" | "userId" | "ts"
+> | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(pendingEventRegistrationKey(slug));

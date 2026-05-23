@@ -79,7 +79,6 @@ const getFileType = (fileName: string, mimeType?: string): string => {
 
 import { Container } from "@/app/dashboard/_components/Container";
 
-
 export default function AdditionalInfo({
   formData,
   setFormData,
@@ -191,7 +190,7 @@ export default function AdditionalInfo({
       // Update existing contact
       updateInfo({
         contacts: contacts.map((c) =>
-          c.id === editingContact.id ? contactForm : c
+          c.id === editingContact.id ? contactForm : c,
         ),
       });
     } else {
@@ -314,7 +313,7 @@ export default function AdditionalInfo({
         title: attachmentForm.fileName,
         type: getFileType(
           attachmentForm.file?.name || "",
-          attachmentForm.file?.type
+          attachmentForm.file?.type,
         ),
         url: presign.publicUrl,
         size: attachmentForm.file?.size,
@@ -328,7 +327,7 @@ export default function AdditionalInfo({
     } catch (error) {
       console.error("Upload error:", error);
       toast.error(
-        `Upload Failed: ${error instanceof Error ? error.message : "Failed to upload attachment"}`
+        `Upload Failed: ${error instanceof Error ? error.message : "Failed to upload attachment"}`,
       );
     } finally {
       setIsUploading(false);
@@ -373,7 +372,9 @@ export default function AdditionalInfo({
                   {contact.name.substring(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <h4 className="font-bold text-base text-neutral-800 poppins">{contact.name}</h4>
+                  <h4 className="font-bold text-base text-neutral-800 poppins">
+                    {contact.name}
+                  </h4>
                   <div className="flex items-center gap-3 text-sm text-neutral-600 inter">
                     <span>{contact.phone || "No Phone"}</span>
                     <span className="text-neutral-300">|</span>
@@ -439,7 +440,9 @@ export default function AdditionalInfo({
                   <FileText className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-base text-neutral-800 poppins">{file.title}</h4>
+                  <h4 className="font-bold text-base text-neutral-800 poppins">
+                    {file.title}
+                  </h4>
                   <p className="text-sm text-neutral-600 inter">{file.type}</p>
                 </div>
               </div>
@@ -599,7 +602,7 @@ export default function AdditionalInfo({
                   isDragging
                     ? "border-primary-500 bg-primary/5"
                     : "border-border hover:border-primary-500 hover:bg-secondary/20",
-                  attachmentErrors.file && "border-destructive"
+                  attachmentErrors.file && "border-destructive",
                 )}
               >
                 <input

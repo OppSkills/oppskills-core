@@ -101,7 +101,7 @@ export function CompetitionCard({ competition }: CompetitionCardProps) {
     ? formatInTimeZone(
         new Date(competition.registrationDeadline),
         "UTC",
-        "dd MMM yyyy"
+        "dd MMM yyyy",
       )
     : "N/A";
 
@@ -151,7 +151,7 @@ export function CompetitionCard({ competition }: CompetitionCardProps) {
                   {index > 0 && <Dot />}
                   {item}
                 </p>
-              )
+              ),
             )}
           </div>
           <h3 className="font-semibold text-xl text-neutral-900 line-clamp-1">

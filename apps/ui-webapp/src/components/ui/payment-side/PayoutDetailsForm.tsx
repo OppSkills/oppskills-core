@@ -7,7 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { PayoutDetailsInput } from "@/lib/api/paymentsApi";
 import GeneralModal from "@/components/ui/derived/GeneralModal";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 interface PayoutDetailsFormProps {
   isOpen: boolean;
@@ -155,13 +159,17 @@ export default function PayoutDetailsForm({
         setIsFetchingPincode(true);
         setPincodeNotFound(false);
         try {
-          const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+          const res = await fetch(
+            `https://api.postalpincode.in/pincode/${pin}`,
+          );
           if (res.ok) {
             const data = await res.json();
             if (data[0] && data[0].Status === "Success" && data[0].PostOffice) {
               const firstPO = data[0].PostOffice;
               if (firstPO && firstPO.length > 0) {
-                const cities = Array.from(new Set(firstPO.map((po: any) => po.Name)));
+                const cities = Array.from(
+                  new Set(firstPO.map((po: any) => po.Name)),
+                );
                 setAvailableCities(cities as string[]);
                 setFormData((prev) => ({
                   ...prev,
@@ -198,11 +206,13 @@ export default function PayoutDetailsForm({
         return !value.trim() ? "Bank name is required" : "";
       case "accountNumber":
         if (!value.trim()) return "Account number is required";
-        if (!/^\d{9,18}$/.test(value)) return "Account number must be 9-18 digits";
+        if (!/^\d{9,18}$/.test(value))
+          return "Account number must be 9-18 digits";
         return "";
       case "confirmAccountNumber":
         if (!value.trim()) return "Confirm account number is required";
-        if (value !== formData.accountNumber) return "Account numbers must match";
+        if (value !== formData.accountNumber)
+          return "Account numbers must match";
         return "";
       case "ifsc":
         if (!value.trim()) return "IFSC is required";
@@ -224,21 +234,28 @@ export default function PayoutDetailsForm({
         }
         return "";
       case "gstNumber":
-        if (value.trim() && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(value)) {
+        if (
+          value.trim() &&
+          !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
+            value,
+          )
+        ) {
           return "Invalid GSTIN format (e.g., 22AAAAA0000A1Z5)";
         }
         return "";
-       case "address2":
+      case "address2":
         return !value.trim() ? "Address 2 is required" : "";
       case "phone": {
         if (!value.trim()) return "Phone Number is required";
         const rawNum = value.replace(/\s+/g, "").replace("+91", "");
-        if (!/^\d{10}$/.test(rawNum)) return "Phone number must be exactly 10 digits";
+        if (!/^\d{10}$/.test(rawNum))
+          return "Phone number must be exactly 10 digits";
         return "";
       }
       case "email":
         if (!value.trim()) return "Email is required";
-        if (!/^[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(value)) return "Invalid email format";
+        if (!/^[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(value))
+          return "Invalid email format";
         return "";
       case "upiId":
         if (!value.trim()) return "UPI ID is required";
@@ -254,7 +271,10 @@ export default function PayoutDetailsForm({
   const getFormErrors = (data: typeof formData) => {
     const newErrors: Record<string, string> = {};
     Object.keys(data).forEach((key) => {
-      const error = validateField(key, data[key as keyof typeof formData] as string);
+      const error = validateField(
+        key,
+        data[key as keyof typeof formData] as string,
+      );
       if (error) {
         newErrors[key] = error;
       }
@@ -293,7 +313,9 @@ export default function PayoutDetailsForm({
     if (Object.keys(newErrors).length === 0) {
       // Exclude confirmAccountNumber before sending
       const { confirmAccountNumber: _, ...submitPayload } = formData;
-      const cleanedPhone = submitPayload.phone.replace(/\s+/g, "").replace("+91", "");
+      const cleanedPhone = submitPayload.phone
+        .replace(/\s+/g, "")
+        .replace("+91", "");
       onSave({ ...submitPayload, phone: cleanedPhone });
     }
   };
@@ -447,7 +469,8 @@ export default function PayoutDetailsForm({
           />
           {isFetchingPincode && (
             <div className="flex items-center gap-1.5 text-xs text-primary animate-pulse px-1">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying Pincode...
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying
+              Pincode...
             </div>
           )}
           {pincodeNotFound && (
@@ -580,7 +603,9 @@ const CustomInput = ({
     <Label className="font-inter text-foreground text-sm font-semibold leading-[140%] select-none flex items-center gap-1.5 flex-wrap">
       {label}
       {isOptional ? (
-        <span className="text-neutral-400 font-normal text-sm select-none">(Optional)</span>
+        <span className="text-neutral-400 font-normal text-sm select-none">
+          (Optional)
+        </span>
       ) : (
         <span className="text-red-500">*</span>
       )}

@@ -1,5 +1,5 @@
-import { IsArray, IsString, IsNotEmpty, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsArray, IsString, IsNotEmpty, ValidateNested } from "class-validator";
+import { Type } from "class-transformer";
 
 class AnswerDto {
   @IsString()

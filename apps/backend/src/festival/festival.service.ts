@@ -7,6 +7,7 @@ import {
 import { prisma } from '@oppskills/db';
 import type { CreateFestivalDto, UpdateFestivalDto } from '@oppskills/types';
 import { DELETED_RESOURCE_OWNER_ID } from '../_utils/constants';
+import { LocationService } from 'src/recommendation/location/location.service';
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 type LifecycleStatus =
@@ -18,6 +19,8 @@ type LifecycleStatus =
 
 @Injectable()
 export class FestivalService {
+  constructor(private readonly locationService: LocationService) {}
+
   async createFestival(dto: CreateFestivalDto, userId: string) {
     const startDate = this.parseDate(dto.startDate, 'startDate');
     const endDate = this.parseDate(dto.endDate, 'endDate');
@@ -29,6 +32,18 @@ export class FestivalService {
 
     const slug = await this.buildFestivalSlug(dto.slug, dto.name);
 
+    let locationCoords = dto.location?.city;
+    if (dto.location?.placeId) {
+      try {
+        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        if (resolved) {
+          locationCoords = resolved;
+        }
+      } catch (error) {
+        // Log error but proceed without coordinates if resolution fails
+      }
+    }
+
     return prisma.festivalEntity.create({
       data: {
         slug,
@@ -39,7 +54,7 @@ export class FestivalService {
 
         locationType: dto.location?.type,
         locationAddress: dto.location?.address,
-        locationCity: dto.location?.city,
+        locationCoords,
         locationVirtualLink: dto.location?.virtualLink,
 
         startDate,
@@ -73,7 +88,7 @@ export class FestivalService {
         endDate: true,
         status: true,
         locationType: true,
-        locationCity: true,
+        locationCoords: true,
         organizationName: true,
         organizationLogoUrl: true,
         hackathons: {
@@ -248,6 +263,18 @@ export class FestivalService {
       ? await this.buildFestivalSlug(dto.slug, name, id)
       : undefined;
 
+    let locationCoords = dto.location?.city;
+    if (dto.location?.placeId) {
+      try {
+        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        if (resolved) {
+          locationCoords = resolved;
+        }
+      } catch (error) {
+        // Log error but proceed without coordinates if resolution fails
+      }
+    }
+
     return prisma.festivalEntity.update({
       where: { id },
       data: {
@@ -259,7 +286,7 @@ export class FestivalService {
 
         locationType: dto.location?.type,
         locationAddress: dto.location?.address,
-        locationCity: dto.location?.city,
+        locationCoords,
         locationVirtualLink: dto.location?.virtualLink,
 
         startDate,

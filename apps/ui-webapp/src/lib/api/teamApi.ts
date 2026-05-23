@@ -36,7 +36,7 @@ export interface TeamMemberUser {
     collegePassoutYear: number | null;
     companyName: string | null;
     jobTitle: string | null;
-    locationCity: string;
+    locationCoords: string;
     locationState: string;
     locationCountry: string;
   } | null;

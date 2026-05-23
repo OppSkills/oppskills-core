@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Calendar, Trophy } from "lucide-react";
 import { Badge } from "./ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, normalizeUrl } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,7 +21,6 @@ const TRENDING_SEARCHES = [
   "Internships",
   "Startup Pitch",
 ];
-
 
 interface NavbarSearchProps {
   query: string;
@@ -98,7 +97,7 @@ export const NavbarSearch = ({ query, isOpen, onClose }: NavbarSearchProps) => {
       className={cn(
         "w-full border p-0 bg-white rounded-2xl absolute right-0 top-12 shadow-xl z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top search-suggestions-container",
         "md:w-[450px] md:max-h-[500px]",
-        "fixed inset-x-0 bottom-0 top-[76px] md:absolute md:bottom-auto md:left-auto md:right-0"
+        "fixed inset-x-0 bottom-0 top-[76px] md:absolute md:bottom-auto md:left-auto md:right-0",
       )}
     >
       <ScrollArea className="h-full max-h-[500px]">
@@ -147,7 +146,7 @@ export const NavbarSearch = ({ query, isOpen, onClose }: NavbarSearchProps) => {
                           <div className="relative h-12 w-12 rounded-lg overflow-hidden shrink-0 bg-neutral-100 border">
                             {item.thumbnail ? (
                               <Image
-                                src={item.thumbnail}
+                                src={normalizeUrl(item.thumbnail)}
                                 alt={item.title}
                                 fill
                                 className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -169,7 +168,7 @@ export const NavbarSearch = ({ query, isOpen, onClose }: NavbarSearchProps) => {
                                   "text-[10px] px-1.5 py-0 rounded-md font-medium",
                                   item.type === "HACKATHON"
                                     ? "bg-amber-50 text-amber-700 border-amber-200"
-                                    : "bg-blue-50 text-blue-700 border-blue-200"
+                                    : "bg-blue-50 text-blue-700 border-blue-200",
                                 )}
                               >
                                 {item.type === "HACKATHON" ? (

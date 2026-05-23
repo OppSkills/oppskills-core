@@ -6,6 +6,7 @@ import { AboutSection } from "./_components/AboutSection";
 import { Organizers } from "./_components/Organizers";
 import { Prizes } from "./_components/Prizes";
 import { Attachments } from "./_components/Attachments";
+import { GoogleMap } from "@/components/common/GoogleMap";
 import type {
   CompetitionDetails,
   Round,
@@ -27,7 +28,10 @@ import { AlertTriangle } from "lucide-react";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { HackathonDetailFallback } from "@/components/boneyard/loading-fallbacks";
 import { useAuth } from "@clerk/nextjs";
-import { transformApiData, type HackathonApiData } from "./_components/transform";
+import {
+  transformApiData,
+  type HackathonApiData,
+} from "./_components/transform";
 import { verifyPayment } from "@/lib/api/paymentsApi";
 import { withRetry } from "@/lib/utils/retry";
 import { toast } from "sonner";
@@ -41,8 +45,10 @@ import { getApiErrorMessage } from "@/lib/utils";
 
 export function CompetitionDetailsClient({
   initialData,
+  googleMapApiKey,
 }: {
   initialData?: CompetitionDetails;
+  googleMapApiKey?: string;
 }) {
   const { slug } = useParams();
   const searchParams = useSearchParams();
@@ -50,7 +56,7 @@ export function CompetitionDetailsClient({
   const { getToken, isSignedIn, userId } = useAuth();
   const hackathonRzpVerifyTriedRef = useRef(false);
   const [competition, setCompetition] = useState<CompetitionDetails | null>(
-    initialData || null
+    initialData || null,
   );
   const [isLoading, setIsLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
@@ -156,14 +162,14 @@ export function CompetitionDetailsClient({
             if (token) {
               const data = (await getHackathonBySlug(
                 token,
-                slug
+                slug,
               )) as HackathonApiData;
               setCompetition(transformApiData(data));
               console.log("competition data", transformApiData(data));
               setIsDraft(true);
               return;
             }
-          } catch { }
+          } catch {}
         }
         console.error("Failed to fetch competition:", publicErr);
         setError("Competition not found or not available.");
@@ -277,8 +283,10 @@ export function CompetitionDetailsClient({
                 setCurTab={setCurTab}
                 hasRounds={competition.rounds.length > 0}
                 hasAttachments={
-                  !!competition.attachments && competition.attachments.length > 0
+                  !!competition.attachments &&
+                  competition.attachments.length > 0
                 }
+                hasLocation={!!googleMapApiKey && !!competition.locationCoords}
                 title={competition.title}
                 slug={competition.slug}
               />
@@ -303,8 +311,6 @@ export function CompetitionDetailsClient({
                   <AboutSection content={competition.about} />
                 </section>
 
-
-
                 <section className="scroll-mt-24">
                   <Organizers
                     organizers={competition.organizers}
@@ -322,6 +328,13 @@ export function CompetitionDetailsClient({
                 <section id="prizes" className="scroll-mt-24">
                   <Prizes prizes={competition.prizes} />
                 </section>
+
+                {googleMapApiKey && competition.locationCoords && (
+                  <section id="location" className="scroll-mt-24 space-y-4">
+                    <h3 className="text-xl font-bold text-foreground">Location</h3>
+                    <GoogleMap apiKey={googleMapApiKey} coords={competition.locationCoords} />
+                  </section>
+                )}
               </div>
             </div>
           </div>

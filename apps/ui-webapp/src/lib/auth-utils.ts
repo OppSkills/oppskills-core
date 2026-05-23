@@ -24,7 +24,9 @@ export async function getSafeToken(
       err?.long_message?.includes("timestamp check failed");
 
     if (isHandshakeError) {
-      console.error("[getSafeToken] Clerk handshake failed, attempting forced refresh...");
+      console.error(
+        "[getSafeToken] Clerk handshake failed, attempting forced refresh...",
+      );
       try {
         return await getToken({ skipCache: true });
       } catch (retryErr) {

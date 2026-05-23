@@ -140,7 +140,7 @@ export default function Register({
         } else {
           console.log("Session ID is missing:", sessionId);
           toast.error(
-            "Registration completed but session could not be created. Please sign in."
+            "Registration completed but session could not be created. Please sign in.",
           );
           setIsOpenLogin(false);
         }
@@ -213,7 +213,6 @@ export default function Register({
   return (
     <div className="flex flex-col gap-6">
       <div id="clerk-captcha"></div>
-
 
       {/* Step 1: Email */}
       {step === 1 && (

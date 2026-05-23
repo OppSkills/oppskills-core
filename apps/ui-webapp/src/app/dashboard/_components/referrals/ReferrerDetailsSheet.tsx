@@ -19,7 +19,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import { SortFromTopToBottom } from "@solar-icons/react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -41,18 +46,25 @@ export function ReferrerDetailsSheet({
   const [selectedOppId, setSelectedOppId] = useState<string | null>(null);
   const { data, isLoading } = useReferrerDetailsForOrganizer(referralId);
 
-  const columns = React.useMemo<ColumnDef<NonNullable<typeof data>["opportunities"][0]>[]>(
+  const columns = React.useMemo<
+    ColumnDef<NonNullable<typeof data>["opportunities"][0]>[]
+  >(
     () => [
       {
         id: "sno",
         header: "S. No.",
-        cell: (info) => <span className="text-neutral-600 font-medium">{info.row.index + 1}</span>,
+        cell: (info) => (
+          <span className="text-neutral-600 font-medium">
+            {info.row.index + 1}
+          </span>
+        ),
       },
       {
         accessorKey: "entityName",
         header: () => (
           <div className="flex items-center gap-2">
-            Event/ Competition <SortFromTopToBottom size={18} className="ml-1 opacity-60" />
+            Event/ Competition{" "}
+            <SortFromTopToBottom size={18} className="ml-1 opacity-60" />
           </div>
         ),
         cell: (info) => {
@@ -61,7 +73,12 @@ export function ReferrerDetailsSheet({
             <div className="flex items-center gap-4 py-2 group/name">
               <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-neutral-900 flex items-center justify-center text-neutral-200 font-semibold text-2xl border border-primary-100">
                 {row.image ? (
-                  <Image src={row.image} alt={row.entityName} fill className="object-cover" />
+                  <Image
+                    src={row.image}
+                    alt={row.entityName}
+                    fill
+                    className="object-cover"
+                  />
                 ) : (
                   <span>{row.entityName.charAt(0).toUpperCase()}</span>
                 )}
@@ -70,7 +87,9 @@ export function ReferrerDetailsSheet({
                 <span className="font-bold text-neutral-900 text-sm group-hover/name:text-primary-800 transition-colors">
                   {row.entityName}
                 </span>
-                <span className="text-xs text-neutral-500 font-medium capitalize">{row.entityType.toLowerCase()}</span>
+                <span className="text-xs text-neutral-500 font-medium capitalize">
+                  {row.entityType.toLowerCase()}
+                </span>
               </div>
             </div>
           );
@@ -80,7 +99,8 @@ export function ReferrerDetailsSheet({
         accessorKey: "clicks",
         header: () => (
           <div className="flex items-center gap-2 justify-center">
-            Link Clicks <SortFromTopToBottom size={18} className="ml-1 opacity-60" />
+            Link Clicks{" "}
+            <SortFromTopToBottom size={18} className="ml-1 opacity-60" />
           </div>
         ),
         cell: (info) => {
@@ -101,7 +121,8 @@ export function ReferrerDetailsSheet({
         accessorKey: "registrations",
         header: () => (
           <div className="flex items-center gap-2 justify-center">
-            Registrations <SortFromTopToBottom size={18} className="ml-1 opacity-60" />
+            Registrations{" "}
+            <SortFromTopToBottom size={18} className="ml-1 opacity-60" />
           </div>
         ),
         cell: (info) => {
@@ -112,14 +133,15 @@ export function ReferrerDetailsSheet({
                 {row.registrations.toString().padStart(2, "0")} Registrations
               </Badge>
               <span className="text-xs text-neutral-500">
-                {row.registrationsLast24h.toString().padStart(2, "0")} in last 24 hrs
+                {row.registrationsLast24h.toString().padStart(2, "0")} in last
+                24 hrs
               </span>
             </div>
           );
         },
       },
     ],
-    []
+    [],
   );
 
   const table = useReactTable({
@@ -131,12 +153,15 @@ export function ReferrerDetailsSheet({
   const opp = data?.opportunities.find((o) => o.id === selectedOppId);
 
   return (
-    <Sheet open={!!referralId} onOpenChange={(open) => {
-      if (!open) {
-        setSelectedOppId(null);
-        onClose();
-      }
-    }}>
+    <Sheet
+      open={!!referralId}
+      onOpenChange={(open) => {
+        if (!open) {
+          setSelectedOppId(null);
+          onClose();
+        }
+      }}
+    >
       <SheetContent className="w-full sm:max-w-4xl bg-neutral-100 p-0 flex flex-col gap-0 border-l border-neutral-200">
         {!selectedOppId ? (
           <>
@@ -152,7 +177,9 @@ export function ReferrerDetailsSheet({
               >
                 <ChevronLeft className="size-6" />
               </Button>
-              <SheetTitle className="text-xl font-medium text-neutral-900">Referrer Details</SheetTitle>
+              <SheetTitle className="text-xl font-medium text-neutral-900">
+                Referrer Details
+              </SheetTitle>
               <SheetDescription className="sr-only">
                 Details for referrer {data?.referrer?.name}
               </SheetDescription>
@@ -173,30 +200,48 @@ export function ReferrerDetailsSheet({
                     {/* Analytics Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="bg-primary-900 text-white rounded-xl p-5 flex flex-col justify-between h-36">
-                        <span className="text-primary-100 font-medium">All Events Referrals</span>
-                        <span className="text-5xl font-normal">{data.summary.totalRegistrations}</span>
+                        <span className="text-primary-100 font-medium">
+                          All Events Referrals
+                        </span>
+                        <span className="text-5xl font-normal">
+                          {data.summary.totalRegistrations}
+                        </span>
                         <div className="flex items-center justify-between mt-auto">
-                          <span className="text-sm text-primary-200">Last 24 Hrs</span>
+                          <span className="text-sm text-primary-200">
+                            Last 24 Hrs
+                          </span>
                           <span className="bg-primary-800 text-primary-50 text-xs px-3 py-1 rounded-full border border-primary-700">
                             {data.summary.registrationsLast24h}
                           </span>
                         </div>
                       </div>
                       <div className="bg-primary-50 text-neutral-900 rounded-xl p-5 flex flex-col justify-between h-36 border border-primary-100">
-                        <span className="text-neutral-700 font-medium">No. Of Links Generated</span>
-                        <span className="text-5xl font-normal text-primary-900">{data.summary.totalReferrals}</span>
+                        <span className="text-neutral-700 font-medium">
+                          No. Of Links Generated
+                        </span>
+                        <span className="text-5xl font-normal text-primary-900">
+                          {data.summary.totalReferrals}
+                        </span>
                         <div className="flex items-center justify-between mt-auto">
-                          <span className="text-sm text-primary-600">Active Links</span>
+                          <span className="text-sm text-primary-600">
+                            Active Links
+                          </span>
                           <span className="bg-primary-900 text-white text-xs px-3 py-1 rounded-full">
                             {data.summary.activeLinks}
                           </span>
                         </div>
                       </div>
                       <div className="bg-primary-50 text-neutral-900 rounded-xl p-5 flex flex-col justify-between h-36 border border-primary-100">
-                        <span className="text-neutral-700 font-medium">No. Of Impressions</span>
-                        <span className="text-5xl font-normal text-primary-900">{data.summary.totalClicks}</span>
+                        <span className="text-neutral-700 font-medium">
+                          No. Of Impressions
+                        </span>
+                        <span className="text-5xl font-normal text-primary-900">
+                          {data.summary.totalClicks}
+                        </span>
                         <div className="flex items-center justify-between mt-auto">
-                          <span className="text-sm text-primary-600">Impression last 24 hrs</span>
+                          <span className="text-sm text-primary-600">
+                            Impression last 24 hrs
+                          </span>
                           <span className="bg-primary-900 text-white text-xs px-3 py-1 rounded-full">
                             {data.summary.clicksLast24h}
                           </span>
@@ -209,19 +254,30 @@ export function ReferrerDetailsSheet({
                       <Table className="min-w-full border-collapse!">
                         <TableHeader className="bg-primary-800 hover:bg-primary-800!">
                           {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id} className="hover:bg-transparent! border-b-0!">
+                            <TableRow
+                              key={headerGroup.id}
+                              className="hover:bg-transparent! border-b-0!"
+                            >
                               {headerGroup.headers.map((header) => (
                                 <TableHead
                                   key={header.id}
                                   className={cn(
                                     "text-white font-normal py-4 px-6 whitespace-nowrap border-r border-primary-700 last:border-r-0",
-                                    (header.id === "clicks" || header.id === "registrations") && "text-center"
+                                    (header.id === "clicks" ||
+                                      header.id === "registrations") &&
+                                      "text-center",
                                   )}
-                                  style={{ width: header.id === "sno" ? "80px" : "auto" }}
+                                  style={{
+                                    width:
+                                      header.id === "sno" ? "80px" : "auto",
+                                  }}
                                 >
                                   {header.isPlaceholder
                                     ? null
-                                    : flexRender(header.column.columnDef.header, header.getContext())}
+                                    : flexRender(
+                                        header.column.columnDef.header,
+                                        header.getContext(),
+                                      )}
                                 </TableHead>
                               ))}
                             </TableRow>
@@ -241,10 +297,15 @@ export function ReferrerDetailsSheet({
                                   key={cell.id}
                                   className={cn(
                                     "py-3 px-6 border-r border-neutral-200 last:border-r-0",
-                                    (cell.column.id === "clicks" || cell.column.id === "registrations") && "text-center"
+                                    (cell.column.id === "clicks" ||
+                                      cell.column.id === "registrations") &&
+                                      "text-center",
                                   )}
                                 >
-                                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                  {flexRender(
+                                    cell.column.columnDef.cell,
+                                    cell.getContext(),
+                                  )}
                                 </TableCell>
                               ))}
                             </TableRow>

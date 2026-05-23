@@ -313,7 +313,7 @@ export async function requestRefund(
 export async function submitRegistration(
   token: string,
   hackathonSlug: string,
-  answers: SubmitRegistrationDto['answers'],
+  answers: SubmitRegistrationDto["answers"],
 ): Promise<{ success: boolean; submissionId: string }> {
   const res = await HackathonsAPI.post(
     `/${hackathonSlug}/registrations/submit`,
@@ -375,10 +375,20 @@ export async function getPayoutDetails(
     params,
   });
   const data = res.data as PayoutDetailsApiResponse;
-  if (data && typeof data === "object" && "exists" in data && data.exists === false) {
+  if (
+    data &&
+    typeof data === "object" &&
+    "exists" in data &&
+    data.exists === false
+  ) {
     return null;
   }
-  if (data && typeof data === "object" && "exists" in data && data.exists === true) {
+  if (
+    data &&
+    typeof data === "object" &&
+    "exists" in data &&
+    data.exists === true
+  ) {
     const { exists: _e, ...rest } = data;
     return rest as PayoutDetails;
   }
@@ -438,11 +448,9 @@ export async function createHackathonTicketTier(
   hackathonSlug: string,
   params: CreateTicketTierParams,
 ): Promise<TicketTier> {
-  const res = await HackathonsAPI.post(
-    `/${hackathonSlug}/tickets`,
-    params,
-    { headers: buildAuthHeaders(token) },
-  );
+  const res = await HackathonsAPI.post(`/${hackathonSlug}/tickets`, params, {
+    headers: buildAuthHeaders(token),
+  });
   return res.data;
 }
 
@@ -495,11 +503,9 @@ export async function createEventTicketTier(
   eventSlug: string,
   params: CreateTicketTierParams,
 ): Promise<TicketTier> {
-  const res = await EventsAPI.post(
-    `/${eventSlug}/tickets`,
-    params,
-    { headers: buildAuthHeaders(token) },
-  );
+  const res = await EventsAPI.post(`/${eventSlug}/tickets`, params, {
+    headers: buildAuthHeaders(token),
+  });
   return res.data;
 }
 
@@ -509,11 +515,9 @@ export async function updateEventTicketTier(
   tierId: string,
   params: Partial<UpdateTicketTierDto>,
 ): Promise<TicketTier> {
-  const res = await EventsAPI.patch(
-    `/${eventSlug}/tickets/${tierId}`,
-    params,
-    { headers: buildAuthHeaders(token) },
-  );
+  const res = await EventsAPI.patch(`/${eventSlug}/tickets/${tierId}`, params, {
+    headers: buildAuthHeaders(token),
+  });
   return res.data;
 }
 

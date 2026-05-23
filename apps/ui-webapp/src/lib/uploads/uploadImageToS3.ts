@@ -27,9 +27,7 @@ export async function uploadImageToS3PresignedPost(input: {
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(
-      `S3 upload failed (${res.status}). ${text.trim().length > 0 ? text : ""}`
+      `S3 upload failed (${res.status}). ${text.trim().length > 0 ? text : ""}`,
     );
   }
 }
-
-

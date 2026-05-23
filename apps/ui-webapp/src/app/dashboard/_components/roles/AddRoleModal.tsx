@@ -24,16 +24,13 @@ import {
 } from "@/components/ui/popover";
 import { useState, useEffect, useMemo } from "react";
 import { Loader2, UserIcon } from "lucide-react";
-import { 
-  CheckRead, 
-  AltArrowDown, 
-  Magnifer, 
-  UserCircle 
-} from "@solar-icons/react";
 import {
-  looksLikeCompleteEmail,
-  useUserSearch,
-} from "@/hooks/useUserSearch";
+  CheckRead,
+  AltArrowDown,
+  Magnifer,
+  UserCircle,
+} from "@solar-icons/react";
+import { looksLikeCompleteEmail, useUserSearch } from "@/hooks/useUserSearch";
 import { type UserSearchResult } from "@/lib/api/usersApi";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -63,7 +60,9 @@ export function AddRoleModal({
   ownerId,
 }: AddRoleModalProps) {
   const [comboboxOpen, setComboboxOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(
+    null,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -117,7 +116,7 @@ export function AddRoleModal({
           {/* Decorative circles */}
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-primary-900/20 rounded-full blur-3xl" />
-          
+
           <DialogHeader className="relative z-10 space-y-2">
             <div className="bg-white/20 w-12 h-12 rounded-2xl flex items-center justify-center mb-2 backdrop-blur-sm border border-white/30">
               <UserCircle className="w-7 h-7 text-white" />
@@ -126,7 +125,8 @@ export function AddRoleModal({
               Assign {roleType}
             </DialogTitle>
             <DialogDescription className="text-primary-100 text-lg opacity-90 max-w-[320px] leading-relaxed">
-              Add a team member to help manage your platform and control permissions.
+              Add a team member to help manage your platform and control
+              permissions.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -135,17 +135,21 @@ export function AddRoleModal({
           <div className="space-y-4">
             <label className="text-neutral-900 font-bold text-lg flex items-center gap-2">
               Search by Email
-              <span className="text-primary-600 text-xs px-2 py-0.5 bg-primary-50 rounded-full">Required</span>
+              <span className="text-primary-600 text-xs px-2 py-0.5 bg-primary-50 rounded-full">
+                Required
+              </span>
             </label>
-            
+
             <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
               <PopoverTrigger asChild>
                 <button
                   type="button"
                   className={cn(
                     "w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all outline-none text-left",
-                    comboboxOpen ? "border-primary-600 bg-primary-50/30" : "border-neutral-100 bg-neutral-50 hover:border-primary-200",
-                    error && "border-red-200 bg-red-50/30"
+                    comboboxOpen
+                      ? "border-primary-600 bg-primary-50/30"
+                      : "border-neutral-100 bg-neutral-50 hover:border-primary-200",
+                    error && "border-red-200 bg-red-50/30",
                   )}
                   disabled={isLoading}
                 >
@@ -168,8 +172,12 @@ export function AddRoleModal({
                           </div>
                         )}
                         <div className="flex flex-col">
-                          <span className="text-neutral-900 font-bold text-sm truncate">{formatUserLabel(selectedUser)}</span>
-                          <span className="text-neutral-500 text-xs truncate">{selectedUser.email}</span>
+                          <span className="text-neutral-900 font-bold text-sm truncate">
+                            {formatUserLabel(selectedUser)}
+                          </span>
+                          <span className="text-neutral-500 text-xs truncate">
+                            {selectedUser.email}
+                          </span>
                         </div>
                       </div>
                     ) : (
@@ -179,10 +187,18 @@ export function AddRoleModal({
                       </div>
                     )}
                   </div>
-                  <AltArrowDown className={cn("w-5 h-5 text-neutral-400 transition-transform duration-200", comboboxOpen && "rotate-180")} />
+                  <AltArrowDown
+                    className={cn(
+                      "w-5 h-5 text-neutral-400 transition-transform duration-200",
+                      comboboxOpen && "rotate-180",
+                    )}
+                  />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-[436px] p-0 border-none shadow-2xl rounded-2xl overflow-hidden mt-2" align="start">
+              <PopoverContent
+                className="w-[436px] p-0 border-none shadow-2xl rounded-2xl overflow-hidden mt-2"
+                align="start"
+              >
                 <Command className="border-none" shouldFilter={false}>
                   <div className="p-3 bg-neutral-50 border-b border-neutral-100 flex items-center gap-2">
                     <Magnifer className="w-4 h-4 text-neutral-400" />
@@ -197,29 +213,47 @@ export function AddRoleModal({
                     {isSearching && (
                       <div className="flex flex-col items-center justify-center py-10 gap-3">
                         <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
-                        <span className="text-sm text-neutral-500 font-medium italic">Searching users...</span>
+                        <span className="text-sm text-neutral-500 font-medium italic">
+                          Searching users...
+                        </span>
                       </div>
                     )}
-                    {!isSearching && looksLikeCompleteEmail(searchQuery) && searchResults.length === 0 && (
-                      <div className="py-10 text-center flex flex-col items-center gap-3">
-                        <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-400">
-                          <Magnifer className="w-6 h-6" />
+                    {!isSearching &&
+                      looksLikeCompleteEmail(searchQuery) &&
+                      searchResults.length === 0 && (
+                        <div className="py-10 text-center flex flex-col items-center gap-3">
+                          <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-400">
+                            <Magnifer className="w-6 h-6" />
+                          </div>
+                          <div className="space-y-1 px-4">
+                            <p className="text-neutral-900 font-bold">
+                              No Users Found
+                            </p>
+                            <p className="text-neutral-500 text-xs">
+                              We couldn't find any account with that email
+                              address.
+                            </p>
+                          </div>
                         </div>
-                        <div className="space-y-1 px-4">
-                          <p className="text-neutral-900 font-bold">No Users Found</p>
-                          <p className="text-neutral-500 text-xs">We couldn't find any account with that email address.</p>
+                      )}
+                    {!isSearching &&
+                      searchQuery.trim().length > 0 &&
+                      !looksLikeCompleteEmail(searchQuery) && (
+                        <div className="px-6 py-10 text-center space-y-2">
+                          <div className="text-primary-600 font-bold bg-primary-50 py-2 rounded-xl text-xs inline-block px-4">
+                            Complete Email Required
+                          </div>
+                          <p className="text-neutral-500 text-sm leading-relaxed">
+                            Please enter the person's full email address to find
+                            them in our system.
+                          </p>
                         </div>
-                      </div>
-                    )}
-                    {!isSearching && searchQuery.trim().length > 0 && !looksLikeCompleteEmail(searchQuery) && (
-                      <div className="px-6 py-10 text-center space-y-2">
-                        <div className="text-primary-600 font-bold bg-primary-50 py-2 rounded-xl text-xs inline-block px-4">Complete Email Required</div>
-                        <p className="text-neutral-500 text-sm leading-relaxed">Please enter the person's full email address to find them in our system.</p>
-                      </div>
-                    )}
+                      )}
                     {!isSearching && searchQuery.trim().length === 0 && (
                       <div className="py-10 text-center px-6 space-y-2">
-                        <p className="text-neutral-400 text-sm">Start typing an email to search for team members.</p>
+                        <p className="text-neutral-400 text-sm">
+                          Start typing an email to search for team members.
+                        </p>
                       </div>
                     )}
                     {!isSearching && searchResults.length > 0 && (
@@ -249,8 +283,12 @@ export function AddRoleModal({
                                 </div>
                               )}
                               <div className="flex flex-col overflow-hidden">
-                                <span className="font-bold text-neutral-900 text-sm group-hover:text-primary-700 transition-colors">{formatUserLabel(user)}</span>
-                                <span className="text-xs text-neutral-500 truncate">{user.email}</span>
+                                <span className="font-bold text-neutral-900 text-sm group-hover:text-primary-700 transition-colors">
+                                  {formatUserLabel(user)}
+                                </span>
+                                <span className="text-xs text-neutral-500 truncate">
+                                  {user.email}
+                                </span>
                               </div>
                             </div>
                             {selectedUser?.id === user.id && (

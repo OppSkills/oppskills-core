@@ -13,6 +13,7 @@ import { AnalyticsModule } from 'src/analytics/analytics.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { HackathonModule } from 'src/hackathon/hackathon.module';
 import { ReferralModule } from 'src/referral/referral.module';
+import { LocationModule } from 'src/recommendation/location/location.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ReferralModule } from 'src/referral/referral.module';
     forwardRef(() => PaymentsModule),
     forwardRef(() => HackathonModule),
     forwardRef(() => ReferralModule),
+    LocationModule,
   ],
   controllers: [
     EventController,

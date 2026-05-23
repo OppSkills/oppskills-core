@@ -4,7 +4,7 @@ import NoDataPlaceholder from "./NoDataPlaceholder";
 import { cn, normalizeUrl, isValidUrl } from "@/lib/utils";
 import {
   MotionContainer,
-  MotionItem
+  MotionItem,
 } from "@/components/ui/derived/MotionWrapper";
 import { Users2, ArrowRight } from "lucide-react";
 
@@ -24,16 +24,21 @@ export default function RecentListing({ data }: { data: RecentListingItem[] }) {
   return (
     <div className="w-full bg-background rounded-3xl p-4 lg:p-5 border-2 border-neutral-400 flex flex-col h-full min-h-[400px] shadow-sm relative overflow-hidden">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-foreground tracking-tight">Recent Listing</h2>
+        <h2 className="text-2xl font-bold text-foreground tracking-tight">
+          Recent Listing
+        </h2>
       </div>
 
-      {(!data || data.length === 0) ? (
+      {!data || data.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center">
-          <NoDataPlaceholder message="No listings available" className="h-full border-none p-0" />
+          <NoDataPlaceholder
+            message="No listings available"
+            className="h-full border-none p-0"
+          />
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-           {data.map((item, index) => {
+          {data.map((item, index) => {
             const href = `/dashboard/${item.type.toLowerCase() === "event" ? "events" : "hackathon"}/${item.slug}`;
 
             const thumbSrc = normalizeUrl(item.thumbnail);
@@ -79,11 +84,19 @@ export default function RecentListing({ data }: { data: RecentListingItem[] }) {
                   <div className="flex flex-row sm:flex-col gap-2 shrink-0 sm:min-w-30">
                     <div className="flex items-center justify-between gap-4 px-4 py-1 rounded-lg bg-primary-200 text-primary-900">
                       <span className="text-sm ">Applied</span>
-                      <span className="text-base tabular-nums">{(item.applied ?? (item as any).tregistrations ?? 0).toLocaleString()}</span>
+                      <span className="text-base tabular-nums">
+                        {(
+                          item.applied ??
+                          (item as any).tregistrations ??
+                          0
+                        ).toLocaleString()}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between gap-4 px-4 py-1 rounded-lg bg-primary-200 text-primary-900">
                       <span className="text-sm">Finalized</span>
-                      <span className="text-base tabular-nums">{(item.finalized ?? 0).toLocaleString()}</span>
+                      <span className="text-base tabular-nums">
+                        {(item.finalized ?? 0).toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </Link>

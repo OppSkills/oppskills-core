@@ -29,7 +29,6 @@ import { presignDocumentUpload } from "@/lib/api/mediaApi";
 import { uploadDocumentToS3PresignedPost } from "@/lib/uploads/uploadDocumentToS3";
 import { Container } from "@/app/dashboard/_components/Container";
 
-
 interface AdditionalInfoProps {
   formData: FormData;
   setFormData: (data: React.SetStateAction<FormData>) => void;
@@ -373,7 +372,9 @@ export default function AdditionalInfo({
                   {contact.name.substring(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <h4 className="font-bold text-base text-neutral-800 poppins">{contact.name}</h4>
+                  <h4 className="font-bold text-base text-neutral-800 poppins">
+                    {contact.name}
+                  </h4>
                   <div className="flex items-center gap-3 text-sm text-neutral-600 inter">
                     <span>{contact.phone || "No Phone"}</span>
                     <span className="text-neutral-300">•</span>
@@ -439,7 +440,9 @@ export default function AdditionalInfo({
                   <FileText className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-base text-neutral-800 poppins">{file.title}</h4>
+                  <h4 className="font-bold text-base text-neutral-800 poppins">
+                    {file.title}
+                  </h4>
                   <p className="text-sm text-neutral-600 inter">{file.type}</p>
                 </div>
               </div>

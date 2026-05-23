@@ -107,7 +107,7 @@ export class CreateTeamDto {
   answers?: RegistrationAnswerDto[];
 
   @ApiPropertyOptional({
-    description: 'Referral code captured from referral link cookie',
+    description: "Referral code captured from referral link cookie",
   })
   @IsOptional()
   @IsString()
@@ -145,7 +145,7 @@ export class JoinTeamDto {
   answers?: RegistrationAnswerDto[];
 
   @ApiPropertyOptional({
-    description: 'Referral code captured from referral link cookie',
+    description: "Referral code captured from referral link cookie",
   })
   @IsOptional()
   @IsString()

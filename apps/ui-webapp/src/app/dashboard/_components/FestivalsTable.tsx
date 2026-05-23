@@ -1,18 +1,18 @@
 "use client";
 
-import React from 'react';
+import React from "react";
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
   getPaginationRowModel,
-} from '@tanstack/react-table';
-import Image from 'next/image';
-import { SortFromTopToBottom } from '@solar-icons/react';
-import { useRouter } from 'next/navigation';
-import { EmptyState } from '@/components/common/EmptyState';
-import ActionDropdown from './ActionDropdown';
+} from "@tanstack/react-table";
+import Image from "next/image";
+import { SortFromTopToBottom } from "@solar-icons/react";
+import { useRouter } from "next/navigation";
+import { EmptyState } from "@/components/common/EmptyState";
+import ActionDropdown from "./ActionDropdown";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { TableBlockFallback } from "@/components/boneyard/loading-fallbacks";
 
@@ -23,9 +23,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import Pagination from '@/components/common/Pagination';
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import Pagination from "@/components/common/Pagination";
 
 export interface FestivalItem {
   id: string;
@@ -61,13 +61,15 @@ export default function FestivalsTable({
 
   const columns: ColumnDef<FestivalItem>[] = [
     {
-      id: 'serialNumber',
-      header: 'S. No.',
-      cell: (info) => <div className="text-neutral-600 text-center">{info.row.index + 1}</div>,
+      id: "serialNumber",
+      header: "S. No.",
+      cell: (info) => (
+        <div className="text-neutral-600 text-center">{info.row.index + 1}</div>
+      ),
       size: 60,
     },
     {
-      accessorKey: 'name',
+      accessorKey: "name",
       header: ({ column }) => {
         return (
           <div className="flex items-center gap-2 text-left">
@@ -76,12 +78,14 @@ export default function FestivalsTable({
               variant="ghost"
               size="sm"
               className="-ml-3 h-8 w-8 hover:bg-transparent"
-              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
             >
               <SortFromTopToBottom className="h-3 w-3" />
             </Button>
           </div>
-        )
+        );
       },
       cell: ({ row }) => {
         const item = row.original;
@@ -106,7 +110,9 @@ export default function FestivalsTable({
                 {item.name}
               </span>
               <span className="text-xs text-neutral-500 truncate max-w-[200px]">
-                {item.description ? item.description.replace(/<[^>]*>?/gm, "") : ""}
+                {item.description
+                  ? item.description.replace(/<[^>]*>?/gm, "")
+                  : ""}
               </span>
             </div>
           </div>
@@ -114,35 +120,35 @@ export default function FestivalsTable({
       },
     },
     {
-      accessorKey: 'numberOfEvents',
+      accessorKey: "numberOfEvents",
       header: () => <div className="text-center">Events</div>,
       cell: ({ row }) => (
         <div className="text-center font-medium text-neutral-700">
-          {row.original.numberOfEvents.toString().padStart(2, '0')}
+          {row.original.numberOfEvents.toString().padStart(2, "0")}
         </div>
       ),
     },
     {
-      accessorKey: 'numberOfCompetitions',
+      accessorKey: "numberOfCompetitions",
       header: () => <div className="text-center">Competitions</div>,
       cell: ({ row }) => (
         <div className="text-center font-medium text-neutral-700">
-          {row.original.numberOfCompetitions.toString().padStart(2, '0')}
+          {row.original.numberOfCompetitions.toString().padStart(2, "0")}
         </div>
       ),
     },
     {
-      accessorKey: 'candidates',
+      accessorKey: "candidates",
       header: () => <div className="text-center">Total Candidates</div>,
       cell: ({ row }) => (
         <div className="text-center font-medium text-neutral-700">
-          {row.original.candidates.toString().padStart(2, '0')}
+          {row.original.candidates.toString().padStart(2, "0")}
         </div>
       ),
     },
     {
-      id: 'actions',
-      header: 'Actions',
+      id: "actions",
+      header: "Actions",
       cell: ({ row }) => (
         <div className="flex justify-center">
           <ActionDropdown
@@ -181,7 +187,10 @@ export default function FestivalsTable({
               <Table className="min-w-full">
                 <TableHeader className="bg-primary-800 border-none!">
                   {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id} className="hover:bg-transparent border-none!">
+                    <TableRow
+                      key={headerGroup.id}
+                      className="hover:bg-transparent border-none!"
+                    >
                       {headerGroup.headers.map((header) => (
                         <TableHead
                           key={header.id}
@@ -190,9 +199,9 @@ export default function FestivalsTable({
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
                         </TableHead>
                       ))}
                     </TableRow>
@@ -203,13 +212,15 @@ export default function FestivalsTable({
                     <TableRow
                       key={row.id}
                       className="h-16 cursor-pointer border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors"
-                      onClick={() => router.push(`/dashboard/festivals/${row.original.slug}`)}
+                      onClick={() =>
+                        router.push(`/dashboard/festivals/${row.original.slug}`)
+                      }
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id} className="py-2">
                           {flexRender(
                             cell.column.columnDef.cell,
-                            cell.getContext()
+                            cell.getContext(),
                           )}
                         </TableCell>
                       ))}
@@ -226,7 +237,7 @@ export default function FestivalsTable({
                 totalPages={totalPages}
                 onPageChange={onPageChange}
                 perPage={10}
-                setPerPage={() => { }}
+                setPerPage={() => {}}
               />
             </div>
           )}

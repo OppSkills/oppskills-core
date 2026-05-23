@@ -9,6 +9,7 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
 ## 1. Dashboard & Analytics
 
 ### Get Full Event Context (`GET /events/by-slug/:slug`)
+
 - **Usage:** Fetches the complete event data (including configuration and settings).
 - **Returns:**
   ```json
@@ -24,20 +25,22 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
     "endDate": "2025-04-12T17:00:00Z",
     "locationType": "PHYSICAL",
     "locationAddress": "789 Event hall Rd",
-    "locationCity": "Austin"
+    "locationCoords": "Austin"
   }
   ```
 
 ### Analytics
+
 - **General Stats:** `GET /analytics/event/:slug/general`
   - Returns views, impressions, and total registration count.
 - **Detailed Stats:** `GET /analytics/event/:slug/detailed`
   - Returns registration trends and gender demographics.
 
 ### React Native Example (TanStack Query)
+
 ```typescript
 const { data: eventDetails } = useQuery({
-  queryKey: ['event', slug],
+  queryKey: ["event", slug],
   queryFn: () => apiClient.request(`/events/by-slug/${slug}`),
 });
 ```
@@ -47,6 +50,7 @@ const { data: eventDetails } = useQuery({
 ## 2. Manage Registrations
 
 ### View Participants
+
 - **List All:** `GET /events/by-slug/:slug/registrations`
   - **Returns:**
     ```json
@@ -68,6 +72,7 @@ const { data: eventDetails } = useQuery({
 - **Export Answers:** `GET /events/by-slug/:slug/registrations-answers`
 
 ### Approvals & Control
+
 - **Approve Participant:** `POST /events/by-slug/:slug/participants/:participantId/approve`
   - **Returns:** `{ "success": true }`
 - **Bulk Approve:** `POST /events/by-slug/:slug/participants/bulk-approve`
@@ -87,6 +92,7 @@ const { data: eventDetails } = useQuery({
 ## 3. Edit Event Configuration
 
 Instead of sending the whole event object back and forth, update specific pieces:
+
 - **Basic Info:** `PUT /events/:id`
   - **Request Body:**
     ```json
@@ -107,9 +113,11 @@ Instead of sending the whole event object back and forth, update specific pieces
 ## 4. Tickets & Roles
 
 ### Tickets
+
 - **List/Manage Tiers:** `GET`, `POST`, `PATCH`, `DELETE` at `/events/:slug/tickets`
 
 ### Roles
+
 - **Manage Team:** `GET`, `POST`, `DELETE` at `/events/:id/roles` (Assign co-managers or evaluators).
   - **Request Body (for POST):**
     ```json

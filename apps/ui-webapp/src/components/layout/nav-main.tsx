@@ -44,7 +44,7 @@ function normalizePath(path: string): string {
  */
 function findActiveUrl(
   items: NavMainItem[],
-  currentPath: string
+  currentPath: string,
 ): string | null {
   const normalizedPath = normalizePath(currentPath);
 
@@ -118,10 +118,12 @@ export function NavMain({
                     }}
                     className="flex items-center gap-3 cursor-pointer text-neutral-700 w-full"
                   >
-                    <div className={cn(
-                      "flex items-center justify-center transition-all duration-200",
-                      isVisualExpanded ? "size-6" : "size-4"
-                    )}>
+                    <div
+                      className={cn(
+                        "flex items-center justify-center transition-all duration-200",
+                        isVisualExpanded ? "size-6" : "size-4",
+                      )}
+                    >
                       {item.icon}
                     </div>
                     <span className="text-xs font-medium">{item.title}</span>

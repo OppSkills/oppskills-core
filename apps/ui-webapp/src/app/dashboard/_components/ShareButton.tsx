@@ -48,7 +48,10 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
           onClick={() => setIsOpen(true)}
           variant="ghost"
           size="icon"
-          className={cn("rounded-full h-10 w-10 hover:bg-neutral-100 transition-all active:scale-95", className)}
+          className={cn(
+            "rounded-full h-10 w-10 hover:bg-neutral-100 transition-all active:scale-95",
+            className,
+          )}
         >
           <SquareShareLine size={24} />
         </Button>
@@ -68,7 +71,10 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
     <>
       <Button
         onClick={() => setIsOpen(true)}
-        className={cn("rounded-full shadow-sm hover:shadow-md transition-all active:scale-95", className)}
+        className={cn(
+          "rounded-full shadow-sm hover:shadow-md transition-all active:scale-95",
+          className,
+        )}
       >
         <Image
           src="/icons/share.svg"

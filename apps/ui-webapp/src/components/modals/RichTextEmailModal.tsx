@@ -21,7 +21,9 @@ interface RichTextEmailModalProps {
   title: string;
   description: React.ReactNode;
   templateNote?: React.ReactNode;
-  sendFn: (content: string) => Promise<{ message?: string; [key: string]: any }>;
+  sendFn: (
+    content: string,
+  ) => Promise<{ message?: string; [key: string]: any }>;
   onSuccess?: (result: any) => void;
   successMessage?: string;
 }
@@ -60,7 +62,10 @@ export default function RichTextEmailModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !isSending && !open && onClose()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => !isSending && !open && onClose()}
+    >
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto flex flex-col gap-6 scrollbar">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-2">
@@ -77,7 +82,9 @@ export default function RichTextEmailModal({
         <div className="space-y-4 flex-1">
           {templateNote && (
             <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground mb-1">Email Template Note:</p>
+              <p className="font-medium text-foreground mb-1">
+                Email Template Note:
+              </p>
               {templateNote}
             </div>
           )}

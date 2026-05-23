@@ -406,7 +406,6 @@ export default function RegistrationPage() {
         Register for {hackathon.name}
       </h1>
 
-
       {!isIndividual && (
         <div className="flex justify-center gap-4 my-6">
           <Button

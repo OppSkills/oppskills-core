@@ -37,7 +37,7 @@ export default function RoleCard({
         "flex flex-col md:flex-row items-start md:items-center justify-between p-6 rounded-xl border gap-4 transition-all",
         isOwner
           ? "bg-[#FCF0FF] border-[#F3E8FF]"
-          : "bg-background border-border hover:shadow-sm"
+          : "bg-background border-border hover:shadow-sm",
       )}
     >
       <div className="flex items-center gap-4">
@@ -53,7 +53,7 @@ export default function RoleCard({
           <div
             className={cn(
               "flex items-center justify-center w-14 h-14 rounded-full text-background text-xl font-bold shrink-0",
-              "bg-[#3b0764]" // darker purple for avatar
+              "bg-[#3b0764]", // darker purple for avatar
             )}
           >
             {getInitials(name)}
@@ -61,14 +61,18 @@ export default function RoleCard({
         )}
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-bold text-lg text-foreground break-words">{name}</h3>
+            <h3 className="font-bold text-lg text-foreground break-words">
+              {name}
+            </h3>
             {isOwner && (
               <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#A020F0] text-background">
                 Owner
               </span>
             )}
           </div>
-          <span className="text-sm text-muted-foreground break-all">{email}</span>
+          <span className="text-sm text-muted-foreground break-all">
+            {email}
+          </span>
         </div>
       </div>
 

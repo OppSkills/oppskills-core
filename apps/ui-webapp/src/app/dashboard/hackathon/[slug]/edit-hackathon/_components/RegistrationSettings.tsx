@@ -42,7 +42,6 @@ import { Check, Plus, Menu } from "lucide-react";
 
 import { Container } from "@/app/dashboard/_components/Container";
 
-
 interface RegistrationSettingsProps {
   formData: FormData;
   setFormData: (data: React.SetStateAction<FormData>) => void;
@@ -71,7 +70,9 @@ export default function RegistrationSettings({
 }: RegistrationSettingsProps) {
   const { getToken } = useAuth();
   const [collegeSearch, setCollegeSearch] = React.useState("");
-  const [collegeNamesMap, setCollegeNamesMap] = React.useState<Record<string, string>>({});
+  const [collegeNamesMap, setCollegeNamesMap] = React.useState<
+    Record<string, string>
+  >({});
   const fetchingRef = React.useRef<Set<string>>(new Set());
 
   const { data: colleges } = useQuery({
@@ -91,7 +92,7 @@ export default function RegistrationSettings({
       if (!selectedIds || selectedIds.length === 0) return;
 
       const missingIds = selectedIds.filter(
-        (id) => !collegeNamesMap[id] && !fetchingRef.current.has(id)
+        (id) => !collegeNamesMap[id] && !fetchingRef.current.has(id),
       );
       if (missingIds.length === 0) return;
 
@@ -120,7 +121,7 @@ export default function RegistrationSettings({
 
   // --- Handlers ---
   const updateSettings = (
-    updates: Partial<FormData["registrationSettings"]>
+    updates: Partial<FormData["registrationSettings"]>,
   ) => {
     setFormData((prev) => {
       const nextRegs: FormData["registrationSettings"] = {
@@ -286,7 +287,13 @@ export default function RegistrationSettings({
     </div>
   );
 
-  const QuestionItem = ({ label, required }: { label: string; required: boolean }) => (
+  const QuestionItem = ({
+    label,
+    required,
+  }: {
+    label: string;
+    required: boolean;
+  }) => (
     <div className="bg-neutral-200 rounded-lg p-2 flex items-center justify-between border border-neutral-100 shadow-sm">
       <div className="flex items-center gap-4">
         <Menu className="w-4 h-4 text-neutral-900" />
@@ -294,7 +301,10 @@ export default function RegistrationSettings({
       </div>
       {required && (
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="bg-neutral-100 text-neutral-700 border-neutral-100 font-normal px-2 py-1 h-auto text-sm rounded-lg">
+          <Badge
+            variant="secondary"
+            className="bg-neutral-100 text-neutral-700 border-neutral-100 font-normal px-2 py-1 h-auto text-sm rounded-lg"
+          >
             Required
           </Badge>
           <div className="w-6 h-6 rounded-full bg-UI-success flex items-center justify-center">
@@ -303,7 +313,10 @@ export default function RegistrationSettings({
         </div>
       )}
       {!required && (
-        <Badge variant="secondary" className="bg-white text-neutral-400 border-neutral-100 font-normal px-4 py-1.5 h-auto text-sm italic">
+        <Badge
+          variant="secondary"
+          className="bg-white text-neutral-400 border-neutral-100 font-normal px-4 py-1.5 h-auto text-sm italic"
+        >
           Optional
         </Badge>
       )}
@@ -338,7 +351,7 @@ export default function RegistrationSettings({
         "p-2 flex gap-2 border rounded-lg transition-all",
         isSelected
           ? "bg-primary-100 border-primary-500 text-primary-600 cursor-normal"
-          : "border-neutral-500 text-primary-800 cursor-pointer hover:bg-primary-100"
+          : "border-neutral-500 text-primary-800 cursor-pointer hover:bg-primary-100",
       )}
       onClick={onClick}
     >
@@ -349,7 +362,7 @@ export default function RegistrationSettings({
         <p
           className={cn(
             "text-base font-medium text-neutral-800 truncate",
-            isSelected && "text-primary-600"
+            isSelected && "text-primary-600",
           )}
         >
           {title}
@@ -361,21 +374,60 @@ export default function RegistrationSettings({
 
   const [isEditingMaxTeams, setIsEditingMaxTeams] = React.useState(false);
   const [localMaxTeams, setLocalMaxTeams] = React.useState<string>(
-    formData.registrationSettings.maxTeams?.toString() || ""
+    formData.registrationSettings.maxTeams?.toString() || "",
   );
 
-  const [showRegistrationModal, setShowRegistrationModal] = React.useState(false);
+  const [showRegistrationModal, setShowRegistrationModal] =
+    React.useState(false);
 
   const defaultFixedQuestions: RegistrationQuestion[] = React.useMemo(
     () => [
-      { id: "fixed-1", label: "Name", type: "Text", required: true, fixed: true },
-      { id: "fixed-3", label: "Email", type: "Email", required: true, fixed: true },
-      { id: "fixed-2", label: "Mobile Number", type: "Phone No.", required: true, fixed: true },
-      { id: "fixed-4", label: "Gender", type: "Options", required: true, fixed: true, options: ["Male", "Female", "Other", "Prefer not to say"] },
-      { id: "fixed-5", label: "Current College / Organization", type: "Text", required: true, fixed: true },
-      { id: "fixed-6", label: "User Type", type: "Options", required: true, fixed: true, options: ["Student", "Professional"] },
+      {
+        id: "fixed-1",
+        label: "Name",
+        type: "Text",
+        required: true,
+        fixed: true,
+      },
+      {
+        id: "fixed-3",
+        label: "Email",
+        type: "Email",
+        required: true,
+        fixed: true,
+      },
+      {
+        id: "fixed-2",
+        label: "Mobile Number",
+        type: "Phone No.",
+        required: true,
+        fixed: true,
+      },
+      {
+        id: "fixed-4",
+        label: "Gender",
+        type: "Options",
+        required: true,
+        fixed: true,
+        options: ["Male", "Female", "Other", "Prefer not to say"],
+      },
+      {
+        id: "fixed-5",
+        label: "Current College / Organization",
+        type: "Text",
+        required: true,
+        fixed: true,
+      },
+      {
+        id: "fixed-6",
+        label: "User Type",
+        type: "Options",
+        required: true,
+        fixed: true,
+        options: ["Student", "Professional"],
+      },
     ],
-    []
+    [],
   );
 
   const allQuestions = React.useMemo(() => {
@@ -389,24 +441,33 @@ export default function RegistrationSettings({
       </div>
 
       {/* Who Can Register */}
-      <Container heading="Who Can Register" description="Select the type(s) of eligible candidates">
+      <Container
+        heading="Who Can Register"
+        description="Select the type(s) of eligible candidates"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {candidateTypes.map((type, index) => (
             <CandidateCard
               key={index}
               title={type.title}
               value={type.value}
-              isSelected={formData.registrationSettings.candidateTypes.includes(type.title)}
+              isSelected={formData.registrationSettings.candidateTypes.includes(
+                type.title,
+              )}
               onClick={() => toggleCandidate(type.title)}
             />
           ))}
         </div>
-        {formData.registrationSettings.candidateTypes.includes("College students") && (
+        {formData.registrationSettings.candidateTypes.includes(
+          "College students",
+        ) && (
           <div className="mt-4 pt-4 border-t border-neutral-100">
             <div className="flex items-center space-x-3 p-3 bg-neutral-50 rounded-xl border border-neutral-100">
               <Checkbox
                 id="collegeRestrictions"
-                checked={formData.registrationSettings.collegeRestrictionEnabled}
+                checked={
+                  formData.registrationSettings.collegeRestrictionEnabled
+                }
                 onCheckedChange={(checked) =>
                   updateSettings({
                     collegeRestrictionEnabled: !!checked,
@@ -456,10 +517,7 @@ export default function RegistrationSettings({
                     }
                   }
 
-                  if (
-                    !isMissingCriteria &&
-                    collegeMatchMode === "EITHER_OR"
-                  ) {
+                  if (!isMissingCriteria && collegeMatchMode === "EITHER_OR") {
                     if (!hasColleges && !hasDomains) {
                       isMissingCriteria = true;
                       message =
@@ -474,7 +532,9 @@ export default function RegistrationSettings({
                 })()}
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">Verification Method</Label>
+                  <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">
+                    Verification Method
+                  </Label>
                   <Select
                     value={formData.registrationSettings.collegeMatchMode}
                     onValueChange={(value) =>
@@ -505,7 +565,9 @@ export default function RegistrationSettings({
 
                 {profileMatchingEnabled && (
                   <div className="space-y-2">
-                    <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">Allowed Colleges</Label>
+                    <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">
+                      Allowed Colleges
+                    </Label>
                     <Input
                       placeholder="Search colleges..."
                       value={collegeSearch}
@@ -520,27 +582,38 @@ export default function RegistrationSettings({
                             className="p-3 hover:bg-primary-50 rounded-lg cursor-pointer transition-colors text-sm inter font-medium text-neutral-700"
                             onClick={() => addCollege(college.id, college.name)}
                           >
-                            {college.name} • <span className="text-neutral-400 font-normal">{college.city}, {college.state}</span>
+                            {college.name} •{" "}
+                            <span className="text-neutral-400 font-normal">
+                              {college.city}, {college.state}
+                            </span>
                           </div>
                         ))}
                       </div>
                     )}
-                    {formData.registrationSettings.allowedCollegeIds.length > 0 && (
+                    {formData.registrationSettings.allowedCollegeIds.length >
+                      0 && (
                       <div className="flex flex-wrap gap-2 mt-3">
-                        {formData.registrationSettings.allowedCollegeIds.map((collegeId) => {
-                          const collegeName = collegeNamesMap[collegeId] || collegeId;
-                          return (
-                            <Badge key={collegeId} variant="secondary" className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all">
-                              {collegeName}
-                              <button
-                                onClick={() => removeCollege(collegeId)}
-                                className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
+                        {formData.registrationSettings.allowedCollegeIds.map(
+                          (collegeId) => {
+                            const collegeName =
+                              collegeNamesMap[collegeId] || collegeId;
+                            return (
+                              <Badge
+                                key={collegeId}
+                                variant="secondary"
+                                className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all"
                               >
-                                ×
-                              </button>
-                            </Badge>
-                          );
-                        })}
+                                {collegeName}
+                                <button
+                                  onClick={() => removeCollege(collegeId)}
+                                  className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
+                                >
+                                  ×
+                                </button>
+                              </Badge>
+                            );
+                          },
+                        )}
                       </div>
                     )}
                   </div>
@@ -548,7 +621,9 @@ export default function RegistrationSettings({
 
                 {emailMatchingEnabled && (
                   <div className="space-y-3">
-                    <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">Allowed Email Domains</Label>
+                    <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">
+                      Allowed Email Domains
+                    </Label>
                     <div className="flex gap-2">
                       <Input
                         placeholder="e.g., iitd.ac.in"
@@ -580,19 +655,26 @@ export default function RegistrationSettings({
                         Add
                       </Button>
                     </div>
-                    {formData.registrationSettings.allowedEmailDomains.length > 0 && (
+                    {formData.registrationSettings.allowedEmailDomains.length >
+                      0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {formData.registrationSettings.allowedEmailDomains.map((domain) => (
-                          <Badge key={domain} variant="secondary" className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all">
-                            @{domain}
-                            <button
-                              onClick={() => removeEmailDomain(domain)}
-                              className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
+                        {formData.registrationSettings.allowedEmailDomains.map(
+                          (domain) => (
+                            <Badge
+                              key={domain}
+                              variant="secondary"
+                              className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all"
                             >
-                              ×
-                            </button>
-                          </Badge>
-                        ))}
+                              @{domain}
+                              <button
+                                onClick={() => removeEmailDomain(domain)}
+                                className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          ),
+                        )}
                       </div>
                     )}
                   </div>
@@ -634,14 +716,20 @@ export default function RegistrationSettings({
         <div className="flex flex-row items-center gap-4 bg-primary-50/30 p-6 rounded-2xl border border-primary-100 w-full lg:w-fit">
           {!isEditingMaxTeams ? (
             <>
-              {formData.registrationSettings.maxTeamsNoLimit || formData.registrationSettings.maxTeams === null || formData.registrationSettings.maxTeams === undefined ? (
+              {formData.registrationSettings.maxTeamsNoLimit ||
+              formData.registrationSettings.maxTeams === null ||
+              formData.registrationSettings.maxTeams === undefined ? (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                     <InfinityIcon className="w-6 h-6 text-primary-600" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-neutral-800">No Limit</p>
-                    <p className="text-sm text-neutral-500 inter">Unlimited registrations allowed</p>
+                    <p className="text-lg font-bold text-neutral-800">
+                      No Limit
+                    </p>
+                    <p className="text-sm text-neutral-500 inter">
+                      Unlimited registrations allowed
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -653,7 +741,9 @@ export default function RegistrationSettings({
                     <p className="text-lg font-bold text-neutral-800">
                       {formData.registrationSettings.maxTeams} Teams
                     </p>
-                    <p className="text-sm text-neutral-500 inter">Registration limit set</p>
+                    <p className="text-sm text-neutral-500 inter">
+                      Registration limit set
+                    </p>
                   </div>
                 </div>
               )}
@@ -708,7 +798,9 @@ export default function RegistrationSettings({
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    setLocalMaxTeams(formData.registrationSettings.maxTeams?.toString() || "");
+                    setLocalMaxTeams(
+                      formData.registrationSettings.maxTeams?.toString() || "",
+                    );
                     setIsEditingMaxTeams(false);
                   }}
                   className="rounded-full text-neutral-400 hover:text-neutral-600 flex-1 sm:flex-none"
@@ -739,7 +831,9 @@ export default function RegistrationSettings({
         open={showRegistrationModal}
         onOpenChange={setShowRegistrationModal}
         questions={formData.registrationQuestions}
-        onSave={(questions) => setFormData(prev => ({ ...prev, registrationQuestions: questions }))}
+        onSave={(questions) =>
+          setFormData((prev) => ({ ...prev, registrationQuestions: questions }))
+        }
       />
     </div>
   );

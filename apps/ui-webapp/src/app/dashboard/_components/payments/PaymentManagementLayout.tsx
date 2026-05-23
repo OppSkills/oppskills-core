@@ -3,12 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  Pencil,
-  Plus,
-  CheckCircle,
-  Loader2,
-} from "lucide-react";
+import { Pencil, Plus, CheckCircle, Loader2 } from "lucide-react";
 import { Container } from "../Container";
 import AnalyticCard from "../AnalyticCard";
 import PayoutDetailsForm from "@/components/ui/payment-side/PayoutDetailsForm";
@@ -79,11 +74,19 @@ export function PaymentManagementLayout({
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<any>(null);
 
-  const eventTiersQuery = useEventTicketTiers(opportunityType === "Event" ? slug : "");
-  const hackTiersQuery = useHackathonTicketTiers(opportunityType === "Hackathon" ? slug : "");
-  
-  const ticketTiers = opportunityType === "Event" ? eventTiersQuery.data : hackTiersQuery.data;
-  const isLoadingTiers = opportunityType === "Event" ? eventTiersQuery.isLoading : hackTiersQuery.isLoading;
+  const eventTiersQuery = useEventTicketTiers(
+    opportunityType === "Event" ? slug : "",
+  );
+  const hackTiersQuery = useHackathonTicketTiers(
+    opportunityType === "Hackathon" ? slug : "",
+  );
+
+  const ticketTiers =
+    opportunityType === "Event" ? eventTiersQuery.data : hackTiersQuery.data;
+  const isLoadingTiers =
+    opportunityType === "Event"
+      ? eventTiersQuery.isLoading
+      : hackTiersQuery.isLoading;
 
   const deleteEventTier = useDeleteEventTicketTier(slug);
   const deleteHackTier = useDeleteHackathonTicketTier(slug);
@@ -118,7 +121,7 @@ export function PaymentManagementLayout({
     const firstTierPrice = parseFloat(String(ticketTiers[0].price));
     if (!isNaN(firstTierPrice)) parsedEntryFee = firstTierPrice;
   }
-  
+
   let feePercentage = 0.02; // 2%
   let taxPercentage = 0.18; // 18% of 2%
   let serviceCharge = Number((parsedEntryFee * feePercentage).toFixed(2));
@@ -129,7 +132,6 @@ export function PaymentManagementLayout({
   let organiserGetsIfParticipant = parsedEntryFee;
   let organiserGetsIfOrganiser = parsedEntryFee - gatewayTotal;
 
-
   return (
     <div className="flex flex-col items-start gap-8 w-full">
       {/* Auto-save status indicator */}
@@ -137,7 +139,8 @@ export function PaymentManagementLayout({
         <div className="text-sm font-bold poppins text-neutral-400 shrink-0">
           {autoSaveStatus === "saving" ? (
             <span className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-primary-600" /> Saving...
+              <Loader2 className="w-4 h-4 animate-spin text-primary-600" />{" "}
+              Saving...
             </span>
           ) : autoSaveStatus === "error" ? (
             <span className="text-red-500">Save failed</span>
@@ -157,7 +160,9 @@ export function PaymentManagementLayout({
 
       <div className="flex flex-col sm:flex-row w-full gap-4 border shadow-sm p-4 sm:p-6 rounded-lg">
         <div className="flex-1 flex items-center">
-          <p className="text-neutral-900 text-xl font-bold poppins">Is the {opportunityType} Paid?</p>
+          <p className="text-neutral-900 text-xl font-bold poppins">
+            Is the {opportunityType} Paid?
+          </p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <Button
@@ -165,26 +170,37 @@ export function PaymentManagementLayout({
             disabled={!canEditPricing}
             className={cn(
               "flex-1 sm:px-8 h-12 transition-all font-bold",
-              isPaid ? "bg-primary-600 text-white" : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200",
-              !canEditPricing && "opacity-60 cursor-not-allowed bg-neutral-200 hover:bg-neutral-200"
+              isPaid
+                ? "bg-primary-600 text-white"
+                : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200",
+              !canEditPricing &&
+                "opacity-60 cursor-not-allowed bg-neutral-200 hover:bg-neutral-200",
             )}
-          >Yes</Button>
+          >
+            Yes
+          </Button>
           <Button
             onClick={() => setIsPaid(false)}
             disabled={!canEditPricing}
             className={cn(
               "flex-1 sm:px-8 h-12 transition-all font-bold",
-              !isPaid ? "bg-primary-600 text-white" : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200",
-              !canEditPricing && "opacity-60 cursor-not-allowed bg-neutral-200 hover:bg-neutral-200"
+              !isPaid
+                ? "bg-primary-600 text-white"
+                : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200",
+              !canEditPricing &&
+                "opacity-60 cursor-not-allowed bg-neutral-200 hover:bg-neutral-200",
             )}
-          >No</Button>
+          >
+            No
+          </Button>
         </div>
       </div>
 
       {isPaid && (
         <>
           <p className="text-base text-neutral-700">
-            Participant prices are set per ticket type below. Configure who pays the service charge and your payout account here.
+            Participant prices are set per ticket type below. Configure who pays
+            the service charge and your payout account here.
           </p>
 
           {/* Multiple tickets Section */}
@@ -217,9 +233,9 @@ export function PaymentManagementLayout({
                     key={ticket.id}
                     className={cn(
                       "flex w-full flex-col sm:flex-row justify-between border-[0.5px] p-4 rounded-xl",
-                      ticket.isActive 
-                        ? "bg-primary-100 border-primary-500" 
-                        : "bg-neutral-50 border-neutral-300 opacity-70"
+                      ticket.isActive
+                        ? "bg-primary-100 border-primary-500"
+                        : "bg-neutral-50 border-neutral-300 opacity-70",
                     )}
                   >
                     <div className="flex flex-col gap-2 flex-1">
@@ -236,7 +252,9 @@ export function PaymentManagementLayout({
                           ₹ {ticket.price} per{" "}
                           {opportunityType === "Hackathon" ? "team" : "person"}
                         </p>
-                        <span className="hidden sm:inline text-neutral-300">|</span>
+                        <span className="hidden sm:inline text-neutral-300">
+                          |
+                        </span>
                         <p className="text-neutral-500">
                           {ticket.capacity != null
                             ? `${ticket.ticketsSold ?? 0} / ${ticket.capacity} sold`
@@ -244,26 +262,32 @@ export function PaymentManagementLayout({
                         </p>
                       </div>
                       {ticket.description && (
-                        <p className="text-sm text-neutral-600 line-clamp-2">{ticket.description}</p>
+                        <p className="text-sm text-neutral-600 line-clamp-2">
+                          {ticket.description}
+                        </p>
                       )}
                     </div>
                     <div className="flex items-center gap-6 mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-primary-200/50">
-                      <button 
+                      <button
                         onClick={() => handleEditTicket(ticket)}
                         disabled={!canManageTicketTiers}
                         className={cn(
                           "text-sm font-bold flex items-center gap-2 transition-colors",
-                          canManageTicketTiers ? "text-primary-700 hover:text-primary-800" : "text-neutral-400 cursor-not-allowed"
+                          canManageTicketTiers
+                            ? "text-primary-700 hover:text-primary-800"
+                            : "text-neutral-400 cursor-not-allowed",
                         )}
                       >
                         <Pencil className="w-4 h-4" /> Edit
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDeleteTicket(ticket.id)}
                         disabled={!canManageTicketTiers}
                         className={cn(
                           "text-sm font-bold flex items-center gap-2 transition-colors",
-                          canManageTicketTiers ? "text-red-600 hover:text-red-700" : "text-neutral-400 cursor-not-allowed"
+                          canManageTicketTiers
+                            ? "text-red-600 hover:text-red-700"
+                            : "text-neutral-400 cursor-not-allowed",
                         )}
                       >
                         <TrashBinTrash className="w-4 h-4" /> Delete
@@ -273,11 +297,14 @@ export function PaymentManagementLayout({
                 ))
               ) : (
                 <div className="flex w-full flex-col sm:flex-row gap-2 bg-primary-100 border-[0.5px] border-primary-500 p-4 rounded-xl">
-                  <Ticket className="w-6 h-6" /> 
+                  <Ticket className="w-6 h-6" />
                   <p className="text-base text-neutral-700">
-                    Don’t have any ticket generated as of now. 
+                    Don’t have any ticket generated as of now.
                     {canManageTicketTiers && (
-                      <a className="text-primary-600 hover:underline cursor-pointer ml-1" onClick={handleOpenCreateTicket}>
+                      <a
+                        className="text-primary-600 hover:underline cursor-pointer ml-1"
+                        onClick={handleOpenCreateTicket}
+                      >
                         Click here to generate one
                       </a>
                     )}
@@ -285,8 +312,8 @@ export function PaymentManagementLayout({
                 </div>
               )}
             </div>
-            
-            <TicketTierDialog 
+
+            <TicketTierDialog
               isOpen={isTicketModalOpen}
               onClose={() => setIsTicketModalOpen(false)}
               opportunityType={opportunityType}
@@ -311,8 +338,16 @@ export function PaymentManagementLayout({
                 <AnalyticCard
                   title="Pending Payout"
                   value={`₹${parseFloat(String(earnings.pendingPayout)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-                  badge={!earnings.isEligibleNow && earnings.eligibleAt ? "Payout Date" : "Status"}
-                  badgeValue={!earnings.isEligibleNow && earnings.eligibleAt ? format(new Date(earnings.eligibleAt), "MMM d, yyyy") : "Available"}
+                  badge={
+                    !earnings.isEligibleNow && earnings.eligibleAt
+                      ? "Payout Date"
+                      : "Status"
+                  }
+                  badgeValue={
+                    !earnings.isEligibleNow && earnings.eligibleAt
+                      ? format(new Date(earnings.eligibleAt), "MMM d, yyyy")
+                      : "Available"
+                  }
                   type="normal"
                 />
 
@@ -339,7 +374,7 @@ export function PaymentManagementLayout({
                       "flex-1 max-w-[180px] py-3 rounded-xl font-bold text-base transition-all",
                       chargeMode === "PER_TEAM"
                         ? "bg-primary-600 text-white shadow-lg shadow-primary-900/20"
-                        : "bg-neutral-50 border-2 border-neutral-100 text-neutral-500 hover:border-primary-200"
+                        : "bg-neutral-50 border-2 border-neutral-100 text-neutral-500 hover:border-primary-200",
                     )}
                   >
                     Per Team
@@ -350,7 +385,7 @@ export function PaymentManagementLayout({
                       "flex-1 max-w-[180px] py-3 rounded-xl font-bold text-base transition-all",
                       chargeMode === "PER_USER"
                         ? "bg-primary-600 text-white shadow-lg shadow-primary-900/20"
-                        : "bg-neutral-50 border-2 border-neutral-100 text-neutral-500 hover:border-primary-200"
+                        : "bg-neutral-50 border-2 border-neutral-100 text-neutral-500 hover:border-primary-200",
                     )}
                   >
                     Per User
@@ -377,11 +412,13 @@ export function PaymentManagementLayout({
                     "p-6 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col gap-6",
                     feeBearer === "PARTICIPANT"
                       ? "bg-primary-50 border-primary-500 shadow-md shadow-primary-900/5"
-                      : "bg-white border-neutral-200 hover:border-neutral-300"
+                      : "bg-white border-neutral-200 hover:border-neutral-300",
                   )}
                 >
                   <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-bold text-neutral-900 poppins">Participant</h3>
+                    <h3 className="text-xl font-bold text-neutral-900 poppins">
+                      Participant
+                    </h3>
                     {feeBearer === "PARTICIPANT" ? (
                       <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center">
                         <CheckCircle className="w-4 h-4 text-white" />
@@ -393,34 +430,55 @@ export function PaymentManagementLayout({
 
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-neutral-500 text-sm inter">Example</span>
+                      <span className="text-neutral-500 text-sm inter">
+                        Example
+                      </span>
                       <div className="flex-1 h-px bg-neutral-200" />
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-neutral-500 inter">Registration Amount:</span>
-                        <span className="text-neutral-900 font-medium poppins">₹ {parsedEntryFee}</span>
+                        <span className="text-neutral-500 inter">
+                          Registration Amount:
+                        </span>
+                        <span className="text-neutral-900 font-medium poppins">
+                          ₹ {parsedEntryFee}
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-neutral-500 inter">Service Charge:</span>
-                        <span className="text-neutral-900 font-medium poppins">₹ {serviceCharge}({(feePercentage * 100)}%)</span>
+                        <span className="text-neutral-500 inter">
+                          Service Charge:
+                        </span>
+                        <span className="text-neutral-900 font-medium poppins">
+                          ₹ {serviceCharge}({feePercentage * 100}%)
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-neutral-500 inter">Tax:</span>
-                        <span className="text-neutral-900 font-medium poppins">₹ {tax}({taxPercentage * 100}% GST of {(feePercentage * 100)}%)</span>
+                        <span className="text-neutral-900 font-medium poppins">
+                          ₹ {tax}({taxPercentage * 100}% GST of{" "}
+                          {feePercentage * 100}%)
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm pt-2">
-                        <span className="text-neutral-500 font-bold inter">User Pay:</span>
-                        <span className="text-neutral-900 font-bold poppins">₹ {userPaysIfParticipant}</span>
+                        <span className="text-neutral-500 font-bold inter">
+                          User Pay:
+                        </span>
+                        <span className="text-neutral-900 font-bold poppins">
+                          ₹ {userPaysIfParticipant}
+                        </span>
                       </div>
                     </div>
 
                     <div className="h-px bg-neutral-200 my-1" />
 
                     <div className="flex justify-between items-center">
-                      <span className="text-neutral-500 font-medium inter">You get</span>
-                      <span className="text-neutral-900 font-bold poppins text-lg">₹ {organiserGetsIfParticipant}</span>
+                      <span className="text-neutral-500 font-medium inter">
+                        You get
+                      </span>
+                      <span className="text-neutral-900 font-bold poppins text-lg">
+                        ₹ {organiserGetsIfParticipant}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -432,11 +490,13 @@ export function PaymentManagementLayout({
                     "p-6 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col gap-6",
                     feeBearer === "ORGANISER"
                       ? "bg-primary-50 border-primary-500 shadow-md shadow-primary-900/5"
-                      : "bg-white border-neutral-200 hover:border-neutral-300"
+                      : "bg-white border-neutral-200 hover:border-neutral-300",
                   )}
                 >
                   <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-bold text-neutral-900 poppins">Organizer</h3>
+                    <h3 className="text-xl font-bold text-neutral-900 poppins">
+                      Organizer
+                    </h3>
                     {feeBearer === "ORGANISER" ? (
                       <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center">
                         <CheckCircle className="w-4 h-4 text-white" />
@@ -448,34 +508,55 @@ export function PaymentManagementLayout({
 
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-neutral-500 text-sm inter">Example</span>
+                      <span className="text-neutral-500 text-sm inter">
+                        Example
+                      </span>
                       <div className="flex-1 h-px bg-neutral-200" />
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-neutral-500 inter">Registration Amount:</span>
-                        <span className="text-neutral-900 font-medium poppins">₹ {parsedEntryFee}</span>
+                        <span className="text-neutral-500 inter">
+                          Registration Amount:
+                        </span>
+                        <span className="text-neutral-900 font-medium poppins">
+                          ₹ {parsedEntryFee}
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-neutral-500 inter">Service Charge:</span>
-                        <span className="text-neutral-900 font-medium poppins">₹ {serviceCharge}({(feePercentage * 100)}%)</span>
+                        <span className="text-neutral-500 inter">
+                          Service Charge:
+                        </span>
+                        <span className="text-neutral-900 font-medium poppins">
+                          ₹ {serviceCharge}({feePercentage * 100}%)
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-neutral-500 inter">Tax:</span>
-                        <span className="text-neutral-900 font-medium poppins">₹ {tax}({taxPercentage * 100}% GST of {(feePercentage * 100)}%)</span>
+                        <span className="text-neutral-900 font-medium poppins">
+                          ₹ {tax}({taxPercentage * 100}% GST of{" "}
+                          {feePercentage * 100}%)
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm pt-2">
-                        <span className="text-neutral-500 font-bold inter">User Pay:</span>
-                        <span className="text-neutral-900 font-bold poppins">₹ {userPaysIfOrganiser}</span>
+                        <span className="text-neutral-500 font-bold inter">
+                          User Pay:
+                        </span>
+                        <span className="text-neutral-900 font-bold poppins">
+                          ₹ {userPaysIfOrganiser}
+                        </span>
                       </div>
                     </div>
 
                     <div className="h-px bg-neutral-200 my-1" />
 
                     <div className="flex justify-between items-center">
-                      <span className="text-neutral-500 font-medium inter">You get</span>
-                      <span className="text-neutral-900 font-bold poppins text-lg">₹ {organiserGetsIfOrganiser}</span>
+                      <span className="text-neutral-500 font-medium inter">
+                        You get
+                      </span>
+                      <span className="text-neutral-900 font-bold poppins text-lg">
+                        ₹ {organiserGetsIfOrganiser}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -487,18 +568,25 @@ export function PaymentManagementLayout({
               heading="Payout Account Details"
               description="Details of the account in which all the amount will be given out"
               action={
-                <button onClick={() => setIsPayoutFormOpen(true)} className="hover:text-primary-600 transition-colors">
+                <button
+                  onClick={() => setIsPayoutFormOpen(true)}
+                  className="hover:text-primary-600 transition-colors"
+                >
                   <Pencil className="w-6 h-6" />
                 </button>
               }
             >
               <div className="flex flex-col py-2">
                 {[
-                  { label: "Account Holder Name", value: payoutDetails?.accountHolderName },
+                  {
+                    label: "Account Holder Name",
+                    value: payoutDetails?.accountHolderName,
+                  },
                   {
                     label: "Phone Number",
                     value: (() => {
-                      const ph = payoutDetails?.phoneNumber || payoutDetails?.phone;
+                      const ph =
+                        payoutDetails?.phoneNumber || payoutDetails?.phone;
                       if (!ph) return undefined;
                       const cleaned = String(ph).trim();
                       if (cleaned.startsWith("+91")) return cleaned;
@@ -506,11 +594,18 @@ export function PaymentManagementLayout({
                         return `+91${cleaned}`;
                       }
                       return cleaned;
-                    })()
+                    })(),
                   },
                   { label: "Email", value: payoutDetails?.email },
                   { label: "Bank Name", value: payoutDetails?.bankName },
-                  { label: "Bank Account Number", value: payoutDetails?.accountNumber || (payoutDetails?.accountNumberLast4 ? `•••• •••• ${payoutDetails.accountNumberLast4}` : undefined) },
+                  {
+                    label: "Bank Account Number",
+                    value:
+                      payoutDetails?.accountNumber ||
+                      (payoutDetails?.accountNumberLast4
+                        ? `•••• •••• ${payoutDetails.accountNumberLast4}`
+                        : undefined),
+                  },
                   { label: "IFSC Code", value: payoutDetails?.ifsc },
                   { label: "Pan Number", value: payoutDetails?.panNumber },
                   { label: "GST Tin Number", value: payoutDetails?.gstNumber },
@@ -520,10 +615,17 @@ export function PaymentManagementLayout({
                   { label: "City", value: payoutDetails?.city },
                   { label: "Pincode", value: payoutDetails?.pinCode },
                 ].map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 items-center gap-4 py-3 border-b border-neutral-100 last:border-0">
-                    <span className="col-span-5 sm:col-span-4 text-neutral-600 font-medium inter text-sm">{item.label}</span>
+                  <div
+                    key={index}
+                    className="grid grid-cols-12 items-center gap-4 py-3 border-b border-neutral-100 last:border-0"
+                  >
+                    <span className="col-span-5 sm:col-span-4 text-neutral-600 font-medium inter text-sm">
+                      {item.label}
+                    </span>
                     <span className="col-span-7 sm:col-span-8 text-neutral-700 font-normal inter text-sm">
-                      {item.value && String(item.value).trim().length > 0 ? item.value : "--"}
+                      {item.value && String(item.value).trim().length > 0
+                        ? item.value
+                        : "--"}
                     </span>
                   </div>
                 ))}

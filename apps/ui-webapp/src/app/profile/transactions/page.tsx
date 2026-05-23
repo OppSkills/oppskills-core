@@ -83,15 +83,19 @@ function amountCharged(tx: Transaction): number {
 function formatDate(iso: string | null) {
   if (!iso) return "—";
   const date = new Date(iso);
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }) + ", " + date.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  return (
+    date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }) +
+    ", " +
+    date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+  );
 }
 
 const columnHelper = createColumnHelper<Transaction>();
@@ -118,7 +122,6 @@ export default function TransactionsPage() {
   });
 
   // Table is now scrollable horizontally on mobile, so we don't need to hide columns.
-
 
   useEffect(() => {
     const load = async () => {
@@ -153,13 +156,13 @@ export default function TransactionsPage() {
                   "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border",
                   isRefunded
                     ? "bg-amber-50 border-amber-100"
-                    : "bg-primary-50 border-primary-100"
+                    : "bg-primary-50 border-primary-100",
                 )}
               >
                 <ArrowDownLeft
                   className={cn(
                     "w-5 h-5",
-                    isRefunded ? "text-amber-500" : "text-primary-600"
+                    isRefunded ? "text-amber-500" : "text-primary-600",
                   )}
                 />
               </div>
@@ -174,7 +177,7 @@ export default function TransactionsPage() {
                       "text-[10px] h-4 px-1.5 font-medium border-none rounded-sm uppercase tracking-wider",
                       tx.opportunityType === "hackathon"
                         ? "bg-violet-100/50 text-violet-600"
-                        : "bg-blue-100/50 text-blue-600"
+                        : "bg-blue-100/50 text-blue-600",
                     )}
                   >
                     {tx.opportunityType === "hackathon"
@@ -271,7 +274,7 @@ export default function TransactionsPage() {
             <div
               className={cn(
                 "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border whitespace-nowrap uppercase tracking-tight",
-                className
+                className,
               )}
             >
               {status === "CAPTURED" && <CheckCircle2 className="w-3 h-3" />}
@@ -295,7 +298,7 @@ export default function TransactionsPage() {
         },
       }),
     ],
-    []
+    [],
   );
 
   const filteredData = useMemo(() => {
@@ -362,7 +365,8 @@ export default function TransactionsPage() {
                 value={formatCurrency(totals.paid, currency)}
                 badge="Transactions"
                 badgeValue={
-                  transactions.filter((t) => t.paymentStatus === "CAPTURED").length
+                  transactions.filter((t) => t.paymentStatus === "CAPTURED")
+                    .length
                 }
                 type="normal"
               />
@@ -379,8 +383,7 @@ export default function TransactionsPage() {
                 type="normal"
               />
             </MotionItem>
-            <MotionItem
-              className="col-span-2 sm:col-span-1">
+            <MotionItem className="col-span-2 sm:col-span-1">
               <AnalyticCard
                 title="Net Spent"
                 value={formatCurrency(totals.net, currency)}
@@ -396,10 +399,12 @@ export default function TransactionsPage() {
         <div>
           {/* Toolbar */}
           <div className="flex items-stretch md:items-center justify-between gap-4 px-6 py-5 border-b border-neutral-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-            <div className={cn(
-              "flex items-center gap-6 overflow-x-auto no-scrollbar pb-1 md:pb-0 transition-all duration-300",
-              isSearchExpanded ? "hidden lg:flex" : "flex"
-            )}>
+            <div
+              className={cn(
+                "flex items-center gap-6 overflow-x-auto no-scrollbar pb-1 md:pb-0 transition-all duration-300",
+                isSearchExpanded ? "hidden lg:flex" : "flex",
+              )}
+            >
               {FILTER_TABS.map((tab) => (
                 <button
                   key={tab.id}
@@ -408,7 +413,7 @@ export default function TransactionsPage() {
                     "text-sm font-semibold whitespace-nowrap pb-1 transition-all relative group",
                     activeTab === tab.id
                       ? "text-primary-600"
-                      : "text-neutral-500 hover:text-neutral-800"
+                      : "text-neutral-500 hover:text-neutral-800",
                   )}
                 >
                   {tab.label}
@@ -417,21 +422,27 @@ export default function TransactionsPage() {
                       "absolute bottom-[-1px] left-0 w-full h-[2px] rounded-full bg-primary-600 transition-transform duration-300",
                       activeTab === tab.id
                         ? "scale-x-100"
-                        : "scale-x-0 group-hover:scale-x-50"
+                        : "scale-x-0 group-hover:scale-x-50",
                     )}
                   />
                 </button>
               ))}
             </div>
 
-            <div className={cn(
-              "relative flex items-center gap-2 transition-all duration-300",
-              isSearchExpanded ? "w-full lg:w-auto" : "w-auto"
-            )}>
-              <div className={cn(
-                "relative flex-1 lg:flex-none transition-all duration-300",
-                isSearchExpanded ? "flex items-center gap-2 w-full" : "hidden lg:block"
-              )}>
+            <div
+              className={cn(
+                "relative flex items-center gap-2 transition-all duration-300",
+                isSearchExpanded ? "w-full lg:w-auto" : "w-auto",
+              )}
+            >
+              <div
+                className={cn(
+                  "relative flex-1 lg:flex-none transition-all duration-300",
+                  isSearchExpanded
+                    ? "flex items-center gap-2 w-full"
+                    : "hidden lg:block",
+                )}
+              >
                 <div className="relative flex-1">
                   <input
                     type="text"
@@ -482,9 +493,9 @@ export default function TransactionsPage() {
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -501,7 +512,7 @@ export default function TransactionsPage() {
                         <TableCell key={cell.id} className="px-6 py-4">
                           {flexRender(
                             cell.column.columnDef.cell,
-                            cell.getContext()
+                            cell.getContext(),
                           )}
                         </TableCell>
                       ))}
@@ -571,7 +582,7 @@ export default function TransactionsPage() {
                 <div className="flex items-center gap-1">
                   {Array.from(
                     { length: table.getPageCount() },
-                    (_, i) => i + 1
+                    (_, i) => i + 1,
                   ).map((page) => (
                     <button
                       key={page}
@@ -580,7 +591,7 @@ export default function TransactionsPage() {
                         "w-8 h-8 rounded-lg text-xs font-bold transition-all",
                         table.getState().pagination.pageIndex === page - 1
                           ? "bg-primary-600 text-white shadow-md shadow-primary-200"
-                          : "text-neutral-500 hover:bg-neutral-100"
+                          : "text-neutral-500 hover:bg-neutral-100",
                       )}
                     >
                       {page}

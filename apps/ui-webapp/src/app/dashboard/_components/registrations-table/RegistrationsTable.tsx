@@ -67,9 +67,7 @@ const StatusBadge = ({ status }: { status: RegistrationStatus }) => {
       variant="outline"
       className={cn(
         "px-3 py-1 rounded-md text-[10px] font-medium border-0",
-        isCompleted
-          ? "bg-green-50 text-green-600"
-          : "bg-red-50 text-red-600"
+        isCompleted ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600",
       )}
     >
       {status}
@@ -84,9 +82,7 @@ const PassBadge = ({ status }: { status: string }) => {
       variant="outline"
       className={cn(
         "px-3 py-1 rounded-md text-[10px] font-medium border-0",
-        isSent
-          ? "bg-green-50 text-green-600"
-          : "bg-red-50 text-red-600"
+        isSent ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600",
       )}
     >
       {isSent ? "Pass sent" : "Pass not sent"}
@@ -112,7 +108,9 @@ export function RegistrationsTable({
           <div className="flex justify-center border-r border-white/10 h-full py-4 px-2">
             <Checkbox
               checked={table.getIsAllPageRowsSelected()}
-              onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+              onCheckedChange={(value) =>
+                table.toggleAllPageRowsSelected(!!value)
+              }
               className="border-white/50 data-[state=checked]:bg-white data-[state=checked]:text-primary-800"
             />
           </div>
@@ -150,7 +148,11 @@ export function RegistrationsTable({
         cell: (info) => (
           <div className="flex items-center gap-3 border-r border-neutral-200 h-full px-4 py-2">
             <Avatar className="w-10 h-10 border border-neutral-100">
-              <AvatarImage src={ensureAbsoluteUrl(info.row.original.avatarUrl) || undefined} />
+              <AvatarImage
+                src={
+                  ensureAbsoluteUrl(info.row.original.avatarUrl) || undefined
+                }
+              />
               <AvatarFallback className="bg-primary-50 text-primary-600 font-bold">
                 {String(info.getValue()).charAt(0)}
               </AvatarFallback>
@@ -222,7 +224,7 @@ export function RegistrationsTable({
                   "h-8 px-4 rounded-md text-[11px] font-bold transition-all",
                   isPresent
                     ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
-                    : "border-purple-600 text-purple-600 hover:bg-purple-50"
+                    : "border-purple-600 text-purple-600 hover:bg-purple-50",
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -241,11 +243,18 @@ export function RegistrationsTable({
               <div onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-400 hover:text-neutral-900">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-neutral-400 hover:text-neutral-900"
+                    >
                       <MoreVertical className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-xl border-neutral-100">
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-48 rounded-xl p-1 shadow-xl border-neutral-100"
+                  >
                     <DropdownMenuItem
                       onClick={() => onView?.(reg.id)}
                       className="rounded-lg gap-2 text-neutral-600 focus:text-primary-600 focus:bg-primary-50"
@@ -274,7 +283,7 @@ export function RegistrationsTable({
         },
       },
     ],
-    [type, onMarkAttendance, onApprove, onView, onSendEmail, actionLoadingId]
+    [type, onMarkAttendance, onApprove, onView, onSendEmail, actionLoadingId],
   );
 
   const table = useReactTable({
@@ -302,7 +311,10 @@ export function RegistrationsTable({
             <table className="w-full border-collapse">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id} className="bg-primary-800 text-white h-12">
+                  <tr
+                    key={headerGroup.id}
+                    className="bg-primary-800 text-white h-12"
+                  >
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
@@ -311,9 +323,9 @@ export function RegistrationsTable({
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                       </th>
                     ))}
                   </tr>
@@ -328,7 +340,10 @@ export function RegistrationsTable({
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="p-0 h-full">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
                       </td>
                     ))}
                   </tr>

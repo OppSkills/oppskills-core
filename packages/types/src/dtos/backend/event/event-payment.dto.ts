@@ -101,7 +101,8 @@ class SaveCheckoutDraftAnswerDto {
  */
 export class SaveEventRegistrationCheckoutDraftDto {
   @ApiProperty({
-    description: "Registration form answers (same shape as join / payment order)",
+    description:
+      "Registration form answers (same shape as join / payment order)",
   })
   @IsArray()
   @ValidateNested({ each: true })
@@ -116,7 +117,8 @@ export class SaveEventRegistrationCheckoutDraftDto {
   ticketTierId?: string;
 
   @ApiPropertyOptional({
-    description: "Referral code (optional; stored for attribution on payment order later)",
+    description:
+      "Referral code (optional; stored for attribution on payment order later)",
   })
   @IsOptional()
   @IsString()
@@ -139,7 +141,8 @@ export class CreateEventPaymentOrderDto {
 
   /** Escrowed server-side when creating the Razorpay order (verify/webhook fallback). */
   @ApiPropertyOptional({
-    description: "Registration answers to escrow for payment verification / webhook",
+    description:
+      "Registration answers to escrow for payment verification / webhook",
   })
   @IsOptional()
   @IsArray()
@@ -209,7 +212,13 @@ export class VerifyEventPaymentDto {
       type: "object",
       properties: {
         fieldId: { type: "string" },
-        value: { oneOf: [{ type: "string" }, { type: "number" }, { type: "array", items: { type: "string" } }] },
+        value: {
+          oneOf: [
+            { type: "string" },
+            { type: "number" },
+            { type: "array", items: { type: "string" } },
+          ],
+        },
       },
     },
   })
@@ -417,4 +426,3 @@ export interface EventDiscountCodeResponse {
   redemptionCount: number;
   createdAt: string;
 }
-

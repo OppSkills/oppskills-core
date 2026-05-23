@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsString, IsNotEmpty, IsOptional } from "class-validator";
 
 export interface EventPassDto {
   id: string;
@@ -35,8 +35,8 @@ export interface EventPassDto {
 
 export class ScanEventPassDto {
   @ApiProperty({
-    description: 'Token from QR code to validate and scan',
-    example: '550e8400-e29b-41d4-a716-446655440000',
+    description: "Token from QR code to validate and scan",
+    example: "550e8400-e29b-41d4-a716-446655440000",
   })
   @IsString()
   @IsNotEmpty()
@@ -72,4 +72,3 @@ export interface PublicPassLookupDto {
     startDate: string;
   };
 }
-

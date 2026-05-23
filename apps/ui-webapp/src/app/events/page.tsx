@@ -28,7 +28,7 @@ export default function EventsPage() {
       page: curPage,
       perPage,
     },
-    { enabled: true }
+    { enabled: true },
   );
 
   const events = data?.items ?? [];
@@ -43,7 +43,7 @@ export default function EventsPage() {
     endDate: e.endDate,
     status: e.status,
     locationType: e.locationType,
-    location: e.locationCity ?? e.locationAddress ?? undefined,
+    location: e.locationCoords ?? e.locationAddress ?? undefined,
     isFree: e.isFree,
     entryFeeAmount: e.entryFeeAmount,
     lowestTicketPrice: e.lowestTicketPrice,

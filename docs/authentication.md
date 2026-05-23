@@ -88,12 +88,12 @@ Clerk JWTs contain standard claims plus custom fields:
 ```typescript
 // Backend verification using @clerk/backend
 const sessionClaims = await verifyToken(token, {
-  secretKey: process.env.CLERK_SECRET_KEY,  // sk_test_* or sk_live_*
-  clockSkewInMs: 15000                       // Allow 15s clock drift
+  secretKey: process.env.CLERK_SECRET_KEY, // sk_test_* or sk_live_*
+  clockSkewInMs: 15000, // Allow 15s clock drift
 });
 
-const userId = sessionClaims.sub;            // Extract user ID
-const email = sessionClaims.email;           // Extract email
+const userId = sessionClaims.sub; // Extract user ID
+const email = sessionClaims.email; // Extract email
 ```
 
 ---
@@ -151,11 +151,13 @@ export class ClerkAuthGuard implements CanActivate {
 ### Token Extraction Methods
 
 **From Authorization Header** (preferred):
+
 ```typescript
-Authorization: Bearer <clerk_jwt_token>
+Authorization: Bearer<clerk_jwt_token>;
 ```
 
 **From Query Parameter** (fallback for special cases):
+
 ```typescript
 GET /api/resource?token=<clerk_jwt_token>
 ```
@@ -163,13 +165,13 @@ GET /api/resource?token=<clerk_jwt_token>
 ### Usage in Controllers
 
 ```typescript
-@Controller('hackathons')
+@Controller("hackathons")
 export class HackathonController {
   @Get()
-  @UseGuards(ClerkAuthGuard)  // Protect this route
-  @ApiBearerAuth('clerk-auth')  // Swagger documentation
+  @UseGuards(ClerkAuthGuard) // Protect this route
+  @ApiBearerAuth("clerk-auth") // Swagger documentation
   async getHackathons(@Request() req) {
-    const userId = req.user.id;  // Access authenticated user
+    const userId = req.user.id; // Access authenticated user
     const email = req.user.email;
     // ... controller logic
   }
@@ -196,6 +198,7 @@ For local development and testing, you can bypass Clerk authentication using the
 ### Configuration
 
 **Enable in `.env.local`:**
+
 ```bash
 AUTH_BYPASS=true
 NODE_ENV=development  # Required: only works in dev/test
@@ -222,17 +225,17 @@ curl -H "X-User-Id: test-user-123" \
 
 ```typescript
 // From clerk-auth.guard.ts
-if (process.env.AUTH_BYPASS === 'true') {
+if (process.env.AUTH_BYPASS === "true") {
   const nodeEnv = process.env.NODE_ENV;
-  const isProduction = nodeEnv === 'production';
+  const isProduction = nodeEnv === "production";
 
   if (isProduction) {
     // Log security warning and continue with normal auth
-    this.logger.error('AUTH_BYPASS set in production - BLOCKED');
+    this.logger.error("AUTH_BYPASS set in production - BLOCKED");
     // Falls through to normal JWT verification
-  } else if (nodeEnv === 'development' || nodeEnv === 'test') {
+  } else if (nodeEnv === "development" || nodeEnv === "test") {
     // Allow bypass
-    const userId = request.header('x-user-id');
+    const userId = request.header("x-user-id");
     // ... auto-create user and authenticate
   }
 }
@@ -255,9 +258,9 @@ OppSkills implements a three-tier authorization system using the `AccessLevel` e
 
 ```typescript
 enum AccessLevel {
-  ADMIN   = 'ADMIN',   // Full system access
-  USER    = 'USER',    // Standard user (default)
-  VIEWER  = 'VIEWER'   // Read-only access
+  ADMIN = "ADMIN", // Full system access
+  USER = "USER", // Standard user (default)
+  VIEWER = "VIEWER", // Read-only access
 }
 ```
 
@@ -274,11 +277,11 @@ model UserEntity {
 
 ### Access Level Capabilities
 
-| Level  | Capabilities |
-|--------|-------------|
-| **ADMIN** | - Full system access<br>- Can manage all hackathons/festivals<br>- Can modify any user's content<br>- Administrative endpoints |
-| **USER** | - Create hackathons/festivals<br>- Manage own content<br>- Join teams<br>- Submit to hackathons |
-| **VIEWER** | - Read-only access<br>- View public content<br>- Cannot create or modify |
+| Level      | Capabilities                                                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **ADMIN**  | - Full system access<br>- Can manage all hackathons/festivals<br>- Can modify any user's content<br>- Administrative endpoints |
+| **USER**   | - Create hackathons/festivals<br>- Manage own content<br>- Join teams<br>- Submit to hackathons                                |
+| **VIEWER** | - Read-only access<br>- View public content<br>- Cannot create or modify                                                       |
 
 ### AdminGuard Implementation
 
@@ -305,8 +308,8 @@ export class AdminGuard implements CanActivate {
 
     const accessLevel = rows[0]?.access_level;
 
-    if (accessLevel !== 'ADMIN') {
-      throw new ForbiddenException('Admin access required.');
+    if (accessLevel !== "ADMIN") {
+      throw new ForbiddenException("Admin access required.");
     }
 
     return true;
@@ -317,12 +320,14 @@ export class AdminGuard implements CanActivate {
 ### Configuring Admin Users
 
 **Environment Variable**:
+
 ```bash
 # Comma-separated Clerk user IDs
 ADMIN_USER_IDS=user_2abc123,user_2def456,user_2ghi789
 ```
 
 **Config Service** (`apps/backend/src/common/config.service.ts`):
+
 ```typescript
 get adminUserIds(): string[] {
   const raw = this.configService.get<string>('ADMIN_USER_IDS', '');
@@ -336,10 +341,10 @@ get adminUserIds(): string[] {
 ### Usage
 
 ```typescript
-@Controller('admin')
+@Controller("admin")
 export class AdminController {
-  @Get('users')
-  @UseGuards(ClerkAuthGuard, AdminGuard)  // Require both auth + admin
+  @Get("users")
+  @UseGuards(ClerkAuthGuard, AdminGuard) // Require both auth + admin
   async getAllUsers() {
     // Only accessible by ADMIN users
   }
@@ -363,8 +368,8 @@ Beyond system-wide access levels, OppSkills implements **per-hackathon roles** f
 
 ```typescript
 enum HackathonUserRole {
-  MANAGER   = 'MANAGER',    // Can manage hackathon settings and teams
-  EVALUATOR = 'EVALUATOR'   // Can evaluate submissions
+  MANAGER = "MANAGER", // Can manage hackathon settings and teams
+  EVALUATOR = "EVALUATOR", // Can evaluate submissions
 }
 ```
 
@@ -422,6 +427,7 @@ model HackathonUserRoleEntity {
 ### Role Assignment API
 
 **Add Role**:
+
 ```typescript
 POST /hackathons/:id/roles
 
@@ -432,6 +438,7 @@ POST /hackathons/:id/roles
 ```
 
 **Remove Role**:
+
 ```typescript
 DELETE /hackathons/:id/roles
 
@@ -442,6 +449,7 @@ DELETE /hackathons/:id/roles
 ```
 
 **List Roles**:
+
 ```typescript
 GET /hackathons/:id/roles
 
@@ -477,16 +485,19 @@ Response:
 
 ```typescript
 // Example: Check if user can manage hackathon
-async function canManageHackathon(userId: string, hackathonId: string): Promise<boolean> {
+async function canManageHackathon(
+  userId: string,
+  hackathonId: string,
+): Promise<boolean> {
   // 1. Check if user is system admin
   const user = await prisma.userEntity.findUnique({
-    where: { id: userId }
+    where: { id: userId },
   });
-  if (user.accessLevel === 'ADMIN') return true;
+  if (user.accessLevel === "ADMIN") return true;
 
   // 2. Check if user is hackathon owner
   const hackathon = await prisma.hackathonEntity.findUnique({
-    where: { id: hackathonId }
+    where: { id: hackathonId },
   });
   if (hackathon.organizerId === userId) return true;
 
@@ -496,9 +507,9 @@ async function canManageHackathon(userId: string, hackathonId: string): Promise<
       hackathonId_userId_role: {
         hackathonId,
         userId,
-        role: 'MANAGER'
-      }
-    }
+        role: "MANAGER",
+      },
+    },
   });
 
   return managerRole !== null;
@@ -513,11 +524,11 @@ export function useHackathonRoles(hackathonId: string) {
   const { getToken } = useAuth();
 
   return useQuery({
-    queryKey: ['hackathon-roles', hackathonId],
+    queryKey: ["hackathon-roles", hackathonId],
     queryFn: async () => {
       const token = await getToken();
       return getHackathonRoles(token, hackathonId);
-    }
+    },
   });
 }
 ```
@@ -536,7 +547,7 @@ OppSkills handles three primary events:
 enum ClerkWebhookEventType {
   USER_CREATED = "user.created",
   USER_UPDATED = "user.updated",
-  USER_DELETED = "user.deleted"
+  USER_DELETED = "user.deleted",
 }
 ```
 
@@ -620,6 +631,7 @@ private async verifyWebhookSignature(
 ### Event Handlers
 
 **User Created**:
+
 ```typescript
 case ClerkWebhookEventType.USER_CREATED: {
   const userId = payload.data.id;
@@ -641,6 +653,7 @@ case ClerkWebhookEventType.USER_CREATED: {
 ```
 
 **User Updated**:
+
 ```typescript
 case ClerkWebhookEventType.USER_UPDATED: {
   await prisma.userEntity.update({
@@ -656,6 +669,7 @@ case ClerkWebhookEventType.USER_UPDATED: {
 ```
 
 **User Deleted**:
+
 ```typescript
 case ClerkWebhookEventType.USER_DELETED: {
   await prisma.userEntity.delete({
@@ -667,12 +681,14 @@ case ClerkWebhookEventType.USER_DELETED: {
 ### Configuration
 
 **Environment Variables**:
+
 ```bash
 # Clerk webhook signing secret (whsec_...)
 CLERK_WEBHOOK_SECRET=whsec_abc123...
 ```
 
 **Clerk Dashboard Setup**:
+
 1. Navigate to Webhooks in Clerk Dashboard
 2. Add endpoint: `https://api.yourapp.com/user-accounts/clerk-webhook`
 3. Select events: `user.created`, `user.updated`, `user.deleted`
@@ -701,6 +717,7 @@ The Next.js frontend uses `@clerk/nextjs` for seamless authentication.
 ### Setup
 
 **Root Layout** (`apps/ui-webapp/src/app/layout.tsx`):
+
 ```typescript
 import { ClerkProvider } from '@clerk/nextjs';
 
@@ -718,6 +735,7 @@ export default function RootLayout({ children }) {
 ### Client-Side Authentication
 
 **Get User Information**:
+
 ```typescript
 'use client';
 import { useUser } from '@clerk/nextjs';
@@ -738,9 +756,10 @@ export function UserProfile() {
 ```
 
 **Get Authentication Token**:
+
 ```typescript
-'use client';
-import { useAuth } from '@clerk/nextjs';
+"use client";
+import { useAuth } from "@clerk/nextjs";
 
 export function useApiCall() {
   const { getToken } = useAuth();
@@ -748,10 +767,10 @@ export function useApiCall() {
   async function callApi() {
     const token = await getToken();
 
-    const response = await fetch('/api/hackathons', {
+    const response = await fetch("/api/hackathons", {
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     return response.json();
@@ -764,6 +783,7 @@ export function useApiCall() {
 ### Server-Side Authentication
 
 **Server Components**:
+
 ```typescript
 import { auth } from '@clerk/nextjs/server';
 
@@ -780,18 +800,16 @@ export default async function ServerPage() {
 ```
 
 **API Routes**:
+
 ```typescript
-import { auth } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   const { userId } = await auth();
 
   if (!userId) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Handle authenticated request
@@ -805,11 +823,11 @@ Create a middleware for route protection:
 
 ```typescript
 // middleware.ts
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 const isProtectedRoute = createRouteMatcher([
-  '/dashboard(.*)',
-  '/api/hackathons(.*)'
+  "/dashboard(.*)",
+  "/api/hackathons(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
@@ -820,8 +838,8 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    '/(api|trpc)(.*)',
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
   ],
 };
 ```
@@ -851,11 +869,12 @@ export function Header() {
 ### API Integration Helper
 
 **API Client** (`apps/ui-webapp/src/lib/api/apiClient.ts`):
+
 ```typescript
 export function buildAuthHeaders(token: string): { Authorization: string } {
   const safeToken = token.trim();
   if (safeToken.length === 0) {
-    throw new Error('Auth token is empty.');
+    throw new Error("Auth token is empty.");
   }
   return { Authorization: `Bearer ${safeToken}` };
 }
@@ -867,24 +886,25 @@ export function createApiClient(resourcePath: string): AxiosInstance {
 ```
 
 **Usage**:
-```typescript
-import { useAuth } from '@clerk/nextjs';
-import { buildAuthHeaders, createApiClient } from '@/lib/api/apiClient';
 
-const API = createApiClient('/hackathons');
+```typescript
+import { useAuth } from "@clerk/nextjs";
+import { buildAuthHeaders, createApiClient } from "@/lib/api/apiClient";
+
+const API = createApiClient("/hackathons");
 
 export function useHackathons() {
   const { getToken } = useAuth();
 
   return useQuery({
-    queryKey: ['hackathons'],
+    queryKey: ["hackathons"],
     queryFn: async () => {
       const token = await getToken();
-      const response = await API.get('/', {
-        headers: buildAuthHeaders(token)
+      const response = await API.get("/", {
+        headers: buildAuthHeaders(token),
       });
       return response.data;
-    }
+    },
   });
 }
 ```
@@ -896,6 +916,7 @@ export function useHackathons() {
 ### 1. Environment Variables
 
 **Never commit secrets**:
+
 ```bash
 # .env.local (gitignored)
 CLERK_SECRET_KEY=sk_test_...
@@ -905,12 +926,14 @@ ADMIN_USER_IDS=user_123,user_456
 ```
 
 **Use different keys per environment**:
+
 - Development: `sk_test_...`
 - Production: `sk_live_...`
 
 ### 2. Token Handling
 
 **Always use Bearer authentication**:
+
 ```typescript
 // Correct
 Authorization: Bearer <token>
@@ -921,17 +944,19 @@ X-Auth-Token: <token>
 ```
 
 **Never log tokens**:
+
 ```typescript
 // BAD
-console.log('Token:', token);
+console.log("Token:", token);
 
 // GOOD
-console.log('Token received:', !!token);
+console.log("Token received:", !!token);
 ```
 
 ### 3. Webhook Security
 
 **Always verify signatures**:
+
 ```typescript
 if (!await verifyWebhookSignature(...)) {
   throw new UnauthorizedException('Invalid signature');
@@ -939,16 +964,15 @@ if (!await verifyWebhookSignature(...)) {
 ```
 
 **Use timing-safe comparison**:
+
 ```typescript
-crypto.timingSafeEqual(
-  Buffer.from(expected),
-  Buffer.from(actual)
-);
+crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(actual));
 ```
 
 ### 4. Authorization Checks
 
 **Check permissions at multiple layers**:
+
 ```typescript
 // 1. Guard level (authentication)
 @UseGuards(ClerkAuthGuard)
@@ -967,6 +991,7 @@ async updateHackathon(userId: string, hackathonId: string) {
 ```
 
 **Never trust client-side checks alone**:
+
 ```typescript
 // Frontend can be bypassed - always verify on backend
 async function deleteHackathon(id: string) {
@@ -978,10 +1003,11 @@ async function deleteHackathon(id: string) {
 ### 5. Database Security
 
 **Use parameterized queries**:
+
 ```typescript
 // GOOD - Prisma handles escaping
 const user = await prisma.userEntity.findUnique({
-  where: { id: userId }
+  where: { id: userId },
 });
 
 // GOOD - Raw query with parameters
@@ -992,11 +1018,12 @@ const rows = await prisma.$queryRaw`
 
 // BAD - SQL injection risk
 const rows = await prisma.$queryRawUnsafe(
-  `SELECT * FROM user WHERE id = '${userId}'`
+  `SELECT * FROM user WHERE id = '${userId}'`,
 );
 ```
 
 **Principle of least privilege**:
+
 ```typescript
 // Only select needed fields
 const user = await prisma.userEntity.findUnique({
@@ -1005,15 +1032,16 @@ const user = await prisma.userEntity.findUnique({
     id: true,
     email: true,
     firstName: true,
-    lastName: true
+    lastName: true,
     // Don't expose sensitive fields
-  }
+  },
 });
 ```
 
 ### 6. Production Safeguards
 
 **Disable auth bypass**:
+
 ```bash
 # NEVER set in production
 AUTH_BYPASS=false  # or omit entirely
@@ -1023,13 +1051,14 @@ NODE_ENV=production
 ```
 
 **Validate environment on startup**:
+
 ```typescript
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === "production") {
   if (!process.env.CLERK_SECRET_KEY) {
-    throw new Error('CLERK_SECRET_KEY required in production');
+    throw new Error("CLERK_SECRET_KEY required in production");
   }
-  if (process.env.AUTH_BYPASS === 'true') {
-    throw new Error('AUTH_BYPASS not allowed in production');
+  if (process.env.AUTH_BYPASS === "true") {
+    throw new Error("AUTH_BYPASS not allowed in production");
   }
 }
 ```
@@ -1054,16 +1083,19 @@ async handleWebhook() {
 ### Issue 1: "Unauthorized" on Valid Requests
 
 **Symptoms**:
+
 - Frontend receives 401 Unauthorized
 - Token appears valid in Clerk Dashboard
 
 **Possible Causes**:
+
 1. Token not sent in request
 2. Wrong token format (missing "Bearer" prefix)
 3. Expired token
 4. Clock skew between systems
 
 **Solutions**:
+
 ```typescript
 // Check token is being sent
 const { getToken } = useAuth();
@@ -1089,15 +1121,18 @@ console.log('Expires:', new Date(claims.exp * 1000));
 ### Issue 2: Webhook Signature Verification Fails
 
 **Symptoms**:
+
 - Webhooks return 401 Unauthorized
 - Signature verification fails
 
 **Possible Causes**:
+
 1. Wrong webhook secret
 2. Secret format incorrect (missing `whsec_` prefix)
 3. Payload modification (e.g., by proxy/middleware)
 
 **Solutions**:
+
 ```bash
 # Verify webhook secret format
 CLERK_WEBHOOK_SECRET=whsec_abc123...  # Must start with whsec_
@@ -1117,15 +1152,18 @@ create(@Body() payload: ClerkWebhookRequestDto) {
 ### Issue 3: User Not Found in Database
 
 **Symptoms**:
+
 - JWT verifies successfully
 - User query returns null
 
 **Possible Causes**:
+
 1. Webhook not received/processed
 2. User created in Clerk but webhook failed
 3. Database connection issue
 
 **Solutions**:
+
 ```typescript
 // Auto-create user on first API call
 const user = await prisma.userEntity.upsert({
@@ -1148,14 +1186,17 @@ curl -X POST https://api.yourapp.com/user-accounts/clerk-webhook
 ### Issue 4: AUTH_BYPASS Not Working
 
 **Symptoms**:
+
 - `AUTH_BYPASS=true` but still getting 401
 
 **Possible Causes**:
+
 1. `NODE_ENV` is not `development` or `test`
 2. Missing `X-User-Id` header
 3. Header case sensitivity
 
 **Solutions**:
+
 ```bash
 # Check environment
 echo $NODE_ENV  # Must be "development" or "test"
@@ -1171,14 +1212,17 @@ curl -H "x-user-id: test-user" \
 ### Issue 5: Admin Access Not Working
 
 **Symptoms**:
+
 - User should be admin but gets 403 Forbidden
 
 **Possible Causes**:
+
 1. User ID not in `ADMIN_USER_IDS`
 2. `access_level` not set to `ADMIN` in database
 3. Typo in user ID
 
 **Solutions**:
+
 ```bash
 # Verify environment variable
 echo $ADMIN_USER_IDS  # Should contain user's Clerk ID
@@ -1197,26 +1241,29 @@ WHERE id = 'user_123';
 ### Issue 6: Token Works in Frontend but Not in API Calls
 
 **Symptoms**:
+
 - User can access protected pages
 - API calls return 401
 
 **Possible Causes**:
+
 1. Token not attached to API requests
 2. Wrong API base URL
 3. CORS issues
 
 **Solutions**:
+
 ```typescript
 // Always get fresh token for API calls
 const { getToken } = useAuth();
 
 async function callApi() {
-  const token = await getToken();  // Fresh token
+  const token = await getToken(); // Fresh token
 
-  const response = await fetch('/api/hackathons', {
+  const response = await fetch("/api/hackathons", {
     headers: {
-      'Authorization': `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
 }
 
@@ -1224,30 +1271,33 @@ async function callApi() {
 // Backend main.ts
 app.enableCors({
   origin: process.env.FRONTEND_URL,
-  credentials: true
+  credentials: true,
 });
 ```
 
 ### Issue 7: Role Assignment Not Persisting
 
 **Symptoms**:
+
 - User assigned as manager/evaluator
 - Role disappears or not visible
 
 **Possible Causes**:
+
 1. Transaction rollback
 2. Unique constraint violation
 3. User doesn't exist in database
 
 **Solutions**:
+
 ```typescript
 // Ensure user exists before assigning role
 const user = await prisma.userEntity.findUnique({
-  where: { email: 'manager@example.com' }
+  where: { email: "manager@example.com" },
 });
 
 if (!user) {
-  throw new NotFoundException('User not found');
+  throw new NotFoundException("User not found");
 }
 
 // Use upsert to handle duplicates
@@ -1256,31 +1306,34 @@ await prisma.hackathonUserRoleEntity.upsert({
     hackathonId_userId_role: {
       hackathonId,
       userId: user.id,
-      role: 'MANAGER'
-    }
+      role: "MANAGER",
+    },
   },
   update: {},
   create: {
     hackathonId,
     userId: user.id,
-    role: 'MANAGER'
-  }
+    role: "MANAGER",
+  },
 });
 ```
 
 ### Issue 8: Frontend Shows User as Signed Out
 
 **Symptoms**:
+
 - User was signed in
 - Suddenly shows as signed out
 - Session appears lost
 
 **Possible Causes**:
+
 1. Session expired
 2. Clerk public key mismatch
 3. Browser cookies cleared
 
 **Solutions**:
+
 ```typescript
 // Check session status
 const { isLoaded, isSignedIn } = useAuth();
@@ -1311,6 +1364,7 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 ### Related Files
 
 **Backend**:
+
 - `/apps/backend/src/common/clerk-auth.guard.ts` - JWT verification
 - `/apps/backend/src/common/admin.guard.ts` - Admin authorization
 - `/apps/backend/src/common/config.service.ts` - Configuration
@@ -1318,14 +1372,17 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 - `/apps/backend/src/user-accounts/user-accounts.controller.ts` - Webhook endpoint
 
 **Frontend**:
+
 - `/apps/ui-webapp/src/app/layout.tsx` - ClerkProvider setup
 - `/apps/ui-webapp/src/lib/api/apiClient.ts` - API authentication
 - `/apps/ui-webapp/src/components/layout/site-header.tsx` - User UI
 
 **Database**:
+
 - `/packages/database/prisma/schema.prisma` - User and role schemas
 
 **Types**:
+
 - `/packages/types/src/dtos/backend/account/clerk-webhook.dto.ts` - Webhook types
 - `/packages/types/src/dtos/backend/hackathon/hackathon-roles.dto.ts` - Role types
 - `/packages/types/src/enums/index.ts` - AccessLevel enum

@@ -18,7 +18,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, AlertCircle, Check, ChevronsUpDown, X, FileText } from "lucide-react";
+import {
+  Loader2,
+  AlertCircle,
+  Check,
+  ChevronsUpDown,
+  X,
+  FileText,
+} from "lucide-react";
 import { cn, getApiErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import { presignDocumentUpload } from "@/lib/api/mediaApi";
@@ -135,7 +142,7 @@ export interface UserDataForPrefill {
   companyName?: string;
   jobTitle?: string;
 
-  locationCity?: string;
+  locationCoords?: string;
   locationState?: string;
   locationCountry?: string;
 
@@ -151,7 +158,7 @@ export interface EventRegistrationModalProps {
   onClose: () => void;
   onSubmit: (
     answers: Array<{ fieldId: string; value: string | number | string[] }>,
-    onboardingData?: OnboardingValues
+    onboardingData?: OnboardingValues,
   ) => Promise<void>;
   fields: RegistrationField[];
   eventName: string;
@@ -168,7 +175,7 @@ type FieldErrors = Record<string, string>;
  */
 function getPrefilledValue(
   field: RegistrationField,
-  userData: UserDataForPrefill | undefined
+  userData: UserDataForPrefill | undefined,
 ): string | undefined {
   if (!userData) return undefined;
 
@@ -228,7 +235,7 @@ function getPrefilledValue(
 
   // Location / year — for custom registration fields only (not onboarding block)
   if (label.includes("city") && !label.includes("university")) {
-    return userData.locationCity;
+    return userData.locationCoords;
   }
   if (label.includes("state") || label.includes("province")) {
     return userData.locationState;
@@ -272,7 +279,7 @@ export function EventRegistrationModal({
   // Onboarding State
   // Keeping step state just in case, but we are single page now
   const [onboardingValues, setOnboardingValues] = useState<OnboardingValues>(
-    {}
+    {},
   );
 
   // College Search State
@@ -284,7 +291,9 @@ export function EventRegistrationModal({
   const [collegeComboboxOpen, setCollegeComboboxOpen] = useState(false);
 
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<Record<string, { name: string; url: string }>>({});
+  const [uploadedFiles, setUploadedFiles] = useState<
+    Record<string, { name: string; url: string }>
+  >({});
 
   // Support all fields now that attachments are supported
   const supportedFields = fields;
@@ -355,7 +364,10 @@ export function EventRegistrationModal({
     }
   }, [isOpen, userData, fields, showOnboarding]);
 
-  const handleFileSelect = async (fieldId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    fieldId: string,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -389,7 +401,7 @@ export function EventRegistrationModal({
         name: file.name,
       };
 
-      setUploadedFiles(prev => ({ ...prev, [fieldId]: fileData }));
+      setUploadedFiles((prev) => ({ ...prev, [fieldId]: fileData }));
       setValue(fieldId, presign.publicUrl);
 
       toast.success("Document uploaded successfully");
@@ -453,7 +465,7 @@ export function EventRegistrationModal({
     const checkRequired = (
       key: keyof OnboardingValues,
       label: string,
-      errorKey: string
+      errorKey: string,
     ) => {
       const value = onboardingValues[key];
       if (
@@ -481,7 +493,8 @@ export function EventRegistrationModal({
 
     if (
       onboardingValues.userCategory === UserCategory.COLLEGE_STUDENT ||
-      onboardingValues.userCategory === UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
+      onboardingValues.userCategory ===
+        UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
       onboardingValues.userCategory === UserCategory.FRESHER
     ) {
       if (!dynamicCollegeField) {
@@ -510,7 +523,8 @@ export function EventRegistrationModal({
     const currentUserCategory = showOnboarding
       ? onboardingValues.userCategory
       : userData?.userCategory;
-    const isWorkingProfessional = currentUserCategory === UserCategory.WORKING_PROFESSIONAL;
+    const isWorkingProfessional =
+      currentUserCategory === UserCategory.WORKING_PROFESSIONAL;
 
     // Validate Registration Fields
     for (const field of supportedFields) {
@@ -639,7 +653,7 @@ export function EventRegistrationModal({
 
     if (effectiveCategory && valuesSource) {
       const identityFieldId = getIdentityFieldId(
-        effectiveCategory as UserCategory
+        effectiveCategory as UserCategory,
       );
       let identityValue: string | undefined;
 
@@ -661,7 +675,7 @@ export function EventRegistrationModal({
       if (identityFieldId && identityValue) {
         // Check if already exists (unlikely but safe to check)
         const existingIndex = answers.findIndex(
-          (a) => a.fieldId === identityFieldId
+          (a) => a.fieldId === identityFieldId,
         );
         if (existingIndex > -1) {
           answers[existingIndex].value = identityValue;
@@ -690,7 +704,7 @@ export function EventRegistrationModal({
       } else if (
         onboardingValues.userCategory === UserCategory.COLLEGE_STUDENT ||
         onboardingValues.userCategory ===
-        UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
+          UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
         onboardingValues.userCategory === UserCategory.FRESHER
       ) {
         filteredOnboardingData.collegeId = onboardingValues.collegeId;
@@ -740,7 +754,7 @@ export function EventRegistrationModal({
           name: c.name,
           city: c.city,
           state: c.state,
-        }))
+        })),
       );
     } catch (err) {
       console.error("Failed to search colleges:", err);
@@ -752,7 +766,9 @@ export function EventRegistrationModal({
   const isCollegeFieldLabel = (label: string) => {
     const l = label.toLowerCase();
     return (
-      l.includes("college") || l.includes("university") || l.includes("institution")
+      l.includes("college") ||
+      l.includes("university") ||
+      l.includes("institution")
     );
   };
 
@@ -761,14 +777,17 @@ export function EventRegistrationModal({
     onSelect: (college: { id: string; name: string }) => void,
     onTextChange: (value: string) => void,
     error?: string,
-    placeholder?: string
+    placeholder?: string,
   ) => {
     const isSkipped = onboardingValues.collegeSkipped || false;
 
     return (
       <div className="space-y-4">
         {!isSkipped ? (
-          <Popover open={collegeComboboxOpen} onOpenChange={setCollegeComboboxOpen}>
+          <Popover
+            open={collegeComboboxOpen}
+            onOpenChange={setCollegeComboboxOpen}
+          >
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -776,7 +795,7 @@ export function EventRegistrationModal({
                 aria-expanded={collegeComboboxOpen}
                 className={cn(
                   "w-full justify-between font-normal",
-                  error && "border-red-500"
+                  error && "border-red-500",
                 )}
               >
                 {currentValue || placeholder || "Search for your college..."}
@@ -825,7 +844,7 @@ export function EventRegistrationModal({
                             "mr-2 h-4 w-4",
                             onboardingValues.collegeId === college.id
                               ? "opacity-100"
-                              : "opacity-0"
+                              : "opacity-0",
                           )}
                         />
                         <div className="flex flex-col">
@@ -875,7 +894,7 @@ export function EventRegistrationModal({
 
   // Check if any dynamic field is "Gender"
   const dynamicGenderField = supportedFields.find(
-    (f) => f.label.toLowerCase() === "gender"
+    (f) => f.label.toLowerCase() === "gender",
   );
 
   const dynamicCollegeField = supportedFields.find((f) => {
@@ -888,7 +907,7 @@ export function EventRegistrationModal({
   });
 
   const dynamicSchoolField = supportedFields.find((f) =>
-    f.label.toLowerCase().includes("school")
+    f.label.toLowerCase().includes("school"),
   );
 
   const dynamicCompanyField = supportedFields.find((f) => {
@@ -1018,66 +1037,66 @@ export function EventRegistrationModal({
 
         {(onboardingValues.userCategory === UserCategory.COLLEGE_STUDENT ||
           onboardingValues.userCategory ===
-          UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
+            UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
           onboardingValues.userCategory === UserCategory.FRESHER) && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>
-                  College <span className="text-red-500">*</span>
-                </Label>
-                {renderCollegeSearch(
-                  onboardingValues.collegeName || "",
-                  (college) => {
-                    updateOnboardingValue("collegeId", college.id);
-                    updateOnboardingValue("collegeName", college.name);
-                  },
-                  (val) => updateOnboardingValue("collegeName", val),
-                  errors.collegeId || errors.collegeName,
-                  "Search for your college..."
-                )}
-              </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>
+                College <span className="text-red-500">*</span>
+              </Label>
+              {renderCollegeSearch(
+                onboardingValues.collegeName || "",
+                (college) => {
+                  updateOnboardingValue("collegeId", college.id);
+                  updateOnboardingValue("collegeName", college.name);
+                },
+                (val) => updateOnboardingValue("collegeName", val),
+                errors.collegeId || errors.collegeName,
+                "Search for your college...",
+              )}
             </div>
-          )}
+          </div>
+        )}
 
         {onboardingValues.userCategory ===
           UserCategory.WORKING_PROFESSIONAL && (
-            <div className="space-y-4">
-              {!dynamicCompanyField && (
-                <div className="space-y-2">
-                  <Label>
-                    Company Name <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    placeholder="Enter Company Name"
-                    value={onboardingValues.companyName || ""}
-                    onChange={(e) =>
-                      updateOnboardingValue("companyName", e.target.value)
-                    }
-                    className={cn(errors.companyName && "border-red-500")}
-                  />
-                  {errors.companyName && (
-                    <p className="text-xs text-red-500">{errors.companyName}</p>
-                  )}
-                </div>
-              )}
+          <div className="space-y-4">
+            {!dynamicCompanyField && (
               <div className="space-y-2">
                 <Label>
-                  Job Title <span className="text-red-500">*</span>
+                  Company Name <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  placeholder="e.g. Software Engineer"
-                  value={onboardingValues.jobTitle || ""}
+                  placeholder="Enter Company Name"
+                  value={onboardingValues.companyName || ""}
                   onChange={(e) =>
-                    updateOnboardingValue("jobTitle", e.target.value)
+                    updateOnboardingValue("companyName", e.target.value)
                   }
-                  className={cn(errors.jobTitle && "border-red-500")}
+                  className={cn(errors.companyName && "border-red-500")}
                 />
-                {errors.jobTitle && (
-                  <p className="text-xs text-red-500">{errors.jobTitle}</p>
+                {errors.companyName && (
+                  <p className="text-xs text-red-500">{errors.companyName}</p>
                 )}
               </div>
+            )}
+            <div className="space-y-2">
+              <Label>
+                Job Title <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                placeholder="e.g. Software Engineer"
+                value={onboardingValues.jobTitle || ""}
+                onChange={(e) =>
+                  updateOnboardingValue("jobTitle", e.target.value)
+                }
+                className={cn(errors.jobTitle && "border-red-500")}
+              />
+              {errors.jobTitle && (
+                <p className="text-xs text-red-500">{errors.jobTitle}</p>
+              )}
             </div>
-          )}
+          </div>
+        )}
       </div>
     );
   };
@@ -1258,7 +1277,8 @@ export function EventRegistrationModal({
         const currentUserCategory = showOnboarding
           ? onboardingValues.userCategory
           : userData?.userCategory;
-        const isWorkingProfessional = currentUserCategory === UserCategory.WORKING_PROFESSIONAL;
+        const isWorkingProfessional =
+          currentUserCategory === UserCategory.WORKING_PROFESSIONAL;
 
         // Skip rendering college field for working professionals
         if (isCollegeField && isWorkingProfessional) {
@@ -1295,7 +1315,7 @@ export function EventRegistrationModal({
                 },
                 (val) => setValue(field.id, val),
                 error,
-                field.placeholder || ""
+                field.placeholder || "",
               )
             ) : (
               <Input

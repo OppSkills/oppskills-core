@@ -71,4 +71,4 @@ import {
     TicketTierService,
   ],
 })
-export class PaymentsModule { }
+export class PaymentsModule {}

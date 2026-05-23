@@ -114,8 +114,8 @@ Notes:
 
 - Use `import type { ... }` for type-only imports.
 - Prefer absolute imports where configured:
- - UI: `@/...` → `apps/ui-webapp/src/*`
-  - Backend Jest: `^src/(.*)$` → `apps/backend/src/*`
+- UI: `@/...` → `apps/ui-webapp/src/*`
+- Backend Jest: `^src/(.*)$` → `apps/backend/src/*`
 - Import grouping (preferred):
   1. Node built-ins
   2. External deps
@@ -151,7 +151,7 @@ Dev auth bypass:
 ### Frontend (Next.js UI)
 
 - Use Server/Client Components correctly; add `'use client'` only when needed.
- - Data fetching: prefer API helpers in `apps/ui-webapp/src/lib/api/*` and TanStack Query hooks in `apps/ui-webapp/src/hooks/*`.
+- Data fetching: prefer API helpers in `apps/ui-webapp/src/lib/api/*` and TanStack Query hooks in `apps/ui-webapp/src/hooks/*`.
 - Auth: use Clerk helpers (`useAuth`, `useSignIn`) and pass tokens per request.
 - Errors: show toasts (`sonner`) for expected UX failures; throw `Error` for programmer errors (missing slug/token).
 

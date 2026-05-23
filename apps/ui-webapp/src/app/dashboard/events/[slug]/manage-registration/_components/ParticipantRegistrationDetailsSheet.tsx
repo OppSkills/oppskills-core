@@ -1,16 +1,22 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  ChevronLeft,
-} from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getParticipantRegistrationAnswers } from "@/lib/api/eventApi";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { getSafeToken } from "@/lib/auth-utils";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { RegistrationInfoCard, type ParticipantInfo } from "@/app/dashboard/_components/registration/RegistrationInfoCard";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  RegistrationInfoCard,
+  type ParticipantInfo,
+} from "@/app/dashboard/_components/registration/RegistrationInfoCard";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { CardListFallback } from "@/components/boneyard/loading-fallbacks";
 
@@ -57,13 +63,16 @@ export function ParticipantRegistrationDetailsSheet({
       college: participant.university,
       location: participant.location,
       education: participant.course,
-      registeredOn: new Date(participant.registeredOn).toLocaleDateString("en-US", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      registeredOn: new Date(participant.registeredOn).toLocaleDateString(
+        "en-US",
+        {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        },
+      ),
       avatarUrl: participant.avatarUrl || undefined,
       answers: registrationAnswersData?.answers || [],
       registrationFields: registrationAnswersData?.fields || [],

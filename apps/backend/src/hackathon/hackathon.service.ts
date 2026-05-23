@@ -24,6 +24,7 @@ import { EmailService } from 'src/email/email.service';
 import { Inject, forwardRef } from '@nestjs/common';
 import { DELETED_RESOURCE_OWNER_ID } from '../_utils/constants';
 import { sanitizeHtmlContent } from '../_utils/html-sanitizer.utils';
+import { LocationService } from 'src/recommendation/location/location.service';
 
 const BASE_DEFAULT_FIELDS = [
   {
@@ -151,7 +152,8 @@ export class HackathonService {
     private readonly analyticsService: AnalyticsService,
     @Inject(forwardRef(() => EmailService))
     private readonly emailService: EmailService,
-  ) { }
+    private readonly locationService: LocationService,
+  ) {}
 
   async createHackathon(dto: CreateHackathonDto, userId: string) {
     this.logger.log(
@@ -188,16 +190,16 @@ export class HackathonService {
     // Build rounds data - either from DTO or empty (no default rounds)
     const roundsData = dto.rounds
       ? dto.rounds.map((round) => ({
-        name: round.name,
-        description: round.description,
-        startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
-        endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
-        order: round.order,
-        roundType: round.roundType,
-        submissionConfig: round.submissionConfig
-          ? (round.submissionConfig as Prisma.InputJsonValue)
-          : Prisma.JsonNull,
-      }))
+          name: round.name,
+          description: round.description,
+          startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
+          endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
+          order: round.order,
+          roundType: round.roundType,
+          submissionConfig: round.submissionConfig
+            ? (round.submissionConfig as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+        }))
       : []; // Don't create default rounds - organizers can add them later
 
     // Determine attendee eligibility
@@ -205,6 +207,18 @@ export class HackathonService {
       dto.attendeeEligibility && dto.attendeeEligibility.length > 0
         ? dto.attendeeEligibility
         : DEFAULT_ATTENDEE_ELIGIBILITY;
+
+    let locationCoords = dto.location?.city;
+    if (dto.location?.placeId) {
+      try {
+        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        if (resolved) {
+          locationCoords = resolved;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+      }
+    }
 
     try {
       const hackathon = await prisma.hackathonEntity.create({
@@ -226,7 +240,7 @@ export class HackathonService {
 
           locationType: dto.location?.type,
           locationAddress: dto.location?.address,
-          locationCity: dto.location?.city,
+          locationCoords,
           locationVirtualLink: dto.location?.virtualLink,
 
           registrationDeadline: dto.registrationDeadline
@@ -262,21 +276,21 @@ export class HackathonService {
               fields: dto.registrationForm?.externalFormLink
                 ? undefined
                 : {
-                  create: [
-                    ...BASE_DEFAULT_FIELDS.map((f) => ({
-                      ...f,
-                      type: f.type as RegistrationFieldType,
-                    })),
-                    ...(dto.registrationForm?.fields ?? []).map((field) => ({
-                      label: field.label,
-                      type: field.type,
-                      required: field.required,
-                      order: field.order,
-                      options: field.options ?? [],
-                      placeholder: field.placeholder,
-                    })),
-                  ],
-                },
+                    create: [
+                      ...BASE_DEFAULT_FIELDS.map((f) => ({
+                        ...f,
+                        type: f.type as RegistrationFieldType,
+                      })),
+                      ...(dto.registrationForm?.fields ?? []).map((field) => ({
+                        label: field.label,
+                        type: field.type,
+                        required: field.required,
+                        order: field.order,
+                        options: field.options ?? [],
+                        placeholder: field.placeholder,
+                      })),
+                    ],
+                  },
             },
           },
 
@@ -286,25 +300,25 @@ export class HackathonService {
 
           prizeBreakdown: dto.prizeBreakdown
             ? {
-              create: dto.prizeBreakdown.map((prize) => ({
-                position: prize.position,
-                amount: prize.amount,
-                description: prize.description,
-              })),
-            }
+                create: dto.prizeBreakdown.map((prize) => ({
+                  position: prize.position,
+                  amount: prize.amount,
+                  description: prize.description,
+                })),
+              }
             : undefined,
 
           // New attachments relation
           attachments: dto.additionalInfo?.attachments
             ? {
-              create: dto.additionalInfo.attachments.map((att) => ({
-                storageKey: att.storageKey,
-                publicUrl: att.publicUrl,
-                fileName: att.fileName,
-                mimeType: att.mimeType,
-                sizeBytes: att.sizeBytes,
-              })),
-            }
+                create: dto.additionalInfo.attachments.map((att) => ({
+                  storageKey: att.storageKey,
+                  publicUrl: att.publicUrl,
+                  fileName: att.fileName,
+                  mimeType: att.mimeType,
+                  sizeBytes: att.sizeBytes,
+                })),
+              }
             : undefined,
         },
         include: this.getHackathonIncludeClause(),
@@ -390,7 +404,7 @@ export class HackathonService {
         OR: [
           { name: { contains: input.search, mode: 'insensitive' } },
           { description: { contains: input.search, mode: 'insensitive' } },
-          { locationCity: { contains: input.search, mode: 'insensitive' } },
+          { locationCoords: { contains: input.search, mode: 'insensitive' } },
         ],
       });
     }
@@ -576,7 +590,7 @@ export class HackathonService {
           approvalStatus: true,
           mode: true,
           locationType: true,
-          locationCity: true,
+          locationCoords: true,
           locationAddress: true,
           locationVirtualLink: true,
           isFree: true,
@@ -691,7 +705,7 @@ export class HackathonService {
         approvalStatus: true,
         mode: true,
         locationType: true,
-        locationCity: true,
+        locationCoords: true,
         locationAddress: true,
         locationVirtualLink: true,
         isFree: true,
@@ -827,7 +841,7 @@ export class HackathonService {
         approvalStatus: true,
         mode: true,
         locationType: true,
-        locationCity: true,
+        locationCoords: true,
         locationAddress: true,
         locationVirtualLink: true,
         isFree: true,
@@ -1201,6 +1215,18 @@ export class HackathonService {
       ? await this.buildHackathonSlug(dto.slug, name, id)
       : undefined;
 
+    let locationCoords = dto.location?.city;
+    if (dto.location?.placeId) {
+      try {
+        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        if (resolved) {
+          locationCoords = resolved;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+      }
+    }
+
     return prisma.hackathonEntity.update({
       where: { id },
       data: {
@@ -1219,7 +1245,7 @@ export class HackathonService {
 
         locationType: dto.location?.type,
         locationAddress: dto.location?.address,
-        locationCity: dto.location?.city,
+        locationCoords,
         locationVirtualLink: dto.location?.virtualLink,
 
         registrationDeadline: dto.registrationDeadline
@@ -1550,7 +1576,7 @@ export class HackathonService {
 
     const externalFormLink =
       typeof dto.externalFormLink === 'string' &&
-        dto.externalFormLink.trim().length > 0
+      dto.externalFormLink.trim().length > 0
         ? dto.externalFormLink.trim()
         : undefined;
 
@@ -2076,14 +2102,14 @@ export class HackathonService {
     const existing = await prisma.hackathonEntity.findFirst({
       where: excludeId
         ? {
-          slug: base,
-          NOT: {
-            id: excludeId,
-          },
-        }
+            slug: base,
+            NOT: {
+              id: excludeId,
+            },
+          }
         : {
-          slug: base,
-        },
+            slug: base,
+          },
       select: { id: true },
     });
 
@@ -2133,41 +2159,25 @@ export class HackathonService {
   }
 
   private assertPricingValid(
-    dto: CreateHackathonDto | UpdateHackathonDto,
-    currentHackathon?: {
+    _dto: CreateHackathonDto | UpdateHackathonDto,
+    _currentHackathon?: {
       isFree: boolean;
       entryFeeAmount: unknown;
       registrationDeadline: Date | null;
     },
   ): void {
-    const targetIsFree = dto.isFree ?? currentHackathon?.isFree ?? true;
-    if (targetIsFree) return;
-
-    const entryFeeAmount =
-      dto.entryFeeAmount ?? currentHackathon?.entryFeeAmount;
-    const hasEntryFeeAmount =
-      typeof entryFeeAmount === 'string'
-        ? entryFeeAmount.trim().length > 0
-        : entryFeeAmount !== null && entryFeeAmount !== undefined;
-
-    if (!hasEntryFeeAmount) {
-      throw new BadRequestException(
-        'entryFeeAmount is required when isFree is false.',
-      );
-    }
-
-    const registrationDeadline =
-      dto.registrationDeadline ?? currentHackathon?.registrationDeadline;
-    const hasRegistrationDeadline =
-      typeof registrationDeadline === 'string'
-        ? registrationDeadline.trim().length > 0
-        : registrationDeadline !== null && registrationDeadline !== undefined;
-
-    if (!hasRegistrationDeadline) {
-      throw new BadRequestException(
-        'registrationDeadline is required when isFree is false.',
-      );
-    }
+    // entryFeeAmount and registrationDeadline are NOT enforced here because the
+    // UI workflow allows an organiser to mark a hackathon as paid (isFree=false)
+    // and then add ticket tiers (which replace a flat entryFeeAmount) or set the
+    // registration deadline in separate steps.
+    //
+    // The checkout service already guards both requirements at payment time:
+    //   - throws if neither entryFeeAmount nor any active ticket tier exists
+    //   - throws if registrationDeadline is missing
+    //
+    // This method is kept as an extension point for future structural/cross-field
+    // validations (e.g. UNIVERSITY_ONLY visibility must have allowedUniversities,
+    // which is handled by assertUniversityRestrictionValid).
   }
 
   private async assertPricingNotLockedByRegistration(
@@ -2184,7 +2194,7 @@ export class HackathonService {
       (dto.isFree !== undefined && dto.isFree !== currentHackathon.isFree) ||
       (dto.entryFeeAmount !== undefined &&
         String(dto.entryFeeAmount) !==
-        String(currentHackathon.entryFeeAmount)) ||
+          String(currentHackathon.entryFeeAmount)) ||
       ('chargeMode' in dto && dto.chargeMode !== currentHackathon.chargeMode) ||
       ('feeBearer' in dto && dto.feeBearer !== currentHackathon.feeBearer);
 
@@ -2697,7 +2707,7 @@ export class HackathonService {
     let location = '';
     if (profile) {
       const parts: string[] = [];
-      if (profile.locationCity) parts.push(profile.locationCity);
+      if (profile.locationCoords) parts.push(profile.locationCoords);
       if (profile.locationState) parts.push(profile.locationState);
       if (profile.locationCountry) parts.push(profile.locationCountry);
       location = parts.join(', ');
@@ -2955,7 +2965,7 @@ export class HackathonService {
       let location = '';
       if (profile) {
         const parts: string[] = [];
-        if (profile.locationCity) parts.push(profile.locationCity);
+        if (profile.locationCoords) parts.push(profile.locationCoords);
         if (profile.locationState) parts.push(profile.locationState);
         if (profile.locationCountry) parts.push(profile.locationCountry);
         location = parts.join(', ');
@@ -3466,12 +3476,12 @@ export class HackathonService {
   private formatAnswersForUser(
     submission:
       | {
-        answers: Array<{
-          fieldId: string;
-          valueText: string | null;
-          valueJson: unknown;
-        }>;
-      }
+          answers: Array<{
+            fieldId: string;
+            valueText: string | null;
+            valueJson: unknown;
+          }>;
+        }
       | undefined,
     fields: Array<{ id: string }>,
   ): Array<{ fieldId: string; value: string | null }> {

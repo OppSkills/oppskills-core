@@ -53,10 +53,11 @@ import {
   ExperienceLevelValue,
   TeamPreferenceValue,
 } from "@oppskills/types/enums";
-import type { CreateOnboardingDto } from "@oppskills/types";
+import type { CreateOnboardingDto, LocationSuggestionDto } from "@oppskills/types";
 
 import { submitOnboarding, getMe } from "@/lib/api/usersApi";
 import { searchColleges } from "@/lib/api/collegesApi";
+import { autocompleteLocation } from "@/lib/api/recommendationApi";
 import {
   Loader2,
   User,
@@ -89,9 +90,10 @@ interface OnboardingFormData {
   companyName: string;
   jobTitle: string;
   // Step 3
-  locationCity: string;
+  locationCoords: string;
   locationState: string;
   locationCountry: string;
+  locationPlaceId?: string;
   // Step 4
   interests: string[];
   skills: string[];
@@ -235,6 +237,15 @@ export default function OnboardingPage() {
   const [isSearchingColleges, setIsSearchingColleges] = useState(false);
   const [collegeComboboxOpen, setCollegeComboboxOpen] = useState(false);
 
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestionDto[]>([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [focusedLocationIndex, setFocusedLocationIndex] = useState(-1);
+  const [debouncedLocationQuery, setDebouncedLocationQuery] = useState("");
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
+  const ignoreLocationQueryRef = useRef("");
+  const isSelectingLocationRef = useRef(false);
+
   useEffect(() => {
     async function checkAlreadyOnboarded() {
       if (!isLoaded) return;
@@ -282,9 +293,10 @@ export default function OnboardingPage() {
       collegeSkipped: false,
       companyName: "",
       jobTitle: "",
-      locationCity: "",
+      locationCoords: "",
       locationState: "",
       locationCountry: "India",
+      locationPlaceId: "",
       interests: [] as string[],
       skills: [] as string[],
       experienceLevel: "" as ExperienceLevelValue | "",
@@ -294,6 +306,121 @@ export default function OnboardingPage() {
       await handleFinalSubmit(value);
     },
   });
+
+  // Debounce the locationCoords input
+  const cityValue = form.state.values.locationCoords;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedLocationQuery(cityValue || "");
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [cityValue]);
+
+  // Fetch location suggestions
+  useEffect(() => {
+    const trimmed = debouncedLocationQuery.trim();
+    if (trimmed.length < 2 || trimmed === ignoreLocationQueryRef.current) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    let active = true;
+    async function fetchSuggestions() {
+      setIsSearchingLocation(true);
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const res = await autocompleteLocation(token, trimmed);
+        if (active) {
+          setLocationSuggestions(res);
+          setFocusedLocationIndex(-1);
+          setShowLocationDropdown(true);
+        }
+      } catch (err) {
+        console.error("Failed to load suggestions:", err);
+      } finally {
+        if (active) {
+          setIsSearchingLocation(false);
+        }
+      }
+    }
+
+    fetchSuggestions();
+    return () => {
+      active = false;
+    };
+  }, [debouncedLocationQuery, getToken]);
+
+  // Handle click outside location suggestions dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        locationDropdownRef.current &&
+        !locationDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowLocationDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleSelectLocationSuggestion = (suggestion: LocationSuggestionDto) => {
+    isSelectingLocationRef.current = true;
+    form.setFieldValue("locationCoords", suggestion.mainText);
+    form.setFieldValue("locationPlaceId", suggestion.placeId);
+    ignoreLocationQueryRef.current = suggestion.mainText;
+
+    // Parse state and country from secondaryText
+    const parts = (suggestion.secondaryText || "").split(",").map(p => p.trim()).filter(Boolean);
+    let parsedState = "";
+    let parsedCountry = "India";
+    if (parts.length >= 2) {
+      parsedCountry = parts[parts.length - 1];
+      parsedState = parts[parts.length - 2];
+    } else if (parts.length === 1) {
+      parsedCountry = parts[0];
+    }
+
+    form.setFieldValue("locationState", parsedState);
+    form.setFieldValue("locationCountry", parsedCountry);
+
+    setLocationSuggestions([]);
+    setShowLocationDropdown(false);
+    setFocusedLocationIndex(-1);
+
+    setTimeout(() => {
+      isSelectingLocationRef.current = false;
+    }, 100);
+  };
+
+  const handleLocationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      showLocationDropdown &&
+      (locationSuggestions.length > 0 || isSearchingLocation)
+    ) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setFocusedLocationIndex((prev) => (prev + 1) % (locationSuggestions.length || 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setFocusedLocationIndex(
+          (prev) =>
+            (prev - 1 + (locationSuggestions.length || 1)) % (locationSuggestions.length || 1),
+        );
+      } else if (e.key === "Enter") {
+        if (focusedLocationIndex >= 0 && focusedLocationIndex < locationSuggestions.length) {
+          e.preventDefault();
+          handleSelectLocationSuggestion(locationSuggestions[focusedLocationIndex]);
+        }
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setShowLocationDropdown(false);
+      }
+    }
+  };
 
   // LocalStorage key for persisting form data
   const STORAGE_KEY = "oppskills_onboarding_form";
@@ -391,12 +518,14 @@ export default function OnboardingPage() {
         if (parsed.companyName)
           form.setFieldValue("companyName", parsed.companyName);
         if (parsed.jobTitle) form.setFieldValue("jobTitle", parsed.jobTitle);
-        if (parsed.locationCity)
-          form.setFieldValue("locationCity", parsed.locationCity);
+        if (parsed.locationCoords)
+          form.setFieldValue("locationCoords", parsed.locationCoords);
         if (parsed.locationState)
           form.setFieldValue("locationState", parsed.locationState);
         if (parsed.locationCountry)
           form.setFieldValue("locationCountry", parsed.locationCountry);
+        if (parsed.locationPlaceId)
+          form.setFieldValue("locationPlaceId", parsed.locationPlaceId);
         if (parsed.interests) form.setFieldValue("interests", parsed.interests);
         if (parsed.skills) form.setFieldValue("skills", parsed.skills);
         if (parsed.experienceLevel)
@@ -481,9 +610,10 @@ export default function OnboardingPage() {
         collegeSkipped: data.collegeSkipped,
         companyName: data.companyName || undefined,
         jobTitle: data.jobTitle || undefined,
-        locationCity: data.locationCity,
+        locationCoords: data.locationCoords,
         locationState: data.locationState,
         locationCountry: data.locationCountry,
+        locationPlaceId: data.locationPlaceId || undefined,
         interests: data.interests,
         skills: data.skills,
         experienceLevel:
@@ -527,7 +657,7 @@ export default function OnboardingPage() {
         return true;
       case 3:
         return (
-          !!values.locationCity &&
+          !!values.locationCoords &&
           !!values.locationState &&
           !!values.locationCountry
         );
@@ -599,20 +729,22 @@ export default function OnboardingPage() {
               return (
                 <div
                   key={name}
-                  className={`flex flex-col items-center ${isActive
+                  className={`flex flex-col items-center ${
+                    isActive
                       ? "text-violet-600"
                       : isCompleted
                         ? "text-green-600"
                         : "text-gray-400"
-                    }`}
+                  }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 transition-all ${isActive
+                    className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 transition-all ${
+                      isActive
                         ? "bg-violet-100 ring-2 ring-violet-600"
                         : isCompleted
                           ? "bg-green-100"
                           : "bg-gray-100"
-                      }`}
+                    }`}
                   >
                     {isCompleted ? (
                       <Check className="w-4 h-4" />
@@ -717,274 +849,321 @@ export default function OnboardingPage() {
               <FieldGroup>
                 {form.state.values.userCategory ===
                   UserCategoryValue.SCHOOL_STUDENT && (
-                    <>
-                      <form.Field name="schoolName">
-                        {(field) => (
-                          <Field>
-                            <FieldLabel>School Name *</FieldLabel>
-                            <Input
-                              value={field.state.value}
-                              onChange={(e) => field.handleChange(e.target.value)}
-                              placeholder="Enter your school name"
-                            />
-                          </Field>
-                        )}
-                      </form.Field>
+                  <>
+                    <form.Field name="schoolName">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel>School Name *</FieldLabel>
+                          <Input
+                            value={field.state.value}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            placeholder="Enter your school name"
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
 
-                      <form.Field name="schoolClass">
-                        {(field) => (
-                          <Field>
-                            <FieldLabel>Class/Grade *</FieldLabel>
-                            <Input
-                              value={field.state.value}
-                              onChange={(e) => field.handleChange(e.target.value)}
-                              placeholder="e.g., 10th, 12th"
-                            />
-                          </Field>
-                        )}
-                      </form.Field>
+                    <form.Field name="schoolClass">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel>Class/Grade *</FieldLabel>
+                          <Input
+                            value={field.state.value}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            placeholder="e.g., 10th, 12th"
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
 
-                      <form.Field name="schoolAddress">
-                        {(field) => (
-                          <Field>
-                            <FieldLabel>School Address</FieldLabel>
-                            <Input
-                              value={field.state.value}
-                              onChange={(e) => field.handleChange(e.target.value)}
-                              placeholder="City, State"
-                            />
-                          </Field>
-                        )}
-                      </form.Field>
-                    </>
-                  )}
+                    <form.Field name="schoolAddress">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel>School Address</FieldLabel>
+                          <Input
+                            value={field.state.value}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            placeholder="City, State"
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
+                  </>
+                )}
 
                 {(form.state.values.userCategory ===
                   UserCategoryValue.COLLEGE_STUDENT ||
                   form.state.values.userCategory ===
-                  UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT) && (
-                    <>
-                      <Field>
-                        <FieldLabel>College *</FieldLabel>
-                        <Popover
-                          open={collegeComboboxOpen}
-                          onOpenChange={setCollegeComboboxOpen}
-                        >
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={collegeComboboxOpen}
-                              className="w-full justify-between font-normal"
-                              disabled={form.state.values.collegeSkipped}
-                            >
-                              {form.state.values.collegeName ||
-                                "Search for your college..."}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-full min-w-[400px] p-0"
-                            align="start"
+                    UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT) && (
+                  <>
+                    <Field>
+                      <FieldLabel>College *</FieldLabel>
+                      <Popover
+                        open={collegeComboboxOpen}
+                        onOpenChange={setCollegeComboboxOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={collegeComboboxOpen}
+                            className="w-full justify-between font-normal"
+                            disabled={form.state.values.collegeSkipped}
                           >
-                            <Command shouldFilter={false}>
-                              <CommandInput
-                                placeholder="Search colleges..."
-                                value={collegeSearchQuery}
-                                onValueChange={(value) =>
-                                  handleCollegeSearch(value)
-                                }
-                              />
-                              <CommandList>
-                                {isSearchingColleges && (
-                                  <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Searching...
-                                  </div>
-                                )}
-                                {!isSearchingColleges &&
-                                  collegeSearchQuery.length >= 2 &&
-                                  collegeSearchResults.length === 0 && (
-                                    <CommandEmpty>
-                                      No colleges found.
-                                    </CommandEmpty>
-                                  )}
-                                {collegeSearchQuery.length < 2 &&
-                                  !form.state.values.collegeName && (
-                                    <div className="px-3 py-2 text-sm text-muted-foreground">
-                                      Type at least 2 characters to search...
-                                    </div>
-                                  )}
-                                <CommandGroup>
-                                  {collegeSearchResults.map((college) => (
-                                    <CommandItem
-                                      key={college.id}
-                                      value={college.id}
-                                      onSelect={() => {
-                                        form.setFieldValue(
-                                          "collegeId",
-                                          college.id,
-                                        );
-                                        form.setFieldValue(
-                                          "collegeName",
-                                          college.name,
-                                        );
-                                        setCollegeSearchQuery("");
-                                        setCollegeSearchResults([]);
-                                        setCollegeComboboxOpen(false);
-                                      }}
-                                      className="cursor-pointer"
-                                    >
-                                      <Check
-                                        className={`mr-2 h-4 w-4 ${form.state.values.collegeId ===
-                                            college.id
-                                            ? "opacity-100"
-                                            : "opacity-0"
-                                          }`}
-                                      />
-                                      <div className="flex flex-col">
-                                        <span className="font-medium">
-                                          {college.name}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                          {college.city}, {college.state}
-                                        </span>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                        <FieldDescription>
-                          Search and select your college from the list
-                        </FieldDescription>
-                      </Field>
-
-                      <form.Field name="collegeSkipped">
-                        {(field) => (
-                          <Field orientation="horizontal">
-                            <Checkbox
-                              id="collegeSkipped"
-                              checked={field.state.value}
-                              onCheckedChange={(checked) =>
-                                field.handleChange(checked === true)
+                            {form.state.values.collegeName ||
+                              "Search for your college..."}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-full min-w-[400px] p-0"
+                          align="start"
+                        >
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder="Search colleges..."
+                              value={collegeSearchQuery}
+                              onValueChange={(value) =>
+                                handleCollegeSearch(value)
                               }
                             />
-                            <FieldLabel htmlFor="collegeSkipped">
-                              My college is not listed
-                            </FieldLabel>
+                            <CommandList>
+                              {isSearchingColleges && (
+                                <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  Searching...
+                                </div>
+                              )}
+                              {!isSearchingColleges &&
+                                collegeSearchQuery.length >= 2 &&
+                                collegeSearchResults.length === 0 && (
+                                  <CommandEmpty>
+                                    No colleges found.
+                                  </CommandEmpty>
+                                )}
+                              {collegeSearchQuery.length < 2 &&
+                                !form.state.values.collegeName && (
+                                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                                    Type at least 2 characters to search...
+                                  </div>
+                                )}
+                              <CommandGroup>
+                                {collegeSearchResults.map((college) => (
+                                  <CommandItem
+                                    key={college.id}
+                                    value={college.id}
+                                    onSelect={() => {
+                                      form.setFieldValue(
+                                        "collegeId",
+                                        college.id,
+                                      );
+                                      form.setFieldValue(
+                                        "collegeName",
+                                        college.name,
+                                      );
+                                      setCollegeSearchQuery("");
+                                      setCollegeSearchResults([]);
+                                      setCollegeComboboxOpen(false);
+                                    }}
+                                    className="cursor-pointer"
+                                  >
+                                    <Check
+                                      className={`mr-2 h-4 w-4 ${
+                                        form.state.values.collegeId ===
+                                        college.id
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      }`}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">
+                                        {college.name}
+                                      </span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {college.city}, {college.state}
+                                      </span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FieldDescription>
+                        Search and select your college from the list
+                      </FieldDescription>
+                    </Field>
+
+                    <form.Field name="collegeSkipped">
+                      {(field) => (
+                        <Field orientation="horizontal">
+                          <Checkbox
+                            id="collegeSkipped"
+                            checked={field.state.value}
+                            onCheckedChange={(checked) =>
+                              field.handleChange(checked === true)
+                            }
+                          />
+                          <FieldLabel htmlFor="collegeSkipped">
+                            My college is not listed
+                          </FieldLabel>
+                        </Field>
+                      )}
+                    </form.Field>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <form.Field name="collegeCurrentYear">
+                        {(field) => (
+                          <Field>
+                            <FieldLabel>Current Year</FieldLabel>
+                            <Select
+                              value={field.state.value}
+                              onValueChange={(value) =>
+                                field.handleChange(value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Year" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="1st">1st Year</SelectItem>
+                                <SelectItem value="2nd">2nd Year</SelectItem>
+                                <SelectItem value="3rd">3rd Year</SelectItem>
+                                <SelectItem value="4th">4th Year</SelectItem>
+                                <SelectItem value="5th">5th Year</SelectItem>
+                                <SelectItem value="graduated">
+                                  Graduated
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
                           </Field>
                         )}
                       </form.Field>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <form.Field name="collegeCurrentYear">
-                          {(field) => (
-                            <Field>
-                              <FieldLabel>Current Year</FieldLabel>
-                              <Select
-                                value={field.state.value}
-                                onValueChange={(value) =>
-                                  field.handleChange(value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Year" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="1st">1st Year</SelectItem>
-                                  <SelectItem value="2nd">2nd Year</SelectItem>
-                                  <SelectItem value="3rd">3rd Year</SelectItem>
-                                  <SelectItem value="4th">4th Year</SelectItem>
-                                  <SelectItem value="5th">5th Year</SelectItem>
-                                  <SelectItem value="graduated">
-                                    Graduated
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </Field>
-                          )}
-                        </form.Field>
-
-                        <form.Field name="collegePassoutYear">
-                          {(field) => (
-                            <Field>
-                              <FieldLabel>Passout Year</FieldLabel>
-                              <Input
-                                type="number"
-                                value={field.state.value}
-                                onChange={(e) =>
-                                  field.handleChange(e.target.value)
-                                }
-                                placeholder="2025"
-                                min="2000"
-                                max="2035"
-                              />
-                            </Field>
-                          )}
-                        </form.Field>
-                      </div>
-                    </>
-                  )}
+                      <form.Field name="collegePassoutYear">
+                        {(field) => (
+                          <Field>
+                            <FieldLabel>Passout Year</FieldLabel>
+                            <Input
+                              type="number"
+                              value={field.state.value}
+                              onChange={(e) =>
+                                field.handleChange(e.target.value)
+                              }
+                              placeholder="2025"
+                              min="2000"
+                              max="2035"
+                            />
+                          </Field>
+                        )}
+                      </form.Field>
+                    </div>
+                  </>
+                )}
 
                 {form.state.values.userCategory ===
                   UserCategoryValue.WORKING_PROFESSIONAL && (
-                    <>
-                      <form.Field name="companyName">
-                        {(field) => (
-                          <Field>
-                            <FieldLabel>Company Name</FieldLabel>
-                            <Input
-                              value={field.state.value}
-                              onChange={(e) => field.handleChange(e.target.value)}
-                              placeholder="Where do you work?"
-                            />
-                          </Field>
-                        )}
-                      </form.Field>
+                  <>
+                    <form.Field name="companyName">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel>Company Name</FieldLabel>
+                          <Input
+                            value={field.state.value}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            placeholder="Where do you work?"
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
 
-                      <form.Field name="jobTitle">
-                        {(field) => (
-                          <Field>
-                            <FieldLabel>Job Title</FieldLabel>
-                            <Input
-                              value={field.state.value}
-                              onChange={(e) => field.handleChange(e.target.value)}
-                              placeholder="e.g., Software Engineer"
-                            />
-                          </Field>
-                        )}
-                      </form.Field>
-                    </>
-                  )}
+                    <form.Field name="jobTitle">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel>Job Title</FieldLabel>
+                          <Input
+                            value={field.state.value}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            placeholder="e.g., Software Engineer"
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
+                  </>
+                )}
 
                 {form.state.values.userCategory ===
                   UserCategoryValue.FRESHER && (
-                    <div className="p-4 bg-violet-50 rounded-lg border border-violet-100">
-                      <p className="text-sm text-violet-700">
-                        As a fresher, you've recently graduated and are starting
-                        your professional journey. You can add your previous
-                        college details in the next sections if you'd like.
-                      </p>
-                    </div>
-                  )}
+                  <div className="p-4 bg-violet-50 rounded-lg border border-violet-100">
+                    <p className="text-sm text-violet-700">
+                      As a fresher, you've recently graduated and are starting
+                      your professional journey. You can add your previous
+                      college details in the next sections if you'd like.
+                    </p>
+                  </div>
+                )}
               </FieldGroup>
             )}
 
             {/* Step 3: Location */}
             {currentStep === 3 && (
               <FieldGroup>
-                <form.Field name="locationCity">
+                <form.Field name="locationCoords">
                   {(field) => (
                     <Field>
                       <FieldLabel>City *</FieldLabel>
-                      <Input
-                        value={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Enter your city"
-                      />
+                      <div className="relative" ref={locationDropdownRef}>
+                        <Input
+                          value={field.state.value}
+                          onChange={(e) => {
+                            field.handleChange(e.target.value);
+                            setShowLocationDropdown(true);
+                            ignoreLocationQueryRef.current = "";
+                            form.setFieldValue("locationPlaceId", "");
+                          }}
+                          onFocus={() => {
+                            if (!isSelectingLocationRef.current) {
+                              setShowLocationDropdown(true);
+                            }
+                          }}
+                          onKeyDown={handleLocationKeyDown}
+                          placeholder="Enter your city"
+                          autoComplete="off"
+                        />
+                        {showLocationDropdown &&
+                          (locationSuggestions.length > 0 || isSearchingLocation) && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg max-h-60 overflow-y-auto divide-y divide-neutral-100 animate-in fade-in slide-in-from-top-1 duration-150">
+                              {isSearchingLocation ? (
+                                <div className="p-3 text-xs text-muted-foreground text-center">
+                                  Searching locations...
+                                </div>
+                              ) : (
+                                locationSuggestions.map((suggestion, index) => (
+                                  <button
+                                    type="button"
+                                    key={suggestion.placeId}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => handleSelectLocationSuggestion(suggestion)}
+                                    onMouseEnter={() => setFocusedLocationIndex(index)}
+                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex flex-col gap-0.5 ${
+                                      focusedLocationIndex === index
+                                        ? "bg-violet-50 text-violet-900"
+                                        : "text-foreground hover:bg-neutral-50"
+                                    }`}
+                                  >
+                                    <span className="font-medium">
+                                      {suggestion.mainText}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground line-clamp-1">
+                                      {suggestion.secondaryText}
+                                    </span>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                      </div>
                     </Field>
                   )}
                 </form.Field>
@@ -1035,10 +1214,11 @@ export default function OnboardingPage() {
                             <Badge
                               key={interest}
                               variant={isSelected ? "default" : "outline"}
-                              className={`cursor-pointer transition-all ${isSelected
+                              className={`cursor-pointer transition-all ${
+                                isSelected
                                   ? "bg-violet-600 hover:bg-violet-700"
                                   : "hover:bg-violet-50"
-                                }`}
+                              }`}
                               onClick={() => {
                                 if (isSelected) {
                                   field.handleChange(
@@ -1077,10 +1257,11 @@ export default function OnboardingPage() {
                             <Badge
                               key={skill}
                               variant={isSelected ? "default" : "outline"}
-                              className={`cursor-pointer transition-all ${isSelected
+                              className={`cursor-pointer transition-all ${
+                                isSelected
                                   ? "bg-purple-600 hover:bg-purple-700"
                                   : "hover:bg-purple-50"
-                                }`}
+                              }`}
                               onClick={() => {
                                 if (isSelected) {
                                   field.handleChange(
@@ -1121,10 +1302,11 @@ export default function OnboardingPage() {
                             <button
                               key={option.value}
                               type="button"
-                              className={`p-4 rounded-xl border-2 text-left transition-all ${isSelected
+                              className={`p-4 rounded-xl border-2 text-left transition-all ${
+                                isSelected
                                   ? "border-violet-600 bg-violet-50"
                                   : "border-gray-200 hover:border-violet-200"
-                                }`}
+                              }`}
                               onClick={() => field.handleChange(option.value)}
                             >
                               <div className="font-medium">{option.label}</div>
@@ -1155,10 +1337,11 @@ export default function OnboardingPage() {
                             <button
                               key={option.value}
                               type="button"
-                              className={`p-4 rounded-xl border-2 text-left transition-all ${isSelected
+                              className={`p-4 rounded-xl border-2 text-left transition-all ${
+                                isSelected
                                   ? "border-purple-600 bg-purple-50"
                                   : "border-gray-200 hover:border-purple-200"
-                                }`}
+                              }`}
                               onClick={() => field.handleChange(option.value)}
                             >
                               <div className="font-medium">{option.label}</div>

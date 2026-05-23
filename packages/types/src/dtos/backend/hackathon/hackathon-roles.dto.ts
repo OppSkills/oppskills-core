@@ -1,9 +1,15 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+} from "class-validator";
 
 /**
  * Possible roles for hackathon team members.
  */
-export const HackathonUserRoleValues = ['MANAGER', 'EVALUATOR'] as const;
+export const HackathonUserRoleValues = ["MANAGER", "EVALUATOR"] as const;
 export type HackathonUserRoleValue = (typeof HackathonUserRoleValues)[number];
 
 /**

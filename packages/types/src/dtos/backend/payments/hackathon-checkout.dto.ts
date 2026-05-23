@@ -7,8 +7,8 @@ import {
   Max,
   IsArray,
   ValidateNested,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+} from "class-validator";
+import { Type } from "class-transformer";
 
 class VerifyPaymentAnswerDto {
   @IsString()

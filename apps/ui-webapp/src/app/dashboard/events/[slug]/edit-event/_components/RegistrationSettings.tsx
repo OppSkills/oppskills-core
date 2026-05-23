@@ -62,7 +62,9 @@ export default function RegistrationSettings({
 }: RegistrationSettingsProps) {
   const { getToken } = useAuth();
   const [collegeSearch, setCollegeSearch] = useState("");
-  const [collegeNamesMap, setCollegeNamesMap] = useState<Record<string, string>>({});
+  const [collegeNamesMap, setCollegeNamesMap] = useState<
+    Record<string, string>
+  >({});
   const fetchingRef = useRef<Set<string>>(new Set());
 
   const { data: colleges } = useQuery({
@@ -81,7 +83,7 @@ export default function RegistrationSettings({
       if (!selectedIds || selectedIds.length === 0) return;
 
       const missingIds = selectedIds.filter(
-        (id) => !collegeNamesMap[id] && !fetchingRef.current.has(id)
+        (id) => !collegeNamesMap[id] && !fetchingRef.current.has(id),
       );
       if (missingIds.length === 0) return;
 
@@ -108,7 +110,7 @@ export default function RegistrationSettings({
   }, [formData.passSettings?.allowedCollegeIds]);
 
   const updateSettings = (
-    updates: Partial<FormData["registrationSettings"]>
+    updates: Partial<FormData["registrationSettings"]>,
   ) => {
     setFormData((prev) => {
       const nextRegs: FormData["registrationSettings"] = {
@@ -139,9 +141,7 @@ export default function RegistrationSettings({
     });
   };
 
-  const updatePassSettings = (
-    updates: Partial<FormData["passSettings"]>
-  ) => {
+  const updatePassSettings = (updates: Partial<FormData["passSettings"]>) => {
     setFormData((prev) => ({
       ...prev,
       passSettings: {
@@ -168,9 +168,9 @@ export default function RegistrationSettings({
 
   const removeCollege = (collegeId: string) => {
     updatePassSettings({
-      allowedCollegeIds: (formData.passSettings?.allowedCollegeIds || []).filter(
-        (id) => id !== collegeId
-      ),
+      allowedCollegeIds: (
+        formData.passSettings?.allowedCollegeIds || []
+      ).filter((id) => id !== collegeId),
     });
     setCollegeNamesMap((prev) => {
       const updated = { ...prev };
@@ -181,7 +181,10 @@ export default function RegistrationSettings({
 
   const addEmailDomain = (domain: string) => {
     const trimmed = domain.trim();
-    if (trimmed && !formData.passSettings?.allowedEmailDomains.includes(trimmed)) {
+    if (
+      trimmed &&
+      !formData.passSettings?.allowedEmailDomains.includes(trimmed)
+    ) {
       updatePassSettings({
         allowedEmailDomains: [
           ...(formData.passSettings?.allowedEmailDomains || []),
@@ -193,9 +196,9 @@ export default function RegistrationSettings({
 
   const removeEmailDomain = (domain: string) => {
     updatePassSettings({
-      allowedEmailDomains: (formData.passSettings?.allowedEmailDomains || []).filter(
-        (d) => d !== domain
-      ),
+      allowedEmailDomains: (
+        formData.passSettings?.allowedEmailDomains || []
+      ).filter((d) => d !== domain),
     });
   };
 
@@ -289,7 +292,7 @@ export default function RegistrationSettings({
 
   const [isEditingMaxUsers, setIsEditingMaxUsers] = useState(false);
   const [localMaxUsers, setLocalMaxUsers] = useState<string>(
-    formData.registrationSettings.maxUsers?.toString() || "100"
+    formData.registrationSettings.maxUsers?.toString() || "100",
   );
 
   return (
@@ -299,7 +302,10 @@ export default function RegistrationSettings({
       </div>
 
       {/* Who Can Register */}
-      <Container heading="Who Can Register" description="Select the type(s) of eligible candidates">
+      <Container
+        heading="Who Can Register"
+        description="Select the type(s) of eligible candidates"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {candidateTypes.map((type, index) => {
             const isSelected =
@@ -311,7 +317,7 @@ export default function RegistrationSettings({
                   "p-2 flex gap-2 border rounded-lg transition-all",
                   isSelected
                     ? "bg-primary-100 border-primary-500 text-primary-600 cursor-normal"
-                    : "border-neutral-500 text-primary-800 cursor-pointer hover:bg-primary-100"
+                    : "border-neutral-500 text-primary-800 cursor-pointer hover:bg-primary-100",
                 )}
                 onClick={() => toggleCandidate(type.title)}
               >
@@ -319,226 +325,260 @@ export default function RegistrationSettings({
                   <CheckCircle size={"24px"} />
                 </div>
                 <div className="flex flex-1 flex-col overflow-hidden">
-                  <p className={cn("text-base font-medium text-neutral-800 truncate", isSelected && "text-primary-600")}>{type.title}</p>
+                  <p
+                    className={cn(
+                      "text-base font-medium text-neutral-800 truncate",
+                      isSelected && "text-primary-600",
+                    )}
+                  >
+                    {type.title}
+                  </p>
                   <p className={cn("text-xs text-neutral-700")}>{type.value}</p>
                 </div>
               </div>
             );
           })}
         </div>
-        {formData.registrationSettings.candidateTypes.includes("College students") && formData.passSettings && (
-          <div className="mt-4 pt-4 border-t border-neutral-100">
-            <div className="flex items-center space-x-3 p-3 bg-neutral-50 rounded-xl border border-neutral-100">
-              <Checkbox
-                id="collegeRestrictions"
-                checked={formData.passSettings.collegeRestrictionEnabled}
-                onCheckedChange={(checked) =>
-                  updatePassSettings({
-                    collegeRestrictionEnabled: !!checked,
-                  })
-                }
-                className="border-neutral-400 data-[state=checked]:bg-primary-600 data-[state=checked]:border-primary-600"
-              />
-              <Label
-                htmlFor="collegeRestrictions"
-                className="font-bold text-neutral-800 cursor-pointer inter"
-              >
-                Restrict registration to specific colleges
-              </Label>
-            </div>
-
-            {formData.passSettings.collegeRestrictionEnabled && (
-              <div className="space-y-6 pl-4 border-l-2 border-primary-100 mt-4 animate-in slide-in-from-left-2 duration-300">
-                {(() => {
-                  const {
-                    allowedCollegeIds = [],
-                    allowedEmailDomains = [],
-                    collegeMatchMode,
-                  } = formData.passSettings;
-                  const hasColleges = allowedCollegeIds.length > 0;
-                  const hasDomains = allowedEmailDomains.length > 0;
-                  let isMissingCriteria = false;
-                  let message = "";
-
-                  if (
-                    collegeMatchMode === "PROFILE_ONLY" ||
-                    collegeMatchMode === "BOTH_REQUIRED"
-                  ) {
-                    if (!hasColleges) {
-                      isMissingCriteria = true;
-                      message = "Please select at least one college.";
-                    }
+        {formData.registrationSettings.candidateTypes.includes(
+          "College students",
+        ) &&
+          formData.passSettings && (
+            <div className="mt-4 pt-4 border-t border-neutral-100">
+              <div className="flex items-center space-x-3 p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                <Checkbox
+                  id="collegeRestrictions"
+                  checked={formData.passSettings.collegeRestrictionEnabled}
+                  onCheckedChange={(checked) =>
+                    updatePassSettings({
+                      collegeRestrictionEnabled: !!checked,
+                    })
                   }
+                  className="border-neutral-400 data-[state=checked]:bg-primary-600 data-[state=checked]:border-primary-600"
+                />
+                <Label
+                  htmlFor="collegeRestrictions"
+                  className="font-bold text-neutral-800 cursor-pointer inter"
+                >
+                  Restrict registration to specific colleges
+                </Label>
+              </div>
 
-                  if (
-                    !isMissingCriteria &&
-                    (collegeMatchMode === "EMAIL_ONLY" ||
-                      collegeMatchMode === "BOTH_REQUIRED")
-                  ) {
-                    if (!hasDomains) {
-                      isMissingCriteria = true;
-                      message = "Please add at least one email domain.";
+              {formData.passSettings.collegeRestrictionEnabled && (
+                <div className="space-y-6 pl-4 border-l-2 border-primary-100 mt-4 animate-in slide-in-from-left-2 duration-300">
+                  {(() => {
+                    const {
+                      allowedCollegeIds = [],
+                      allowedEmailDomains = [],
+                      collegeMatchMode,
+                    } = formData.passSettings;
+                    const hasColleges = allowedCollegeIds.length > 0;
+                    const hasDomains = allowedEmailDomains.length > 0;
+                    let isMissingCriteria = false;
+                    let message = "";
+
+                    if (
+                      collegeMatchMode === "PROFILE_ONLY" ||
+                      collegeMatchMode === "BOTH_REQUIRED"
+                    ) {
+                      if (!hasColleges) {
+                        isMissingCriteria = true;
+                        message = "Please select at least one college.";
+                      }
                     }
-                  }
 
-                  if (
-                    !isMissingCriteria &&
-                    collegeMatchMode === "EITHER_OR"
-                  ) {
-                    if (!hasColleges && !hasDomains) {
-                      isMissingCriteria = true;
-                      message =
-                        "Please add at least one college or email domain.";
+                    if (
+                      !isMissingCriteria &&
+                      (collegeMatchMode === "EMAIL_ONLY" ||
+                        collegeMatchMode === "BOTH_REQUIRED")
+                    ) {
+                      if (!hasDomains) {
+                        isMissingCriteria = true;
+                        message = "Please add at least one email domain.";
+                      }
                     }
-                  }
 
-                  if (isMissingCriteria) {
-                    return (
-                      <div className="flex items-center gap-2 p-3 text-sm rounded-lg bg-amber-50 text-amber-700 border border-amber-200 animate-in fade-in zoom-in duration-300">
-                        <AlertTriangle className="w-4 h-4 shrink-0" />
-                        <span className="inter font-medium">{message}</span>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-
-                {/* Match Mode */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">Verification Method</Label>
-                  <Select
-                    value={formData.passSettings.collegeMatchMode}
-                    onValueChange={(value) =>
-                      updatePassSettings({
-                        collegeMatchMode: value as any,
-                      })
+                    if (
+                      !isMissingCriteria &&
+                      collegeMatchMode === "EITHER_OR"
+                    ) {
+                      if (!hasColleges && !hasDomains) {
+                        isMissingCriteria = true;
+                        message =
+                          "Please add at least one college or email domain.";
+                      }
                     }
-                  >
-                    <SelectTrigger className="rounded-xl border-neutral-200 bg-white poppins font-medium">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-neutral-200 shadow-xl">
-                      <SelectItem value="EITHER_OR" className="inter">
-                        Either college profile OR email domain
-                      </SelectItem>
-                      <SelectItem value="PROFILE_ONLY" className="inter">
-                        College profile only
-                      </SelectItem>
-                      <SelectItem value="EMAIL_ONLY" className="inter">
-                        Email domain only
-                      </SelectItem>
-                      <SelectItem value="BOTH_REQUIRED" className="inter">
-                        Both profile AND email must match
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                {/* Allowed Colleges */}
-                {profileMatchingEnabled && (
+                    if (isMissingCriteria) {
+                      return (
+                        <div className="flex items-center gap-2 p-3 text-sm rounded-lg bg-amber-50 text-amber-700 border border-amber-200 animate-in fade-in zoom-in duration-300">
+                          <AlertTriangle className="w-4 h-4 shrink-0" />
+                          <span className="inter font-medium">{message}</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* Match Mode */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">Allowed Colleges</Label>
-                    <Input
-                      placeholder="Search colleges..."
-                      value={collegeSearch}
-                      onChange={(e) => setCollegeSearch(e.target.value)}
-                      className="rounded-xl border-neutral-200 focus:border-primary-500 transition-all inter"
-                    />
-                    {colleges && colleges.length > 0 && (
-                      <div className="border border-neutral-100 rounded-xl max-h-40 overflow-y-auto bg-white shadow-lg mt-2 p-1">
-                        {colleges.map((college) => (
-                          <div
-                            key={college.id}
-                            className="p-3 hover:bg-primary-50 rounded-lg cursor-pointer transition-colors text-sm inter font-medium text-neutral-700"
-                            onClick={() => addCollege(college.id, college.name)}
-                          >
-                            {college.name} • <span className="text-neutral-400 font-normal">{college.city}, {college.state}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {/* Selected Colleges */}
-                    {formData.passSettings.allowedCollegeIds.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {formData.passSettings.allowedCollegeIds.map((collegeId) => {
-                          const collegeName = collegeNamesMap[collegeId] || collegeId;
-                          return (
-                            <Badge key={collegeId} variant="secondary" className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all">
-                              {collegeName}
-                              <button
-                                onClick={() => removeCollege(collegeId)}
-                                className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
-                              >
-                                ×
-                              </button>
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    )}
+                    <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">
+                      Verification Method
+                    </Label>
+                    <Select
+                      value={formData.passSettings.collegeMatchMode}
+                      onValueChange={(value) =>
+                        updatePassSettings({
+                          collegeMatchMode: value as any,
+                        })
+                      }
+                    >
+                      <SelectTrigger className="rounded-xl border-neutral-200 bg-white poppins font-medium">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-neutral-200 shadow-xl">
+                        <SelectItem value="EITHER_OR" className="inter">
+                          Either college profile OR email domain
+                        </SelectItem>
+                        <SelectItem value="PROFILE_ONLY" className="inter">
+                          College profile only
+                        </SelectItem>
+                        <SelectItem value="EMAIL_ONLY" className="inter">
+                          Email domain only
+                        </SelectItem>
+                        <SelectItem value="BOTH_REQUIRED" className="inter">
+                          Both profile AND email must match
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
 
-                {/* Email Domains */}
-                {emailMatchingEnabled && (
-                  <div className="space-y-3">
-                    <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">Allowed Email Domains</Label>
-                    <div className="text-xs text-neutral-400 inter italic">
-                      Enter email domains (e.g., galgotiascollege.edu)
-                    </div>
-                    <div className="flex gap-2">
+                  {/* Allowed Colleges */}
+                  {profileMatchingEnabled && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">
+                        Allowed Colleges
+                      </Label>
                       <Input
-                        placeholder="e.g., iitd.ac.in"
-                        className="rounded-xl border-neutral-200 focus:border-primary-500 inter"
-                        onKeyPress={(e) => {
-                          if (e.key === "Enter") {
-                            const value = e.currentTarget.value.trim();
+                        placeholder="Search colleges..."
+                        value={collegeSearch}
+                        onChange={(e) => setCollegeSearch(e.target.value)}
+                        className="rounded-xl border-neutral-200 focus:border-primary-500 transition-all inter"
+                      />
+                      {colleges && colleges.length > 0 && (
+                        <div className="border border-neutral-100 rounded-xl max-h-40 overflow-y-auto bg-white shadow-lg mt-2 p-1">
+                          {colleges.map((college) => (
+                            <div
+                              key={college.id}
+                              className="p-3 hover:bg-primary-50 rounded-lg cursor-pointer transition-colors text-sm inter font-medium text-neutral-700"
+                              onClick={() =>
+                                addCollege(college.id, college.name)
+                              }
+                            >
+                              {college.name} •{" "}
+                              <span className="text-neutral-400 font-normal">
+                                {college.city}, {college.state}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Selected Colleges */}
+                      {formData.passSettings.allowedCollegeIds.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {formData.passSettings.allowedCollegeIds.map(
+                            (collegeId) => {
+                              const collegeName =
+                                collegeNamesMap[collegeId] || collegeId;
+                              return (
+                                <Badge
+                                  key={collegeId}
+                                  variant="secondary"
+                                  className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all"
+                                >
+                                  {collegeName}
+                                  <button
+                                    onClick={() => removeCollege(collegeId)}
+                                    className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
+                                  >
+                                    ×
+                                  </button>
+                                </Badge>
+                              );
+                            },
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Email Domains */}
+                  {emailMatchingEnabled && (
+                    <div className="space-y-3">
+                      <Label className="text-sm font-bold text-neutral-700 inter uppercase tracking-wider">
+                        Allowed Email Domains
+                      </Label>
+                      <div className="text-xs text-neutral-400 inter italic">
+                        Enter email domains (e.g., galgotiascollege.edu)
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="e.g., iitd.ac.in"
+                          className="rounded-xl border-neutral-200 focus:border-primary-500 inter"
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter") {
+                              const value = e.currentTarget.value.trim();
+                              if (value) {
+                                addEmailDomain(value);
+                                e.currentTarget.value = "";
+                              }
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="rounded-xl border-primary-500 text-primary-600 hover:bg-primary-50 font-bold px-6"
+                          onClick={(e) => {
+                            const input = e.currentTarget
+                              .previousSibling as HTMLInputElement;
+                            const value = input.value.trim();
                             if (value) {
                               addEmailDomain(value);
-                              e.currentTarget.value = "";
+                              input.value = "";
                             }
-                          }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="rounded-xl border-primary-500 text-primary-600 hover:bg-primary-50 font-bold px-6"
-                        onClick={(e) => {
-                          const input = e.currentTarget
-                            .previousSibling as HTMLInputElement;
-                          const value = input.value.trim();
-                          if (value) {
-                            addEmailDomain(value);
-                            input.value = "";
-                          }
-                        }}
-                      >
-                        Add
-                      </Button>
-                    </div>
-                    {/* Selected Domains */}
-                    {formData.passSettings.allowedEmailDomains.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {formData.passSettings.allowedEmailDomains.map((domain) => (
-                          <Badge key={domain} variant="secondary" className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all">
-                            @{domain}
-                            <button
-                              onClick={() => removeEmailDomain(domain)}
-                              className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
-                            >
-                              ×
-                            </button>
-                          </Badge>
-                        ))}
+                          }}
+                        >
+                          Add
+                        </Button>
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+                      {/* Selected Domains */}
+                      {formData.passSettings.allowedEmailDomains.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {formData.passSettings.allowedEmailDomains.map(
+                            (domain) => (
+                              <Badge
+                                key={domain}
+                                variant="secondary"
+                                className="bg-primary-100 text-primary-700 hover:bg-primary-200 border-none px-3 py-1 rounded-full poppins text-xs transition-all"
+                              >
+                                @{domain}
+                                <button
+                                  onClick={() => removeEmailDomain(domain)}
+                                  className="ml-2 hover:text-destructive transition-colors text-lg leading-none"
+                                >
+                                  ×
+                                </button>
+                              </Badge>
+                            ),
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
       </Container>
 
       {/* Registration deadline + event schedule */}
@@ -552,22 +592,27 @@ export default function RegistrationSettings({
               label: "Registration Starts",
               date: formData.registrationSettings.startDate,
               time: formData.registrationSettings.startTime,
-              onDateSelect: (date: Date | undefined) => updateSettings({ startDate: date }),
-              onTimeChange: (time: string) => updateSettings({ startTime: time }),
+              onDateSelect: (date: Date | undefined) =>
+                updateSettings({ startDate: date }),
+              onTimeChange: (time: string) =>
+                updateSettings({ startTime: time }),
             },
             {
               label: "Registration Deadline",
               date: formData.registrationSettings.endDate,
               time: formData.registrationSettings.endTime,
-              onDateSelect: (date: Date | undefined) => updateSettings({ endDate: date }),
+              onDateSelect: (date: Date | undefined) =>
+                updateSettings({ endDate: date }),
               onTimeChange: (time: string) => updateSettings({ endTime: time }),
             },
             {
               label: "Event Date & Time",
               date: formData.registrationSettings.eventDate,
               time: formData.registrationSettings.eventTime,
-              onDateSelect: (date: Date | undefined) => updateSettings({ eventDate: date }),
-              onTimeChange: (time: string) => updateSettings({ eventTime: time }),
+              onDateSelect: (date: Date | undefined) =>
+                updateSettings({ eventDate: date }),
+              onTimeChange: (time: string) =>
+                updateSettings({ eventTime: time }),
             },
           ].map((block, idx) => (
             <DateTimeBlock
@@ -624,7 +669,9 @@ export default function RegistrationSettings({
             <Popover>
               <PopoverTrigger asChild>
                 <button className="flex items-center gap-2 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl border border-neutral-300 transition-all font-bold poppins text-sm shadow-sm">
-                  <span>Limit: {formData.registrationSettings.maxUsers ?? 100}</span>
+                  <span>
+                    Limit: {formData.registrationSettings.maxUsers ?? 100}
+                  </span>
                   <svg
                     width="14"
                     height="14"
@@ -650,7 +697,10 @@ export default function RegistrationSettings({
                   </svg>
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-64 p-4 rounded-xl border border-neutral-200 bg-white shadow-xl flex flex-col gap-2">
+              <PopoverContent
+                align="end"
+                className="w-64 p-4 rounded-xl border border-neutral-200 bg-white shadow-xl flex flex-col gap-2"
+              >
                 <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider inter">
                   Set Max Registrations
                 </span>
@@ -684,7 +734,9 @@ export default function RegistrationSettings({
           <div className="space-y-6 py-2">
             {/* Pass Sending Mode */}
             <div className="space-y-4">
-              <Label className="text-base font-bold poppins text-neutral-800">Pass Sending Mode</Label>
+              <Label className="text-base font-bold poppins text-neutral-800">
+                Pass Sending Mode
+              </Label>
               <RadioGroup
                 value={formData.passSettings.passSendingMode}
                 onValueChange={(value) =>
@@ -694,25 +746,43 @@ export default function RegistrationSettings({
                 }
                 className="flex flex-col gap-3"
               >
-                <div className={cn(
-                  "flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
-                  formData.passSettings.passSendingMode === "IMMEDIATE"
-                    ? "bg-primary-50/30 border-primary-200"
-                    : "border-transparent hover:bg-neutral-50"
-                )}>
-                  <RadioGroupItem value="IMMEDIATE" id="immediate" className="border-primary-500 text-primary-600" />
-                  <Label htmlFor="immediate" className="font-medium text-neutral-700 cursor-pointer inter">
+                <div
+                  className={cn(
+                    "flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
+                    formData.passSettings.passSendingMode === "IMMEDIATE"
+                      ? "bg-primary-50/30 border-primary-200"
+                      : "border-transparent hover:bg-neutral-50",
+                  )}
+                >
+                  <RadioGroupItem
+                    value="IMMEDIATE"
+                    id="immediate"
+                    className="border-primary-500 text-primary-600"
+                  />
+                  <Label
+                    htmlFor="immediate"
+                    className="font-medium text-neutral-700 cursor-pointer inter"
+                  >
                     Send pass immediately after registration
                   </Label>
                 </div>
-                <div className={cn(
-                  "flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
-                  formData.passSettings.passSendingMode === "APPROVAL"
-                    ? "bg-primary-50/30 border-primary-200"
-                    : "border-transparent hover:bg-neutral-50"
-                )}>
-                  <RadioGroupItem value="APPROVAL" id="approval" className="border-primary-500 text-primary-600" />
-                  <Label htmlFor="approval" className="font-medium text-neutral-700 cursor-pointer inter">
+                <div
+                  className={cn(
+                    "flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer",
+                    formData.passSettings.passSendingMode === "APPROVAL"
+                      ? "bg-primary-50/30 border-primary-200"
+                      : "border-transparent hover:bg-neutral-50",
+                  )}
+                >
+                  <RadioGroupItem
+                    value="APPROVAL"
+                    id="approval"
+                    className="border-primary-500 text-primary-600"
+                  />
+                  <Label
+                    htmlFor="approval"
+                    className="font-medium text-neutral-700 cursor-pointer inter"
+                  >
                     Send pass after organizer approval
                   </Label>
                 </div>

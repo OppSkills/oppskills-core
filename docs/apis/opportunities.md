@@ -11,6 +11,7 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
 These endpoints power the public pages where users find events.
 
 ### Search Everything (`GET /opportunity/search?q=<keyword>`)
+
 - **Usage:** Returns a mix of matching hackathons and events, plus a top recommended section.
 - **Returns:**
   ```json
@@ -41,6 +42,7 @@ These endpoints power the public pages where users find events.
   ```
 
 ### Search Suggestions (`GET /opportunity/autosuggest?q=<keyword>`)
+
 - **Usage:** Used for fast dropdown suggestions. Strips description HTML.
 - **Returns:**
   ```json
@@ -56,13 +58,14 @@ These endpoints power the public pages where users find events.
   ```
 
 ### Fetching Details By Slug (`GET /hackathons/public/by-slug/:slug` or `/events/public/by-slug/:slug`)
+
 - **Usage:** Fetch the full details of a specific hackathon or event.
 - **React Native Example (TanStack Query):**
   ```typescript
   const { data: hackathon } = useQuery({
-    queryKey: ['hackathon', slug],
+    queryKey: ["hackathon", slug],
     queryFn: () => apiClient.request(`/hackathons/public/by-slug/${slug}`),
-    staleTime: 120000, 
+    staleTime: 120000,
   });
   ```
 
@@ -73,6 +76,7 @@ These endpoints power the public pages where users find events.
 How users sign up for an opportunity.
 
 ### Join an Event (`POST /events/:id/join`)
+
 - **Usage:** Registers the user for an event. You must submit answers to their custom form if they have one.
 - **Request Body:**
   ```json
@@ -84,18 +88,21 @@ How users sign up for an opportunity.
 - **Returns:** `{ "success": true, "registrationId": "reg_abc123" }`
 
 ### Join a Hackathon (`POST /hackathons/:id/register`)
+
 - **Usage:** Registers the user for a hackathon. Same payload structure as joining events if custom fields are required.
 - **Returns:** `{ "success": true, "registrationId": "reg_xyz789" }`
 
 ### React Native Example
+
 ```typescript
 const joinEvent = useMutation({
-  mutationFn: (data) => apiClient.request(`/events/${eventId}/join`, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
+  mutationFn: (data) =>
+    apiClient.request(`/events/${eventId}/join`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['registration', eventId] });
+    queryClient.invalidateQueries({ queryKey: ["registration", eventId] });
   },
 });
 ```
@@ -107,6 +114,7 @@ const joinEvent = useMutation({
 Organizers build their events step-by-step. All items start as a `DRAFT`.
 
 ### Create the Draft (`POST /hackathons` or `POST /events`)
+
 - **Usage:** Initializes the draft opportunity.
 - **Request Body:**
   ```json
@@ -125,12 +133,15 @@ Organizers build their events step-by-step. All items start as a `DRAFT`.
 - **Returns:** The newly created draft object containing its unique `id` and `slug`.
 
 ### Add Details (Module Updates)
+
 Organizers update specific parts of their draft step-by-step before publishing:
+
 - **Update Rounds:** `PUT /hackathons/:id/rounds`
 - **Update Registration Form:** `PUT /hackathons/:id/registration-form`
 - **Update Prize Breakdown:** `PUT /hackathons/:id/prize-breakdown`
 
 ### Publish
+
 - **Submit for Approval:** `POST /hackathons/:id/submit-for-approval` (Requests admin review).
 - **Manually Publish:** `PATCH /hackathons/:id/status` (If permissions allow direct publish).
   - **Request Body:** `{ "status": "PUBLISHED" }`

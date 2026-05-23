@@ -110,7 +110,7 @@ export default async function EventPage({ params }: Props) {
             name: event.locationAddress || "TBA",
             address: {
               "@type": "PostalAddress",
-              addressLocality: event.locationCity,
+              addressLocality: event.locationCoords,
               addressCountry: "IN",
             },
           },
@@ -133,7 +133,10 @@ export default async function EventPage({ params }: Props) {
   return (
     <>
       <JsonLd data={eventSchema} />
-      <EventDetailsClient event={event} />
+      <EventDetailsClient
+        event={event}
+        googleMapApiKey={process.env.GOOGLE_MAP_API}
+      />
     </>
   );
 }

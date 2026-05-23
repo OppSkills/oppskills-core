@@ -11,10 +11,12 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
 These endpoints are used when a user clicks a referral link (often handled before they even log in).
 
 ### Validate a Code (`GET /referrals/public/resolve/:code`)
+
 - **Usage:** Checks if a referral code is valid and returns who it belongs to.
 - **Returns:** Information about the referrer and the target opportunity (e.g., `hackathonId`, `eventName`) so you can redirect the user appropriately.
 
 ### Track a Click (`POST /referrals/public/track-click`)
+
 - **Usage:** Logs that someone clicked the link so the referrer can see their analytics. Call this as soon as the app/website opens with a referral code in the URL.
 - **Request Body:**
   ```json
@@ -29,9 +31,10 @@ These endpoints are used when a user clicks a referral link (often handled befor
 
 ## 2. The Referrer's Dashboard
 
-These endpoints are for the logged-in user who is *sharing* their links. Or for organizers creating links for users.
+These endpoints are for the logged-in user who is _sharing_ their links. Or for organizers creating links for users.
 
 ### Generate a Link (`POST /referrals`)
+
 - **Usage:** Creates a new referral code assigned to a specific user for a specific opportunity.
 - **Request Body:**
   ```json
@@ -45,19 +48,22 @@ These endpoints are for the logged-in user who is *sharing* their links. Or for 
 - **Returns:** The newly created referral object, including the generated `code` string.
 
 ### React Native Example (TanStack Query)
+
 ```typescript
 const createReferral = useMutation({
-  mutationFn: (data) => apiClient.request('/referrals', { 
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
+  mutationFn: (data) =>
+    apiClient.request("/referrals", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['referrals', 'performance'] });
+    queryClient.invalidateQueries({ queryKey: ["referrals", "performance"] });
   },
 });
 ```
 
 ### View Performance (`GET /referrals/my/performance`)
+
 - **Usage:** Returns total clicks, signups, and rewards earned for the current user.
 - **Returns:**
   ```json
@@ -71,10 +77,12 @@ const createReferral = useMutation({
   ```
 
 ### List Referred Users (`GET /referrals/my/referred-users`)
+
 - **Usage:** Lists the people who successfully signed up using this user's links.
 - **Returns:** An array of `ReferredRegistrationDto` objects (contains `name`, `email`, `registrationDate`, and `status`).
 
 ---
 
 ## 3. Admin Tools
+
 Admins can view platform-wide referral metrics using `GET /referrals/analytics` or look up a specific user's links with `GET /referrals/user-lookup`.

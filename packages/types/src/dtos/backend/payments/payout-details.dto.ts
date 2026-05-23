@@ -1,11 +1,11 @@
-import { Transform } from 'class-transformer';
+import { Transform } from "class-transformer";
 import {
   IsString,
   IsOptional,
   IsNotEmpty,
   Length,
   Matches,
-} from 'class-validator';
+} from "class-validator";
 
 export class UpsertPayoutDetailsDto {
   @IsOptional()
@@ -22,19 +22,19 @@ export class UpsertPayoutDetailsDto {
   accountHolderName: string;
 
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.replace(/\s/g, '') : value,
+    typeof value === "string" ? value.replace(/\s/g, "") : value,
   )
   @IsString()
   @IsNotEmpty()
-  @Matches(/^\d{9,18}$/, { message: 'Account number must be 9-18 digits' })
+  @Matches(/^\d{9,18}$/, { message: "Account number must be 9-18 digits" })
   accountNumber: string;
 
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toUpperCase() : value,
+    typeof value === "string" ? value.trim().toUpperCase() : value,
   )
   @IsString()
   @IsNotEmpty()
-  @Matches(/^[A-Z]{4}0[A-Z0-9]{6}$/, { message: 'Invalid IFSC code format' })
+  @Matches(/^[A-Z]{4}0[A-Z0-9]{6}$/, { message: "Invalid IFSC code format" })
   ifsc: string;
 
   @IsString()
@@ -82,6 +82,6 @@ export class UpsertPayoutDetailsDto {
   email?: string;
 
   @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
+  @Transform(({ value }) => value === "true" || value === true)
   razorpayBankName?: boolean;
 }

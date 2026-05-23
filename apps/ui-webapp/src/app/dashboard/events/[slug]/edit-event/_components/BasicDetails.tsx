@@ -39,7 +39,16 @@ import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { presignImageUpload } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
-import { ClockCircle, DocumentText, MapPoint, Pen, UserCircle, AltArrowDown as ChevronDown, Earth, MagicStick2 } from "@solar-icons/react";
+import {
+  ClockCircle,
+  DocumentText,
+  MapPoint,
+  Pen,
+  UserCircle,
+  AltArrowDown as ChevronDown,
+  Earth,
+  MagicStick2,
+} from "@solar-icons/react";
 import BannerUploader from "@/components/ui/derived/BannerUploader";
 import InputBlock from "@/components/ui/derived/InputBlock";
 import LocationInputModal from "@/components/ui/derived/LocationInputModal";
@@ -66,7 +75,10 @@ export default function BasicDetails({
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const { getToken } = useAuth();
   const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
-  const bannerInputId = useMemo(() => `edit-event-banner-upload-${crypto.randomUUID()}`, []);
+  const bannerInputId = useMemo(
+    () => `edit-event-banner-upload-${crypto.randomUUID()}`,
+    [],
+  );
 
   async function handleBannerSelected(file: File | null): Promise<void> {
     if (!file) return;
@@ -123,8 +135,7 @@ export default function BasicDetails({
       <div className="w-full lg:max-w-[371px] flex flex-col gap-6">
         <BannerUploader
           imageUrl={
-            formData.eventThumbnail &&
-              formData.eventThumbnail.trim().length > 0
+            formData.eventThumbnail && formData.eventThumbnail.trim().length > 0
               ? formData.eventThumbnail.trim()
               : undefined
           }
@@ -233,10 +244,10 @@ export default function BasicDetails({
                   label={
                     formData.eventDate
                       ? formData.eventDate.toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })
                       : "Select Date"
                   }
                   subLabel="Event Date"
@@ -290,7 +301,9 @@ export default function BasicDetails({
         {/* Location */}
         <LocationInputModal
           value={formData.eventLocation}
-          onChange={(val) => setFormData((prev) => ({ ...prev, eventLocation: val }))}
+          onChange={(val, placeId) =>
+            setFormData((prev) => ({ ...prev, eventLocation: val, eventLocationPlaceId: placeId }))
+          }
           label="Add Event Location"
           subLabel="Offline location or virtual link"
         />
@@ -303,16 +316,15 @@ export default function BasicDetails({
                 icon={<DocumentText className="w-6 h-6" />}
                 label={
                   formData.eventDescription &&
-                    formData.eventDescription.replace(/<[^>]*>?/gm, "")
-                      .length > 0
+                  formData.eventDescription.replace(/<[^>]*>?/gm, "").length > 0
                     ? "Description"
                     : "Add Description"
                 }
                 subLabel={
                   formData.eventDescription
                     ? formData.eventDescription
-                      .replace(/<[^>]*>?/gm, "")
-                      .substring(0, 50) + "..."
+                        .replace(/<[^>]*>?/gm, "")
+                        .substring(0, 50) + "..."
                     : "Everything you need to know about..."
                 }
               />
@@ -349,7 +361,15 @@ export default function BasicDetails({
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              {["Workshop", "Conference", "Meetup", "Networking", "Seminar", "Webinar", "Other"].map((t) => (
+              {[
+                "Workshop",
+                "Conference",
+                "Meetup",
+                "Networking",
+                "Seminar",
+                "Webinar",
+                "Other",
+              ].map((t) => (
                 <DropdownMenuItem
                   key={t}
                   onClick={() => setFormData({ ...formData, eventType: t })}

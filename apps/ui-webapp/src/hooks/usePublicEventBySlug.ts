@@ -16,7 +16,7 @@ export interface PublicEventDetail {
   status: string;
   approvalStatus: string | null;
   locationType: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationAddress: string | null;
   locationVirtualLink: string | null;
   isFree: boolean;
