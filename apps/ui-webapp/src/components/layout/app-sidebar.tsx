@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import Image from "next/image";
 import Link from "next/link";
-import { Confetti, Home, Rocket, Rocket2, UserSpeak } from "@solar-icons/react";
+import { Confetti, Home, Rocket, Rocket2, UsersGroupTwoRounded, UserSpeak } from "@solar-icons/react";
 import { NavUser } from "./nav-user";
 import { usePathname } from "next/navigation";
 import { User, Calendar, Trophy, Wallet } from "lucide-react";
@@ -44,6 +44,11 @@ const data = {
       title: "Festivals",
       url: "/dashboard/festivals",
       icon: <Confetti />,
+    },
+    {
+      title: "Manage Community",
+      url: "/dashboard/community",
+      icon: <UsersGroupTwoRounded />,
     },
   ],
   navProfile: [

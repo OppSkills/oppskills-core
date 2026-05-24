@@ -87,6 +87,7 @@
     from {
       transform: translateX(0);
     }
+
     to {
       transform: translateX(calc(-100% - var(--gap)));
     }
@@ -96,6 +97,7 @@
     from {
       transform: translateY(0);
     }
+
     to {
       transform: translateY(calc(-100% - var(--gap)));
     }
@@ -438,8 +440,13 @@ select:-webkit-autofill {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-neutral-500);
 }
+
 /* Smooth Marquee Effect for Swiper */
-.swiper-free-mode > .swiper-wrapper {
+.swiper-free-mode>.swiper-wrapper {
   transition-timing-function: linear !important;
 }
 
+input::placeholder {
+  color: var(--neutral-600);
+  opacity: 0.5;
+}
