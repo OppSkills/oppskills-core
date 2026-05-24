@@ -206,3 +206,13 @@ export {
   ScheduleType,
   NotificationStatus,
 } from "./dtos/backend/notification/schedule-notification.dto";
+
+// =====================
+// Community (type-only)
+// =====================
+export type {
+  CommunityMember,
+  CommunityTask,
+  CommunityMeet,
+} from "./dtos/backend/community/manage-community.dto";
+
