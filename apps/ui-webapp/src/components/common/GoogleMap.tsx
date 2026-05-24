@@ -32,7 +32,7 @@ export function GoogleMap({ apiKey, coords, className }: GoogleMapProps) {
     <div
       className={
         className ||
-        "w-full aspect-[3/1] rounded-2xl overflow-hidden border border-neutral-200 shadow-sm bg-neutral-50"
+        "w-full aspect-[2/1] md:aspect-[3/1] rounded-2xl overflow-hidden border border-neutral-200 shadow-sm bg-neutral-50"
       }
     >
       <iframe
