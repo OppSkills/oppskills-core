@@ -46,6 +46,7 @@ import { RegistrationModal } from "./RegistrationModal";
 import {
   TicketTierRegistrationPicker,
   getActiveRegistrationTiers,
+  type RegistrationPickerTier,
 } from "@/components/registration/TicketTierRegistrationPicker";
 
 interface CompetitionSidebarProps {
@@ -81,12 +82,13 @@ export function CompetitionSidebar({
 
   // Synthetic free-tier used when isFree=false but no real tiers are configured.
   // id='__free__' is never sent to the backend; we strip it before checkout.
-  const SYNTHETIC_FREE_TIER = {
+  const SYNTHETIC_FREE_TIER: RegistrationPickerTier = {
     id: '__free__',
     name: 'Free Ticket',
     description: 'No entry fee required',
     price: 0,
     isActive: true,
+    isFree: true,
   };
 
   const sidebarActiveTiers = useMemo(
@@ -534,7 +536,12 @@ export function CompetitionSidebar({
     const baseAmount =
       tierBase !== null ? tierBase : entryBase;
 
-    const isPaid = competition.isFree === false && baseAmount > 0;
+    const isSelectedTierFree =
+      isSyntheticFree ||
+      tierSelected?.isFree === true ||
+      baseAmount <= 0;
+    const isPaid =
+      competition.isFree === false && !isSelectedTierFree && baseAmount > 0;
     const processingFee = Math.ceil(baseAmount * 0.0236 * 100) / 100;
     const totalAmount =
       competition.feeBearer === "PARTICIPANT"

@@ -651,7 +651,7 @@ export class HackathonService {
           },
           ticketTiers: {
             where: { isActive: true },
-            select: { price: true },
+            select: { price: true, isFree: true },
           },
         },
       }),
@@ -660,6 +660,7 @@ export class HackathonService {
 
     const items = hackathonRows.map((h) => {
       const tierNums = (h.ticketTiers ?? [])
+        .filter((t) => !t.isFree)
         .map((t) => Number(t.price))
         .filter((n) => Number.isFinite(n));
       const lowestTicketPrice =
@@ -771,6 +772,7 @@ export class HackathonService {
             currency: true,
             capacity: true,
             order: true,
+            isFree: true,
           },
           orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
         },
@@ -914,6 +916,7 @@ export class HackathonService {
             currency: true,
             capacity: true,
             order: true,
+            isFree: true,
           },
           orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
         },

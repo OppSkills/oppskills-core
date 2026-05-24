@@ -115,11 +115,16 @@ export function PaymentManagementLayout({
     }
   };
 
-  // Example fee breakdown uses ticket tier prices only (no separate base entry fee in this UI).
+  // Example fee breakdown uses the first paid tier (mixed free/paid events).
   let parsedEntryFee = 0;
   if (ticketTiers && ticketTiers.length > 0) {
-    const firstTierPrice = parseFloat(String(ticketTiers[0].price));
-    if (!isNaN(firstTierPrice)) parsedEntryFee = firstTierPrice;
+    const firstPaidTier = ticketTiers.find(
+      (t: { isFree?: boolean }) => !t.isFree,
+    );
+    if (firstPaidTier) {
+      const tierPrice = parseFloat(String(firstPaidTier.price));
+      if (!isNaN(tierPrice)) parsedEntryFee = tierPrice;
+    }
   }
 
   let feePercentage = 0.02; // 2%
@@ -199,8 +204,9 @@ export function PaymentManagementLayout({
       {isPaid && (
         <>
           <p className="text-base text-neutral-700">
-            Participant prices are set per ticket type below. Configure who pays
-            the service charge and your payout account here.
+            Participant prices are set per ticket type below. You can mix free
+            and paid tickets on the same {opportunityType.toLowerCase()}.
+            Configure who pays the service charge and your payout account here.
           </p>
 
           {/* Multiple tickets Section */}
@@ -249,8 +255,16 @@ export function PaymentManagementLayout({
                       </p>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm sm:text-base">
                         <p className="text-neutral-700 font-medium">
-                          ₹ {ticket.price} per{" "}
-                          {opportunityType === "Hackathon" ? "team" : "person"}
+                          {ticket.isFree ? (
+                            "Free"
+                          ) : (
+                            <>
+                              ₹ {ticket.price} per{" "}
+                              {opportunityType === "Hackathon"
+                                ? "team"
+                                : "person"}
+                            </>
+                          )}
                         </p>
                         <span className="hidden sm:inline text-neutral-300">
                           |

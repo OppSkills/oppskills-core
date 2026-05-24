@@ -169,6 +169,11 @@ export class HackathonCheckoutService {
           'Invalid or inactive ticket tier selected',
         );
       }
+      if (tier.isFree && new Decimal(tier.price).greaterThan(0)) {
+        throw new BadRequestException(
+          'This ticket tier is misconfigured (marked free but has a price)',
+        );
+      }
       if (tier.capacity != null) {
         const sold = await prisma.hackathonPaymentEntity.count({
           where: {
@@ -185,7 +190,9 @@ export class HackathonCheckoutService {
           throw new BadRequestException('This ticket type is sold out');
         }
       }
-      registrationFee = new Decimal(tier.price);
+      registrationFee = tier.isFree
+        ? new Decimal(0)
+        : new Decimal(tier.price);
       resolvedTicketTierId = tier.id;
     } else if (hasFlatFee) {
       // Legacy flat-fee path (no tiers, entryFeeAmount set)

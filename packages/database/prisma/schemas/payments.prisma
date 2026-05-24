@@ -379,6 +379,8 @@ model TicketTierEntity {
   /// null = unlimited
   capacity          Int?
   isActive          Boolean                  @default(true) @map("is_active")
+  /// When true, tier is free (no Razorpay charge); price must be 0.
+  isFree            Boolean                  @default(false) @map("is_free")
   /// Display order (lower = shown first)
   order             Int                      @default(0)
   eventId           String?                  @map("event_id")

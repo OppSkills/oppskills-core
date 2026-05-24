@@ -419,6 +419,7 @@ export interface TicketTier {
   currency?: string;
   capacity: number | null;
   isActive: boolean;
+  isFree?: boolean;
   order: number;
   createdAt?: string;
   updatedAt?: string;

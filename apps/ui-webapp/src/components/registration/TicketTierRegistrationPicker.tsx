@@ -10,6 +10,7 @@ export type RegistrationPickerTier = {
   description?: string | null;
   price?: unknown;
   isActive?: boolean;
+  isFree?: boolean;
 };
 
 function tierBasePrice(tier: RegistrationPickerTier): number {
@@ -105,7 +106,7 @@ export function TicketTierRegistrationPicker({
               feeBearer === "PARTICIPANT"
                 ? participantProcessingFee(base)
                 : 0;
-            const isFree = base <= 0;
+            const isFree = tier.isFree === true || base <= 0;
             const selected = tier.id === selectedTierId;
             const isYourTicket =
               showRegisteredChrome && registeredTierId === tier.id;

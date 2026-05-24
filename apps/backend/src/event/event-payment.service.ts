@@ -158,6 +158,11 @@ export class EventPaymentService {
           'Invalid or inactive ticket tier selected',
         );
       }
+      if (tier.isFree && new Decimal(tier.price).greaterThan(0)) {
+        throw new BadRequestException(
+          'This ticket tier is misconfigured (marked free but has a price)',
+        );
+      }
       if (tier.capacity != null) {
         const sold = await prisma.eventPaymentEntity.count({
           where: {
@@ -171,7 +176,9 @@ export class EventPaymentService {
           throw new BadRequestException('This ticket type is sold out');
         }
       }
-      registrationFee = new Decimal(tier.price);
+      registrationFee = tier.isFree
+        ? new Decimal(0)
+        : new Decimal(tier.price);
     } else {
       if (params.ticketTierId) {
         throw new BadRequestException('Ticket type is not used for this event');

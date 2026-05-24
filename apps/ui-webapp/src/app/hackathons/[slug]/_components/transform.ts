@@ -106,6 +106,7 @@ export interface HackathonApiData {
     currency?: string | null;
     capacity?: number | null;
     isActive?: boolean;
+    isFree?: boolean;
     order?: number | null;
   }>;
 }
