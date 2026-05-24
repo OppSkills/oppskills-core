@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { BadgeCheck } from "lucide-react";
 
@@ -63,9 +63,20 @@ export function TicketTierRegistrationPicker({
   registeredTierId = null,
 }: TicketTierRegistrationPickerProps) {
   const active = getActiveRegistrationTiers(ticketTiers);
-  if (active.length === 0) return null;
 
   const showRegisteredChrome = isRegistered && !!registeredTierId;
+
+  /** After registration, only show the tier the user registered with. */
+  const tiersToShow = useMemo(() => {
+    if (!isRegistered) return active;
+    if (!registeredTierId) return [];
+    const registered =
+      active.find((t) => t.id === registeredTierId) ??
+      ticketTiers.find((t) => t.id === registeredTierId);
+    return registered ? [registered] : [];
+  }, [active, isRegistered, registeredTierId, ticketTiers]);
+
+  if (!isRegistered && active.length === 0) return null;
 
   return (
     <div
@@ -99,8 +110,9 @@ export function TicketTierRegistrationPicker({
             : "Welcome! Please choose your desired ticket type:"}
         </p>
 
+        {tiersToShow.length > 0 ? (
         <div className="flex flex-col gap-3">
-          {active.map((tier) => {
+          {tiersToShow.map((tier) => {
             const base = tierBasePrice(tier);
             const fee =
               feeBearer === "PARTICIPANT"
@@ -202,11 +214,13 @@ export function TicketTierRegistrationPicker({
             );
           })}
         </div>
+        ) : null}
 
         {/* Fee breakdown note (PARTICIPANT bearer, only when paid tier selected) */}
         {feeBearer === "PARTICIPANT" &&
+          !isRegistered &&
           (() => {
-            const sel = active.find((t) => t.id === selectedTierId);
+            const sel = tiersToShow.find((t) => t.id === selectedTierId);
             if (!sel) return null;
             const base = tierBasePrice(sel);
             const fee = participantProcessingFee(base);
