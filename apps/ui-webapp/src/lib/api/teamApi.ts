@@ -273,6 +273,8 @@ export async function joinDraftTeam(
     invitationCode?: string;
     /** Defaults to the `oppskills_ref` cookie when not provided. */
     referralCode?: string;
+    /** Free ticket tier within a paid hackathon. */
+    ticketTierId?: string;
   },
 ): Promise<unknown> {
   const referralCode = data.referralCode ?? getReferralCodeFromCookie();

@@ -53,6 +53,7 @@ import {
   clearPendingHackathonRegistration,
   writePendingHackathonRegistration,
 } from "@/lib/registration/pendingHackathonRegistration";
+import { isFreeTicketTierId } from "@/lib/registration/ticketTierUtils";
 
 declare global {
   interface Window {
@@ -252,6 +253,13 @@ export default function HackathonCheckoutClient({ slug }: { slug: string }) {
 
       const tierId = tierFromUrl ?? intent.ticketTierId;
       if (tierId && Array.isArray(pub.ticketTiers)) {
+        if (isFreeTicketTierId(tierId, pub.ticketTiers)) {
+          toast.info(
+            "This is a free ticket. Finish registration on the hackathon page.",
+          );
+          router.replace(`/hackathons/${slug}`);
+          return;
+        }
         const t = pub.ticketTiers.find((x: { id: string }) => x.id === tierId);
         if (t) {
           setTierLabel(t.name || "Ticket");

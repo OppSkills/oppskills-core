@@ -390,6 +390,10 @@ model TicketTierEntity {
   event             EventEntity?             @relation(fields: [eventId], references: [id], onDelete: Cascade)
   hackathon         HackathonEntity?         @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
   eventPayments     EventPaymentEntity[]     @relation("EventPaymentTicketTier")
+  eventParticipants EventParticipantEntity[]
+  hackathonTeams         TeamEntity[]
+  hackathonMembers       TeamMemberEntity[]
+  hackathonSubmissions   HackathonRegistrationSubmissionEntity[]
   hackathonPayments HackathonPaymentEntity[] @relation("HackathonPaymentTicketTier")
 
   @@index([eventId])

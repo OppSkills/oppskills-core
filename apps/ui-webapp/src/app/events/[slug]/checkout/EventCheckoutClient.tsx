@@ -20,6 +20,7 @@ import {
   getPublicEventBySlug,
   verifyEventPayment,
 } from "@/lib/api/eventApi";
+import { isFreeTicketTierId } from "@/lib/registration/ticketTierUtils";
 import { clearPendingEventRegistration } from "@/lib/registration/pendingHackathonRegistration";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,6 +119,13 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
           (x: { id: string }) => x.id === tierFromUrl,
         );
         if (t) {
+          if (isFreeTicketTierId(tierFromUrl, pub.ticketTiers)) {
+            toast.info(
+              "This is a free ticket. Finish registration on the event page.",
+            );
+            router.replace(`/events/${slug}`);
+            return;
+          }
           setTierLabel(t.name || "Ticket");
           setTierHint(
             typeof t.description === "string" && t.description.trim()

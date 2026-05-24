@@ -158,9 +158,12 @@ export class EventPaymentService {
           'Invalid or inactive ticket tier selected',
         );
       }
-      if (tier.isFree && new Decimal(tier.price).greaterThan(0)) {
+      if (
+        tier.isFree ||
+        new Decimal(tier.price).lessThanOrEqualTo(0)
+      ) {
         throw new BadRequestException(
-          'This ticket tier is misconfigured (marked free but has a price)',
+          'This is a free ticket. Complete registration on the event page without checkout.',
         );
       }
       if (tier.capacity != null) {
@@ -557,6 +560,14 @@ export class EventPaymentService {
       if (!tier) {
         throw new BadRequestException(
           'Invalid or inactive ticket tier selected',
+        );
+      }
+      if (
+        tier.isFree ||
+        new Decimal(tier.price).lessThanOrEqualTo(0)
+      ) {
+        throw new BadRequestException(
+          'This is a free ticket. Complete registration on the event page without checkout.',
         );
       }
     } else if (params.ticketTierId) {

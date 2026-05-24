@@ -314,10 +314,11 @@ export async function submitRegistration(
   token: string,
   hackathonSlug: string,
   answers: SubmitRegistrationDto["answers"],
+  ticketTierId?: string,
 ): Promise<{ success: boolean; submissionId: string }> {
   const res = await HackathonsAPI.post(
     `/${hackathonSlug}/registrations/submit`,
-    { answers },
+    { answers, ...(ticketTierId ? { ticketTierId } : {}) },
     {
       headers: buildAuthHeaders(token),
     },

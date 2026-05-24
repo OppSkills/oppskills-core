@@ -325,11 +325,13 @@ export default function EventDetailsClient({ event, googleMapApiKey }: EventDeta
             name: string;
             price: unknown;
             description?: string | null;
+            isFree?: boolean;
           }) => ({
             id: t.id,
             name: t.name,
             price:
               typeof t.price === "number" ? t.price : Number(t.price ?? 0) || 0,
+            isFree: t.isFree,
             description: t.description?.trim() || "",
           }),
         )
@@ -409,6 +411,8 @@ export default function EventDetailsClient({ event, googleMapApiKey }: EventDeta
           }
           isRegistered={!!registrationStatus?.isRegistered}
           needsCompleteRegistration={!!registrationStatus?.isPaidButIncomplete}
+          selectedTicketTierId={pageSelectedTierId}
+          ticketTiers={pageTicketTiers}
         />
       }
     />
@@ -428,6 +432,8 @@ export default function EventDetailsClient({ event, googleMapApiKey }: EventDeta
           }
           isRegistered={!!registrationStatus?.isRegistered}
           needsCompleteRegistration={!!registrationStatus?.isPaidButIncomplete}
+          selectedTicketTierId={pageSelectedTierId}
+          ticketTiers={pageTicketTiers}
         />
       </div>
     </div>

@@ -990,6 +990,14 @@ export class JoinEventDto {
   @IsOptional()
   @IsString()
   referralCode?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Active ticket tier for paid events with a free tier (no payment row created)",
+  })
+  @IsOptional()
+  @IsString()
+  ticketTierId?: string;
 }
 
 /**

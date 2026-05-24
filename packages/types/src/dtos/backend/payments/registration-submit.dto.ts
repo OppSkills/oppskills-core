@@ -1,4 +1,10 @@
-import { IsArray, IsString, IsNotEmpty, ValidateNested } from "class-validator";
+import {
+  IsArray,
+  IsString,
+  IsNotEmpty,
+  ValidateNested,
+  IsOptional,
+} from "class-validator";
 import { Type } from "class-transformer";
 
 class AnswerDto {
@@ -16,4 +22,9 @@ export class SubmitRegistrationDto {
   @ValidateNested({ each: true })
   @Type(() => AnswerDto)
   answers: AnswerDto[];
+
+  /** Free ticket tier within a paid hackathon (no payment row). */
+  @IsOptional()
+  @IsString()
+  ticketTierId?: string;
 }
