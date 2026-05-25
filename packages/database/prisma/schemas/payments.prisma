@@ -379,6 +379,8 @@ model TicketTierEntity {
   /// null = unlimited
   capacity          Int?
   isActive          Boolean                  @default(true) @map("is_active")
+  /// When true, tier is free (no Razorpay charge); price must be 0.
+  isFree            Boolean                  @default(false) @map("is_free")
   /// Display order (lower = shown first)
   order             Int                      @default(0)
   eventId           String?                  @map("event_id")
@@ -388,6 +390,10 @@ model TicketTierEntity {
   event             EventEntity?             @relation(fields: [eventId], references: [id], onDelete: Cascade)
   hackathon         HackathonEntity?         @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
   eventPayments     EventPaymentEntity[]     @relation("EventPaymentTicketTier")
+  eventParticipants EventParticipantEntity[]
+  hackathonTeams         TeamEntity[]
+  hackathonMembers       TeamMemberEntity[]
+  hackathonSubmissions   HackathonRegistrationSubmissionEntity[]
   hackathonPayments HackathonPaymentEntity[] @relation("HackathonPaymentTicketTier")
 
   @@index([eventId])

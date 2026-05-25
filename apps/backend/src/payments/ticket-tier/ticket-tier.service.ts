@@ -2,6 +2,7 @@ import {
   Injectable,
   ForbiddenException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   prisma,
@@ -21,6 +22,7 @@ interface CreateTicketTierParams {
   capacity?: number;
   order?: number;
   isActive?: boolean;
+  isFree?: boolean;
 }
 
 interface UpdateTicketTierParams {
@@ -32,11 +34,52 @@ interface UpdateTicketTierParams {
   capacity?: number;
   order?: number;
   isActive?: boolean;
+  isFree?: boolean;
 }
+
+const tierPublicSelect = {
+  id: true,
+  name: true,
+  description: true,
+  price: true,
+  currency: true,
+  capacity: true,
+  order: true,
+  isFree: true,
+} as const;
 
 @Injectable()
 export class TicketTierService {
   constructor() {}
+
+  /** Normalise tier pricing: free tiers always have price 0; paid tiers need price > 0. */
+  private resolveTierPricing(
+    isFree: boolean | undefined,
+    price: number | undefined,
+    existing?: { isFree: boolean; price: Decimal },
+  ): { isFree: boolean; price: number } {
+    const resolvedIsFree = isFree ?? existing?.isFree ?? false;
+    const resolvedPrice =
+      price !== undefined
+        ? price
+        : existing
+          ? Number(existing.price)
+          : undefined;
+
+    if (resolvedIsFree) {
+      return { isFree: true, price: 0 };
+    }
+
+    if (resolvedPrice === undefined) {
+      throw new BadRequestException('Price is required for paid ticket tiers');
+    }
+    if (resolvedPrice <= 0) {
+      throw new BadRequestException(
+        'Paid ticket tiers must have a price greater than 0, or mark the tier as free',
+      );
+    }
+    return { isFree: false, price: resolvedPrice };
+  }
 
   private async userCanManageEventTickets(
     eventId: string,
@@ -143,15 +186,7 @@ export class TicketTierService {
     return prisma.ticketTierEntity.findMany({
       where: { eventId, isActive: true },
       orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        price: true,
-        currency: true,
-        capacity: true,
-        order: true,
-      },
+      select: tierPublicSelect,
     });
   }
 
@@ -164,11 +199,17 @@ export class TicketTierService {
     if (!(await this.userCanManageEventTickets(event.id, params.userId)))
       throw new ForbiddenException('Not authorised');
 
+    const { isFree, price } = this.resolveTierPricing(
+      params.isFree,
+      params.price,
+    );
+
     return prisma.ticketTierEntity.create({
       data: {
         name: params.name,
         description: params.description,
-        price: new Decimal(params.price),
+        price: new Decimal(price),
+        isFree,
         capacity: params.capacity ?? null,
         order: params.order ?? 0,
         isActive: params.isActive ?? true,
@@ -180,13 +221,24 @@ export class TicketTierService {
   async updateEventTicketTier(params: UpdateTicketTierParams) {
     const tier = await prisma.ticketTierEntity.findUnique({
       where: { id: params.tierId },
-      select: { id: true, eventId: true, hackathonId: true },
+      select: {
+        id: true,
+        eventId: true,
+        hackathonId: true,
+        isFree: true,
+        price: true,
+      },
     });
     if (!tier || !tier.eventId)
       throw new NotFoundException('Ticket tier not found');
 
     if (!(await this.userCanManageEventTickets(tier.eventId, params.userId)))
       throw new ForbiddenException('Not authorised');
+
+    const pricing =
+      params.isFree !== undefined || params.price !== undefined
+        ? this.resolveTierPricing(params.isFree, params.price, tier)
+        : null;
 
     return prisma.ticketTierEntity.update({
       where: { id: params.tierId },
@@ -195,7 +247,10 @@ export class TicketTierService {
         ...(params.description !== undefined && {
           description: params.description,
         }),
-        ...(params.price !== undefined && { price: new Decimal(params.price) }),
+        ...(pricing && {
+          isFree: pricing.isFree,
+          price: new Decimal(pricing.price),
+        }),
         ...(params.capacity !== undefined && { capacity: params.capacity }),
         ...(params.order !== undefined && { order: params.order }),
         ...(params.isActive !== undefined && { isActive: params.isActive }),
@@ -254,15 +309,7 @@ export class TicketTierService {
     return prisma.ticketTierEntity.findMany({
       where: { hackathonId, isActive: true },
       orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        price: true,
-        currency: true,
-        capacity: true,
-        order: true,
-      },
+      select: tierPublicSelect,
     });
   }
 
@@ -277,11 +324,17 @@ export class TicketTierService {
     )
       throw new ForbiddenException('Not authorised');
 
+    const { isFree, price } = this.resolveTierPricing(
+      params.isFree,
+      params.price,
+    );
+
     return prisma.ticketTierEntity.create({
       data: {
         name: params.name,
         description: params.description,
-        price: new Decimal(params.price),
+        price: new Decimal(price),
+        isFree,
         capacity: params.capacity ?? null,
         order: params.order ?? 0,
         isActive: params.isActive ?? true,
@@ -293,7 +346,12 @@ export class TicketTierService {
   async updateHackathonTicketTier(params: UpdateTicketTierParams) {
     const tier = await prisma.ticketTierEntity.findUnique({
       where: { id: params.tierId },
-      select: { id: true, hackathonId: true },
+      select: {
+        id: true,
+        hackathonId: true,
+        isFree: true,
+        price: true,
+      },
     });
     if (!tier || !tier.hackathonId)
       throw new NotFoundException('Ticket tier not found');
@@ -306,6 +364,11 @@ export class TicketTierService {
     )
       throw new ForbiddenException('Not authorised');
 
+    const pricing =
+      params.isFree !== undefined || params.price !== undefined
+        ? this.resolveTierPricing(params.isFree, params.price, tier)
+        : null;
+
     return prisma.ticketTierEntity.update({
       where: { id: params.tierId },
       data: {
@@ -313,7 +376,10 @@ export class TicketTierService {
         ...(params.description !== undefined && {
           description: params.description,
         }),
-        ...(params.price !== undefined && { price: new Decimal(params.price) }),
+        ...(pricing && {
+          isFree: pricing.isFree,
+          price: new Decimal(pricing.price),
+        }),
         ...(params.capacity !== undefined && { capacity: params.capacity }),
         ...(params.order !== undefined && { order: params.order }),
         ...(params.isActive !== undefined && { isActive: params.isActive }),

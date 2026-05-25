@@ -145,7 +145,7 @@ export function CreateTeamFormContent({
                     feeBearer === "PARTICIPANT"
                       ? Math.ceil(base * 0.0236 * 100) / 100
                       : 0;
-                  const isTierFree = base <= 0;
+                  const isTierFree = tier.isFree === true || base <= 0;
                   const isSelected = ticketTierId === tier.id;
 
                   return (

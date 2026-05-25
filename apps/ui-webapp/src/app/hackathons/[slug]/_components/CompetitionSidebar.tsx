@@ -46,6 +46,7 @@ import { RegistrationModal } from "./RegistrationModal";
 import {
   TicketTierRegistrationPicker,
   getActiveRegistrationTiers,
+  type RegistrationPickerTier,
 } from "@/components/registration/TicketTierRegistrationPicker";
 
 interface CompetitionSidebarProps {
@@ -81,12 +82,13 @@ export function CompetitionSidebar({
 
   // Synthetic free-tier used when isFree=false but no real tiers are configured.
   // id='__free__' is never sent to the backend; we strip it before checkout.
-  const SYNTHETIC_FREE_TIER = {
-    id: "__free__",
-    name: "Free Ticket",
-    description: "No entry fee required",
+  const SYNTHETIC_FREE_TIER: RegistrationPickerTier = {
+    id: '__free__',
+    name: 'Free Ticket',
+    description: 'No entry fee required',
     price: 0,
     isActive: true,
+    isFree: true,
   };
 
   const sidebarActiveTiers = useMemo(
@@ -123,7 +125,7 @@ export function CompetitionSidebar({
     }
     const registeredTierId =
       hackathonRegistrationCompleteForDisplay &&
-      registrationStatus?.ticketTierId
+        registrationStatus?.ticketTierId
         ? registrationStatus.ticketTierId
         : null;
     setPageSelectedTierId((prev) => {
@@ -529,7 +531,12 @@ export function CompetitionSidebar({
 
     const baseAmount = tierBase !== null ? tierBase : entryBase;
 
-    const isPaid = competition.isFree === false && baseAmount > 0;
+    const isSelectedTierFree =
+      isSyntheticFree ||
+      tierSelected?.isFree === true ||
+      baseAmount <= 0;
+    const isPaid =
+      competition.isFree === false && !isSelectedTierFree && baseAmount > 0;
     const processingFee = Math.ceil(baseAmount * 0.0236 * 100) / 100;
     const totalAmount =
       competition.feeBearer === "PARTICIPANT"
@@ -729,17 +736,17 @@ export function CompetitionSidebar({
               <span className="text-[10px] uppercase text-neutral-500 font-medium leading-none mb-0.5">
                 {competition.startDate
                   ? formatToIST(competition.startDate, {
-                      formatType: "short_month",
-                      showSuffix: false,
-                    })
+                    formatType: "short_month",
+                    showSuffix: false,
+                  })
                   : "TBD"}
               </span>
               <span className="text-lg font-bold text-neutral-900  leading-none">
                 {competition.startDate
                   ? formatToIST(competition.startDate, {
-                      formatType: "day",
-                      showSuffix: false,
-                    })
+                    formatType: "day",
+                    showSuffix: false,
+                  })
                   : "--"}
               </span>
             </div>
@@ -789,7 +796,7 @@ export function CompetitionSidebar({
 
           {/* Location Row */}
           <div className="flex gap-4 items-center">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
+            <div className="shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
               <MapPin className="w-5 h-5 text-neutral-700 " />
             </div>
             <div>

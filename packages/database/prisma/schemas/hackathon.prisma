@@ -288,6 +288,9 @@ model TeamEntity {
   isOpen                  Boolean                                 @default(true) @map("is_open")
   /// When set, the PER_TEAM leader registration was attributed to this referral (leader has no TeamMemberEntity row).
   referralId              String?                                 @map("referral_id")
+  /// Selected ticket tier for free-tier registrations (no payment row).
+  ticketTierId            String?                                 @map("ticket_tier_id")
+  ticketTier              TicketTierEntity?                       @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
   payments                HackathonPaymentEntity[]
   registrationSubmissions HackathonRegistrationSubmissionEntity[]
   roundSubmissions        HackathonTeamRoundSubmissionEntity[]
@@ -299,6 +302,7 @@ model TeamEntity {
   roundQualifications     TeamRoundQualificationEntity[]
 
   @@index([referralId])
+  @@index([ticketTierId])
   @@map("team")
   @@schema("hackathon")
 }
@@ -309,6 +313,9 @@ model TeamMemberEntity {
   userId                 String
   teamId                 String
   referralId             String?                                @map("referral_id")
+  /// Selected ticket tier for PER_USER free-tier registrations (no payment row).
+  ticketTierId           String?                                @map("ticket_tier_id")
+  ticketTier             TicketTierEntity?                      @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
   scanned_at             DateTime?
   registrationSubmission HackathonRegistrationSubmissionEntity?
   referral               ReferralEntity?                        @relation(fields: [referralId], references: [id])
@@ -317,6 +324,7 @@ model TeamMemberEntity {
 
   @@unique([userId, teamId])
   @@index([referralId])
+  @@index([ticketTierId])
   @@map("team_member")
   @@schema("hackathon")
 }
@@ -330,6 +338,9 @@ model HackathonRegistrationSubmissionEntity {
   teamMemberId String?                             @unique @map("team_member_id")
   /// Whether this user is the team leader
   isLeader     Boolean                             @default(false) @map("is_leader")
+  /// Free-tier selection when no payment row (e.g. PER_USER leader without a team_member row).
+  ticketTierId String?                             @map("ticket_tier_id")
+  ticketTier   TicketTierEntity?                   @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
   submittedAt  DateTime                            @default(now()) @map("submitted_at")
   createdAt    DateTime                            @default(now())
   updatedAt    DateTime                            @updatedAt
@@ -343,6 +354,7 @@ model HackathonRegistrationSubmissionEntity {
   @@index([hackathonId])
   @@index([userId])
   @@index([teamId])
+  @@index([ticketTierId])
   @@map("hackathon_registration_submission")
   @@schema("hackathon")
 }

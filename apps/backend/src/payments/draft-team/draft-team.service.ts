@@ -13,6 +13,7 @@ import {
   HackathonPaymentScope,
   HackathonPaymentStatus,
 } from '@oppskills/db';
+import { Decimal } from '@prisma/client/runtime/library';
 import { Logger } from 'src/_utils/logger';
 import { EMAIL_EVENTS } from 'src/email/email.events';
 import { ReferralService } from 'src/referral/referral.service';
@@ -224,8 +225,10 @@ export class DraftTeamService {
      * the code before passing it (see ReferralService.resolveForRegistration).
      */
     referralId?: string | null;
+    /** Free ticket tier — skips payment check when joining a paid hackathon. */
+    ticketTierId?: string;
   }) {
-    const { teamId, invitationCode, userId, referralId } = params;
+    const { teamId, invitationCode, userId, referralId, ticketTierId } = params;
 
     if (!teamId && !invitationCode) {
       throw new BadRequestException(
@@ -236,6 +239,7 @@ export class DraftTeamService {
     const team = await prisma.teamEntity.findFirst({
       where: teamId ? { id: teamId } : { invitationCode },
       include: {
+        ticketTier: { select: { isFree: true, price: true } },
         hackathon: {
           select: {
             id: true,
@@ -303,8 +307,39 @@ export class DraftTeamService {
       throw new BadRequestException('Team is not accepting new members');
     }
 
+    let joinFreeTierId: string | null = null;
+    if (ticketTierId && !team.hackathon.isFree) {
+      const tier = await prisma.ticketTierEntity.findFirst({
+        where: {
+          id: ticketTierId,
+          hackathonId: team.hackathon.id,
+          isActive: true,
+        },
+        select: { id: true, isFree: true, price: true },
+      });
+      if (!tier) {
+        throw new BadRequestException(
+          'Invalid or inactive ticket tier selected',
+        );
+      }
+      const tierIsFree =
+        tier.isFree || new Decimal(tier.price).lessThanOrEqualTo(0);
+      if (!tierIsFree) {
+        throw new BadRequestException(
+          'This ticket requires payment. Complete checkout for paid tiers.',
+        );
+      }
+      joinFreeTierId = tier.id;
+    }
+
+    const teamHasFreeTier =
+      !!team.ticketTierId &&
+      !!team.ticketTier &&
+      (team.ticketTier.isFree ||
+        new Decimal(team.ticketTier.price).lessThanOrEqualTo(0));
+
     // For paid hackathons, validate payment before allowing user to join
-    if (!team.hackathon.isFree) {
+    if (!team.hackathon.isFree && !joinFreeTierId && !teamHasFreeTier) {
       if (team.hackathon.chargeMode === HackathonChargeMode.PER_TEAM) {
         // PER_TEAM: Members (not leader) must wait for leader to complete payment
         if (team.leaderId !== userId) {
@@ -356,6 +391,7 @@ export class DraftTeamService {
       data: {
         teamId: team.id,
         userId,
+        ...(joinFreeTierId ? { ticketTierId: joinFreeTierId } : {}),
       },
       include: {
         user: {

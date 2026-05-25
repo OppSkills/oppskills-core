@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { BadgeCheck } from "lucide-react";
 
@@ -10,6 +10,7 @@ export type RegistrationPickerTier = {
   description?: string | null;
   price?: unknown;
   isActive?: boolean;
+  isFree?: boolean;
 };
 
 function tierBasePrice(tier: RegistrationPickerTier): number {
@@ -62,9 +63,20 @@ export function TicketTierRegistrationPicker({
   registeredTierId = null,
 }: TicketTierRegistrationPickerProps) {
   const active = getActiveRegistrationTiers(ticketTiers);
-  if (active.length === 0) return null;
 
   const showRegisteredChrome = isRegistered && !!registeredTierId;
+
+  /** After registration, only show the tier the user registered with. */
+  const tiersToShow = useMemo(() => {
+    if (!isRegistered) return active;
+    if (!registeredTierId) return [];
+    const registered =
+      active.find((t) => t.id === registeredTierId) ??
+      ticketTiers.find((t) => t.id === registeredTierId);
+    return registered ? [registered] : [];
+  }, [active, isRegistered, registeredTierId, ticketTiers]);
+
+  if (!isRegistered && active.length === 0) return null;
 
   return (
     <div
@@ -98,111 +110,116 @@ export function TicketTierRegistrationPicker({
             : "Welcome! Please choose your desired ticket type:"}
         </p>
 
-        <div className="flex flex-col gap-3">
-          {active.map((tier) => {
-            const base = tierBasePrice(tier);
-            const fee =
-              feeBearer === "PARTICIPANT" ? participantProcessingFee(base) : 0;
-            const isFree = base <= 0;
-            const selected = tier.id === selectedTierId;
-            const isYourTicket =
-              showRegisteredChrome && registeredTierId === tier.id;
+        {tiersToShow.length > 0 ? (
+          <div className="flex flex-col gap-3">
+            {tiersToShow.map((tier) => {
+              const base = tierBasePrice(tier);
+              const fee =
+                feeBearer === "PARTICIPANT"
+                  ? participantProcessingFee(base)
+                  : 0;
+              const isFree = tier.isFree === true || base <= 0;
+              const selected = tier.id === selectedTierId;
+              const isYourTicket =
+                showRegisteredChrome && registeredTierId === tier.id;
 
-            return (
-              <button
-                key={tier.id}
-                type="button"
-                disabled={disabled}
-                onClick={() => onSelectTier(tier.id)}
-                className={cn(
-                  "w-full text-left rounded-2xl border-2 p-4 transition-all relative focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2",
-                  isYourTicket && "border-emerald-500 bg-emerald-50 shadow-sm",
-                  !isYourTicket &&
+              return (
+                <button
+                  key={tier.id}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => onSelectTier(tier.id)}
+                  className={cn(
+                    "w-full text-left rounded-2xl border-2 p-4 transition-all relative focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2",
+                    isYourTicket && "border-emerald-500 bg-emerald-50 shadow-sm",
+                    !isYourTicket &&
                     selected &&
                     "border-purple-500 bg-purple-50/40 shadow-sm",
-                  !isYourTicket &&
+                    !isYourTicket &&
                     !selected &&
                     "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50",
-                )}
-              >
-                {/* Top row: name + radio */}
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <span
-                    className={cn(
-                      "font-semibold text-base leading-tight",
-                      isYourTicket
-                        ? "text-emerald-900"
-                        : selected
-                          ? "text-purple-900"
-                          : "text-neutral-800",
-                    )}
-                  >
-                    {tier.name}
-                  </span>
-
-                  {/* Radio circle */}
-                  <span
-                    aria-hidden
-                    className={cn(
-                      "shrink-0 mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors",
-                      isYourTicket
-                        ? "border-emerald-500 bg-emerald-500"
-                        : selected
-                          ? "border-purple-600 bg-purple-600"
-                          : "border-neutral-300 bg-white",
-                    )}
-                  >
-                    {(isYourTicket || selected) && (
-                      <span className="h-2 w-2 rounded-full bg-white" />
-                    )}
-                  </span>
-                </div>
-
-                {/* Price row */}
-                <div className="flex items-baseline gap-2 mb-2">
-                  {isFree ? (
-                    <span className="text-xl font-bold text-neutral-900">
-                      Free
-                    </span>
-                  ) : (
-                    <>
-                      <span className="text-xl font-bold text-neutral-900">
-                        ₹{" "}
-                        {base.toLocaleString("en-IN", {
-                          maximumFractionDigits: 0,
-                        })}
-                      </span>
-                      {fee > 0 && (
-                        <span className="text-sm text-neutral-500 font-medium">
-                          + ₹{fee.toFixed(2)}
-                        </span>
-                      )}
-                    </>
                   )}
-                </div>
+                >
+                  {/* Top row: name + radio */}
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <span
+                      className={cn(
+                        "font-semibold text-base leading-tight",
+                        isYourTicket
+                          ? "text-emerald-900"
+                          : selected
+                            ? "text-purple-900"
+                            : "text-neutral-800",
+                      )}
+                    >
+                      {tier.name}
+                    </span>
 
-                {/* Description */}
-                {tier.description ? (
-                  <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed line-clamp-3">
-                    {tier.description}
-                  </p>
-                ) : null}
+                    {/* Radio circle */}
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "shrink-0 mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors",
+                        isYourTicket
+                          ? "border-emerald-500 bg-emerald-500"
+                          : selected
+                            ? "border-purple-600 bg-purple-600"
+                            : "border-neutral-300 bg-white",
+                      )}
+                    >
+                      {(isYourTicket || selected) && (
+                        <span className="h-2 w-2 rounded-full bg-white" />
+                      )}
+                    </span>
+                  </div>
 
-                {/* "Your ticket" badge */}
-                {isYourTicket ? (
-                  <span className="absolute top-3 right-10 inline-flex items-center gap-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 shadow-sm">
-                    Your ticket
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
+                  {/* Price row */}
+                  <div className="flex items-baseline gap-2 mb-2">
+                    {isFree ? (
+                      <span className="text-xl font-bold text-neutral-900">
+                        Free
+                      </span>
+                    ) : (
+                      <>
+                        <span className="text-xl font-bold text-neutral-900">
+                          ₹{" "}
+                          {base.toLocaleString("en-IN", {
+                            maximumFractionDigits: 0,
+                          })}
+                        </span>
+                        {fee > 0 && (
+                          <span className="text-sm text-neutral-500 font-medium">
+                            + ₹{fee.toFixed(2)}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  {tier.description ? (
+                    <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed line-clamp-3">
+                      {tier.description}
+                    </p>
+                  ) : null}
+
+                  {/* "Your ticket" badge */}
+                  {isYourTicket ? (
+                    <span className="absolute top-3 right-10 inline-flex items-center gap-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 shadow-sm">
+                      Your ticket
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
 
         {/* Fee breakdown note (PARTICIPANT bearer, only when paid tier selected) */}
         {feeBearer === "PARTICIPANT" &&
+          !isRegistered &&
           (() => {
-            const sel = active.find((t) => t.id === selectedTierId);
+            const sel = tiersToShow.find((t) => t.id === selectedTierId);
             if (!sel) return null;
             const base = tierBasePrice(sel);
             const fee = participantProcessingFee(base);

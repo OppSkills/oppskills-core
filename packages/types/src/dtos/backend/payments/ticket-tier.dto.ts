@@ -35,6 +35,10 @@ export class CreateTicketTierDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;
 }
 
 export class UpdateTicketTierDto {
@@ -66,4 +70,8 @@ export class UpdateTicketTierDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;
 }
