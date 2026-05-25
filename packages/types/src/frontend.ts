@@ -215,4 +215,3 @@ export type {
   CommunityTask,
   CommunityMeet,
 } from "./dtos/backend/community/manage-community.dto";
-

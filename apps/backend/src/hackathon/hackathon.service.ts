@@ -211,12 +211,17 @@ export class HackathonService {
     let locationCoords = dto.location?.city;
     if (dto.location?.placeId) {
       try {
-        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        const resolved = await this.locationService.getPlaceCoords(
+          dto.location.placeId,
+        );
         if (resolved) {
           locationCoords = resolved;
         }
       } catch (error) {
-        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+        this.logger.warn(
+          `Failed to resolve placeId coords: ${dto.location.placeId}`,
+          error,
+        );
       }
     }
 
@@ -1218,12 +1223,17 @@ export class HackathonService {
     let locationCoords = dto.location?.city;
     if (dto.location?.placeId) {
       try {
-        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        const resolved = await this.locationService.getPlaceCoords(
+          dto.location.placeId,
+        );
         if (resolved) {
           locationCoords = resolved;
         }
       } catch (error) {
-        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+        this.logger.warn(
+          `Failed to resolve placeId coords: ${dto.location.placeId}`,
+          error,
+        );
       }
     }
 
