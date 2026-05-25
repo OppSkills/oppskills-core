@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Post } from "./types";
 import { cn } from "@/lib/utils";
+import ImageLightbox from "./ImageLightbox";
 
 interface PostCardProps {
   post: Post;
@@ -36,6 +37,13 @@ export default function PostCard({
   const [commentText, setCommentText] = useState("");
   const [showMenu, setShowMenu] = useState(false);
   const [showComments, setShowComments] = useState(true);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const handleImageClick = (index: number) => {
+    setLightboxIndex(index);
+    setIsLightboxOpen(true);
+  };
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,8 +159,9 @@ export default function PostCard({
           {post.images.map((img, index) => (
             <div
               key={index}
+              onClick={() => handleImageClick(index)}
               className={cn(
-                "relative w-full h-full",
+                "relative w-full h-full cursor-zoom-in hover:opacity-95 transition-opacity",
                 post.images!.length > 1 ? "h-44 sm:h-64" : "",
               )}
             >
@@ -305,6 +314,13 @@ export default function PostCard({
           )}
         </div>
       )}
+      <ImageLightbox
+        isOpen={isLightboxOpen}
+        onClose={() => setIsLightboxOpen(false)}
+        images={post.images || []}
+        currentIndex={lightboxIndex}
+        onIndexChange={setLightboxIndex}
+      />
     </div>
   );
 }
