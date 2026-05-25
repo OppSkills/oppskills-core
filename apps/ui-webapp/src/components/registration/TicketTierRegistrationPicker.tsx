@@ -131,13 +131,14 @@ export function TicketTierRegistrationPicker({
                   onClick={() => onSelectTier(tier.id)}
                   className={cn(
                     "w-full text-left rounded-2xl border-2 p-4 transition-all relative focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2",
-                    isYourTicket && "border-emerald-500 bg-emerald-50 shadow-sm",
+                    isYourTicket &&
+                      "border-emerald-500 bg-emerald-50 shadow-sm",
                     !isYourTicket &&
-                    selected &&
-                    "border-purple-500 bg-purple-50/40 shadow-sm",
+                      selected &&
+                      "border-purple-500 bg-purple-50/40 shadow-sm",
                     !isYourTicket &&
-                    !selected &&
-                    "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50",
+                      !selected &&
+                      "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50",
                   )}
                 >
                   {/* Top row: name + radio */}

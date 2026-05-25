@@ -600,9 +600,7 @@ export class RegistrationSubmitService {
       select: { id: true, isFree: true, price: true, capacity: true },
     });
     if (!tier) {
-      throw new BadRequestException(
-        'Invalid or inactive ticket tier selected',
-      );
+      throw new BadRequestException('Invalid or inactive ticket tier selected');
     }
     const tierIsFree =
       tier.isFree || new Decimal(tier.price).lessThanOrEqualTo(0);
@@ -627,16 +625,15 @@ export class RegistrationSubmitService {
     const memberCount = await prisma.teamMemberEntity.count({
       where: { ticketTierId: tierId, team: { hackathonId } },
     });
-    const leaderSubmissions = await prisma.hackathonRegistrationSubmissionEntity.count(
-      {
+    const leaderSubmissions =
+      await prisma.hackathonRegistrationSubmissionEntity.count({
         where: {
           hackathonId,
           ticketTierId: tierId,
           isLeader: true,
           teamMemberId: null,
         },
-      },
-    );
+      });
     return memberCount + leaderSubmissions;
   }
 

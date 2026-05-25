@@ -83,9 +83,9 @@ export function CompetitionSidebar({
   // Synthetic free-tier used when isFree=false but no real tiers are configured.
   // id='__free__' is never sent to the backend; we strip it before checkout.
   const SYNTHETIC_FREE_TIER: RegistrationPickerTier = {
-    id: '__free__',
-    name: 'Free Ticket',
-    description: 'No entry fee required',
+    id: "__free__",
+    name: "Free Ticket",
+    description: "No entry fee required",
     price: 0,
     isActive: true,
     isFree: true,
@@ -125,7 +125,7 @@ export function CompetitionSidebar({
     }
     const registeredTierId =
       hackathonRegistrationCompleteForDisplay &&
-        registrationStatus?.ticketTierId
+      registrationStatus?.ticketTierId
         ? registrationStatus.ticketTierId
         : null;
     setPageSelectedTierId((prev) => {
@@ -532,9 +532,7 @@ export function CompetitionSidebar({
     const baseAmount = tierBase !== null ? tierBase : entryBase;
 
     const isSelectedTierFree =
-      isSyntheticFree ||
-      tierSelected?.isFree === true ||
-      baseAmount <= 0;
+      isSyntheticFree || tierSelected?.isFree === true || baseAmount <= 0;
     const isPaid =
       competition.isFree === false && !isSelectedTierFree && baseAmount > 0;
     const processingFee = Math.ceil(baseAmount * 0.0236 * 100) / 100;
@@ -736,17 +734,17 @@ export function CompetitionSidebar({
               <span className="text-[10px] uppercase text-neutral-500 font-medium leading-none mb-0.5">
                 {competition.startDate
                   ? formatToIST(competition.startDate, {
-                    formatType: "short_month",
-                    showSuffix: false,
-                  })
+                      formatType: "short_month",
+                      showSuffix: false,
+                    })
                   : "TBD"}
               </span>
               <span className="text-lg font-bold text-neutral-900  leading-none">
                 {competition.startDate
                   ? formatToIST(competition.startDate, {
-                    formatType: "day",
-                    showSuffix: false,
-                  })
+                      formatType: "day",
+                      showSuffix: false,
+                    })
                   : "--"}
               </span>
             </div>

@@ -238,24 +238,26 @@ describe('RegistrationSubmitService', () => {
         mappedAnswers: [],
         userCategory: 'COLLEGE_STUDENT',
       });
-      jest.spyOn(service as any, 'validateAnswers').mockImplementation(() => {});
+      jest
+        .spyOn(service as any, 'validateAnswers')
+        .mockImplementation(() => {});
       (prismaMock.hackathonEntity.findUnique as jest.Mock).mockResolvedValue({
         ...openHackathonBase,
         chargeMode: HackathonChargeMode.PER_TEAM,
         registrationForm: { externalFormLink: null, fields: [] },
       });
-      (prismaMock.registrationFormEntity.findUnique as jest.Mock).mockResolvedValue(
-        { fields: [] },
-      );
+      (
+        prismaMock.registrationFormEntity.findUnique as jest.Mock
+      ).mockResolvedValue({ fields: [] });
       (prismaMock.teamMemberEntity.findFirst as jest.Mock).mockResolvedValue(
         null,
       );
       (prismaMock.teamEntity.findFirst as jest.Mock).mockResolvedValue(
         leaderTeam,
       );
-      (prismaMock.hackathonRegistrationSubmissionEntity.findFirst as jest.Mock).mockResolvedValue(
-        null,
-      );
+      (
+        prismaMock.hackathonRegistrationSubmissionEntity.findFirst as jest.Mock
+      ).mockResolvedValue(null);
       (prismaMock.ticketTierEntity.findFirst as jest.Mock).mockResolvedValue({
         id: 'tier-free',
         isFree: true,
@@ -305,7 +307,9 @@ describe('RegistrationSubmitService', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(prismaMock.hackathonPaymentEntity.findFirst).not.toHaveBeenCalled();
+      expect(
+        prismaMock.hackathonPaymentEntity.findFirst,
+      ).not.toHaveBeenCalled();
       expect(teamUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'team-1' },
@@ -335,9 +339,9 @@ describe('RegistrationSubmitService', () => {
     });
 
     it('requires payment when no free tier is provided', async () => {
-      (prismaMock.hackathonPaymentEntity.findFirst as jest.Mock).mockResolvedValue(
-        null,
-      );
+      (
+        prismaMock.hackathonPaymentEntity.findFirst as jest.Mock
+      ).mockResolvedValue(null);
 
       await expect(
         service.submitRegistration({
@@ -449,12 +453,12 @@ describe('RegistrationSubmitService', () => {
         ticketTierId: 'tier-free',
         ticketTier: { isFree: true, price: 0, name: 'Community' },
       });
-      (prismaMock.hackathonRegistrationSubmissionEntity.findUnique as jest.Mock).mockResolvedValue(
-        null,
-      );
-      (prismaMock.hackathonPaymentEntity.findFirst as jest.Mock).mockResolvedValue(
-        null,
-      );
+      (
+        prismaMock.hackathonRegistrationSubmissionEntity.findUnique as jest.Mock
+      ).mockResolvedValue(null);
+      (
+        prismaMock.hackathonPaymentEntity.findFirst as jest.Mock
+      ).mockResolvedValue(null);
 
       const result = await service.getRegistrationStatus('slug', 'user-1');
 

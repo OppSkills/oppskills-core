@@ -121,7 +121,9 @@ describe('EventPaymentService (free ticket tiers)', () => {
       (prisma.eventParticipantEntity.findUnique as jest.Mock).mockResolvedValue(
         null,
       );
-      (prisma.eventPaymentEntity.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.eventPaymentEntity.findFirst as jest.Mock).mockResolvedValue(
+        null,
+      );
 
       await expect(
         service.createPaymentOrder({
@@ -147,7 +149,9 @@ describe('EventPaymentService (free ticket tiers)', () => {
       (prisma.eventParticipantEntity.findUnique as jest.Mock).mockResolvedValue(
         null,
       );
-      (prisma.eventPaymentEntity.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.eventPaymentEntity.findFirst as jest.Mock).mockResolvedValue(
+        null,
+      );
 
       await expect(
         service.createPaymentOrder({

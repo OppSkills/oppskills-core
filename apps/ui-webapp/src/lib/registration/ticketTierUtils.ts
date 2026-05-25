@@ -11,7 +11,9 @@ export function tierBasePrice(tier: TicketTierLike): number {
   return Number(p ?? 0) || 0;
 }
 
-export function isFreeTicketTier(tier: TicketTierLike | null | undefined): boolean {
+export function isFreeTicketTier(
+  tier: TicketTierLike | null | undefined,
+): boolean {
   if (!tier) return false;
   return tier.isFree === true || tierBasePrice(tier) <= 0;
 }

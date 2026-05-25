@@ -327,40 +327,40 @@ export default function EventDetailsClient({
   const tickets =
     Array.isArray(event.ticketTiers) && event.ticketTiers.length > 0
       ? event.ticketTiers.map(
-        (t: {
-          id: string;
-          name: string;
-          price: unknown;
-          description?: string | null;
-          isFree?: boolean;
-        }) => ({
-          id: t.id,
-          name: t.name,
-          price:
-            typeof t.price === "number" ? t.price : Number(t.price ?? 0) || 0,
-          isFree: t.isFree,
-          description: t.description?.trim() || "",
-        }),
-      )
+          (t: {
+            id: string;
+            name: string;
+            price: unknown;
+            description?: string | null;
+            isFree?: boolean;
+          }) => ({
+            id: t.id,
+            name: t.name,
+            price:
+              typeof t.price === "number" ? t.price : Number(t.price ?? 0) || 0,
+            isFree: t.isFree,
+            description: t.description?.trim() || "",
+          }),
+        )
       : [
-        {
-          id: "standard",
-          name: event.isFree ? "Free Entry" : "Standard Ticket",
-          price: event.isFree
-            ? 0
-            : typeof event.entryFeeAmount === "number"
-              ? event.entryFeeAmount
-              : Number(event.entryFeeAmount ?? 0) || 0,
-          description: "Standard registration for this event.",
-        },
-      ];
+          {
+            id: "standard",
+            name: event.isFree ? "Free Entry" : "Standard Ticket",
+            price: event.isFree
+              ? 0
+              : typeof event.entryFeeAmount === "number"
+                ? event.entryFeeAmount
+                : Number(event.entryFeeAmount ?? 0) || 0,
+            description: "Standard registration for this event.",
+          },
+        ];
 
   const cardUser = user
     ? {
-      name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
-      email: user.primaryEmailAddress?.emailAddress || "",
-      avatar: user.imageUrl,
-    }
+        name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+        email: user.primaryEmailAddress?.emailAddress || "",
+        avatar: user.imageUrl,
+      }
     : undefined;
 
   const sidebarEvent: EventDetails = {
@@ -400,51 +400,56 @@ export default function EventDetailsClient({
 
   const isPendingRegistration = !!registrationStatus?.isPaidButIncomplete;
 
-  const mainRegistrationCard = (showPageTierPicker && !isPendingRegistration) ? (
-    <TicketTierRegistrationPicker
-      ticketTiers={pageTicketTiers}
-      feeBearer={event.feeBearer}
-      selectedTierId={pageSelectedTierId}
-      onSelectTier={setPageSelectedTierId}
-      disabled={registrationPickerDisabled}
-      isRegistered={!!registrationStatus?.isRegistered}
-      registeredTierId={registrationStatus?.ticketTierId ?? null}
-      footer={
-        <EventRegisterCta
-          event={sidebarEvent}
-          onRegister={handleRegistration}
-          isCheckingRegistration={
-            isSignedIn && !!user?.id && isRegistrationStatusPending
-          }
-          isRegistered={!!registrationStatus?.isRegistered}
-          needsCompleteRegistration={!!registrationStatus?.isPaidButIncomplete}
-          selectedTicketTierId={pageSelectedTierId}
-          ticketTiers={pageTicketTiers}
-        />
-      }
-    />
-  ) : (
-    <div className="rounded-2xl border border-[#E9D5FF] bg-white shadow-sm overflow-hidden">
-      <div className="bg-[#F3E8FF] px-4 py-2.5 border-b border-[#E9D5FF]">
-        <p className="text-sm font-semibold text-neutral-700 tracking-wide">
-          Registration
-        </p>
+  const mainRegistrationCard =
+    showPageTierPicker && !isPendingRegistration ? (
+      <TicketTierRegistrationPicker
+        ticketTiers={pageTicketTiers}
+        feeBearer={event.feeBearer}
+        selectedTierId={pageSelectedTierId}
+        onSelectTier={setPageSelectedTierId}
+        disabled={registrationPickerDisabled}
+        isRegistered={!!registrationStatus?.isRegistered}
+        registeredTierId={registrationStatus?.ticketTierId ?? null}
+        footer={
+          <EventRegisterCta
+            event={sidebarEvent}
+            onRegister={handleRegistration}
+            isCheckingRegistration={
+              isSignedIn && !!user?.id && isRegistrationStatusPending
+            }
+            isRegistered={!!registrationStatus?.isRegistered}
+            needsCompleteRegistration={
+              !!registrationStatus?.isPaidButIncomplete
+            }
+            selectedTicketTierId={pageSelectedTierId}
+            ticketTiers={pageTicketTiers}
+          />
+        }
+      />
+    ) : (
+      <div className="rounded-2xl border border-[#E9D5FF] bg-white shadow-sm overflow-hidden">
+        <div className="bg-[#F3E8FF] px-4 py-2.5 border-b border-[#E9D5FF]">
+          <p className="text-sm font-semibold text-neutral-700 tracking-wide">
+            Registration
+          </p>
+        </div>
+        <div className="p-4 sm:p-5">
+          <EventRegisterCta
+            event={sidebarEvent}
+            onRegister={handleRegistration}
+            isCheckingRegistration={
+              isSignedIn && !!user?.id && isRegistrationStatusPending
+            }
+            isRegistered={!!registrationStatus?.isRegistered}
+            needsCompleteRegistration={
+              !!registrationStatus?.isPaidButIncomplete
+            }
+            selectedTicketTierId={pageSelectedTierId}
+            ticketTiers={pageTicketTiers}
+          />
+        </div>
       </div>
-      <div className="p-4 sm:p-5">
-        <EventRegisterCta
-          event={sidebarEvent}
-          onRegister={handleRegistration}
-          isCheckingRegistration={
-            isSignedIn && !!user?.id && isRegistrationStatusPending
-          }
-          isRegistered={!!registrationStatus?.isRegistered}
-          needsCompleteRegistration={!!registrationStatus?.isPaidButIncomplete}
-          selectedTicketTierId={pageSelectedTierId}
-          ticketTiers={pageTicketTiers}
-        />
-      </div>
-    </div>
-  );
+    );
 
   return (
     <div className="min-h-screen bg-transparent lg:pt-8 pb-8 font-sans">

@@ -174,10 +174,7 @@ export class HackathonCheckoutService {
           'This ticket tier is misconfigured (marked free but has a price)',
         );
       }
-      if (
-        tier.isFree ||
-        new Decimal(tier.price).lessThanOrEqualTo(0)
-      ) {
+      if (tier.isFree || new Decimal(tier.price).lessThanOrEqualTo(0)) {
         throw new BadRequestException(
           'This is a free ticket. Complete registration on the hackathon page without checkout.',
         );
@@ -685,10 +682,7 @@ export class HackathonCheckoutService {
           'Invalid or inactive ticket tier selected',
         );
       }
-      if (
-        tier.isFree ||
-        new Decimal(tier.price).lessThanOrEqualTo(0)
-      ) {
+      if (tier.isFree || new Decimal(tier.price).lessThanOrEqualTo(0)) {
         throw new BadRequestException(
           'This is a free ticket. Complete registration on the hackathon page without checkout.',
         );

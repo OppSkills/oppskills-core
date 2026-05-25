@@ -566,8 +566,15 @@ export function RegistrationModal({
       }
 
       if (type === "HACKATHON" && !competition.isFree) {
-        const hackathonTiers = (competition as { ticketTiers?: Array<{ id: string; isFree?: boolean; price?: unknown }> })
-          .ticketTiers;
+        const hackathonTiers = (
+          competition as {
+            ticketTiers?: Array<{
+              id: string;
+              isFree?: boolean;
+              price?: unknown;
+            }>;
+          }
+        ).ticketTiers;
         const selectedFreeTier = isFreeTicketTierId(
           ticketTierId,
           hackathonTiers,
@@ -954,9 +961,15 @@ export function RegistrationModal({
           ticketTierId &&
           isFreeTicketTierId(
             ticketTierId,
-            (competition as {
-              ticketTiers?: Array<{ id: string; isFree?: boolean; price?: unknown }>;
-            }).ticketTiers,
+            (
+              competition as {
+                ticketTiers?: Array<{
+                  id: string;
+                  isFree?: boolean;
+                  price?: unknown;
+                }>;
+              }
+            ).ticketTiers,
           )
             ? ticketTierId
             : undefined;
@@ -1043,8 +1056,15 @@ export function RegistrationModal({
         } else if (
           isFreeTicketTierId(
             ticketTierId,
-            (competition as { ticketTiers?: Array<{ id: string; isFree?: boolean; price?: unknown }> })
-              .ticketTiers,
+            (
+              competition as {
+                ticketTiers?: Array<{
+                  id: string;
+                  isFree?: boolean;
+                  price?: unknown;
+                }>;
+              }
+            ).ticketTiers,
           ) &&
           ticketTierId
         ) {
@@ -1094,8 +1114,15 @@ export function RegistrationModal({
         } else if (
           isFreeTicketTierId(
             ticketTierId,
-            (competition as { ticketTiers?: Array<{ id: string; isFree?: boolean; price?: unknown }> })
-              .ticketTiers,
+            (
+              competition as {
+                ticketTiers?: Array<{
+                  id: string;
+                  isFree?: boolean;
+                  price?: unknown;
+                }>;
+              }
+            ).ticketTiers,
           ) &&
           ticketTierId
         ) {

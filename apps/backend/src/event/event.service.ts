@@ -2771,8 +2771,7 @@ export class EventService {
         passEmailSent: p.passEmailSent,
         passEmailSentAt: p.passEmailSentAt?.toISOString(),
         approvedAt: p.approvedAt?.toISOString(),
-        ticketTierId:
-          p.payment?.ticketTierId ?? p.ticketTierId ?? null,
+        ticketTierId: p.payment?.ticketTierId ?? p.ticketTierId ?? null,
         ticketTierName:
           p.payment?.ticketTier?.name ?? p.ticketTier?.name ?? null,
         paymentAmount: p.payment ? Number(p.payment.grossAmount) : null,
