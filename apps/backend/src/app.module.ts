@@ -25,6 +25,7 @@ import { OpportunityModule } from './opportunity/opportunity.module';
 import { ReferralModule } from './referral/referral.module';
 import { NotificationModule } from './notification/notification.module';
 import { RecommendationModule } from './recommendation/recommendation.module';
+import { CommunityModule } from './community/community.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { RecommendationModule } from './recommendation/recommendation.module';
     ReferralModule,
     NotificationModule,
     RecommendationModule,
+    CommunityModule,
   ],
   controllers: [AppController],
   providers: [

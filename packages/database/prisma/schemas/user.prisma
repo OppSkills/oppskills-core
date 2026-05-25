@@ -53,6 +53,8 @@ model UserEntity {
   teamMembers                      TeamMemberEntity[]
   onboardingProfile                UserOnboardingProfileEntity?
   notifications                    notifications[]                         @relation("UserNotifications")
+  communities                      CommunityEntity[]                       @relation("UserCommunities")
+  communityMemberships             CommunityMemberEntity[]               @relation("UserCommunityMemberships")
 
   @@map("user")
   @@schema("user")

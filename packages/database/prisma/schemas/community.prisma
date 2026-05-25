@@ -1,0 +1,69 @@
+// PostgreSQL schema: user
+// Communities owned by users
+
+enum Industry {
+  TECHNOLOGY
+  EDUCATION
+  HEALTHCARE
+  FINANCE
+  ARTS_CULTURE
+  SPORTS_FITNESS
+  FOOD_BEVERAGE
+  TRAVEL
+  NONPROFIT
+  GOVERNMENT
+  RETAIL
+  MEDIA_ENTERTAINMENT
+  REAL_ESTATE
+  OTHER
+
+  @@map("Industry")
+  @@schema("user")
+}
+
+enum CommunityMemberRole {
+  ADMIN
+  EDITOR
+  MEMBER
+
+  @@map("CommunityMemberRole")
+  @@schema("user")
+}
+
+model CommunityEntity {
+  id          String   @id @default(cuid())
+  name        String
+  handle      String   @unique
+  description String?
+  website     String?
+  industry    Industry
+  coverImage  String?  @map("cover_image")
+  avatarImage String?  @map("avatar_image")
+  ownerId     String   @map("owner_id")
+  owner       UserEntity @relation("UserCommunities", fields: [ownerId], references: [id])
+  members     CommunityMemberEntity[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([name, ownerId])
+  @@index([ownerId])
+  @@map("community")
+  @@schema("user")
+}
+
+model CommunityMemberEntity {
+  id          String              @id @default(cuid())
+  communityId String              @map("community_id")
+  userId      String              @map("user_id")
+  role        CommunityMemberRole
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  community   CommunityEntity     @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        UserEntity          @relation("UserCommunityMemberships", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
+  @@index([userId])
+  @@index([communityId])
+  @@map("community_member")
+  @@schema("user")
+}

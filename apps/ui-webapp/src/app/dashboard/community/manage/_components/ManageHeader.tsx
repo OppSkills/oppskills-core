@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { UserPlus, ShieldAlert } from "lucide-react";
 
 interface ManageHeaderProps {
+  communityId: string;
   onAddMember?: () => void;
   onAddRole?: () => void;
 }
 
 export default function ManageHeader({
+  communityId,
   onAddMember,
   onAddRole,
 }: ManageHeaderProps) {
@@ -21,6 +23,9 @@ export default function ManageHeader({
         </h1>
         <p className="text-neutral-700 text-base">
           Here is summary of your Community
+        </p>
+        <p className="text-xs text-neutral-500 font-mono" aria-label="Community identifier">
+          {communityId}
         </p>
       </div>
       <div className="flex items-center gap-3 w-full sm:w-auto">

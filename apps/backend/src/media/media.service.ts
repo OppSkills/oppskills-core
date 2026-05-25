@@ -215,6 +215,10 @@ export class MediaService {
       prefix = 'public/hackathon-banners';
     } else if (purpose === 'EVENT_BANNER') {
       prefix = 'public/event-banners';
+    } else if (purpose === 'COMMUNITY_COVER') {
+      prefix = 'public/community-covers';
+    } else if (purpose === 'COMMUNITY_AVATAR') {
+      prefix = 'public/community-avatars';
     } else {
       prefix = 'public';
     }

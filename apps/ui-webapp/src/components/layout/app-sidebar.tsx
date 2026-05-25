@@ -46,7 +46,7 @@ const data = {
       icon: <Confetti />,
     },
     {
-      title: "Manage Community",
+      title: "Community",
       url: "/dashboard/community",
       icon: <UsersGroupTwoRounded />,
     },
