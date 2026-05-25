@@ -47,7 +47,9 @@ export default function AddMemberRoleModal({
     if (onAddRole) {
       onAddRole(roleName.trim(), roleType);
     } else {
-      toast.success(`Successfully created community role "${roleName.trim()}"!`);
+      toast.success(
+        `Successfully created community role "${roleName.trim()}"!`,
+      );
     }
 
     // Reset Form & Close
@@ -77,7 +79,6 @@ export default function AddMemberRoleModal({
       className="max-w-xl"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
-        
         {/* Role Name */}
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-semibold text-neutral-500 pl-1 select-none">
@@ -103,7 +104,11 @@ export default function AddMemberRoleModal({
             </SelectTrigger>
             <SelectContent className="rounded-2xl shadow-md border-neutral-200">
               {allRoleTypes.map((type) => (
-                <SelectItem key={type} value={type} className="rounded-lg font-medium cursor-pointer">
+                <SelectItem
+                  key={type}
+                  value={type}
+                  className="rounded-lg font-medium cursor-pointer"
+                >
                   {type}
                 </SelectItem>
               ))}
@@ -121,22 +126,40 @@ export default function AddMemberRoleModal({
               <SelectValue placeholder="Select platform access" />
             </SelectTrigger>
             <SelectContent className="rounded-2xl shadow-md border-neutral-200">
-              <SelectItem value="Admin Access" className="rounded-lg font-medium cursor-pointer">
+              <SelectItem
+                value="Admin Access"
+                className="rounded-lg font-medium cursor-pointer"
+              >
                 Admin Access
               </SelectItem>
-              <SelectItem value="Create Opportunities" className="rounded-lg font-medium cursor-pointer">
+              <SelectItem
+                value="Create Opportunities"
+                className="rounded-lg font-medium cursor-pointer"
+              >
                 Create Opportunities
               </SelectItem>
-              <SelectItem value="View Analytics" className="rounded-lg font-medium cursor-pointer">
+              <SelectItem
+                value="View Analytics"
+                className="rounded-lg font-medium cursor-pointer"
+              >
                 View Analytics
               </SelectItem>
-              <SelectItem value="Assign Tasks" className="rounded-lg font-medium cursor-pointer">
+              <SelectItem
+                value="Assign Tasks"
+                className="rounded-lg font-medium cursor-pointer"
+              >
                 Assign Tasks
               </SelectItem>
-              <SelectItem value="Create Meets" className="rounded-lg font-medium cursor-pointer">
+              <SelectItem
+                value="Create Meets"
+                className="rounded-lg font-medium cursor-pointer"
+              >
                 Create Meets
               </SelectItem>
-              <SelectItem value="Manage Feed" className="rounded-lg font-medium cursor-pointer">
+              <SelectItem
+                value="Manage Feed"
+                className="rounded-lg font-medium cursor-pointer"
+              >
                 Manage Feed
               </SelectItem>
             </SelectContent>
@@ -155,7 +178,6 @@ export default function AddMemberRoleModal({
             className="w-full min-h-[100px] p-5 border border-neutral-350 focus:border-[#835BD5] rounded-3xl text-base placeholder-neutral-450 leading-relaxed resize-none bg-white"
           />
         </div>
-
       </form>
     </CustomModal>
   );

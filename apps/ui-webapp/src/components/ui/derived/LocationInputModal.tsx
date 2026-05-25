@@ -68,7 +68,9 @@ export default function LocationInputModal({
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const ignoreQueryRef = useRef("");
   // Track the placeId of the currently selected suggestion
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | undefined>(undefined);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | undefined>(
+    undefined,
+  );
 
   const debouncedQuery = useDebounce(tempValue, 400);
 
@@ -173,7 +175,10 @@ export default function LocationInputModal({
 
     const prefix = tempMode === "VIRTUAL" ? "VIRTUAL:" : "OFFLINE:";
     // For OFFLINE locations, pass along the placeId if a suggestion was selected
-    onChange(prefix + trimmedVal, tempMode === "OFFLINE" ? selectedPlaceId : undefined);
+    onChange(
+      prefix + trimmedVal,
+      tempMode === "OFFLINE" ? selectedPlaceId : undefined,
+    );
     setIsOpen(false);
     toast.success("Location updated successfully.");
   };

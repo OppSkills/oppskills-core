@@ -49,9 +49,9 @@ export function CreateTeamFormContent({
 
   // Synthetic free-tier: shown when isFree=false but organiser added no real tiers.
   const SYNTHETIC_FREE_TIER = {
-    id: '__free__',
-    name: 'Free Ticket',
-    description: 'No entry fee required',
+    id: "__free__",
+    name: "Free Ticket",
+    description: "No entry fee required",
     price: 0,
     isActive: true,
   };
@@ -79,7 +79,8 @@ export function CreateTeamFormContent({
             </p>
           ) : type !== "EVENT" && !isFree && !paymentCompleted ? (
             <p>
-              Please complete the form and payment below to finish your registration.
+              Please complete the form and payment below to finish your
+              registration.
             </p>
           ) : (
             <p>Finish your registration by completing the form below.</p>

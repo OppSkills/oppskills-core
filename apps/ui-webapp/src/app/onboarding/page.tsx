@@ -53,7 +53,10 @@ import {
   ExperienceLevelValue,
   TeamPreferenceValue,
 } from "@oppskills/types/enums";
-import type { CreateOnboardingDto, LocationSuggestionDto } from "@oppskills/types";
+import type {
+  CreateOnboardingDto,
+  LocationSuggestionDto,
+} from "@oppskills/types";
 
 import { submitOnboarding, getMe } from "@/lib/api/usersApi";
 import { searchColleges } from "@/lib/api/collegesApi";
@@ -237,7 +240,9 @@ export default function OnboardingPage() {
   const [isSearchingColleges, setIsSearchingColleges] = useState(false);
   const [collegeComboboxOpen, setCollegeComboboxOpen] = useState(false);
 
-  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestionDto[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<
+    LocationSuggestionDto[]
+  >([]);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [focusedLocationIndex, setFocusedLocationIndex] = useState(-1);
@@ -367,14 +372,19 @@ export default function OnboardingPage() {
     };
   }, []);
 
-  const handleSelectLocationSuggestion = (suggestion: LocationSuggestionDto) => {
+  const handleSelectLocationSuggestion = (
+    suggestion: LocationSuggestionDto,
+  ) => {
     isSelectingLocationRef.current = true;
     form.setFieldValue("locationCoords", suggestion.mainText);
     form.setFieldValue("locationPlaceId", suggestion.placeId);
     ignoreLocationQueryRef.current = suggestion.mainText;
 
     // Parse state and country from secondaryText
-    const parts = (suggestion.secondaryText || "").split(",").map(p => p.trim()).filter(Boolean);
+    const parts = (suggestion.secondaryText || "")
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
     let parsedState = "";
     let parsedCountry = "India";
     if (parts.length >= 2) {
@@ -403,17 +413,25 @@ export default function OnboardingPage() {
     ) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setFocusedLocationIndex((prev) => (prev + 1) % (locationSuggestions.length || 1));
+        setFocusedLocationIndex(
+          (prev) => (prev + 1) % (locationSuggestions.length || 1),
+        );
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setFocusedLocationIndex(
           (prev) =>
-            (prev - 1 + (locationSuggestions.length || 1)) % (locationSuggestions.length || 1),
+            (prev - 1 + (locationSuggestions.length || 1)) %
+            (locationSuggestions.length || 1),
         );
       } else if (e.key === "Enter") {
-        if (focusedLocationIndex >= 0 && focusedLocationIndex < locationSuggestions.length) {
+        if (
+          focusedLocationIndex >= 0 &&
+          focusedLocationIndex < locationSuggestions.length
+        ) {
           e.preventDefault();
-          handleSelectLocationSuggestion(locationSuggestions[focusedLocationIndex]);
+          handleSelectLocationSuggestion(
+            locationSuggestions[focusedLocationIndex],
+          );
         }
       } else if (e.key === "Escape") {
         e.preventDefault();
@@ -1132,7 +1150,8 @@ export default function OnboardingPage() {
                           autoComplete="off"
                         />
                         {showLocationDropdown &&
-                          (locationSuggestions.length > 0 || isSearchingLocation) && (
+                          (locationSuggestions.length > 0 ||
+                            isSearchingLocation) && (
                             <div className="absolute z-50 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg max-h-60 overflow-y-auto divide-y divide-neutral-100 animate-in fade-in slide-in-from-top-1 duration-150">
                               {isSearchingLocation ? (
                                 <div className="p-3 text-xs text-muted-foreground text-center">
@@ -1144,8 +1163,12 @@ export default function OnboardingPage() {
                                     type="button"
                                     key={suggestion.placeId}
                                     onMouseDown={(e) => e.preventDefault()}
-                                    onClick={() => handleSelectLocationSuggestion(suggestion)}
-                                    onMouseEnter={() => setFocusedLocationIndex(index)}
+                                    onClick={() =>
+                                      handleSelectLocationSuggestion(suggestion)
+                                    }
+                                    onMouseEnter={() =>
+                                      setFocusedLocationIndex(index)
+                                    }
                                     className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex flex-col gap-0.5 ${
                                       focusedLocationIndex === index
                                         ? "bg-violet-50 text-violet-900"

@@ -18,7 +18,14 @@ import {
 } from "@/components/ui/sidebar";
 import Image from "next/image";
 import Link from "next/link";
-import { Confetti, Home, Rocket, Rocket2, UsersGroupTwoRounded, UserSpeak } from "@solar-icons/react";
+import {
+  Confetti,
+  Home,
+  Rocket,
+  Rocket2,
+  UsersGroupTwoRounded,
+  UserSpeak,
+} from "@solar-icons/react";
 import { NavUser } from "./nav-user";
 import { usePathname } from "next/navigation";
 import { User, Calendar, Trophy, Wallet } from "lucide-react";

@@ -29,14 +29,14 @@ export default function CommunityStatsCard({
         isDark
           ? "bg-[radial-gradient(circle_at_top_left,var(--color-primary-700)_0%,var(--color-primary-900)_70%)] border-primary-800 text-white"
           : "bg-[#F3EEFF] border-primary-200/40 text-neutral-900 hover:bg-[#EBDDFF]",
-        className
+        className,
       )}
     >
       <div className="flex flex-col gap-2">
         <span
           className={cn(
             "text-sm font-semibold tracking-wide",
-            isDark ? "text-primary-200" : "text-[#423072]"
+            isDark ? "text-primary-200" : "text-[#423072]",
           )}
         >
           {title}
@@ -50,7 +50,7 @@ export default function CommunityStatsCard({
         <span
           className={cn(
             "text-xs",
-            isDark ? "text-primary-100" : "text-primary-700"
+            isDark ? "text-primary-100" : "text-primary-700",
           )}
         >
           {badgeText}
@@ -60,7 +60,7 @@ export default function CommunityStatsCard({
             "px-3 py-1 rounded-full text-xs font-bold font-sans tracking-wide min-w-fit shadow-xs",
             isDark
               ? "bg-[#181127] border border-primary-700/50 text-primary-200"
-              : "bg-[#271B40] text-white"
+              : "bg-[#271B40] text-white",
           )}
         >
           {badgeValue}

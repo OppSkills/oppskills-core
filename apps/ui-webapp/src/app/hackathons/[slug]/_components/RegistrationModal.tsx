@@ -506,10 +506,16 @@ export function RegistrationModal({
         }
       }
 
-      if (type === "HACKATHON" && (!completionMode || !paymentCompleted) && !competition.isFree) {
+      if (
+        type === "HACKATHON" &&
+        (!completionMode || !paymentCompleted) &&
+        !competition.isFree
+      ) {
         // Strip synthetic '__free__' id before sending to backend.
         const realTierId =
-          ticketTierId && ticketTierId !== '__free__' ? ticketTierId : undefined;
+          ticketTierId && ticketTierId !== "__free__"
+            ? ticketTierId
+            : undefined;
         await saveHackathonRegistrationCheckoutDraft(token, competition.slug, {
           answers: formattedAnswers,
           ticketTierId: realTierId,
@@ -537,12 +543,10 @@ export function RegistrationModal({
           ticketTierId: realTierId,
           userId: user?.id,
         });
-        toast.success('Saved. Continue to secure checkout.');
+        toast.success("Saved. Continue to secure checkout.");
         onClose();
         const tierQ =
-          realTierId != null
-            ? `?tier=${encodeURIComponent(realTierId)}`
-            : '';
+          realTierId != null ? `?tier=${encodeURIComponent(realTierId)}` : "";
         router.push(`/hackathons/${competition.slug}/checkout${tierQ}`);
         return;
       }
@@ -778,9 +782,9 @@ export function RegistrationModal({
       if (
         isPaidOpportunity &&
         activeRegTiers.length > 1 &&
-        (!ticketTierId || ticketTierId === '__free__')
+        (!ticketTierId || ticketTierId === "__free__")
       ) {
-        toast.error('Please select a ticket type before continuing.');
+        toast.error("Please select a ticket type before continuing.");
         return;
       }
 

@@ -24,8 +24,12 @@ export default function ManageHeader({
         </p>
       </div>
       <div className="flex items-center gap-3 w-full sm:w-auto">
-        <Button onClick={onAddMember} className="bg-primary-700">Add Member</Button>
-        <Button variant="outline" onClick={onAddRole}>Add Member Role</Button>
+        <Button onClick={onAddMember} className="bg-primary-700">
+          Add Member
+        </Button>
+        <Button variant="outline" onClick={onAddRole}>
+          Add Member Role
+        </Button>
       </div>
     </div>
   );

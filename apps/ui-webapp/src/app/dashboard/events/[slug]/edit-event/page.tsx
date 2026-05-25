@@ -197,7 +197,10 @@ function requireToken(token: string | null): string {
   return token;
 }
 
-function toLocationDto(input: string, placeId?: string): EventLocationDto | undefined {
+function toLocationDto(
+  input: string,
+  placeId?: string,
+): EventLocationDto | undefined {
   const trimmed = input.trim();
   if (trimmed.length === 0) return undefined;
 
@@ -663,7 +666,10 @@ export default function EditEventPage() {
           currentFormData.eventThumbnail.trim().length > 0
             ? normalizeUrl(currentFormData.eventThumbnail)
             : undefined,
-        location: toLocationDto(currentFormData.eventLocation, currentFormData.eventLocationPlaceId),
+        location: toLocationDto(
+          currentFormData.eventLocation,
+          currentFormData.eventLocationPlaceId,
+        ),
         registrationDeadline: (() => {
           const deadlineDate =
             currentFormData.registrationSettings.endDate ??

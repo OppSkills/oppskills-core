@@ -12,7 +12,11 @@ import AddMemberRoleModal from "./_components/AddMemberRoleModal";
 import MemberDetailsSheet from "./_components/MemberDetailsSheet";
 import { toast } from "sonner";
 
-import type { CommunityMember as Member, CommunityTask as Task, CommunityMeet as Meet } from "@oppskills/types";
+import type {
+  CommunityMember as Member,
+  CommunityTask as Task,
+  CommunityMeet as Meet,
+} from "@oppskills/types";
 
 const initialMembers: Member[] = [
   {
@@ -77,7 +81,8 @@ const initialTasks: Task[] = [
   {
     id: "1",
     text: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato crust Hawaiian stuffed sausage. Burnt steak party extra style stuffed.",
+    description:
+      "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato crust Hawaiian stuffed sausage. Burnt steak party extra style stuffed.",
     tag: "Ideathon, E-Summit",
     completed: false,
     assignedTo: "Ananya Sharma",
@@ -87,7 +92,8 @@ const initialTasks: Task[] = [
   {
     id: "2",
     text: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
+    description:
+      "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
     tag: "Ideathon, E-Summit",
     completed: false,
     assignedTo: "Rohit Verma",
@@ -97,7 +103,8 @@ const initialTasks: Task[] = [
   {
     id: "3",
     text: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
+    description:
+      "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
     tag: "Ideathon, E-Summit",
     completed: false,
     assignedTo: "Suhani Mehta",
@@ -110,7 +117,8 @@ const initialMeets: Meet[] = [
   {
     id: "1",
     title: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato crust Hawaiian stuffed sausage. Burnt steak party extra style stuffed.",
+    description:
+      "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato crust Hawaiian stuffed sausage. Burnt steak party extra style stuffed.",
     date: "21 Mar 2026",
     time: "9:00 AM",
     attendees: 12,
@@ -122,7 +130,8 @@ const initialMeets: Meet[] = [
   {
     id: "2",
     title: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
+    description:
+      "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
     date: "21 Mar 2026",
     time: "9:00 AM",
     attendees: 12,
@@ -134,7 +143,8 @@ const initialMeets: Meet[] = [
   {
     id: "3",
     title: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
+    description:
+      "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
     date: "21 Mar 2026",
     time: "9:00 AM",
     attendees: 12,
@@ -146,7 +156,8 @@ const initialMeets: Meet[] = [
   {
     id: "4",
     title: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
+    description:
+      "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
     date: "21 Mar 2026",
     time: "9:00 AM",
     attendees: 12,
@@ -163,10 +174,13 @@ export default function ManageCommunityPage() {
   const [isAddMemberTypeOpen, setIsAddMemberTypeOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [isAddRoleOpen, setIsAddRoleOpen] = useState(false);
-  
-  const [selectedMemberForTask, setSelectedMemberForTask] = useState<string | null>(null);
-  const [selectedMemberForDetails, setSelectedMemberForDetails] = useState<Member | null>(null);
-  
+
+  const [selectedMemberForTask, setSelectedMemberForTask] = useState<
+    string | null
+  >(null);
+  const [selectedMemberForDetails, setSelectedMemberForDetails] =
+    useState<Member | null>(null);
+
   // Shared Dynamic State Pools
   const [members, setMembers] = useState<Member[]>(initialMembers);
   const [customMemberTypes, setCustomMemberTypes] = useState<string[]>([]);
@@ -176,7 +190,7 @@ export default function ManageCommunityPage() {
     "Content Writer",
     "Alumini - 2024",
     "Alumini - 2025",
-    "Circle"
+    "Circle",
   ]);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [meets, setMeets] = useState<Meet[]>(initialMeets);
@@ -218,11 +232,13 @@ export default function ManageCommunityPage() {
       email: email,
       role: roleName,
       avatarUrl: `/avatars/user.png`, // Generic default fallback
-      lastAssignedDate: new Date().toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric"
-      }).replace(/\//g, "-"),
+      lastAssignedDate: new Date()
+        .toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        })
+        .replace(/\//g, "-"),
     };
 
     setMembers((prev) => [...prev, newMember]);
@@ -240,7 +256,7 @@ export default function ManageCommunityPage() {
     assignedToName?: string,
     dueDate?: string,
     priority?: "High" | "Medium" | "Low",
-    description?: string
+    description?: string,
   ) => {
     const newTask: Task = {
       id: String(tasks.length + 1),
@@ -267,12 +283,12 @@ export default function ManageCommunityPage() {
           return { ...t, completed: nextCompleted };
         }
         return t;
-      })
+      }),
     );
   };
 
   const handleDeleteTask = (id: string) => {
-    const taskToDelete = tasks.find(t => t.id === id);
+    const taskToDelete = tasks.find((t) => t.id === id);
     setTasks((prev) => prev.filter((t) => t.id !== id));
     if (taskToDelete) {
       toast.success(`Deleted task: "${taskToDelete.text}"`);
@@ -285,7 +301,7 @@ export default function ManageCommunityPage() {
     timeStr: string,
     targetGroup: string,
     meetType: "Urgent" | "Recurring" | "Feedback" | "Important",
-    description: string
+    description: string,
   ) => {
     const newMeet: Meet = {
       id: String(meets.length + 1),
@@ -293,7 +309,7 @@ export default function ManageCommunityPage() {
       date: new Date(dateStr).toLocaleDateString("en-GB", {
         day: "numeric",
         month: "short",
-        year: "numeric"
+        year: "numeric",
       }),
       time: timeStr,
       attendees: targetGroup === "Core Members" ? 12 : 543,
@@ -309,18 +325,20 @@ export default function ManageCommunityPage() {
 
   // Dynamic calculations relative to core stats
   const totalCommunitySize = 12300 + (members.length - 7);
-  const coreTeamCount = 12 + (members.filter((m) => 
-    ["Community Admin", "Media Lead", "Content Writer"].includes(m.role)
-  ).length - 4);
+  const coreTeamCount =
+    12 +
+    (members.filter((m) =>
+      ["Community Admin", "Media Lead", "Content Writer"].includes(m.role),
+    ).length -
+      4);
 
   return (
     <div className="flex justify-center w-full min-h-screen bg-[#FAFAFA] pb-12">
       <div className="w-full p-4 lg:p-6 flex flex-col gap-8 animate-in fade-in duration-500">
-        
         {/* Header Section */}
-        <ManageHeader 
-          onAddMember={() => setIsAddMemberOpen(true)} 
-          onAddRole={() => setIsAddRoleOpen(true)} 
+        <ManageHeader
+          onAddMember={() => setIsAddMemberOpen(true)}
+          onAddRole={() => setIsAddRoleOpen(true)}
         />
 
         {/* Stats Grid Section */}
@@ -335,8 +353,8 @@ export default function ManageCommunityPage() {
 
         {/* Members Directory Section with Dynamic Custom Tabs, View Details, and Add Type Trigger */}
         <div className="w-full mt-2">
-          <MembersDirectory 
-            onAssignTask={handleAssignTask} 
+          <MembersDirectory
+            onAssignTask={handleAssignTask}
             onAddMemberType={() => setIsAddMemberTypeOpen(true)}
             onViewDetails={setSelectedMemberForDetails}
             customTabs={customMemberTypes}

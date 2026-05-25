@@ -102,9 +102,7 @@ export function TicketTierRegistrationPicker({
           {active.map((tier) => {
             const base = tierBasePrice(tier);
             const fee =
-              feeBearer === "PARTICIPANT"
-                ? participantProcessingFee(base)
-                : 0;
+              feeBearer === "PARTICIPANT" ? participantProcessingFee(base) : 0;
             const isFree = base <= 0;
             const selected = tier.id === selectedTierId;
             const isYourTicket =
@@ -118,8 +116,7 @@ export function TicketTierRegistrationPicker({
                 onClick={() => onSelectTier(tier.id)}
                 className={cn(
                   "w-full text-left rounded-2xl border-2 p-4 transition-all relative focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2",
-                  isYourTicket &&
-                    "border-emerald-500 bg-emerald-50 shadow-sm",
+                  isYourTicket && "border-emerald-500 bg-emerald-50 shadow-sm",
                   !isYourTicket &&
                     selected &&
                     "border-purple-500 bg-purple-50/40 shadow-sm",
