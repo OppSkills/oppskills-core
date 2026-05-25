@@ -29,6 +29,7 @@ interface TicketTierDialogProps {
     price?: string | number;
     capacity?: number | null;
     isActive?: boolean;
+    isFree?: boolean;
   };
 }
 
@@ -44,6 +45,7 @@ export default function TicketTierDialog({
   const [price, setPrice] = useState("");
   const [capacity, setCapacity] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [isFreeTier, setIsFreeTier] = useState(false);
 
   const isEvent = opportunityType === "Event";
 
@@ -72,21 +74,25 @@ export default function TicketTierDialog({
         editingTier.capacity != null ? String(editingTier.capacity) : "",
       );
       setIsActive(editingTier.isActive ?? true);
+      setIsFreeTier(editingTier.isFree ?? false);
     } else {
       setName("");
       setDescription("");
       setPrice("");
       setCapacity("");
       setIsActive(true);
+      setIsFreeTier(false);
     }
   }, [isOpen, editingTier]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const priceNum = parseFloat(price);
-    if (Number.isNaN(priceNum) || priceNum < 0) {
-      toast.error("Please enter a valid price (0 or more).");
+    const priceNum = isFreeTier ? 0 : parseFloat(price);
+    if (!isFreeTier && (Number.isNaN(priceNum) || priceNum <= 0)) {
+      toast.error(
+        "Please enter a valid price greater than 0, or mark the ticket as free.",
+      );
       return;
     }
 
@@ -106,6 +112,7 @@ export default function TicketTierDialog({
       price: priceNum,
       capacity: capacityNum,
       isActive,
+      isFree: isFreeTier,
     };
 
     try {
@@ -174,10 +181,31 @@ export default function TicketTierDialog({
             />
           </div>
 
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isFreeTierOption"
+              checked={isFreeTier}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setIsFreeTier(checked);
+                if (checked) setPrice("0");
+              }}
+              className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600"
+            />
+            <label
+              htmlFor="isFreeTierOption"
+              className="text-sm poppins font-medium text-neutral-700"
+            >
+              Free ticket (no payment for this tier)
+            </label>
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex flex-col gap-1.5 flex-1">
               <label className="text-sm font-semibold poppins text-neutral-700">
-                Price (INR) <span className="text-red-500">*</span>
+                Price (INR){" "}
+                {!isFreeTier && <span className="text-red-500">*</span>}
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 font-medium">
@@ -187,11 +215,12 @@ export default function TicketTierDialog({
                   type="number"
                   step="0.01"
                   min="0"
-                  value={price}
+                  value={isFreeTier ? "0" : price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="0"
-                  required
-                  className="pl-8 inter font-medium"
+                  required={!isFreeTier}
+                  disabled={isFreeTier}
+                  className="pl-8 inter font-medium disabled:opacity-60"
                 />
               </div>
             </div>

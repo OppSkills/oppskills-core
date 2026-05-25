@@ -211,12 +211,17 @@ export class HackathonService {
     let locationCoords = dto.location?.city;
     if (dto.location?.placeId) {
       try {
-        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        const resolved = await this.locationService.getPlaceCoords(
+          dto.location.placeId,
+        );
         if (resolved) {
           locationCoords = resolved;
         }
       } catch (error) {
-        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+        this.logger.warn(
+          `Failed to resolve placeId coords: ${dto.location.placeId}`,
+          error,
+        );
       }
     }
 
@@ -651,7 +656,7 @@ export class HackathonService {
           },
           ticketTiers: {
             where: { isActive: true },
-            select: { price: true },
+            select: { price: true, isFree: true },
           },
         },
       }),
@@ -660,6 +665,7 @@ export class HackathonService {
 
     const items = hackathonRows.map((h) => {
       const tierNums = (h.ticketTiers ?? [])
+        .filter((t) => !t.isFree)
         .map((t) => Number(t.price))
         .filter((n) => Number.isFinite(n));
       const lowestTicketPrice =
@@ -771,6 +777,7 @@ export class HackathonService {
             currency: true,
             capacity: true,
             order: true,
+            isFree: true,
           },
           orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
         },
@@ -914,6 +921,7 @@ export class HackathonService {
             currency: true,
             capacity: true,
             order: true,
+            isFree: true,
           },
           orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
         },
@@ -1218,12 +1226,17 @@ export class HackathonService {
     let locationCoords = dto.location?.city;
     if (dto.location?.placeId) {
       try {
-        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        const resolved = await this.locationService.getPlaceCoords(
+          dto.location.placeId,
+        );
         if (resolved) {
           locationCoords = resolved;
         }
       } catch (error) {
-        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+        this.logger.warn(
+          `Failed to resolve placeId coords: ${dto.location.placeId}`,
+          error,
+        );
       }
     }
 

@@ -324,7 +324,11 @@ export default function BasicDetails({
         <LocationInputModal
           value={formData.eventLocation}
           onChange={(val, placeId) =>
-            setFormData((prev) => ({ ...prev, eventLocation: val, eventLocationPlaceId: placeId }))
+            setFormData((prev) => ({
+              ...prev,
+              eventLocation: val,
+              eventLocationPlaceId: placeId,
+            }))
           }
           label="Add Location"
           subLabel="Offline or Virtual"

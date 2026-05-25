@@ -14,6 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@clerk/nextjs";
+import { presignImageUpload } from "@/lib/api/mediaApi";
+import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
+import ImageCropDialog from "./ImageCropDialog";
 
 const topColleges = [
   { img: "iith.png", name: "IIT Hyderabad" },
@@ -38,6 +42,8 @@ const industries = [
 ];
 
 export default function RegsitrationForm() {
+  const { getToken } = useAuth();
+
   const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
   const [description, setDescription] = useState("");
@@ -48,40 +54,161 @@ export default function RegsitrationForm() {
   // Cover image upload
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isDraggingCover, setIsDraggingCover] = useState(false);
 
   // Logo image upload
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isDraggingLogo, setIsDraggingLogo] = useState(false);
 
-  // Handle Cover change
+  // Cropping Modal states
+  const [cropImage, setCropImage] = useState<string | null>(null);
+  const [cropAspect, setCropAspect] = useState<number>(4 / 1);
+  const [cropTitle, setCropTitle] = useState<string>("");
+  const [cropType, setCropType] = useState<"cover" | "logo" | null>(null);
+  const [isCropOpen, setIsCropOpen] = useState(false);
+
+  // Core trigger for cropping flow
+  const triggerCropFlow = (file: File, type: "cover" | "logo") => {
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedMimeTypes.includes(file.type)) {
+      toast.error("Only JPG, PNG, or WebP images are allowed.");
+      return;
+    }
+
+    const maxSize = type === "cover" ? 2 * 1024 * 1024 : 1 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error(
+        `Image size should be less than ${type === "cover" ? "2MB" : "1MB"}`,
+      );
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImage(reader.result as string);
+      setCropAspect(type === "cover" ? 4 / 1 : 1 / 1);
+      setCropTitle(
+        type === "cover" ? "Crop Cover Banner" : "Crop Community Logo",
+      );
+      setCropType(type);
+      setIsCropOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle Cover change via input
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("Cover image size should be less than 2MB");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      triggerCropFlow(file, "cover");
     }
   };
 
-  // Handle Logo change
+  // Handle Logo change via input
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 1 * 1024 * 1024) {
-        toast.error("Profile picture size should be less than 1MB");
+      triggerCropFlow(file, "logo");
+    }
+  };
+
+  // Drag and Drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnterCover = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingCover(true);
+  };
+
+  const handleDragLeaveCover = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingCover(false);
+  };
+
+  const handleDropCover = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingCover(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      triggerCropFlow(file, "cover");
+    }
+  };
+
+  const handleDragEnterLogo = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingLogo(true);
+  };
+
+  const handleDragLeaveLogo = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingLogo(false);
+  };
+
+  const handleDropLogo = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingLogo(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      triggerCropFlow(file, "logo");
+    }
+  };
+
+  // S3 Upload flow after cropping
+  const handleCropComplete = async (croppedFile: File) => {
+    if (!cropType) return;
+
+    const setUploading =
+      cropType === "cover" ? setIsUploadingCover : setIsUploadingLogo;
+    const setPreview = cropType === "cover" ? setCoverPreview : setLogoPreview;
+    const purpose =
+      cropType === "cover" ? "COMMUNITY_BANNER" : "COMMUNITY_LOGO";
+
+    setUploading(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Please sign in to upload images.");
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+
+      const presign = await presignImageUpload(token, {
+        purpose,
+        mimeType: croppedFile.type,
+      });
+
+      await uploadImageToS3PresignedPost({ presign, file: croppedFile });
+
+      const publicUrl = presign.publicUrl.startsWith("http")
+        ? presign.publicUrl
+        : presign.publicUrl.startsWith("//")
+          ? `https:${presign.publicUrl}`
+          : `https://${presign.publicUrl}`;
+
+      setPreview(publicUrl);
+      toast.success(
+        `${cropType === "cover" ? "Cover banner" : "Logo"} uploaded successfully!`,
+      );
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+      setCropImage(null);
+      setCropType(null);
     }
   };
 
@@ -117,10 +244,17 @@ export default function RegsitrationForm() {
       <div className="relative w-full">
         {/* Cover Upload Box */}
         <div
-          onClick={() => coverInputRef.current?.click()}
+          onClick={() => !isUploadingCover && coverInputRef.current?.click()}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnterCover}
+          onDragLeave={handleDragLeaveCover}
+          onDrop={handleDropCover}
           className={cn(
             "relative w-full h-40 md:h-56 rounded-3xl bg-[#E6E0FA]/60 border-2 border-dashed border-[#BCA5F4]/40 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden hover:bg-[#E6E0FA]/80 group",
-            coverPreview ? "border-none" : ""
+            coverPreview ? "border-none" : "",
+            isDraggingCover
+              ? "border-[#5D3EBB] bg-[#E6E0FA]/80 scale-[1.01]"
+              : "",
           )}
         >
           <input
@@ -130,7 +264,14 @@ export default function RegsitrationForm() {
             accept="image/*"
             className="hidden"
           />
-          {coverPreview ? (
+          {isUploadingCover ? (
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="w-8 h-8 border-4 border-[#5D3EBB] border-t-transparent rounded-full animate-spin" />
+              <span className="text-[#3A2482] font-bold text-sm">
+                Uploading Cover...
+              </span>
+            </div>
+          ) : coverPreview ? (
             <>
               <Image
                 src={coverPreview}
@@ -161,8 +302,15 @@ export default function RegsitrationForm() {
 
         {/* Profile Picture Overlap Box */}
         <div
-          onClick={() => logoInputRef.current?.click()}
-          className="absolute left-6 md:left-8 bottom-[-48px] w-24 h-24 md:w-32 md:h-32 bg-[#E6E0FA] rounded-2xl md:rounded-3xl border-4 border-white shadow-md flex items-center justify-center cursor-pointer overflow-hidden z-10 transition-transform hover:scale-105 group"
+          onClick={() => !isUploadingLogo && logoInputRef.current?.click()}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnterLogo}
+          onDragLeave={handleDragLeaveLogo}
+          onDrop={handleDropLogo}
+          className={cn(
+            "absolute left-6 md:left-8 bottom-[-48px] w-24 h-24 md:w-32 md:h-32 bg-[#E6E0FA] rounded-2xl md:rounded-3xl border-4 border-white shadow-md flex items-center justify-center cursor-pointer overflow-hidden z-10 transition-transform hover:scale-105 group",
+            isDraggingLogo ? "border-[#5D3EBB] scale-105" : "",
+          )}
         >
           <input
             type="file"
@@ -171,7 +319,11 @@ export default function RegsitrationForm() {
             accept="image/*"
             className="hidden"
           />
-          {logoPreview ? (
+          {isUploadingLogo ? (
+            <div className="flex flex-col items-center justify-center gap-1">
+              <div className="w-8 h-8 border-4 border-[#5D3EBB] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : logoPreview ? (
             <>
               <Image
                 src={logoPreview}
@@ -290,7 +442,7 @@ export default function RegsitrationForm() {
             "w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-300 mt-0.5 shrink-0",
             isVerified
               ? "bg-[#10B981] border-[#10B981] scale-105 shadow-sm shadow-[#10B981]/25"
-              : "border-neutral-300 group-hover:border-neutral-400 bg-white"
+              : "border-neutral-300 group-hover:border-neutral-400 bg-white",
           )}
         >
           {isVerified && <Check className="w-3.5 h-3.5 text-white stroke-3" />}
@@ -340,6 +492,14 @@ export default function RegsitrationForm() {
           ))}
         </div>
       </div>
+      <ImageCropDialog
+        isOpen={isCropOpen}
+        onClose={() => setIsCropOpen(false)}
+        imageSrc={cropImage}
+        aspectRatio={cropAspect}
+        onCropComplete={handleCropComplete}
+        title={cropTitle}
+      />
     </form>
   );
 }

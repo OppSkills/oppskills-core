@@ -75,7 +75,6 @@ export default function AddMemberTypeModal({
       className="max-w-xl"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
-        
         {/* Type Name Input Column */}
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-semibold text-neutral-500 pl-1 select-none">

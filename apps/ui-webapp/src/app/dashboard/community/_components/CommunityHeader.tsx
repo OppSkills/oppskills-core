@@ -1,0 +1,132 @@
+"use client";
+
+import React from "react";
+import Image from "next/image";
+import { Check, Edit2, Plus } from "lucide-react";
+import { CommunityDetails } from "./types";
+import { Button } from "@/components/ui/button";
+
+interface CommunityHeaderProps {
+  details: CommunityDetails;
+  onEditHeader?: () => void;
+  onCreatePost?: () => void;
+}
+
+export default function CommunityHeader({
+  details,
+  onEditHeader,
+  onCreatePost,
+}: CommunityHeaderProps) {
+  const formatFollowers = (count: number) => {
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(0)}k`;
+    }
+    return count.toString();
+  };
+
+  return (
+    <div className="w-full bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-xs relative">
+      {/* Banner Area */}
+      <div className="relative w-full h-44 sm:h-56 bg-gradient-to-r from-[#FDFBF7] to-[#F5F2EB] flex items-center justify-center overflow-hidden border-b border-neutral-100 group">
+        {details.bannerUrl ? (
+          <Image
+            src={details.bannerUrl}
+            alt="Community Banner"
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center p-6 text-center select-none">
+            <h1 className="text-3xl sm:text-5xl font-serif text-[#2B1B17] tracking-tight font-medium flex items-center gap-2">
+              Say hello to{" "}
+              <span className="font-bold flex items-center gap-1">
+                <span className="text-[#E67E22]">★</span> Claude
+              </span>
+            </h1>
+          </div>
+        )}
+
+        {/* Edit Banner Trigger */}
+        <button
+          onClick={onEditHeader}
+          className="absolute top-4 right-4 bg-white/80 hover:bg-white text-neutral-700 p-2 rounded-full shadow-md hover:scale-105 transition-all opacity-0 group-hover:opacity-100 duration-300 z-20"
+          title="Edit Header"
+        >
+          <Edit2 className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Avatar & Action Button Row */}
+      <div className="relative px-6 pb-6 pt-16 sm:pt-20">
+        {/* Avatar Container */}
+        <div className="absolute left-6 top-[-48px] sm:top-[-64px] w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-3xl border-4 border-white shadow-md flex items-center justify-center overflow-hidden z-10 select-none">
+          {details.logoUrl ? (
+            <Image
+              src={details.logoUrl}
+              alt="Community Logo"
+              fill
+              className="object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-neutral-900 text-white font-bold font-serif text-3xl sm:text-4xl flex items-center justify-center">
+              AI
+            </div>
+          )}
+        </div>
+
+        {/* Top Header Actions Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-2xl font-extrabold text-neutral-800 tracking-tight">
+                {details.name}
+              </h2>
+              {details.isVerified && (
+                <span
+                  className="inline-flex items-center justify-center bg-[#10B981] text-white rounded-full p-0.5 w-4 h-4 shadow-sm"
+                  title="Verified Community"
+                >
+                  <Check className="w-2.5 h-2.5 stroke-[4]" />
+                </span>
+              )}
+            </div>
+            <span className="text-sm font-semibold text-neutral-400">
+              @{details.handle}
+            </span>
+          </div>
+
+          {/* Follow Stats & Post Button */}
+          <div className="flex items-center gap-4 sm:gap-6 self-start sm:self-center">
+            <div className="flex items-center gap-4 text-sm font-bold text-neutral-600">
+              <div>
+                <span className="text-neutral-800 font-extrabold">
+                  {formatFollowers(details.followers)}
+                </span>{" "}
+                Followers
+              </div>
+              <div className="w-1.5 h-1.5 rounded-full bg-neutral-300" />
+              <div>
+                <span className="text-neutral-800 font-extrabold">
+                  {details.following}
+                </span>{" "}
+                Following
+              </div>
+            </div>
+
+            <Button
+              onClick={onCreatePost}
+              className="bg-[#2E1E66] hover:bg-[#1E1146] text-white font-bold px-5 py-2.5 rounded-full shadow-md hover:shadow-lg active:scale-95 transition-all duration-300 flex items-center gap-1.5 text-sm shrink-0"
+            >
+              <Plus className="w-4 h-4" /> Create New Post
+            </Button>
+          </div>
+        </div>
+
+        {/* Community Description */}
+        <p className="text-neutral-600 text-sm md:text-base leading-relaxed mt-4 max-w-2xl font-medium">
+          {details.description}
+        </p>
+      </div>
+    </div>
+  );
+}

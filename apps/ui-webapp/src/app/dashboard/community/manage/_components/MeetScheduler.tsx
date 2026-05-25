@@ -1,7 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronLeft, Video, Plus, X, VideoOff, Users, ArrowRight, Calendar, Clock, AlertCircle } from "lucide-react";
+import {
+  ChevronLeft,
+  Video,
+  Plus,
+  X,
+  VideoOff,
+  Users,
+  ArrowRight,
+  Calendar,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,7 +38,7 @@ interface MeetSchedulerProps {
     timeStr: string,
     targetGroup: string,
     meetType: "Urgent" | "Recurring" | "Feedback" | "Important",
-    description: string
+    description: string,
   ) => void;
 }
 
@@ -64,7 +75,9 @@ export default function MeetScheduler({
   const [meetDate, setMeetDate] = useState("10-05-2026");
   const [meetTime, setMeetTime] = useState("9:00 AM");
   const [targetGroup, setTargetGroup] = useState("Core Members");
-  const [meetType, setMeetType] = useState<"Urgent" | "Recurring" | "Feedback" | "Important">("Recurring");
+  const [meetType, setMeetType] = useState<
+    "Urgent" | "Recurring" | "Feedback" | "Important"
+  >("Recurring");
   const [description, setDescription] = useState("");
   const [sendEmail, setSendEmail] = useState(true);
 
@@ -84,7 +97,8 @@ export default function MeetScheduler({
         meetTime,
         targetGroup,
         meetType,
-        description.trim() || "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large."
+        description.trim() ||
+          "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large.",
       );
     } else {
       const newMeet: Meet = {
@@ -96,7 +110,9 @@ export default function MeetScheduler({
         link: `https://oppskills.meet/${meetTitle.toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
         targetGroup,
         type: meetType,
-        description: description.trim() || "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large.",
+        description:
+          description.trim() ||
+          "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large.",
         attendance: "Scheduled",
       };
       setLocalMeets((prev) => [newMeet, ...prev]);
@@ -132,9 +148,11 @@ export default function MeetScheduler({
 
         {/* Scrollable sheet body container */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 flex flex-col gap-6 scrollbar-none">
-          
           {/* Card 1: Create Meet */}
-          <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-6 border border-neutral-150 shadow-2xs flex flex-col gap-5">
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-3xl p-6 border border-neutral-150 shadow-2xs flex flex-col gap-5"
+          >
             <h3 className="font-aeonicPro text-2xl font-bold text-neutral-800 tracking-tight select-none">
               Create Meet
             </h3>
@@ -165,10 +183,30 @@ export default function MeetScheduler({
                     <SelectValue placeholder="Select meet date" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl shadow-md border-neutral-200">
-                    <SelectItem value="10-05-2026" className="rounded-lg font-medium cursor-pointer">10-05-2026</SelectItem>
-                    <SelectItem value="15-05-2026" className="rounded-lg font-medium cursor-pointer">15-05-2026</SelectItem>
-                    <SelectItem value="21 Mar 2026" className="rounded-lg font-medium cursor-pointer">21 Mar 2026</SelectItem>
-                    <SelectItem value="28 May 2026" className="rounded-lg font-medium cursor-pointer">28 May 2026</SelectItem>
+                    <SelectItem
+                      value="10-05-2026"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      10-05-2026
+                    </SelectItem>
+                    <SelectItem
+                      value="15-05-2026"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      15-05-2026
+                    </SelectItem>
+                    <SelectItem
+                      value="21 Mar 2026"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      21 Mar 2026
+                    </SelectItem>
+                    <SelectItem
+                      value="28 May 2026"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      28 May 2026
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -183,10 +221,30 @@ export default function MeetScheduler({
                     <SelectValue placeholder="Select meet time" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl shadow-md border-neutral-200">
-                    <SelectItem value="9:00 AM" className="rounded-lg font-medium cursor-pointer">9:00 AM</SelectItem>
-                    <SelectItem value="11:30 AM" className="rounded-lg font-medium cursor-pointer">11:30 AM</SelectItem>
-                    <SelectItem value="03:00 PM" className="rounded-lg font-medium cursor-pointer">03:00 PM</SelectItem>
-                    <SelectItem value="06:00 PM" className="rounded-lg font-medium cursor-pointer">06:00 PM</SelectItem>
+                    <SelectItem
+                      value="9:00 AM"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      9:00 AM
+                    </SelectItem>
+                    <SelectItem
+                      value="11:30 AM"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      11:30 AM
+                    </SelectItem>
+                    <SelectItem
+                      value="03:00 PM"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      03:00 PM
+                    </SelectItem>
+                    <SelectItem
+                      value="06:00 PM"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      06:00 PM
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -203,8 +261,18 @@ export default function MeetScheduler({
                     <SelectValue placeholder="Select target group" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl shadow-md border-neutral-200">
-                    <SelectItem value="Core Members" className="rounded-lg font-medium cursor-pointer">Core Members</SelectItem>
-                    <SelectItem value="All Members" className="rounded-lg font-medium cursor-pointer">All Members</SelectItem>
+                    <SelectItem
+                      value="Core Members"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      Core Members
+                    </SelectItem>
+                    <SelectItem
+                      value="All Members"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      All Members
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -214,15 +282,38 @@ export default function MeetScheduler({
                 <label className="text-xs font-semibold text-neutral-450 pl-0.5 select-none uppercase tracking-wide">
                   Meet is for
                 </label>
-                <Select value={meetType} onValueChange={(val: any) => setMeetType(val)}>
+                <Select
+                  value={meetType}
+                  onValueChange={(val: any) => setMeetType(val)}
+                >
                   <SelectTrigger className="h-12 px-5 border border-neutral-200 focus:border-[#835BD5] rounded-full text-base text-neutral-700 bg-white font-medium focus:ring-0 w-full">
                     <SelectValue placeholder="Select meet type" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl shadow-md border-neutral-200">
-                    <SelectItem value="Recurring" className="rounded-lg font-medium cursor-pointer">Recurring</SelectItem>
-                    <SelectItem value="Urgent" className="rounded-lg font-medium cursor-pointer">Urgent</SelectItem>
-                    <SelectItem value="Feedback" className="rounded-lg font-medium cursor-pointer">Feedback</SelectItem>
-                    <SelectItem value="Important" className="rounded-lg font-medium cursor-pointer">Important</SelectItem>
+                    <SelectItem
+                      value="Recurring"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      Recurring
+                    </SelectItem>
+                    <SelectItem
+                      value="Urgent"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      Urgent
+                    </SelectItem>
+                    <SelectItem
+                      value="Feedback"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      Feedback
+                    </SelectItem>
+                    <SelectItem
+                      value="Important"
+                      className="rounded-lg font-medium cursor-pointer"
+                    >
+                      Important
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -282,16 +373,25 @@ export default function MeetScheduler({
               <table className="w-full border-collapse text-left min-w-[600px]">
                 <thead>
                   <tr className="bg-[#22163b] text-white text-xs font-bold uppercase tracking-wider font-aeonicPro">
-                    <th className="py-3 px-4 border-r border-neutral-700/20">Meet</th>
-                    <th className="py-3 px-4 border-r border-neutral-700/20 text-center w-36">Date</th>
-                    <th className="py-3 px-4 border-r border-neutral-700/20 text-center w-36">Type</th>
+                    <th className="py-3 px-4 border-r border-neutral-700/20">
+                      Meet
+                    </th>
+                    <th className="py-3 px-4 border-r border-neutral-700/20 text-center w-36">
+                      Date
+                    </th>
+                    <th className="py-3 px-4 border-r border-neutral-700/20 text-center w-36">
+                      Type
+                    </th>
                     <th className="py-3 px-4 text-center w-48">Attendance</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 text-sm">
                   {activeMeets.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="py-12 text-center text-neutral-400 font-semibold">
+                      <td
+                        colSpan={4}
+                        className="py-12 text-center text-neutral-400 font-semibold"
+                      >
                         <VideoOff className="w-6 h-6 text-neutral-300 mx-auto mb-1.5" />
                         No meetings scheduled
                       </td>
@@ -306,24 +406,31 @@ export default function MeetScheduler({
                       const typeColor = isUrgent
                         ? "bg-red-50 text-[#C62828] border-red-150"
                         : isRecurring
-                        ? "bg-emerald-50 text-[#2E7D32] border-emerald-150"
-                        : isFeedback
-                        ? "bg-amber-50 text-[#D84315] border-amber-150"
-                        : "bg-blue-50 text-[#1565C0] border-blue-150";
+                          ? "bg-emerald-50 text-[#2E7D32] border-emerald-150"
+                          : isFeedback
+                            ? "bg-amber-50 text-[#D84315] border-amber-150"
+                            : "bg-blue-50 text-[#1565C0] border-blue-150";
 
-                      const attendanceColor = meet.attendance === "Present"
-                        ? "bg-emerald-50 text-[#2E7D32] border-emerald-150"
-                        : meet.attendance === "Absent"
-                        ? "bg-red-50 text-[#C62828] border-red-150"
-                        : "bg-[#F3EEFF] text-[#423072] border-[#835BD5]/10";
+                      const attendanceColor =
+                        meet.attendance === "Present"
+                          ? "bg-emerald-50 text-[#2E7D32] border-emerald-150"
+                          : meet.attendance === "Absent"
+                            ? "bg-red-50 text-[#C62828] border-red-150"
+                            : "bg-[#F3EEFF] text-[#423072] border-[#835BD5]/10";
 
                       return (
-                        <tr key={meet.id} className="hover:bg-neutral-50/20 transition-colors">
+                        <tr
+                          key={meet.id}
+                          className="hover:bg-neutral-50/20 transition-colors"
+                        >
                           <td className="py-3.5 px-4 border-r border-neutral-100 max-w-sm">
                             <div className="flex flex-col">
-                              <span className="font-bold text-neutral-800">{meet.title}</span>
+                              <span className="font-bold text-neutral-800">
+                                {meet.title}
+                              </span>
                               <span className="text-xs text-neutral-400 mt-1 leading-normal">
-                                {meet.description || "Community sync meeting. Review deliverables, coordinate tasks, and align on project milestones."}
+                                {meet.description ||
+                                  "Community sync meeting. Review deliverables, coordinate tasks, and align on project milestones."}
                               </span>
                             </div>
                           </td>
@@ -331,13 +438,19 @@ export default function MeetScheduler({
                             {meet.date}
                           </td>
                           <td className="py-3.5 px-4 border-r border-neutral-100 text-center">
-                            <span className={`border px-3.5 py-1.5 rounded-md text-[10px] font-bold ${typeColor}`}>
+                            <span
+                              className={`border px-3.5 py-1.5 rounded-md text-[10px] font-bold ${typeColor}`}
+                            >
                               {meet.type || "Recurring"}
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-center">
-                            <span className={`border px-3.5 py-1.5 rounded-md text-[10px] font-bold ${attendanceColor}`}>
-                              {meet.attendance === "Scheduled" ? `Scheduled for ${meet.date}` : (meet.attendance || "Present")}
+                            <span
+                              className={`border px-3.5 py-1.5 rounded-md text-[10px] font-bold ${attendanceColor}`}
+                            >
+                              {meet.attendance === "Scheduled"
+                                ? `Scheduled for ${meet.date}`
+                                : meet.attendance || "Present"}
                             </span>
                           </td>
                         </tr>
@@ -348,7 +461,6 @@ export default function MeetScheduler({
               </table>
             </div>
           </div>
-          
         </div>
       </SheetContent>
     </Sheet>

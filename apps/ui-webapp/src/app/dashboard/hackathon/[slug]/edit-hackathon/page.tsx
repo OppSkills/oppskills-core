@@ -272,7 +272,10 @@ function toParticipantTypeValue(
   return undefined;
 }
 
-function toLocationDto(input: string, placeId?: string): HackathonLocationDto | undefined {
+function toLocationDto(
+  input: string,
+  placeId?: string,
+): HackathonLocationDto | undefined {
   const trimmed = input.trim();
   if (trimmed.length === 0) return undefined;
 
@@ -923,7 +926,10 @@ export default function EditHackathonPage() {
         visibility: toVisibilityValue(formData.eventFestVisibility),
         hackathonType: toHackathonTypeValue(formData.hackathonType),
         participantType: toParticipantTypeValue(formData.participantType),
-        location: toLocationDto(formData.eventLocation, formData.eventLocationPlaceId),
+        location: toLocationDto(
+          formData.eventLocation,
+          formData.eventLocationPlaceId,
+        ),
         attendeeEligibility: mapCandidateTypesToEligibility(
           formData.registrationSettings.candidateTypes,
         ),

@@ -75,6 +75,7 @@ export class DraftTeamController {
       teamId: body.teamId,
       invitationCode: body.invitationCode,
       referralId,
+      ticketTierId: body.ticketTierId,
     });
   }
 

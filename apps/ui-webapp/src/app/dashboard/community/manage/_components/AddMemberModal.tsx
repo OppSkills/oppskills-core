@@ -24,7 +24,12 @@ export default function AddMemberModal({
   isOpen,
   onClose,
   onAddMember,
-  availableRoles = ["Community Admin", "Media Lead", "Content Writer", "Circle"],
+  availableRoles = [
+    "Community Admin",
+    "Media Lead",
+    "Content Writer",
+    "Circle",
+  ],
 }: AddMemberModalProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState(availableRoles[0] || "Community Admin");
@@ -79,7 +84,6 @@ export default function AddMemberModal({
       className="max-w-xl"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
-        
         {/* Member Email Input */}
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-semibold text-neutral-500 pl-1 select-none">
@@ -105,14 +109,17 @@ export default function AddMemberModal({
             </SelectTrigger>
             <SelectContent className="rounded-2xl shadow-md border-neutral-200">
               {availableRoles.map((roleOption) => (
-                <SelectItem key={roleOption} value={roleOption} className="rounded-lg font-medium cursor-pointer">
+                <SelectItem
+                  key={roleOption}
+                  value={roleOption}
+                  className="rounded-lg font-medium cursor-pointer"
+                >
                   {roleOption}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-
       </form>
     </CustomModal>
   );

@@ -41,6 +41,7 @@ export class RegistrationSubmitController {
       hackathonSlug: slug,
       userId: req.user.id,
       answers: dto.answers,
+      ticketTierId: dto.ticketTierId,
     });
   }
 }

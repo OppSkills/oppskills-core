@@ -35,7 +35,9 @@ export class FestivalService {
     let locationCoords = dto.location?.city;
     if (dto.location?.placeId) {
       try {
-        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        const resolved = await this.locationService.getPlaceCoords(
+          dto.location.placeId,
+        );
         if (resolved) {
           locationCoords = resolved;
         }
@@ -266,7 +268,9 @@ export class FestivalService {
     let locationCoords = dto.location?.city;
     if (dto.location?.placeId) {
       try {
-        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        const resolved = await this.locationService.getPlaceCoords(
+          dto.location.placeId,
+        );
         if (resolved) {
           locationCoords = resolved;
         }

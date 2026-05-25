@@ -21,7 +21,7 @@ export default function CommunityActionCard({
       onClick={onClick}
       className={cn(
         "flex items-center justify-between p-4 h-[82px] rounded-2xl bg-[radial-gradient(circle_at_top_left,var(--color-primary-800)_0%,var(--color-primary-900)_85%)] hover:bg-[radial-gradient(circle_at_top_left,var(--color-primary-700)_0%,var(--color-primary-800)_85%)] border border-[#271B40]/20 text-white transition-all duration-300 ease-in-out cursor-pointer hover:-translate-y-0.5 shadow-md active:scale-98 select-none group",
-        className
+        className,
       )}
     >
       <span className="font-aeonicPro text-lg font-medium tracking-wide pl-2 group-hover:text-primary-100 transition-colors">

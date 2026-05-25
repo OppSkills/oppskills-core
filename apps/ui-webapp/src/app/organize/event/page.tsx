@@ -257,7 +257,11 @@ export default function Page() {
     if (trimmed.length === 0) return undefined;
 
     if (trimmed.startsWith("OFFLINE:")) {
-      return { type: "PHYSICAL", address: trimmed.substring(8).trim(), placeId };
+      return {
+        type: "PHYSICAL",
+        address: trimmed.substring(8).trim(),
+        placeId,
+      };
     }
     if (trimmed.startsWith("VIRTUAL:")) {
       return { type: "VIRTUAL", virtualLink: trimmed.substring(8).trim() };
@@ -501,9 +505,10 @@ export default function Page() {
           values.eventEndDate,
           values.eventTimeFrom,
         ),
-        location: toLocationDto(values.eventLocation, values.eventLocationPlaceId) as
-          | EventLocationDto
-          | undefined,
+        location: toLocationDto(
+          values.eventLocation,
+          values.eventLocationPlaceId,
+        ) as EventLocationDto | undefined,
         registrationDeadline: values.eventRegisterBy
           ? combineDateAndTimeToIso(values.eventRegisterBy, "23:59")
           : undefined,

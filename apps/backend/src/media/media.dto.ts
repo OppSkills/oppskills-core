@@ -11,6 +11,8 @@ const MEDIA_UPLOAD_PURPOSE_VALUES = [
   'COMMUNITY_AVATAR',
   'EVENT_ATTACHMENT',
   'OPPORTUNITY_ATTACHMENT',
+  'COMMUNITY_BANNER',
+  'COMMUNITY_LOGO',
 ] as const;
 export type MediaUploadPurposeValue =
   (typeof MEDIA_UPLOAD_PURPOSE_VALUES)[number];

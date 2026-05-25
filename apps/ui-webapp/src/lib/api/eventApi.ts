@@ -418,6 +418,7 @@ export interface JoinEventPayload {
     value: string | number | string[];
   }>;
   referralCode?: string;
+  ticketTierId?: string;
 }
 
 /**

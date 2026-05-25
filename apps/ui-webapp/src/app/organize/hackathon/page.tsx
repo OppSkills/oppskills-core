@@ -359,7 +359,11 @@ export default function Page() {
     if (trimmed.length === 0) return undefined;
 
     if (trimmed.startsWith("OFFLINE:")) {
-      return { type: "PHYSICAL", address: trimmed.substring(8).trim(), placeId };
+      return {
+        type: "PHYSICAL",
+        address: trimmed.substring(8).trim(),
+        placeId,
+      };
     }
     if (trimmed.startsWith("VIRTUAL:")) {
       return { type: "VIRTUAL", virtualLink: trimmed.substring(8).trim() };
@@ -793,7 +797,11 @@ export default function Page() {
               <LocationInputModal
                 value={formData.eventLocation}
                 onChange={(val, placeId) =>
-                  setFormData({ ...formData, eventLocation: val, eventLocationPlaceId: placeId })
+                  setFormData({
+                    ...formData,
+                    eventLocation: val,
+                    eventLocationPlaceId: placeId,
+                  })
                 }
                 label="Add Hackathon Location"
                 subLabel="Offline location or virtual link"
@@ -1079,9 +1087,10 @@ export default function Page() {
                     participantType: toParticipantTypeValue(
                       formData.participantType,
                     ),
-                    location: toLocationDto(formData.eventLocation, formData.eventLocationPlaceId) as
-                      | HackathonLocationDto
-                      | undefined,
+                    location: toLocationDto(
+                      formData.eventLocation,
+                      formData.eventLocationPlaceId,
+                    ) as HackathonLocationDto | undefined,
                     registrationDeadline: toIsoDateOnly(
                       formData.eventRegisterBy,
                     ),

@@ -274,7 +274,9 @@ export function isLocationCoords(value: string | null | undefined): boolean {
  *
  * Returns null if the input does not look like coordinates.
  */
-export function getGoogleMapsUrl(coords: string | null | undefined): string | null {
+export function getGoogleMapsUrl(
+  coords: string | null | undefined,
+): string | null {
   if (!isLocationCoords(coords)) return null;
   const parts = coords!.split(",").map((p) => p.trim());
   const [lat, lng, placeId] = parts;
