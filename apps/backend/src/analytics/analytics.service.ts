@@ -1036,26 +1036,28 @@ export class AnalyticsService {
   }
 
   private async getOrganizerOpportunitiesIds(userId: string) {
-    const events = await prisma.eventEntity.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userRoles: { some: { userId, role: 'MANAGER' } } },
-        ],
-        isDeleted: false,
-      },
-      select: { id: true },
-    });
-    const hackathons = await prisma.hackathonEntity.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userRoles: { some: { userId, role: 'MANAGER' } } },
-        ],
-        isDeleted: false,
-      },
-      select: { id: true },
-    });
+    const [events, hackathons] = await Promise.all([
+      prisma.eventEntity.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
+        },
+        select: { id: true },
+      }),
+      prisma.hackathonEntity.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
+        },
+        select: { id: true },
+      }),
+    ]);
 
     return {
       eventIds: events.map((e) => e.id),
@@ -1069,25 +1071,37 @@ export class AnalyticsService {
     const { eventIds, hackathonIds } =
       await this.getOrganizerOpportunitiesIds(userId);
 
-    const eventParticipants = await prisma.eventParticipantEntity.findMany({
-      where: {
-        eventId: { in: eventIds },
-        checkoutPending: false,
-      },
-      select: {
-        approved: true,
-      },
-    });
+    if (eventIds.length === 0 && hackathonIds.length === 0) {
+      return {
+        totalRegistrations: 0,
+        pendingReview: 0,
+        approved: 0,
+      };
+    }
+
+    const [eventParticipants, hackathonRegsCount] = await Promise.all([
+      eventIds.length > 0
+        ? prisma.eventParticipantEntity.findMany({
+            where: {
+              eventId: { in: eventIds },
+              checkoutPending: false,
+            },
+            select: {
+              approved: true,
+            },
+          })
+        : Promise.resolve<{ approved: boolean }[]>([]),
+      hackathonIds.length > 0
+        ? prisma.hackathonRegistrationSubmissionEntity.count({
+            where: {
+              hackathonId: { in: hackathonIds },
+            },
+          })
+        : Promise.resolve(0),
+    ]);
 
     let approved = eventParticipants.filter((p) => p.approved).length;
     const pendingReview = eventParticipants.filter((p) => !p.approved).length;
-
-    const hackathonRegsCount =
-      await prisma.hackathonRegistrationSubmissionEntity.count({
-        where: {
-          hackathonId: { in: hackathonIds },
-        },
-      });
 
     // Treat hackathon submissions as approved registrations
     approved += hackathonRegsCount;
