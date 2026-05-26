@@ -2,6 +2,16 @@ import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { prisma } from '@oppskills/db';
 import type Redis from 'ioredis';
 import { CacheService } from 'src/common/cache.service';
+import type {
+  OrganizerRegistrationsSummaryDto,
+  OrganizerOpportunitiesSummaryDto,
+  OrganizerPaymentsSummaryDto,
+  OrganizerRolesSummaryDto,
+  OrganizerNotificationsSummaryDto,
+  OrganizerReferralsSummaryDto,
+  OrganizerPipelineSummaryDto,
+  OrganizerSettingsSummaryDto,
+} from '@oppskills/types';
 
 @Injectable()
 export class AnalyticsService {
@@ -1022,6 +1032,412 @@ export class AnalyticsService {
             tregistrations: topHackathon.registrationCount ?? 0,
           }
         : null,
+    };
+  }
+
+  private async getOrganizerOpportunitiesIds(userId: string) {
+    const events = await prisma.eventEntity.findMany({
+      where: {
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
+        isDeleted: false,
+      },
+      select: { id: true },
+    });
+    const hackathons = await prisma.hackathonEntity.findMany({
+      where: {
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
+        isDeleted: false,
+      },
+      select: { id: true },
+    });
+
+    return {
+      eventIds: events.map((e) => e.id),
+      hackathonIds: hackathons.map((h) => h.id),
+    };
+  }
+
+  async getRegistrationsSummary(
+    userId: string,
+  ): Promise<OrganizerRegistrationsSummaryDto> {
+    const { eventIds, hackathonIds } =
+      await this.getOrganizerOpportunitiesIds(userId);
+
+    const eventParticipants = await prisma.eventParticipantEntity.findMany({
+      where: {
+        eventId: { in: eventIds },
+        checkoutPending: false,
+      },
+      select: {
+        approved: true,
+      },
+    });
+
+    let approved = eventParticipants.filter((p) => p.approved).length;
+    const pendingReview = eventParticipants.filter((p) => !p.approved).length;
+
+    const hackathonRegsCount =
+      await prisma.hackathonRegistrationSubmissionEntity.count({
+        where: {
+          hackathonId: { in: hackathonIds },
+        },
+      });
+
+    // Treat hackathon submissions as approved registrations
+    approved += hackathonRegsCount;
+    const totalRegistrations = approved + pendingReview;
+
+    return {
+      totalRegistrations,
+      pendingReview,
+      approved,
+    };
+  }
+
+  async getOpportunitiesSummary(
+    userId: string,
+  ): Promise<OrganizerOpportunitiesSummaryDto> {
+    const events = await prisma.eventEntity.findMany({
+      where: {
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
+        isDeleted: false,
+      },
+      select: {
+        status: true,
+        createdAt: true,
+        approvalApprovedAt: true,
+      },
+    });
+
+    const hackathons = await prisma.hackathonEntity.findMany({
+      where: {
+        OR: [
+          { ownerId: userId },
+          { userRoles: { some: { userId, role: 'MANAGER' } } },
+        ],
+        isDeleted: false,
+      },
+      select: {
+        status: true,
+        createdAt: true,
+        approvalApprovedAt: true,
+      },
+    });
+
+    const allOpportunities = [...events, ...hackathons];
+
+    const draftsInProgress = allOpportunities.filter(
+      (o) => o.status === 'DRAFT',
+    ).length;
+    const readyToPublish = allOpportunities.filter((o) =>
+      ['PUBLISHED', 'ONGOING'].includes(o.status),
+    ).length;
+
+    let totalSetupTimeMs = 0;
+    let approvedCount = 0;
+
+    for (const o of allOpportunities) {
+      if (o.approvalApprovedAt) {
+        totalSetupTimeMs +=
+          o.approvalApprovedAt.getTime() - o.createdAt.getTime();
+        approvedCount++;
+      }
+    }
+
+    let avgSetupTime = '0 hours';
+    if (approvedCount > 0) {
+      const avgMs = totalSetupTimeMs / approvedCount;
+      const avgDays = avgMs / (1000 * 60 * 60 * 24);
+      if (avgDays >= 1) {
+        avgSetupTime = `${avgDays.toFixed(1)} days`;
+      } else {
+        const avgHours = avgMs / (1000 * 60 * 60);
+        avgSetupTime = `${avgHours.toFixed(1)} hours`;
+      }
+    }
+
+    return {
+      draftsInProgress,
+      readyToPublish,
+      avgSetupTime,
+    };
+  }
+
+  async getPaymentsSummary(
+    userId: string,
+  ): Promise<OrganizerPaymentsSummaryDto> {
+    const eventPayments = await prisma.eventPaymentEntity.findMany({
+      where: {
+        event: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
+        },
+      },
+      select: {
+        grossAmount: true,
+        organizerShareAmount: true,
+        paymentStatus: true,
+        transferStatus: true,
+        transferOnHold: true,
+        refundedAmount: true,
+      },
+    });
+
+    const hackathonPayments = await prisma.hackathonPaymentEntity.findMany({
+      where: {
+        hackathon: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
+        },
+      },
+      select: {
+        grossAmount: true,
+        organizerShareAmount: true,
+        paymentStatus: true,
+        transferStatus: true,
+        transferOnHold: true,
+        refundedAmount: true,
+      },
+    });
+
+    let totalCollected = 0;
+    let pendingPayout = 0;
+    let refunds = 0;
+
+    const allPayments = [...eventPayments, ...hackathonPayments];
+
+    for (const p of allPayments) {
+      const gross = Number(p.grossAmount) || 0;
+      const orgShare = Number(p.organizerShareAmount) || 0;
+      const refAmt = Number(p.refundedAmount) || 0;
+
+      if (p.paymentStatus === 'CAPTURED') {
+        totalCollected += gross;
+
+        if (p.transferStatus !== 'PAID' || p.transferOnHold) {
+          pendingPayout += orgShare;
+        }
+      }
+
+      if (p.paymentStatus === 'REFUNDED' || refAmt > 0) {
+        refunds += refAmt || gross;
+      }
+    }
+
+    return {
+      totalCollected,
+      pendingPayout,
+      refunds,
+    };
+  }
+
+  async getRolesSummary(userId: string): Promise<OrganizerRolesSummaryDto> {
+    const { eventIds, hackathonIds } =
+      await this.getOrganizerOpportunitiesIds(userId);
+
+    const eventUserIds = await prisma.eventParticipantEntity.findMany({
+      where: { eventId: { in: eventIds } },
+      select: { userId: true },
+    });
+
+    const hackathonUserIds =
+      await prisma.hackathonRegistrationSubmissionEntity.findMany({
+        where: { hackathonId: { in: hackathonIds } },
+        select: { userId: true },
+      });
+
+    const distinctUserIds = Array.from(
+      new Set([
+        ...eventUserIds.map((p) => p.userId),
+        ...hackathonUserIds.map((s) => s.userId),
+      ]),
+    );
+
+    const campuses = await prisma.userOnboardingProfileEntity.findMany({
+      where: {
+        userId: { in: distinctUserIds },
+        collegeId: { not: null },
+      },
+      select: { collegeId: true },
+      distinct: ['collegeId'],
+    });
+
+    const hackathonRolesCount = await prisma.hackathonUserRoleEntity.count({
+      where: { hackathonId: { in: hackathonIds } },
+    });
+
+    const eventRolesCount = await prisma.eventUserRoleEntity.count({
+      where: { eventId: { in: eventIds } },
+    });
+
+    return {
+      verifiedCampuses: campuses.length,
+      adminSeats: hackathonRolesCount + eventRolesCount,
+      renewalsDue: 0,
+    };
+  }
+
+  async getNotificationsSummary(
+    userId: string,
+  ): Promise<OrganizerNotificationsSummaryDto> {
+    const { eventIds, hackathonIds } =
+      await this.getOrganizerOpportunitiesIds(userId);
+
+    const queuedAlerts = await prisma.notifications.count({
+      where: {
+        status: { in: ['QUEUED', 'PROCESSING'] },
+        OR: [
+          { eventId: { in: eventIds } },
+          { hackathonId: { in: hackathonIds } },
+        ],
+      },
+    });
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const notificationsSentToday = await prisma.notifications.findMany({
+      where: {
+        completedAt: { gte: todayStart },
+        OR: [
+          { eventId: { in: eventIds } },
+          { hackathonId: { in: hackathonIds } },
+        ],
+      },
+      select: {
+        successCount: true,
+      },
+    });
+
+    const sentToday = notificationsSentToday.reduce(
+      (sum, n) => sum + (n.successCount || 0),
+      0,
+    );
+
+    return {
+      queuedAlerts,
+      sentToday,
+      openRate: 0.0,
+    };
+  }
+
+  async getReferralsSummary(
+    userId: string,
+  ): Promise<OrganizerReferralsSummaryDto> {
+    const { eventIds, hackathonIds } =
+      await this.getOrganizerOpportunitiesIds(userId);
+
+    const referrals = await prisma.referralEntity.findMany({
+      where: {
+        OR: [
+          {
+            entityType: 'EVENT',
+            entityId: { in: eventIds },
+          },
+          {
+            entityType: 'HACKATHON',
+            entityId: { in: hackathonIds },
+          },
+        ],
+      },
+      select: {
+        registrationsCount: true,
+      },
+    });
+
+    const totalReferrals = referrals.length;
+    const converted = referrals.reduce(
+      (sum, r) => sum + (r.registrationsCount || 0),
+      0,
+    );
+
+    return {
+      totalReferrals,
+      converted,
+      rewardsIssued: 0,
+    };
+  }
+
+  async getPipelineSummary(
+    userId: string,
+  ): Promise<OrganizerPipelineSummaryDto> {
+    const regSummary = await this.getRegistrationsSummary(userId);
+
+    const { hackathonIds } = await this.getOrganizerOpportunitiesIds(userId);
+
+    const shortlisted = await prisma.teamRoundQualificationEntity.count({
+      where: {
+        qualified: true,
+        round: {
+          hackathonId: { in: hackathonIds },
+        },
+      },
+    });
+
+    return {
+      totalRegistrations: regSummary.totalRegistrations,
+      shortlisted,
+      waitlisted: 0,
+    };
+  }
+
+  async getSettingsSummary(
+    userId: string,
+  ): Promise<OrganizerSettingsSummaryDto> {
+    const { eventIds, hackathonIds } =
+      await this.getOrganizerOpportunitiesIds(userId);
+
+    const hasGoogleSheets = !!(
+      process.env.GOOGLE_SHEETS_CLIENT_EMAIL &&
+      process.env.GOOGLE_SHEETS_PRIVATE_KEY &&
+      process.env.GOOGLE_SHEETS_SPREADSHEET_ID
+     );
+
+    const activeRazorpay = await prisma.razorpayRouteAccountEntity.count({
+      where: {
+        userId,
+        status: 'ACTIVATED',
+      },
+    });
+
+    const activeIntegrations = activeRazorpay + (hasGoogleSheets ? 1 : 0);
+
+    const hackathonRoles = await prisma.hackathonUserRoleEntity.findMany({
+      where: { hackathonId: { in: hackathonIds } },
+      select: { userId: true },
+    });
+
+    const eventRoles = await prisma.eventUserRoleEntity.findMany({
+      where: { eventId: { in: eventIds } },
+      select: { userId: true },
+    });
+
+    const distinctTeamUserIds = new Set([
+      ...hackathonRoles.map((r) => r.userId),
+      ...eventRoles.map((r) => r.userId),
+    ]);
+
+    distinctTeamUserIds.delete(userId);
+    const teamMembers = distinctTeamUserIds.size;
+
+    return {
+      activeIntegrations,
+      teamMembers,
     };
   }
 }
