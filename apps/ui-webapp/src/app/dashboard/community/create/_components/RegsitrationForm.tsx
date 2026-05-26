@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@clerk/nextjs";
-import { presignImageUpload } from "@/lib/api/mediaApi";
+import { presignImageUpload, type PresignImageUploadPurpose } from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 import ImageCropDialog from "./ImageCropDialog";
 
@@ -186,7 +186,7 @@ export default function RegsitrationForm() {
       }
 
       const presign = await presignImageUpload(token, {
-        purpose,
+        purpose: purpose as PresignImageUploadPurpose,
         mimeType: croppedFile.type,
       });
 
@@ -250,7 +250,7 @@ export default function RegsitrationForm() {
           onDragLeave={handleDragLeaveCover}
           onDrop={handleDropCover}
           className={cn(
-            "relative w-full h-40 md:h-56 rounded-3xl bg-[#E6E0FA]/60 border-2 border-dashed border-[#BCA5F4]/40 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden hover:bg-[#E6E0FA]/80 group",
+            "relative w-full aspect-[4/1] rounded-3xl bg-[#E6E0FA]/60 border-2 border-dashed border-[#BCA5F4]/40 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden hover:bg-[#E6E0FA]/80 group",
             coverPreview ? "border-none" : "",
             isDraggingCover
               ? "border-[#5D3EBB] bg-[#E6E0FA]/80 scale-[1.01]"

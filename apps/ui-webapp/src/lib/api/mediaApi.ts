@@ -6,7 +6,9 @@ export type PresignImageUploadPurpose =
   | "HACKATHON_BANNER"
   | "EVENT_BANNER"
   | "COMMUNITY_COVER"
-  | "COMMUNITY_AVATAR";
+  | "COMMUNITY_AVATAR"
+  | "COMMUNITY_BANNER"
+  | "COMMUNITY_LOGO";
 
 export type PresignImageUploadRequest = Readonly<{
   purpose: PresignImageUploadPurpose;

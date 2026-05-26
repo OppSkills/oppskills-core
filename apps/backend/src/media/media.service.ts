@@ -219,6 +219,10 @@ export class MediaService {
       prefix = 'public/community-covers';
     } else if (purpose === 'COMMUNITY_AVATAR') {
       prefix = 'public/community-avatars';
+    } else if (purpose === 'COMMUNITY_BANNER') {
+      prefix = 'community-banner';
+    } else if (purpose === 'COMMUNITY_LOGO') {
+      prefix = 'community-logo';
     } else {
       prefix = 'public';
     }

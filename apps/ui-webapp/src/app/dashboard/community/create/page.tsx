@@ -32,6 +32,7 @@ import {
   type CommunityIndustryValue,
 } from "@oppskills/types/enums";
 import RegistrationSidebar from "./_components/RegistrationSidebar";
+import ImageCropDialog from "./_components/ImageCropDialog";
 
 const topColleges = [
   { img: "iith.png", name: "IIT Hyderabad" },
@@ -107,6 +108,40 @@ export default function CreateCommunityPage() {
     () => `community-avatar-upload-${crypto.randomUUID()}`,
     [],
   );
+
+  // Cropping Modal states
+  const [cropImage, setCropImage] = useState<string | null>(null);
+  const [cropAspect, setCropAspect] = useState<number>(4 / 1);
+  const [cropTitle, setCropTitle] = useState<string>("");
+  const [cropType, setCropType] = useState<"cover" | "avatar" | null>(null);
+  const [isCropOpen, setIsCropOpen] = useState(false);
+
+  // Core trigger for cropping flow
+  const triggerCropFlow = (file: File, type: "cover" | "avatar") => {
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedMimeTypes.includes(file.type)) {
+      toast.error("Only JPG, PNG, or WebP images are allowed.");
+      return;
+    }
+
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast.error("Image too large. Max size is 10MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImage(reader.result as string);
+      setCropAspect(type === "cover" ? 4 / 1 : 1 / 1);
+      setCropTitle(
+        type === "cover" ? "Crop Cover Banner" : "Crop Community Logo",
+      );
+      setCropType(type);
+      setIsCropOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const form = useForm({
     defaultValues: {
@@ -231,54 +266,57 @@ export default function CreateCommunityPage() {
       mimeType: file.type,
     });
     await uploadImageToS3PresignedPost({ presign, file });
-    return presign.publicUrl;
+
+    const publicUrl = presign.publicUrl.startsWith("http")
+      ? presign.publicUrl
+      : presign.publicUrl.startsWith("//")
+        ? `https:${presign.publicUrl}`
+        : `https://${presign.publicUrl}`;
+
+    return publicUrl;
   }
 
   async function handleCoverSelected(file: File | null) {
     if (!file || isUploadingCover) return;
-
-    const objectUrl = URL.createObjectURL(file);
-    setCoverPreview(objectUrl);
-    setIsUploadingCover(true);
-
-    try {
-      const publicUrl = await uploadImage(file, "COMMUNITY_COVER");
-      if (publicUrl) {
-        form.setFieldValue("coverImage", publicUrl);
-        setCoverPreview(publicUrl);
-      }
-    } catch (err: unknown) {
-      console.error(err);
-      toast.error("Cover upload failed.");
-      setCoverPreview(null);
-      form.setFieldValue("coverImage", "");
-    } finally {
-      setIsUploadingCover(false);
-    }
+    triggerCropFlow(file, "cover");
   }
 
   async function handleAvatarSelected(file: File | null) {
     if (!file || isUploadingAvatar) return;
+    triggerCropFlow(file, "avatar");
+  }
 
-    const objectUrl = URL.createObjectURL(file);
-    setAvatarPreview(objectUrl);
-    setIsUploadingAvatar(true);
+  const handleCropComplete = async (croppedFile: File) => {
+    if (!cropType) return;
 
+    const setUploading =
+      cropType === "cover" ? setIsUploadingCover : setIsUploadingAvatar;
+    const setPreview = cropType === "cover" ? setCoverPreview : setAvatarPreview;
+    const fieldName = cropType === "cover" ? "coverImage" : "avatarImage";
+    const purpose =
+      cropType === "cover" ? "COMMUNITY_COVER" : "COMMUNITY_AVATAR";
+
+    setUploading(true);
     try {
-      const publicUrl = await uploadImage(file, "COMMUNITY_AVATAR");
+      const publicUrl = await uploadImage(croppedFile, purpose);
       if (publicUrl) {
-        form.setFieldValue("avatarImage", publicUrl);
-        setAvatarPreview(publicUrl);
+        form.setFieldValue(fieldName, publicUrl);
+        setPreview(publicUrl);
+        toast.success(
+          `${cropType === "cover" ? "Cover banner" : "Logo"} uploaded successfully!`,
+        );
       }
     } catch (err: unknown) {
       console.error(err);
-      toast.error("Avatar upload failed.");
-      setAvatarPreview(null);
-      form.setFieldValue("avatarImage", "");
+      toast.error(`${cropType === "cover" ? "Cover banner" : "Logo"} upload failed.`);
+      setPreview(null);
+      form.setFieldValue(fieldName, "");
     } finally {
-      setIsUploadingAvatar(false);
+      setUploading(false);
+      setCropImage(null);
+      setCropType(null);
     }
-  }
+  };
 
   return (
     <div className="w-full min-h-screen bg-neutral-50 flex flex-col justify-start items-center">
@@ -330,7 +368,7 @@ export default function CreateCommunityPage() {
                   }
                 }}
                 className={cn(
-                  "relative w-full h-[100px] max-h-[100px] rounded-3xl bg-[#E6E0FA]/60 border-2 border-dashed border-[#BCA5F4]/40 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden hover:bg-[#E6E0FA]/80 group",
+                  "relative w-full aspect-[4/1] rounded-3xl bg-[#E6E0FA]/60 border-2 border-dashed border-[#BCA5F4]/40 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden hover:bg-[#E6E0FA]/80 group",
                   coverPreview ? "border-none" : "",
                 )}
               >
@@ -676,6 +714,18 @@ export default function CreateCommunityPage() {
           <RegistrationSidebar />
         </div>
       </div>
+      <ImageCropDialog
+        isOpen={isCropOpen}
+        onClose={() => {
+          setIsCropOpen(false);
+          setCropImage(null);
+          setCropType(null);
+        }}
+        imageSrc={cropImage}
+        aspectRatio={cropAspect}
+        onCropComplete={handleCropComplete}
+        title={cropTitle}
+      />
     </div>
   );
 }

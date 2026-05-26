@@ -27,7 +27,7 @@ export default function CommunityHeader({
   return (
     <div className="w-full bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-xs relative">
       {/* Banner Area */}
-      <div className="relative w-full h-44 sm:h-56 bg-gradient-to-r from-[#FDFBF7] to-[#F5F2EB] flex items-center justify-center overflow-hidden border-b border-neutral-100 group">
+      <div className="relative w-full aspect-[4/1] bg-gradient-to-r from-[#FDFBF7] to-[#F5F2EB] flex items-center justify-center overflow-hidden border-b border-neutral-100 group">
         {details.bannerUrl ? (
           <Image
             src={details.bannerUrl}
