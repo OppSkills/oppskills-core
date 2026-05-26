@@ -14,7 +14,7 @@ export class CommunityListItemDto {
   handle: string;
 
   @ApiPropertyOptional()
-  coverImage: string | null;
+  avatarImage: string | null;
 
   @ApiProperty()
   industry: CommunityIndustryValue;

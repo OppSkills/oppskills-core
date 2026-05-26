@@ -24,7 +24,6 @@ interface PostCardProps {
   onAddComment: (postId: string, content: string) => void;
   onToggleCommentLike: (postId: string, commentId: string) => void;
   onShare: (postId: string) => void;
-  onEdit: (postId: string) => void;
 }
 
 export default function PostCard({
@@ -34,7 +33,6 @@ export default function PostCard({
   onAddComment,
   onToggleCommentLike,
   onShare,
-  onEdit,
 }: PostCardProps) {
   const [commentText, setCommentText] = useState("");
   const [showMenu, setShowMenu] = useState(false);
@@ -59,29 +57,6 @@ export default function PostCard({
       return `${(count / 1000).toFixed(0)}k`;
     }
     return count.toString();
-  };
-
-  const renderFormattedContent = (text: string) => {
-    if (!text) return null;
-
-    // Convert basic markdown syntax into styled elements safely
-    const formatted = text
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/_(.*?)_/g, "<u>$1</u>")
-      .replace(/~~(.*?)~~/g, "<del>$1</del>")
-      .replace(/<sup>(.*?)<\/sup>/g, "<sup>$1</sup>")
-      .replace(/<sub>(.*?)<\/sub>/g, "<sub>$1</sub>")
-      .replace(/\n- (.*?)/g, "<br/>• $1")
-      .replace(/\n\d+\. (.*?)/g, "<br/>• $1")
-      .replace(/\n/g, "<br/>");
-
-    return (
-      <div
-        dangerouslySetInnerHTML={{ __html: formatted }}
-        className="text-neutral-700 text-sm sm:text-base leading-relaxed font-medium select-text"
-      />
-    );
   };
 
   return (
@@ -146,10 +121,7 @@ export default function PostCard({
                   <Trash2 className="w-4 h-4" /> Delete
                 </button>
                 <button
-                  onClick={() => {
-                    onEdit(post.id);
-                    setShowMenu(false);
-                  }}
+                  onClick={() => setShowMenu(false)}
                   className="w-full text-left px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
                 >
                   <Edit className="w-4 h-4" /> Edit
@@ -170,7 +142,9 @@ export default function PostCard({
       </div>
 
       {/* Post Content Description */}
-      {renderFormattedContent(post.content)}
+      <p className="text-neutral-700 text-sm sm:text-base leading-relaxed font-medium">
+        {post.content}
+      </p>
 
       {/* Post Images Grid / Multi-Image display */}
       {post.images && post.images.length > 0 && (

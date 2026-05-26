@@ -39,7 +39,7 @@ export function getApiRootUrl(): string {
     "/user-accounts",
     "/colleges",
     "/media",
-    "/communities",
+    "/community",
   ] as const;
   const matched = knownResourceSuffixes.find((suffix) =>
     trimmed.endsWith(suffix),

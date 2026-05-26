@@ -32,6 +32,7 @@ export type MyCommunityListItem = Readonly<{
   name: string;
   handle: string;
   coverImage: string | null;
+  avatarImage: string | null;
   industry: CommunityIndustryValue;
   myRole: CommunityMyRole;
   createdAt: string;
@@ -109,6 +110,7 @@ export async function getMyCommunities(
       name: requireString(entry, "name"),
       handle: requireString(entry, "handle"),
       coverImage: optionalString(entry, "coverImage"),
+      avatarImage: optionalString(entry, "avatarImage"),
       industry: requireString(entry, "industry") as CommunityIndustryValue,
       myRole: requireString(entry, "myRole") as CommunityMyRole,
       createdAt: requireString(entry, "createdAt"),

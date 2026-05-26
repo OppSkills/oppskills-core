@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { EmptyState } from "@/components/common/EmptyState";
 import { BoneyardSkeleton } from "@/components/boneyard/boneyard-skeleton";
 import { TableBlockFallback } from "@/components/boneyard/loading-fallbacks";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -71,14 +72,14 @@ export function CommunitiesTable({
         const c = row.original;
         return (
           <div className="flex items-center gap-4 py-2">
-            <div className="relative h-12 w-20 overflow-hidden rounded-lg border border-neutral-100 bg-muted shrink-0">
-              {c.coverImage ? (
+            <div className="relative h-12 w-12 overflow-hidden rounded-full border border-neutral-100 bg-muted shrink-0">
+              {c.avatarImage ? (
                 <Image
-                  src={c.coverImage}
+                  src={c.avatarImage}
                   alt={c.name}
                   fill
                   className="object-cover"
-                  unoptimized={c.coverImage.startsWith("http")}
+                  unoptimized={c.avatarImage.startsWith("http")}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-slate-900 to-slate-800">
@@ -102,7 +103,7 @@ export function CommunitiesTable({
       accessorKey: "industry",
       header: "Industry",
       cell: ({ row }) => (
-        <span className="text-sm text-neutral-700">
+        <span className="text-sm text-neutral-700 block text-left">
           {industryLabel(row.original.industry)}
         </span>
       ),
@@ -122,7 +123,7 @@ export function CommunitiesTable({
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex justify-center">
+        <div className="flex justify-center items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -133,6 +134,17 @@ export function CommunitiesTable({
             }}
           >
             Manage
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 rounded-lg border-neutral-300 text-[10px] font-bold text-neutral-600 hover:bg-neutral-50"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(`/community/${row.original.handle}`, "_blank");
+            }}
+          >
+            View
           </Button>
         </div>
       ),
@@ -174,19 +186,26 @@ export function CommunitiesTable({
                       key={headerGroup.id}
                       className="hover:bg-transparent border-none!"
                     >
-                      {headerGroup.headers.map((header) => (
-                        <TableHead
-                          key={header.id}
-                          className="h-14 text-[11px] font-bold uppercase tracking-wider text-white border-none!"
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
-                        </TableHead>
-                      ))}
+                      {headerGroup.headers.map((header) => {
+                        const colId = header.column.id || (header.column.columnDef as any).accessorKey;
+                        const isLeft = colId === "name" || colId === "industry";
+                        return (
+                          <TableHead
+                            key={header.id}
+                            className={cn(
+                              "h-14 text-[11px] font-bold uppercase tracking-wider text-white border-none!",
+                              isLeft ? "text-left pl-6" : "text-center"
+                            )}
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
+                          </TableHead>
+                        );
+                      })}
                     </TableRow>
                   ))}
                 </TableHeader>
@@ -201,14 +220,24 @@ export function CommunitiesTable({
                         )
                       }
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="py-2">
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </TableCell>
-                      ))}
+                      {row.getVisibleCells().map((cell) => {
+                        const colId = cell.column.id || (cell.column.columnDef as any).accessorKey;
+                        const isLeft = colId === "name" || colId === "industry";
+                        return (
+                          <TableCell
+                            key={cell.id}
+                            className={cn(
+                              "py-2",
+                              isLeft ? "text-left pl-6" : "text-center"
+                            )}
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </TableCell>
+                        );
+                      })}
                     </TableRow>
                   ))}
                 </TableBody>
