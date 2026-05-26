@@ -99,3 +99,105 @@ Get metrics for a single hackathon or event.
 
 - **Top Listings:** `GET /analytics/organizer-top-listings` (Sorted by total registrations).
 - **Highest Performing:** `GET /analytics/organizer-highest-performing` (Sorted by view-to-registration conversion rate).
+
+---
+
+## 4. Organizer Summary Analytics
+
+Fetch modular, granular summaries across the organizer's active workspace.
+
+### Registrations Summary (`GET /analytics/organizer/registrations-summary`)
+
+- **Usage:** Shows a high-level registration breakdown (approved vs pending review) across all managed listings.
+- **Returns:**
+  ```json
+  {
+    "totalRegistrations": 250,
+    "pendingReview": 45,
+    "approved": 205
+  }
+  ```
+
+### Opportunities Summary (`GET /analytics/organizer/opportunities-summary`)
+
+- **Usage:** Returns the status breakdown of opportunities (drafts vs published) and average time elapsed between listing creation and approval.
+- **Returns:**
+  ```json
+  {
+    "draftsInProgress": 3,
+    "readyToPublish": 9,
+    "avgSetupTime": "2.4 days"
+  }
+  ```
+
+### Payments Summary (`GET /analytics/organizer/payments-summary`)
+
+- **Usage:** Shows financial performance metrics across paid registrations, including total revenue collected, payouts pending transfer, and refunds processed.
+- **Returns:**
+  ```json
+  {
+    "totalCollected": 45000,
+    "pendingPayout": 8500,
+    "refunds": 1200
+  }
+  ```
+
+### Roles Summary (`GET /analytics/organizer/roles-summary`)
+
+- **Usage:** Tracks organization scaling metrics: verified campus connections, assigned co-organizer/manager seats, and renewals due.
+- **Returns:**
+  ```json
+  {
+    "verifiedCampuses": 14,
+    "adminSeats": 5,
+    "renewalsDue": 0
+  }
+  ```
+
+### Notifications Summary (`GET /analytics/organizer/notifications-summary`)
+
+- **Usage:** Monitors bulk alert dispatch, tracking queued campaigns, successful deliveries today, and recipient open rates.
+- **Returns:**
+  ```json
+  {
+    "queuedAlerts": 2,
+    "sentToday": 1500,
+    "openRate": 0.0
+  }
+  ```
+
+### Referrals Summary (`GET /analytics/organizer/referrals-summary`)
+
+- **Usage:** Monitors active promotional campaigns, summarizing total tracking links created, successful registration conversions, and referral rewards disbursed.
+- **Returns:**
+  ```json
+  {
+    "totalReferrals": 45,
+    "converted": 120,
+    "rewardsIssued": 0
+  }
+  ```
+
+### Pipeline Summary (`GET /analytics/organizer/pipeline-summary`)
+
+- **Usage:** Tracks participant evaluation pipeline progression across rounds, indicating overall registrations, shortlisted contenders, and waitlist allocations.
+- **Returns:**
+  ```json
+  {
+    "totalRegistrations": 250,
+    "shortlisted": 18,
+    "waitlisted": 0
+  }
+  ```
+
+### Settings Summary (`GET /analytics/organizer/settings-summary`)
+
+- **Usage:** Summarizes active third-party workspace integrations (such as Google Sheets synchronization and Razorpay Route merchant setup) and registered staff size.
+- **Returns:**
+  ```json
+  {
+    "activeIntegrations": 2,
+    "teamMembers": 4
+  }
+  ```
+
