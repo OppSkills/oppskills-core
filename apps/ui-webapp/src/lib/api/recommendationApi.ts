@@ -27,3 +27,23 @@ export async function autocompleteLocation(
     throw new Error("Failed to load location suggestions. Please try again.");
   }
 }
+
+const locationAPI = createApiClient("/location");
+
+/**
+ * Send user coordinates to the backend to be logged.
+ */
+export async function sendUserLocation(
+  token: string | null | undefined,
+  coords: { latitude: number; longitude: number },
+): Promise<{ success: boolean }> {
+  try {
+    const res = await locationAPI.post("", coords, {
+      headers: token ? buildAuthHeaders(token) : {},
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error sending user location:", error);
+    throw new Error("Failed to send user location.");
+  }
+}
