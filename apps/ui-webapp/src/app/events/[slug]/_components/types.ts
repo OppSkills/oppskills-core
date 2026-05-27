@@ -31,6 +31,8 @@ export interface EventDetails {
   time: string;
   venueName: string;
   venueAddress: string;
+  /** Raw GPS coordinates ("lat,lng") – use for Maps link only, never render directly. */
+  locationCoords?: string | null;
   startDate?: string | Date;
   endDate?: string | Date;
 

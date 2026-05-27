@@ -94,7 +94,7 @@ todos:
   - `gender`, `userCategory`
   - School: `schoolName`, `schoolClass`, `schoolAddress`
   - College: `collegeId` (FK to `CollegeEntity`), `collegeCurrentYear`, `collegePassoutYear`, `collegeSkipped`
-  - Location: `locationCity`, `locationState`, `locationCountry`
+  - Location: `locationCoords`, `locationState`, `locationCountry`
   - Interests: `interests String[]`
   - Skills: `skills String[]`
   - Optional: `experienceLevel`, `teamPreference`

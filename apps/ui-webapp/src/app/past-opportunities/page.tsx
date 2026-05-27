@@ -42,7 +42,9 @@ function toListingItem(item: PastOpportunityItem): ListingItem {
     status: item.status,
     locationType: (item as any).locationType ?? null,
     location:
-      (item as any).locationCity ?? (item as any).locationAddress ?? undefined,
+      (item as any).locationCoords ??
+      (item as any).locationAddress ??
+      undefined,
     mode: deriveMode(item),
     isFree: item.isFree,
     entryFeeAmount: item.entryFeeAmount ?? null,

@@ -651,6 +651,7 @@ export class EventController {
       userId,
       dto.answers,
       dto.referralCode,
+      dto.ticketTierId,
     );
   }
 

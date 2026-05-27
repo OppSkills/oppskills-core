@@ -49,7 +49,7 @@ export interface FestivalFormData {
   organizationName: string;
   organizationLogoUrl: string;
   locationType: "PHYSICAL" | "VIRTUAL";
-  locationCity: string;
+  locationCoords: string;
   locationVirtualLink: string;
 }
 
@@ -87,7 +87,7 @@ function mapFestivalToFormData(festival: unknown): FestivalFormData {
     (getString(festival, "locationType") as "PHYSICAL" | "VIRTUAL") ??
     "PHYSICAL";
   const locAddress = getString(festival, "locationAddress") ?? "";
-  const locCity = getString(festival, "locationCity") ?? "";
+  const locCity = getString(festival, "locationCoords") ?? "";
   const locVirtualLink = getString(festival, "locationVirtualLink") ?? "";
 
   let location = locAddress;
@@ -120,7 +120,7 @@ function mapFestivalToFormData(festival: unknown): FestivalFormData {
     organizationName: getString(festival, "organizationName") ?? "",
     organizationLogoUrl: getString(festival, "organizationLogoUrl") ?? "",
     locationType: locType,
-    locationCity: locCity,
+    locationCoords: locCity,
     locationVirtualLink: locVirtualLink,
   };
 }
@@ -167,7 +167,7 @@ export default function EditFestivalPage() {
     organizationName: "",
     organizationLogoUrl: "",
     locationType: "PHYSICAL",
-    locationCity: "",
+    locationCoords: "",
     locationVirtualLink: "",
   });
 
@@ -234,7 +234,7 @@ export default function EditFestivalPage() {
               : undefined,
           city:
             currentFormData.locationType === "PHYSICAL"
-              ? currentFormData.locationCity
+              ? currentFormData.locationCoords
               : undefined,
           virtualLink:
             currentFormData.locationType === "VIRTUAL"

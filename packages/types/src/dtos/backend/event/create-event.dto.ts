@@ -121,6 +121,15 @@ export class EventLocationDto {
   @IsOptional()
   @IsUrl()
   virtualLink?: string;
+
+  /** Google Place ID. */
+  @ApiPropertyOptional({
+    description: "Google Place ID for resolving coordinates",
+    example: "ChIJ2V-Az5xs3zkR65a6CB1q2wY",
+  })
+  @IsOptional()
+  @IsString()
+  placeId?: string;
 }
 
 /**
@@ -981,6 +990,14 @@ export class JoinEventDto {
   @IsOptional()
   @IsString()
   referralCode?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Active ticket tier for paid events with a free tier (no payment row created)",
+  })
+  @IsOptional()
+  @IsString()
+  ticketTierId?: string;
 }
 
 /**

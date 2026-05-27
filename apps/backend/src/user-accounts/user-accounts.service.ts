@@ -19,6 +19,7 @@ import {
   UserOnboardedEventPayload,
 } from 'src/email/email.events';
 import { CollegesService } from 'src/colleges/colleges.service';
+import { LocationService } from 'src/recommendation/location/location.service';
 
 @Injectable()
 export class UserAccountsService {
@@ -28,6 +29,7 @@ export class UserAccountsService {
     private readonly clerkAuthConfigService: ClerkAuthConfigService,
     private readonly eventEmitter: EventEmitter2,
     private readonly collegesService: CollegesService,
+    private readonly locationService: LocationService,
   ) {}
 
   async create({
@@ -341,12 +343,12 @@ export class UserAccountsService {
       (data as any).collegeName.trim().length > 0
     ) {
       // Validate location presence before creating college
-      if (data.locationCity && data.locationState && data.locationCountry) {
+      if (data.locationCoords && data.locationState && data.locationCountry) {
         try {
           const college = await this.collegesService.findOrCreateCollege(
             (data as any).collegeName,
             {
-              city: data.locationCity,
+              city: data.locationCoords,
               state: data.locationState,
               country: data.locationCountry,
             },
@@ -388,7 +390,7 @@ export class UserAccountsService {
                 collegeSkipped: data.collegeSkipped || false,
                 companyName: data.companyName || null,
                 jobTitle: data.jobTitle || null,
-                locationCity: data.locationCity?.trim() || null,
+                locationCoords: data.locationCoords?.trim() || null,
                 locationState: data.locationState?.trim() || null,
                 locationCountry: data.locationCountry?.trim() || null,
                 interests: data.interests || [],
@@ -409,7 +411,7 @@ export class UserAccountsService {
                 collegeSkipped: data.collegeSkipped || false,
                 companyName: data.companyName || null,
                 jobTitle: data.jobTitle || null,
-                locationCity: data.locationCity?.trim() || null,
+                locationCoords: data.locationCoords?.trim() || null,
                 locationState: data.locationState?.trim() || null,
                 locationCountry: data.locationCountry?.trim() || null,
                 interests: data.interests || [],
@@ -431,7 +433,7 @@ export class UserAccountsService {
         email: result.email,
         firstName: result.firstName || undefined,
         userCategory: data.userCategory,
-        locationCity: data.locationCity?.trim() || undefined,
+        locationCoords: data.locationCoords?.trim() || undefined,
       };
       this.eventEmitter.emit(EMAIL_EVENTS.USER_ONBOARDED, eventPayload);
 
@@ -901,7 +903,7 @@ export class UserAccountsService {
       ) {
         const profile = user.onboardingProfile;
         if (
-          profile.locationCity &&
+          profile.locationCoords &&
           profile.locationState &&
           profile.locationCountry
         ) {
@@ -909,7 +911,7 @@ export class UserAccountsService {
             const college = await this.collegesService.findOrCreateCollege(
               education.collegeName,
               {
-                city: profile.locationCity,
+                city: profile.locationCoords,
                 state: profile.locationState,
                 country: profile.locationCountry,
               },

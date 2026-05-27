@@ -6,6 +6,7 @@ import { AboutSection } from "./_components/AboutSection";
 import { Organizers } from "./_components/Organizers";
 import { Prizes } from "./_components/Prizes";
 import { Attachments } from "./_components/Attachments";
+import { GoogleMap } from "@/components/common/GoogleMap";
 import type {
   CompetitionDetails,
   Round,
@@ -44,8 +45,10 @@ import { getApiErrorMessage } from "@/lib/utils";
 
 export function CompetitionDetailsClient({
   initialData,
+  googleMapApiKey,
 }: {
   initialData?: CompetitionDetails;
+  googleMapApiKey?: string;
 }) {
   const { slug } = useParams();
   const searchParams = useSearchParams();
@@ -283,6 +286,7 @@ export function CompetitionDetailsClient({
                   !!competition.attachments &&
                   competition.attachments.length > 0
                 }
+                hasLocation={!!googleMapApiKey && !!competition.locationCoords}
                 title={competition.title}
                 slug={competition.slug}
               />
@@ -324,6 +328,13 @@ export function CompetitionDetailsClient({
                 <section id="prizes" className="scroll-mt-24">
                   <Prizes prizes={competition.prizes} />
                 </section>
+
+                {googleMapApiKey && competition.locationCoords && (
+                  <section id="location" className="scroll-mt-24 space-y-4">
+                    <h3 className="text-xl font-bold text-foreground">Location</h3>
+                    <GoogleMap apiKey={googleMapApiKey} coords={competition.locationCoords} />
+                  </section>
+                )}
               </div>
             </div>
           </div>

@@ -9,6 +9,9 @@ jest.mock('@oppskills/db', () => {
   const queryRaw = jest.fn();
   const upsert = jest.fn().mockResolvedValue(undefined);
   return {
+    Prisma: {
+      sql: (strings: any, ...values: any[]) => ({ strings, values }),
+    },
     prisma: {
       $queryRaw: queryRaw,
       incompleteRegistrationReminderLogEntity: { upsert },
@@ -22,7 +25,7 @@ describe('formatListingLocation', () => {
       formatListingLocation({
         locationType: 'VIRTUAL',
         locationAddress: null,
-        locationCity: null,
+        locationCoords: null,
         locationVirtualLink: null,
       }),
     ).toBe('Online');
@@ -33,7 +36,7 @@ describe('formatListingLocation', () => {
       formatListingLocation({
         locationType: 'PHYSICAL',
         locationAddress: 'Street 1',
-        locationCity: 'Delhi',
+        locationCoords: 'Delhi',
         locationVirtualLink: null,
       }),
     ).toBe('Street 1, Delhi');
@@ -44,7 +47,7 @@ describe('formatListingLocation', () => {
       formatListingLocation({
         locationType: null,
         locationAddress: null,
-        locationCity: null,
+        locationCoords: null,
         locationVirtualLink: 'https://meet.example.com',
       }),
     ).toBe('Online');
@@ -85,7 +88,7 @@ describe('IncompleteRegistrationReminderService.run', () => {
           endDate: start,
           locationType: 'VIRTUAL',
           locationAddress: null,
-          locationCity: null,
+          locationCoords: null,
           locationVirtualLink: null,
           payerEmail: 'p@x.com',
           firstName: 'Pat',
@@ -136,7 +139,7 @@ describe('IncompleteRegistrationReminderService.run', () => {
           endDate: start,
           locationType: null,
           locationAddress: null,
-          locationCity: null,
+          locationCoords: null,
           locationVirtualLink: null,
           payerEmail: 'x@y.com',
           firstName: null,

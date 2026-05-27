@@ -85,4 +85,51 @@ describe('LocationService', () => {
       ]);
     });
   });
+
+  describe('getPlaceCoords', () => {
+    it('should return null if placeId is empty', async () => {
+      const result = await service.getPlaceCoords('');
+      expect(result).toBeNull();
+    });
+
+    it('should fetch place details from Google and return coordinates string', async () => {
+      const mockGoogleDetailsResponse = {
+        location: {
+          latitude: 28.4594965,
+          longitude: 77.4984261,
+        },
+      };
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue(mockGoogleDetailsResponse),
+      });
+
+      const result = await service.getPlaceCoords('place_123');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://places.googleapis.com/v1/places/place_123',
+        expect.objectContaining({
+          method: 'GET',
+          headers: {
+            'X-Goog-Api-Key': 'test-api-key',
+            'X-Goog-FieldMask': 'location',
+          },
+        }),
+      );
+
+      expect(result).toBe('28.4594965,77.4984261,place_123');
+    });
+
+    it('should return null if fetch fails', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: jest.fn().mockResolvedValue({ error: 'Internal Error' }),
+      });
+
+      const result = await service.getPlaceCoords('place_123');
+      expect(result).toBeNull();
+    });
+  });
 });

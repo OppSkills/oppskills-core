@@ -43,7 +43,7 @@ export default function CompetitionsPage() {
     status: h.status,
     mode: h.mode,
     locationType: h.locationType,
-    location: h.locationCity ?? h.locationAddress ?? undefined,
+    location: h.locationCoords ?? h.locationAddress ?? undefined,
     isFree: h.isFree,
     entryFeeAmount: h.entryFeeAmount,
     lowestTicketPrice: h.lowestTicketPrice,

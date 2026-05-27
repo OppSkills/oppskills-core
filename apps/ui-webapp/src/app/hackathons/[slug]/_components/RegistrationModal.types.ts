@@ -17,6 +17,9 @@ export interface RegistrationModalProps {
   omitTicketTierSection?: boolean;
   /** Saved answers from a previous checkout draft (paid events) */
   prefillAnswers?: Array<{ fieldId: string; value: unknown }> | null;
+  paymentCompleted?: boolean;
+  teamId?: string;
+  isLeader?: boolean;
 }
 
 export type RegistrationMode = "CREATE" | "JOIN";
@@ -54,6 +57,7 @@ export interface CreateTeamFormContentProps {
   type?: "HACKATHON" | "EVENT";
   /** Hide team name / fee / discount; show completion notice (hackathon only) */
   completionMode?: boolean;
+  paymentCompleted?: boolean;
   ticketTiers?: any[];
   ticketTierId?: string;
   setTicketTierId?: (id: string) => void;

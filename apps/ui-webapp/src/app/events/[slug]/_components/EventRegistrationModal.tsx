@@ -142,7 +142,7 @@ export interface UserDataForPrefill {
   companyName?: string;
   jobTitle?: string;
 
-  locationCity?: string;
+  locationCoords?: string;
   locationState?: string;
   locationCountry?: string;
 
@@ -235,7 +235,7 @@ function getPrefilledValue(
 
   // Location / year — for custom registration fields only (not onboarding block)
   if (label.includes("city") && !label.includes("university")) {
-    return userData.locationCity;
+    return userData.locationCoords;
   }
   if (label.includes("state") || label.includes("province")) {
     return userData.locationState;

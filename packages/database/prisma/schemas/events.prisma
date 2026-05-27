@@ -87,10 +87,13 @@ model EventParticipantEntity {
   passEmailSent                     Boolean                                  @default(false) @map("pass_email_sent")
   passEmailSentAt                   DateTime?                                @map("pass_email_sent_at")
   referralId                        String?                                  @map("referral_id")
+  /// Selected ticket tier for free-tier registrations (no payment row).
+  ticketTierId                      String?                                  @map("ticket_tier_id")
   approvedBy                        UserEntity?                              @relation("EventParticipantApprover", fields: [approvedById], references: [id])
   event                             EventEntity                              @relation(fields: [eventId], references: [id], onDelete: Cascade)
   referral                          ReferralEntity?                          @relation(fields: [referralId], references: [id])
   user                              UserEntity                               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticketTier                        TicketTierEntity?                        @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
   eventPass                         EventPassEntity?
   payment                           EventPaymentEntity?
   submission                        EventRegistrationSubmissionEntity?
@@ -103,6 +106,7 @@ model EventParticipantEntity {
   @@index([eventId])
   @@index([userId])
   @@index([referralId])
+  @@index([ticketTierId])
   @@map("event_participant")
   @@schema("events")
 }

@@ -55,8 +55,8 @@ export function buildCreateOnboardingDtoFromRegistration(args: {
   if (profile?.teamPreference) {
     dto.teamPreference = profile.teamPreference;
   }
-  if (profile?.locationCity)
-    dto.locationCity = profile.locationCity ?? undefined;
+  if (profile?.locationCoords)
+    dto.locationCoords = profile.locationCoords ?? undefined;
   if (profile?.locationState)
     dto.locationState = profile.locationState ?? undefined;
   if (profile?.locationCountry) {

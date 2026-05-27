@@ -34,7 +34,7 @@ export interface PublicHackathonListItem {
   approvalStatus: string;
   mode: string;
   locationType: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationAddress: string | null;
   locationVirtualLink: string | null;
   isFree: boolean;

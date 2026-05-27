@@ -143,7 +143,7 @@ const FIELD_METADATA: Record<
   // Location
   locationType: { type: "enum", enumKey: "locationType" },
   locationAddress: { type: "string" },
-  locationCity: { type: "string" },
+  locationCoords: { type: "string" },
   locationVirtualLink: { type: "url" },
 
   // Pricing

@@ -280,7 +280,7 @@ Hackathons support:
 Both festivals and hackathons store location as:
 
 - `locationType`: `PHYSICAL` or `VIRTUAL`
-- Physical: `locationAddress`, `locationCity`
+- Physical: `locationAddress`, `locationCoords`
 - Virtual: `locationVirtualLink`
 
 ### Registration Forms

@@ -36,6 +36,7 @@ export function CreateTeamFormContent({
   setIsOpenToggle,
   type,
   completionMode,
+  paymentCompleted = false,
   ticketTiers = [],
   ticketTierId,
   setTicketTierId,
@@ -46,25 +47,39 @@ export function CreateTeamFormContent({
   );
   const hasTiers = activeTiers.length > 0;
 
-  // Default tier only when exactly one active tier; otherwise wait for explicit selection.
-  React.useEffect(() => {
-    if (!hasTiers || !setTicketTierId) return;
-    if (activeTiers.length === 1 && !ticketTierId) {
-      setTicketTierId(activeTiers[0].id);
-    }
-  }, [hasTiers, ticketTierId, setTicketTierId, activeTiers]);
+  // Synthetic free-tier: shown when isFree=false but organiser added no real tiers.
+  const SYNTHETIC_FREE_TIER = {
+    id: '__free__',
+    name: 'Free Ticket',
+    description: 'No entry fee required',
+    price: 0,
+    isActive: true,
+  };
+  const displayTiers =
+    !isFree && !hasTiers && !omitTicketTierSection
+      ? [SYNTHETIC_FREE_TIER]
+      : activeTiers;
 
-  const selectedTier = hasTiers
-    ? activeTiers.find((t: any) => t.id === ticketTierId) || activeTiers[0]
-    : null;
+  // Default: auto-select when there is exactly one selectable tier.
+  React.useEffect(() => {
+    if (!setTicketTierId) return;
+    if (displayTiers.length === 1 && !ticketTierId) {
+      setTicketTierId(displayTiers[0].id);
+    }
+  }, [displayTiers.length, ticketTierId, setTicketTierId]);
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {completionMode && (
         <div className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-sm text-neutral-800">
-          {type !== "EVENT" && !isFree ? (
+          {type !== "EVENT" && !isFree && paymentCompleted ? (
             <p>
               Payment received. Complete the form below to finish your
               registration — you will not be charged again.
+            </p>
+          ) : type !== "EVENT" && !isFree && !paymentCompleted ? (
+            <p>
+              Please complete the form and payment below to finish your registration.
             </p>
           ) : (
             <p>Finish your registration by completing the form below.</p>
@@ -112,15 +127,15 @@ export function CreateTeamFormContent({
         </div>
       )}
 
-      {!isFree && !completionMode && (
+      {!isFree && (!completionMode || !paymentCompleted) && (
         <div className="space-y-4">
-          {hasTiers && !omitTicketTierSection ? (
+          {(hasTiers || displayTiers.length > 0) && !omitTicketTierSection ? (
             <div className="space-y-3">
               <Label className="text-neutral-900 font-semibold text-lg ml-1">
                 Select Ticket
               </Label>
               <div className="flex flex-col gap-3">
-                {activeTiers.map((tier: any) => {
+                {displayTiers.map((tier: any) => {
                   const base =
                     typeof tier.price === "number"
                       ? tier.price
@@ -129,7 +144,7 @@ export function CreateTeamFormContent({
                     feeBearer === "PARTICIPANT"
                       ? Math.ceil(base * 0.0236 * 100) / 100
                       : 0;
-                  const total = base + fee;
+                  const isTierFree = tier.isFree === true || base <= 0;
                   const isSelected = ticketTierId === tier.id;
 
                   return (
@@ -139,64 +154,66 @@ export function CreateTeamFormContent({
                         setTicketTierId && setTicketTierId(tier.id)
                       }
                       className={cn(
-                        "rounded-2xl border-2 p-4 cursor-pointer transition-all flex flex-col",
+                        "rounded-2xl border-2 p-4 cursor-pointer transition-all",
                         isSelected
-                          ? "border-primary-600 bg-primary-50/30 shadow-md shadow-primary-900/5"
-                          : "border-neutral-200 bg-white hover:border-neutral-300",
+                          ? "border-purple-600 bg-purple-50/40 shadow-sm"
+                          : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50",
                       )}
                     >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-neutral-900 text-lg poppins">
-                            {tier.name}
-                          </span>
-                          {tier.description && (
-                            <span className="text-sm text-neutral-500 mt-1">
-                              {tier.description}
-                            </span>
-                          )}
-                        </div>
-                        <div
+                      {/* Top row: name + radio */}
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <span
                           className={cn(
-                            "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5",
+                            "font-semibold text-base leading-tight",
+                            isSelected ? "text-purple-900" : "text-neutral-800",
+                          )}
+                        >
+                          {tier.name}
+                        </span>
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "shrink-0 mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors",
                             isSelected
-                              ? "border-primary-600"
-                              : "border-neutral-300",
+                              ? "border-purple-600 bg-purple-600"
+                              : "border-neutral-300 bg-white",
                           )}
                         >
                           {isSelected && (
-                            <div className="w-2.5 h-2.5 rounded-full bg-primary-600" />
+                            <span className="h-2 w-2 rounded-full bg-white" />
                           )}
-                        </div>
+                        </span>
                       </div>
 
-                      <div className="mt-3 pt-3 border-t border-neutral-100 flex flex-col gap-1 w-full">
-                        {feeBearer === "PARTICIPANT" && base > 0 ? (
-                          <>
-                            <div className="flex justify-between text-neutral-600 text-sm">
-                              <span>Entry Fee</span>
-                              <span className="font-medium text-neutral-900">
-                                ₹{base.toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-start text-neutral-500 text-xs">
-                              <span>Transaction Charges</span>
-                              <span className="shrink-0">
-                                ₹{fee.toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between font-bold text-neutral-900 text-sm mt-1 pt-1 border-t border-neutral-100">
-                              <span>Total Payable</span>
-                              <span>₹{total.toFixed(2)}</span>
-                            </div>
-                          </>
+                      {/* Price row */}
+                      <div className="flex items-baseline gap-2 mb-2">
+                        {isTierFree ? (
+                          <span className="text-xl font-bold text-neutral-900">
+                            Free
+                          </span>
                         ) : (
-                          <div className="flex justify-between font-bold text-neutral-900 text-base">
-                            <span>Ticket Price</span>
-                            <span>₹{base.toFixed(2)}</span>
-                          </div>
+                          <>
+                            <span className="text-xl font-bold text-neutral-900">
+                              ₹{" "}
+                              {base.toLocaleString("en-IN", {
+                                maximumFractionDigits: 0,
+                              })}
+                            </span>
+                            {fee > 0 && (
+                              <span className="text-sm text-neutral-500 font-medium">
+                                + ₹{fee.toFixed(2)}
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
+
+                      {/* Description */}
+                      {tier.description ? (
+                        <p className="text-xs sm:text-sm text-neutral-500 leading-relaxed line-clamp-3">
+                          {tier.description}
+                        </p>
+                      ) : null}
                     </div>
                   );
                 })}

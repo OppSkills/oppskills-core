@@ -3,6 +3,10 @@
 import { format, isAfter } from "date-fns";
 import { Loader2, CheckCircle } from "lucide-react";
 import type { EventDetails } from "./types";
+import {
+  isFreeTicketTierId,
+  type TicketTierLike,
+} from "@/lib/registration/ticketTierUtils";
 
 export interface EventRegisterCtaProps {
   event: EventDetails;
@@ -10,6 +14,8 @@ export interface EventRegisterCtaProps {
   isCheckingRegistration?: boolean;
   isRegistered?: boolean;
   needsCompleteRegistration?: boolean;
+  selectedTicketTierId?: string | null;
+  ticketTiers?: TicketTierLike[];
 }
 
 /**
@@ -21,12 +27,15 @@ export function EventRegisterCta({
   isCheckingRegistration = false,
   isRegistered = false,
   needsCompleteRegistration = false,
+  selectedTicketTierId = null,
+  ticketTiers,
 }: EventRegisterCtaProps) {
   const deadline = event.registrationDeadline
     ? new Date(event.registrationDeadline)
     : null;
   const isDeadlinePassed = deadline ? isAfter(new Date(), deadline) : false;
 
+  const tiers = ticketTiers ?? event.ticketTiers ?? [];
   const tickets = event.tickets ?? [];
   const prices = tickets
     .map((t) => t.price)
@@ -35,8 +44,14 @@ export function EventRegisterCta({
   const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
   const hasMultiplePrices = prices.length > 1 && minPrice !== maxPrice;
   const eventFree = event.isFree === true;
+  const selectedTierIsFree = isFreeTicketTierId(
+    selectedTicketTierId,
+    tiers,
+  );
   const effectiveFree =
-    eventFree || (prices.length > 0 && minPrice === 0 && maxPrice === 0);
+    eventFree ||
+    selectedTierIsFree ||
+    (prices.length > 0 && minPrice === 0 && maxPrice === 0);
 
   const currency = event.currency || "INR";
   const formatMoney = (n: number) =>
@@ -73,32 +88,30 @@ export function EventRegisterCta({
     registerButtonClass = "bg-neutral-300 text-neutral-600 cursor-not-allowed";
   } else if (effectiveFree) {
     buttonText = "Register now";
-  } else {
-    if (priceDisplay) {
-      buttonText = "Click to pay";
-    }
-
-    return (
-      <button
-        type="button"
-        onClick={onRegister}
-        disabled={isDisabled}
-        className={`w-full flex items-center justify-center gap-2 ${registerButtonClass} rounded-full h-[52px] font-semibold text-base shadow-sm transition-colors disabled:opacity-90`}
-      >
-        {isCheckingRegistration ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-            {buttonText}
-          </>
-        ) : isRegistered ? (
-          <>
-            <CheckCircle className="w-5 h-5 shrink-0" />
-            {buttonText}
-          </>
-        ) : (
-          buttonText
-        )}
-      </button>
-    );
+  } else if (priceDisplay) {
+    buttonText = "Click to pay";
   }
+
+  return (
+    <button
+      type="button"
+      onClick={onRegister}
+      disabled={isDisabled}
+      className={`w-full flex items-center justify-center gap-2 ${registerButtonClass} rounded-full h-[52px] font-semibold text-base shadow-sm transition-colors disabled:opacity-90`}
+    >
+      {isCheckingRegistration ? (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+          {buttonText}
+        </>
+      ) : isRegistered ? (
+        <>
+          <CheckCircle className="w-5 h-5 shrink-0" />
+          {buttonText}
+        </>
+      ) : (
+        buttonText
+      )}
+    </button>
+  );
 }

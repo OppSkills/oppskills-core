@@ -756,7 +756,7 @@ model FestivalEntity {
   // Location
   locationType        LocationType?
   locationAddress     String?
-  locationCity        String?
+  locationCoords        String?
   locationVirtualLink String?
 
   // Dates
@@ -1161,7 +1161,7 @@ The platform enforces numerous business rules to maintain data integrity and pre
 - locationType: 'PHYSICAL'
 - locationAddress: non-empty string
 // Optional:
-- locationCity: string
+- locationCoords: string
 ```
 
 **VIRTUAL Location:**

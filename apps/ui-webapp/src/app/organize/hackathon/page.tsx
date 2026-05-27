@@ -100,6 +100,7 @@ export default function Page() {
     eventStartDate: Date | undefined;
     eventEndDate: Date | undefined;
     eventLocation: string;
+    eventLocationPlaceId: string | undefined;
     eventTimeFrom: string;
     eventDescription: string;
     eventThumbnail: string;
@@ -117,6 +118,7 @@ export default function Page() {
     eventStartDate: undefined,
     eventEndDate: undefined,
     eventLocation: "",
+    eventLocationPlaceId: undefined,
     eventTimeFrom: "12:00",
     eventDescription: "",
     eventThumbnail: "",
@@ -351,12 +353,13 @@ export default function Page() {
    */
   function toLocationDto(
     input: string,
+    placeId?: string,
   ): HackathonLocationDto | FestivalLocationDto | undefined {
     const trimmed = input.trim();
     if (trimmed.length === 0) return undefined;
 
     if (trimmed.startsWith("OFFLINE:")) {
-      return { type: "PHYSICAL", address: trimmed.substring(8).trim() };
+      return { type: "PHYSICAL", address: trimmed.substring(8).trim(), placeId };
     }
     if (trimmed.startsWith("VIRTUAL:")) {
       return { type: "VIRTUAL", virtualLink: trimmed.substring(8).trim() };
@@ -375,7 +378,7 @@ export default function Page() {
       }
       return { type: "VIRTUAL", virtualLink: url };
     }
-    return { type: "PHYSICAL", address: trimmed };
+    return { type: "PHYSICAL", address: trimmed, placeId };
   }
 
   /**
@@ -789,8 +792,8 @@ export default function Page() {
             <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4">
               <LocationInputModal
                 value={formData.eventLocation}
-                onChange={(val) =>
-                  setFormData({ ...formData, eventLocation: val })
+                onChange={(val, placeId) =>
+                  setFormData({ ...formData, eventLocation: val, eventLocationPlaceId: placeId })
                 }
                 label="Add Hackathon Location"
                 subLabel="Offline location or virtual link"
@@ -1076,7 +1079,7 @@ export default function Page() {
                     participantType: toParticipantTypeValue(
                       formData.participantType,
                     ),
-                    location: toLocationDto(formData.eventLocation) as
+                    location: toLocationDto(formData.eventLocation, formData.eventLocationPlaceId) as
                       | HackathonLocationDto
                       | undefined,
                     registrationDeadline: toIsoDateOnly(

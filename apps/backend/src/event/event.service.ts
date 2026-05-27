@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, prisma } from '@oppskills/db';
+import { Decimal } from '@prisma/client/runtime/library';
 import type {
   CreateEventDto,
   UpdateEventDto,
@@ -23,6 +24,7 @@ import type { EventJoinedEventPayload } from '../email/email.events';
 import { AnalyticsService } from 'src/analytics/analytics.service';
 import { ReferralService } from 'src/referral/referral.service';
 import { ReferralEntityTypeDto } from '@oppskills/types';
+import { LocationService } from 'src/recommendation/location/location.service';
 
 type AccessLevelValue = 'ADMIN' | 'USER' | 'VIEWER';
 type LifecycleStatus =
@@ -44,6 +46,7 @@ export class EventService {
     private readonly eventEmitter: EventEmitter2,
     private readonly analyticsService: AnalyticsService,
     private readonly referralService: ReferralService,
+    private readonly locationService: LocationService,
   ) {}
 
   /**
@@ -66,6 +69,18 @@ export class EventService {
       ? this.parseDate(dto.registrationDeadline, 'registrationDeadline')
       : null;
 
+    let locationCoords = dto.location?.city;
+    if (dto.location?.placeId) {
+      try {
+        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        if (resolved) {
+          locationCoords = resolved;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+      }
+    }
+
     return prisma.eventEntity.create({
       data: {
         slug,
@@ -80,7 +95,7 @@ export class EventService {
 
         locationType: dto.location?.type,
         locationAddress: dto.location?.address,
-        locationCity: dto.location?.city,
+        locationCoords,
         locationVirtualLink: dto.location?.virtualLink,
 
         registrationDeadline,
@@ -151,7 +166,7 @@ export class EventService {
         OR: [
           { name: { contains: input.search, mode: 'insensitive' } },
           { description: { contains: input.search, mode: 'insensitive' } },
-          { locationCity: { contains: input.search, mode: 'insensitive' } },
+          { locationCoords: { contains: input.search, mode: 'insensitive' } },
         ],
       });
     }
@@ -338,7 +353,7 @@ export class EventService {
           status: true,
           approvalStatus: true,
           locationType: true,
-          locationCity: true,
+          locationCoords: true,
           locationAddress: true,
           locationVirtualLink: true,
           isFree: true,
@@ -382,7 +397,7 @@ export class EventService {
           },
           ticketTiers: {
             where: { isActive: true },
-            select: { price: true },
+            select: { price: true, isFree: true },
           },
         },
       }),
@@ -391,6 +406,7 @@ export class EventService {
 
     const items = events.map((e) => {
       const tierNums = (e.ticketTiers ?? [])
+        .filter((t) => !t.isFree)
         .map((t) => Number(t.price))
         .filter((n) => Number.isFinite(n));
       const lowestTicketPrice =
@@ -432,7 +448,7 @@ export class EventService {
         status: true,
         approvalStatus: true,
         locationType: true,
-        locationCity: true,
+        locationCoords: true,
         locationAddress: true,
         locationVirtualLink: true,
         isFree: true,
@@ -500,6 +516,7 @@ export class EventService {
             currency: true,
             capacity: true,
             order: true,
+            isFree: true,
           },
           orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
         },
@@ -542,7 +559,7 @@ export class EventService {
         status: true,
         approvalStatus: true,
         locationType: true,
-        locationCity: true,
+        locationCoords: true,
         locationAddress: true,
         locationVirtualLink: true,
         isFree: true,
@@ -600,6 +617,7 @@ export class EventService {
             currency: true,
             capacity: true,
             order: true,
+            isFree: true,
           },
           orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
         },
@@ -989,6 +1007,18 @@ export class EventService {
       ? this.parseDate(dto.registrationDeadline, 'registrationDeadline')
       : undefined;
 
+    let locationCoords = dto.location?.city;
+    if (dto.location?.placeId) {
+      try {
+        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        if (resolved) {
+          locationCoords = resolved;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+      }
+    }
+
     // Build update data
     const updateData: Record<string, unknown> = {
       slug,
@@ -1002,7 +1032,7 @@ export class EventService {
 
       locationType: dto.location?.type,
       locationAddress: dto.location?.address,
-      locationCity: dto.location?.city,
+      locationCoords,
       locationVirtualLink: dto.location?.virtualLink,
 
       registrationDeadline,
@@ -1124,6 +1154,7 @@ export class EventService {
     userId: string,
     answers?: Array<{ fieldId: string; value: string | number | string[] }>,
     referralCode?: string,
+    ticketTierId?: string,
   ) {
     const event = await prisma.eventEntity.findUnique({
       where: { id: eventId, isDeleted: false },
@@ -1135,7 +1166,7 @@ export class EventService {
         eventType: true,
         locationType: true,
         locationAddress: true,
-        locationCity: true,
+        locationCoords: true,
         locationVirtualLink: true,
         ownerId: true,
         festivalId: true,
@@ -1183,20 +1214,53 @@ export class EventService {
       throw new BadRequestException('You cannot join your own event.');
     }
 
-    // Check if already joined
     const existing = await prisma.eventParticipantEntity.findUnique({
       where: {
         eventId_userId: { eventId, userId },
       },
+      select: { id: true, checkoutPending: true },
     });
-    if (existing) {
+    if (existing && !existing.checkoutPending) {
       throw new ConflictException('You have already joined this event.');
     }
 
-    // For paid events, verify payment has been captured
-    // (Payment flow creates participant via EventPaymentService.verifyPayment)
-    if (!event.isFree) {
-      // Check if user is from a free college
+    let resolvedFreeTierId: string | null = null;
+    if (ticketTierId) {
+      const tier = await prisma.ticketTierEntity.findFirst({
+        where: { id: ticketTierId, eventId, isActive: true },
+        select: { id: true, isFree: true, price: true, capacity: true },
+      });
+      if (!tier) {
+        throw new BadRequestException(
+          'Invalid or inactive ticket tier selected',
+        );
+      }
+      const tierIsFree =
+        tier.isFree || new Decimal(tier.price).lessThanOrEqualTo(0);
+      if (!event.isFree && !tierIsFree) {
+        throw new BadRequestException(
+          'This ticket requires payment. Complete checkout for paid tiers.',
+        );
+      }
+      if (tierIsFree) {
+        resolvedFreeTierId = tier.id;
+        if (tier.capacity != null) {
+          const sold = await prisma.eventParticipantEntity.count({
+            where: {
+              eventId,
+              ticketTierId: tier.id,
+              checkoutPending: false,
+            },
+          });
+          if (sold >= tier.capacity) {
+            throw new BadRequestException('This ticket type is sold out');
+          }
+        }
+      }
+    }
+
+    // Paid events: require captured payment unless college-free or free ticket tier.
+    if (!event.isFree && !resolvedFreeTierId) {
       let isCollegeFree = false;
       if (event.freeCollegeIds && event.freeCollegeIds.length > 0) {
         const userProfile = await prisma.userOnboardingProfileEntity.findUnique(
@@ -1214,7 +1278,6 @@ export class EventService {
       }
 
       if (!isCollegeFree) {
-        // Check for captured payment
         const capturedPayment = await prisma.eventPaymentEntity.findFirst({
           where: {
             eventId,
@@ -1680,40 +1743,71 @@ export class EventService {
         throw new BadRequestException('Event is at full capacity.');
       }
 
-      // Create participant and increment count
-      // Set approval fields based on pass sending mode
       const isImmediate = event.passSendingMode === 'IMMEDIATE';
-      const participant = await tx.eventParticipantEntity.create({
-        data: {
-          eventId,
-          userId,
-          referralId,
-          approved: isImmediate,
-          approvedAt: isImmediate ? new Date() : null,
-          passEmailSent: false, // Will be set by email listener
-        },
-      });
+      let participant: { id: string };
+      let incrementRegistrationCount = false;
 
-      await tx.eventEntity.update({
-        where: { id: eventId },
-        data: { registrationCount: { increment: 1 } },
-      });
-
-      // Create submission and answers if provided
-      let submissionId: string | undefined;
-      if (providedAnswers.length > 0 && registrationFields.length > 0) {
-        const submission = await tx.eventRegistrationSubmissionEntity.create({
+      if (existing?.checkoutPending) {
+        participant = await tx.eventParticipantEntity.update({
+          where: { id: existing.id },
+          data: {
+            checkoutPending: false,
+            ticketTierId: resolvedFreeTierId,
+            referralId: referralId ?? undefined,
+            approved: isImmediate,
+            approvedAt: isImmediate ? new Date() : null,
+          },
+        });
+        incrementRegistrationCount = true;
+      } else {
+        participant = await tx.eventParticipantEntity.create({
           data: {
             eventId,
             userId,
-            participantId: participant.id,
+            referralId,
+            ticketTierId: resolvedFreeTierId,
+            checkoutPending: false,
+            approved: isImmediate,
+            approvedAt: isImmediate ? new Date() : null,
+            passEmailSent: false,
           },
         });
+        incrementRegistrationCount = true;
+      }
+
+      if (incrementRegistrationCount) {
+        await tx.eventEntity.update({
+          where: { id: eventId },
+          data: { registrationCount: { increment: 1 } },
+        });
+      }
+
+      let submissionId: string | undefined;
+      if (providedAnswers.length > 0 && registrationFields.length > 0) {
+        let submission = await tx.eventRegistrationSubmissionEntity.findFirst({
+          where: { eventId, userId },
+        });
+        if (submission) {
+          await tx.eventRegistrationAnswerEntity.deleteMany({
+            where: { submissionId: submission.id },
+          });
+          await tx.eventRegistrationSubmissionEntity.update({
+            where: { id: submission.id },
+            data: { participantId: participant.id },
+          });
+        } else {
+          submission = await tx.eventRegistrationSubmissionEntity.create({
+            data: {
+              eventId,
+              userId,
+              participantId: participant.id,
+            },
+          });
+        }
         submissionId = submission.id;
 
-        // Create answers
         const answerData = providedAnswers.map((a) => ({
-          submissionId: submission.id,
+          submissionId: submission!.id,
           fieldId: a.fieldId,
           valueText:
             typeof a.value === 'string' ? a.value : JSON.stringify(a.value),
@@ -1766,7 +1860,7 @@ export class EventService {
     // Build location string
     let eventLocation: string | undefined;
     if (event.locationType === 'PHYSICAL') {
-      eventLocation = [event.locationAddress, event.locationCity]
+      eventLocation = [event.locationAddress, event.locationCoords]
         .filter(Boolean)
         .join(', ');
     } else if (event.locationType === 'VIRTUAL' && event.locationVirtualLink) {
@@ -2112,6 +2206,8 @@ export class EventService {
         id: true,
         joinedAt: true,
         checkoutPending: true,
+        ticketTierId: true,
+        ticketTier: { select: { id: true, name: true, isFree: true } },
       },
     });
 
@@ -2146,8 +2242,24 @@ export class EventService {
         },
       });
       paymentCompleted = !!payment;
-      ticketTierId = payment?.ticketTierId ?? payment?.ticketTier?.id ?? null;
-      ticketTierName = payment?.ticketTier?.name ?? null;
+      ticketTierId =
+        payment?.ticketTierId ??
+        payment?.ticketTier?.id ??
+        participant?.ticketTierId ??
+        null;
+      ticketTierName =
+        payment?.ticketTier?.name ?? participant?.ticketTier?.name ?? null;
+
+      if (
+        !paymentCompleted &&
+        participant &&
+        !participant.checkoutPending &&
+        participant.ticketTier?.isFree
+      ) {
+        paymentCompleted = true;
+        ticketTierId = participant.ticketTier.id;
+        ticketTierName = participant.ticketTier.name;
+      }
     } else {
       paymentCompleted = true;
     }
@@ -2509,7 +2621,7 @@ export class EventService {
                   companyName: true,
                   jobTitle: true,
                   collegeCurrentYear: true,
-                  locationCity: true,
+                  locationCoords: true,
                   locationState: true,
                   locationCountry: true,
                   college: {
@@ -2542,6 +2654,9 @@ export class EventService {
             select: {
               isUsed: true,
             },
+          },
+          ticketTier: {
+            select: { id: true, name: true },
           },
           payment: {
             select: {
@@ -2590,7 +2705,7 @@ export class EventService {
       let location = '';
       if (profile) {
         const parts: string[] = [];
-        if (profile.locationCity) parts.push(profile.locationCity);
+        if (profile.locationCoords) parts.push(profile.locationCoords);
         if (profile.locationState) parts.push(profile.locationState);
         if (profile.locationCountry) parts.push(profile.locationCountry);
         location = parts.join(', ');
@@ -2646,8 +2761,10 @@ export class EventService {
         passEmailSent: p.passEmailSent,
         passEmailSentAt: p.passEmailSentAt?.toISOString(),
         approvedAt: p.approvedAt?.toISOString(),
-        ticketTierId: p.payment?.ticketTierId ?? null,
-        ticketTierName: p.payment?.ticketTier?.name ?? null,
+        ticketTierId:
+          p.payment?.ticketTierId ?? p.ticketTierId ?? null,
+        ticketTierName:
+          p.payment?.ticketTier?.name ?? p.ticketTier?.name ?? null,
         paymentAmount: p.payment ? Number(p.payment.grossAmount) : null,
         paymentStatus: p.payment?.paymentStatus ?? null,
         paymentCapturedAt: p.payment?.capturedAt?.toISOString() ?? null,

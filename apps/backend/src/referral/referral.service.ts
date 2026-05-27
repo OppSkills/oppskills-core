@@ -19,7 +19,7 @@ import { ReferralCounterService } from './referral-counter.service';
 const ONBOARDING_PROFILE_SELECT = {
   select: {
     userCategory: true,
-    locationCity: true,
+    locationCoords: true,
     locationState: true,
     locationCountry: true,
     college: { select: { name: true } },
@@ -494,7 +494,7 @@ export class ReferralService {
     const formatLocation = (profile: any) => {
       if (!profile) return 'Unknown';
       const parts = [
-        profile.locationCity,
+        profile.locationCoords,
         profile.locationState,
         profile.locationCountry,
       ].filter(Boolean);
@@ -890,7 +890,7 @@ export class ReferralService {
   private formatLocation(profile: any): string {
     if (!profile) return 'Unknown';
     const parts = [
-      profile.locationCity,
+      profile.locationCoords,
       profile.locationState,
       profile.locationCountry,
     ].filter(Boolean);

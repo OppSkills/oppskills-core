@@ -158,6 +158,14 @@ export class EventPaymentService {
           'Invalid or inactive ticket tier selected',
         );
       }
+      if (
+        tier.isFree ||
+        new Decimal(tier.price).lessThanOrEqualTo(0)
+      ) {
+        throw new BadRequestException(
+          'This is a free ticket. Complete registration on the event page without checkout.',
+        );
+      }
       if (tier.capacity != null) {
         const sold = await prisma.eventPaymentEntity.count({
           where: {
@@ -171,7 +179,9 @@ export class EventPaymentService {
           throw new BadRequestException('This ticket type is sold out');
         }
       }
-      registrationFee = new Decimal(tier.price);
+      registrationFee = tier.isFree
+        ? new Decimal(0)
+        : new Decimal(tier.price);
     } else {
       if (params.ticketTierId) {
         throw new BadRequestException('Ticket type is not used for this event');
@@ -550,6 +560,14 @@ export class EventPaymentService {
       if (!tier) {
         throw new BadRequestException(
           'Invalid or inactive ticket tier selected',
+        );
+      }
+      if (
+        tier.isFree ||
+        new Decimal(tier.price).lessThanOrEqualTo(0)
+      ) {
+        throw new BadRequestException(
+          'This is a free ticket. Complete registration on the event page without checkout.',
         );
       }
     } else if (params.ticketTierId) {

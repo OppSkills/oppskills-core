@@ -55,7 +55,7 @@ export class EmailListener {
     private readonly emailService: EmailService,
     @Inject(forwardRef(() => EventPassService))
     private readonly eventPassService: EventPassService,
-  ) {}
+  ) { }
 
   @OnEvent(EMAIL_EVENTS.USER_CREATED)
   async handleUserCreated(payload: UserCreatedEventPayload): Promise<void> {
@@ -83,7 +83,7 @@ export class EmailListener {
         firstName: payload.firstName,
         email: payload.email,
         userCategory: payload.userCategory,
-        locationCity: payload.locationCity,
+        locationCoords: payload.locationCoords,
         baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
       },
     });
@@ -180,7 +180,7 @@ export class EmailListener {
       );
       let eventLocation: string | undefined;
       if (event.locationType === 'PHYSICAL') {
-        eventLocation = [event.locationAddress, event.locationCity]
+        eventLocation = [event.locationAddress, event.locationCoords]
           .filter(Boolean)
           .join(', ');
       } else if (

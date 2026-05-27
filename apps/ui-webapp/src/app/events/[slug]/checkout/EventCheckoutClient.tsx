@@ -20,6 +20,7 @@ import {
   getPublicEventBySlug,
   verifyEventPayment,
 } from "@/lib/api/eventApi";
+import { isFreeTicketTierId } from "@/lib/registration/ticketTierUtils";
 import { clearPendingEventRegistration } from "@/lib/registration/pendingHackathonRegistration";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ import {
   UpiLogoRow,
   WalletLogoRow,
 } from "@/components/checkout/PaymentMethodLogos";
+import { isInvalidDiscountCodeMessage } from "@/components/checkout/coupon";
 import {
   type PayMethod,
   razorpayMethodBlock,
@@ -67,6 +69,7 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
   const [order, setOrder] = useState<any>(null);
   const [orderLoading, setOrderLoading] = useState(true);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const [phase, setPhase] = useState<"idle" | "processing">("idle");
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PayMethod | null>(null);
@@ -85,6 +88,7 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
   const loadOrder = useCallback(async () => {
     setOrderLoading(true);
     setOrderError(null);
+    setCouponError(null);
     try {
       const token = await getToken();
       if (!token) {
@@ -103,7 +107,7 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
         pub.organizationName ||
         pub.organization_name ||
         [pub.owner?.firstName, pub.owner?.lastName].filter(Boolean).join(" ") ||
-        pub.locationCity ||
+        pub.locationCoords ||
         "";
       setEventSubtitle(org || "Event registration");
       if (pub.bannerImageUrl) {
@@ -115,6 +119,13 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
           (x: { id: string }) => x.id === tierFromUrl,
         );
         if (t) {
+          if (isFreeTicketTierId(tierFromUrl, pub.ticketTiers)) {
+            toast.info(
+              "This is a free ticket. Finish registration on the event page.",
+            );
+            router.replace(`/events/${slug}`);
+            return;
+          }
           setTierLabel(t.name || "Ticket");
           setTierHint(
             typeof t.description === "string" && t.description.trim()
@@ -146,7 +157,25 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
       }
       setOrder(o);
     } catch (e) {
-      setOrderError(getApiErrorMessage(e, "Could not load checkout."));
+      const msg = getApiErrorMessage(e, "Could not load checkout.");
+      if (appliedDiscount && isInvalidDiscountCodeMessage(msg)) {
+        setCouponError(msg);
+        try {
+          const token = await getToken();
+          if (token) {
+            const o = await createEventPaymentOrder(token, slug, {
+              ticketTierId: tierFromUrl,
+            });
+            if (!(o.zeroAmountPayment || o.amountPaise === 0)) {
+              setOrder(o);
+            }
+          }
+        } catch {
+          /* keep previous order if baseline refresh fails */
+        }
+      } else {
+        setOrderError(msg);
+      }
     } finally {
       setOrderLoading(false);
     }
@@ -490,9 +519,10 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
                   <Input
                     placeholder="Enter coupon code"
                     value={discountInput}
-                    onChange={(e) =>
-                      setDiscountInput(e.target.value.toUpperCase())
-                    }
+                    onChange={(e) => {
+                      setDiscountInput(e.target.value.toUpperCase());
+                      setCouponError(null);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -515,6 +545,9 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
                     Apply coupon
                   </Button>
                 </div>
+                {couponError ? (
+                  <p className="text-sm text-red-600 -mt-2">{couponError}</p>
+                ) : null}
 
                 <div>
                   <h3 className="text-sm font-bold text-neutral-900 mb-2">
@@ -525,8 +558,6 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
                       <Loader2 className="h-5 w-5 animate-spin" />
                       Calculating…
                     </div>
-                  ) : orderError ? (
-                    <p className="text-sm text-red-600 py-2">{orderError}</p>
                   ) : order ? (
                     <div className="rounded-lg border border-neutral-200 overflow-hidden text-sm">
                       <div className="flex justify-between px-3 py-2 bg-white">
@@ -537,7 +568,10 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
                       </div>
                       {discount > 0 ? (
                         <div className="flex justify-between px-3 py-2 bg-emerald-50/60 border-t border-neutral-100">
-                          <span className="text-emerald-800">Discount</span>
+                          <span className="text-emerald-800">
+                            Coupon
+                            {appliedDiscount ? ` (${appliedDiscount})` : ""}
+                          </span>
                           <span className="tabular-nums font-medium text-emerald-800">
                             − {discount.toFixed(2)} {order.currency || "INR"}
                           </span>
@@ -591,6 +625,8 @@ export default function EventCheckoutClient({ slug }: { slug: string }) {
                         </span>
                       </div>
                     </div>
+                  ) : orderError ? (
+                    <p className="text-sm text-red-600 py-2">{orderError}</p>
                   ) : null}
                 </div>
 

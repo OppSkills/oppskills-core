@@ -226,7 +226,7 @@ model FestivalEntity {
   // Location
   locationType        LocationType
   locationAddress     String?
-  locationCity        String?
+  locationCoords        String?
   locationVirtualLink String?
 
   // Schedule
@@ -295,7 +295,7 @@ model HackathonEntity {
   // Location
   locationType        LocationType
   locationAddress     String?
-  locationCity        String?
+  locationCoords        String?
   locationVirtualLink String?
 
   // Registration
@@ -803,7 +803,7 @@ const hackathon = await prisma.hackathonEntity.create({
     hackathonType: "CODING_HACKATHON",
     participantType: "TEAM_OF_4",
     locationType: "PHYSICAL",
-    locationCity: "San Francisco",
+    locationCoords: "San Francisco",
     rounds: {
       create: [
         {

@@ -86,5 +86,10 @@ export default async function Page({ params }: Props) {
     );
   }
 
-  return <CompetitionDetailsClient initialData={transformApiData(data)} />;
+  return (
+    <CompetitionDetailsClient
+      initialData={transformApiData(data)}
+      googleMapApiKey={process.env.GOOGLE_MAP_API}
+    />
+  );
 }

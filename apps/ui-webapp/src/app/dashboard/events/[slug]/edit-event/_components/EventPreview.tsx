@@ -10,6 +10,7 @@ import { HackathonDetailFallback } from "@/components/boneyard/loading-fallbacks
 import { format } from "date-fns";
 import { useEventBySlug } from "@/hooks/useEventBySlug";
 import DOMPurify from "isomorphic-dompurify";
+import { ensureAbsoluteUrl } from "@/lib/utils";
 
 // Re-export of internal types for mapping
 interface EventData {
@@ -22,7 +23,7 @@ interface EventData {
   endDate: string;
   status: string;
   locationType: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationAddress: string | null;
   locationVirtualLink: string | null;
   isFree: boolean;
@@ -76,9 +77,10 @@ function getInitials(
  */
 function formatLocation(event: {
   locationType: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationAddress: string | null;
   locationVirtualLink: string | null;
+  organizationName?: string | null;
 }): { venueName: string; venueAddress: string } {
   if (event.locationType === "VIRTUAL" || event.locationType === "ONLINE") {
     return {
@@ -88,8 +90,8 @@ function formatLocation(event: {
   }
 
   return {
-    venueName: event.locationAddress || "TBA",
-    venueAddress: event.locationCity || "",
+    venueName: event.organizationName || "Venue Name",
+    venueAddress: event.locationAddress || "TBA",
   };
 }
 
@@ -227,7 +229,7 @@ export function EventPreview({ slug }: EventPreviewProps) {
             {event.bannerImageUrl && (
               <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-sm">
                 <Image
-                  src={event.bannerImageUrl}
+                  src={ensureAbsoluteUrl(event.bannerImageUrl)}
                   alt={event.name}
                   fill
                   className="object-cover"
@@ -273,7 +275,7 @@ export function EventPreview({ slug }: EventPreviewProps) {
                   <div className="p-4 bg-[#FDF2FF]  rounded-xl border border-purple-100  flex items-center gap-4">
                     {event.owner.imageUrl ? (
                       <Image
-                        src={event.owner.imageUrl}
+                        src={ensureAbsoluteUrl(event.owner.imageUrl)}
                         alt={`${event.owner.firstName || ""} ${event.owner.lastName || ""}`}
                         width={48}
                         height={48}

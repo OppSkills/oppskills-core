@@ -141,6 +141,8 @@ export interface FormData {
   eventName: string;
   eventDate: Date | undefined;
   eventLocation: string;
+  /** Place ID from Google autocomplete suggestion — set when user picks from dropdown */
+  eventLocationPlaceId?: string;
   eventTimeFrom: string;
   eventDescription: string;
   eventThumbnail: string;
@@ -195,12 +197,12 @@ function requireToken(token: string | null): string {
   return token;
 }
 
-function toLocationDto(input: string): EventLocationDto | undefined {
+function toLocationDto(input: string, placeId?: string): EventLocationDto | undefined {
   const trimmed = input.trim();
   if (trimmed.length === 0) return undefined;
 
   if (trimmed.startsWith("OFFLINE:")) {
-    return { type: "PHYSICAL", address: trimmed.substring(8).trim() };
+    return { type: "PHYSICAL", address: trimmed.substring(8).trim(), placeId };
   }
   if (trimmed.startsWith("VIRTUAL:")) {
     return { type: "VIRTUAL", virtualLink: trimmed.substring(8).trim() };
@@ -209,7 +211,7 @@ function toLocationDto(input: string): EventLocationDto | undefined {
   if (isValidUrl(trimmed)) {
     return { type: "VIRTUAL", virtualLink: normalizeUrl(trimmed) };
   }
-  return { type: "PHYSICAL", address: trimmed };
+  return { type: "PHYSICAL", address: trimmed, placeId };
 }
 
 function combineDateAndTimeToIso(date: Date, timeHHmm: string): string {
@@ -256,12 +258,10 @@ function mapEventToFormData(event: Record<string, unknown>): FormData {
 
   const locationVirtualLink = getString(event, "locationVirtualLink");
   const locationAddress = getString(event, "locationAddress");
-  const locationCity = getString(event, "locationCity");
+  // Use address for display; never join raw coords into the location string
   const location = locationVirtualLink
     ? locationVirtualLink
-    : [locationAddress, locationCity]
-        .filter((v): v is string => typeof v === "string")
-        .join(", ");
+    : (locationAddress ?? "");
 
   // Map visibility from backend
   const visibilityRaw = getString(event, "visibility");
@@ -663,7 +663,7 @@ export default function EditEventPage() {
           currentFormData.eventThumbnail.trim().length > 0
             ? normalizeUrl(currentFormData.eventThumbnail)
             : undefined,
-        location: toLocationDto(currentFormData.eventLocation),
+        location: toLocationDto(currentFormData.eventLocation, currentFormData.eventLocationPlaceId),
         registrationDeadline: (() => {
           const deadlineDate =
             currentFormData.registrationSettings.endDate ??

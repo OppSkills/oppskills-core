@@ -84,6 +84,8 @@ export interface CompetitionDetails {
   specificTime?: string;
   venueName?: string;
   venueAddress?: string;
+  /** Raw GPS coordinates string ("lat,lng") – used for building a Google Maps link. Never render directly. */
+  locationCoords?: string | null;
   teamSize?: string;
   impressions?: number;
   registrationDeadline?: string;

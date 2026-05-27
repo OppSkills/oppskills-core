@@ -25,7 +25,7 @@ For mobile (React Native) integrations, use the `apiClient.request` and TanStack
     "endDate": "2025-04-12T17:00:00Z",
     "locationType": "PHYSICAL",
     "locationAddress": "789 Event hall Rd",
-    "locationCity": "Austin"
+    "locationCoords": "Austin"
   }
   ```
 

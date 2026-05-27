@@ -49,6 +49,7 @@ import {
   clearPendingHackathonRegistration,
   clearPendingEventRegistration,
 } from "@/lib/registration/pendingHackathonRegistration";
+import { isFreeTicketTierId } from "@/lib/registration/ticketTierUtils";
 import { writeHackathonCheckoutIntent } from "@/lib/registration/hackathonCheckoutIntent";
 import type {
   RegistrationModalProps,
@@ -78,6 +79,72 @@ function isBenignTeamAlreadyExistsError(err: unknown): boolean {
   );
 }
 
+async function completeHackathonFreeTierRegistration(
+  token: string,
+  competition: RegistrationModalProps["competition"],
+  formattedAnswers: Array<{ fieldId: string; value: string }>,
+  ticketTierId: string,
+  opts: {
+    finalTeamName: string;
+    maxSize: number;
+    teamId?: string;
+    invitationCode?: string;
+  },
+) {
+  const realTierId =
+    ticketTierId && ticketTierId !== "__free__" ? ticketTierId : undefined;
+  if (!realTierId) {
+    throw new Error("Please select a ticket type");
+  }
+
+  if (competition.chargeMode === "PER_USER") {
+    if (opts.invitationCode) {
+      try {
+        await joinDraftTeam(token, competition.slug, {
+          invitationCode: opts.invitationCode,
+          ticketTierId: realTierId,
+        });
+      } catch (e) {
+        if (!isBenignTeamAlreadyExistsError(e)) throw e;
+      }
+    } else if (opts.teamId) {
+      try {
+        await joinDraftTeam(token, competition.slug, {
+          teamId: opts.teamId,
+          ticketTierId: realTierId,
+        });
+      } catch (e) {
+        if (!isBenignTeamAlreadyExistsError(e)) throw e;
+      }
+    } else {
+      try {
+        await createDraftTeam(token, competition.slug, {
+          name: opts.finalTeamName,
+          maxSize: opts.maxSize,
+        });
+      } catch (e) {
+        if (!isBenignTeamAlreadyExistsError(e)) throw e;
+      }
+    }
+  } else if (!opts.teamId) {
+    try {
+      await createDraftTeam(token, competition.slug, {
+        name: opts.finalTeamName,
+        maxSize: opts.maxSize,
+      });
+    } catch (e) {
+      if (!isBenignTeamAlreadyExistsError(e)) throw e;
+    }
+  }
+
+  await submitRegistration(
+    token,
+    competition.slug,
+    formattedAnswers,
+    realTierId,
+  );
+}
+
 export function RegistrationModal({
   isOpen,
   onClose,
@@ -90,6 +157,9 @@ export function RegistrationModal({
   pageSelectedTicketTierId = null,
   omitTicketTierSection = false,
   prefillAnswers,
+  paymentCompleted = false,
+  teamId,
+  isLeader,
 }: RegistrationModalProps) {
   const router = useRouter();
   const { user } = useUser();
@@ -365,6 +435,31 @@ export function RegistrationModal({
   ) => {
     try {
       if (type === "EVENT") {
+        const eventTicketTiers = (competition as any).ticketTiers as
+          | Array<{ id: string; isFree?: boolean; price?: unknown }>
+          | undefined;
+        const selectedFreeTier = isFreeTicketTierId(
+          ticketTierId,
+          eventTicketTiers,
+        );
+
+        if (competition.isFree || selectedFreeTier) {
+          writePendingEventRegistration(competition.slug, {
+            answers: formattedAnswers,
+            userId: user?.id,
+          });
+          await joinEvent(token, competition.id, {
+            answers: formattedAnswers,
+            ticketTierId: selectedFreeTier ? ticketTierId : undefined,
+          });
+          clearPendingEventRegistration(competition.slug);
+          toast.success("Successfully registered for the event!");
+          onSuccess?.(null);
+          onClose();
+          router.push(`/events/${competition.slug}?registered=true`);
+          return;
+        }
+
         const isPaidEvent =
           !competition.isFree &&
           (((competition as any).ticketTiers?.length ?? 0) > 0 ||
@@ -470,6 +565,41 @@ export function RegistrationModal({
         return;
       }
 
+      if (type === "HACKATHON" && !competition.isFree) {
+        const hackathonTiers = (competition as { ticketTiers?: Array<{ id: string; isFree?: boolean; price?: unknown }> })
+          .ticketTiers;
+        const selectedFreeTier = isFreeTicketTierId(
+          ticketTierId,
+          hackathonTiers,
+        );
+        if (selectedFreeTier && ticketTierId) {
+          await completeHackathonFreeTierRegistration(
+            token,
+            competition,
+            formattedAnswers,
+            ticketTierId,
+            {
+              finalTeamName,
+              maxSize,
+              teamId: opts.teamId,
+              invitationCode: opts.invitationCode,
+            },
+          );
+          const myUpdatedTeam = await checkMyHackathonTeam(
+            token,
+            competition.id,
+          );
+          clearPendingHackathonRegistration(competition.slug);
+          toast.success("Registration successful!");
+          if (myUpdatedTeam) {
+            onSuccess?.(myUpdatedTeam);
+          }
+          onClose();
+          router.push(`/hackathons/${competition.slug}?registered=true`);
+          return;
+        }
+      }
+
       const orderParams: {
         discountCode?: string;
         ticketTierId?: string;
@@ -503,16 +633,13 @@ export function RegistrationModal({
         }
       }
 
-      if (
-        type === "HACKATHON" &&
-        !completionMode &&
-        !competition.isFree &&
-        (!!(competition as any).entryFeeAmount ||
-          ((competition as any).ticketTiers?.length ?? 0) > 0)
-      ) {
+      if (type === "HACKATHON" && (!completionMode || !paymentCompleted) && !competition.isFree) {
+        // Strip synthetic '__free__' id before sending to backend.
+        const realTierId =
+          ticketTierId && ticketTierId !== '__free__' ? ticketTierId : undefined;
         await saveHackathonRegistrationCheckoutDraft(token, competition.slug, {
           answers: formattedAnswers,
-          ticketTierId,
+          ticketTierId: realTierId,
           teamId: orderParams.teamId,
           teamName: orderParams.teamName,
           maxSize: orderParams.maxSize,
@@ -521,7 +648,7 @@ export function RegistrationModal({
         });
         writeHackathonCheckoutIntent(competition.slug, {
           discountCode: orderParams.discountCode,
-          ticketTierId,
+          ticketTierId: realTierId,
           teamId: orderParams.teamId,
           teamName: orderParams.teamName,
           maxSize: orderParams.maxSize,
@@ -534,15 +661,15 @@ export function RegistrationModal({
           maxSize,
           invitationCode: opts.invitationCode,
           joinTeamId: orderParams.joinTeamId,
-          ticketTierId,
+          ticketTierId: realTierId,
           userId: user?.id,
         });
-        toast.success("Saved. Continue to secure checkout.");
+        toast.success('Saved. Continue to secure checkout.');
         onClose();
         const tierQ =
-          ticketTierId != null
-            ? `?tier=${encodeURIComponent(ticketTierId)}`
-            : "";
+          realTierId != null
+            ? `?tier=${encodeURIComponent(realTierId)}`
+            : '';
         router.push(`/hackathons/${competition.slug}/checkout${tierQ}`);
         return;
       }
@@ -772,11 +899,15 @@ export function RegistrationModal({
       const activeRegTiers = (competition.ticketTiers ?? []).filter(
         (t: { isActive?: boolean }) => t.isActive !== false,
       );
-      const isPaidOpportunity =
-        !competition.isFree &&
-        (!!(competition as any).entryFeeAmount || activeRegTiers.length > 0);
-      if (isPaidOpportunity && activeRegTiers.length > 1 && !ticketTierId) {
-        toast.error("Please select a ticket type before continuing.");
+      // isFree=false always goes through ticket/payment flow (even ₹0).
+      const isPaidOpportunity = !competition.isFree;
+      // Block only when user has NOT chosen among multiple real tiers.
+      if (
+        isPaidOpportunity &&
+        activeRegTiers.length > 1 &&
+        (!ticketTierId || ticketTierId === '__free__')
+      ) {
+        toast.error('Please select a ticket type before continuing.');
         return;
       }
 
@@ -808,7 +939,29 @@ export function RegistrationModal({
       }
 
       if (completionMode && type === "HACKATHON") {
-        await submitRegistration(token, competition.slug, filteredFormatted);
+        if (!paymentCompleted && !competition.isFree) {
+          await processPayment(token, teamName, filteredFormatted, {
+            teamId: teamId,
+            invitationCode: isLeader ? undefined : invitationCode || undefined,
+          });
+          return;
+        }
+        const freeTierId =
+          ticketTierId &&
+          isFreeTicketTierId(
+            ticketTierId,
+            (competition as {
+              ticketTiers?: Array<{ id: string; isFree?: boolean; price?: unknown }>;
+            }).ticketTiers,
+          )
+            ? ticketTierId
+            : undefined;
+        await submitRegistration(
+          token,
+          competition.slug,
+          filteredFormatted,
+          freeTierId,
+        );
         const myUpdatedTeam = await checkMyHackathonTeam(token, competition.id);
         toast.success("Registration successful!");
         if (myUpdatedTeam) {
@@ -835,7 +988,15 @@ export function RegistrationModal({
       const finalTeamName = teamName.trim();
 
       if (type === "EVENT") {
-        if (competition.isFree) {
+        const eventTicketTiers = (competition as any).ticketTiers as
+          | Array<{ id: string; isFree?: boolean; price?: unknown }>
+          | undefined;
+        const selectedFreeTier = isFreeTicketTierId(
+          ticketTierId,
+          eventTicketTiers,
+        );
+
+        if (competition.isFree || selectedFreeTier) {
           writePendingEventRegistration(competition.slug, {
             answers: filteredFormatted as Array<{
               fieldId: string;
@@ -845,6 +1006,7 @@ export function RegistrationModal({
           });
           await joinEvent(token, competition.id, {
             answers: filteredFormatted,
+            ticketTierId: selectedFreeTier ? ticketTierId : undefined,
           });
           clearPendingEventRegistration(competition.slug);
           toast.success("Registration successful!");
@@ -874,6 +1036,31 @@ export function RegistrationModal({
           toast.success("Registration successful!");
           onSuccess?.(result);
           onClose();
+        } else if (
+          isFreeTicketTierId(
+            ticketTierId,
+            (competition as { ticketTiers?: Array<{ id: string; isFree?: boolean; price?: unknown }> })
+              .ticketTiers,
+          ) &&
+          ticketTierId
+        ) {
+          await completeHackathonFreeTierRegistration(
+            token,
+            competition,
+            filteredFormatted,
+            ticketTierId,
+            { finalTeamName, maxSize },
+          );
+          const myUpdatedTeam = await checkMyHackathonTeam(
+            token,
+            competition.id,
+          );
+          toast.success("Registration successful!");
+          if (myUpdatedTeam) {
+            onSuccess?.(myUpdatedTeam);
+          }
+          onClose();
+          router.push(`/hackathons/${competition.slug}?registered=true`);
         } else {
           await processPayment(token, finalTeamName, filteredFormatted, {});
         }
@@ -900,39 +1087,44 @@ export function RegistrationModal({
           }
           onClose();
           router.push(`/hackathons/${competition.slug}?registered=true`);
-        } else {
-          if (competition.chargeMode === "PER_TEAM") {
-            try {
-              await joinDraftTeam(token, competition.slug, {
+        } else if (
+          isFreeTicketTierId(
+            ticketTierId,
+            (competition as { ticketTiers?: Array<{ id: string; isFree?: boolean; price?: unknown }> })
+              .ticketTiers,
+          ) &&
+          ticketTierId
+        ) {
+          try {
+            await completeHackathonFreeTierRegistration(
+              token,
+              competition,
+              filteredFormatted,
+              ticketTierId,
+              {
+                finalTeamName,
+                maxSize,
                 invitationCode: invitationCode.toUpperCase(),
-              });
-              await submitRegistration(
-                token,
-                competition.slug,
-                filteredFormatted,
-              );
-
-              const myUpdatedTeam = await checkMyHackathonTeam(
-                token,
-                competition.id,
-              );
-
-              toast.success("Joined team successfully!");
-              if (myUpdatedTeam) {
-                onSuccess?.(myUpdatedTeam);
-              }
-
-              onClose();
-              router.push(`/hackathons/${competition.slug}?registered=true`);
-            } catch (err) {
-              toast.error(getApiErrorMessage(err, "Failed to join team"));
-              return;
+              },
+            );
+            const myUpdatedTeam = await checkMyHackathonTeam(
+              token,
+              competition.id,
+            );
+            toast.success("Joined team successfully!");
+            if (myUpdatedTeam) {
+              onSuccess?.(myUpdatedTeam);
             }
-          } else {
-            await processPayment(token, finalTeamName, filteredFormatted, {
-              invitationCode: invitationCode.toUpperCase(),
-            });
+            onClose();
+            router.push(`/hackathons/${competition.slug}?registered=true`);
+          } catch (err) {
+            toast.error(getApiErrorMessage(err, "Failed to join team"));
+            return;
           }
+        } else {
+          await processPayment(token, finalTeamName, filteredFormatted, {
+            invitationCode: invitationCode.toUpperCase(),
+          });
         }
       }
     } catch (error) {
@@ -942,6 +1134,16 @@ export function RegistrationModal({
       setIsSubmitting(false);
     }
   };
+
+  const isPaidWithTier =
+    !competition.isFree &&
+    (!completionMode || !paymentCompleted) &&
+    !!ticketTierId &&
+    !isFreeTicketTierId(ticketTierId, competition.ticketTiers) &&
+    (competition.ticketTiers ?? []).some(
+      (t: { id: string; isActive?: boolean }) =>
+        t.id === ticketTierId && t.isActive !== false,
+    );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -1023,6 +1225,7 @@ export function RegistrationModal({
                 setIsOpenToggle={setIsOpenToggle}
                 type={type}
                 completionMode
+                paymentCompleted={paymentCompleted}
                 omitTicketTierSection={omitTicketTierSection}
               />
             ) : completionMode && type === "EVENT" ? (
@@ -1046,6 +1249,7 @@ export function RegistrationModal({
                 setIsOpenToggle={setIsOpenToggle}
                 type={type}
                 completionMode
+                paymentCompleted={paymentCompleted}
                 omitTicketTierSection={omitTicketTierSection}
               />
             ) : mode === "CREATE" ? (
@@ -1137,6 +1341,8 @@ export function RegistrationModal({
                 ) : completionMode &&
                   (type === "HACKATHON" || type === "EVENT") ? (
                   "Submit registration"
+                ) : isPaidWithTier ? (
+                  "Continue to payment"
                 ) : mode === "CREATE" ? (
                   isIndividual ? (
                     "Register"

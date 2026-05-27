@@ -5,7 +5,6 @@ import { ClerkAuthConfigService } from 'src/common/config.service';
 
 describe('LocationController', () => {
   let controller: LocationController;
-  let service: LocationService;
 
   const mockLocationService = {
     getAutocompleteSuggestions: jest.fn(),
@@ -29,7 +28,6 @@ describe('LocationController', () => {
     }).compile();
 
     controller = module.get<LocationController>(LocationController);
-    service = module.get<LocationService>(LocationService);
   });
 
   it('should be defined', () => {
@@ -47,11 +45,15 @@ describe('LocationController', () => {
           secondaryText: 'Noida',
         },
       ];
-      mockLocationService.getAutocompleteSuggestions.mockResolvedValue(mockResult);
+      mockLocationService.getAutocompleteSuggestions.mockResolvedValue(
+        mockResult,
+      );
 
       const result = await controller.autocomplete({ q: 'GCET' });
 
-      expect(service.getAutocompleteSuggestions).toHaveBeenCalledWith('GCET');
+      expect(
+        mockLocationService.getAutocompleteSuggestions,
+      ).toHaveBeenCalledWith('GCET');
       expect(result).toEqual(mockResult);
     });
   });

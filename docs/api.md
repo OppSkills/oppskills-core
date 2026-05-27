@@ -1093,7 +1093,7 @@ GET /events/:id
   "endDate": "2025-03-15T21:00:00Z",
   "locationType": "PHYSICAL",
   "locationAddress": "123 Tech Hub, San Francisco, CA",
-  "locationCity": "San Francisco",
+  "locationCoords": "San Francisco",
   "maxUsers": 100,
   "registrationCount": 45,
   "isFree": true,

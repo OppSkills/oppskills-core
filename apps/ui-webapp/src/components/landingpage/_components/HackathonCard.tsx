@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { cn, normalizeUrl } from "@/lib/utils";
 
 interface HackathonCardProps {
   href: string;
@@ -33,7 +33,7 @@ export function HackathonCard({
         <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted flex-shrink-0">
           {imageSrc ? (
             <Image
-              src={imageSrc}
+              src={normalizeUrl(imageSrc)}
               alt={title}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"

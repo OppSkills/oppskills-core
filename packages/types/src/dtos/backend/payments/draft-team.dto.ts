@@ -36,6 +36,11 @@ export class JoinDraftTeamDto {
   @IsOptional()
   @IsString()
   referralCode?: string;
+
+  /** Free ticket tier — skips payment check when joining a paid hackathon. */
+  @IsOptional()
+  @IsString()
+  ticketTierId?: string;
 }
 
 export class LeaveDraftTeamDto {

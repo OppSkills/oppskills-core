@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { EventTabs } from "./EventTabs";
+import { GoogleMap } from "@/components/common/GoogleMap";
 import { RegistrationModal } from "@/app/hackathons/[slug]/_components/RegistrationModal";
 import { EventSidebar } from "./EventSidebar";
 import { EventRegisterCta } from "./EventRegisterCta";
@@ -44,6 +45,7 @@ type EventData = any; // We'll let it be any for now to avoid huge type duplicat
 
 interface EventDetailsClientProps {
   event: EventData; // Hydrated from server
+  googleMapApiKey?: string;
 }
 
 /**
@@ -63,24 +65,27 @@ function getInitials(
  */
 function formatLocation(event: {
   locationType: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationAddress: string | null;
   locationVirtualLink: string | null;
-}): { venueName: string; venueAddress: string } {
+  organizationName?: string | null;
+}): { venueName: string; venueAddress: string; locationCoords?: string | null } {
   if (event.locationType === "VIRTUAL" || event.locationType === "ONLINE") {
     return {
       venueName: "Virtual Event",
       venueAddress: event.locationVirtualLink || "Online",
+      locationCoords: null,
     };
   }
 
   return {
-    venueName: event.locationAddress || "TBA",
-    venueAddress: event.locationCity || "",
+    venueName: event.organizationName || "Venue Name",
+    venueAddress: event.locationAddress || "TBA",
+    locationCoords: event.locationCoords || null,
   };
 }
 
-export default function EventDetailsClient({ event }: EventDetailsClientProps) {
+export default function EventDetailsClient({ event, googleMapApiKey }: EventDetailsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isSignedIn, getToken } = useAuth();
@@ -244,7 +249,13 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     refetchRegistrationStatus,
   ]);
 
-  const TABS = ["About Event", "Contact Details"];
+  const TABS = useMemo(() => {
+    const list = ["About Event", "Contact Details"];
+    if (googleMapApiKey && event.locationCoords) {
+      list.push("Location");
+    }
+    return list;
+  }, [googleMapApiKey, event.locationCoords]);
 
   const handleRegistration = async () => {
     if (!event) return;
@@ -314,11 +325,13 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
             name: string;
             price: unknown;
             description?: string | null;
+            isFree?: boolean;
           }) => ({
             id: t.id,
             name: t.name,
             price:
               typeof t.price === "number" ? t.price : Number(t.price ?? 0) || 0,
+            isFree: t.isFree,
             description: t.description?.trim() || "",
           }),
         )
@@ -352,6 +365,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     time: formattedTime,
     venueName: venueName,
     venueAddress: venueAddress,
+    locationCoords: event.locationCoords || null,
     startDate: event.startDate,
     endDate: event.endDate,
     tickets: tickets,
@@ -377,7 +391,9 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
     !!registrationStatus?.isRegistered ||
     !!registrationStatus?.isPaidButIncomplete;
 
-  const mainRegistrationCard = showPageTierPicker ? (
+  const isPendingRegistration = !!registrationStatus?.isPaidButIncomplete;
+
+  const mainRegistrationCard = (showPageTierPicker && !isPendingRegistration) ? (
     <TicketTierRegistrationPicker
       ticketTiers={pageTicketTiers}
       feeBearer={event.feeBearer}
@@ -395,6 +411,8 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
           }
           isRegistered={!!registrationStatus?.isRegistered}
           needsCompleteRegistration={!!registrationStatus?.isPaidButIncomplete}
+          selectedTicketTierId={pageSelectedTierId}
+          ticketTiers={pageTicketTiers}
         />
       }
     />
@@ -414,6 +432,8 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
           }
           isRegistered={!!registrationStatus?.isRegistered}
           needsCompleteRegistration={!!registrationStatus?.isPaidButIncomplete}
+          selectedTicketTierId={pageSelectedTierId}
+          ticketTiers={pageTicketTiers}
         />
       </div>
     </div>
@@ -529,8 +549,6 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                     </div>
                   )}
                 </section>
-
-                {/* Placeholder for Speaker Tab if we add it */}
               </div>
             </div>
 
@@ -631,6 +649,15 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
                 })()}
               </div>
             </section>
+
+            {googleMapApiKey && event.locationCoords && (
+              <section id="location" className="scroll-mt-24 space-y-4 pt-10">
+                <h2 className="text-2xl font-bold text-foreground poppins">
+                  Location
+                </h2>
+                <GoogleMap apiKey={googleMapApiKey} coords={event.locationCoords} />
+              </section>
+            )}
           </div>
         </div>
       </div>
@@ -642,7 +669,7 @@ export default function EventDetailsClient({ event }: EventDetailsClientProps) {
         type="EVENT"
         completionMode={!!registrationStatus?.isPaidButIncomplete}
         pageSelectedTicketTierId={pageSelectedTierId}
-        omitTicketTierSection={showPageTierPicker}
+        omitTicketTierSection={showPageTierPicker || isPendingRegistration}
         prefillAnswers={registrationStatus?.draftAnswers ?? undefined}
         onSuccess={async () => {
           await refetchRegistrationStatus();

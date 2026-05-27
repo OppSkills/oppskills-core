@@ -94,7 +94,7 @@ model UserOnboardingProfileEntity {
   collegeSkipped       Boolean          @default(false) @map("college_skipped")
   companyName          String?          @map("company_name")
   jobTitle             String?          @map("job_title")
-  locationCity         String?          @map("location_city")
+  locationCoords         String?          @map("location_city")
   locationState        String?          @map("location_state")
   locationCountry      String?          @map("location_country")
   interests            String[]         @default([])

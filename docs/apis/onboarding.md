@@ -40,7 +40,7 @@ const submitOnboarding = useMutation({
   "collegeCurrentYear": "3rd Year",
   "collegePassoutYear": 2026,
   "collegeSkipped": false,
-  "locationCity": "Mumbai",
+  "locationCoords": "Mumbai",
   "locationState": "Maharashtra",
   "locationCountry": "India",
   "skills": ["React"],

@@ -13,7 +13,7 @@ interface FestivalInfoCardProps {
   startDate: string;
   endDate: string;
   locationAddress?: string | null;
-  locationCity: string | null;
+  locationCoords: string | null;
   locationVirtualLink: string | null;
   websiteUrl: string | null;
   organizationName: string | null;

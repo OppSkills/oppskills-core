@@ -26,7 +26,7 @@ export class OpportunityService {
     impressions: true,
     ticketTiers: {
       where: { isActive: true },
-      select: { price: true },
+      select: { price: true, isFree: true },
     },
   } as const;
 
@@ -206,6 +206,7 @@ export class OpportunityService {
     // 3. Cleanup: Remove internal sorting fields (views, impressions) before returning
     const sanitize = (item: any) => {
       const tierNums = (item.ticketTiers ?? [])
+        .filter((t: { isFree?: boolean }) => !t.isFree)
         .map((t: { price: unknown }) => Number(t.price))
         .filter((n: number) => Number.isFinite(n));
       const lowestTicketPrice =
