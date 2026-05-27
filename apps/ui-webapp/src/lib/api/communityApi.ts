@@ -117,3 +117,30 @@ export async function getMyCommunities(
     };
   });
 }
+
+export async function getCommunity(
+  token: string,
+  id: string,
+): Promise<CommunityResponse> {
+  const res = await API.get(`/${id}`, {
+    headers: buildAuthHeaders(token),
+  });
+
+  const raw = res.data as unknown;
+  if (!isRecord(raw)) {
+    throw new Error("Invalid response: expected object.");
+  }
+
+  return {
+    id: requireString(raw, "id"),
+    name: requireString(raw, "name"),
+    handle: requireString(raw, "handle"),
+    description: optionalString(raw, "description"),
+    website: optionalString(raw, "website"),
+    industry: requireString(raw, "industry") as CommunityIndustryValue,
+    coverImage: optionalString(raw, "coverImage"),
+    avatarImage: optionalString(raw, "avatarImage"),
+    createdAt: requireString(raw, "createdAt"),
+  };
+}
+

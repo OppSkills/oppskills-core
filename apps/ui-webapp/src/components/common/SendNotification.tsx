@@ -41,12 +41,66 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 export interface SendNotificationProps {
-  type: "event" | "hackathon";
+  type: "event" | "hackathon" | "community";
   id?: string | null;
   slug?: string | null;
   name?: string;
   endDate?: Date | null;
 }
+
+const initialCommunityNotificationsMock: NotificationRecord[] = [
+  {
+    id: "n1",
+    userId: "u_admin",
+    content: "<p>Pizza, networking, and expert knowledge-sharing starts at 6 PM. See you at the auditorium!</p>",
+    scheduleType: "IMMEDIATELY",
+    status: "COMPLETED",
+    totalRecipients: 12300,
+    processedCount: 12300,
+    successCount: 12285,
+    failedCount: 15,
+    createdAt: "2026-05-25T16:00:00.000Z",
+    completedAt: "2026-05-25T16:05:00.000Z",
+    logs: [
+      { id: "l1", level: "INFO", message: "Broadcast initiated successfully.", createdAt: "2026-05-25T16:00:00.000Z" },
+      { id: "l2", level: "INFO", message: "Resolved 12,300 active subscriber emails.", createdAt: "2026-05-25T16:01:00.000Z" },
+      { id: "l3", level: "ERROR", message: "Mailing queue completed. 15 bounces detected.", createdAt: "2026-05-25T16:05:00.000Z", meta: JSON.stringify({ failedCount: 15, successCount: 12285, processedCount: 12300 }) },
+    ]
+  },
+  {
+    id: "n2",
+    userId: "u_admin",
+    content: "<p>Team sync to review student chapter applications. Please review the shared documents beforehand.</p>",
+    scheduleType: "IMMEDIATELY",
+    status: "COMPLETED",
+    totalRecipients: 18,
+    processedCount: 18,
+    successCount: 18,
+    failedCount: 0,
+    createdAt: "2026-05-22T10:30:00.000Z",
+    completedAt: "2026-05-22T10:31:00.000Z",
+    logs: [
+      { id: "l4", level: "INFO", message: "Broadcast initiated successfully.", createdAt: "2026-05-22T10:30:00.000Z" },
+      { id: "l5", level: "INFO", message: "Delivered to core administration segment.", createdAt: "2026-05-22T10:31:00.000Z" },
+    ]
+  },
+  {
+    id: "n3",
+    userId: "u_admin",
+    content: "<p>Please ensure all pending community outreach checklists are uploaded by Friday EOD.</p>",
+    scheduleType: "CUSTOM",
+    scheduledAt: "2026-05-28T14:00:00.000Z",
+    status: "QUEUED",
+    totalRecipients: 42,
+    processedCount: 0,
+    successCount: 0,
+    failedCount: 0,
+    createdAt: "2026-05-24T14:00:00.000Z",
+    logs: [
+      { id: "l6", level: "INFO", message: "Broadcast scheduled in system cron scheduler.", createdAt: "2026-05-24T14:00:00.000Z", meta: JSON.stringify({ delay: 345600000, expectedFinishAt: "2026-05-28T14:00:00.000Z", totalRecipients: 42 }) },
+    ]
+  }
+];
 
 export function SendNotification({
   type,
@@ -76,6 +130,65 @@ export function SendNotification({
     if (!slugOrId) return;
     try {
       setFetchingHistory(true);
+      if (type === "community") {
+        if (typeof window === "undefined") {
+          setNotifications(initialCommunityNotificationsMock);
+          return;
+        }
+        const key = `oppskills_community_notifications_${slugOrId}`;
+        const stored = localStorage.getItem(key);
+        let list: NotificationRecord[] = stored ? JSON.parse(stored) : initialCommunityNotificationsMock;
+        
+        let modified = false;
+        list = list.map(n => {
+          if (n.status === "QUEUED" && n.scheduledAt && new Date(n.scheduledAt) <= new Date()) {
+            modified = true;
+            return {
+              ...n,
+              status: "PROCESSING",
+              logs: [
+                ...(n.logs || []),
+                {
+                  id: `l_${Date.now()}_proc`,
+                  level: "INFO",
+                  message: "Simulated queue worker picked up broadcast task.",
+                  createdAt: new Date().toISOString()
+                }
+              ]
+            };
+          } else if (n.status === "PROCESSING") {
+            modified = true;
+            const newProcessed = Math.min(n.totalRecipients, n.processedCount + Math.ceil(n.totalRecipients / 3));
+            const newSuccess = newProcessed;
+            const isFinished = newProcessed >= n.totalRecipients;
+            
+            return {
+              ...n,
+              processedCount: newProcessed,
+              successCount: newSuccess,
+              status: isFinished ? "COMPLETED" : "PROCESSING",
+              completedAt: isFinished ? new Date().toISOString() : undefined,
+              logs: [
+                ...(n.logs || []),
+                {
+                  id: `l_${Date.now()}_step_${newProcessed}`,
+                  level: "INFO",
+                  message: isFinished ? "Simulated broadcast campaign successfully finished." : `Simulated sending to recipients... progress: ${newProcessed}/${n.totalRecipients}`,
+                  createdAt: new Date().toISOString()
+                }
+              ]
+            };
+          }
+          return n;
+        });
+
+        if (modified) {
+          localStorage.setItem(key, JSON.stringify(list));
+        }
+
+        setNotifications(list);
+        return;
+      }
       const token = await getToken();
       let data: NotificationRecord[] = [];
       if (type === "event") {
@@ -135,9 +248,10 @@ export function SendNotification({
       toast.error("Please enter a message body");
       return;
     }
-    if (!id && !slug) {
+    const slugOrId = id || slug;
+    if (!slugOrId) {
       toast.error(
-        `${type === "event" ? "Event" : "Hackathon"} identifier not found. Please refresh.`,
+        `${type === "event" ? "Event" : type === "hackathon" ? "Hackathon" : "Community"} identifier not found. Please refresh.`,
       );
       return;
     }
@@ -149,6 +263,50 @@ export function SendNotification({
 
     try {
       setLoading(true);
+      if (type === "community") {
+        const key = `oppskills_community_notifications_${slugOrId}`;
+        const stored = localStorage.getItem(key);
+        const currentList: NotificationRecord[] = stored ? JSON.parse(stored) : initialCommunityNotificationsMock;
+        
+        const totalRecipients = 12300;
+        
+        const newNotif: NotificationRecord = {
+          id: `n_${Date.now()}`,
+          userId: "u_admin",
+          content: message,
+          scheduleType: whenToSend === "Custom Time" ? "CUSTOM" : "IMMEDIATELY",
+          scheduledAt: whenToSend === "Custom Time" ? new Date(customDateTime).toISOString() : undefined,
+          status: whenToSend === "Custom Time" ? "QUEUED" : "PROCESSING",
+          totalRecipients,
+          processedCount: 0,
+          successCount: 0,
+          failedCount: 0,
+          createdAt: new Date().toISOString(),
+          logs: [
+            {
+              id: `l_${Date.now()}_init`,
+              level: "INFO",
+              message: whenToSend === "Custom Time" 
+                ? `Simulated broadcast scheduled for ${new Date(customDateTime).toLocaleString()}` 
+                : "Simulated broadcast initialized immediately.",
+              createdAt: new Date().toISOString()
+            }
+          ]
+        };
+
+        const updatedList = [newNotif, ...currentList];
+        localStorage.setItem(key, JSON.stringify(updatedList));
+
+        setLastScheduledTime(
+          whenToSend === "Custom Time" ? new Date(customDateTime).toISOString() : new Date().toISOString(),
+        );
+        setMessage("");
+        setWhenToSend("Immediately");
+        toast.success("Broadcast initiated successfully!");
+        fetchHistory();
+        return;
+      }
+
       const token = await getToken();
       const response = await sendBulkEmail(token, {
         eventId: type === "event" ? id || undefined : undefined,
@@ -406,7 +564,7 @@ export function SendNotification({
                 </h1>
                 <p className="text-neutral-500 text-sm mt-1">
                   Send email to participants about{" "}
-                  {type === "event" ? "events" : "hackathons"}
+                  {type === "event" ? "events" : type === "hackathon" ? "hackathons" : "communities"}
                 </p>
               </div>
             </div>

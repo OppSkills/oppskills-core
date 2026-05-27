@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ManageHeader from "./ManageHeader";
 import CommunityStats from "./CommunityStats";
 import MembersDirectory from "./MembersDirectory";
@@ -11,6 +11,8 @@ import AddMemberModal from "./AddMemberModal";
 import AddMemberRoleModal from "./AddMemberRoleModal";
 import MemberDetailsSheet from "./MemberDetailsSheet";
 import { toast } from "sonner";
+import { useAuth } from "@clerk/nextjs";
+import { getCommunity } from "@/lib/api/communityApi";
 
 import type { CommunityMember as Member, CommunityTask as Task, CommunityMeet as Meet } from "@oppskills/types";
 
@@ -162,6 +164,30 @@ export default function ManageCommunityClient({
 }: {
   communityId: string;
 }) {
+  const { getToken, isLoaded } = useAuth();
+  const [communityName, setCommunityName] = useState<string>("");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadDetails() {
+      if (!isLoaded) return;
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const details = await getCommunity(token, communityId);
+        if (!cancelled && details) {
+          setCommunityName(details.name);
+        }
+      } catch (error) {
+        console.error("Failed to load community details:", error);
+      }
+    }
+    void loadDetails();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, getToken, communityId]);
+
   const [isMeetSchedulerOpen, setIsMeetSchedulerOpen] = useState(false);
   const [isTaskTrackerOpen, setIsTaskTrackerOpen] = useState(false);
   const [isAddMemberTypeOpen, setIsAddMemberTypeOpen] = useState(false);
@@ -324,6 +350,7 @@ export default function ManageCommunityClient({
         {/* Header Section */}
         <ManageHeader
           communityId={communityId}
+          communityName={communityName}
           onAddMember={() => setIsAddMemberOpen(true)}
           onAddRole={() => setIsAddRoleOpen(true)}
         />

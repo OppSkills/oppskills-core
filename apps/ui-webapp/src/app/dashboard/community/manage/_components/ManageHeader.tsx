@@ -6,12 +6,14 @@ import { UserPlus, ShieldAlert } from "lucide-react";
 
 interface ManageHeaderProps {
   communityId: string;
+  communityName?: string;
   onAddMember?: () => void;
   onAddRole?: () => void;
 }
 
 export default function ManageHeader({
   communityId,
+  communityName,
   onAddMember,
   onAddRole,
 }: ManageHeaderProps) {
@@ -19,7 +21,7 @@ export default function ManageHeader({
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full pb-2 border-b border-neutral-100">
       <div className="space-y-1">
         <h1 className="text-2xl md:text-3xl tracking-tight text-neutral-900">
-          Manage Your Community
+          {communityName || "Manage Your Community"}
         </h1>
         <p className="text-neutral-700 text-base">
           Here is summary of your Community

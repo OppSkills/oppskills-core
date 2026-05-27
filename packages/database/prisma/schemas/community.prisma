@@ -1,4 +1,4 @@
-// PostgreSQL schema: user
+// PostgreSQL schema: community
 // Communities owned by users
 
 enum Industry {
@@ -18,7 +18,7 @@ enum Industry {
   OTHER
 
   @@map("Industry")
-  @@schema("user")
+  @@schema("community")
 }
 
 enum CommunityMemberRole {
@@ -27,7 +27,7 @@ enum CommunityMemberRole {
   MEMBER
 
   @@map("CommunityMemberRole")
-  @@schema("user")
+  @@schema("community")
 }
 
 model CommunityEntity {
@@ -48,7 +48,7 @@ model CommunityEntity {
   @@unique([name, ownerId])
   @@index([ownerId])
   @@map("community")
-  @@schema("user")
+  @@schema("community")
 }
 
 model CommunityMemberEntity {
@@ -65,5 +65,5 @@ model CommunityMemberEntity {
   @@index([userId])
   @@index([communityId])
   @@map("community_member")
-  @@schema("user")
+  @@schema("community")
 }

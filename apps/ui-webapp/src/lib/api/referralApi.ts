@@ -3,7 +3,7 @@ import { buildAuthHeaders, createApiClient } from "./apiClient";
 const API = createApiClient("/referrals");
 const PUBLIC_API = createApiClient("/referrals/public");
 
-export type ReferralEntityType = "HACKATHON" | "EVENT" | "FESTIVAL";
+export type ReferralEntityType = "HACKATHON" | "EVENT" | "FESTIVAL" | "COMMUNITY";
 
 export interface ReferralListItem {
   id: string;

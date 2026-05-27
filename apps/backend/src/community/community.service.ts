@@ -1,7 +1,9 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@oppskills/db';
@@ -63,6 +65,37 @@ export class CommunityService {
         createdAt: row.createdAt,
       };
     });
+  }
+
+  async getCommunityById(
+    userId: string,
+    communityId: string,
+  ): Promise<CommunityResponseDto> {
+    const community = await prisma.communityEntity.findUnique({
+      where: { id: communityId },
+      include: {
+        members: {
+          where: { userId },
+        },
+      },
+    });
+
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    const isOwner = community.ownerId === userId;
+    const isMember =
+      community.members.length > 0 &&
+      ['ADMIN', 'EDITOR'].includes(community.members[0].role);
+
+    if (!isOwner && !isMember) {
+      throw new ForbiddenException(
+        'You do not have permission to manage this community.',
+      );
+    }
+
+    return this.toResponseDto(community);
   }
 
   async create(

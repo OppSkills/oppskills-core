@@ -13,6 +13,7 @@ import React from "react";
 import { HackathonSidebar } from "./layout/hackathon-sidebar";
 import { EventsSidebar } from "./layout/events-sidebar";
 import { FestivalsSidebar } from "./layout/festivals-sidebar";
+import { CommunitySidebar } from "./layout/community-sidebar";
 import { MobileNavigationProvider } from "./layout/mobile-navigation-context";
 
 export default function LayoutProvider({
@@ -74,8 +75,22 @@ export default function LayoutProvider({
     return [false, null];
   }, [pathname]);
 
+  /**
+   * Check if the current route is in the community management section
+   * Pattern: /dashboard/community/manage/[id]...
+   * Excludes the legacy index or community list page
+   */
+  const [isCommunityManageDashboard, communityId] = React.useMemo(() => {
+    const communityManageDetailPattern = /^\/dashboard\/community\/manage\/([^/]+)/;
+    const match = pathname.match(communityManageDetailPattern);
+    if (match) {
+      return [true, match[1]];
+    }
+    return [false, null];
+  }, [pathname]);
+
   const hasSecondarySidebar =
-    ishackathonDetail || isEventsDashboard || isFestivalsDashboard;
+    ishackathonDetail || isEventsDashboard || isFestivalsDashboard || isCommunityManageDashboard;
 
   const [mainSidebarOpen, setMainSidebarOpen] =
     React.useState(!hasSecondarySidebar);
@@ -170,6 +185,20 @@ export default function LayoutProvider({
                 {isFestivalsDashboard && festivalsSlug && (
                   <FestivalsSidebar
                     slug={festivalsSlug}
+                    side="left"
+                    variant="sidebar"
+                    collapsible="icon"
+                    style={
+                      {
+                        "--sidebar-width": "12rem",
+                        left: "64px",
+                      } as React.CSSProperties
+                    }
+                  />
+                )}
+                {isCommunityManageDashboard && communityId && (
+                  <CommunitySidebar
+                    id={communityId}
                     side="left"
                     variant="sidebar"
                     collapsible="icon"

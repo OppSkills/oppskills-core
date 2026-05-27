@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Req,
   UnauthorizedException,
@@ -47,6 +48,31 @@ export class CommunityController {
     }
     const items = await this.communityService.listMyCommunities(userId);
     return { items };
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get community details by ID',
+    description:
+      'Returns the full details of a community if the user is authorized to manage it.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Community details retrieved successfully',
+    type: CommunityResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Not Found' })
+  async getCommunityById(
+    @Param('id') id: string,
+    @Req() req: Request,
+  ): Promise<CommunityResponseDto> {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.getCommunityById(userId, id);
   }
 
   @Post()
