@@ -77,6 +77,27 @@ export function createApiClient(resourcePath: string): AxiosInstance {
     if (typeof url === "string" && url.startsWith("/")) {
       config.url = url.replace(/^\/+/, "");
     }
+
+    // Attach user coordinates header "x-coords" if available in localStorage
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      try {
+        const coordsStr = localStorage.getItem("user_coords");
+        if (coordsStr) {
+          const parsed = JSON.parse(coordsStr);
+          if (
+            parsed &&
+            typeof parsed.latitude === "number" &&
+            typeof parsed.longitude === "number"
+          ) {
+            config.headers = config.headers || {};
+            config.headers["x-coords"] = `${parsed.latitude},${parsed.longitude}`;
+          }
+        }
+      } catch (err) {
+        // Silent catch for parsing errors or blocked localStorage
+      }
+    }
+
     return config;
   });
 
