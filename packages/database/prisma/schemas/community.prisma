@@ -42,6 +42,7 @@ model CommunityEntity {
   ownerId     String   @map("owner_id")
   owner       UserEntity @relation("UserCommunities", fields: [ownerId], references: [id])
   members     CommunityMemberEntity[]
+  meets       CommunityMeetEntity[]
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -65,5 +66,54 @@ model CommunityMemberEntity {
   @@index([userId])
   @@index([communityId])
   @@map("community_member")
+  @@schema("community")
+}
+
+enum MeetKind {
+  INSTANT
+  OPEN_LINK
+  SCHEDULED
+
+  @@map("MeetKind")
+  @@schema("community")
+}
+
+enum MeetAudienceScope {
+  ALL
+  MEMBER_TYPES
+
+  @@map("MeetAudienceScope")
+  @@schema("community")
+}
+
+enum MeetStatus {
+  ACTIVE
+  SCHEDULED
+  ENDED
+
+  @@map("MeetStatus")
+  @@schema("community")
+}
+
+model CommunityMeetEntity {
+  id               String            @id @default(cuid())
+  communityId      String            @map("community_id")
+  inviteCode       String            @unique @map("invite_code")
+  kind             MeetKind
+  title            String
+  description      String?
+  scheduledStartAt DateTime?         @map("scheduled_start_at")
+  audienceScope    MeetAudienceScope @default(ALL) @map("audience_scope")
+  hostUserId       String            @map("host_user_id")
+  livekitRoomName  String            @unique @map("livekit_room_name")
+  status           MeetStatus        @default(ACTIVE)
+  community        CommunityEntity   @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  host             UserEntity        @relation("CommunityMeetHost", fields: [hostUserId], references: [id])
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  @@index([communityId])
+  @@index([hostUserId])
+  @@map("community_meet")
   @@schema("community")
 }

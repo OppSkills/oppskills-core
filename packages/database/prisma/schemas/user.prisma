@@ -55,6 +55,7 @@ model UserEntity {
   notifications                    notifications[]                         @relation("UserNotifications")
   communities                      CommunityEntity[]                       @relation("UserCommunities")
   communityMemberships             CommunityMemberEntity[]               @relation("UserCommunityMemberships")
+  hostedCommunityMeets             CommunityMeetEntity[]                 @relation("CommunityMeetHost")
 
   @@map("user")
   @@schema("user")

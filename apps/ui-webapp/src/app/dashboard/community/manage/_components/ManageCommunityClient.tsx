@@ -13,6 +13,10 @@ import MemberDetailsSheet from "./MemberDetailsSheet";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
 import { getCommunity } from "@/lib/api/communityApi";
+import {
+  listCommunityMeets,
+  toCommunityMeetUi,
+} from "@/lib/api/communityMeetApi";
 
 import type { CommunityMember as Member, CommunityTask as Task, CommunityMeet as Meet } from "@oppskills/types";
 
@@ -108,56 +112,7 @@ const initialTasks: Task[] = [
   },
 ];
 
-const initialMeets: Meet[] = [
-  {
-    id: "1",
-    title: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato crust Hawaiian stuffed sausage. Burnt steak party extra style stuffed.",
-    date: "21 Mar 2026",
-    time: "9:00 AM",
-    attendees: 12,
-    link: "https://oppskills.meet/weekly-sync",
-    targetGroup: "Core Members",
-    type: "Urgent",
-    attendance: "Present",
-  },
-  {
-    id: "2",
-    title: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
-    date: "21 Mar 2026",
-    time: "9:00 AM",
-    attendees: 12,
-    link: "https://oppskills.meet/weekly-sync",
-    targetGroup: "Core Members",
-    type: "Recurring",
-    attendance: "Absent",
-  },
-  {
-    id: "3",
-    title: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
-    date: "21 Mar 2026",
-    time: "9:00 AM",
-    attendees: 12,
-    link: "https://oppskills.meet/weekly-sync",
-    targetGroup: "Core Members",
-    type: "Feedback",
-    attendance: "Scheduled",
-  },
-  {
-    id: "4",
-    title: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
-    date: "21 Mar 2026",
-    time: "9:00 AM",
-    attendees: 12,
-    link: "https://oppskills.meet/weekly-sync",
-    targetGroup: "Core Members",
-    type: "Important",
-    attendance: "Scheduled",
-  },
-];
+const initialMeets: Meet[] = [];
 
 export default function ManageCommunityClient({
   communityId,
@@ -166,6 +121,7 @@ export default function ManageCommunityClient({
 }) {
   const { getToken, isLoaded } = useAuth();
   const [communityName, setCommunityName] = useState<string>("");
+  const [meets, setMeets] = useState<Meet[]>(initialMeets);
 
   useEffect(() => {
     let cancelled = false;
@@ -174,9 +130,13 @@ export default function ManageCommunityClient({
       try {
         const token = await getToken();
         if (!token) return;
-        const details = await getCommunity(token, communityId);
-        if (!cancelled && details) {
+        const [details, meetItems] = await Promise.all([
+          getCommunity(token, communityId),
+          listCommunityMeets(token, communityId),
+        ]);
+        if (!cancelled) {
           setCommunityName(details.name);
+          setMeets(meetItems.map(toCommunityMeetUi));
         }
       } catch (error) {
         console.error("Failed to load community details:", error);
@@ -209,7 +169,6 @@ export default function ManageCommunityClient({
     "Circle"
   ]);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [meets, setMeets] = useState<Meet[]>(initialMeets);
 
   const handleAssignTask = (memberName: string) => {
     setSelectedMemberForTask(memberName);
@@ -309,34 +268,6 @@ export default function ManageCommunityClient({
     }
   };
 
-  const handleScheduleMeet = (
-    title: string,
-    dateStr: string,
-    timeStr: string,
-    targetGroup: string,
-    meetType: "Urgent" | "Recurring" | "Feedback" | "Important",
-    description: string
-  ) => {
-    const newMeet: Meet = {
-      id: String(meets.length + 1),
-      title,
-      date: new Date(dateStr).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-      }),
-      time: timeStr,
-      attendees: targetGroup === "Core Members" ? 12 : 543,
-      link: `https://oppskills.meet/${title.toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
-      targetGroup,
-      type: meetType,
-      description,
-      attendance: "Scheduled",
-    };
-    setMeets((prev) => [newMeet, ...prev]);
-    toast.success(`Successfully scheduled "${title}"!`);
-  };
-
   // Dynamic calculations relative to core stats
   const totalCommunitySize = 12300 + (members.length - 7);
   const coreTeamCount = 12 + (members.filter((m) => 
@@ -379,10 +310,11 @@ export default function ManageCommunityClient({
 
         {/* Drawer Overlays */}
         <MeetScheduler
+          communityId={communityId}
           isOpen={isMeetSchedulerOpen}
           onClose={() => setIsMeetSchedulerOpen(false)}
           meets={meets}
-          onScheduleMeet={handleScheduleMeet}
+          onMeetsChange={setMeets}
         />
         <TaskTracker
           isOpen={isTaskTrackerOpen}

@@ -440,17 +440,22 @@ export default function MemberDetailsSheet({
                     </tr>
                   ) : (
                     meets.map((meet) => {
-                      // Deterministic realistic attendance for distinct members/meetings
                       const meetHash = meet.title.length + meet.id.length;
                       const memberHash = member.name.length + member.id.length;
                       const isPresent = (meetHash + memberHash) % 3 !== 0;
 
+                      const kindLabels: Record<Meet["kind"], string> = {
+                        INSTANT: "Instant",
+                        OPEN_LINK: "Open link",
+                        SCHEDULED: "Scheduled",
+                      };
                       const typeColor =
-                        meet.attendees > 10
+                        meet.kind === "SCHEDULED"
                           ? "bg-emerald-50 text-[#2E7D32] border-emerald-150"
-                          : "bg-red-50 text-[#C62828] border-red-150";
-                      const typeText =
-                        meet.attendees > 10 ? "Recurring" : "Urgent";
+                          : meet.kind === "OPEN_LINK"
+                            ? "bg-blue-50 text-[#1565C0] border-blue-150"
+                            : "bg-purple-50 text-[#423072] border-[#835BD5]/20";
+                      const typeText = kindLabels[meet.kind];
 
                       return (
                         <tr key={meet.id}>

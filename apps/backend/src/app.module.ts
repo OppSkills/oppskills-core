@@ -26,6 +26,7 @@ import { ReferralModule } from './referral/referral.module';
 import { NotificationModule } from './notification/notification.module';
 import { RecommendationModule } from './recommendation/recommendation.module';
 import { CommunityModule } from './community/community.module';
+import { MeetModule } from './meet/meet.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { CommunityModule } from './community/community.module';
     NotificationModule,
     RecommendationModule,
     CommunityModule,
+    MeetModule,
   ],
   controllers: [AppController],
   providers: [

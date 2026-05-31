@@ -57,6 +57,8 @@ async function bootstrap() {
     'http://127.0.0.1:3000',
     'http://localhost:3002',
     'http://127.0.0.1:3002',
+    'http://localhost:3003',
+    'http://127.0.0.1:3003',
   ];
 
   const prodOrigins = [
@@ -64,6 +66,7 @@ async function bootstrap() {
     'https://www.oppskills.com',
     'https://app.oppskills.com',
     'https://admin.oppskills.com',
+    'https://meet.oppskills.com',
   ];
 
   if (frontendUrl) {

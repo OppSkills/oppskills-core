@@ -18,15 +18,22 @@ export interface CommunityTask {
   priority?: "High" | "Medium" | "Low";
 }
 
+import type {
+  MeetAudienceScope,
+  MeetKind,
+  MeetStatus,
+} from "./community-meet.dto";
+
 export interface CommunityMeet {
   id: string;
   title: string;
   date: string;
   time: string;
-  attendees: number;
+  inviteCode: string;
   link: string;
   description?: string;
-  targetGroup?: string;
-  type?: "Urgent" | "Recurring" | "Feedback" | "Important";
-  attendance?: "Present" | "Absent" | "Scheduled";
+  kind: MeetKind;
+  audienceScope: MeetAudienceScope;
+  status: MeetStatus;
+  hostName?: string;
 }
