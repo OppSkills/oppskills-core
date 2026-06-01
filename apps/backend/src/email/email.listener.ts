@@ -20,8 +20,21 @@ import type {
   HackathonBulkEmailPayload,
 } from './email.events';
 import { Logger } from 'src/_utils/logger';
-import { prisma } from '@oppskills/db';
+import { prisma, Prisma } from '@oppskills/db';
 import { EventPassService } from '../event/event-pass.service';
+
+type EventBulkEmailParticipant = Prisma.EventParticipantEntityGetPayload<{
+  include: {
+    user: { select: { email: true; firstName: true } };
+  };
+}>;
+
+type HackathonBulkEmailParticipant =
+  Prisma.HackathonRegistrationSubmissionEntityGetPayload<{
+    include: {
+      user: { select: { email: true; firstName: true } };
+    };
+  }>;
 
 @Injectable()
 export class EmailListener {
@@ -394,6 +407,95 @@ export class EmailListener {
       });
     }
   }
+
+  private async sendEventNotificationBatches(
+    participants: EventBulkEmailParticipant[],
+    event: { slug: string },
+    eventName: string,
+    htmlBody: string,
+    batchSize: number,
+  ): Promise<number> {
+    const sendFromOffset = async (offset: number): Promise<number> => {
+      if (offset >= participants.length) return 0;
+
+      const batch = participants.slice(offset, offset + batchSize);
+      const participantsWithEmail = batch.filter(
+        (participant): participant is EventBulkEmailParticipant =>
+          !!participant.user?.email,
+      );
+      const rendered = await Promise.all(
+        participantsWithEmail.map(async (participant) => ({
+          to: participant.user.email,
+          subject: `Update from ${eventName}`,
+          html: await render(
+            createElement(EventNotificationEmail, {
+              firstName: participant.user.firstName || 'Participant',
+              eventName,
+              eventSlug: event.slug,
+              htmlBody,
+              baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
+            }),
+          ),
+        })),
+      );
+
+      let batchSent = 0;
+      if (rendered.length > 0) {
+        await this.emailService.sendBatch(rendered);
+        batchSent = rendered.length;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      return batchSent + (await sendFromOffset(offset + batchSize));
+    };
+
+    return sendFromOffset(0);
+  }
+
+  private async sendHackathonNotificationBatches(
+    participants: HackathonBulkEmailParticipant[],
+    hackathon: { slug: string },
+    hackathonName: string,
+    htmlBody: string,
+    batchSize: number,
+  ): Promise<number> {
+    const sendFromOffset = async (offset: number): Promise<number> => {
+      if (offset >= participants.length) return 0;
+
+      const batch = participants.slice(offset, offset + batchSize);
+      const participantsWithEmail = batch.filter(
+        (participant): participant is HackathonBulkEmailParticipant =>
+          !!participant.user?.email,
+      );
+      const rendered = await Promise.all(
+        participantsWithEmail.map(async (participant) => ({
+          to: participant.user.email,
+          subject: `Update from ${hackathonName}`,
+          html: await render(
+            createElement(HackathonNotificationEmail, {
+              firstName: participant.user.firstName || 'Participant',
+              hackathonName,
+              hackathonSlug: hackathon.slug,
+              htmlBody,
+              baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
+            }),
+          ),
+        })),
+      );
+
+      let batchSent = 0;
+      if (rendered.length > 0) {
+        await this.emailService.sendBatch(rendered);
+        batchSent = rendered.length;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      return batchSent + (await sendFromOffset(offset + batchSize));
+    };
+
+    return sendFromOffset(0);
+  }
+
   @OnEvent(EMAIL_EVENTS.EVENT_BULK_EMAIL)
   async handleBulkEmail(payload: EventBulkEmailPayload): Promise<void> {
     const { eventId, htmlBody, organizerEmail, organizerName, eventName } =
@@ -423,44 +525,14 @@ export class EmailListener {
       },
     });
 
-    const BATCH_SIZE = 100;
-    let sentCount = 0;
+    const sentCount = await this.sendEventNotificationBatches(
+      participants,
+      event,
+      eventName,
+      htmlBody,
+      100,
+    );
 
-    for (let i = 0; i < participants.length; i += BATCH_SIZE) {
-      const batch = participants.slice(i, i + BATCH_SIZE);
-      const emailBatch: Array<{ to: string; subject: string; html: string }> =
-        [];
-
-      for (const participant of batch) {
-        if (!participant.user.email) continue;
-
-        const emailHtml = await render(
-          createElement(EventNotificationEmail, {
-            firstName: participant.user.firstName || 'Participant',
-            eventName,
-            eventSlug: event.slug,
-            htmlBody,
-            baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
-          }),
-        );
-
-        emailBatch.push({
-          to: participant.user.email,
-          subject: `Update from ${eventName}`,
-          html: emailHtml,
-        });
-      }
-
-      if (emailBatch.length > 0) {
-        await this.emailService.sendBatch(emailBatch);
-        sentCount += emailBatch.length;
-      }
-
-      // reliable sleep
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-    }
-
-    // Send success email to organizer
     await this.emailService.send({
       type: 'bulk-email-success',
       to: organizerEmail,
@@ -514,44 +586,14 @@ export class EmailListener {
         },
       });
 
-    const BATCH_SIZE = 100;
-    let sentCount = 0;
+    const sentCount = await this.sendHackathonNotificationBatches(
+      participants,
+      hackathon,
+      hackathonName,
+      htmlBody,
+      100,
+    );
 
-    for (let i = 0; i < participants.length; i += BATCH_SIZE) {
-      const batch = participants.slice(i, i + BATCH_SIZE);
-      const emailBatch: Array<{ to: string; subject: string; html: string }> =
-        [];
-
-      for (const participant of batch) {
-        if (!participant.user.email) continue;
-
-        const emailHtml = await render(
-          createElement(HackathonNotificationEmail, {
-            firstName: participant.user.firstName || 'Participant',
-            hackathonName,
-            hackathonSlug: hackathon.slug,
-            htmlBody,
-            baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
-          }),
-        );
-
-        emailBatch.push({
-          to: participant.user.email,
-          subject: `Update from ${hackathonName}`,
-          html: emailHtml,
-        });
-      }
-
-      if (emailBatch.length > 0) {
-        await this.emailService.sendBatch(emailBatch);
-        sentCount += emailBatch.length;
-      }
-
-      // reliable sleep
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-    }
-
-    // Send success email to organizer
     await this.emailService.send({
       type: 'bulk-email-success',
       to: organizerEmail,

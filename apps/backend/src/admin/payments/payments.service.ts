@@ -118,8 +118,9 @@ export class AdminPaymentsService {
   ) {
     const where = { hackathonId };
 
-    const total = await prisma.hackathonPaymentEntity.count({ where });
-    const hackathonPayments = await prisma.hackathonPaymentEntity.findMany({
+    const [total, hackathonPayments] = await Promise.all([
+      prisma.hackathonPaymentEntity.count({ where }),
+      prisma.hackathonPaymentEntity.findMany({
       where,
       skip,
       take: limit,
@@ -139,7 +140,8 @@ export class AdminPaymentsService {
           },
         },
       },
-    });
+    }),
+    ]);
 
     const data = hackathonPayments.map((p) => this.mapHackathonPayment(p));
     const further = skip + data.length < total;
@@ -154,8 +156,9 @@ export class AdminPaymentsService {
   ) {
     const where = { eventId };
 
-    const total = await prisma.eventPaymentEntity.count({ where });
-    const eventPayments = await prisma.eventPaymentEntity.findMany({
+    const [total, eventPayments] = await Promise.all([
+      prisma.eventPaymentEntity.count({ where }),
+      prisma.eventPaymentEntity.findMany({
       where,
       skip,
       take: limit,
@@ -175,7 +178,8 @@ export class AdminPaymentsService {
           },
         },
       },
-    });
+    }),
+    ]);
 
     const data = eventPayments.map((p) => this.mapEventPayment(p));
     const further = skip + data.length < total;
@@ -218,14 +222,26 @@ export class AdminPaymentsService {
       return { data: [] as PaymentRow[], further: false };
     }
 
-    const hackathonIds = idRows
-      .filter((r) => r.kind === 'Hackathon')
-      .map((r) => r.id);
-    const eventIds = idRows.filter((r) => r.kind === 'Event').map((r) => r.id);
+    const hackathonIds: string[] = [];
+    const eventIds: string[] = [];
+    for (const r of idRows) {
+      if (r.kind === 'Hackathon') {
+        hackathonIds.push(r.id);
+      } else if (r.kind === 'Event') {
+        eventIds.push(r.id);
+      }
+    }
 
-    const hackathonPayments =
+    type HackathonPaymentRow = Awaited<
+      ReturnType<typeof prisma.hackathonPaymentEntity.findMany>
+    >[number];
+    type EventPaymentRow = Awaited<
+      ReturnType<typeof prisma.eventPaymentEntity.findMany>
+    >[number];
+
+    const [hackathonPayments, eventPayments] = await Promise.all([
       hackathonIds.length > 0
-        ? await prisma.hackathonPaymentEntity.findMany({
+        ? prisma.hackathonPaymentEntity.findMany({
             where: { id: { in: hackathonIds } },
             include: {
               payerUser: {
@@ -243,11 +259,9 @@ export class AdminPaymentsService {
               },
             },
           })
-        : [];
-
-    const eventPayments =
+        : Promise.resolve([] as HackathonPaymentRow[]),
       eventIds.length > 0
-        ? await prisma.eventPaymentEntity.findMany({
+        ? prisma.eventPaymentEntity.findMany({
             where: { id: { in: eventIds } },
             include: {
               payerUser: {
@@ -265,7 +279,8 @@ export class AdminPaymentsService {
               },
             },
           })
-        : [];
+        : Promise.resolve([] as EventPaymentRow[]),
+    ]);
 
     const hMap = new Map<string, any>(hackathonPayments.map((p) => [p.id, p]));
     const eMap = new Map<string, any>(eventPayments.map((p) => [p.id, p]));

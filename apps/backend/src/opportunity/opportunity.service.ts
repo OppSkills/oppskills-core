@@ -116,7 +116,12 @@ export class OpportunityService {
       };
     }
     // (PUBLISHED + APPROVED)
-    const [matchingHackathons, matchingEvents] = await Promise.all([
+    const [
+      matchingHackathons,
+      matchingEvents,
+      topHackathons,
+      topEvents,
+    ] = await Promise.all([
       prisma.hackathonEntity.findMany({
         where: {
           name: { contains: q, mode: 'insensitive' },
@@ -139,11 +144,6 @@ export class OpportunityService {
         take: 4,
         orderBy: { createdAt: 'desc' },
       }),
-    ]);
-
-    // 2. Fetch top 8 overall (among those that match q)
-    // Preference: Registrations > Views > Impressions
-    const [topHackathons, topEvents] = await Promise.all([
       prisma.hackathonEntity.findMany({
         where: {
           name: { contains: q, mode: 'insensitive' },
@@ -205,10 +205,13 @@ export class OpportunityService {
 
     // 3. Cleanup: Remove internal sorting fields (views, impressions) before returning
     const sanitize = (item: any) => {
-      const tierNums = (item.ticketTiers ?? [])
-        .filter((t: { isFree?: boolean }) => !t.isFree)
-        .map((t: { price: unknown }) => Number(t.price))
-        .filter((n: number) => Number.isFinite(n));
+      const tierNums = (item.ticketTiers ?? []).flatMap(
+        (t: { isFree?: boolean; price: unknown }) => {
+          if (t.isFree) return [];
+          const n = Number(t.price);
+          return Number.isFinite(n) ? [n] : [];
+        },
+      );
       const lowestTicketPrice =
         tierNums.length > 0 ? Math.min(...tierNums) : null;
       const highestTicketPrice =

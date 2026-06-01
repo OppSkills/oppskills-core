@@ -410,10 +410,11 @@ export class EventService {
     ]);
 
     const items = events.map((e) => {
-      const tierNums = (e.ticketTiers ?? [])
-        .filter((t) => !t.isFree)
-        .map((t) => Number(t.price))
-        .filter((n) => Number.isFinite(n));
+      const tierNums = (e.ticketTiers ?? []).flatMap((t) => {
+        if (t.isFree) return [];
+        const n = Number(t.price);
+        return Number.isFinite(n) ? [n] : [];
+      });
       const lowestTicketPrice =
         tierNums.length > 0 ? Math.min(...tierNums) : null;
       const highestTicketPrice =
@@ -1558,16 +1559,16 @@ export class EventService {
     const registrationFields = updatedRegForm?.fields ?? [];
 
     // Transform answers: replace frontend "default-*" IDs with real DB IDs
-    const providedAnswers = (answers ?? [])
-      .map((a) => ({
-        fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
-        value: a.value,
-      }))
-      .filter((a) => {
-        // If it still starts with 'default-', it means it wasn't in our current mapping
-        // (likely a field from a different user category that's no longer relevant or shouldn't be handled here)
-        return !a.fieldId.startsWith('default-');
-      });
+    const providedAnswers: Array<{
+      fieldId: string;
+      value: string | number | string[];
+    }> = [];
+    for (const a of answers ?? []) {
+      const fieldId = frontendIdToDbId.get(a.fieldId) ?? a.fieldId;
+      if (!fieldId.startsWith('default-')) {
+        providedAnswers.push({ fieldId, value: a.value });
+      }
+    }
 
     const providedFieldIds = new Set(providedAnswers.map((a) => a.fieldId));
 
@@ -2208,28 +2209,27 @@ export class EventService {
     });
     if (!event) throw new NotFoundException('Event not found');
 
-    const participant = await prisma.eventParticipantEntity.findUnique({
-      where: {
-        eventId_userId: { eventId, userId },
-      },
-      select: {
-        id: true,
-        joinedAt: true,
-        checkoutPending: true,
-        ticketTierId: true,
-        ticketTier: { select: { id: true, name: true, isFree: true } },
-      },
-    });
-
-    // Check if registration answers exist (submission row alone is not enough)
-    const registrationSubmission =
-      await prisma.eventRegistrationSubmissionEntity.findFirst({
+    const [participant, registrationSubmission] = await Promise.all([
+      prisma.eventParticipantEntity.findUnique({
+        where: {
+          eventId_userId: { eventId, userId },
+        },
+        select: {
+          id: true,
+          joinedAt: true,
+          checkoutPending: true,
+          ticketTierId: true,
+          ticketTier: { select: { id: true, name: true, isFree: true } },
+        },
+      }),
+      prisma.eventRegistrationSubmissionEntity.findFirst({
         where: { eventId, userId },
         select: {
           id: true,
           _count: { select: { answers: true } },
         },
-      });
+      }),
+    ]);
     const hasRegistrationAnswers =
       !!registrationSubmission && registrationSubmission._count.answers > 0;
 
@@ -2431,15 +2431,16 @@ export class EventService {
     }
 
     // Transform answers: replace frontend "default-*" IDs with real DB IDs
-    const mappedAnswers = answers
-      .map((a) => ({
-        fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
-        value: a.value,
-      }))
-      .filter((a) => {
-        // If it still starts with 'default-', skip it (field doesn't exist or wrong category)
-        return !a.fieldId.startsWith('default-');
-      });
+    const mappedAnswers: Array<{
+      fieldId: string;
+      value: string | number | string[];
+    }> = [];
+    for (const a of answers) {
+      const fieldId = frontendIdToDbId.get(a.fieldId) ?? a.fieldId;
+      if (!fieldId.startsWith('default-')) {
+        mappedAnswers.push({ fieldId, value: a.value });
+      }
+    }
 
     const submissionId =
       existingSubmission && existingSubmission._count.answers === 0
@@ -2824,29 +2825,37 @@ export class EventService {
 
     if (!event) throw new NotFoundException('Event not found');
 
-    const managers = event.userRoles
-      .filter((r) => r.role === 'MANAGER')
-      .map((r) => ({
-        id: r.user.id,
-        email: r.user.email,
-        firstName: r.user.firstName,
-        lastName: r.user.lastName,
-        imageUrl: r.user.imageUrl,
-        role: r.role as EventUserRoleValue,
-        assignedAt: r.createdAt.toISOString(),
-      }));
+    const managers = event.userRoles.flatMap((r) =>
+      r.role === 'MANAGER'
+        ? [
+            {
+              id: r.user.id,
+              email: r.user.email,
+              firstName: r.user.firstName,
+              lastName: r.user.lastName,
+              imageUrl: r.user.imageUrl,
+              role: r.role as EventUserRoleValue,
+              assignedAt: r.createdAt.toISOString(),
+            },
+          ]
+        : [],
+    );
 
-    const evaluators = event.userRoles
-      .filter((r) => r.role === 'EVALUATOR')
-      .map((r) => ({
-        id: r.user.id,
-        email: r.user.email,
-        firstName: r.user.firstName,
-        lastName: r.user.lastName,
-        imageUrl: r.user.imageUrl,
-        role: r.role as EventUserRoleValue,
-        assignedAt: r.createdAt.toISOString(),
-      }));
+    const evaluators = event.userRoles.flatMap((r) =>
+      r.role === 'EVALUATOR'
+        ? [
+            {
+              id: r.user.id,
+              email: r.user.email,
+              firstName: r.user.firstName,
+              lastName: r.user.lastName,
+              imageUrl: r.user.imageUrl,
+              role: r.role as EventUserRoleValue,
+              assignedAt: r.createdAt.toISOString(),
+            },
+          ]
+        : [],
+    );
 
     return {
       owner: event.owner,
@@ -2904,29 +2913,37 @@ export class EventService {
       );
     }
 
-    const managers = event.userRoles
-      .filter((r) => r.role === 'MANAGER')
-      .map((r) => ({
-        id: r.user.id,
-        email: r.user.email,
-        firstName: r.user.firstName,
-        lastName: r.user.lastName,
-        imageUrl: r.user.imageUrl,
-        role: r.role as EventUserRoleValue,
-        assignedAt: r.createdAt.toISOString(),
-      }));
+    const managers = event.userRoles.flatMap((r) =>
+      r.role === 'MANAGER'
+        ? [
+            {
+              id: r.user.id,
+              email: r.user.email,
+              firstName: r.user.firstName,
+              lastName: r.user.lastName,
+              imageUrl: r.user.imageUrl,
+              role: r.role as EventUserRoleValue,
+              assignedAt: r.createdAt.toISOString(),
+            },
+          ]
+        : [],
+    );
 
-    const evaluators = event.userRoles
-      .filter((r) => r.role === 'EVALUATOR')
-      .map((r) => ({
-        id: r.user.id,
-        email: r.user.email,
-        firstName: r.user.firstName,
-        lastName: r.user.lastName,
-        imageUrl: r.user.imageUrl,
-        role: r.role as EventUserRoleValue,
-        assignedAt: r.createdAt.toISOString(),
-      }));
+    const evaluators = event.userRoles.flatMap((r) =>
+      r.role === 'EVALUATOR'
+        ? [
+            {
+              id: r.user.id,
+              email: r.user.email,
+              firstName: r.user.firstName,
+              lastName: r.user.lastName,
+              imageUrl: r.user.imageUrl,
+              role: r.role as EventUserRoleValue,
+              assignedAt: r.createdAt.toISOString(),
+            },
+          ]
+        : [],
+    );
 
     return {
       owner: event.owner,

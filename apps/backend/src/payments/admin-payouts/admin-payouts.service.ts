@@ -33,27 +33,31 @@ export class AdminPayoutsService {
       },
     });
 
-    return hackathons
-      .map((hackathon) => {
-        const netEarnings = hackathon.payments.reduce((sum, p) => {
-          const share = new Prisma.Decimal(p.organizerShareAmount);
-          const refunded = new Prisma.Decimal(p.refundedAmount || 0);
-          return sum.add(share.sub(refunded));
-        }, new Prisma.Decimal(0));
+    return hackathons.flatMap((hackathon) => {
+      const netEarnings = hackathon.payments.reduce((sum, p) => {
+        const share = new Prisma.Decimal(p.organizerShareAmount);
+        const refunded = new Prisma.Decimal(p.refundedAmount || 0);
+        return sum.add(share.sub(refunded));
+      }, new Prisma.Decimal(0));
 
-        const paidOut = hackathon.payouts.reduce(
-          (sum, p) => sum.add(new Prisma.Decimal(p.amount)),
-          new Prisma.Decimal(0),
-        );
+      const paidOut = hackathon.payouts.reduce(
+        (sum, p) => sum.add(new Prisma.Decimal(p.amount)),
+        new Prisma.Decimal(0),
+      );
 
-        const pendingPayout = Prisma.Decimal.max(
-          netEarnings.sub(paidOut),
-          new Prisma.Decimal(0),
-        );
+      const pendingPayout = Prisma.Decimal.max(
+        netEarnings.sub(paidOut),
+        new Prisma.Decimal(0),
+      );
 
-        const currency = hackathon.payments[0]?.currency || 'INR';
+      if (!pendingPayout.greaterThan(0)) {
+        return [];
+      }
 
-        return {
+      const currency = hackathon.payments[0]?.currency || 'INR';
+
+      return [
+        {
           hackathonId: hackathon.id,
           hackathonTitle: hackathon.name,
           hackathonSlug: hackathon.slug,
@@ -75,9 +79,9 @@ export class AdminPayoutsService {
               }
             : null,
           existingPayouts: hackathon.payouts,
-        };
-      })
-      .filter((h) => parseFloat(h.pendingPayout) > 0);
+        },
+      ];
+    });
   }
 
   async markPaid(dto: {
@@ -137,6 +141,10 @@ export class AdminPayoutsService {
       });
 
       let remainingToAllocate = requestedAmount;
+      const payoutItems: Array<{
+        paymentId: string;
+        amountAllocated: Prisma.Decimal;
+      }> = [];
       for (const payment of capturedPayments) {
         if (remainingToAllocate.lessThanOrEqualTo(0)) break;
 
@@ -147,17 +155,21 @@ export class AdminPayoutsService {
         if (paymentNet.lessThanOrEqualTo(0)) continue;
 
         const allocate = Prisma.Decimal.min(remainingToAllocate, paymentNet);
-
-        await tx.hackathonPayoutItemEntity.create({
-          data: {
-            payoutId: newPayout.id,
-            paymentId: payment.id,
-            amountAllocated: allocate,
-          },
-        });
-
+        payoutItems.push({ paymentId: payment.id, amountAllocated: allocate });
         remainingToAllocate = remainingToAllocate.sub(allocate);
       }
+
+      await Promise.all(
+        payoutItems.map((item) =>
+          tx.hackathonPayoutItemEntity.create({
+            data: {
+              payoutId: newPayout.id,
+              paymentId: item.paymentId,
+              amountAllocated: item.amountAllocated,
+            },
+          }),
+        ),
+      );
 
       return newPayout;
     });

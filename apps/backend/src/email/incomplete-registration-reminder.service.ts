@@ -143,8 +143,9 @@ export class IncompleteRegistrationReminderService {
 
     const baseUrl = process.env.FRONTEND_URL || 'https://oppskills.com';
 
-    const hackathonRows = await prisma.$queryRaw<HackathonReminderRow[]>(
-      Prisma.sql`
+    const [hackathonRows, eventRows, freeEventRows] = await Promise.all([
+      prisma.$queryRaw<HackathonReminderRow[]>(
+        Prisma.sql`
         SELECT
           hp.id AS "paymentId",
           h.slug AS "slug",
@@ -181,10 +182,9 @@ export class IncompleteRegistrationReminderService {
               AND l.last_sent_at > ${cutoff}
           )
       `,
-    );
-
-    const eventRows = await prisma.$queryRaw<EventReminderRow[]>(
-      Prisma.sql`
+      ),
+      prisma.$queryRaw<EventReminderRow[]>(
+        Prisma.sql`
         SELECT
           ep.id AS "paymentId",
           e.slug AS "slug",
@@ -223,10 +223,9 @@ export class IncompleteRegistrationReminderService {
               AND l.last_sent_at > ${cutoff}
           )
       `,
-    );
-
-    const freeEventRows = await prisma.$queryRaw<FreeEventReminderRow[]>(
-      Prisma.sql`
+      ),
+      prisma.$queryRaw<FreeEventReminderRow[]>(
+        Prisma.sql`
         SELECT
           ep.id AS "participantId",
           e.slug AS "slug",
@@ -265,186 +264,195 @@ export class IncompleteRegistrationReminderService {
               AND l.last_sent_at > ${cutoff}
           )
       `,
-    );
+      ),
+    ]);
 
-    let hackathonEmailsSent = 0;
-    let eventEmailsSent = 0;
-    let freeEventEmailsSent = 0;
+    const hackathonEmailsSent = (
+      await Promise.all(
+        hackathonRows.map(async (row) => {
+          const eventDate = row.startDate.toLocaleDateString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+          const eventTime = row.startDate.toLocaleTimeString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          const eventLocation = formatListingLocation({
+            locationType: row.locationType,
+            locationAddress: row.locationAddress,
+            locationCoords: row.locationCoords,
+            locationVirtualLink: row.locationVirtualLink,
+          });
 
-    for (const row of hackathonRows) {
-      const eventDate = row.startDate.toLocaleDateString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-      const eventTime = row.startDate.toLocaleTimeString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      const eventLocation = formatListingLocation({
-        locationType: row.locationType,
-        locationAddress: row.locationAddress,
-        locationCoords: row.locationCoords,
-        locationVirtualLink: row.locationVirtualLink,
-      });
+          const result = await this.emailService.send({
+            type: 'incomplete-registration',
+            to: row.payerEmail,
+            props: {
+              firstName: row.firstName ?? undefined,
+              email: row.payerEmail,
+              eventName: row.title,
+              eventDate,
+              eventTime,
+              eventLocation,
+              eventSlug: row.slug,
+              resourceType: 'hackathon',
+              baseUrl,
+            },
+          });
 
-      const result = await this.emailService.send({
-        type: 'incomplete-registration',
-        to: row.payerEmail,
-        props: {
-          firstName: row.firstName ?? undefined,
-          email: row.payerEmail,
-          eventName: row.title,
-          eventDate,
-          eventTime,
-          eventLocation,
-          eventSlug: row.slug,
-          resourceType: 'hackathon',
-          baseUrl,
-        },
-      });
+          if (result.success) {
+            await prisma.incompleteRegistrationReminderLogEntity.upsert({
+              where: { hackathonPaymentId: row.paymentId },
+              create: {
+                hackathonPaymentId: row.paymentId,
+                lastSentAt: new Date(),
+                sentCount: 1,
+              },
+              update: {
+                lastSentAt: new Date(),
+                sentCount: { increment: 1 },
+              },
+            });
+            return 1;
+          }
+          this.logger.warn(
+            `Hackathon reminder email failed for payment ${row.paymentId}: ${result.error}`,
+          );
+          return 0;
+        }),
+      )
+    ).reduce((sum, n) => sum + n, 0);
 
-      if (result.success) {
-        await prisma.incompleteRegistrationReminderLogEntity.upsert({
-          where: { hackathonPaymentId: row.paymentId },
-          create: {
-            hackathonPaymentId: row.paymentId,
-            lastSentAt: new Date(),
-            sentCount: 1,
-          },
-          update: {
-            lastSentAt: new Date(),
-            sentCount: { increment: 1 },
-          },
-        });
-        hackathonEmailsSent += 1;
-      } else {
-        this.logger.warn(
-          `Hackathon reminder email failed for payment ${row.paymentId}: ${result.error}`,
-        );
-      }
-    }
+    const eventEmailsSent = (
+      await Promise.all(
+        eventRows.map(async (row) => {
+          const eventDate = row.startDate.toLocaleDateString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+          const eventTime = row.startDate.toLocaleTimeString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          const eventLocation = formatListingLocation({
+            locationType: row.locationType,
+            locationAddress: row.locationAddress,
+            locationCoords: row.locationCoords,
+            locationVirtualLink: row.locationVirtualLink,
+          });
 
-    for (const row of eventRows) {
-      const eventDate = row.startDate.toLocaleDateString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-      const eventTime = row.startDate.toLocaleTimeString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      const eventLocation = formatListingLocation({
-        locationType: row.locationType,
-        locationAddress: row.locationAddress,
-        locationCoords: row.locationCoords,
-        locationVirtualLink: row.locationVirtualLink,
-      });
+          const result = await this.emailService.send({
+            type: 'incomplete-registration',
+            to: row.payerEmail,
+            props: {
+              firstName: row.firstName ?? undefined,
+              email: row.payerEmail,
+              eventName: row.name,
+              eventDate,
+              eventTime,
+              eventLocation,
+              eventType: row.eventType,
+              eventSlug: row.slug,
+              resourceType: 'event',
+              baseUrl,
+              incompleteRegistrationKind: 'paid',
+            },
+          });
 
-      const result = await this.emailService.send({
-        type: 'incomplete-registration',
-        to: row.payerEmail,
-        props: {
-          firstName: row.firstName ?? undefined,
-          email: row.payerEmail,
-          eventName: row.name,
-          eventDate,
-          eventTime,
-          eventLocation,
-          eventType: row.eventType,
-          eventSlug: row.slug,
-          resourceType: 'event',
-          baseUrl,
-          incompleteRegistrationKind: 'paid',
-        },
-      });
+          if (result.success) {
+            await prisma.incompleteRegistrationReminderLogEntity.upsert({
+              where: { eventPaymentId: row.paymentId },
+              create: {
+                eventPaymentId: row.paymentId,
+                lastSentAt: new Date(),
+                sentCount: 1,
+              },
+              update: {
+                lastSentAt: new Date(),
+                sentCount: { increment: 1 },
+              },
+            });
+            return 1;
+          }
+          this.logger.warn(
+            `Event reminder email failed for payment ${row.paymentId}: ${result.error}`,
+          );
+          return 0;
+        }),
+      )
+    ).reduce((sum, n) => sum + n, 0);
 
-      if (result.success) {
-        await prisma.incompleteRegistrationReminderLogEntity.upsert({
-          where: { eventPaymentId: row.paymentId },
-          create: {
-            eventPaymentId: row.paymentId,
-            lastSentAt: new Date(),
-            sentCount: 1,
-          },
-          update: {
-            lastSentAt: new Date(),
-            sentCount: { increment: 1 },
-          },
-        });
-        eventEmailsSent += 1;
-      } else {
-        this.logger.warn(
-          `Event reminder email failed for payment ${row.paymentId}: ${result.error}`,
-        );
-      }
-    }
+    const freeEventEmailsSent = (
+      await Promise.all(
+        freeEventRows.map(async (row) => {
+          const eventDate = row.startDate.toLocaleDateString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+          const eventTime = row.startDate.toLocaleTimeString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          const eventLocation = formatListingLocation({
+            locationType: row.locationType,
+            locationAddress: row.locationAddress,
+            locationCoords: row.locationCoords,
+            locationVirtualLink: row.locationVirtualLink,
+          });
 
-    for (const row of freeEventRows) {
-      const eventDate = row.startDate.toLocaleDateString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-      const eventTime = row.startDate.toLocaleTimeString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      const eventLocation = formatListingLocation({
-        locationType: row.locationType,
-        locationAddress: row.locationAddress,
-        locationCoords: row.locationCoords,
-        locationVirtualLink: row.locationVirtualLink,
-      });
+          const result = await this.emailService.send({
+            type: 'incomplete-registration',
+            to: row.payerEmail,
+            props: {
+              firstName: row.firstName ?? undefined,
+              email: row.payerEmail,
+              eventName: row.name,
+              eventDate,
+              eventTime,
+              eventLocation,
+              eventType: row.eventType,
+              eventSlug: row.slug,
+              resourceType: 'event',
+              baseUrl,
+              incompleteRegistrationKind: 'free',
+            },
+          });
 
-      const result = await this.emailService.send({
-        type: 'incomplete-registration',
-        to: row.payerEmail,
-        props: {
-          firstName: row.firstName ?? undefined,
-          email: row.payerEmail,
-          eventName: row.name,
-          eventDate,
-          eventTime,
-          eventLocation,
-          eventType: row.eventType,
-          eventSlug: row.slug,
-          resourceType: 'event',
-          baseUrl,
-          incompleteRegistrationKind: 'free',
-        },
-      });
-
-      if (result.success) {
-        await prisma.incompleteRegistrationReminderLogEntity.upsert({
-          where: { eventParticipantId: row.participantId },
-          create: {
-            eventParticipantId: row.participantId,
-            lastSentAt: new Date(),
-            sentCount: 1,
-          },
-          update: {
-            lastSentAt: new Date(),
-            sentCount: { increment: 1 },
-          },
-        });
-        freeEventEmailsSent += 1;
-      } else {
-        this.logger.warn(
-          `Free event reminder email failed for participant ${row.participantId}: ${result.error}`,
-        );
-      }
-    }
+          if (result.success) {
+            await prisma.incompleteRegistrationReminderLogEntity.upsert({
+              where: { eventParticipantId: row.participantId },
+              create: {
+                eventParticipantId: row.participantId,
+                lastSentAt: new Date(),
+                sentCount: 1,
+              },
+              update: {
+                lastSentAt: new Date(),
+                sentCount: { increment: 1 },
+              },
+            });
+            return 1;
+          }
+          this.logger.warn(
+            `Free event reminder email failed for participant ${row.participantId}: ${result.error}`,
+          );
+          return 0;
+        }),
+      )
+    ).reduce((sum, n) => sum + n, 0);
 
     this.logger.log(
       `Incomplete registration reminders: hackathons ${hackathonEmailsSent}/${hackathonRows.length} sent, paid events ${eventEmailsSent}/${eventRows.length} sent, free events ${freeEventEmailsSent}/${freeEventRows.length} sent`,

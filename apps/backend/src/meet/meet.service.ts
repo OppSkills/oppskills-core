@@ -60,13 +60,19 @@ export class MeetService {
   }
 
   private async nextInviteCode(): Promise<string> {
-    for (let i = 0; i < 5; i++) {
-      const code = randomBytes(6).toString('base64url');
-      const exists = await prisma.communityMeetEntity.findUnique({
-        where: { inviteCode: code },
-      });
-      if (!exists) return code;
-    }
+    const candidates = Array.from({ length: 5 }, () =>
+      randomBytes(6).toString('base64url'),
+    );
+    const availability = await Promise.all(
+      candidates.map(async (code) => ({
+        code,
+        exists: !!(await prisma.communityMeetEntity.findUnique({
+          where: { inviteCode: code },
+        })),
+      })),
+    );
+    const available = availability.find((r) => !r.exists);
+    if (available) return available.code;
     throw new BadRequestException('Failed to generate meet invite code');
   }
 

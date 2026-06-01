@@ -474,9 +474,12 @@ export class UserAccountsService {
         );
       }
       // Sanitize: filter out empty strings and non-string values
-      const sanitizedInterests = data.interests
-        .filter((i) => typeof i === 'string' && i.trim().length > 0)
-        .map((i) => i.trim());
+      const sanitizedInterests: string[] = [];
+      for (const i of data.interests) {
+        if (typeof i === 'string' && i.trim().length > 0) {
+          sanitizedInterests.push(i.trim());
+        }
+      }
       // Replace with sanitized array (can be empty)
       data.interests = sanitizedInterests;
     }
@@ -490,9 +493,12 @@ export class UserAccountsService {
         );
       }
       // Sanitize: filter out empty strings and non-string values
-      const sanitizedSkills = data.skills
-        .filter((s) => typeof s === 'string' && s.trim().length > 0)
-        .map((s) => s.trim());
+      const sanitizedSkills: string[] = [];
+      for (const s of data.skills) {
+        if (typeof s === 'string' && s.trim().length > 0) {
+          sanitizedSkills.push(s.trim());
+        }
+      }
       // Replace with sanitized array (can be empty)
       data.skills = sanitizedSkills;
     }
@@ -1100,29 +1106,29 @@ export class UserAccountsService {
   }
 
   private async getHackathonParticipations(userId: string) {
-    const teams = await prisma.teamEntity.findMany({
-      where: {
-        OR: [{ leaderId: userId }, { members: { some: { userId } } }],
-        hackathon: { isDeleted: false },
-      },
-      include: {
-        hackathon: true,
-        payments: {
-          where: {
-            paymentStatus: { in: ['CAPTURED', 'AUTHORIZED'] },
+    const [teams, submissions] = await Promise.all([
+      prisma.teamEntity.findMany({
+        where: {
+          OR: [{ leaderId: userId }, { members: { some: { userId } } }],
+          hackathon: { isDeleted: false },
+        },
+        include: {
+          hackathon: true,
+          payments: {
+            where: {
+              paymentStatus: { in: ['CAPTURED', 'AUTHORIZED'] },
+            },
+          },
+          members: {
+            where: { userId },
           },
         },
-        members: {
-          where: { userId },
-        },
-      },
-    });
-
-    const submissions =
-      await prisma.hackathonRegistrationSubmissionEntity.findMany({
+      }),
+      prisma.hackathonRegistrationSubmissionEntity.findMany({
         where: { userId },
         select: { id: true, hackathonId: true, teamId: true },
-      });
+      }),
+    ]);
 
     return teams.map((t) => {
       const h = t.hackathon;

@@ -1257,14 +1257,10 @@ export class HackathonCheckoutService {
     hackathonId: string,
     bodyAnswers?: Array<{ fieldId: string; value: string }>,
   ): Promise<Array<{ fieldId: string; value: string }>> {
-    const fromSubmission = await this.loadSubmissionAnswersForHackathonVerify(
-      hackathonId,
-      userId,
-    );
-    const fromEscrow = await this.paymentEscrowService.loadAnswersForVerify(
-      razorpayOrderId,
-      userId,
-    );
+    const [fromSubmission, fromEscrow] = await Promise.all([
+      this.loadSubmissionAnswersForHackathonVerify(hackathonId, userId),
+      this.paymentEscrowService.loadAnswersForVerify(razorpayOrderId, userId),
+    ]);
     const base =
       fromSubmission.length > 0 ? fromSubmission : (fromEscrow ?? []);
 
@@ -1330,23 +1326,21 @@ export class HackathonCheckoutService {
       throw new ForbiddenException('Payment does not belong to this user');
     }
 
-    const mergedAnswers = await this.resolveMergedAnswersForVerify(
-      params.razorpayOrderId,
-      params.userId,
-      payment.hackathonId,
-      params.answers,
-    );
-
-    // Resolve referral code from dto, falling back to Razorpay order notes.
-    // Invalid / mismatched codes resolve to null and are silently ignored so
-    // they never break the verify flow.
-    const referralId = await this.resolveReferralForHackathonPayment({
-      userId: params.userId,
-      hackathonId: payment.hackathon.id,
-      festivalId: payment.hackathon.festivalId,
-      razorpayOrderId: params.razorpayOrderId,
-      dtoReferralCode: params.referralCode,
-    });
+    const [mergedAnswers, referralId] = await Promise.all([
+      this.resolveMergedAnswersForVerify(
+        params.razorpayOrderId,
+        params.userId,
+        payment.hackathonId,
+        params.answers,
+      ),
+      this.resolveReferralForHackathonPayment({
+        userId: params.userId,
+        hackathonId: payment.hackathon.id,
+        festivalId: payment.hackathon.festivalId,
+        razorpayOrderId: params.razorpayOrderId,
+        dtoReferralCode: params.referralCode,
+      }),
+    ]);
 
     // Layer 1 — pre-check: if the webhook already captured this payment, return
     // idempotently rather than downgrading CAPTURED → AUTHORIZED.

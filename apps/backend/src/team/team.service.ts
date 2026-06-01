@@ -211,19 +211,21 @@ export class TeamService {
     const maxSize =
       dto.maxSize ?? getMaxSizeFromParticipantType(hackathon.participantType);
 
-    const { providedAnswers, registrationFields } =
-      await this.prepareHackathonRegistrationAnswers({
-        hackathonId: dto.hackathonId,
-        userId: leaderId,
-        answers: dto.answers,
-      });
-    const referralId = await this.referralService.resolveForRegistration({
-      code: dto.referralCode,
-      userId: leaderId,
-      expectedEntityType: ReferralEntityTypeDto.HACKATHON,
-      expectedEntityId: dto.hackathonId,
-      parentFestivalId: hackathon.festivalId,
-    });
+    const [{ providedAnswers, registrationFields }, referralId] =
+      await Promise.all([
+        this.prepareHackathonRegistrationAnswers({
+          hackathonId: dto.hackathonId,
+          userId: leaderId,
+          answers: dto.answers,
+        }),
+        this.referralService.resolveForRegistration({
+          code: dto.referralCode,
+          userId: leaderId,
+          expectedEntityType: ReferralEntityTypeDto.HACKATHON,
+          expectedEntityId: dto.hackathonId,
+          parentFestivalId: hackathon.festivalId,
+        }),
+      ]);
 
     // Generate unique invitation code
     let invitationCode = generateInvitationCode();
@@ -571,27 +573,32 @@ export class TeamService {
       );
     }
 
-    const { providedAnswers, registrationFields } =
-      await this.prepareHackathonRegistrationAnswers({
+    const [
+      { providedAnswers, registrationFields },
+      referralId,
+      user,
+    ] = await Promise.all([
+      this.prepareHackathonRegistrationAnswers({
         hackathonId: team.hackathonId,
         userId,
         answers: dto.answers,
-      });
-    const referralId = await this.referralService.resolveForRegistration({
-      code: dto.referralCode,
-      userId,
-      expectedEntityType: ReferralEntityTypeDto.HACKATHON,
-      expectedEntityId: team.hackathonId,
-      parentFestivalId: team.hackathon.festivalId,
-    });
-    const user = await prisma.userEntity.findUnique({
-      where: { id: userId },
-      select: {
-        email: true,
-        firstName: true,
-        lastName: true,
-      },
-    });
+      }),
+      this.referralService.resolveForRegistration({
+        code: dto.referralCode,
+        userId,
+        expectedEntityType: ReferralEntityTypeDto.HACKATHON,
+        expectedEntityId: team.hackathonId,
+        parentFestivalId: team.hackathon.festivalId,
+      }),
+      prisma.userEntity.findUnique({
+        where: { id: userId },
+        select: {
+          email: true,
+          firstName: true,
+          lastName: true,
+        },
+      }),
+    ]);
 
     // Create member and registration in transaction
     const result = await prisma.$transaction(async (tx) => {

@@ -128,31 +128,11 @@ export class RegistrationSubmitService {
       await this.validatePaymentRequirement(hackathon, leaderTeam, userId);
     }
 
-    // Map frontend field IDs (like "default-name") to database field IDs
-    const { mappedAnswers, userCategory } = await this.mapFieldIdsToDatabaseIds(
-      hackathon.id,
-      userId,
-      answers,
-    );
-
-    // Refetch registration form fields after mapping (in case new fields were created)
-    const updatedRegForm = await prisma.registrationFormEntity.findUnique({
-      where: { hackathonId: hackathon.id },
-      include: {
-        fields: {
-          select: {
-            id: true,
-            label: true,
-            type: true,
-            required: true,
-            options: true,
-          },
-        },
-      },
-    });
+    const { mappedAnswers, userCategory, fields: registrationFields } =
+      await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
 
     this.validateAnswers(
-      updatedRegForm?.fields || [],
+      registrationFields,
       mappedAnswers,
       userCategory,
     );
@@ -221,7 +201,7 @@ export class RegistrationSubmitService {
 
     const mobile = extractMobileFromRegistrationFieldAnswers(
       mappedAnswers,
-      updatedRegForm?.fields ?? [],
+      registrationFields,
     );
     await syncUserOnboardingMobileFromRegistration(userId, mobile);
 
@@ -342,29 +322,11 @@ export class RegistrationSubmitService {
       }
     }
 
-    const { mappedAnswers, userCategory } = await this.mapFieldIdsToDatabaseIds(
-      hackathon.id,
-      userId,
-      answers,
-    );
-
-    const updatedRegForm = await prisma.registrationFormEntity.findUnique({
-      where: { hackathonId: hackathon.id },
-      include: {
-        fields: {
-          select: {
-            id: true,
-            label: true,
-            type: true,
-            required: true,
-            options: true,
-          },
-        },
-      },
-    });
+    const { mappedAnswers, userCategory, fields: registrationFields } =
+      await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
 
     this.validateAnswers(
-      updatedRegForm?.fields || [],
+      registrationFields,
       mappedAnswers,
       userCategory,
     );
@@ -385,7 +347,7 @@ export class RegistrationSubmitService {
 
     const mobile = extractMobileFromRegistrationFieldAnswers(
       mappedAnswers,
-      updatedRegForm?.fields ?? [],
+      registrationFields,
     );
     await syncUserOnboardingMobileFromRegistration(userId, mobile);
 
@@ -473,34 +435,16 @@ export class RegistrationSubmitService {
       return;
     }
 
-    const { mappedAnswers, userCategory } = await this.mapFieldIdsToDatabaseIds(
-      hackathon.id,
-      userId,
-      answers,
-    );
-
-    const updatedRegForm = await prisma.registrationFormEntity.findUnique({
-      where: { hackathonId: hackathon.id },
-      include: {
-        fields: {
-          select: {
-            id: true,
-            label: true,
-            type: true,
-            required: true,
-            options: true,
-          },
-        },
-      },
-    });
+    const { mappedAnswers, userCategory, fields: registrationFields } =
+      await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
 
     this.validateAnswers(
-      updatedRegForm?.fields || [],
+      registrationFields,
       mappedAnswers,
       userCategory,
     );
 
-    if (!mappedAnswers.length && (updatedRegForm?.fields?.length ?? 0) > 0) {
+    if (!mappedAnswers.length && registrationFields.length > 0) {
       throw new BadRequestException('Registration answers are required');
     }
 
@@ -556,7 +500,7 @@ export class RegistrationSubmitService {
 
     const mobile = extractMobileFromRegistrationFieldAnswers(
       mappedAnswers,
-      updatedRegForm?.fields ?? [],
+      registrationFields,
     );
     await syncUserOnboardingMobileFromRegistration(userId, mobile);
   }
@@ -622,18 +566,19 @@ export class RegistrationSubmitService {
         where: { hackathonId, ticketTierId: tierId },
       });
     }
-    const memberCount = await prisma.teamMemberEntity.count({
-      where: { ticketTierId: tierId, team: { hackathonId } },
-    });
-    const leaderSubmissions =
-      await prisma.hackathonRegistrationSubmissionEntity.count({
+    const [memberCount, leaderSubmissions] = await Promise.all([
+      prisma.teamMemberEntity.count({
+        where: { ticketTierId: tierId, team: { hackathonId } },
+      }),
+      prisma.hackathonRegistrationSubmissionEntity.count({
         where: {
           hackathonId,
           ticketTierId: tierId,
           isLeader: true,
           teamMemberId: null,
         },
-      });
+      }),
+    ]);
     return memberCount + leaderSubmissions;
   }
 
@@ -771,6 +716,13 @@ export class RegistrationSubmitService {
   ): Promise<{
     mappedAnswers: Array<{ fieldId: string; value: string }>;
     userCategory: string | null;
+    fields: Array<{
+      id: string;
+      label: string;
+      type: string;
+      required: boolean;
+      options: string[];
+    }>;
   }> {
     const regForm = await prisma.registrationFormEntity.findUnique({
       where: { hackathonId },
@@ -789,6 +741,7 @@ export class RegistrationSubmitService {
       return {
         mappedAnswers: answers,
         userCategory: p?.userCategory ?? null,
+        fields: regForm?.fields ?? [],
       };
     }
 
@@ -963,9 +916,22 @@ export class RegistrationSubmitService {
       value: a.value,
     }));
 
+    const fields = await prisma.registrationFieldEntity.findMany({
+      where: { registrationFormId: ensuredRegForm.id },
+      select: {
+        id: true,
+        label: true,
+        type: true,
+        required: true,
+        options: true,
+      },
+      orderBy: { order: 'asc' },
+    });
+
     return {
       mappedAnswers,
       userCategory: userCategory ?? null,
+      fields,
     };
   }
 
