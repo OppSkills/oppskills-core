@@ -21,11 +21,13 @@ interface AddMemberRoleModalProps {
   customRoleTypes?: string[];
 }
 
+const EMPTY_ROLE_TYPES: string[] = [];
+
 export default function AddMemberRoleModal({
   isOpen,
   onClose,
   onAddRole,
-  customRoleTypes = [],
+  customRoleTypes = EMPTY_ROLE_TYPES,
 }: AddMemberRoleModalProps) {
   const [roleName, setRoleName] = useState("");
   const [roleType, setRoleType] = useState("Circle");

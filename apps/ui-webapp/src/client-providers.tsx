@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { InitBoneyard } from "@/components/boneyard/init-boneyard";
+import { MotionConfig } from "framer-motion";
 
 const queryClient = new QueryClient();
 
@@ -13,7 +14,9 @@ export default function ClientProviders({
   return (
     <QueryClientProvider client={queryClient}>
       <InitBoneyard />
-      {children}
+      <MotionConfig reducedMotion="user">
+        {children}
+      </MotionConfig>
     </QueryClientProvider>
   );
 }

@@ -52,6 +52,9 @@ interface TaskTrackerProps {
   members?: Member[];
 }
 
+const EMPTY_TASKS: Task[] = [];
+const EMPTY_MEMBERS: Member[] = [];
+
 const AVAILABLE_TAGS = [
   "E-Summit",
   "Hackathon",
@@ -65,11 +68,11 @@ export default function TaskTracker({
   isOpen,
   onClose,
   memberName,
-  tasks = [],
+  tasks = EMPTY_TASKS,
   onAddTask,
   onToggleTask,
   onDeleteTask,
-  members = [],
+  members = EMPTY_MEMBERS,
 }: TaskTrackerProps) {
   const [activeTaskTab, setActiveTaskTab] = useState<
     "In Progress" | "Completed"

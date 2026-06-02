@@ -26,6 +26,8 @@ interface MembersDirectoryProps {
   onChangeRole?: (id: string, newRole: string) => void;
 }
 
+const EMPTY_TABS: string[] = [];
+
 const initialMembers: Member[] = [
   {
     id: "1",
@@ -95,7 +97,7 @@ interface TabItem {
 export default function MembersDirectory({
   onAssignTask,
   onAddMemberType,
-  customTabs = [],
+  customTabs = EMPTY_TABS,
   onViewDetails,
   members: propMembers,
   onDeleteMember,

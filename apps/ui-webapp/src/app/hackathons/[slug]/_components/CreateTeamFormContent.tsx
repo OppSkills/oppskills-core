@@ -17,6 +17,8 @@ import { CreateTeamFormContentProps } from "./RegistrationModal.types";
 import { cn } from "@/lib/utils";
 import { isUploadField } from "@/lib/form-utils";
 
+const EMPTY_TICKET_TIERS: CreateTeamFormContentProps["ticketTiers"] = [];
+
 export function CreateTeamFormContent({
   fields,
   answers,
@@ -37,7 +39,7 @@ export function CreateTeamFormContent({
   type,
   completionMode,
   paymentCompleted = false,
-  ticketTiers = [],
+  ticketTiers = EMPTY_TICKET_TIERS,
   ticketTierId,
   setTicketTierId,
   omitTicketTierSection = false,

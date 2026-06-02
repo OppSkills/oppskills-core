@@ -1,15 +1,32 @@
 "use client";
 
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
-  Label,
-} from "recharts";
+import dynamic from "next/dynamic";
 import NoDataPlaceholder from "./NoDataPlaceholder";
+
+const PieChart = dynamic(() => import("recharts").then((mod) => mod.PieChart), {
+  ssr: false,
+});
+const Pie = dynamic(() => import("recharts").then((mod) => mod.Pie), {
+  ssr: false,
+});
+const Cell = dynamic(() => import("recharts").then((mod) => mod.Cell), {
+  ssr: false,
+});
+const ResponsiveContainer = dynamic(
+  () => import("recharts").then((mod) => mod.ResponsiveContainer),
+  {
+    ssr: false,
+  },
+);
+const Legend = dynamic(() => import("recharts").then((mod) => mod.Legend), {
+  ssr: false,
+});
+const Tooltip = dynamic(() => import("recharts").then((mod) => mod.Tooltip), {
+  ssr: false,
+});
+const Label = dynamic(() => import("recharts").then((mod) => mod.Label), {
+  ssr: false,
+});
 
 // { male: 100, female: 50 }
 export interface GenderData {

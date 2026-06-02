@@ -35,6 +35,9 @@ interface MemberDetailsSheetProps {
   onToggleTask?: (id: string) => void;
 }
 
+const EMPTY_TASKS: Task[] = [];
+const EMPTY_MEETS: Meet[] = [];
+
 // Extracted detailed profiles matching the clicked member
 const MEMBER_PROFILES: Record<
   string,
@@ -112,8 +115,8 @@ const DEFAULT_PROFILE = {
 export default function MemberDetailsSheet({
   member,
   onClose,
-  tasks = [],
-  meets = [],
+  tasks = EMPTY_TASKS,
+  meets = EMPTY_MEETS,
   onToggleTask,
 }: MemberDetailsSheetProps) {
   const [activeTaskTab, setActiveTaskTab] = useState<

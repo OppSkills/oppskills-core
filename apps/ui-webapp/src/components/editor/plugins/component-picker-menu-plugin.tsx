@@ -32,6 +32,8 @@ const LexicalTypeaheadMenuPlugin = dynamic(
   { ssr: false },
 );
 
+const EMPTY_OPTIONS: Array<ComponentPickerOption> = [];
+
 function ComponentPickerMenu({
   options,
   selectedIndex,
@@ -101,7 +103,7 @@ function ComponentPickerMenu({
 }
 
 export function ComponentPickerMenuPlugin({
-  baseOptions = [],
+  baseOptions = EMPTY_OPTIONS,
   dynamicOptionsFn,
 }: {
   baseOptions?: Array<ComponentPickerOption>;

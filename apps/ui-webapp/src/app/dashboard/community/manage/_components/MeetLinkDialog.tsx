@@ -30,15 +30,17 @@ export default function MeetLinkDialog({
 }: MeetLinkDialogProps) {
   const openedRef = React.useRef(false);
 
-  React.useEffect(() => {
-    if (open && autoOpen && !openedRef.current) {
+  // Prefer handling open actions where the event occurs instead of faking
+  // an event with an effect. Use the dialog's `onOpenChange` event to
+  // perform the side-effect immediately when the dialog opens.
+  const handleDialogOpenChange = (newOpen: boolean) => {
+    onOpenChange(newOpen);
+    if (newOpen && autoOpen && !openedRef.current) {
       openedRef.current = true;
       window.open(meetUrl, "_blank", "noopener,noreferrer");
     }
-    if (!open) {
-      openedRef.current = false;
-    }
-  }, [open, autoOpen, meetUrl]);
+    if (!newOpen) openedRef.current = false;
+  };
 
   const handleCopy = async () => {
     try {
@@ -50,7 +52,7 @@ export default function MeetLinkDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-lg rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-aeonicPro text-xl">
