@@ -17,6 +17,9 @@
     "next": "16.1.4",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "@oppskills/types": "workspace:*",
+    "axios": "^1.13.2",
+    "clsx": "^2.1.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1"
   },
