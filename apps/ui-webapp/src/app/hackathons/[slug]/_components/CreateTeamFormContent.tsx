@@ -13,11 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CreateTeamFormContentProps } from "./RegistrationModal.types";
+import type { CreateTeamFormContentProps } from "./RegistrationModal.types";
 import { cn } from "@/lib/utils";
 import { isUploadField } from "@/lib/form-utils";
 
 const EMPTY_TICKET_TIERS: CreateTeamFormContentProps["ticketTiers"] = [];
+type TicketTier = NonNullable<CreateTeamFormContentProps["ticketTiers"]>[number];
 
 export function CreateTeamFormContent({
   fields,
@@ -44,8 +45,8 @@ export function CreateTeamFormContent({
   setTicketTierId,
   omitTicketTierSection = false,
 }: CreateTeamFormContentProps) {
-  const activeTiers = ticketTiers.filter(
-    (tier: { isActive?: boolean }) => tier.isActive !== false,
+  const activeTiers: TicketTier[] = (ticketTiers ?? []).filter(
+    (tier: TicketTier) => tier.isActive !== false,
   );
   const hasTiers = activeTiers.length > 0;
 
@@ -57,9 +58,9 @@ export function CreateTeamFormContent({
     price: 0,
     isActive: true,
   };
-  const displayTiers =
+  const displayTiers: TicketTier[] =
     !isFree && !hasTiers && !omitTicketTierSection
-      ? [SYNTHETIC_FREE_TIER]
+      ? [SYNTHETIC_FREE_TIER as TicketTier]
       : activeTiers;
 
   // Default: auto-select when there is exactly one selectable tier.
@@ -138,7 +139,7 @@ export function CreateTeamFormContent({
                 Select Ticket
               </Label>
               <div className="flex flex-col gap-3">
-                {displayTiers.map((tier: any) => {
+                {displayTiers.map((tier: TicketTier) => {
                   const base =
                     typeof tier.price === "number"
                       ? tier.price
