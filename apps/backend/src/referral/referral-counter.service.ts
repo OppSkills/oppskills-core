@@ -116,26 +116,28 @@ export class ReferralCounterService implements OnModuleDestroy {
   async flushToDb(): Promise<void> {
     const metrics = ['c', 'h', 'reg'];
 
-    for (const metric of metrics) {
-      const stream = this.redis.scanStream({
-        match: `ref:${metric}:*`,
-        count: 200,
-      });
+    await Promise.all(metrics.map((metric) => this.flushMetricToDb(metric)));
+  }
 
-      for await (const keys of stream) {
-        for (const key of keys) {
-          // Key format: ref:metric:referralId
-          const parts = key.split(':');
-          if (parts.length < 3) continue;
+  private async flushMetricToDb(metric: string): Promise<void> {
+    const stream = this.redis.scanStream({
+      match: `ref:${metric}:*`,
+      count: 200,
+    });
 
-          const currentMetric = parts[1];
-          // Redis 'ref:c:*' matches 'ref:c24:*', so we must be explicit
-          if (currentMetric !== metric) continue;
+    for await (const keys of stream) {
+      await Promise.all(
+        keys.map(async (key) => {
+            const parts = key.split(':');
+            if (parts.length < 3) return;
 
-          const referralId = parts[2];
+            const currentMetric = parts[1];
+            if (currentMetric !== metric) return;
 
-          const value = await this.redis.eval(
-            `
+            const referralId = parts[2];
+
+            const value = await this.redis.eval(
+              `
             local t = redis.call('TYPE', KEYS[1]).ok
             if t == 'string' then
               local v = redis.call('GET', KEYS[1])
@@ -144,65 +146,64 @@ export class ReferralCounterService implements OnModuleDestroy {
             end
             return nil
             `,
-            1,
-            key,
-          );
+              1,
+              key,
+            );
 
-          if (!value) continue;
-          const count = Number(value);
-          if (!Number.isFinite(count) || count <= 0) continue;
+            if (!value) return;
+            const count = Number(value);
+            if (!Number.isFinite(count) || count <= 0) return;
 
-          try {
-            if (metric === 'c') {
-              await prisma.referralEntity.update({
-                where: { id: referralId },
-                data: {
-                  clicksCount: { increment: count },
-                  lastClickAt: new Date(),
-                },
-              });
-            } else if (metric === 'h') {
-              await prisma.referralEntity.update({
-                where: { id: referralId },
-                data: {
-                  humanClicksCount: { increment: count },
-                  lastClickAt: new Date(),
-                },
-              });
-            } else if (metric === 'reg') {
-              await prisma.referralEntity.update({
-                where: { id: referralId },
-                data: {
-                  registrationsCount: { increment: count },
-                  lastRegistrationAt: new Date(),
-                },
-              });
-            }
-          } catch (err) {
-            const isRecordNotFound =
-              err instanceof Prisma.PrismaClientKnownRequestError &&
-              err.code === 'P2025';
+            try {
+              if (metric === 'c') {
+                await prisma.referralEntity.update({
+                  where: { id: referralId },
+                  data: {
+                    clicksCount: { increment: count },
+                    lastClickAt: new Date(),
+                  },
+                });
+              } else if (metric === 'h') {
+                await prisma.referralEntity.update({
+                  where: { id: referralId },
+                  data: {
+                    humanClicksCount: { increment: count },
+                    lastClickAt: new Date(),
+                  },
+                });
+              } else if (metric === 'reg') {
+                await prisma.referralEntity.update({
+                  where: { id: referralId },
+                  data: {
+                    registrationsCount: { increment: count },
+                    lastRegistrationAt: new Date(),
+                  },
+                });
+              }
+            } catch (err) {
+              const isRecordNotFound =
+                err instanceof Prisma.PrismaClientKnownRequestError &&
+                err.code === 'P2025';
 
-            if (isRecordNotFound) {
-              this.logger.warn(
-                `Referral ${referralId} not found in DB. Dropping ${count} ${metric} stats for ${key}.`,
-              );
-            } else {
-              this.logger.error(
-                `Failed to update referral stats for ${referralId}, re-queueing to Redis`,
-                err,
-              );
-              // Re-queue the count so it's not lost if the DB update failed (transient error)
-              await this.redis.incrby(key, count).catch((redisErr) => {
-                this.logger.error(
-                  `CRITICAL: Failed to re-queue ${key} to Redis`,
-                  redisErr,
+              if (isRecordNotFound) {
+                this.logger.warn(
+                  `Referral ${referralId} not found in DB. Dropping ${count} ${metric} stats for ${key}.`,
                 );
-              });
+              } else {
+                this.logger.error(
+                  `Failed to update referral stats for ${referralId}, re-queueing to Redis`,
+                  err,
+                );
+                await this.redis.incrby(key, count).catch((redisErr) => {
+                  this.logger.error(
+                    `CRITICAL: Failed to re-queue ${key} to Redis`,
+                    redisErr,
+                  );
+                });
+              }
             }
-          }
-        }
-      }
+          }),
+      );
     }
   }
 }

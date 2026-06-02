@@ -211,12 +211,17 @@ export class HackathonService {
     let locationCoords = dto.location?.city;
     if (dto.location?.placeId) {
       try {
-        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        const resolved = await this.locationService.getPlaceCoords(
+          dto.location.placeId,
+        );
         if (resolved) {
           locationCoords = resolved;
         }
       } catch (error) {
-        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+        this.logger.warn(
+          `Failed to resolve placeId coords: ${dto.location.placeId}`,
+          error,
+        );
       }
     }
 
@@ -659,10 +664,11 @@ export class HackathonService {
     ]);
 
     const items = hackathonRows.map((h) => {
-      const tierNums = (h.ticketTiers ?? [])
-        .filter((t) => !t.isFree)
-        .map((t) => Number(t.price))
-        .filter((n) => Number.isFinite(n));
+      const tierNums = (h.ticketTiers ?? []).flatMap((t) => {
+        if (t.isFree) return [];
+        const n = Number(t.price);
+        return Number.isFinite(n) ? [n] : [];
+      });
       const lowestTicketPrice =
         tierNums.length > 0 ? Math.min(...tierNums) : null;
       const highestTicketPrice =
@@ -1221,12 +1227,17 @@ export class HackathonService {
     let locationCoords = dto.location?.city;
     if (dto.location?.placeId) {
       try {
-        const resolved = await this.locationService.getPlaceCoords(dto.location.placeId);
+        const resolved = await this.locationService.getPlaceCoords(
+          dto.location.placeId,
+        );
         if (resolved) {
           locationCoords = resolved;
         }
       } catch (error) {
-        this.logger.warn(`Failed to resolve placeId coords: ${dto.location.placeId}`, error);
+        this.logger.warn(
+          `Failed to resolve placeId coords: ${dto.location.placeId}`,
+          error,
+        );
       }
     }
 
@@ -1411,9 +1422,12 @@ export class HackathonService {
     const incomingIds = new Set(incomingWithId.map((r) => r.id));
 
     // Rounds to delete: existing but not in incoming
-    const toDeleteIds = existingRounds
-      .filter((r) => !incomingIds.has(r.id))
-      .map((r) => r.id);
+    const toDeleteIds: string[] = [];
+    for (const r of existingRounds) {
+      if (!incomingIds.has(r.id)) {
+        toDeleteIds.push(r.id);
+      }
+    }
 
     // Non-DRAFT constraints
     if (!isDraft) {
@@ -1467,23 +1481,24 @@ export class HackathonService {
         });
       }
 
-      // Update existing rounds
-      for (const round of incomingWithId) {
-        await tx.roundEntity.update({
-          where: { id: round.id },
-          data: {
-            name: round.name,
-            description: round.description,
-            startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
-            endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
-            order: round.order,
-            roundType: round.roundType,
-            submissionConfig: round.submissionConfig
-              ? (round.submissionConfig as Prisma.InputJsonValue)
-              : Prisma.JsonNull,
-          },
-        });
-      }
+      await Promise.all(
+        incomingWithId.map((round) =>
+          tx.roundEntity.update({
+            where: { id: round.id },
+            data: {
+              name: round.name,
+              description: round.description,
+              startsAt: this.parseDate(round.startsAt, 'rounds.startsAt'),
+              endsAt: this.parseDate(round.endsAt, 'rounds.endsAt'),
+              order: round.order,
+              roundType: round.roundType,
+              submissionConfig: round.submissionConfig
+                ? (round.submissionConfig as Prisma.InputJsonValue)
+                : Prisma.JsonNull,
+            },
+          }),
+        ),
+      );
 
       // Create new rounds
       if (incomingNew.length > 0) {
@@ -1662,20 +1677,22 @@ export class HackathonService {
     }
 
     await prisma.$transaction(async (tx) => {
-      for (const form of forms) {
-        await tx.registrationFieldEntity.createMany({
-          data: BASE_DEFAULT_FIELDS.map((f) => ({
-            registrationFormId: form.id,
-            label: f.label,
-            type: f.type as RegistrationFieldType,
-            required: f.required,
-            order: f.order,
-            options: f.options ?? [],
-            placeholder: f.placeholder ?? null,
-          })),
-          skipDuplicates: true,
-        });
-      }
+      await Promise.all(
+        forms.map((form) =>
+          tx.registrationFieldEntity.createMany({
+            data: BASE_DEFAULT_FIELDS.map((f) => ({
+              registrationFormId: form.id,
+              label: f.label,
+              type: f.type as RegistrationFieldType,
+              required: f.required,
+              order: f.order,
+              options: f.options ?? [],
+              placeholder: f.placeholder ?? null,
+            })),
+            skipDuplicates: true,
+          }),
+        ),
+      );
     });
 
     return { affected: forms.length };
@@ -2354,29 +2371,37 @@ export class HackathonService {
 
     if (!hackathon) throw new NotFoundException('Hackathon not found');
 
-    const managers = hackathon.userRoles
-      .filter((r) => r.role === 'MANAGER')
-      .map((r) => ({
-        id: r.user.id,
-        email: r.user.email,
-        firstName: r.user.firstName,
-        lastName: r.user.lastName,
-        imageUrl: r.user.imageUrl,
-        role: r.role as 'MANAGER' | 'EVALUATOR',
-        assignedAt: r.createdAt.toISOString(),
-      }));
+    const managers = hackathon.userRoles.flatMap((r) =>
+      r.role === 'MANAGER'
+        ? [
+            {
+              id: r.user.id,
+              email: r.user.email,
+              firstName: r.user.firstName,
+              lastName: r.user.lastName,
+              imageUrl: r.user.imageUrl,
+              role: r.role as 'MANAGER' | 'EVALUATOR',
+              assignedAt: r.createdAt.toISOString(),
+            },
+          ]
+        : [],
+    );
 
-    const evaluators = hackathon.userRoles
-      .filter((r) => r.role === 'EVALUATOR')
-      .map((r) => ({
-        id: r.user.id,
-        email: r.user.email,
-        firstName: r.user.firstName,
-        lastName: r.user.lastName,
-        imageUrl: r.user.imageUrl,
-        role: r.role as 'MANAGER' | 'EVALUATOR',
-        assignedAt: r.createdAt.toISOString(),
-      }));
+    const evaluators = hackathon.userRoles.flatMap((r) =>
+      r.role === 'EVALUATOR'
+        ? [
+            {
+              id: r.user.id,
+              email: r.user.email,
+              firstName: r.user.firstName,
+              lastName: r.user.lastName,
+              imageUrl: r.user.imageUrl,
+              role: r.role as 'MANAGER' | 'EVALUATOR',
+              assignedAt: r.createdAt.toISOString(),
+            },
+          ]
+        : [],
+    );
 
     return {
       owner: hackathon.owner,
@@ -2579,23 +2604,21 @@ export class HackathonService {
       );
     }
 
-    // Get all rounds for this hackathon
-    const rounds = await prisma.roundEntity.findMany({
-      where: { hackathonId: hackathon.id },
-      orderBy: { order: 'asc' },
-      select: {
-        id: true,
-        name: true,
-        order: true,
-        roundType: true,
-        startsAt: true,
-        endsAt: true,
-        status: true,
-      },
-    });
-
-    // Query specific team
-    const team = await prisma.teamEntity.findFirst({
+    const [rounds, team] = await Promise.all([
+      prisma.roundEntity.findMany({
+        where: { hackathonId: hackathon.id },
+        orderBy: { order: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          order: true,
+          roundType: true,
+          startsAt: true,
+          endsAt: true,
+          status: true,
+        },
+      }),
+      prisma.teamEntity.findFirst({
       where: { id: teamId, hackathonId: hackathon.id },
       include: {
         leader: {
@@ -2666,7 +2689,8 @@ export class HackathonService {
           },
         },
       },
-    });
+      }),
+    ]);
 
     if (!team) throw new NotFoundException('Team not found');
 

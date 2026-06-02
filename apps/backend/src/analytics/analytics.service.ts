@@ -184,12 +184,10 @@ export class AnalyticsService {
     });
 
     for await (const keys of stream) {
-      for (const key of keys) {
-        // Atomic GET and DEL to prevent race condition
-        // If a new increment comes during this op, Redis blocks effectively,
-        // or if it comes after, it creates a new key (safe).
-        const value = await this.redis.eval(
-          `
+      await Promise.all(
+        keys.map(async (key) => {
+          const value = await this.redis.eval(
+            `
           local t = redis.call('TYPE', KEYS[1]).ok
           if t == 'string' then
             local v = redis.call('GET', KEYS[1])
@@ -198,42 +196,44 @@ export class AnalyticsService {
           end
           return nil
           `,
-          1,
-          key,
-        );
+            1,
+            key,
+          );
 
-        if (!value) continue;
+          if (!value) return;
 
-        const count = Number(value);
-        const [metric, type, slug] = key.split(':');
+          const count = Number(value);
+          const [metric, type, slug] = key.split(':');
 
-        try {
-          if (type === 'event') {
-            await prisma.eventEntity.update({
-              where: { slug },
-              data: {
-                ...(metric === 'pv' && { views: { increment: count } }),
-                ...(metric === 'pi' && { impressions: { increment: count } }),
-              },
-            });
+          try {
+            if (type === 'event') {
+              await prisma.eventEntity.update({
+                where: { slug },
+                data: {
+                  ...(metric === 'pv' && { views: { increment: count } }),
+                  ...(metric === 'pi' && {
+                    impressions: { increment: count },
+                  }),
+                },
+              });
+            }
+
+            if (type === 'opportunity') {
+              await prisma.hackathonEntity.update({
+                where: { slug },
+                data: {
+                  ...(metric === 'pv' && { views: { increment: count } }),
+                  ...(metric === 'pi' && {
+                    impressions: { increment: count },
+                  }),
+                },
+              });
+            }
+          } catch (err) {
+            this.logger.error(`Failed flushing ${key}`, err);
           }
-
-          if (type === 'opportunity') {
-            await prisma.hackathonEntity.update({
-              where: { slug },
-              data: {
-                ...(metric === 'pv' && { views: { increment: count } }),
-                ...(metric === 'pi' && { impressions: { increment: count } }),
-              },
-            });
-          }
-        } catch (err) {
-          this.logger.error(`Failed flushing ${key}`, err);
-          // If update failed, we might want to put the count back?
-          // For now, logging is safer than risking infinite loops or double counting.
-          // In a high-integrity system, we might push back to Redis or a dead-letter queue.
-        }
-      }
+        }),
+      );
     }
   }
 
@@ -394,19 +394,20 @@ export class AnalyticsService {
     });
 
     // Period-specific registrations (Teams and Members)
-    const teamLeaderCount = await prisma.teamEntity.count({
-      where: {
-        hackathon: { slug },
-        createdAt: { gte: startDate, lte: endDate },
-      },
-    });
-
-    const teamMemberCount = await prisma.teamMemberEntity.count({
-      where: {
-        team: { hackathon: { slug } },
-        joinedAt: { gte: startDate, lte: endDate },
-      },
-    });
+    const [teamLeaderCount, teamMemberCount] = await Promise.all([
+      prisma.teamEntity.count({
+        where: {
+          hackathon: { slug },
+          createdAt: { gte: startDate, lte: endDate },
+        },
+      }),
+      prisma.teamMemberEntity.count({
+        where: {
+          team: { hackathon: { slug } },
+          joinedAt: { gte: startDate, lte: endDate },
+        },
+      }),
+    ]);
 
     return {
       registrations: hackathon.registrationCount, // Global total
@@ -441,31 +442,32 @@ export class AnalyticsService {
     });
 
     // Fetch real registrations (Combined leader creation and member joining)
-    const leaders = await prisma.teamEntity.findMany({
-      where: {
-        hackathon: { slug },
-        createdAt: { gte: startDate, lte: endDate },
-      },
-      select: {
-        createdAt: true,
-        leader: {
-          select: { onboardingProfile: { select: { gender: true } } },
+    const [leaders, members] = await Promise.all([
+      prisma.teamEntity.findMany({
+        where: {
+          hackathon: { slug },
+          createdAt: { gte: startDate, lte: endDate },
         },
-      },
-    });
-
-    const members = await prisma.teamMemberEntity.findMany({
-      where: {
-        team: { hackathon: { slug } },
-        joinedAt: { gte: startDate, lte: endDate },
-      },
-      select: {
-        joinedAt: true,
-        user: {
-          select: { onboardingProfile: { select: { gender: true } } },
+        select: {
+          createdAt: true,
+          leader: {
+            select: { onboardingProfile: { select: { gender: true } } },
+          },
         },
-      },
-    });
+      }),
+      prisma.teamMemberEntity.findMany({
+        where: {
+          team: { hackathon: { slug } },
+          joinedAt: { gte: startDate, lte: endDate },
+        },
+        select: {
+          joinedAt: true,
+          user: {
+            select: { onboardingProfile: { select: { gender: true } } },
+          },
+        },
+      }),
+    ]);
 
     const combinedItems = [
       ...leaders.map((l) => ({
@@ -531,27 +533,54 @@ export class AnalyticsService {
     userId: string,
     options: { period?: string; from?: string; to?: string } = {},
   ) {
-    // 1. Calculate Event Stats
-    const events = await prisma.eventEntity.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userRoles: { some: { userId, role: 'MANAGER' } } },
-        ],
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-        status: true,
-        views: true,
-        impressions: true,
-        createdAt: true,
-        registrationCount: true,
-        _count: {
-          select: { participants: true },
+    const [events, hackathons, festivals] = await Promise.all([
+      prisma.eventEntity.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
         },
-      },
-    });
+        select: {
+          id: true,
+          status: true,
+          views: true,
+          impressions: true,
+          createdAt: true,
+          registrationCount: true,
+          _count: {
+            select: { participants: true },
+          },
+        },
+      }),
+      prisma.hackathonEntity.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
+        },
+        select: {
+          id: true,
+          status: true,
+          views: true,
+          impressions: true,
+          createdAt: true,
+          _count: {
+            select: {
+              teams: true,
+            },
+          },
+          registrationCount: true,
+        },
+      }),
+      prisma.festivalEntity.findMany({
+        where: { organizerId: userId, isDeleted: false },
+        select: { status: true },
+      }),
+    ]);
 
     const eventStats = {
       active: events.filter((e) => ['PUBLISHED', 'ONGOING'].includes(e.status))
@@ -563,30 +592,6 @@ export class AnalyticsService {
       (acc, e) => acc + (e.registrationCount || 0),
       0,
     );
-
-    // 2. Calculate Hackathon Stats
-    const hackathons = await prisma.hackathonEntity.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userRoles: { some: { userId, role: 'MANAGER' } } },
-        ],
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-        status: true,
-        views: true,
-        impressions: true,
-        createdAt: true,
-        _count: {
-          select: {
-            teams: true,
-          },
-        },
-        registrationCount: true,
-      },
-    });
 
     const hackathonStats = {
       active: hackathons.filter((h) =>
@@ -600,12 +605,6 @@ export class AnalyticsService {
       0,
     );
 
-    // 3. Calculate Festival Stats
-    const festivals = await prisma.festivalEntity.findMany({
-      where: { organizerId: userId, isDeleted: false },
-      select: { status: true },
-    });
-
     const festivalStats = {
       active: festivals.filter((f) =>
         ['PUBLISHED', 'ONGOING'].includes(f.status),
@@ -616,43 +615,47 @@ export class AnalyticsService {
     // 4. Calculate Period Stats
     const { startDate, endDate } = await this.resolveRange(options);
 
-    const periodEventParticipants = await prisma.eventParticipantEntity.count({
-      where: {
-        event: {
-          OR: [
-            { ownerId: userId },
-            { userRoles: { some: { userId, role: 'MANAGER' } } },
-          ],
+    const [
+      periodEventParticipants,
+      periodHackathonLeaders,
+      periodHackathonMembers,
+    ] = await Promise.all([
+      prisma.eventParticipantEntity.count({
+        where: {
+          event: {
+            OR: [
+              { ownerId: userId },
+              { userRoles: { some: { userId, role: 'MANAGER' } } },
+            ],
+          },
+          joinedAt: { gte: startDate, lte: endDate },
         },
-        joinedAt: { gte: startDate, lte: endDate },
-      },
-    });
-
-    const periodHackathonLeaders = await prisma.teamEntity.count({
-      where: {
-        hackathon: {
-          OR: [
-            { ownerId: userId },
-            { userRoles: { some: { userId, role: 'MANAGER' } } },
-          ],
-        },
-        createdAt: { gte: startDate, lte: endDate },
-      },
-    });
-
-    const periodHackathonMembers = await prisma.teamMemberEntity.count({
-      where: {
-        team: {
+      }),
+      prisma.teamEntity.count({
+        where: {
           hackathon: {
             OR: [
               { ownerId: userId },
               { userRoles: { some: { userId, role: 'MANAGER' } } },
             ],
           },
+          createdAt: { gte: startDate, lte: endDate },
         },
-        joinedAt: { gte: startDate, lte: endDate },
-      },
-    });
+      }),
+      prisma.teamMemberEntity.count({
+        where: {
+          team: {
+            hackathon: {
+              OR: [
+                { ownerId: userId },
+                { userRoles: { some: { userId, role: 'MANAGER' } } },
+              ],
+            },
+          },
+          joinedAt: { gte: startDate, lte: endDate },
+        },
+      }),
+    ]);
 
     // 5. Calculate View, Impression and Period Stats in a single pass
     let totalViews = 0;
@@ -716,64 +719,62 @@ export class AnalyticsService {
   ) {
     const { startDate, endDate } = await this.resolveRange(options);
 
-    // 1. Fetch Event Registrations
-    const eventRegistrations = await prisma.eventParticipantEntity.findMany({
-      where: {
-        event: {
-          OR: [
-            { ownerId: userId },
-            { userRoles: { some: { userId, role: 'MANAGER' } } },
-          ],
-        },
-        joinedAt: { gte: startDate, lte: endDate },
-      },
-      select: {
-        joinedAt: true,
-        user: {
-          select: { onboardingProfile: { select: { gender: true } } },
-        },
-      },
-    });
-
-    // 2. Fetch Hackathon Registrations (Leaders)
-    const hackathonLeaders = await prisma.teamEntity.findMany({
-      where: {
-        hackathon: {
-          OR: [
-            { ownerId: userId },
-            { userRoles: { some: { userId, role: 'MANAGER' } } },
-          ],
-        },
-        createdAt: { gte: startDate, lte: endDate },
-      },
-      select: {
-        createdAt: true,
-        leader: {
-          select: { onboardingProfile: { select: { gender: true } } },
-        },
-      },
-    });
-
-    // 3. Fetch Hackathon Registrations (Members)
-    const hackathonMembers = await prisma.teamMemberEntity.findMany({
-      where: {
-        team: {
-          hackathon: {
-            OR: [
-              { ownerId: userId },
-              { userRoles: { some: { userId, role: 'MANAGER' } } },
-            ],
+    const [eventRegistrations, hackathonLeaders, hackathonMembers] =
+      await Promise.all([
+        prisma.eventParticipantEntity.findMany({
+          where: {
+            event: {
+              OR: [
+                { ownerId: userId },
+                { userRoles: { some: { userId, role: 'MANAGER' } } },
+              ],
+            },
+            joinedAt: { gte: startDate, lte: endDate },
           },
-        },
-        joinedAt: { gte: startDate, lte: endDate },
-      },
-      select: {
-        joinedAt: true,
-        user: {
-          select: { onboardingProfile: { select: { gender: true } } },
-        },
-      },
-    });
+          select: {
+            joinedAt: true,
+            user: {
+              select: { onboardingProfile: { select: { gender: true } } },
+            },
+          },
+        }),
+        prisma.teamEntity.findMany({
+          where: {
+            hackathon: {
+              OR: [
+                { ownerId: userId },
+                { userRoles: { some: { userId, role: 'MANAGER' } } },
+              ],
+            },
+            createdAt: { gte: startDate, lte: endDate },
+          },
+          select: {
+            createdAt: true,
+            leader: {
+              select: { onboardingProfile: { select: { gender: true } } },
+            },
+          },
+        }),
+        prisma.teamMemberEntity.findMany({
+          where: {
+            team: {
+              hackathon: {
+                OR: [
+                  { ownerId: userId },
+                  { userRoles: { some: { userId, role: 'MANAGER' } } },
+                ],
+              },
+            },
+            joinedAt: { gte: startDate, lte: endDate },
+          },
+          select: {
+            joinedAt: true,
+            user: {
+              select: { onboardingProfile: { select: { gender: true } } },
+            },
+          },
+        }),
+      ]);
 
     // Bucketing logic
     const diffMs = endDate.getTime() - startDate.getTime();
@@ -869,8 +870,8 @@ export class AnalyticsService {
   }
 
   async getTopListings(userId: string) {
-    // 1. Fetch Top 3 Events
-    const topEvents = await prisma.eventEntity.findMany({
+    const [topEvents, topHackathons] = await Promise.all([
+      prisma.eventEntity.findMany({
       where: {
         OR: [
           { ownerId: userId },
@@ -898,35 +899,34 @@ export class AnalyticsService {
         },
       },
       take: 3,
-    });
-
-    // 2. Fetch Top 3 Hackathons
-    const topHackathons = await prisma.hackathonEntity.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userRoles: { some: { userId, role: 'MANAGER' } } },
-        ],
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        bannerImageUrl: true,
-        organizationName: true,
-        locationCoords: true,
-        registrationCount: true,
-        teams: {
-          select: { id: true },
+    }),
+      prisma.hackathonEntity.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
         },
-      },
-      orderBy: {
-        registrationCount: 'desc',
-      },
-      take: 3,
-    });
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          bannerImageUrl: true,
+          organizationName: true,
+          locationCoords: true,
+          registrationCount: true,
+          teams: {
+            select: { id: true },
+          },
+        },
+        orderBy: {
+          registrationCount: 'desc',
+        },
+        take: 3,
+      }),
+    ]);
 
     const stripHtml = (html: string | null) => {
       if (!html) return '';
@@ -969,51 +969,50 @@ export class AnalyticsService {
   }
 
   async getHighestPerformingListings(userId: string) {
-    // 1. Highest Performing Event
-    const topEvent = await prisma.eventEntity.findFirst({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userRoles: { some: { userId, role: 'MANAGER' } } },
-        ],
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        bannerImageUrl: true,
-        _count: {
-          select: { participants: true },
+    const [topEvent, topHackathon] = await Promise.all([
+      prisma.eventEntity.findFirst({
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
         },
-      },
-      orderBy: {
-        participants: {
-          _count: 'desc',
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          bannerImageUrl: true,
+          _count: {
+            select: { participants: true },
+          },
         },
-      },
-    });
-
-    // 2. Highest Performing Hackathon
-    const topHackathon = await prisma.hackathonEntity.findFirst({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userRoles: { some: { userId, role: 'MANAGER' } } },
-        ],
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        bannerImageUrl: true,
-        registrationCount: true,
-      },
-      orderBy: {
-        registrationCount: 'desc',
-      },
-    });
+        orderBy: {
+          participants: {
+            _count: 'desc',
+          },
+        },
+      }),
+      prisma.hackathonEntity.findFirst({
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          bannerImageUrl: true,
+          registrationCount: true,
+        },
+        orderBy: {
+          registrationCount: 'desc',
+        },
+      }),
+    ]);
 
     return {
       event: topEvent
@@ -1036,26 +1035,28 @@ export class AnalyticsService {
   }
 
   private async getOrganizerOpportunitiesIds(userId: string) {
-    const events = await prisma.eventEntity.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userRoles: { some: { userId, role: 'MANAGER' } } },
-        ],
-        isDeleted: false,
-      },
-      select: { id: true },
-    });
-    const hackathons = await prisma.hackathonEntity.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userRoles: { some: { userId, role: 'MANAGER' } } },
-        ],
-        isDeleted: false,
-      },
-      select: { id: true },
-    });
+    const [events, hackathons] = await Promise.all([
+      prisma.eventEntity.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
+        },
+        select: { id: true },
+      }),
+      prisma.hackathonEntity.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
+        },
+        select: { id: true },
+      }),
+    ]);
 
     return {
       eventIds: events.map((e) => e.id),
@@ -1069,25 +1070,25 @@ export class AnalyticsService {
     const { eventIds, hackathonIds } =
       await this.getOrganizerOpportunitiesIds(userId);
 
-    const eventParticipants = await prisma.eventParticipantEntity.findMany({
-      where: {
-        eventId: { in: eventIds },
-        checkoutPending: false,
-      },
-      select: {
-        approved: true,
-      },
-    });
-
-    let approved = eventParticipants.filter((p) => p.approved).length;
-    const pendingReview = eventParticipants.filter((p) => !p.approved).length;
-
-    const hackathonRegsCount =
-      await prisma.hackathonRegistrationSubmissionEntity.count({
+    const [eventParticipants, hackathonRegsCount] = await Promise.all([
+      prisma.eventParticipantEntity.findMany({
+        where: {
+          eventId: { in: eventIds },
+          checkoutPending: false,
+        },
+        select: {
+          approved: true,
+        },
+      }),
+      prisma.hackathonRegistrationSubmissionEntity.count({
         where: {
           hackathonId: { in: hackathonIds },
         },
-      });
+      }),
+    ]);
+
+    let approved = eventParticipants.filter((p) => p.approved).length;
+    const pendingReview = eventParticipants.filter((p) => !p.approved).length;
 
     // Treat hackathon submissions as approved registrations
     approved += hackathonRegsCount;
@@ -1103,35 +1104,36 @@ export class AnalyticsService {
   async getOpportunitiesSummary(
     userId: string,
   ): Promise<OrganizerOpportunitiesSummaryDto> {
-    const events = await prisma.eventEntity.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userRoles: { some: { userId, role: 'MANAGER' } } },
-        ],
-        isDeleted: false,
-      },
-      select: {
-        status: true,
-        createdAt: true,
-        approvalApprovedAt: true,
-      },
-    });
-
-    const hackathons = await prisma.hackathonEntity.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userRoles: { some: { userId, role: 'MANAGER' } } },
-        ],
-        isDeleted: false,
-      },
-      select: {
-        status: true,
-        createdAt: true,
-        approvalApprovedAt: true,
-      },
-    });
+    const [events, hackathons] = await Promise.all([
+      prisma.eventEntity.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
+        },
+        select: {
+          status: true,
+          createdAt: true,
+          approvalApprovedAt: true,
+        },
+      }),
+      prisma.hackathonEntity.findMany({
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
+        },
+        select: {
+          status: true,
+          createdAt: true,
+          approvalApprovedAt: true,
+        },
+      }),
+    ]);
 
     const allOpportunities = [...events, ...hackathons];
 
@@ -1175,45 +1177,46 @@ export class AnalyticsService {
   async getPaymentsSummary(
     userId: string,
   ): Promise<OrganizerPaymentsSummaryDto> {
-    const eventPayments = await prisma.eventPaymentEntity.findMany({
-      where: {
-        event: {
-          OR: [
-            { ownerId: userId },
-            { userRoles: { some: { userId, role: 'MANAGER' } } },
-          ],
-          isDeleted: false,
+    const [eventPayments, hackathonPayments] = await Promise.all([
+      prisma.eventPaymentEntity.findMany({
+        where: {
+          event: {
+            OR: [
+              { ownerId: userId },
+              { userRoles: { some: { userId, role: 'MANAGER' } } },
+            ],
+            isDeleted: false,
+          },
         },
-      },
-      select: {
-        grossAmount: true,
-        organizerShareAmount: true,
-        paymentStatus: true,
-        transferStatus: true,
-        transferOnHold: true,
-        refundedAmount: true,
-      },
-    });
-
-    const hackathonPayments = await prisma.hackathonPaymentEntity.findMany({
-      where: {
-        hackathon: {
-          OR: [
-            { ownerId: userId },
-            { userRoles: { some: { userId, role: 'MANAGER' } } },
-          ],
-          isDeleted: false,
+        select: {
+          grossAmount: true,
+          organizerShareAmount: true,
+          paymentStatus: true,
+          transferStatus: true,
+          transferOnHold: true,
+          refundedAmount: true,
         },
-      },
-      select: {
-        grossAmount: true,
-        organizerShareAmount: true,
-        paymentStatus: true,
-        transferStatus: true,
-        transferOnHold: true,
-        refundedAmount: true,
-      },
-    });
+      }),
+      prisma.hackathonPaymentEntity.findMany({
+        where: {
+          hackathon: {
+            OR: [
+              { ownerId: userId },
+              { userRoles: { some: { userId, role: 'MANAGER' } } },
+            ],
+            isDeleted: false,
+          },
+        },
+        select: {
+          grossAmount: true,
+          organizerShareAmount: true,
+          paymentStatus: true,
+          transferStatus: true,
+          transferOnHold: true,
+          refundedAmount: true,
+        },
+      }),
+    ]);
 
     let totalCollected = 0;
     let pendingPayout = 0;
@@ -1250,16 +1253,16 @@ export class AnalyticsService {
     const { eventIds, hackathonIds } =
       await this.getOrganizerOpportunitiesIds(userId);
 
-    const eventUserIds = await prisma.eventParticipantEntity.findMany({
-      where: { eventId: { in: eventIds } },
-      select: { userId: true },
-    });
-
-    const hackathonUserIds =
-      await prisma.hackathonRegistrationSubmissionEntity.findMany({
+    const [eventUserIds, hackathonUserIds] = await Promise.all([
+      prisma.eventParticipantEntity.findMany({
+        where: { eventId: { in: eventIds } },
+        select: { userId: true },
+      }),
+      prisma.hackathonRegistrationSubmissionEntity.findMany({
         where: { hackathonId: { in: hackathonIds } },
         select: { userId: true },
-      });
+      }),
+    ]);
 
     const distinctUserIds = Array.from(
       new Set([
@@ -1268,22 +1271,22 @@ export class AnalyticsService {
       ]),
     );
 
-    const campuses = await prisma.userOnboardingProfileEntity.findMany({
-      where: {
-        userId: { in: distinctUserIds },
-        collegeId: { not: null },
-      },
-      select: { collegeId: true },
-      distinct: ['collegeId'],
-    });
-
-    const hackathonRolesCount = await prisma.hackathonUserRoleEntity.count({
-      where: { hackathonId: { in: hackathonIds } },
-    });
-
-    const eventRolesCount = await prisma.eventUserRoleEntity.count({
-      where: { eventId: { in: eventIds } },
-    });
+    const [campuses, hackathonRolesCount, eventRolesCount] = await Promise.all([
+      prisma.userOnboardingProfileEntity.findMany({
+        where: {
+          userId: { in: distinctUserIds },
+          collegeId: { not: null },
+        },
+        select: { collegeId: true },
+        distinct: ['collegeId'],
+      }),
+      prisma.hackathonUserRoleEntity.count({
+        where: { hackathonId: { in: hackathonIds } },
+      }),
+      prisma.eventUserRoleEntity.count({
+        where: { eventId: { in: eventIds } },
+      }),
+    ]);
 
     return {
       verifiedCampuses: campuses.length,
@@ -1376,18 +1379,19 @@ export class AnalyticsService {
   async getPipelineSummary(
     userId: string,
   ): Promise<OrganizerPipelineSummaryDto> {
-    const regSummary = await this.getRegistrationsSummary(userId);
-
-    const { hackathonIds } = await this.getOrganizerOpportunitiesIds(userId);
-
-    const shortlisted = await prisma.teamRoundQualificationEntity.count({
-      where: {
-        qualified: true,
-        round: {
-          hackathonId: { in: hackathonIds },
-        },
-      },
-    });
+    const [regSummary, { shortlisted }] = await Promise.all([
+      this.getRegistrationsSummary(userId),
+      this.getOrganizerOpportunitiesIds(userId).then(async ({ hackathonIds }) => ({
+        shortlisted: await prisma.teamRoundQualificationEntity.count({
+          where: {
+            qualified: true,
+            round: {
+              hackathonId: { in: hackathonIds },
+            },
+          },
+        }),
+      })),
+    ]);
 
     return {
       totalRegistrations: regSummary.totalRegistrations,
@@ -1408,24 +1412,24 @@ export class AnalyticsService {
       process.env.GOOGLE_SHEETS_SPREADSHEET_ID
      );
 
-    const activeRazorpay = await prisma.razorpayRouteAccountEntity.count({
-      where: {
-        userId,
-        status: 'ACTIVATED',
-      },
-    });
+    const [activeRazorpay, hackathonRoles, eventRoles] = await Promise.all([
+      prisma.razorpayRouteAccountEntity.count({
+        where: {
+          userId,
+          status: 'ACTIVATED',
+        },
+      }),
+      prisma.hackathonUserRoleEntity.findMany({
+        where: { hackathonId: { in: hackathonIds } },
+        select: { userId: true },
+      }),
+      prisma.eventUserRoleEntity.findMany({
+        where: { eventId: { in: eventIds } },
+        select: { userId: true },
+      }),
+    ]);
 
     const activeIntegrations = activeRazorpay + (hasGoogleSheets ? 1 : 0);
-
-    const hackathonRoles = await prisma.hackathonUserRoleEntity.findMany({
-      where: { hackathonId: { in: hackathonIds } },
-      select: { userId: true },
-    });
-
-    const eventRoles = await prisma.eventUserRoleEntity.findMany({
-      where: { eventId: { in: eventIds } },
-      select: { userId: true },
-    });
 
     const distinctTeamUserIds = new Set([
       ...hackathonRoles.map((r) => r.userId),

@@ -132,9 +132,9 @@ describe('EventService — free/paid ticket tiers', () => {
         userCategory: 'COLLEGE_STUDENT',
       });
 
-      await expect(
-        service.joinEvent('event-1', 'user-1', []),
-      ).rejects.toThrow('Payment required');
+      await expect(service.joinEvent('event-1', 'user-1', [])).rejects.toThrow(
+        'Payment required',
+      );
     });
 
     it('registers with a free tier without requiring payment', async () => {
@@ -220,9 +220,7 @@ describe('EventService — free/paid ticket tiers', () => {
             },
             eventRegistrationSubmissionEntity: {
               findFirst: jest.fn().mockResolvedValue(null),
-              create: jest
-                .fn()
-                .mockResolvedValue({ id: 'submission-1' }),
+              create: jest.fn().mockResolvedValue({ id: 'submission-1' }),
               update: jest.fn(),
             },
             eventRegistrationAnswerEntity: {

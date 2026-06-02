@@ -48,8 +48,8 @@ export default function HeroSection() {
           },
           {
             image: "/illustrations/communities.svg",
-            title: "Communities",
-            link: "/communities",
+            title: "Community",
+            link: "/community",
           },
         ].map((item, index) => {
           return (

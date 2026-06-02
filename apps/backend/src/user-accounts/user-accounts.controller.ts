@@ -378,32 +378,31 @@ export class UserAccountsController {
       throw new BadRequestException(`${fieldName} cannot exceed 20 items`);
     }
 
-    return arr
-      .map((item) => {
-        if (typeof item !== 'string') {
-          throw new BadRequestException(
-            `All ${fieldName} items must be strings`,
-          );
-        }
-        const trimmed = item.trim();
+    const validated: string[] = [];
+    for (const item of arr) {
+      if (typeof item !== 'string') {
+        throw new BadRequestException(
+          `All ${fieldName} items must be strings`,
+        );
+      }
+      const trimmed = item.trim();
 
-        // Max length constraint for security/sanity
-        if (trimmed.length > 50) {
-          throw new BadRequestException(
-            `${fieldName} items must be under 50 characters`,
-          );
-        }
+      if (trimmed.length > 50) {
+        throw new BadRequestException(
+          `${fieldName} items must be under 50 characters`,
+        );
+      }
 
-        // Pattern: Alpha-numeric, spaces, and common tech symbols (+, #, -, ., /)
-        // This prevents XSS and malicious scripts.
-        if (trimmed.length > 0 && !/^[a-zA-Z0-9\s\+\#\-\.\/]+$/.test(trimmed)) {
-          throw new BadRequestException(
-            `Invalid characters in ${fieldName}: "${trimmed}"`,
-          );
-        }
+      if (trimmed.length > 0 && !/^[a-zA-Z0-9\s\+\#\-\.\/]+$/.test(trimmed)) {
+        throw new BadRequestException(
+          `Invalid characters in ${fieldName}: "${trimmed}"`,
+        );
+      }
 
-        return trimmed;
-      })
-      .filter((t) => t.length > 0);
+      if (trimmed.length > 0) {
+        validated.push(trimmed);
+      }
+    }
+    return validated;
   }
 }

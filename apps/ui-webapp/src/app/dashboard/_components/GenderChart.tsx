@@ -1,14 +1,29 @@
 "use client";
 
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+import dynamic from "next/dynamic";
 import NoDataPlaceholder from "./NoDataPlaceholder";
+
+const PieChart = dynamic(() => import("recharts").then((mod) => mod.PieChart), {
+  ssr: false,
+});
+const Pie = dynamic(() => import("recharts").then((mod) => mod.Pie), {
+  ssr: false,
+});
+const Cell = dynamic(() => import("recharts").then((mod) => mod.Cell), {
+  ssr: false,
+});
+const Tooltip = dynamic(() => import("recharts").then((mod) => mod.Tooltip), {
+  ssr: false,
+});
+const ResponsiveContainer = dynamic(
+  () => import("recharts").then((mod) => mod.ResponsiveContainer),
+  {
+    ssr: false,
+  },
+);
+const Legend = dynamic(() => import("recharts").then((mod) => mod.Legend), {
+  ssr: false,
+});
 
 interface GenderData {
   name: string;
@@ -16,10 +31,10 @@ interface GenderData {
   color?: string;
 }
 
+const COLORS = ["#8b5cf6", "#ec4899", "#14b8a6"]; // Default colors
+
 export default function GenderChart({ data }: { data: GenderData[] }) {
   const isDataEmpty = data.length === 0 || data.every((d) => d.value === 0);
-
-  const COLORS = ["#8b5cf6", "#ec4899", "#14b8a6"]; // Default colors
 
   return (
     <div className="w-full bg-background rounded-[20px] p-6 border border-border h-[400px] flex flex-col">

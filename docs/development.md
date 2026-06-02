@@ -110,6 +110,51 @@ CLERK_SECRET_KEY="sk_test_..." # Same as backend
 # PostHog Analytics (optional)
 NEXT_PUBLIC_POSTHOG_KEY="phc_..." # Get from PostHog project settings
 NEXT_PUBLIC_POSTHOG_HOST="https://us.i.posthog.com" # Optional, defaults to US instance
+
+# Meet links shown in community scheduler
+NEXT_PUBLIC_MEET_BASE_URL="http://localhost:3003"
+```
+
+#### Meet app (`apps/meet-webapp/.env.local`)
+
+Uses the same Clerk application as `ui-webapp`.
+
+```env
+NEXT_PUBLIC_API_URL="http://localhost:3001"
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
+CLERK_SECRET_KEY="sk_test_..."
+```
+
+Production meet URLs: `https://meet.oppskills.com/[invite-code]`
+
+#### Backend LiveKit (community meets)
+
+Add to `apps/backend/.env.local`:
+
+```env
+# LiveKit Cloud — https://cloud.livekit.io
+# Or use local dev server (see docker-compose livekit service):
+LIVEKIT_API_KEY="devkey"
+LIVEKIT_API_SECRET="secret"
+LIVEKIT_URL="ws://localhost:7880"
+
+# Public meet app base URL (used when creating meet links)
+MEET_BASE_URL="http://localhost:3003"
+```
+
+Start local LiveKit SFU (optional, for development without LiveKit Cloud):
+
+```bash
+docker compose up -d livekit
+```
+
+Local dev uses API key `devkey` / secret `secret` (LiveKit `--dev` mode). For production, replace with credentials from your [LiveKit Cloud](https://cloud.livekit.io) project settings (`wss://your-project.livekit.cloud`).
+
+Run the new migration after pulling meet changes:
+
+```bash
+pnpm db:migrate:deploy
+# or locally: pnpm db:migrate
 ```
 
 ### 5. Set Up Database
@@ -149,6 +194,9 @@ pnpm dev:backend
 # Frontend only (port 3000)
 pnpm dev:ui-webapp
 
+# Meet app only (port 3003)
+pnpm dev:meet-webapp
+
 # Prisma Studio (port 3008)
 pnpm db:studio
 ```
@@ -156,6 +204,7 @@ pnpm db:studio
 ### 7. Verify Setup
 
 - **Frontend**: http://localhost:3000
+- **Meet app**: http://localhost:3003
 - **Backend**: http://localhost:3001
 - **API Docs**: http://localhost:3001/api-reference
 - **Prisma Studio**: http://localhost:3008 (if running)
@@ -765,6 +814,22 @@ pnpm build              # Build for production
 pnpm start              # Start production server
 pnpm lint               # Lint frontend code
 ```
+
+### Meet app (`apps/meet-webapp/`)
+
+```bash
+pnpm dev                # Start dev server on port 3003
+pnpm build              # Build for production
+pnpm start              # Start production server on port 3003
+```
+
+#### Deploying `meet.oppskills.com`
+
+1. Create a Vercel project with root directory `apps/meet-webapp`.
+2. Add domain `meet.oppskills.com` (CNAME to Vercel).
+3. Set env vars: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` (same Clerk app as main webapp).
+4. Set backend `MEET_BASE_URL=https://meet.oppskills.com` and LiveKit secrets in production.
+5. Ensure backend CORS includes `https://meet.oppskills.com` (already configured in `apps/backend/src/main.ts`).
 
 ## Next Steps
 

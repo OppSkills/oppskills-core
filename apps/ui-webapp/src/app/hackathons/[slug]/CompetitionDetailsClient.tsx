@@ -331,8 +331,13 @@ export function CompetitionDetailsClient({
 
                 {googleMapApiKey && competition.locationCoords && (
                   <section id="location" className="scroll-mt-24 space-y-4">
-                    <h3 className="text-xl font-bold text-foreground">Location</h3>
-                    <GoogleMap apiKey={googleMapApiKey} coords={competition.locationCoords} />
+                    <h3 className="text-xl font-bold text-foreground">
+                      Location
+                    </h3>
+                    <GoogleMap
+                      apiKey={googleMapApiKey}
+                      coords={competition.locationCoords}
+                    />
                   </section>
                 )}
               </div>

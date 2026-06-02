@@ -114,31 +114,46 @@ export class CollegesService {
       `Starting bulk import: ${safeColleges.length} colleges in ${results.totalBatches} batches`,
     );
 
-    // Process in batches
+    const batches: Array<{ batch: typeof safeColleges; batchNumber: number }> =
+      [];
     for (let i = 0; i < safeColleges.length; i += safeBatchSize) {
-      const batch = safeColleges.slice(i, i + safeBatchSize);
-      const batchNumber = Math.floor(i / safeBatchSize) + 1;
+      batches.push({
+        batch: safeColleges.slice(i, i + safeBatchSize),
+        batchNumber: Math.floor(i / safeBatchSize) + 1,
+      });
+    }
 
-      try {
-        const batchOutcome = await this.processBatchFast(batch, {
-          updateConcurrency: 10,
-        });
+    const batchOutcomes = await Promise.all(
+      batches.map(async ({ batch, batchNumber }) => {
+        try {
+          const batchOutcome = await this.processBatchFast(batch, {
+            updateConcurrency: 10,
+          });
+          this.logger.log(
+            `Batch ${batchNumber}/${results.totalBatches} completed: ${batchOutcome.imported} imported (${batchOutcome.created} created, ${batchOutcome.updated} updated), ${batchOutcome.failed} failed`,
+          );
+          return { ok: true as const, batchOutcome, batchNumber, batch };
+        } catch (error) {
+          const errorMsg = `Batch ${batchNumber} failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          return { ok: false as const, errorMsg, batchNumber, batch };
+        }
+      }),
+    );
 
+    for (const outcome of batchOutcomes) {
+      if (outcome.ok) {
+        const { batchOutcome } = outcome;
         results.imported += batchOutcome.imported;
         results.failed += batchOutcome.failed;
         results.created += batchOutcome.created;
         results.updated += batchOutcome.updated;
         results.skipped += batchOutcome.skipped;
         results.errors.push(...batchOutcome.errors);
-
-        this.logger.log(
-          `Batch ${batchNumber}/${results.totalBatches} completed: ${batchOutcome.imported} imported (${batchOutcome.created} created, ${batchOutcome.updated} updated), ${batchOutcome.failed} failed`,
-        );
-      } catch (error) {
-        results.failed += batch.length;
-        const errorMsg = `Batch ${batchNumber} failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      } else {
+        results.failed += outcome.batch.length;
+        const errorMsg = outcome.errorMsg;
         results.errors.push(errorMsg);
-        this.logger.error(errorMsg, error);
+        this.logger.error(errorMsg);
       }
     }
 
@@ -302,18 +317,22 @@ export class CollegesService {
     const existingIdSet = new Set(existingRows.map((r) => r.id));
 
     // Insert new rows quickly. Existing rows are ignored by skipDuplicates.
-    const toCreate = normalized
-      .filter((c) => !existingIdSet.has(c.id))
-      .map((c) => ({
-        id: c.id,
-        name: c.name,
-        country: c.country,
-        state: c.state,
-        city: c.city,
-        address: c.address,
-        website: c.website,
-        logo: c.logo,
-      }));
+    const toCreate = normalized.flatMap((c) =>
+      existingIdSet.has(c.id)
+        ? []
+        : [
+            {
+              id: c.id,
+              name: c.name,
+              country: c.country,
+              state: c.state,
+              city: c.city,
+              address: c.address,
+              website: c.website,
+              logo: c.logo,
+            },
+          ],
+    );
 
     let created = 0;
     if (toCreate.length > 0) {
@@ -457,29 +476,33 @@ export class CollegesService {
     const safeLimit = this.coerceConcurrencyLimit(limit);
     const results: Array<Result<true>> = new Array(items.length);
 
-    let nextIndex = 0;
-    const runWorker = async (): Promise<void> => {
-      while (true) {
-        const currentIndex = nextIndex;
-        nextIndex += 1;
-        if (currentIndex >= items.length) return;
-        const item = items[currentIndex];
-        try {
-          await worker(item);
-          results[currentIndex] = { ok: true, value: true };
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : 'Unknown error';
-          results[currentIndex] = { ok: false, error: msg };
-        }
+    const processChunk = async (offset: number): Promise<void> => {
+      if (offset >= items.length) return;
+      const chunk = items.slice(offset, offset + safeLimit);
+      const chunkResults = await Promise.all(
+        chunk.map(async (item, chunkIndex) => {
+          try {
+            await worker(item);
+            return {
+              index: offset + chunkIndex,
+              result: { ok: true, value: true } as Result<true>,
+            };
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Unknown error';
+            return {
+              index: offset + chunkIndex,
+              result: { ok: false, error: msg } as Result<true>,
+            };
+          }
+        }),
+      );
+      for (const { index, result } of chunkResults) {
+        results[index] = result;
       }
+      await processChunk(offset + safeLimit);
     };
 
-    const runners: Promise<void>[] = [];
-    const runnerCount = Math.min(safeLimit, items.length);
-    for (let i = 0; i < runnerCount; i += 1) {
-      runners.push(runWorker());
-    }
-    await Promise.all(runners);
+    await processChunk(0);
     return results;
   }
 

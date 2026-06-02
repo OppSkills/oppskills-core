@@ -7,8 +7,12 @@ import { IsIn, IsString } from 'class-validator';
 const MEDIA_UPLOAD_PURPOSE_VALUES = [
   'HACKATHON_BANNER',
   'EVENT_BANNER',
+  'COMMUNITY_COVER',
+  'COMMUNITY_AVATAR',
   'EVENT_ATTACHMENT',
   'OPPORTUNITY_ATTACHMENT',
+  'COMMUNITY_BANNER',
+  'COMMUNITY_LOGO',
 ] as const;
 export type MediaUploadPurposeValue =
   (typeof MEDIA_UPLOAD_PURPOSE_VALUES)[number];

@@ -1,10 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 
 export function CommunityJoinCard() {
   return (
-    <div className="w-full bg-white rounded-3xl p-5 lg:p-6 border-2 border-neutral-300 flex flex-col min-h-[400px] shadow-sm relative overflow-hidden group cursor-pointer hover:border-primary-400 transition-all duration-300">
+    <Link
+      href="/dashboard/community"
+      className="flex w-full flex-col bg-white rounded-3xl p-5 lg:p-6 border-2 border-neutral-300 min-h-[400px] shadow-sm relative overflow-hidden group cursor-pointer hover:border-primary-400 transition-all duration-300"
+    >
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-2xl font-bold text-foreground tracking-tight">
           Community
@@ -22,6 +26,6 @@ export function CommunityJoinCard() {
 
       {/* Decorative backdrop to match the style */}
       <div className="absolute inset-0 bg-linear-to-b from-transparent to-neutral-50/10 pointer-events-none" />
-    </div>
+    </Link>
   );
 }

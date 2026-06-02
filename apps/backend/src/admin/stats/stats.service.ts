@@ -61,6 +61,12 @@ export class AdminStatsService {
       eventRevTotal,
       eventRevThisYear,
       eventRevLastYear,
+      hackathonTotal,
+      hackathonThisMonth,
+      hackathonLastMonth,
+      eventTotal,
+      eventThisMonth,
+      eventLastMonth,
     ] = await Promise.all([
       sumRevenue(prisma.hackathonPaymentEntity, { paymentStatus: 'CAPTURED' }),
       sumRevenue(prisma.hackathonPaymentEntity, {
@@ -80,18 +86,6 @@ export class AdminStatsService {
         paymentStatus: 'CAPTURED',
         createdAt: { gte: startOfLastYear, lte: endOfLastYear },
       }),
-    ]);
-
-    // --- Active Entities (Hackathons & Events) ---
-    // Assuming "Active Entities" stats refer to creation counts as per "thisMonth/lastMonth" breakdown
-    const [
-      hackathonTotal,
-      hackathonThisMonth,
-      hackathonLastMonth,
-      eventTotal,
-      eventThisMonth,
-      eventLastMonth,
-    ] = await Promise.all([
       prisma.hackathonEntity.count(),
       prisma.hackathonEntity.count({
         where: { createdAt: { gte: startOfThisMonth } },

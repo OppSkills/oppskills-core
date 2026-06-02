@@ -83,9 +83,9 @@ export function CompetitionSidebar({
   // Synthetic free-tier used when isFree=false but no real tiers are configured.
   // id='__free__' is never sent to the backend; we strip it before checkout.
   const SYNTHETIC_FREE_TIER: RegistrationPickerTier = {
-    id: '__free__',
-    name: 'Free Ticket',
-    description: 'No entry fee required',
+    id: "__free__",
+    name: "Free Ticket",
+    description: "No entry fee required",
     price: 0,
     isActive: true,
     isFree: true,
@@ -111,14 +111,12 @@ export function CompetitionSidebar({
   const hackathonRegistrationCompleteForDisplay =
     !!registrationStatus?.hasSubmitted &&
     (!!competition.isFree || !!registrationStatus.paymentCompleted);
-  const needsCompleteRegistration =
-    hasTeam && !isFullyRegistered;
-
+  const needsCompleteRegistration = hasTeam && !isFullyRegistered;
 
   useEffect(() => {
     if (!competition.isFree && sidebarActiveTiers.length === 0) {
       // Synthetic free-ticket: auto-select the placeholder.
-      setPageSelectedTierId('__free__');
+      setPageSelectedTierId("__free__");
       return;
     }
     if (sidebarActiveTiers.length === 0) {
@@ -201,9 +199,7 @@ export function CompetitionSidebar({
         }
         setRegistrationStatus(status);
 
-        const canComplete =
-          !!team && !status?.hasSubmitted;
-
+        const canComplete = !!team && !status?.hasSubmitted;
 
         if (team && registration) {
           if (status?.hasSubmitted) {
@@ -391,9 +387,9 @@ export function CompetitionSidebar({
       // Block only if multiple real tiers exist and none is chosen yet.
       if (
         sidebarActiveTiers.length > 1 &&
-        (!pageSelectedTierId || pageSelectedTierId === '__free__')
+        (!pageSelectedTierId || pageSelectedTierId === "__free__")
       ) {
-        toast.error('Please select a ticket type first.');
+        toast.error("Please select a ticket type first.");
         return;
       }
 
@@ -520,26 +516,23 @@ export function CompetitionSidebar({
         ? rawEntryFee
         : Number(rawEntryFee ?? 0) || 0;
 
-    const isSyntheticFree = pageSelectedTierId === '__free__';
+    const isSyntheticFree = pageSelectedTierId === "__free__";
     const tierSelected =
       sidebarActiveTiers.length > 0 && pageSelectedTierId && !isSyntheticFree
         ? sidebarActiveTiers.find((t) => t.id === pageSelectedTierId)
         : undefined;
     const tierBase = tierSelected
-      ? typeof tierSelected.price === 'number'
+      ? typeof tierSelected.price === "number"
         ? tierSelected.price
         : Number(tierSelected.price ?? 0) || 0
       : isSyntheticFree
         ? 0
         : null;
 
-    const baseAmount =
-      tierBase !== null ? tierBase : entryBase;
+    const baseAmount = tierBase !== null ? tierBase : entryBase;
 
     const isSelectedTierFree =
-      isSyntheticFree ||
-      tierSelected?.isFree === true ||
-      baseAmount <= 0;
+      isSyntheticFree || tierSelected?.isFree === true || baseAmount <= 0;
     const isPaid =
       competition.isFree === false && !isSelectedTierFree && baseAmount > 0;
     const processingFee = Math.ceil(baseAmount * 0.0236 * 100) / 100;
@@ -801,7 +794,7 @@ export function CompetitionSidebar({
 
           {/* Location Row */}
           <div className="flex gap-4 items-center">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
+            <div className="shrink-0 w-10 h-10 rounded-xl border border-neutral-400  flex items-center justify-center shadow-sm">
               <MapPin className="w-5 h-5 text-neutral-700 " />
             </div>
             <div>
@@ -818,14 +811,10 @@ export function CompetitionSidebar({
                     rel="noopener noreferrer"
                     className="hover:underline decoration-neutral-400 block"
                   >
-                    <p className="text-sm text-neutral-500">
-                      {addressText}
-                    </p>
+                    <p className="text-sm text-neutral-500">{addressText}</p>
                   </a>
                 ) : (
-                  <p className="text-sm text-neutral-500">
-                    {addressText}
-                  </p>
+                  <p className="text-sm text-neutral-500">{addressText}</p>
                 );
               })()}
             </div>
@@ -970,11 +959,15 @@ export function CompetitionSidebar({
         omitTicketTierSection={
           needsCompleteRegistration
             ? (registrationStatus?.paymentCompleted ?? false)
-            : (!competition.isFree && sidebarActiveTiers.length > 0)
+            : !competition.isFree && sidebarActiveTiers.length > 0
         }
         paymentCompleted={registrationStatus?.paymentCompleted ?? false}
         teamId={registrationStatus?.teamId || myTeam?.id || undefined}
-        isLeader={registrationStatus?.isLeader || myTeam?.leaderId === user?.id || undefined}
+        isLeader={
+          registrationStatus?.isLeader ||
+          myTeam?.leaderId === user?.id ||
+          undefined
+        }
         prefillAnswers={registrationStatus?.draftAnswers ?? undefined}
         onSuccess={async (updatedTeam) => {
           setMyTeam(updatedTeam);

@@ -282,45 +282,44 @@ export class EmailController {
         .join(', ');
     }
 
-    // Send emails
-    let successCount = 0;
-    let failCount = 0;
+    const sendResults = await Promise.all(
+      incompleteUsers.map(async (user) => {
+        try {
+          const result = await this.emailService.send({
+            type: 'incomplete-registration',
+            to: user.email,
+            props: {
+              firstName: user.firstName || undefined,
+              email: user.email,
+              eventName: event.name,
+              eventDate,
+              eventTime,
+              eventLocation,
+              eventType: event.eventType,
+              eventSlug: event.slug,
+              resourceType: 'event',
+              incompleteRegistrationKind: 'paid',
+            },
+          });
 
-    for (const user of incompleteUsers) {
-      try {
-        const result = await this.emailService.send({
-          type: 'incomplete-registration',
-          to: user.email,
-          props: {
-            firstName: user.firstName || undefined,
-            email: user.email,
-            eventName: event.name,
-            eventDate,
-            eventTime,
-            eventLocation,
-            eventType: event.eventType,
-            eventSlug: event.slug,
-            resourceType: 'event',
-            incompleteRegistrationKind: 'paid',
-          },
-        });
-
-        if (result.success) {
-          successCount++;
-          this.logger.log(
-            `Sent incomplete registration email to ${user.email}`,
-          );
-        } else {
-          failCount++;
+          if (result.success) {
+            this.logger.log(
+              `Sent incomplete registration email to ${user.email}`,
+            );
+            return { ok: true as const };
+          }
           this.logger.error(
             `Failed to send email to ${user.email}: ${result.error}`,
           );
+          return { ok: false as const };
+        } catch (error) {
+          this.logger.error(`Error sending email to ${user.email}:`, error);
+          return { ok: false as const };
         }
-      } catch (error) {
-        failCount++;
-        this.logger.error(`Error sending email to ${user.email}:`, error);
-      }
-    }
+      }),
+    );
+    const successCount = sendResults.filter((r) => r.ok).length;
+    const failCount = sendResults.length - successCount;
 
     return {
       success: true,

@@ -74,7 +74,8 @@ export class LocationService {
       if (!response.ok) {
         let errorMsg = `Google Places API error (Status: ${response.status}): ${JSON.stringify(data)}`;
         if (response.status === 403) {
-          errorMsg += ' - Attempting fallback to Legacy Google Places Autocomplete API...';
+          errorMsg +=
+            ' - Attempting fallback to Legacy Google Places Autocomplete API...';
           this.logger.warn(errorMsg);
           return this.fetchLegacyAutocomplete(trimmedQuery);
         }
@@ -153,7 +154,8 @@ export class LocationService {
       if (!response.ok) {
         let errorMsg = `Google Places Details API error (Status: ${response.status}): ${JSON.stringify(data)}`;
         if (response.status === 403) {
-          errorMsg += ' - Attempting fallback to Legacy Google Place Details API...';
+          errorMsg +=
+            ' - Attempting fallback to Legacy Google Place Details API...';
           this.logger.warn(errorMsg);
           return this.fetchLegacyPlaceCoords(trimmedId);
         }
@@ -202,10 +204,14 @@ export class LocationService {
         error_message?: string;
       };
 
-      if (!response.ok || (data.status !== 'OK' && data.status !== 'ZERO_RESULTS')) {
+      if (
+        !response.ok ||
+        (data.status !== 'OK' && data.status !== 'ZERO_RESULTS')
+      ) {
         let errorMsg = `Google Legacy Places Autocomplete API error (Status: ${data.status}): ${data.error_message || 'Unknown error'}`;
         if (data.status === 'REQUEST_DENIED') {
-          errorMsg += ' - If the error mentions referer restrictions, note that server-to-server requests from NestJS will be blocked. Consider using a separate unrestricted or IP-restricted key for the backend.';
+          errorMsg +=
+            ' - If the error mentions referer restrictions, note that server-to-server requests from NestJS will be blocked. Consider using a separate unrestricted or IP-restricted key for the backend.';
         }
         this.logger.error(errorMsg);
         return [];
@@ -229,7 +235,9 @@ export class LocationService {
     }
   }
 
-  private async fetchLegacyPlaceCoords(placeId: string): Promise<string | null> {
+  private async fetchLegacyPlaceCoords(
+    placeId: string,
+  ): Promise<string | null> {
     const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=geometry&key=${this.apiKey}`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -252,7 +260,8 @@ export class LocationService {
       if (!response.ok || data.status !== 'OK') {
         let errorMsg = `Google Legacy Places Details API error (Status: ${data.status}): ${data.error_message || 'Unknown error'}`;
         if (data.status === 'REQUEST_DENIED') {
-          errorMsg += ' - If the error mentions referer restrictions, note that server-to-server requests from NestJS will be blocked. Consider using a separate unrestricted or IP-restricted key for the backend.';
+          errorMsg +=
+            ' - If the error mentions referer restrictions, note that server-to-server requests from NestJS will be blocked. Consider using a separate unrestricted or IP-restricted key for the backend.';
         }
         this.logger.error(errorMsg);
         return null;

@@ -566,8 +566,15 @@ export function RegistrationModal({
       }
 
       if (type === "HACKATHON" && !competition.isFree) {
-        const hackathonTiers = (competition as { ticketTiers?: Array<{ id: string; isFree?: boolean; price?: unknown }> })
-          .ticketTiers;
+        const hackathonTiers = (
+          competition as {
+            ticketTiers?: Array<{
+              id: string;
+              isFree?: boolean;
+              price?: unknown;
+            }>;
+          }
+        ).ticketTiers;
         const selectedFreeTier = isFreeTicketTierId(
           ticketTierId,
           hackathonTiers,
@@ -633,10 +640,16 @@ export function RegistrationModal({
         }
       }
 
-      if (type === "HACKATHON" && (!completionMode || !paymentCompleted) && !competition.isFree) {
+      if (
+        type === "HACKATHON" &&
+        (!completionMode || !paymentCompleted) &&
+        !competition.isFree
+      ) {
         // Strip synthetic '__free__' id before sending to backend.
         const realTierId =
-          ticketTierId && ticketTierId !== '__free__' ? ticketTierId : undefined;
+          ticketTierId && ticketTierId !== "__free__"
+            ? ticketTierId
+            : undefined;
         await saveHackathonRegistrationCheckoutDraft(token, competition.slug, {
           answers: formattedAnswers,
           ticketTierId: realTierId,
@@ -664,12 +677,10 @@ export function RegistrationModal({
           ticketTierId: realTierId,
           userId: user?.id,
         });
-        toast.success('Saved. Continue to secure checkout.');
+        toast.success("Saved. Continue to secure checkout.");
         onClose();
         const tierQ =
-          realTierId != null
-            ? `?tier=${encodeURIComponent(realTierId)}`
-            : '';
+          realTierId != null ? `?tier=${encodeURIComponent(realTierId)}` : "";
         router.push(`/hackathons/${competition.slug}/checkout${tierQ}`);
         return;
       }
@@ -905,9 +916,9 @@ export function RegistrationModal({
       if (
         isPaidOpportunity &&
         activeRegTiers.length > 1 &&
-        (!ticketTierId || ticketTierId === '__free__')
+        (!ticketTierId || ticketTierId === "__free__")
       ) {
-        toast.error('Please select a ticket type before continuing.');
+        toast.error("Please select a ticket type before continuing.");
         return;
       }
 
@@ -950,9 +961,15 @@ export function RegistrationModal({
           ticketTierId &&
           isFreeTicketTierId(
             ticketTierId,
-            (competition as {
-              ticketTiers?: Array<{ id: string; isFree?: boolean; price?: unknown }>;
-            }).ticketTiers,
+            (
+              competition as {
+                ticketTiers?: Array<{
+                  id: string;
+                  isFree?: boolean;
+                  price?: unknown;
+                }>;
+              }
+            ).ticketTiers,
           )
             ? ticketTierId
             : undefined;
@@ -1039,8 +1056,15 @@ export function RegistrationModal({
         } else if (
           isFreeTicketTierId(
             ticketTierId,
-            (competition as { ticketTiers?: Array<{ id: string; isFree?: boolean; price?: unknown }> })
-              .ticketTiers,
+            (
+              competition as {
+                ticketTiers?: Array<{
+                  id: string;
+                  isFree?: boolean;
+                  price?: unknown;
+                }>;
+              }
+            ).ticketTiers,
           ) &&
           ticketTierId
         ) {
@@ -1090,8 +1114,15 @@ export function RegistrationModal({
         } else if (
           isFreeTicketTierId(
             ticketTierId,
-            (competition as { ticketTiers?: Array<{ id: string; isFree?: boolean; price?: unknown }> })
-              .ticketTiers,
+            (
+              competition as {
+                ticketTiers?: Array<{
+                  id: string;
+                  isFree?: boolean;
+                  price?: unknown;
+                }>;
+              }
+            ).ticketTiers,
           ) &&
           ticketTierId
         ) {

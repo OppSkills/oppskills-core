@@ -158,10 +158,7 @@ export class EventPaymentService {
           'Invalid or inactive ticket tier selected',
         );
       }
-      if (
-        tier.isFree ||
-        new Decimal(tier.price).lessThanOrEqualTo(0)
-      ) {
+      if (tier.isFree || new Decimal(tier.price).lessThanOrEqualTo(0)) {
         throw new BadRequestException(
           'This is a free ticket. Complete registration on the event page without checkout.',
         );
@@ -179,9 +176,7 @@ export class EventPaymentService {
           throw new BadRequestException('This ticket type is sold out');
         }
       }
-      registrationFee = tier.isFree
-        ? new Decimal(0)
-        : new Decimal(tier.price);
+      registrationFee = tier.isFree ? new Decimal(0) : new Decimal(tier.price);
     } else {
       if (params.ticketTierId) {
         throw new BadRequestException('Ticket type is not used for this event');
@@ -562,10 +557,7 @@ export class EventPaymentService {
           'Invalid or inactive ticket tier selected',
         );
       }
-      if (
-        tier.isFree ||
-        new Decimal(tier.price).lessThanOrEqualTo(0)
-      ) {
+      if (tier.isFree || new Decimal(tier.price).lessThanOrEqualTo(0)) {
         throw new BadRequestException(
           'This is a free ticket. Complete registration on the event page without checkout.',
         );
@@ -614,20 +606,20 @@ export class EventPaymentService {
       );
     }
 
-    const mappedAnswers = await this.mapFrontendFieldIdsToDbIds(
-      event.id,
-      params.userId,
-      params.answers as Array<{
-        fieldId: string;
-        value: string | number | string[];
-      }>,
-    );
-
-    const requiredOrganizerFields =
-      await this.applicableRequiredOrganizerRegistrationFields(
+    const [mappedAnswers, requiredOrganizerFields] = await Promise.all([
+      this.mapFrontendFieldIdsToDbIds(
         event.id,
         params.userId,
-      );
+        params.answers as Array<{
+          fieldId: string;
+          value: string | number | string[];
+        }>,
+      ),
+      this.applicableRequiredOrganizerRegistrationFields(
+        event.id,
+        params.userId,
+      ),
+    ]);
 
     if (requiredOrganizerFields.length > 0) {
       const answerByFieldId = new Map(
@@ -648,29 +640,32 @@ export class EventPaymentService {
     }
 
     await prisma.$transaction(async (tx) => {
-      const participant = await tx.eventParticipantEntity.upsert({
-        where: {
-          eventId_userId: {
+      const [participant, existingSubmission] = await Promise.all([
+        tx.eventParticipantEntity.upsert({
+          where: {
+            eventId_userId: {
+              eventId: event.id,
+              userId: params.userId,
+            },
+          },
+          create: {
             eventId: event.id,
             userId: params.userId,
+            approved: false,
+            approvedAt: null,
+            passEmailSent: false,
+            checkoutPending: true,
           },
-        },
-        create: {
-          eventId: event.id,
-          userId: params.userId,
-          approved: false,
-          approvedAt: null,
-          passEmailSent: false,
-          checkoutPending: true,
-        },
-        update: {
-          checkoutPending: true,
-        },
-      });
+          update: {
+            checkoutPending: true,
+          },
+        }),
+        tx.eventRegistrationSubmissionEntity.findFirst({
+          where: { eventId: event.id, userId: params.userId },
+        }),
+      ]);
 
-      let submission = await tx.eventRegistrationSubmissionEntity.findFirst({
-        where: { eventId: event.id, userId: params.userId },
-      });
+      let submission = existingSubmission;
 
       if (submission) {
         await tx.eventRegistrationAnswerEntity.deleteMany({
@@ -887,14 +882,10 @@ export class EventPaymentService {
     eventId: string,
     bodyAnswers?: Array<{ fieldId: string; value: string | number | string[] }>,
   ): Promise<Array<{ fieldId: string; value: string | number | string[] }>> {
-    const fromSubmission = await this.loadSubmissionAnswersForUser(
-      eventId,
-      userId,
-    );
-    const fromEscrow = await this.paymentEscrowService.loadAnswersForVerify(
-      razorpayOrderId,
-      userId,
-    );
+    const [fromSubmission, fromEscrow] = await Promise.all([
+      this.loadSubmissionAnswersForUser(eventId, userId),
+      this.paymentEscrowService.loadAnswersForVerify(razorpayOrderId, userId),
+    ]);
     const fromEscrowMapped: Array<{
       fieldId: string;
       value: string | number | string[];
@@ -985,21 +976,21 @@ export class EventPaymentService {
       throw new ForbiddenException('Payment does not belong to this user');
     }
 
-    const mergedAnswers = await this.resolveMergedAnswersForEventVerify(
-      params.razorpayOrderId,
-      params.userId,
-      payment.eventId,
-      params.answers,
-    );
-
-    // Resolve referral code (DTO → Razorpay notes fallback). Best-effort only.
-    const referralId = await this.resolveReferralForEventPayment({
-      userId: params.userId,
-      eventId: payment.event.id,
-      festivalId: payment.event.festivalId,
-      razorpayOrderId: params.razorpayOrderId,
-      dtoReferralCode: params.referralCode,
-    });
+    const [mergedAnswers, referralId] = await Promise.all([
+      this.resolveMergedAnswersForEventVerify(
+        params.razorpayOrderId,
+        params.userId,
+        payment.eventId,
+        params.answers,
+      ),
+      this.resolveReferralForEventPayment({
+        userId: params.userId,
+        eventId: payment.event.id,
+        festivalId: payment.event.festivalId,
+        razorpayOrderId: params.razorpayOrderId,
+        dtoReferralCode: params.referralCode,
+      }),
+    ]);
 
     if (
       !mergedAnswers.length &&
@@ -1025,22 +1016,22 @@ export class EventPaymentService {
 
     // Map frontend field IDs to database field IDs EARLY (before participant check)
     // This ensures we have mapped answers for saving even if participant already exists
-    const mappedAnswers = await this.mapFrontendFieldIdsToDbIds(
-      payment.event.id,
-      params.userId,
-      mergedAnswers,
-    );
-
-    // Check for existing participant (might have been created by webhook or checkout draft)
-    const existingParticipant = await prisma.eventParticipantEntity.findUnique({
-      where: {
-        eventId_userId: {
-          eventId: payment.event.id,
-          userId: params.userId,
+    const [mappedAnswers, existingParticipant] = await Promise.all([
+      this.mapFrontendFieldIdsToDbIds(
+        payment.event.id,
+        params.userId,
+        mergedAnswers,
+      ),
+      prisma.eventParticipantEntity.findUnique({
+        where: {
+          eventId_userId: {
+            eventId: payment.event.id,
+            userId: params.userId,
+          },
         },
-      },
-      select: { id: true, checkoutPending: true },
-    });
+        select: { id: true, checkoutPending: true },
+      }),
+    ]);
 
     // If participant already exists, save answers if not already saved, then return
     if (existingParticipant) {
@@ -1852,16 +1843,16 @@ export class EventPaymentService {
     }
 
     // Transform answers: replace frontend "default-*" IDs with real DB IDs
-    const mappedAnswers = answers
-      .map((a) => ({
-        fieldId: frontendIdToDbId.get(a.fieldId) ?? a.fieldId,
-        value: a.value,
-      }))
-      .filter((a) => {
-        // If it still starts with 'default-', it means it wasn't in our mapping
-        // (likely a field from a different user category that's no longer relevant)
-        return !a.fieldId.startsWith('default-');
-      });
+    const mappedAnswers: Array<{
+      fieldId: string;
+      value: string | number | string[];
+    }> = [];
+    for (const a of answers) {
+      const fieldId = frontendIdToDbId.get(a.fieldId) ?? a.fieldId;
+      if (!fieldId.startsWith('default-')) {
+        mappedAnswers.push({ fieldId, value: a.value });
+      }
+    }
 
     return mappedAnswers;
   }

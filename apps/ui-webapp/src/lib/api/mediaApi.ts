@@ -2,7 +2,13 @@ import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 const API = createApiClient("/media");
 
-export type PresignImageUploadPurpose = "HACKATHON_BANNER" | "EVENT_BANNER";
+export type PresignImageUploadPurpose =
+  | "HACKATHON_BANNER"
+  | "EVENT_BANNER"
+  | "COMMUNITY_COVER"
+  | "COMMUNITY_AVATAR"
+  | "COMMUNITY_BANNER"
+  | "COMMUNITY_LOGO";
 
 export type PresignImageUploadRequest = Readonly<{
   purpose: PresignImageUploadPurpose;

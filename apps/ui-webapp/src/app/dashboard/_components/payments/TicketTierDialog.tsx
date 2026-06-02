@@ -90,7 +90,9 @@ export default function TicketTierDialog({
 
     const priceNum = isFreeTier ? 0 : parseFloat(price);
     if (!isFreeTier && (Number.isNaN(priceNum) || priceNum <= 0)) {
-      toast.error("Please enter a valid price greater than 0, or mark the ticket as free.");
+      toast.error(
+        "Please enter a valid price greater than 0, or mark the ticket as free.",
+      );
       return;
     }
 

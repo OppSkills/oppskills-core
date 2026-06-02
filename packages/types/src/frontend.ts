@@ -206,3 +206,15 @@ export {
   ScheduleType,
   NotificationStatus,
 } from "./dtos/backend/notification/schedule-notification.dto";
+
+// =====================
+// Community (type-only)
+// =====================
+export type {
+  CommunityMember,
+  CommunityTask,
+  CommunityMeet,
+} from "./dtos/backend/community/manage-community.dto";
+
+// Community industry enums are re-exported via ./enums/index (use @oppskills/types/enums for value imports)
+

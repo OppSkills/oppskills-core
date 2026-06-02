@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+:root {
+  --meet-bg: #0a0a0f;
+  --meet-panel: #14121c;
+  --meet-accent: #835bd5;
+  --meet-accent-strong: #a855f7;
+}
+
+body {
+  background: var(--meet-bg);
+  color: white;
+  min-height: 100vh;
+}

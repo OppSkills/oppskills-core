@@ -66,12 +66,15 @@ export async function processNotification(notificationId: string) {
 
         if (participants.length === 0) break;
 
-        batchRecipients = participants
-          .map((p) => ({ email: p.user?.email, firstName: p.user?.firstName }))
-          .filter((u) => !!u.email) as {
-          email: string;
-          firstName: string | null;
-        }[];
+        batchRecipients = [];
+        for (const p of participants) {
+          if (p.user?.email) {
+            batchRecipients.push({
+              email: p.user.email,
+              firstName: p.user.firstName,
+            });
+          }
+        }
         lastIdThisBatch = participants[participants.length - 1].id;
       } else if (notification.hackathonId) {
         const submissions =
@@ -87,12 +90,15 @@ export async function processNotification(notificationId: string) {
 
         if (submissions.length === 0) break;
 
-        batchRecipients = submissions
-          .map((s) => ({ email: s.user?.email, firstName: s.user?.firstName }))
-          .filter((u) => !!u.email) as {
-          email: string;
-          firstName: string | null;
-        }[];
+        batchRecipients = [];
+        for (const s of submissions) {
+          if (s.user?.email) {
+            batchRecipients.push({
+              email: s.user.email,
+              firstName: s.user.firstName,
+            });
+          }
+        }
         lastIdThisBatch = submissions[submissions.length - 1].id;
       }
 

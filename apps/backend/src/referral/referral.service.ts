@@ -41,13 +41,17 @@ export class ReferralService {
   ) {}
 
   private async nextCode(): Promise<string> {
-    for (let i = 0; i < 5; i++) {
-      const code = randomBytes(8).toString('base64url').slice(0, 10);
-      const exists = await prisma.referralEntity.findUnique({
-        where: { code },
-      });
-      if (!exists) return code;
-    }
+    const candidates = Array.from({ length: 5 }, () =>
+      randomBytes(8).toString('base64url').slice(0, 10),
+    );
+    const availability = await Promise.all(
+      candidates.map(async (code) => ({
+        code,
+        exists: !!(await prisma.referralEntity.findUnique({ where: { code } })),
+      })),
+    );
+    const available = availability.find((r) => !r.exists);
+    if (available) return available.code;
     throw new BadRequestException('Failed to generate referral code');
   }
 
@@ -758,27 +762,21 @@ export class ReferralService {
       await this.getRecentStatsBatch(referralIds);
 
     // 3. Batch fetch entity details
-    const hackathonIds = [
-      ...new Set(
-        referrals
-          .filter((r) => r.entityType === 'HACKATHON')
-          .map((r) => r.entityId),
-      ),
-    ];
-    const eventIds = [
-      ...new Set(
-        referrals
-          .filter((r) => r.entityType === 'EVENT')
-          .map((r) => r.entityId),
-      ),
-    ];
-    const festivalIds = [
-      ...new Set(
-        referrals
-          .filter((r) => r.entityType === 'FESTIVAL')
-          .map((r) => r.entityId),
-      ),
-    ];
+    const hackathonIdSet = new Set<string>();
+    const eventIdSet = new Set<string>();
+    const festivalIdSet = new Set<string>();
+    for (const r of referrals) {
+      if (r.entityType === 'HACKATHON') {
+        hackathonIdSet.add(r.entityId);
+      } else if (r.entityType === 'EVENT') {
+        eventIdSet.add(r.entityId);
+      } else if (r.entityType === 'FESTIVAL') {
+        festivalIdSet.add(r.entityId);
+      }
+    }
+    const hackathonIds = [...hackathonIdSet];
+    const eventIds = [...eventIdSet];
+    const festivalIds = [...festivalIdSet];
 
     const [hackathons, events, festivals] = await Promise.all([
       prisma.hackathonEntity.findMany({
@@ -901,13 +899,10 @@ export class ReferralService {
     const now = new Date();
     const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    // 1. Batch fetch clicks from Redis
-    const clicksLast24hMap =
-      await this.counter.getBatchClicksLast24h(referralIds);
-
-    // 2. Batch fetch registrations from DB
-    const [eventRegs24h, teamRegs24h, teamMemberRegs24h] = await Promise.all([
-      prisma.eventParticipantEntity.groupBy({
+    const [clicksLast24hMap, eventRegs24h, teamRegs24h, teamMemberRegs24h] =
+      await Promise.all([
+        this.counter.getBatchClicksLast24h(referralIds),
+        prisma.eventParticipantEntity.groupBy({
         by: ['referralId'],
         where: { referralId: { in: referralIds }, joinedAt: { gte: start24h } },
         _count: { _all: true },

@@ -69,7 +69,11 @@ function formatLocation(event: {
   locationAddress: string | null;
   locationVirtualLink: string | null;
   organizationName?: string | null;
-}): { venueName: string; venueAddress: string; locationCoords?: string | null } {
+}): {
+  venueName: string;
+  venueAddress: string;
+  locationCoords?: string | null;
+} {
   if (event.locationType === "VIRTUAL" || event.locationType === "ONLINE") {
     return {
       venueName: "Virtual Event",
@@ -85,7 +89,10 @@ function formatLocation(event: {
   };
 }
 
-export default function EventDetailsClient({ event, googleMapApiKey }: EventDetailsClientProps) {
+export default function EventDetailsClient({
+  event,
+  googleMapApiKey,
+}: EventDetailsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isSignedIn, getToken } = useAuth();
@@ -393,51 +400,56 @@ export default function EventDetailsClient({ event, googleMapApiKey }: EventDeta
 
   const isPendingRegistration = !!registrationStatus?.isPaidButIncomplete;
 
-  const mainRegistrationCard = (showPageTierPicker && !isPendingRegistration) ? (
-    <TicketTierRegistrationPicker
-      ticketTiers={pageTicketTiers}
-      feeBearer={event.feeBearer}
-      selectedTierId={pageSelectedTierId}
-      onSelectTier={setPageSelectedTierId}
-      disabled={registrationPickerDisabled}
-      isRegistered={!!registrationStatus?.isRegistered}
-      registeredTierId={registrationStatus?.ticketTierId ?? null}
-      footer={
-        <EventRegisterCta
-          event={sidebarEvent}
-          onRegister={handleRegistration}
-          isCheckingRegistration={
-            isSignedIn && !!user?.id && isRegistrationStatusPending
-          }
-          isRegistered={!!registrationStatus?.isRegistered}
-          needsCompleteRegistration={!!registrationStatus?.isPaidButIncomplete}
-          selectedTicketTierId={pageSelectedTierId}
-          ticketTiers={pageTicketTiers}
-        />
-      }
-    />
-  ) : (
-    <div className="rounded-2xl border border-[#E9D5FF] bg-white shadow-sm overflow-hidden">
-      <div className="bg-[#F3E8FF] px-4 py-2.5 border-b border-[#E9D5FF]">
-        <p className="text-sm font-semibold text-neutral-700 tracking-wide">
-          Registration
-        </p>
+  const mainRegistrationCard =
+    showPageTierPicker && !isPendingRegistration ? (
+      <TicketTierRegistrationPicker
+        ticketTiers={pageTicketTiers}
+        feeBearer={event.feeBearer}
+        selectedTierId={pageSelectedTierId}
+        onSelectTier={setPageSelectedTierId}
+        disabled={registrationPickerDisabled}
+        isRegistered={!!registrationStatus?.isRegistered}
+        registeredTierId={registrationStatus?.ticketTierId ?? null}
+        footer={
+          <EventRegisterCta
+            event={sidebarEvent}
+            onRegister={handleRegistration}
+            isCheckingRegistration={
+              isSignedIn && !!user?.id && isRegistrationStatusPending
+            }
+            isRegistered={!!registrationStatus?.isRegistered}
+            needsCompleteRegistration={
+              !!registrationStatus?.isPaidButIncomplete
+            }
+            selectedTicketTierId={pageSelectedTierId}
+            ticketTiers={pageTicketTiers}
+          />
+        }
+      />
+    ) : (
+      <div className="rounded-2xl border border-[#E9D5FF] bg-white shadow-sm overflow-hidden">
+        <div className="bg-[#F3E8FF] px-4 py-2.5 border-b border-[#E9D5FF]">
+          <p className="text-sm font-semibold text-neutral-700 tracking-wide">
+            Registration
+          </p>
+        </div>
+        <div className="p-4 sm:p-5">
+          <EventRegisterCta
+            event={sidebarEvent}
+            onRegister={handleRegistration}
+            isCheckingRegistration={
+              isSignedIn && !!user?.id && isRegistrationStatusPending
+            }
+            isRegistered={!!registrationStatus?.isRegistered}
+            needsCompleteRegistration={
+              !!registrationStatus?.isPaidButIncomplete
+            }
+            selectedTicketTierId={pageSelectedTierId}
+            ticketTiers={pageTicketTiers}
+          />
+        </div>
       </div>
-      <div className="p-4 sm:p-5">
-        <EventRegisterCta
-          event={sidebarEvent}
-          onRegister={handleRegistration}
-          isCheckingRegistration={
-            isSignedIn && !!user?.id && isRegistrationStatusPending
-          }
-          isRegistered={!!registrationStatus?.isRegistered}
-          needsCompleteRegistration={!!registrationStatus?.isPaidButIncomplete}
-          selectedTicketTierId={pageSelectedTierId}
-          ticketTiers={pageTicketTiers}
-        />
-      </div>
-    </div>
-  );
+    );
 
   return (
     <div className="min-h-screen bg-transparent lg:pt-8 pb-8 font-sans">
@@ -655,7 +667,10 @@ export default function EventDetailsClient({ event, googleMapApiKey }: EventDeta
                 <h2 className="text-2xl font-bold text-foreground poppins">
                   Location
                 </h2>
-                <GoogleMap apiKey={googleMapApiKey} coords={event.locationCoords} />
+                <GoogleMap
+                  apiKey={googleMapApiKey}
+                  coords={event.locationCoords}
+                />
               </section>
             )}
           </div>

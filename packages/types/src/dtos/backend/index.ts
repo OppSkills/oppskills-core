@@ -8,3 +8,4 @@ export * from "./referral";
 export * from "./payments";
 export * from "./notification";
 export * from "./recommendation";
+export * from "./community";

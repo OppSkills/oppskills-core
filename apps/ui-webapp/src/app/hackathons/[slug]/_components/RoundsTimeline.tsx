@@ -20,6 +20,12 @@ import DOMPurify from "isomorphic-dompurify";
 
 export type { RoundSubmissionInfo };
 
+const EMPTY_SUBMISSIONS: Record<string, RoundSubmissionInfo> = {};
+const EMPTY_QUALIFICATIONS: Record<
+  string,
+  { qualified: boolean; qualifiedAt?: string }
+> = {};
+
 interface RoundsTimelineProps {
   rounds: Round[];
   myTeam?: {
@@ -39,8 +45,8 @@ interface RoundsTimelineProps {
 export function RoundsTimeline({
   rounds,
   myTeam,
-  submissionsByRoundId = {},
-  qualificationsByRoundId = {},
+  submissionsByRoundId = EMPTY_SUBMISSIONS,
+  qualificationsByRoundId = EMPTY_QUALIFICATIONS,
   competitionSlug,
   currentUserId,
 }: RoundsTimelineProps) {

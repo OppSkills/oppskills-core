@@ -37,3 +37,10 @@ export enum TeamPreferenceValue {
   OPEN_TO_EITHER = "OPEN_TO_EITHER",
   PREFER_SOLO = "PREFER_SOLO",
 }
+
+export {
+  COMMUNITY_INDUSTRY_VALUES,
+  COMMUNITY_INDUSTRY_LABELS,
+  CommunityIndustry,
+  type CommunityIndustryValue,
+} from "./community-industry";

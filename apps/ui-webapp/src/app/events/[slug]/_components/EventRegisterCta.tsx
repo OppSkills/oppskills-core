@@ -44,10 +44,7 @@ export function EventRegisterCta({
   const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
   const hasMultiplePrices = prices.length > 1 && minPrice !== maxPrice;
   const eventFree = event.isFree === true;
-  const selectedTierIsFree = isFreeTicketTierId(
-    selectedTicketTierId,
-    tiers,
-  );
+  const selectedTierIsFree = isFreeTicketTierId(selectedTicketTierId, tiers);
   const effectiveFree =
     eventFree ||
     selectedTierIsFree ||
