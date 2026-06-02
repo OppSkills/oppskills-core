@@ -6,6 +6,9 @@ function getApiRootUrl(): string {
   if (typeof raw === "string" && raw.trim().length > 0) {
     return raw.trim().replace(/\/+$/g, "");
   }
+  if (process.env.NODE_ENV === "production") {
+    return "https://api.oppskills.com";
+  }
   return "http://localhost:3001";
 }
 

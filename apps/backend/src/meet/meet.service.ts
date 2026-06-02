@@ -28,10 +28,12 @@ export class MeetService {
   constructor(private readonly config: ConfigService) {}
 
   private getMeetBaseUrl(): string {
-    return (
-      this.config.get<string>('MEET_BASE_URL')?.trim() ||
-      'http://localhost:3003'
-    ).replace(/\/+$/g, '');
+    const configured = this.config.get<string>('MEET_BASE_URL')?.trim();
+    const fallback =
+      process.env.NODE_ENV === 'production'
+        ? 'https://meet.oppskills.com'
+        : 'http://localhost:3003';
+    return (configured || fallback).replace(/\/+$/g, '');
   }
 
   private getLivekitConfig(): { apiKey: string; apiSecret: string; url: string } {
