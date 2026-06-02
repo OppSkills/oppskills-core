@@ -31,10 +31,11 @@ function optionalString(obj: Record<string, unknown>, key: string): string | nul
 }
 
 function parseMeetResponse(raw: Record<string, unknown>): CommunityMeetResponse {
+  const inviteCode = requireString(raw, "inviteCode");
   return {
     id: requireString(raw, "id"),
     communityId: requireString(raw, "communityId"),
-    inviteCode: requireString(raw, "inviteCode"),
+    inviteCode,
     kind: requireString(raw, "kind") as CommunityMeetResponse["kind"],
     title: requireString(raw, "title"),
     description: optionalString(raw, "description"),
@@ -46,7 +47,8 @@ function parseMeetResponse(raw: Record<string, unknown>): CommunityMeetResponse 
     hostUserId: requireString(raw, "hostUserId"),
     hostName: requireString(raw, "hostName"),
     status: requireString(raw, "status") as CommunityMeetResponse["status"],
-    meetUrl: requireString(raw, "meetUrl"),
+    // Build from frontend base URL config to avoid backend fallback leaking localhost.
+    meetUrl: buildMeetUrl(inviteCode),
     createdAt: requireString(raw, "createdAt"),
   };
 }
