@@ -18,19 +18,24 @@ interface MeetRoomProps {
   token: string;
   serverUrl: string;
   preview: MeetPreviewResponse;
+  initialAudioEnabled?: boolean;
+  initialVideoEnabled?: boolean;
   onLeave: () => void;
 }
 
 function MeetRoomContent({
   preview,
+  sidebarOpen,
+  onToggleSidebar,
   onLeave,
 }: {
   preview: MeetPreviewResponse;
+  sidebarOpen: boolean;
+  onToggleSidebar: () => void;
   onLeave: () => void;
 }) {
   const room = useRoomContext();
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("grid");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [handRaised, setHandRaised] = useState(false);
   const [raisedHands, setRaisedHands] = useState<Set<string>>(new Set());
@@ -98,12 +103,15 @@ function MeetRoomContent({
       <MeetHeader
         layoutMode={layoutMode}
         onLayoutChange={setLayoutMode}
-        elapsedSeconds={elapsedSeconds}
       />
 
       <div className="flex-1 flex min-h-0">
         <div className="flex-1 flex flex-col min-w-0 relative">
-          <VideoStage layoutMode={layoutMode} raisedHands={raisedHands} />
+          <VideoStage
+            layoutMode={layoutMode}
+            raisedHands={raisedHands}
+            sidebarOpen={sidebarOpen}
+          />
           {reaction && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl animate-bounce pointer-events-none">
               {reaction}
@@ -116,7 +124,7 @@ function MeetRoomContent({
       <div className="absolute right-4 bottom-24">
         <button
           type="button"
-          onClick={() => setSidebarOpen((v) => !v)}
+          onClick={onToggleSidebar}
           className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
           title="Toggle sidebar"
         >
@@ -139,19 +147,28 @@ export default function MeetRoom({
   token,
   serverUrl,
   preview,
+  initialAudioEnabled = true,
+  initialVideoEnabled = true,
   onLeave,
 }: MeetRoomProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   return (
     <LiveKitRoom
       token={token}
       serverUrl={serverUrl}
       connect
-      video
-      audio
+      video={initialVideoEnabled}
+      audio={initialAudioEnabled}
       onDisconnected={onLeave}
       className="h-screen"
     >
-      <MeetRoomContent preview={preview} onLeave={onLeave} />
+      <MeetRoomContent
+        preview={preview}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        onLeave={onLeave}
+      />
     </LiveKitRoom>
   );
 }

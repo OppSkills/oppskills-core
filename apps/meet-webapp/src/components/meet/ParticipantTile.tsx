@@ -51,6 +51,7 @@ export default function ParticipantTile({
       ? (audioTrack as VideoTrackRef)
       : undefined;
   const displayName = participant.name || participant.identity;
+  const firstName = displayName.trim().split(" ")[0] || displayName;
   const isMuted = !participant.isMicrophoneEnabled;
   const isCameraOff = !participant.isCameraEnabled;
 
@@ -68,7 +69,7 @@ export default function ParticipantTile({
           className="w-full h-full object-cover"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#271B40] to-[#14121c]">
+        <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-[#271B40] to-[#14121c]">
           <div className="w-16 h-16 rounded-full bg-[#835BD5]/30 flex items-center justify-center text-2xl font-bold">
             {displayName.charAt(0).toUpperCase()}
           </div>
@@ -83,24 +84,58 @@ export default function ParticipantTile({
         </div>
       )}
 
-      <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-        <span className="text-xs font-semibold bg-black/60 px-2 py-1 rounded-md truncate max-w-[70%]">
-          {displayName}
-          {isLocal ? " (You)" : ""}
-        </span>
-        <div className="flex items-center gap-1">
-          {isMuted ? (
-            <MicOff className="w-3.5 h-3.5 text-red-400" />
-          ) : (
-            <Mic className="w-3.5 h-3.5 text-emerald-400" />
-          )}
-          {isCameraOff ? (
-            <VideoOff className="w-3.5 h-3.5 text-red-400" />
-          ) : (
-            <Video className="w-3.5 h-3.5 text-emerald-400" />
-          )}
+      {isLocal ? (
+        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+          <StatusIcon isMuted={isMuted} isMic />
+          <span className="text-xs font-semibold bg-black/60 px-2 py-1 rounded-md truncate">
+            {firstName} (You)
+          </span>
+          <StatusIcon isMuted={isCameraOff} isMic={false} />
         </div>
-      </div>
+      ) : (
+        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold bg-black/60 px-2 py-1 rounded-md truncate max-w-[70%]">
+            {firstName}
+          </span>
+          <ParticipantMicCameraStatus isMuted={isMuted} isCameraOff={isCameraOff} />
+        </div>
+      )}
     </div>
+  );
+}
+
+function ParticipantMicCameraStatus({
+  isMuted,
+  isCameraOff,
+}: {
+  isMuted: boolean;
+  isCameraOff: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <StatusIcon isMuted={isMuted} isMic />
+      <StatusIcon isMuted={isCameraOff} isMic={false} />
+    </div>
+  );
+}
+
+function StatusIcon({
+  isMuted,
+  isMic,
+}: {
+  isMuted: boolean;
+  isMic: boolean;
+}) {
+  if (isMic) {
+    return isMuted ? (
+      <MicOff className="w-3.5 h-3.5 text-red-400" />
+    ) : (
+      <Mic className="w-3.5 h-3.5 text-emerald-400" />
+    );
+  }
+  return isMuted ? (
+    <VideoOff className="w-3.5 h-3.5 text-red-400" />
+  ) : (
+    <Video className="w-3.5 h-3.5 text-emerald-400" />
   );
 }

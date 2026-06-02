@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   useLocalParticipant,
   useRoomContext,
@@ -15,8 +15,10 @@ import {
   Smile,
   CircleDot,
   PhoneOff,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface MeetControlBarProps {
   onLeave: () => void;
@@ -31,20 +33,23 @@ function ControlButton({
   children,
   title,
   danger,
+  disabled,
 }: {
   active?: boolean;
   onClick: () => void;
   children: React.ReactNode;
   title: string;
   danger?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       title={title}
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "w-11 h-11 rounded-xl flex items-center justify-center transition-colors",
+        "w-11 h-11 rounded-xl flex items-center justify-center transition-colors disabled:opacity-60 disabled:cursor-not-allowed",
         danger
           ? "bg-red-600 hover:bg-red-500 text-white"
           : active
@@ -67,6 +72,7 @@ export default function MeetControlBar({
   const { localParticipant } = useLocalParticipant();
   const micEnabled = localParticipant.isMicrophoneEnabled;
   const camEnabled = localParticipant.isCameraEnabled;
+  const [isScreenShareUpdating, setIsScreenShareUpdating] = useState(false);
 
   const toggleMic = async () => {
     await localParticipant.setMicrophoneEnabled(!micEnabled);
@@ -77,9 +83,27 @@ export default function MeetControlBar({
   };
 
   const toggleScreenShare = async () => {
-    await localParticipant.setScreenShareEnabled(
-      !localParticipant.isScreenShareEnabled,
-    );
+    const nextEnabled = !localParticipant.isScreenShareEnabled;
+    if (!nextEnabled) {
+      const confirmed = window.confirm(
+        "Are you sure you want to stop sharing your screen?",
+      );
+      if (!confirmed) return;
+    }
+
+    setIsScreenShareUpdating(true);
+    try {
+      await localParticipant.setScreenShareEnabled(nextEnabled);
+      toast.success(nextEnabled ? "Screen sharing started" : "Screen sharing stopped");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not change screen sharing state",
+      );
+    } finally {
+      setIsScreenShareUpdating(false);
+    }
   };
 
   const publishData = (payload: Record<string, unknown>) => {
@@ -114,11 +138,27 @@ export default function MeetControlBar({
       </ControlButton>
 
       <ControlButton
-        active={localParticipant.isScreenShareEnabled}
+        active={localParticipant.isScreenShareEnabled || isScreenShareUpdating}
+        disabled={isScreenShareUpdating}
         onClick={() => void toggleScreenShare()}
-        title="Share screen"
+        title={
+          isScreenShareUpdating
+            ? "Updating screen sharing..."
+            : localParticipant.isScreenShareEnabled
+              ? "Stop sharing screen"
+              : "Share screen"
+        }
       >
-        <MonitorUp className="w-5 h-5" />
+        {isScreenShareUpdating ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <MonitorUp
+            className={cn(
+              "w-5 h-5",
+              localParticipant.isScreenShareEnabled && "text-emerald-300",
+            )}
+          />
+        )}
       </ControlButton>
 
       <ControlButton

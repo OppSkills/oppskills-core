@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { Loader2, Video } from "lucide-react";
+import { Loader2, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { toast } from "sonner";
 import type { MeetJoinTokenResponse, MeetPreviewResponse } from "@oppskills/types";
 import { getMeetJoinToken, getMeetPreview } from "@/lib/api/meetApi";
@@ -23,6 +23,11 @@ export default function MeetPageClient({ inviteCode }: { inviteCode: string }) {
   const { getToken, isLoaded } = useAuth();
   const [state, setState] = useState<PageState>({ phase: "loading" });
   const [isJoining, setIsJoining] = useState(false);
+  const [micEnabled, setMicEnabled] = useState(true);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const previewVideoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +60,96 @@ export default function MeetPageClient({ inviteCode }: { inviteCode: string }) {
       cancelled = true;
     };
   }, [getToken, inviteCode, isLoaded]);
+
+  useEffect(() => {
+    if (state.phase !== "lobby") return;
+    let cancelled = false;
+    let stream: MediaStream | null = null;
+    let levelTimer: number | null = null;
+    let audioContext: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let source: MediaStreamAudioSourceNode | null = null;
+
+    const cleanup = () => {
+      if (levelTimer) window.clearInterval(levelTimer);
+      source?.disconnect();
+      analyser?.disconnect();
+      void audioContext?.close();
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      if (previewVideoRef.current) {
+        previewVideoRef.current.srcObject = null;
+      }
+    };
+
+    const setupPreview = async () => {
+      if (!cameraEnabled && !micEnabled) {
+        setAudioLevel(0);
+        setMediaError(null);
+        return;
+      }
+
+      try {
+        const nextStream = await navigator.mediaDevices.getUserMedia({
+          video: cameraEnabled,
+          audio: micEnabled,
+        });
+        if (cancelled) {
+          nextStream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        stream = nextStream;
+        setMediaError(null);
+
+        if (previewVideoRef.current) {
+          previewVideoRef.current.srcObject = stream;
+          previewVideoRef.current.muted = true;
+          void previewVideoRef.current.play().catch(() => undefined);
+        }
+
+        const audioTracks = stream.getAudioTracks();
+        if (micEnabled && audioTracks.length > 0) {
+          audioContext = new AudioContext();
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 256;
+          source = audioContext.createMediaStreamSource(stream);
+          source.connect(analyser);
+          const data = new Uint8Array(analyser.frequencyBinCount);
+          levelTimer = window.setInterval(() => {
+            if (!analyser) return;
+            analyser.getByteTimeDomainData(data);
+            let sum = 0;
+            for (const value of data) {
+              const centered = (value - 128) / 128;
+              sum += centered * centered;
+            }
+            const rms = Math.sqrt(sum / data.length);
+            setAudioLevel(Math.min(100, Math.round(rms * 220)));
+          }, 150);
+        } else {
+          setAudioLevel(0);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setAudioLevel(0);
+          setMediaError(
+            error instanceof Error
+              ? error.message
+              : "Could not access camera or microphone.",
+          );
+        }
+      }
+    };
+
+    void setupPreview();
+
+    return () => {
+      cancelled = true;
+      cleanup();
+    };
+  }, [cameraEnabled, micEnabled, state.phase]);
 
   const handleJoin = async () => {
     if (state.phase !== "lobby") return;
@@ -121,6 +216,8 @@ export default function MeetPageClient({ inviteCode }: { inviteCode: string }) {
         token={state.join.token}
         serverUrl={state.join.livekitUrl}
         preview={state.preview}
+        initialAudioEnabled={micEnabled}
+        initialVideoEnabled={cameraEnabled}
         onLeave={() => setState({ phase: "left" })}
       />
     );
@@ -146,6 +243,63 @@ export default function MeetPageClient({ inviteCode }: { inviteCode: string }) {
             {preview.description}
           </p>
         )}
+
+        <div className="space-y-3">
+          <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 aspect-video">
+            {cameraEnabled ? (
+              <video
+                ref={previewVideoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-white/70">
+                Camera is off
+              </div>
+            )}
+            <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+              <span className="text-xs px-2 py-1 rounded-md bg-black/60">
+                Preview
+              </span>
+              <div className="w-24 h-2 rounded-full bg-black/60 overflow-hidden">
+                <div
+                  className="h-full bg-emerald-400 transition-[width] duration-150"
+                  style={{ width: `${audioLevel}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setMicEnabled((v) => !v)}
+              className="h-11 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center gap-2 text-sm font-semibold"
+            >
+              {micEnabled ? (
+                <Mic className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <MicOff className="w-4 h-4 text-red-400" />
+              )}
+              {micEnabled ? "Mic on" : "Mic off"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCameraEnabled((v) => !v)}
+              className="h-11 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center gap-2 text-sm font-semibold"
+            >
+              {cameraEnabled ? (
+                <Video className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <VideoOff className="w-4 h-4 text-red-400" />
+              )}
+              {cameraEnabled ? "Camera on" : "Camera off"}
+            </button>
+          </div>
+          {mediaError && <p className="text-xs text-red-300">{mediaError}</p>}
+        </div>
 
         <div className="text-sm text-white/50 space-y-1">
           <p>Host: {preview.hostName}</p>
