@@ -12,6 +12,9 @@
   "dependencies": {
     "@clerk/nextjs": "^6.32.0",
     "@livekit/components-react": "^2.9.14",
+    "@oppskills/types": "workspace:*",
+    "axios": "^1.13.2",
+    "clsx": "^2.1.1",
     "livekit-client": "^2.15.14",
     "lucide-react": "^0.562.0",
     "next": "16.1.4",
