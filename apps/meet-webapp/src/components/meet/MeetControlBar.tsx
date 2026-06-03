@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   useLocalParticipant,
   useRoomContext,
@@ -16,11 +16,13 @@ import {
   CircleDot,
   PhoneOff,
   Loader2,
+  PanelLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface MeetControlBarProps {
+  onToggleSidebar: () => void;
   onLeave: () => void;
   handRaised: boolean;
   onToggleHand: () => void;
@@ -63,6 +65,7 @@ function ControlButton({
 }
 
 export default function MeetControlBar({
+  onToggleSidebar,
   onLeave,
   handRaised,
   onToggleHand,
@@ -162,10 +165,12 @@ export default function MeetControlBar({
       </ControlButton>
 
       <ControlButton
-        onClick={() => undefined}
-        title="Recording coming soon"
+        onClick={() => {
+          onToggleSidebar();
+        }}
+        title="Open side panel"
       >
-        <CircleDot className="w-5 h-5 opacity-40" />
+        <PanelLeft className="w-5 h-5 opacity-40" />
       </ControlButton>
 
       <ControlButton

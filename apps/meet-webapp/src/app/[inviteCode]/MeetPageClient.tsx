@@ -216,6 +216,7 @@ export default function MeetPageClient({ inviteCode }: { inviteCode: string }) {
         token={state.join.token}
         serverUrl={state.join.livekitUrl}
         preview={state.preview}
+        inviteCode={inviteCode}
         initialAudioEnabled={micEnabled}
         initialVideoEnabled={cameraEnabled}
         onLeave={() => setState({ phase: "left" })}

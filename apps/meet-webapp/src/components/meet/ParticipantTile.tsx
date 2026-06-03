@@ -85,20 +85,30 @@ export default function ParticipantTile({
       )}
 
       {isLocal ? (
+        <>
         <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-          <StatusIcon isMuted={isMuted} isMic />
           <span className="text-xs font-semibold bg-black/60 px-2 py-1 rounded-md truncate">
             {firstName} (You)
           </span>
+        </div>
+        <div className="absolute top-2 right-2 flex items-center gap-2">
           <StatusIcon isMuted={isCameraOff} isMic={false} />
+          <StatusIcon isMuted={isMuted} isMic />
         </div>
+        </>
+        
       ) : (
-        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold bg-black/60 px-2 py-1 rounded-md truncate max-w-[70%]">
-            {firstName}
-          </span>
-          <ParticipantMicCameraStatus isMuted={isMuted} isCameraOff={isCameraOff} />
-        </div>
+        <>
+          <div className="absolute bottom-2 left-2 right-2 flex items-center">
+            <span className="text-xs font-semibold bg-black/60 px-2 py-1 rounded-md truncate max-w-full">
+              {firstName}
+            </span>
+          </div>
+          <div className="absolute top-2 right-2 flex items-center justify-between gap-2">
+            <ParticipantMicCameraStatus isMuted={isMuted} isCameraOff={isCameraOff} />
+          </div>
+        </>
+   
       )}
     </div>
   );
@@ -112,7 +122,7 @@ function ParticipantMicCameraStatus({
   isCameraOff: boolean;
 }) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-2">
       <StatusIcon isMuted={isMuted} isMic />
       <StatusIcon isMuted={isCameraOff} isMic={false} />
     </div>

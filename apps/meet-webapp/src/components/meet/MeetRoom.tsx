@@ -12,12 +12,11 @@ import MeetHeader, { type LayoutMode } from "./MeetHeader";
 import VideoStage from "./VideoStage";
 import MeetSidebar from "./MeetSidebar";
 import MeetControlBar from "./MeetControlBar";
-import { Users } from "lucide-react";
-
 interface MeetRoomProps {
   token: string;
   serverUrl: string;
   preview: MeetPreviewResponse;
+  inviteCode: string;
   initialAudioEnabled?: boolean;
   initialVideoEnabled?: boolean;
   onLeave: () => void;
@@ -25,11 +24,13 @@ interface MeetRoomProps {
 
 function MeetRoomContent({
   preview,
+  inviteCode,
   sidebarOpen,
   onToggleSidebar,
   onLeave,
 }: {
   preview: MeetPreviewResponse;
+  inviteCode: string;
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
   onLeave: () => void;
@@ -110,7 +111,7 @@ function MeetRoomContent({
           <VideoStage
             layoutMode={layoutMode}
             raisedHands={raisedHands}
-            sidebarOpen={sidebarOpen}
+            inviteCode={inviteCode}
           />
           {reaction && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl animate-bounce pointer-events-none">
@@ -121,22 +122,12 @@ function MeetRoomContent({
         <MeetSidebar hostUserId={preview.hostUserId} open={sidebarOpen} />
       </div>
 
-      <div className="absolute right-4 bottom-24">
-        <button
-          type="button"
-          onClick={onToggleSidebar}
-          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
-          title="Toggle sidebar"
-        >
-          <Users className="w-4 h-4" />
-        </button>
-      </div>
-
       <MeetControlBar
         onLeave={onLeave}
         handRaised={handRaised}
         onToggleHand={toggleHand}
         onReaction={() => undefined}
+        onToggleSidebar={onToggleSidebar}
       />
       <RoomAudioRenderer />
     </div>
@@ -147,6 +138,7 @@ export default function MeetRoom({
   token,
   serverUrl,
   preview,
+  inviteCode,
   initialAudioEnabled = true,
   initialVideoEnabled = true,
   onLeave,
@@ -165,6 +157,7 @@ export default function MeetRoom({
     >
       <MeetRoomContent
         preview={preview}
+        inviteCode={inviteCode}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
         onLeave={onLeave}
