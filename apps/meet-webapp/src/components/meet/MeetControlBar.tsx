@@ -94,15 +94,6 @@ export default function MeetControlBar({
   const toggleScreenShare = async () => {
     const nextEnabled = !localParticipant.isScreenShareEnabled;
 
-    if (nextEnabled && !canScreenShare) {
-      toast.error(
-        isMobile
-          ? "Screen sharing is not supported in mobile browsers. Use a desktop browser to share your screen."
-          : "Screen sharing is not supported in this browser.",
-      );
-      return;
-    }
-
     if (!nextEnabled) {
       const confirmed = window.confirm(
         "Are you sure you want to stop sharing your screen?",
@@ -113,20 +104,32 @@ export default function MeetControlBar({
     setIsScreenShareUpdating(true);
     try {
       await localParticipant.setScreenShareEnabled(nextEnabled, {
-        audio: true,
+        audio: !isMobile,
+        video: true,
+        ...(isMobile
+          ? {
+              selfBrowserSurface: "include" as const,
+              surfaceSwitching: "include" as const,
+            }
+          : {}),
       });
-      toast.success(nextEnabled ? "Screen sharing started" : "Screen sharing stopped");
+      toast.success(
+        nextEnabled ? "Screen sharing started" : "Screen sharing stopped",
+      );
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Could not change screen sharing state";
+        error instanceof Error
+          ? error.message
+          : "Could not change screen sharing state";
       if (
         isMobile &&
         (message.includes("NotSupported") ||
           message.includes("not supported") ||
-          message.includes("getDisplayMedia"))
+          message.includes("getDisplayMedia") ||
+          message.includes("Permission denied"))
       ) {
         toast.error(
-          "Screen sharing is not supported in mobile browsers. Use a desktop browser to share your screen.",
+          "Screen sharing is not supported in this mobile browser. Try Chrome on Android or Safari 17.4+ on iOS.",
         );
       } else {
         toast.error(message);
@@ -179,9 +182,7 @@ export default function MeetControlBar({
         onClick={() => void toggleScreenShare()}
         title={
           !canScreenShare && !localParticipant.isScreenShareEnabled
-            ? isMobile
-              ? "Screen sharing unavailable on mobile"
-              : "Screen sharing unavailable"
+            ? "Screen sharing unavailable"
             : isScreenShareUpdating
               ? "Updating screen sharing..."
               : localParticipant.isScreenShareEnabled

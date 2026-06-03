@@ -50,8 +50,9 @@ export default function MeetSidebar({ hostUserId, open, onClose }: MeetSidebarPr
       <aside
         className={cn(
           "flex flex-col bg-[#14121c]",
-          "fixed inset-0 z-50",
-          "md:static md:inset-auto md:z-auto md:w-80 md:shrink-0 md:border-l md:border-white/10",
+          "fixed inset-0 z-[60]",
+          "max-md:pb-[calc(5rem+env(safe-area-inset-bottom))]",
+          "md:static md:inset-auto md:z-auto md:w-80 md:shrink-0 md:border-l md:border-white/10 md:pb-0",
         )}
       >
         <div className="flex items-center justify-between px-4 border-b border-white/10 md:hidden">
@@ -148,7 +149,10 @@ export default function MeetSidebar({ hostUserId, open, onClose }: MeetSidebarPr
                 ))
               )}
             </div>
-            <form onSubmit={handleSend} className="p-3 border-t border-white/10">
+            <form
+              onSubmit={handleSend}
+              className="shrink-0 p-3 border-t border-white/10 max-md:pb-1"
+            >
               <input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}

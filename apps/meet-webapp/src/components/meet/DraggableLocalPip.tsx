@@ -132,7 +132,7 @@ export default function DraggableLocalPip({
           isLocal
           isSpeaking={speakingIds.has(localParticipant.identity)}
           raisedHand={raisedHands.has(localParticipant.identity)}
-          className="w-40 h-24 sm:w-48 sm:h-28 md:w-56 md:h-32 shadow-lg border border-white/20 aspect-auto! pointer-events-none"
+        className="w-full h-full min-h-0 shadow-lg border border-white/20 pointer-events-none max-w-[min(40vw,10rem)] max-h-[min(40vh,11rem)]"
         />
       </ParticipantContext.Provider>
     </div>

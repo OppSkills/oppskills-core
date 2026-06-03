@@ -70,7 +70,7 @@ function LocalParticipantPip({
         speakingIds={speakingIds}
         raisedHands={raisedHands}
         isLocal
-        className="w-40 h-24 sm:w-48 sm:h-28 md:w-56 md:h-32 shadow-lg border border-white/20 aspect-auto!"
+        className="w-40 h-24 sm:w-48 sm:h-28 md:w-56 md:h-32 shadow-lg border border-white/20 max-w-[min(40vw,14rem)] max-h-[min(35vh,10rem)]"
       />
     </div>
   );
@@ -217,8 +217,7 @@ function SpotlightLayoutView({
   const manualSpotlightRef = useRef(false);
 
   const dominantSpeaker = useMemo(
-    () =>
-      speakingParticipants.find((p) => !p.isLocal) ?? speakingParticipants[0],
+    () => speakingParticipants.find((p) => !p.isLocal),
     [speakingParticipants],
   );
 

@@ -10,6 +10,7 @@ import {
 import { Track } from "livekit-client";
 import { Mic, MicOff, Video, VideoOff, Hand } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCameraTrackDimensions } from "@/hooks/useCameraTrackDimensions";
 
 interface ParticipantTileProps {
   isSpeaking?: boolean;
@@ -25,6 +26,7 @@ export default function ParticipantTile({
   className,
 }: ParticipantTileProps) {
   const participant = useParticipantContext();
+  const dimensions = useCameraTrackDimensions(participant);
   const tracks = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: false },
@@ -55,22 +57,32 @@ export default function ParticipantTile({
   const isMuted = !participant.isMicrophoneEnabled;
   const isCameraOff = !participant.isCameraEnabled;
 
+  const videoAspectRatio =
+    dimensions && dimensions.width > 0 && dimensions.height > 0
+      ? `${dimensions.width} / ${dimensions.height}`
+      : "16 / 9";
+
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-[#1a1525] aspect-video",
+        "relative overflow-hidden rounded-2xl bg-[#1a1525] w-full h-full min-h-0 flex items-center justify-center",
         isSpeaking && "ring-2 ring-[#835BD5] ring-offset-2 ring-offset-[#0a0a0f]",
         className,
       )}
     >
       {videoTrackRef && !isCameraOff ? (
-        <VideoTrack
-          trackRef={videoTrackRef}
-          className="w-full h-full object-cover"
-        />
+        <div
+          className="relative flex max-h-full max-w-full items-center justify-center"
+          style={{ aspectRatio: videoAspectRatio }}
+        >
+          <VideoTrack
+            trackRef={videoTrackRef}
+            className="h-full w-full object-contain"
+          />
+        </div>
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-[#271B40] to-[#14121c]">
-          <div className="w-16 h-16 rounded-full bg-[#835BD5]/30 flex items-center justify-center text-2xl font-bold">
+        <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-[#271B40] to-[#14121c]">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#835BD5]/30 text-2xl font-bold">
             {displayName.charAt(0).toUpperCase()}
           </div>
         </div>
@@ -79,36 +91,37 @@ export default function ParticipantTile({
       {audioTrackRef && <AudioTrack trackRef={audioTrackRef} />}
 
       {raisedHand && (
-        <div className="absolute top-2 right-2 bg-amber-400 text-black rounded-full p-1.5">
-          <Hand className="w-3.5 h-3.5" />
+        <div className="absolute top-2 right-2 rounded-full bg-amber-400 p-1.5 text-black">
+          <Hand className="h-3.5 w-3.5" />
         </div>
       )}
 
       {isLocal ? (
         <>
-        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-          <span className="text-xs font-semibold bg-black/60 px-2 py-1 rounded-md truncate">
-            {firstName} (You)
-          </span>
-        </div>
-        <div className="absolute top-2 right-2 flex items-center gap-2">
-          <StatusIcon isMuted={isCameraOff} isMic={false} />
-          <StatusIcon isMuted={isMuted} isMic />
-        </div>
+          <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+            <span className="truncate rounded-md bg-black/60 px-2 py-1 text-xs font-semibold">
+              {firstName} (You)
+            </span>
+          </div>
+          <div className="absolute top-2 right-2 flex items-center gap-2">
+            <StatusIcon isMuted={isCameraOff} isMic={false} />
+            <StatusIcon isMuted={isMuted} isMic />
+          </div>
         </>
-        
       ) : (
         <>
           <div className="absolute bottom-2 left-2 right-2 flex items-center">
-            <span className="text-xs font-semibold bg-black/60 px-2 py-1 rounded-md truncate max-w-full">
+            <span className="max-w-full truncate rounded-md bg-black/60 px-2 py-1 text-xs font-semibold">
               {firstName}
             </span>
           </div>
           <div className="absolute top-2 right-2 flex items-center justify-between gap-2">
-            <ParticipantMicCameraStatus isMuted={isMuted} isCameraOff={isCameraOff} />
+            <ParticipantMicCameraStatus
+              isMuted={isMuted}
+              isCameraOff={isCameraOff}
+            />
           </div>
         </>
-   
       )}
     </div>
   );
@@ -138,14 +151,14 @@ function StatusIcon({
 }) {
   if (isMic) {
     return isMuted ? (
-      <MicOff className="w-3.5 h-3.5 text-red-400" />
+      <MicOff className="h-3.5 w-3.5 text-red-400" />
     ) : (
-      <Mic className="w-3.5 h-3.5 text-emerald-400" />
+      <Mic className="h-3.5 w-3.5 text-emerald-400" />
     );
   }
   return isMuted ? (
-    <VideoOff className="w-3.5 h-3.5 text-red-400" />
+    <VideoOff className="h-3.5 w-3.5 text-red-400" />
   ) : (
-    <Video className="w-3.5 h-3.5 text-emerald-400" />
+    <Video className="h-3.5 w-3.5 text-emerald-400" />
   );
 }
