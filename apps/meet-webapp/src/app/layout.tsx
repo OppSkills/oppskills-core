@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
   meetWebApplicationJsonLd,
@@ -23,6 +24,7 @@ export default function RootLayout({
       <html lang="en">
         <head />
         <body className="antialiased">
+          <GoogleAnalytics />
           <JsonLd data={[organizationJsonLd, meetWebApplicationJsonLd]} />
           {children}
           <Toaster theme="dark" position="top-center" />
