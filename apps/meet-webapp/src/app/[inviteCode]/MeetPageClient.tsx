@@ -234,7 +234,13 @@ export default function MeetPageClient({ inviteCode }: { inviteCode: string }) {
             <Video className="w-6 h-6 text-[#835BD5]" />
           </div>
           <div>
-            <p className="text-sm text-white/50">{preview.communityName}</p>
+            {preview.communityName ? (
+              <p className="text-sm text-white/50">{preview.communityName}</p>
+            ) : (
+              <p className="text-sm text-white/50">
+                Hosted by {preview.hostName}
+              </p>
+            )}
             <h1 className="text-2xl font-bold">{preview.title}</h1>
           </div>
         </div>

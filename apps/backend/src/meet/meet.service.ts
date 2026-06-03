@@ -20,7 +20,7 @@ type MeetRow = Awaited<
   ReturnType<typeof prisma.communityMeetEntity.findUniqueOrThrow>
 > & {
   host: { id: string; firstName: string | null; lastName: string | null };
-  community: { id: string; name: string; ownerId: string };
+  community: { id: string; name: string; ownerId: string } | null;
 };
 
 @Injectable()
@@ -140,13 +140,11 @@ export class MeetService {
     };
   }
 
-  async createMeet(
+  private async createMeetRecord(
     userId: string,
-    communityId: string,
     dto: CreateCommunityMeetDto,
+    communityId: string | null,
   ): Promise<CommunityMeetResponse> {
-    await this.assertCanManageCommunity(userId, communityId);
-
     const inviteCode = await this.nextInviteCode();
     const livekitRoomName = `meet-${inviteCode}`;
     const now = new Date();
@@ -195,6 +193,22 @@ export class MeetService {
     return this.toResponse(meet);
   }
 
+  async createPersonalMeet(
+    userId: string,
+    dto: CreateCommunityMeetDto,
+  ): Promise<CommunityMeetResponse> {
+    return this.createMeetRecord(userId, dto, null);
+  }
+
+  async createMeet(
+    userId: string,
+    communityId: string,
+    dto: CreateCommunityMeetDto,
+  ): Promise<CommunityMeetResponse> {
+    await this.assertCanManageCommunity(userId, communityId);
+    return this.createMeetRecord(userId, dto, communityId);
+  }
+
   async listMeets(
     userId: string,
     communityId: string,
@@ -203,6 +217,23 @@ export class MeetService {
 
     const meets = await prisma.communityMeetEntity.findMany({
       where: { communityId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        host: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+        community: {
+          select: { id: true, name: true, ownerId: true },
+        },
+      },
+    });
+
+    return meets.map((meet) => this.toResponse(meet));
+  }
+
+  async listHostedMeets(userId: string): Promise<CommunityMeetResponse[]> {
+    const meets = await prisma.communityMeetEntity.findMany({
+      where: { hostUserId: userId },
       orderBy: { createdAt: 'desc' },
       include: {
         host: {
@@ -231,7 +262,7 @@ export class MeetService {
       kind: meet.kind,
       status: meet.status,
       scheduledStartAt: meet.scheduledStartAt?.toISOString() ?? null,
-      communityName: meet.community.name,
+      communityName: meet.community?.name ?? null,
       hostName: this.formatHostName(meet.host),
       hostUserId: meet.hostUserId,
       audienceScope: meet.audienceScope,

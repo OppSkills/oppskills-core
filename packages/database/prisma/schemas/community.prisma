@@ -97,7 +97,7 @@ enum MeetStatus {
 
 model CommunityMeetEntity {
   id               String            @id @default(cuid())
-  communityId      String            @map("community_id")
+  communityId      String?           @map("community_id")
   inviteCode       String            @unique @map("invite_code")
   kind             MeetKind
   title            String
@@ -107,7 +107,7 @@ model CommunityMeetEntity {
   hostUserId       String            @map("host_user_id")
   livekitRoomName  String            @unique @map("livekit_room_name")
   status           MeetStatus        @default(ACTIVE)
-  community        CommunityEntity   @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  community        CommunityEntity?  @relation(fields: [communityId], references: [id], onDelete: Cascade)
   host             UserEntity        @relation("CommunityMeetHost", fields: [hostUserId], references: [id])
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")

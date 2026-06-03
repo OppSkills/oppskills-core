@@ -17,12 +17,19 @@ export default function MeetHeader({
   onLayoutChange,
 }: MeetHeaderProps) {
   return (
-    <header className="relative h-14 shrink-0 border-b border-white/10 bg-[#0c0114]/90 px-4 flex items-center">
-      <div className="flex items-center gap-2 shrink-0">
-        <Image src="/logo.svg" alt="OppSkills" width={200} height={50} />
+    <header className="h-14 shrink-0 border-b border-white/10 bg-[#0c0114]/90 px-4 flex items-center justify-between">
+      <div className="flex items-center gap-2 shrink-0 min-w-0">
+        <Image
+          src="/logo.svg"
+          alt="OppSkills"
+          width={120}
+          height={32}
+          className="h-7 w-auto md:h-8"
+          priority
+        />
       </div>
 
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 bg-white/5 rounded-xl p-1">
+      <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 shrink-0">
         <button
           type="button"
           onClick={() => onLayoutChange("grid")}

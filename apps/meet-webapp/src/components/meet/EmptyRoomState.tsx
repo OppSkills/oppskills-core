@@ -27,8 +27,8 @@ export default function EmptyRoomState({ inviteCode }: EmptyRoomStateProps) {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center p-6 min-h-0">
-      <div className="max-w-md w-full text-center space-y-6">
+    <div className="flex-1 flex items-center justify-center p-4 sm:p-6 min-h-0 min-w-0 w-full overflow-y-auto">
+      <div className="max-w-md w-full min-w-0 text-center space-y-6">
         <div className="mx-auto w-16 h-16 rounded-2xl bg-[#835BD5]/20 flex items-center justify-center">
           <Users className="w-8 h-8 text-[#835BD5]" />
         </div>

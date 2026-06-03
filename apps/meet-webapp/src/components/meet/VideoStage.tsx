@@ -14,6 +14,7 @@ import type { LayoutMode } from "./MeetHeader";
 import ParticipantTile from "./ParticipantTile";
 import EmptyRoomState from "./EmptyRoomState";
 import StagePagination from "./StagePagination";
+import DraggableLocalPip from "./DraggableLocalPip";
 import { useViewportLayout } from "@/hooks/useViewportLayout";
 import { getGridDimensions } from "@/lib/meet/gridLayout";
 
@@ -25,7 +26,10 @@ interface VideoStageProps {
   layoutMode: LayoutMode;
   raisedHands: Set<string>;
   inviteCode: string;
+  isMobile?: boolean;
 }
+
+const MOBILE_CONTROL_BAR_INSET = 80;
 
 function sortForGrid(participants: StageParticipant[]): StageParticipant[] {
   return [...participants]
@@ -39,13 +43,26 @@ function LocalParticipantPip({
   localParticipant,
   speakingIds,
   raisedHands,
+  isMobile = false,
   className = "absolute bottom-2 z-30 right-6",
 }: {
   localParticipant: StageParticipant;
   speakingIds: Set<string>;
   raisedHands: Set<string>;
+  isMobile?: boolean;
   className?: string;
 }) {
+  if (isMobile) {
+    return (
+      <DraggableLocalPip
+        localParticipant={localParticipant}
+        speakingIds={speakingIds}
+        raisedHands={raisedHands}
+        bottomInset={MOBILE_CONTROL_BAR_INSET}
+      />
+    );
+  }
+
   return (
     <div className={className}>
       <ParticipantTileWrapped
@@ -106,6 +123,7 @@ function GridLayoutView({
   raisedHands,
   maxCols,
   tilesPerPage,
+  isMobile,
 }: {
   participants: StageParticipant[];
   localParticipant?: StageParticipant;
@@ -113,6 +131,7 @@ function GridLayoutView({
   raisedHands: Set<string>;
   maxCols: number;
   tilesPerPage: number;
+  isMobile?: boolean;
 }) {
   const [page, setPage] = useState(0);
   const sorted = useMemo(() => sortForGrid(participants), [participants]);
@@ -167,6 +186,7 @@ function GridLayoutView({
           localParticipant={localParticipant}
           speakingIds={speakingIds}
           raisedHands={raisedHands}
+          isMobile={isMobile}
         />
       )}
     </div>
@@ -180,6 +200,7 @@ function SpotlightLayoutView({
   speakingIds,
   raisedHands,
   filmstripPerPage,
+  isMobile,
 }: {
   remoteParticipants: StageParticipant[];
   localParticipant?: StageParticipant;
@@ -187,6 +208,7 @@ function SpotlightLayoutView({
   speakingIds: Set<string>;
   raisedHands: Set<string>;
   filmstripPerPage: number;
+  isMobile?: boolean;
 }) {
   const [spotlightIdentity, setSpotlightIdentity] = useState<string | null>(
     null,
@@ -309,6 +331,7 @@ function SpotlightLayoutView({
           localParticipant={localParticipant}
           speakingIds={speakingIds}
           raisedHands={raisedHands}
+          isMobile={isMobile}
         />
       )}
     </div>
@@ -319,6 +342,7 @@ export default function VideoStage({
   layoutMode,
   raisedHands,
   inviteCode,
+  isMobile = false,
 }: VideoStageProps) {
   const participants = useParticipants();
   const speakingParticipants = useSpeakingParticipants();
@@ -416,6 +440,7 @@ export default function VideoStage({
                 localParticipant={localParticipant}
                 speakingIds={speakingIds}
                 raisedHands={raisedHands}
+                isMobile={isMobile}
               />
             )}
         </div>
@@ -432,6 +457,7 @@ export default function VideoStage({
             localParticipant={localParticipant}
             speakingIds={speakingIds}
             raisedHands={raisedHands}
+            isMobile={isMobile}
             className="absolute bottom-2 z-20 right-6"
           />
         )}
@@ -448,6 +474,7 @@ export default function VideoStage({
         speakingIds={speakingIds}
         raisedHands={raisedHands}
         filmstripPerPage={filmstripPerPage}
+        isMobile={isMobile}
       />
     );
   }
@@ -460,6 +487,7 @@ export default function VideoStage({
       raisedHands={raisedHands}
       maxCols={maxCols}
       tilesPerPage={tilesPerPage}
+      isMobile={isMobile}
     />
   );
 }
