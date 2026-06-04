@@ -13,3 +13,4 @@ export * from "./HackathonNotificationEmail";
 export * from "./HackathonTeamNotification";
 export * from "./ReferralInvitationEmail";
 export * from "./CommunityWelcomeEmail";
+export * from "./CommunityTaskAssignedEmail";

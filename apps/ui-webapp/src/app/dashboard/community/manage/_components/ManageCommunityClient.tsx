@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import ManageHeader from "./ManageHeader";
 import CommunityStats from "./CommunityStats";
 import MembersDirectory from "./MembersDirectory";
@@ -24,6 +24,7 @@ import {
   listCommunityMeets,
   toCommunityMeetUi,
 } from "@/lib/api/communityMeetApi";
+import { listTasks, updateTaskStatus } from "@/lib/api/communityTaskApi";
 
 import type { CommunityMember as Member, CommunityTask as Task, CommunityMeet as Meet } from "@oppskills/types";
 
@@ -37,38 +38,7 @@ const defaultRoles = [
 ];
 
 
-const initialTasks: Task[] = [
-  {
-    id: "1",
-    text: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato crust Hawaiian stuffed sausage. Burnt steak party extra style stuffed.",
-    tag: "Ideathon, E-Summit",
-    completed: false,
-    assignedTo: "Ananya Sharma",
-    dueDate: "21 Mar 2026",
-    priority: "High",
-  },
-  {
-    id: "2",
-    text: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
-    tag: "Ideathon, E-Summit",
-    completed: false,
-    assignedTo: "Rohit Verma",
-    dueDate: "21 Mar 2026",
-    priority: "Low",
-  },
-  {
-    id: "3",
-    text: "Website Development",
-    description: "Pizza ipsum dolor meat lovers buffalo. Marinara white mozzarella black lovers large. Philly tomato...",
-    tag: "Ideathon, E-Summit",
-    completed: false,
-    assignedTo: "Suhani Mehta",
-    dueDate: "21 Mar 2026",
-    priority: "Medium",
-  },
-];
+
 
 const initialMeets: Meet[] = [];
 
@@ -90,22 +60,23 @@ export default function ManageCommunityClient({
       try {
         const token = await getToken();
         if (!token) return;
-        const [details, meetItems, types, memberList] = await Promise.all([
+        const [details, meetItems, types, memberList, taskList] = await Promise.all([
           getCommunity(token, communityId),
           listCommunityMeets(token, communityId),
           getUniqueMemberTypes(token, communityId),
           listCommunityMembers(token, communityId),
+          listTasks(token, communityId),
         ]);
         if (!cancelled) {
           const isOwner = loggedInUserId === details.ownerId;
           const myMemberRecord = memberList.find((m) => m.userId === loggedInUserId);
-          const isOwnerOrAdminOrModerator =
+          const isOwnerOrMember =
             isOwner ||
             (myMemberRecord &&
-              ["ADMIN", "MODERATOR"].includes(myMemberRecord.accessControlRole));
+              ["ADMIN", "MODERATOR", "READ_ONLY"].includes(myMemberRecord.accessControlRole));
 
-          if (!isOwnerOrAdminOrModerator) {
-            toast.error("You do not have permission to manage this community.");
+          if (!isOwnerOrMember) {
+            toast.error("You do not have permission to view this community.");
             router.push("/dashboard/community");
             return;
           }
@@ -116,6 +87,7 @@ export default function ManageCommunityClient({
           setCustomMemberTypes(types);
           setMembers(memberList);
           setAvailableRoles(types.length > 0 ? types : defaultRoles);
+          setTasks(taskList);
         }
       } catch (error) {
         console.error("Failed to load community details:", error);
@@ -140,7 +112,26 @@ export default function ManageCommunityClient({
   const [members, setMembers] = useState<Member[]>(initialMembers);
   const [customMemberTypes, setCustomMemberTypes] = useState<string[]>([]);
   const [availableRoles, setAvailableRoles] = useState<string[]>(defaultRoles);
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<any[]>([]);
+
+  const mappedTasksForSheet = useMemo(() => {
+    return tasks.map(t => ({
+      id: t.id,
+      text: t.title,
+      description: t.description || "",
+      tag: t.tags.join(", "),
+      completed: t.status === "COMPLETED",
+      assignedTo: t.toUserName || undefined,
+      dueDate: t.dueDate
+        ? new Date(t.dueDate).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
+        : undefined,
+      priority: (t.priority === "HIGH" ? "High" : t.priority === "LOW" ? "Low" : "Medium") as "High" | "Medium" | "Low",
+    }));
+  }, [tasks]);
 
   const handleAssignTask = (memberName: string) => {
     setSelectedMemberForTask(memberName);
@@ -155,7 +146,8 @@ export default function ManageCommunityClient({
   const currentUserMember = members.find((m) => m.userId === loggedInUserId);
   const isOwner = loggedInUserId === communityOwnerId;
   const isAdmin = currentUserMember?.accessControlRole === "ADMIN";
-  const isEligibleToModify = isOwner || isAdmin;
+  const isModerator = currentUserMember?.accessControlRole === "MODERATOR";
+  const isEligibleToModify = isOwner || isAdmin || isModerator;
 
   // State Mutators
   const handleInviteMembers = async (
@@ -277,48 +269,23 @@ export default function ManageCommunityClient({
     }
   };
 
-  const handleAddTask = (
-    text: string,
-    tag: string,
-    assignedToName?: string,
-    dueDate?: string,
-    priority?: "High" | "Medium" | "Low",
-    description?: string
-  ) => {
-    const newTask: Task = {
-      id: String(tasks.length + 1),
-      text,
-      tag,
-      completed: false,
-      assignedTo: assignedToName || selectedMemberForTask || undefined,
-      dueDate: dueDate || "28 May 2026",
-      priority: priority || "Medium",
-      description: description || "Dedicated community milestone deliverable.",
-    };
-    setTasks((prev) => [...prev, newTask]);
-    toast.success(`Added new task: "${text}"`);
-  };
-
-  const handleToggleTask = (id: string) => {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === id) {
-          const nextCompleted = !t.completed;
-          if (nextCompleted) {
-            toast.success(`Completed task: "${t.text}"`);
-          }
-          return { ...t, completed: nextCompleted };
-        }
-        return t;
-      })
-    );
-  };
-
-  const handleDeleteTask = (id: string) => {
-    const taskToDelete = tasks.find(t => t.id === id);
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-    if (taskToDelete) {
-      toast.success(`Deleted task: "${taskToDelete.text}"`);
+  const handleToggleTask = async (id: string) => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const task = tasks.find((t) => t.id === id);
+      if (!task) return;
+      const nextStatus = task.status === "COMPLETED" ? "PENDING" : "COMPLETED";
+      const updated = await updateTaskStatus(token, communityId, id, { status: nextStatus });
+      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      toast.success(
+        nextStatus === "COMPLETED"
+          ? `Completed task: "${task.title}"`
+          : `Reopened task: "${task.title}"`
+      );
+    } catch (err: any) {
+      console.error("Failed to toggle task:", err);
+      toast.error(err.message || "Failed to toggle task");
     }
   };
 
@@ -377,12 +344,10 @@ export default function ManageCommunityClient({
           onClose={handleCloseTaskTracker}
           memberName={selectedMemberForTask}
           tasks={tasks}
-          onAddTask={handleAddTask}
-          onToggleTask={handleToggleTask}
-          onDeleteTask={handleDeleteTask}
+          onTasksChange={setTasks}
           members={members}
+          communityId={communityId}
         />
-
 
         {/* Add Member Dialog Modal (Triggered by header 'Add Member' button) */}
         <AddMemberModal
@@ -396,7 +361,7 @@ export default function ManageCommunityClient({
         <MemberDetailsSheet
           member={selectedMemberForDetails}
           onClose={() => setSelectedMemberForDetails(null)}
-          tasks={tasks}
+          tasks={mappedTasksForSheet}
           meets={meets}
           onToggleTask={handleToggleTask}
           isEligibleToModify={isEligibleToModify}

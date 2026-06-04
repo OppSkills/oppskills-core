@@ -145,10 +145,18 @@ export default function MemberDetailsSheet({
   const canModifyTarget = () => {
     if (!member || !isEligibleToModify) return false;
     if (member.userId === communityOwnerId) return false;
+
+    const isCurrentOwner = currentUserMember?.userId === communityOwnerId;
+    const isCurrentAdmin = currentUserMember?.accessControlRole === "ADMIN";
+
     if (member.accessControlRole === "ADMIN") {
-      const isCurrentOwner = currentUserMember?.userId === communityOwnerId;
       if (!isCurrentOwner) return false;
     }
+
+    if (member.accessControlRole === "MODERATOR") {
+      if (!isCurrentOwner && !isCurrentAdmin) return false;
+    }
+
     return true;
   };
 

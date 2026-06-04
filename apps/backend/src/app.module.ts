@@ -27,6 +27,7 @@ import { NotificationModule } from './notification/notification.module';
 import { RecommendationModule } from './recommendation/recommendation.module';
 import { CommunityModule } from './community/community.module';
 import { MeetModule } from './meet/meet.module';
+import { CommunityTaskModule } from './community-task/community-task.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { MeetModule } from './meet/meet.module';
     RecommendationModule,
     CommunityModule,
     MeetModule,
+    CommunityTaskModule,
   ],
   controllers: [AppController],
   providers: [

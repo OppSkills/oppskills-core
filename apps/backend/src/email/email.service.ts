@@ -30,6 +30,8 @@ import {
   ReferralInvitationEmailProps,
   CommunityWelcomeEmail,
   CommunityWelcomeEmailProps,
+  CommunityTaskAssignedEmail,
+  CommunityTaskAssignedEmailProps,
 } from '@oppskills/emails';
 import { Logger } from 'src/_utils/logger';
 
@@ -46,7 +48,8 @@ export type EmailType =
   | 'hackathon-new-member-joined'
   | 'hackathon-team-notification'
   | 'referral-invitation'
-  | 'community-welcome';
+  | 'community-welcome'
+  | 'community-task-assigned';
 
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
@@ -79,7 +82,9 @@ export interface SendEmailOptions<T extends EmailType> {
                           ? ReferralInvitationEmailProps
                           : T extends 'community-welcome'
                             ? CommunityWelcomeEmailProps
-                            : never;
+                            : T extends 'community-task-assigned'
+                              ? CommunityTaskAssignedEmailProps
+                              : never;
 }
 
 @Injectable()
@@ -212,7 +217,8 @@ export class EmailService {
       | HackathonNewMemberJoinedEmailProps
       | HackathonTeamNotificationEmailProps
       | ReferralInvitationEmailProps
-      | CommunityWelcomeEmailProps,
+      | CommunityWelcomeEmailProps
+      | CommunityTaskAssignedEmailProps,
   ): Promise<{ subject: string; html: string }> {
     switch (type) {
       case 'welcome': {
@@ -329,6 +335,15 @@ export class EmailService {
         const html = await render(element, { pretty: true });
         return {
           subject: `You have been added to the ${p.communityName} community`,
+          html,
+        };
+      }
+      case 'community-task-assigned': {
+        const p = props as CommunityTaskAssignedEmailProps;
+        const element = createElement(CommunityTaskAssignedEmail, p);
+        const html = await render(element, { pretty: true });
+        return {
+          subject: `New Task Assigned: ${p.taskTitle}`,
           html,
         };
       }
