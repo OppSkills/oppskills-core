@@ -10,6 +10,7 @@ import {
   Trophy,
   Calendar,
   Loader2,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
@@ -28,6 +29,7 @@ import { UserAccountButton } from "./user-account-button";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NavbarSearch } from "./navbar-search";
+import { chatNavLink } from "@/lib/site-navigation";
 
 function isNavLinkActive(href: string, pathname: string): boolean {
   if (href === "/") {
@@ -117,6 +119,22 @@ const Navbar = () => {
               </Link>
             );
           })}
+          <SignedIn>
+            <Link
+              href={chatNavLink.href}
+              aria-current={
+                isNavLinkActive(chatNavLink.href, pathname) ? "page" : undefined
+              }
+              className={cn(
+                "text-base font-medium pb-1 border-b-2 transition-colors",
+                isNavLinkActive(chatNavLink.href, pathname)
+                  ? "text-primary-700 border-primary-600"
+                  : "text-neutral-700 border-transparent hover:text-neutral-900",
+              )}
+            >
+              {chatNavLink.name}
+            </Link>
+          </SignedIn>
         </div>
 
         {/* --- RIGHT SIDE ACTIONS --- */}
@@ -277,6 +295,19 @@ const Navbar = () => {
 
               <div className="mt-6 pt-6 border-t border-neutral-200 space-y-4">
                 <SignedIn>
+                  <Link
+                    href={chatNavLink.href}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "flex items-center gap-4 px-4 py-4 rounded-2xl transition-colors",
+                      isNavLinkActive(chatNavLink.href, pathname)
+                        ? "bg-primary-50 text-primary-700"
+                        : "text-neutral-700 hover:bg-neutral-200",
+                    )}
+                  >
+                    <MessageSquare className="w-6 h-6 shrink-0" />
+                    <span className="text-xl font-semibold">{chatNavLink.name}</span>
+                  </Link>
                   <div className="space-y-4">
                     <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest px-4">
                       Organize

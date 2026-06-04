@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Twitter, Linkedin, Facebook, Instagram } from "lucide-react";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { IconBrandThreads } from "@tabler/icons-react";
+import { chatNavLink } from "@/lib/site-navigation";
 
 interface FooterLink {
   name: string;
@@ -30,6 +31,7 @@ const Footer = () => {
       { name: "Opportunities", href: "/hackathons" },
       { name: "Events", href: "/events" },
       { name: "Festivals", href: "/festivals" },
+      { name: chatNavLink.name, href: chatNavLink.href },
     ],
     OppSkills: [
       // { name: "Market Mafiaa", href: "https://marketmafiaa.com" },
@@ -127,6 +129,14 @@ const Footer = () => {
                       className="text-gray-400 hover:text-background transition-colors text-base"
                     >
                       Profile
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href={chatNavLink.href}
+                      className="text-gray-400 hover:text-background transition-colors text-base"
+                    >
+                      {chatNavLink.name}
                     </Link>
                   </li>
                 </SignedIn>

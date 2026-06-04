@@ -48,6 +48,10 @@ model UserEntity {
   razorpayRouteAccount             RazorpayRouteAccountEntity?             @relation("UserRazorpayRouteAccount")
   featureWaitlist                  FeatureWaitlistEntity[]                 @relation("UserFeatureWaitlist")
   onboardingProfile                UserOnboardingProfileEntity?
+  createdConversations             ConversationEntity[]                    @relation("UserCreatedConversations")
+  chatParticipants                 ConversationParticipantEntity[]         @relation("UserChatParticipants")
+  sentChatMessages                 MessageEntity[]                         @relation("UserSentChatMessages")
+  messageDeliveries                MessageDeliveryEntity[]                 @relation("UserMessageDeliveries")
 
   @@map("user")
   @@schema("user")

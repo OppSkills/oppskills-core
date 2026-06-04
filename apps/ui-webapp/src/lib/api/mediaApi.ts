@@ -8,7 +8,8 @@ export type PresignImageUploadPurpose =
   | "COMMUNITY_COVER"
   | "COMMUNITY_AVATAR"
   | "COMMUNITY_BANNER"
-  | "COMMUNITY_LOGO";
+  | "COMMUNITY_LOGO"
+  | "CHAT_ATTACHMENT";
 
 export type PresignImageUploadRequest = Readonly<{
   purpose: PresignImageUploadPurpose;
@@ -25,7 +26,8 @@ export type PresignImageUploadResponse = Readonly<{
 
 export type PresignDocumentUploadPurpose =
   | "EVENT_ATTACHMENT"
-  | "OPPORTUNITY_ATTACHMENT";
+  | "OPPORTUNITY_ATTACHMENT"
+  | "CHAT_ATTACHMENT";
 
 export type PresignDocumentUploadRequest = Readonly<{
   purpose: PresignDocumentUploadPurpose;
