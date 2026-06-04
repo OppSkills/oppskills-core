@@ -13,6 +13,7 @@ const MEDIA_UPLOAD_PURPOSE_VALUES = [
   'OPPORTUNITY_ATTACHMENT',
   'COMMUNITY_BANNER',
   'COMMUNITY_LOGO',
+  'CHAT_ATTACHMENT',
 ] as const;
 export type MediaUploadPurposeValue =
   (typeof MEDIA_UPLOAD_PURPOSE_VALUES)[number];
@@ -58,13 +59,13 @@ export class PresignDocumentUploadDto {
    * What this document is used for. Controls the S3 prefix.
    */
   @ApiProperty({
-    enum: ['EVENT_ATTACHMENT', 'OPPORTUNITY_ATTACHMENT'],
+    enum: ['EVENT_ATTACHMENT', 'OPPORTUNITY_ATTACHMENT', 'CHAT_ATTACHMENT'],
     description: 'Upload purpose (controls S3 key prefix)',
     example: 'EVENT_ATTACHMENT',
   })
   @IsString()
-  @IsIn(['EVENT_ATTACHMENT', 'OPPORTUNITY_ATTACHMENT'])
-  purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT';
+  @IsIn(['EVENT_ATTACHMENT', 'OPPORTUNITY_ATTACHMENT', 'CHAT_ATTACHMENT'])
+  purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT' | 'CHAT_ATTACHMENT';
 
   /**
    * MIME type as detected by the browser.

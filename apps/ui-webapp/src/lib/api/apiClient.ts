@@ -41,6 +41,7 @@ export function getApiRootUrl(): string {
     "/media",
     "/communities",
     "/meets",
+    "/chats",
   ] as const;
   const matched = knownResourceSuffixes.find((suffix) =>
     trimmed.endsWith(suffix),

@@ -4,7 +4,8 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import type { Readable } from 'stream';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import type { PresignedPost } from '@aws-sdk/s3-presigned-post';
 import type {
@@ -13,6 +14,11 @@ import type {
   PresignDocumentUploadResponse,
 } from './media.dto';
 import crypto from 'crypto';
+import {
+  extensionFromFileName,
+  isChatDocumentAllowed,
+  resolveChatDocumentMime,
+} from './chat-attachment-mime';
 
 /**
  * MediaService
@@ -90,7 +96,7 @@ export class MediaService {
    */
   async presignDocumentUpload(input: {
     userId: string;
-    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT';
+    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT' | 'CHAT_ATTACHMENT';
     mimeType: string;
     fileName: string;
   }): Promise<PresignDocumentUploadResponse> {
@@ -100,15 +106,28 @@ export class MediaService {
     );
 
     const maxBytes = this.getMaxDocumentUploadBytes();
-    const allowedMimeTypes = this.getAllowedDocumentMimeTypes();
 
-    const mimeType = input.mimeType.trim().toLowerCase();
-    if (!allowedMimeTypes.includes(mimeType)) {
-      throw new BadRequestException(
-        `Unsupported document type "${mimeType}". Allowed: ${allowedMimeTypes.join(
-          ', ',
-        )}`,
-      );
+    let mimeType: string;
+    if (input.purpose === 'CHAT_ATTACHMENT') {
+      if (!isChatDocumentAllowed(input.mimeType, input.fileName)) {
+        const ext = extensionFromFileName(input.fileName);
+        throw new BadRequestException(
+          ext
+            ? `Unsupported file type ".${ext}" for chat attachments.`
+            : `Unsupported file type "${input.mimeType}" for chat attachments.`,
+        );
+      }
+      mimeType = resolveChatDocumentMime(input.mimeType, input.fileName);
+    } else {
+      const allowedMimeTypes = this.getAllowedDocumentMimeTypes();
+      mimeType = input.mimeType.trim().toLowerCase();
+      if (!allowedMimeTypes.includes(mimeType)) {
+        throw new BadRequestException(
+          `Unsupported document type "${mimeType}". Allowed: ${allowedMimeTypes.join(
+            ', ',
+          )}`,
+        );
+      }
     }
 
     const extension = this.extensionForDocumentMimeType(
@@ -223,6 +242,8 @@ export class MediaService {
       prefix = 'community-banner';
     } else if (purpose === 'COMMUNITY_LOGO') {
       prefix = 'community-logo';
+    } else if (purpose === 'CHAT_ATTACHMENT') {
+      prefix = 'private/chat-attachments';
     } else {
       prefix = 'public';
     }
@@ -312,16 +333,32 @@ export class MediaService {
       'text/plain': 'txt',
       'image/jpeg': 'jpg',
       'image/png': 'png',
+      'video/mp4': 'mp4',
+      'video/webm': 'webm',
+      'video/quicktime': 'mov',
+      'application/gzip': 'gz',
+      'application/x-gzip': 'gz',
+      'application/zip': 'zip',
+      'application/x-zip-compressed': 'zip',
+      'application/vnd.rar': 'rar',
+      'application/x-rar-compressed': 'rar',
+      'application/x-7z-compressed': '7z',
+      'application/x-tar': 'tar',
+      'application/x-bzip2': 'bz2',
+      'application/epub+zip': 'epub',
+      'application/json': 'json',
+      'application/xml': 'xml',
+      'text/html': 'html',
+      'text/csv': 'csv',
+      'application/rtf': 'rtf',
+      'application/vnd.android.package-archive': 'apk',
     };
 
     return mimeMap[mimeType] || 'bin';
   }
 
-  /**
-   * Builds S3 object key for document uploads
-   */
   private buildDocumentObjectKey(
-    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT',
+    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT' | 'CHAT_ATTACHMENT',
     userId: string,
     fileName: string,
     extension: string,
@@ -338,11 +375,65 @@ export class MediaService {
       .substring(0, 50); // Limit length
 
     const uuid = crypto.randomUUID();
-    const prefix =
-      purpose === 'EVENT_ATTACHMENT'
-        ? 'public/event-attachments'
-        : 'public/opportunity-attachments';
+    let prefix: string;
+    if (purpose === 'EVENT_ATTACHMENT') {
+      prefix = 'public/event-attachments';
+    } else if (purpose === 'CHAT_ATTACHMENT') {
+      prefix = 'private/chat-attachments';
+    } else {
+      prefix = 'public/opportunity-attachments';
+    }
 
     return `${prefix}/${encodeURIComponent(safeUserId)}/${safeFileName}-${uuid}.${extension}`;
+  }
+
+  /**
+   * Resolves the S3 object key from a persisted CloudFront or S3 URL.
+   */
+  resolveObjectKeyFromStoredUrl(storedUrl: string): string {
+    const cloudfrontBase = this.normalizeBaseUrl(
+      this.getRequiredEnv('MEDIA_CLOUDFRONT_BASE_URL'),
+    );
+    const normalized = storedUrl.trim();
+
+    if (normalized.startsWith(cloudfrontBase)) {
+      const path = normalized.slice(cloudfrontBase.length).replace(/^\//, '');
+      return decodeURIComponent(path);
+    }
+
+    try {
+      const parsed = new URL(normalized);
+      return decodeURIComponent(parsed.pathname.replace(/^\//, ''));
+    } catch {
+      throw new BadRequestException('Invalid media URL');
+    }
+  }
+
+  assertChatAttachmentKey(key: string): void {
+    if (!/(?:^|\/)chat-attachments\//.test(key)) {
+      throw new BadRequestException('URL is not a chat attachment');
+    }
+  }
+
+  async getObjectStream(key: string): Promise<{
+    body: Readable;
+    contentType: string;
+  }> {
+    const bucket = this.getRequiredEnv('MEDIA_S3_BUCKET');
+    const result = await this.s3.send(
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      }),
+    );
+
+    if (!result.Body) {
+      throw new InternalServerErrorException('Empty object body from S3');
+    }
+
+    return {
+      body: result.Body as Readable,
+      contentType: result.ContentType ?? 'application/octet-stream',
+    };
   }
 }
