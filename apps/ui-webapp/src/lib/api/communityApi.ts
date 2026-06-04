@@ -22,6 +22,7 @@ export type CommunityResponse = Readonly<{
   industry: CommunityIndustryValue;
   coverImage: string | null;
   avatarImage: string | null;
+  ownerId: string;
   createdAt: string;
 }>;
 
@@ -81,6 +82,7 @@ export async function createCommunity(
     industry: requireString(raw, "industry") as CommunityIndustryValue,
     coverImage: optionalString(raw, "coverImage"),
     avatarImage: optionalString(raw, "avatarImage"),
+    ownerId: requireString(raw, "ownerId"),
     createdAt: requireString(raw, "createdAt"),
   };
 }
@@ -140,7 +142,83 @@ export async function getCommunity(
     industry: requireString(raw, "industry") as CommunityIndustryValue,
     coverImage: optionalString(raw, "coverImage"),
     avatarImage: optionalString(raw, "avatarImage"),
+    ownerId: requireString(raw, "ownerId"),
     createdAt: requireString(raw, "createdAt"),
   };
 }
+
+export async function getUniqueMemberTypes(
+  token: string,
+  communityId: string,
+): Promise<string[]> {
+  const res = await API.get(`/${communityId}/members/types`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as string[];
+}
+
+export async function addCommunityMembers(
+  token: string,
+  communityId: string,
+  data: {
+    userIds: string[];
+    role: string;
+    accessControlRole: string;
+  },
+): Promise<{ success: boolean; count: number }> {
+  const res = await API.post(`/${communityId}/members`, data, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as { success: boolean; count: number };
+}
+
+export async function updateMemberType(
+  token: string,
+  communityId: string,
+  memberId: string,
+  role: string,
+): Promise<any> {
+  const res = await API.patch(`/${communityId}/members/${memberId}/type`, { role }, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data;
+}
+
+export async function updateMemberAccess(
+  token: string,
+  communityId: string,
+  memberId: string,
+  accessControlRole: string,
+): Promise<any> {
+  const res = await API.patch(
+    `/${communityId}/members/${memberId}/access-control`,
+    { accessControlRole },
+    {
+      headers: buildAuthHeaders(token),
+    },
+  );
+  return res.data;
+}
+
+export async function listCommunityMembers(
+  token: string,
+  communityId: string,
+): Promise<any[]> {
+  const res = await API.get(`/${communityId}/members`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as any[];
+}
+
+export async function deleteCommunityMember(
+  token: string,
+  communityId: string,
+  memberId: string,
+): Promise<any> {
+  const res = await API.delete(`/${communityId}/members/${memberId}`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data;
+}
+
 

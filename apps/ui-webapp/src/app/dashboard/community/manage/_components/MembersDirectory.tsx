@@ -18,74 +18,19 @@ import type { CommunityMember as Member } from "@oppskills/types";
 
 interface MembersDirectoryProps {
   onAssignTask?: (memberName: string) => void;
-  onAddMemberType?: () => void;
   customTabs?: string[];
   onViewDetails?: (member: any) => void;
   members?: Member[];
   onDeleteMember?: (id: string, name: string) => void;
   onChangeRole?: (id: string, newRole: string) => void;
+  isEligibleToModify?: boolean;
+  communityOwnerId?: string;
+  currentUserMember?: Member;
 }
 
 const EMPTY_TABS: string[] = [];
 
-const initialMembers: Member[] = [
-  {
-    id: "1",
-    name: "Ananya Sharma",
-    email: "ananya.sharma@brightwave.io",
-    role: "Community Admin",
-    avatarUrl: "/avatars/ananya.png",
-    lastAssignedDate: "21-04-2026",
-  },
-  {
-    id: "2",
-    name: "Rohit Verma",
-    email: "rohit.verma@brightwave.io",
-    role: "Community Admin",
-    avatarUrl: "/avatars/rohit.png",
-    lastAssignedDate: "21-04-2026",
-  },
-  {
-    id: "3",
-    name: "Suhani Mehta",
-    email: "suhani.mehta@brightwave.io",
-    role: "Media Lead",
-    avatarUrl: "/avatars/suhani.png",
-    lastAssignedDate: "21-04-2026",
-  },
-  {
-    id: "4",
-    name: "Amitabh Singh",
-    email: "amitabh.singh@brightwave.io",
-    role: "Content Writer",
-    avatarUrl: "/avatars/amitabh.png",
-    lastAssignedDate: "21-04-2026",
-  },
-  {
-    id: "5",
-    name: "Neha Kapoor",
-    email: "neha.kapoor@brightwave.io",
-    role: "Alumini - 2024",
-    avatarUrl: "/avatars/neha.png",
-    lastAssignedDate: "21-03-2026",
-  },
-  {
-    id: "6",
-    name: "Neha Kapoor",
-    email: "neha.kapoor@brightwave.io",
-    role: "Alumini - 2025",
-    avatarUrl: "/avatars/neha2.png",
-    lastAssignedDate: "21-03-2026",
-  },
-  {
-    id: "7",
-    name: "Karan Malhotra",
-    email: "karan.malhotra@brightwave.io",
-    role: "Circle",
-    avatarUrl: "/avatars/karan.png",
-    lastAssignedDate: "21-03-2026",
-  },
-];
+const initialMembers: Member[] = [];
 
 interface TabItem {
   label: string;
@@ -96,15 +41,27 @@ interface TabItem {
 
 export default function MembersDirectory({
   onAssignTask,
-  onAddMemberType,
   customTabs = EMPTY_TABS,
   onViewDetails,
   members: propMembers,
   onDeleteMember,
   onChangeRole,
+  isEligibleToModify = false,
+  communityOwnerId = "",
+  currentUserMember,
 }: MembersDirectoryProps) {
-  const [localMembers, setLocalMembers] = useState<Member[]>(initialMembers);
+  const [localMembers, setLocalMembers] = useState<Member[]>([]);
   const members = propMembers || localMembers;
+
+  const canModifyMember = (targetMember: Member) => {
+    if (!isEligibleToModify) return false;
+    if (targetMember.userId === communityOwnerId) return false;
+    if (targetMember.accessControlRole === "ADMIN") {
+      const isCurrentOwner = currentUserMember?.userId === communityOwnerId;
+      if (!isCurrentOwner) return false;
+    }
+    return true;
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string>("All Members");
 
@@ -122,12 +79,9 @@ export default function MembersDirectory({
       {
         label: "All Members",
         showCount: true,
-        totalCount: 543 + (members.length - 7),
+        totalCount: members.length,
         hasInfo: false,
       },
-      { label: "Core Team", showCount: false, hasInfo: true },
-      { label: "Alumini", showCount: false, hasInfo: true },
-      { label: "Circle", showCount: false, hasInfo: true },
     ];
 
     const custom: TabItem[] = customTabs.map((label) => ({
@@ -150,16 +104,7 @@ export default function MembersDirectory({
 
       // Tab filter
       let matchesTab = true;
-      if (activeTab === "Core Team") {
-        matchesTab =
-          member.role === "Community Admin" ||
-          member.role === "Media Lead" ||
-          member.role === "Content Writer";
-      } else if (activeTab === "Alumini") {
-        matchesTab = member.role.startsWith("Alumini");
-      } else if (activeTab === "Circle") {
-        matchesTab = member.role === "Circle";
-      } else if (activeTab !== "All Members") {
+      if (activeTab !== "All Members") {
         matchesTab = member.role.toLowerCase() === activeTab.toLowerCase();
       }
 
@@ -274,15 +219,6 @@ export default function MembersDirectory({
               </button>
             );
           })}
-
-          {/* Plus Add Tab Button */}
-          <button
-            onClick={onAddMemberType}
-            className="w-7 h-7 rounded-full border border-neutral-300 flex items-center justify-center text-neutral-500 hover:bg-neutral-100 transition-all cursor-pointer ml-2 self-center shrink-0 mb-2 lg:mb-0"
-            title="Create Custom Group"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
         </div>
 
         {/* Right side Rounded Search box */}
@@ -342,19 +278,21 @@ export default function MembersDirectory({
             <thead>
               <tr className="bg-[#22163b] text-white text-sm font-aeonicPro select-none">
                 {/* Select All Checkbox Column */}
-                <th className="py-4 px-4 text-center w-14 border-r border-neutral-700/30">
-                  <div className="flex items-center justify-center">
-                    <input
-                      type="checkbox"
-                      checked={
-                        sortedMembers.length > 0 &&
-                        selectedIds.size === sortedMembers.length
-                      }
-                      onChange={handleToggleAll}
-                      className="w-5 h-5 rounded-md border-2 border-neutral-400 focus:ring-0 text-[#835BD5] cursor-pointer accent-[#835BD5]"
-                    />
-                  </div>
-                </th>
+                {isEligibleToModify && (
+                  <th className="py-4 px-4 text-center w-14 border-r border-neutral-700/30">
+                    <div className="flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        checked={
+                          sortedMembers.length > 0 &&
+                          selectedIds.size === sortedMembers.length
+                        }
+                        onChange={handleToggleAll}
+                        className="w-5 h-5 rounded-md border-2 border-neutral-400 focus:ring-0 text-[#835BD5] cursor-pointer accent-[#835BD5]"
+                      />
+                    </div>
+                  </th>
+                )}
 
                 {/* S.No Column */}
                 <th className="py-4 px-4 text-center w-16 border-r border-neutral-700/30 font-semibold">
@@ -396,9 +334,11 @@ export default function MembersDirectory({
                 </th>
 
                 {/* Delete Column */}
-                <th className="py-4 px-4 font-semibold text-center w-24">
-                  Delete
-                </th>
+                {isEligibleToModify && (
+                  <th className="py-4 px-4 font-semibold text-center w-24">
+                    Delete
+                  </th>
+                )}
               </tr>
             </thead>
 
@@ -407,7 +347,7 @@ export default function MembersDirectory({
               {sortedMembers.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={isEligibleToModify ? 6 : 4}
                     className="py-16 text-center text-neutral-400 font-semibold"
                   >
                     <Search className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
@@ -425,16 +365,18 @@ export default function MembersDirectory({
                       }`}
                     >
                       {/* Checkbox */}
-                      <td className="py-4 px-4 text-center border-r border-neutral-100">
-                        <div className="flex items-center justify-center">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => handleToggleRow(member.id)}
-                            className="w-5 h-5 rounded-md border-2 border-neutral-300 text-[#835BD5] focus:ring-0 cursor-pointer accent-[#835BD5]"
-                          />
-                        </div>
-                      </td>
+                      {isEligibleToModify && (
+                        <td className="py-4 px-4 text-center border-r border-neutral-100">
+                          <div className="flex items-center justify-center">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleToggleRow(member.id)}
+                              className="w-5 h-5 rounded-md border-2 border-neutral-300 text-[#835BD5] focus:ring-0 cursor-pointer accent-[#835BD5]"
+                            />
+                          </div>
+                        </td>
+                      )}
 
                       {/* Serial Number */}
                       <td className="py-4 px-4 text-center border-r border-neutral-100 text-sm font-semibold text-neutral-700">
@@ -469,29 +411,40 @@ export default function MembersDirectory({
 
                       {/* Custom Pastel Role Badge */}
                       <td className="py-4 px-6 border-r border-neutral-100">
-                        <div
-                          className={`px-3 py-1.5 rounded-md text-xs font-semibold text-center w-fit select-none ${getRoleBadgeStyles(
-                            member.role,
-                          )}`}
-                        >
-                          {member.role}
+                        <div className="flex flex-col gap-1">
+                          <div
+                            className={`px-3 py-1.5 rounded-md text-xs font-semibold text-center w-fit select-none ${getRoleBadgeStyles(
+                              member.role,
+                            )}`}
+                          >
+                            {member.role}
+                          </div>
+                          {member.accessControlRole && (
+                            <span className="text-[10px] text-neutral-500 font-medium pl-1">
+                              Access: {member.accessControlRole}
+                            </span>
+                          )}
                         </div>
                       </td>
 
                       {/* Task Coordinator Actions */}
                       <td className="py-4 px-6 border-r border-neutral-100">
                         <div className="flex flex-col items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => {
-                              if (onAssignTask) {
-                                onAssignTask(member.name);
-                              }
-                            }}
-                            className="flex items-center gap-2 bg-[#271B40] hover:bg-[#423072] active:scale-97 text-white font-bold text-xs px-5 py-2.5 rounded-full shadow-md transition-all cursor-pointer"
-                          >
-                            <CheckSquare className="w-3.5 h-3.5 text-white" />
-                            Assign Task
-                          </button>
+                          {isEligibleToModify ? (
+                            <button
+                              onClick={() => {
+                                if (onAssignTask) {
+                                  onAssignTask(member.name);
+                                }
+                              }}
+                              className="flex items-center gap-2 bg-[#271B40] hover:bg-[#423072] active:scale-97 text-white font-bold text-xs px-5 py-2.5 rounded-full shadow-md transition-all cursor-pointer"
+                            >
+                              <CheckSquare className="w-3.5 h-3.5 text-white" />
+                              Assign Task
+                            </button>
+                          ) : (
+                            <span className="text-xs text-neutral-500 font-medium select-none">No Actions</span>
+                          )}
 
                           <button
                             onClick={() => {
@@ -507,17 +460,23 @@ export default function MembersDirectory({
                       </td>
 
                       {/* Red Trash Delete Action */}
-                      <td className="py-4 px-4 text-center">
-                        <button
-                          onClick={() =>
-                            handleDeleteMember(member.id, member.name)
-                          }
-                          className="p-2 rounded-lg text-neutral-400 hover:text-[#E92215] hover:bg-[#E92215]/10 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                          title="Remove Member"
-                        >
-                          <Trash2 className="w-5 h-5 stroke-1.5" />
-                        </button>
-                      </td>
+                      {isEligibleToModify && (
+                        <td className="py-4 px-4 text-center">
+                          {canModifyMember(member) ? (
+                            <button
+                              onClick={() =>
+                                handleDeleteMember(member.id, member.name)
+                              }
+                              className="p-2 rounded-lg text-neutral-400 hover:text-[#E92215] hover:bg-[#E92215]/10 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                              title="Remove Member"
+                            >
+                              <Trash2 className="w-5 h-5 stroke-1.5" />
+                            </button>
+                          ) : (
+                            <span className="text-xs text-neutral-400 font-semibold select-none">Locked</span>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   );
                 })

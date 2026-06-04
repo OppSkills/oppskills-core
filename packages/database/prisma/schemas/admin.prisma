@@ -1,6 +1,3 @@
-// PostgreSQL schema: admin
-// Platform admin
-
 model AdminEntity {
   id           String     @id @default(cuid())
   name         String

@@ -1,15 +1,3 @@
-// PostgreSQL schema: user
-// Users, profiles, onboarding, and access levels
-
-enum AccessLevel {
-  ADMIN
-  USER
-  VIEWER
-
-  @@map("AccessLevel")
-  @@schema("user")
-}
-
 model UserEntity {
   id                               String                                  @id @default(cuid())
   email                            String                                  @unique
@@ -20,42 +8,42 @@ model UserEntity {
   createdAt                        DateTime                                @default(now())
   updatedAt                        DateTime                                @updatedAt
   onboarded                        Boolean                                 @default(false)
+  festivals                        FestivalEntity[]                        @relation("UserFestivals")
+  approvedReferrals                ReferralEntity[]                        @relation("ReferralApprover")
+  referralsCreated                 ReferralEntity[]                        @relation("ReferralCreator")
+  referralsAssigned                ReferralEntity[]                        @relation("ReferralReferrer")
+  communities                      CommunityEntity[]                       @relation("UserCommunities")
+  hostedCommunityMeets             CommunityMeetEntity[]                   @relation("CommunityMeetHost")
+  communityMemberships             CommunityMemberEntity[]                 @relation("UserCommunityMemberships")
+  notifications                    notifications[]                         @relation("UserNotifications")
   events                           EventEntity[]                           @relation("UserEvents")
-  eventDiscountRedemptions         EventDiscountRedemptionEntity[]         @relation("UserEventDiscountRedemptions")
   eventParticipantApprovals        EventParticipantEntity[]                @relation("EventParticipantApprover")
   eventParticipations              EventParticipantEntity[]
   scannedEventPasses               EventPassEntity[]                       @relation("ScannedEventPasses")
   eventPasses                      EventPassEntity[]                       @relation("UserEventPasses")
-  eventPaymentsAsOrganizer         EventPaymentEntity[]                    @relation("EventPaymentOrganizer")
-  eventPaymentsAsPayer             EventPaymentEntity[]                    @relation("EventPaymentPayer")
-  eventPayoutsReceived             EventPayoutEntity[]                     @relation("UserEventPayoutsReceived")
   eventRegistrationSubmissions     EventRegistrationSubmissionEntity[]     @relation("UserEventSubmissions")
   eventRolesCreated                EventUserRoleEntity[]                   @relation("EventRoleCreator")
   eventRoles                       EventUserRoleEntity[]                   @relation("UserEventRoles")
-  featureWaitlist                  FeatureWaitlistEntity[]                 @relation("UserFeatureWaitlist")
-  festivals                        FestivalEntity[]                        @relation("UserFestivals")
   hackathons                       HackathonEntity[]                       @relation("UserHackathons")
+  hackathonRegistrationSubmissions HackathonRegistrationSubmissionEntity[] @relation("UserHackathonSubmissions")
+  hackathonRolesCreated            HackathonUserRoleEntity[]               @relation("HackathonRoleCreator")
+  hackathonRoles                   HackathonUserRoleEntity[]               @relation("UserHackathonRoles")
+  teamsCreated                     TeamEntity[]                            @relation("TeamCreator")
+  teamsLed                         TeamEntity[]                            @relation("UserTeams")
+  teamMembers                      TeamMemberEntity[]
+  eventDiscountRedemptions         EventDiscountRedemptionEntity[]         @relation("UserEventDiscountRedemptions")
+  eventPaymentsAsOrganizer         EventPaymentEntity[]                    @relation("EventPaymentOrganizer")
+  eventPaymentsAsPayer             EventPaymentEntity[]                    @relation("EventPaymentPayer")
+  eventPayoutsReceived             EventPayoutEntity[]                     @relation("UserEventPayoutsReceived")
   discountRedemptions              HackathonDiscountRedemptionEntity[]     @relation("UserDiscountRedemptions")
   paymentsAsOrganizer              HackathonPaymentEntity[]                @relation("HackathonPaymentOrganizer")
   paymentsAsPayer                  HackathonPaymentEntity[]                @relation("HackathonPaymentPayer")
   payoutsReceived                  HackathonPayoutEntity[]                 @relation("UserPayoutsReceived")
-  hackathonRegistrationSubmissions HackathonRegistrationSubmissionEntity[] @relation("UserHackathonSubmissions")
-  hackathonRolesCreated            HackathonUserRoleEntity[]               @relation("HackathonRoleCreator")
-  hackathonRoles                   HackathonUserRoleEntity[]               @relation("UserHackathonRoles")
   payoutDetails                    OrganizerPayoutDetailsEntity[]          @relation("UserPayoutDetails")
   paymentRegistrationEscrows       PaymentRegistrationEscrowEntity[]
   razorpayRouteAccount             RazorpayRouteAccountEntity?             @relation("UserRazorpayRouteAccount")
-  approvedReferrals                ReferralEntity[]                        @relation("ReferralApprover")
-  referralsCreated                 ReferralEntity[]                        @relation("ReferralCreator")
-  referralsAssigned                ReferralEntity[]                        @relation("ReferralReferrer")
-  teamsCreated                     TeamEntity[]                            @relation("TeamCreator")
-  teamsLed                         TeamEntity[]                            @relation("UserTeams")
-  teamMembers                      TeamMemberEntity[]
+  featureWaitlist                  FeatureWaitlistEntity[]                 @relation("UserFeatureWaitlist")
   onboardingProfile                UserOnboardingProfileEntity?
-  notifications                    notifications[]                         @relation("UserNotifications")
-  communities                      CommunityEntity[]                       @relation("UserCommunities")
-  communityMemberships             CommunityMemberEntity[]               @relation("UserCommunityMemberships")
-  hostedCommunityMeets             CommunityMeetEntity[]                 @relation("CommunityMeetHost")
 
   @@map("user")
   @@schema("user")
@@ -97,7 +85,7 @@ model UserOnboardingProfileEntity {
   collegeSkipped       Boolean          @default(false) @map("college_skipped")
   companyName          String?          @map("company_name")
   jobTitle             String?          @map("job_title")
-  locationCoords         String?          @map("location_city")
+  locationCoords       String?          @map("location_city")
   locationState        String?          @map("location_state")
   locationCountry      String?          @map("location_country")
   interests            String[]         @default([])
@@ -130,6 +118,15 @@ model FeatureWaitlistEntity {
   @@index([userId])
   @@index([feature])
   @@map("feature_waitlist")
+  @@schema("user")
+}
+
+enum AccessLevel {
+  ADMIN
+  USER
+  VIEWER
+
+  @@map("AccessLevel")
   @@schema("user")
 }
 

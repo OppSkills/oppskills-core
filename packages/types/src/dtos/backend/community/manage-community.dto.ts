@@ -1,10 +1,12 @@
 export interface CommunityMember {
   id: string;
+  userId: string;
   name: string;
   email: string;
   role: string;
   avatarUrl: string;
   lastAssignedDate: string;
+  accessControlRole: string;
 }
 
 export interface CommunityTask {

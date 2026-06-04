@@ -1,6 +1,3 @@
-// Root Prisma schema — generator and datasource only.
-// Domain models live in ./schemas/*.prisma (multi-file schema).
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
@@ -9,5 +6,5 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["admin", "user", "common", "events", "hackathon", "payments", "email_notifications", "community"]
+  schemas  = ["admin", "common", "community", "email_notifications", "events", "hackathon", "payments", "user"]
 }

@@ -44,3 +44,10 @@ export {
   CommunityIndustry,
   type CommunityIndustryValue,
 } from "./community-industry";
+
+export enum CommunityAccessControlRole {
+  ADMIN = "ADMIN",
+  MODERATOR = "MODERATOR",
+  READ_ONLY = "READ_ONLY",
+}
+

@@ -8,14 +8,14 @@ interface ManageHeaderProps {
   communityId: string;
   communityName?: string;
   onAddMember?: () => void;
-  onAddRole?: () => void;
+  isEligibleToModify?: boolean;
 }
 
 export default function ManageHeader({
   communityId,
   communityName,
   onAddMember,
-  onAddRole,
+  isEligibleToModify = false,
 }: ManageHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full pb-2 border-b border-neutral-100">
@@ -26,17 +26,13 @@ export default function ManageHeader({
         <p className="text-neutral-700 text-base">
           Here is summary of your Community
         </p>
-        <p className="text-xs text-neutral-500 font-mono" aria-label="Community identifier">
-          {communityId}
-        </p>
       </div>
       <div className="flex items-center gap-3 w-full sm:w-auto">
-        <Button onClick={onAddMember} className="bg-primary-700">
-          Add Member
-        </Button>
-        <Button variant="outline" onClick={onAddRole}>
-          Add Member Role
-        </Button>
+        {isEligibleToModify && (
+          <Button onClick={onAddMember} className="bg-primary-700">
+            Add Member
+          </Button>
+        )}
       </div>
     </div>
   );

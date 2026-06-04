@@ -1,6 +1,3 @@
-// PostgreSQL schema: events
-// Events, passes, and event registration
-
 model EventEntity {
   id                        String                              @id @default(cuid())
   slug                      String                              @unique
@@ -12,7 +9,6 @@ model EventEntity {
   festivalId                String?                             @map("festival_id")
   locationType              LocationType?                       @map("location_type")
   locationAddress           String?                             @map("location_address")
-  locationCoords            String?                             @map("location_coords")
   locationVirtualLink       String?                             @map("location_virtual_link")
   isFree                    Boolean                             @default(true) @map("is_free")
   entryFeeAmount            Decimal?                            @map("entry_fee_amount") @db.Decimal(12, 2)
@@ -53,20 +49,21 @@ model EventEntity {
   deletedAt                 DateTime?                           @map("deleted_at")
   isDeleted                 Boolean                             @default(false) @map("is_deleted")
   feeBearer                 FeeBearer                           @default(ORGANISER) @map("fee_bearer")
+  locationCoords            String?                             @map("location_coords")
+  notifications             notifications[]
   festival                  FestivalEntity?                     @relation(fields: [festivalId], references: [id])
   owner                     UserEntity                          @relation("UserEvents", fields: [ownerId], references: [id])
   attachments               EventAttachmentEntity[]
-  discountCodes             EventDiscountCodeEntity[]
   participants              EventParticipantEntity[]
   eventPasses               EventPassEntity[]                   @relation("EventPasses")
-  payments                  EventPaymentEntity[]
-  payouts                   EventPayoutEntity[]
   prizeBreakdown            EventPrizeBreakdownEntity[]
   registrationForm          EventRegistrationFormEntity?
   registrationSubmissions   EventRegistrationSubmissionEntity[]
   userRoles                 EventUserRoleEntity[]
+  discountCodes             EventDiscountCodeEntity[]
+  payments                  EventPaymentEntity[]
+  payouts                   EventPayoutEntity[]
   payoutDetails             OrganizerPayoutDetailsEntity?
-  notifications             notifications[]
   ticketTiers               TicketTierEntity[]
 
   @@index([festivalId])
@@ -87,20 +84,20 @@ model EventParticipantEntity {
   passEmailSent                     Boolean                                  @default(false) @map("pass_email_sent")
   passEmailSentAt                   DateTime?                                @map("pass_email_sent_at")
   referralId                        String?                                  @map("referral_id")
+  /// True while user saved registration answers but has not completed payment (paid events).
+  /// Hidden from organizer lists until checkout completes.
+  checkoutPending                   Boolean                                  @default(false) @map("checkout_pending")
   /// Selected ticket tier for free-tier registrations (no payment row).
   ticketTierId                      String?                                  @map("ticket_tier_id")
   approvedBy                        UserEntity?                              @relation("EventParticipantApprover", fields: [approvedById], references: [id])
   event                             EventEntity                              @relation(fields: [eventId], references: [id], onDelete: Cascade)
   referral                          ReferralEntity?                          @relation(fields: [referralId], references: [id])
+  ticketTier                        TicketTierEntity?                        @relation(fields: [ticketTierId], references: [id])
   user                              UserEntity                               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ticketTier                        TicketTierEntity?                        @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
   eventPass                         EventPassEntity?
-  payment                           EventPaymentEntity?
   submission                        EventRegistrationSubmissionEntity?
+  payment                           EventPaymentEntity?
   incompleteRegistrationReminderLog IncompleteRegistrationReminderLogEntity?
-  /// True while user saved registration answers but has not completed payment (paid events).
-  /// Hidden from organizer lists until checkout completes.
-  checkoutPending                   Boolean                                  @default(false) @map("checkout_pending")
 
   @@unique([eventId, userId])
   @@index([eventId])
