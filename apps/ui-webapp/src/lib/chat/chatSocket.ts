@@ -127,20 +127,32 @@ export function getChatSocket(): Socket | null {
   return socket;
 }
 
-export function joinConversation(conversationId: string): Promise<boolean> {
+const WS_ACK_TIMEOUT_MS = 10_000;
+
+function emitWithAck<T>(
+  event: string,
+  payload: unknown,
+  parse: (res: { ok?: boolean; error?: string } & T) => boolean,
+): Promise<boolean> {
   return new Promise((resolve) => {
     if (!socket?.connected) {
       resolve(false);
       return;
     }
-    socket.emit(
-      "join_conversation",
-      { conversationId },
-      (res: { ok?: boolean }) => {
-        resolve(res?.ok === true);
-      },
-    );
+    const timer = setTimeout(() => resolve(false), WS_ACK_TIMEOUT_MS);
+    socket.emit(event, payload, (res: { ok?: boolean; error?: string } & T) => {
+      clearTimeout(timer);
+      resolve(parse(res));
+    });
   });
+}
+
+export function joinConversation(conversationId: string): Promise<boolean> {
+  return emitWithAck(
+    "join_conversation",
+    { conversationId },
+    (res) => res?.ok === true,
+  );
 }
 
 export function leaveConversation(conversationId: string) {
@@ -156,10 +168,12 @@ export function emitSendMessage(
       resolve(null);
       return;
     }
+    const timer = setTimeout(() => resolve(null), WS_ACK_TIMEOUT_MS);
     socket.emit(
       "send_message",
       { conversationId, ...payload },
-      (res: { ok?: boolean; message?: ChatMessageDto }) => {
+      (res: { ok?: boolean; message?: ChatMessageDto; error?: string }) => {
+        clearTimeout(timer);
         if (res?.ok && res.message) {
           resolve(res.message);
         } else {

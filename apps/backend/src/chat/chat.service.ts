@@ -134,18 +134,32 @@ export class ChatService {
     }
   }
 
-  private async otherParticipantIds(
+  private async activeParticipantIds(
     conversationId: string,
-    excludeUserId: string,
   ): Promise<string[]> {
     const rows = await prisma.conversationParticipantEntity.findMany({
-      where: {
-        conversationId,
-        userId: { not: excludeUserId },
-      },
+      where: { conversationId, leftAt: null },
       select: { userId: true },
     });
     return rows.map((r) => r.userId);
+  }
+
+  private otherParticipantIdsFromActive(
+    activeParticipantIds: string[],
+    excludeUserId: string,
+  ): string[] {
+    return activeParticipantIds.filter((id) => id !== excludeUserId);
+  }
+
+  private async otherParticipantIds(
+    conversationId: string,
+    excludeUserId: string,
+    activeParticipantIds?: string[],
+  ): Promise<string[]> {
+    const active =
+      activeParticipantIds ??
+      (await this.activeParticipantIds(conversationId));
+    return this.otherParticipantIdsFromActive(active, excludeUserId);
   }
 
   private async computeDeliveryStatus(
@@ -153,9 +167,14 @@ export class ChatService {
     senderId: string,
     conversationId: string,
     viewerId: string,
+    activeParticipantIds?: string[],
   ): Promise<ChatDeliveryStatus | null> {
     if (viewerId !== senderId) return null;
-    const others = await this.otherParticipantIds(conversationId, senderId);
+    const others = await this.otherParticipantIds(
+      conversationId,
+      senderId,
+      activeParticipantIds,
+    );
     if (others.length === 0) return 'DELIVERED';
     const delivered = await prisma.messageDeliveryEntity.count({
       where: {
@@ -189,12 +208,14 @@ export class ChatService {
       } | null;
     },
     viewerId: string,
+    activeParticipantIds?: string[],
   ): Promise<ChatMessageDto> {
     const deliveryStatus = await this.computeDeliveryStatus(
       message.id,
       message.senderId,
       message.conversationId,
       viewerId,
+      activeParticipantIds,
     );
     let attachment: ChatAttachmentDto | null = null;
     if (message.attachment) {
@@ -727,8 +748,10 @@ export class ChatService {
       });
       const hasMore = messages.length > limit;
       if (hasMore) messages.pop();
+      const activeParticipantIds =
+        await this.activeParticipantIds(conversationId);
       const data = await Promise.all(
-        messages.map((m) => this.mapMessage(m, userId)),
+        messages.map((m) => this.mapMessage(m, userId, activeParticipantIds)),
       );
       await this.ackDelivered(userId, conversationId, data.map((m) => m.id));
       return {
@@ -751,8 +774,12 @@ export class ChatService {
     if (hasMore) messages.pop();
 
     const chronological = [...messages].reverse();
+    const activeParticipantIds =
+      await this.activeParticipantIds(conversationId);
     const data = await Promise.all(
-      chronological.map((m) => this.mapMessage(m, userId)),
+      chronological.map((m) =>
+        this.mapMessage(m, userId, activeParticipantIds),
+      ),
     );
     const ids = data.map((m) => m.id);
     await this.ackDelivered(userId, conversationId, ids);
@@ -851,9 +878,13 @@ export class ChatService {
     userId: string,
     conversationId: string,
     messageIds: string[],
-  ): Promise<{ updatedIds: string[]; statuses: Record<string, ChatDeliveryStatus> }> {
+  ): Promise<{
+    updatedIds: string[];
+    statuses: Record<string, ChatDeliveryStatus>;
+    senderByMessageId: Record<string, string>;
+  }> {
     if (messageIds.length === 0) {
-      return { updatedIds: [], statuses: {} };
+      return { updatedIds: [], statuses: {}, senderByMessageId: {} };
     }
     await this.assertParticipant(userId, conversationId);
 
@@ -867,7 +898,7 @@ export class ChatService {
     });
 
     if (messages.length === 0) {
-      return { updatedIds: [], statuses: {} };
+      return { updatedIds: [], statuses: {}, senderByMessageId: {} };
     }
 
     await prisma.messageDeliveryEntity.createMany({
@@ -878,6 +909,8 @@ export class ChatService {
       skipDuplicates: true,
     });
 
+    const activeParticipantIds =
+      await this.activeParticipantIds(conversationId);
     const statuses: Record<string, ChatDeliveryStatus> = {};
     for (const m of messages) {
       const status = await this.computeDeliveryStatus(
@@ -885,13 +918,20 @@ export class ChatService {
         m.senderId,
         conversationId,
         m.senderId,
+        activeParticipantIds,
       );
       statuses[m.id] = status ?? 'SENT';
+    }
+
+    const senderByMessageId: Record<string, string> = {};
+    for (const m of messages) {
+      senderByMessageId[m.id] = m.senderId;
     }
 
     return {
       updatedIds: messages.map((m) => m.id),
       statuses,
+      senderByMessageId,
     };
   }
 

@@ -204,5 +204,22 @@ describe('ChatService', () => {
 
       expect(status).toBe('SENT');
     });
+
+    it('uses precomputed active participants without querying participants', async () => {
+      prisma.messageDeliveryEntity.count.mockResolvedValue(1);
+
+      const status = await service['computeDeliveryStatus'](
+        'm1',
+        'user-1',
+        'conv-1',
+        'user-1',
+        ['user-1', 'user-2'],
+      );
+
+      expect(status).toBe('DELIVERED');
+      expect(
+        prisma.conversationParticipantEntity.findMany,
+      ).not.toHaveBeenCalled();
+    });
   });
 });

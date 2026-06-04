@@ -10,6 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
+import { HttpException } from '@nestjs/common';
 import { verifyToken } from '@clerk/backend';
 import { Logger } from 'src/_utils/logger';
 import { ClerkAuthConfigService } from 'src/common/config.service';
@@ -122,18 +123,44 @@ export class ChatGateway
     return userId;
   }
 
+  private wsErrorMessage(error: unknown): string {
+    if (error instanceof HttpException) {
+      const response = error.getResponse();
+      if (typeof response === 'string') return response;
+      if (typeof response === 'object' && response !== null && 'message' in response) {
+        const msg = (response as { message?: string | string[] }).message;
+        if (Array.isArray(msg)) return msg.join(', ');
+        if (typeof msg === 'string') return msg;
+      }
+      return error.message;
+    }
+    if (error instanceof Error) return error.message;
+    return 'Request failed';
+  }
+
+  private wsFail(error: unknown): { ok: false; error: string } {
+    if (!(error instanceof HttpException)) {
+      this.logger.warn('Chat WS handler error', error);
+    }
+    return { ok: false, error: this.wsErrorMessage(error) };
+  }
+
   @SubscribeMessage('join_conversation')
   async joinConversation(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { conversationId: string },
   ) {
-    const userId = this.requireUserId(client);
-    const conversationId = body?.conversationId;
-    if (!conversationId) return { ok: false };
+    try {
+      const userId = this.requireUserId(client);
+      const conversationId = body?.conversationId;
+      if (!conversationId) return { ok: false, error: 'conversationId required' };
 
-    await this.chatService.assertParticipant(userId, conversationId);
-    await client.join(this.conversationRoom(conversationId));
-    return { ok: true };
+      await this.chatService.assertParticipant(userId, conversationId);
+      await client.join(this.conversationRoom(conversationId));
+      return { ok: true };
+    } catch (error) {
+      return this.wsFail(error);
+    }
   }
 
   @SubscribeMessage('leave_conversation')
@@ -141,10 +168,14 @@ export class ChatGateway
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { conversationId: string },
   ) {
-    const conversationId = body?.conversationId;
-    if (!conversationId) return { ok: false };
-    await client.leave(this.conversationRoom(conversationId));
-    return { ok: true };
+    try {
+      const conversationId = body?.conversationId;
+      if (!conversationId) return { ok: false, error: 'conversationId required' };
+      await client.leave(this.conversationRoom(conversationId));
+      return { ok: true };
+    } catch (error) {
+      return this.wsFail(error);
+    }
   }
 
   @SubscribeMessage('send_message')
@@ -153,25 +184,33 @@ export class ChatGateway
     @MessageBody()
     body: { conversationId: string } & SendChatMessageDto,
   ) {
-    const userId = this.requireUserId(client);
-    const { conversationId, ...payload } = body;
-    if (!conversationId) return { ok: false };
+    try {
+      const userId = this.requireUserId(client);
+      const { conversationId, ...payload } = body;
+      if (!conversationId) return { ok: false, error: 'conversationId required' };
 
-    const message = await this.chatService.sendMessage(
-      userId,
-      conversationId,
-      payload,
-    );
+      const message = await this.chatService.sendMessage(
+        userId,
+        conversationId,
+        payload,
+      );
 
-    await this.broadcastNewMessage(conversationId, message);
-    return { ok: true, message };
+      await this.broadcastNewMessage(conversationId, message);
+      return { ok: true, message };
+    } catch (error) {
+      return this.wsFail(error);
+    }
   }
 
   @SubscribeMessage('presence_heartbeat')
   async presenceHeartbeat(@ConnectedSocket() client: AuthenticatedSocket) {
-    const userId = this.requireUserId(client);
-    await this.presenceService.refreshOnline(userId);
-    return { ok: true };
+    try {
+      const userId = this.requireUserId(client);
+      await this.presenceService.refreshOnline(userId);
+      return { ok: true };
+    } catch (error) {
+      return this.wsFail(error);
+    }
   }
 
   private async broadcastPresenceToContacts(
@@ -199,32 +238,34 @@ export class ChatGateway
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { conversationId: string; messageIds: string[] },
   ) {
-    const userId = this.requireUserId(client);
-    const { conversationId, messageIds } = body;
-    if (!conversationId || !messageIds?.length) return { ok: false };
+    try {
+      const userId = this.requireUserId(client);
+      const { conversationId, messageIds } = body;
+      if (!conversationId || !messageIds?.length) {
+        return { ok: false, error: 'conversationId and messageIds required' };
+      }
 
-    const result = await this.chatService.ackDelivered(
-      userId,
-      conversationId,
-      messageIds,
-    );
+      const result = await this.chatService.ackDelivered(
+        userId,
+        conversationId,
+        messageIds,
+      );
 
-    for (const messageId of result.updatedIds) {
-      const status = result.statuses[messageId];
-      const row = await prisma.messageEntity.findUnique({
-        where: { id: messageId },
-        select: { senderId: true },
-      });
-      if (row) {
-        this.server.to(this.userRoom(row.senderId)).emit('messages_delivered', {
+      for (const messageId of result.updatedIds) {
+        const senderId = result.senderByMessageId[messageId];
+        const status = result.statuses[messageId];
+        if (!senderId || !status) continue;
+        this.server.to(this.userRoom(senderId)).emit('messages_delivered', {
           conversationId,
           messageId,
           deliveryStatus: status,
         });
       }
-    }
 
-    return { ok: true, ...result };
+      return { ok: true, ...result };
+    } catch (error) {
+      return this.wsFail(error);
+    }
   }
 
   async broadcastConversationRemoved(
