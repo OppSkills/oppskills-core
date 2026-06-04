@@ -27,8 +27,8 @@ export class MeetPreviewResponseDto {
   @ApiPropertyOptional({ nullable: true })
   scheduledStartAt: string | null;
 
-  @ApiProperty()
-  communityName: string;
+  @ApiPropertyOptional({ nullable: true })
+  communityName: string | null;
 
   @ApiProperty()
   hostName: string;

@@ -1,0 +1,14 @@
+{
+  "name": "OppSkills Meet",
+  "short_name": "Meet",
+  "icons": [
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#0c0114",
+  "background_color": "#0a0a0f",
+  "display": "standalone"
+}

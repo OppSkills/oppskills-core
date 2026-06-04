@@ -32,9 +32,13 @@ function optionalString(obj: Record<string, unknown>, key: string): string | nul
 
 function parseMeetResponse(raw: Record<string, unknown>): CommunityMeetResponse {
   const inviteCode = requireString(raw, "inviteCode");
+  const communityId = raw["communityId"];
   return {
     id: requireString(raw, "id"),
-    communityId: requireString(raw, "communityId"),
+    communityId:
+      typeof communityId === "string" && communityId.trim().length > 0
+        ? communityId
+        : null,
     inviteCode,
     kind: requireString(raw, "kind") as CommunityMeetResponse["kind"],
     title: requireString(raw, "title"),
@@ -114,7 +118,7 @@ export async function getMeetPreview(
     kind: requireString(raw, "kind") as MeetPreviewResponse["kind"],
     status: requireString(raw, "status") as MeetPreviewResponse["status"],
     scheduledStartAt: optionalString(raw, "scheduledStartAt"),
-    communityName: requireString(raw, "communityName"),
+    communityName: optionalString(raw, "communityName"),
     hostName: requireString(raw, "hostName"),
     hostUserId: requireString(raw, "hostUserId"),
     audienceScope: requireString(

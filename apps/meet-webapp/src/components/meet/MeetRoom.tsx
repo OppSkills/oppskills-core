@@ -12,12 +12,12 @@ import MeetHeader, { type LayoutMode } from "./MeetHeader";
 import VideoStage from "./VideoStage";
 import MeetSidebar from "./MeetSidebar";
 import MeetControlBar from "./MeetControlBar";
-import { Users } from "lucide-react";
-
+import { useIsMobile } from "@/hooks/useMediaQuery";
 interface MeetRoomProps {
   token: string;
   serverUrl: string;
   preview: MeetPreviewResponse;
+  inviteCode: string;
   initialAudioEnabled?: boolean;
   initialVideoEnabled?: boolean;
   onLeave: () => void;
@@ -25,13 +25,17 @@ interface MeetRoomProps {
 
 function MeetRoomContent({
   preview,
+  inviteCode,
   sidebarOpen,
   onToggleSidebar,
+  onSidebarClose,
   onLeave,
 }: {
   preview: MeetPreviewResponse;
+  inviteCode: string;
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
+  onSidebarClose: () => void;
   onLeave: () => void;
 }) {
   const room = useRoomContext();
@@ -98,38 +102,37 @@ function MeetRoomContent({
     });
   };
 
+  const isMobile = useIsMobile();
+
   return (
-    <div className="h-screen flex flex-col bg-[#0a0a0f] relative">
+    <div className="h-dvh flex flex-col overflow-hidden bg-[#0a0a0f] relative">
       <MeetHeader
         layoutMode={layoutMode}
         onLayoutChange={setLayoutMode}
       />
 
-      <div className="flex-1 flex min-h-0">
-        <div className="flex-1 flex flex-col min-w-0 relative">
+      <div className="flex-1 flex min-h-0 overflow-hidden max-md:pb-20">
+        <div
+          className="flex-1 flex flex-col min-w-0 relative overflow-hidden"
+          data-meet-stage
+        >
           <VideoStage
             layoutMode={layoutMode}
             raisedHands={raisedHands}
-            sidebarOpen={sidebarOpen}
+            inviteCode={inviteCode}
+            isMobile={isMobile}
           />
           {reaction && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl animate-bounce pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl animate-bounce pointer-events-none z-10">
               {reaction}
             </div>
           )}
         </div>
-        <MeetSidebar hostUserId={preview.hostUserId} open={sidebarOpen} />
-      </div>
-
-      <div className="absolute right-4 bottom-24">
-        <button
-          type="button"
-          onClick={onToggleSidebar}
-          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
-          title="Toggle sidebar"
-        >
-          <Users className="w-4 h-4" />
-        </button>
+        <MeetSidebar
+          hostUserId={preview.hostUserId}
+          open={sidebarOpen}
+          onClose={onSidebarClose}
+        />
       </div>
 
       <MeetControlBar
@@ -137,6 +140,8 @@ function MeetRoomContent({
         handRaised={handRaised}
         onToggleHand={toggleHand}
         onReaction={() => undefined}
+        onToggleSidebar={onToggleSidebar}
+        sidebarOpen={sidebarOpen}
       />
       <RoomAudioRenderer />
     </div>
@@ -147,11 +152,15 @@ export default function MeetRoom({
   token,
   serverUrl,
   preview,
+  inviteCode,
   initialAudioEnabled = true,
   initialVideoEnabled = true,
   onLeave,
 }: MeetRoomProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 768px)").matches;
+  });
 
   return (
     <LiveKitRoom
@@ -161,12 +170,14 @@ export default function MeetRoom({
       video={initialVideoEnabled}
       audio={initialAudioEnabled}
       onDisconnected={onLeave}
-      className="h-screen"
+      className="h-dvh"
     >
       <MeetRoomContent
         preview={preview}
+        inviteCode={inviteCode}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        onSidebarClose={() => setSidebarOpen(false)}
         onLeave={onLeave}
       />
     </LiveKitRoom>

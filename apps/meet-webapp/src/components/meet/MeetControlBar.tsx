@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   useLocalParticipant,
   useRoomContext,
@@ -16,15 +16,20 @@ import {
   CircleDot,
   PhoneOff,
   Loader2,
+  PanelLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useCanScreenShare } from "@/hooks/useCanScreenShare";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 
 interface MeetControlBarProps {
+  onToggleSidebar: () => void;
   onLeave: () => void;
   handRaised: boolean;
   onToggleHand: () => void;
   onReaction: (emoji: string) => void;
+  sidebarOpen?: boolean;
 }
 
 function ControlButton({
@@ -63,16 +68,20 @@ function ControlButton({
 }
 
 export default function MeetControlBar({
+  onToggleSidebar,
   onLeave,
   handRaised,
   onToggleHand,
   onReaction,
+  sidebarOpen = false,
 }: MeetControlBarProps) {
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
   const micEnabled = localParticipant.isMicrophoneEnabled;
   const camEnabled = localParticipant.isCameraEnabled;
   const [isScreenShareUpdating, setIsScreenShareUpdating] = useState(false);
+  const canScreenShare = useCanScreenShare();
+  const isMobile = useIsMobile();
 
   const toggleMic = async () => {
     await localParticipant.setMicrophoneEnabled(!micEnabled);
@@ -84,6 +93,7 @@ export default function MeetControlBar({
 
   const toggleScreenShare = async () => {
     const nextEnabled = !localParticipant.isScreenShareEnabled;
+
     if (!nextEnabled) {
       const confirmed = window.confirm(
         "Are you sure you want to stop sharing your screen?",
@@ -93,14 +103,37 @@ export default function MeetControlBar({
 
     setIsScreenShareUpdating(true);
     try {
-      await localParticipant.setScreenShareEnabled(nextEnabled);
-      toast.success(nextEnabled ? "Screen sharing started" : "Screen sharing stopped");
+      await localParticipant.setScreenShareEnabled(nextEnabled, {
+        audio: !isMobile,
+        video: true,
+        ...(isMobile
+          ? {
+              selfBrowserSurface: "include" as const,
+              surfaceSwitching: "include" as const,
+            }
+          : {}),
+      });
+      toast.success(
+        nextEnabled ? "Screen sharing started" : "Screen sharing stopped",
+      );
     } catch (error) {
-      toast.error(
+      const message =
         error instanceof Error
           ? error.message
-          : "Could not change screen sharing state",
-      );
+          : "Could not change screen sharing state";
+      if (
+        isMobile &&
+        (message.includes("NotSupported") ||
+          message.includes("not supported") ||
+          message.includes("getDisplayMedia") ||
+          message.includes("Permission denied"))
+      ) {
+        toast.error(
+          "Screen sharing is not supported in this mobile browser. Try Chrome on Android or Safari 17.4+ on iOS.",
+        );
+      } else {
+        toast.error(message);
+      }
     } finally {
       setIsScreenShareUpdating(false);
     }
@@ -112,7 +145,13 @@ export default function MeetControlBar({
   };
 
   return (
-    <footer className="h-20 shrink-0 border-t border-white/10 bg-[#0c0114]/95 px-4 flex items-center justify-center gap-3">
+    <footer
+      className={cn(
+        "h-20 shrink-0 border-t border-white/10 bg-[#0c0114]/95 px-4 flex items-center justify-center gap-2 sm:gap-3",
+        "fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]",
+        "md:relative md:z-auto md:pb-0",
+      )}
+    >
       <ControlButton
         active={micEnabled}
         onClick={() => void toggleMic()}
@@ -139,14 +178,16 @@ export default function MeetControlBar({
 
       <ControlButton
         active={localParticipant.isScreenShareEnabled || isScreenShareUpdating}
-        disabled={isScreenShareUpdating}
+        disabled={isScreenShareUpdating || (!canScreenShare && !localParticipant.isScreenShareEnabled)}
         onClick={() => void toggleScreenShare()}
         title={
-          isScreenShareUpdating
-            ? "Updating screen sharing..."
-            : localParticipant.isScreenShareEnabled
-              ? "Stop sharing screen"
-              : "Share screen"
+          !canScreenShare && !localParticipant.isScreenShareEnabled
+            ? "Screen sharing unavailable"
+            : isScreenShareUpdating
+              ? "Updating screen sharing..."
+              : localParticipant.isScreenShareEnabled
+                ? "Stop sharing screen"
+                : "Share screen"
         }
       >
         {isScreenShareUpdating ? (
@@ -162,10 +203,13 @@ export default function MeetControlBar({
       </ControlButton>
 
       <ControlButton
-        onClick={() => undefined}
-        title="Recording coming soon"
+        active={sidebarOpen}
+        onClick={() => {
+          onToggleSidebar();
+        }}
+        title={sidebarOpen ? "Close side panel" : "Open side panel"}
       >
-        <CircleDot className="w-5 h-5 opacity-40" />
+        <PanelLeft className={cn("w-5 h-5", !sidebarOpen && "opacity-40")} />
       </ControlButton>
 
       <ControlButton

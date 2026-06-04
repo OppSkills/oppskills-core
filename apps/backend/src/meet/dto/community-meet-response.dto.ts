@@ -12,8 +12,8 @@ export class CommunityMeetResponseDto {
   @ApiProperty()
   id: string;
 
-  @ApiProperty()
-  communityId: string;
+  @ApiPropertyOptional({ nullable: true })
+  communityId: string | null;
 
   @ApiProperty()
   inviteCode: string;

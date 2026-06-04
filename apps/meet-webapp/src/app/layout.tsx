@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
+import { GoogleAnalytics } from "@/components/google-analytics";
+import { JsonLd } from "@/components/seo/JsonLd";
+import {
+  meetWebApplicationJsonLd,
+  organizationJsonLd,
+  rootMetadata,
+} from "@/lib/metadata";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "OppSkills Meet",
-  description: "Community video meetings on OppSkills",
-};
+export const metadata: Metadata = rootMetadata;
 
 export default function RootLayout({
   children,
@@ -18,7 +22,10 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
+        <head />
         <body className="antialiased">
+          <GoogleAnalytics />
+          <JsonLd data={[organizationJsonLd, meetWebApplicationJsonLd]} />
           {children}
           <Toaster theme="dark" position="top-center" />
         </body>

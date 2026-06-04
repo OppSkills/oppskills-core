@@ -18,11 +18,18 @@ export default function MeetHeader({
 }: MeetHeaderProps) {
   return (
     <header className="h-14 shrink-0 border-b border-white/10 bg-[#0c0114]/90 px-4 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Image src="/logo.svg" alt="OppSkills" width={200} height={50} />
+      <div className="flex items-center gap-2 shrink-0 min-w-0">
+        <Image
+          src="/logo.svg"
+          alt="OppSkills"
+          width={120}
+          height={32}
+          className="h-7 w-auto md:h-8"
+          priority
+        />
       </div>
 
-      <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
+      <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 shrink-0">
         <button
           type="button"
           onClick={() => onLayoutChange("grid")}
@@ -33,6 +40,8 @@ export default function MeetHeader({
               : "text-white/60 hover:text-white",
           )}
           title="Grid view"
+          aria-label="Grid view"
+          aria-pressed={layoutMode === "grid"}
         >
           <Grid3X3 className="w-4 h-4" />
         </button>
@@ -46,12 +55,12 @@ export default function MeetHeader({
               : "text-white/60 hover:text-white",
           )}
           title="Spotlight view"
+          aria-label="Spotlight view"
+          aria-pressed={layoutMode === "spotlight"}
         >
           <Maximize2 className="w-4 h-4" />
         </button>
       </div>
-
-      
     </header>
   );
 }

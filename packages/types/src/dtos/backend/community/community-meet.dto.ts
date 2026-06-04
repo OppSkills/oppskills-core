@@ -17,7 +17,7 @@ export interface CreateCommunityMeetDto {
 
 export interface CommunityMeetResponse {
   id: string;
-  communityId: string;
+  communityId: string | null;
   inviteCode: string;
   kind: MeetKind;
   title: string;
@@ -38,7 +38,7 @@ export interface MeetPreviewResponse {
   kind: MeetKind;
   status: MeetStatus;
   scheduledStartAt: string | null;
-  communityName: string;
+  communityName: string | null;
   hostName: string;
   hostUserId: string;
   audienceScope: MeetAudienceScope;

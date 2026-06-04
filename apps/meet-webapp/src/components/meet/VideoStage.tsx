@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   useParticipants,
   useSpeakingParticipants,
@@ -8,28 +8,344 @@ import {
   VideoTrack,
   useTracks,
 } from "@livekit/components-react";
-import { Track } from "livekit-client";
+import { Track, type Participant } from "livekit-client";
 import { MonitorUp } from "lucide-react";
 import type { LayoutMode } from "./MeetHeader";
 import ParticipantTile from "./ParticipantTile";
+import EmptyRoomState from "./EmptyRoomState";
+import StagePagination from "./StagePagination";
+import DraggableLocalPip from "./DraggableLocalPip";
+import { useViewportLayout } from "@/hooks/useViewportLayout";
+import { getGridDimensions } from "@/lib/meet/gridLayout";
 
-const TILES_PER_PAGE = 16;
-const CAROUSEL_TILES_PER_PAGE = 6;
+const SCREEN_SHARE_CAROUSEL_PER_PAGE = 6;
+
+type StageParticipant = Participant;
 
 interface VideoStageProps {
   layoutMode: LayoutMode;
   raisedHands: Set<string>;
-  sidebarOpen: boolean;
+  inviteCode: string;
+  isMobile?: boolean;
+}
+
+const MOBILE_CONTROL_BAR_INSET = 80;
+
+function sortForGrid(participants: StageParticipant[]): StageParticipant[] {
+  return [...participants]
+    .filter((p) => !p.isLocal)
+    .sort((a, b) =>
+      (a.name || a.identity).localeCompare(b.name || b.identity),
+    );
+}
+
+function LocalParticipantPip({
+  localParticipant,
+  speakingIds,
+  raisedHands,
+  isMobile = false,
+  className = "absolute bottom-2 z-30 right-6",
+}: {
+  localParticipant: StageParticipant;
+  speakingIds: Set<string>;
+  raisedHands: Set<string>;
+  isMobile?: boolean;
+  className?: string;
+}) {
+  if (isMobile) {
+    return (
+      <DraggableLocalPip
+        localParticipant={localParticipant}
+        speakingIds={speakingIds}
+        raisedHands={raisedHands}
+        bottomInset={MOBILE_CONTROL_BAR_INSET}
+      />
+    );
+  }
+
+  return (
+    <div className={className}>
+      <ParticipantTileWrapped
+        participant={localParticipant}
+        speakingIds={speakingIds}
+        raisedHands={raisedHands}
+        isLocal
+        className="w-40 h-24 sm:w-48 sm:h-28 md:w-56 md:h-32 shadow-lg border border-white/20 max-w-[min(40vw,14rem)] max-h-[min(35vh,10rem)]"
+      />
+    </div>
+  );
+}
+
+function ParticipantTileWrapped({
+  participant,
+  speakingIds,
+  raisedHands,
+  isLocal,
+  className,
+  onSelect,
+}: {
+  participant: StageParticipant;
+  speakingIds: Set<string>;
+  raisedHands: Set<string>;
+  isLocal?: boolean;
+  className?: string;
+  onSelect?: () => void;
+}) {
+  const tile = (
+    <ParticipantContext.Provider value={participant}>
+      <ParticipantTile
+        isLocal={isLocal ?? participant.isLocal}
+        isSpeaking={speakingIds.has(participant.identity)}
+        raisedHand={raisedHands.has(participant.identity)}
+        className={className}
+      />
+    </ParticipantContext.Provider>
+  );
+
+  if (!onSelect) return tile;
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="min-w-0 min-h-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#835BD5]"
+      aria-label={`Focus on ${participant.name || participant.identity}`}
+    >
+      {tile}
+    </button>
+  );
+}
+
+function GridLayoutView({
+  participants,
+  localParticipant,
+  speakingIds,
+  raisedHands,
+  maxCols,
+  tilesPerPage,
+  isMobile,
+}: {
+  participants: StageParticipant[];
+  localParticipant?: StageParticipant;
+  speakingIds: Set<string>;
+  raisedHands: Set<string>;
+  maxCols: number;
+  tilesPerPage: number;
+  isMobile?: boolean;
+}) {
+  const [page, setPage] = useState(0);
+  const sorted = useMemo(() => sortForGrid(participants), [participants]);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / tilesPerPage));
+  const safePage = Math.min(page, totalPages - 1);
+  const pageParticipants = sorted.slice(
+    safePage * tilesPerPage,
+    safePage * tilesPerPage + tilesPerPage,
+  );
+  const gridDimensions = useMemo(
+    () => getGridDimensions(pageParticipants.length, maxCols),
+    [pageParticipants.length, maxCols],
+  );
+
+  useEffect(() => {
+    setPage(0);
+  }, [sorted.length, tilesPerPage]);
+
+  useEffect(() => {
+    if (page > totalPages - 1) {
+      setPage(Math.max(0, totalPages - 1));
+    }
+  }, [page, totalPages]);
+
+  return (
+    <div className="flex-1 p-4 flex flex-col gap-3 min-h-0 relative">
+      <div
+        className="flex-1 min-h-0 grid gap-2 sm:gap-3 [direction:rtl]"
+        style={{
+          gridTemplateColumns: `repeat(${gridDimensions.cols}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${gridDimensions.rows}, minmax(0, 1fr))`,
+        }}
+      >
+        {pageParticipants.map((participant) => (
+          <ParticipantTileWrapped
+            key={participant.identity}
+            participant={participant}
+            speakingIds={speakingIds}
+            raisedHands={raisedHands}
+            className="w-full h-full min-h-0 aspect-auto! [direction:ltr]"
+          />
+        ))}
+      </div>
+      <StagePagination
+        page={safePage}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        label="Grid pages"
+      />
+      {localParticipant && (
+        <LocalParticipantPip
+          localParticipant={localParticipant}
+          speakingIds={speakingIds}
+          raisedHands={raisedHands}
+          isMobile={isMobile}
+        />
+      )}
+    </div>
+  );
+}
+
+function SpotlightLayoutView({
+  remoteParticipants,
+  localParticipant,
+  speakingParticipants,
+  speakingIds,
+  raisedHands,
+  filmstripPerPage,
+  isMobile,
+}: {
+  remoteParticipants: StageParticipant[];
+  localParticipant?: StageParticipant;
+  speakingParticipants: StageParticipant[];
+  speakingIds: Set<string>;
+  raisedHands: Set<string>;
+  filmstripPerPage: number;
+  isMobile?: boolean;
+}) {
+  const [spotlightIdentity, setSpotlightIdentity] = useState<string | null>(
+    null,
+  );
+  const [filmstripPage, setFilmstripPage] = useState(0);
+  const manualSpotlightRef = useRef(false);
+
+  const dominantSpeaker = useMemo(
+    () => speakingParticipants.find((p) => !p.isLocal),
+    [speakingParticipants],
+  );
+
+  useEffect(() => {
+    const stillPresent =
+      spotlightIdentity &&
+      remoteParticipants.some((p) => p.identity === spotlightIdentity);
+    if (stillPresent) return;
+
+    const fallback = dominantSpeaker ?? remoteParticipants[0];
+    if (fallback) {
+      setSpotlightIdentity(fallback.identity);
+      manualSpotlightRef.current = false;
+    }
+  }, [remoteParticipants, dominantSpeaker, spotlightIdentity]);
+
+  useEffect(() => {
+    if (!dominantSpeaker) return;
+    if (manualSpotlightRef.current) {
+      if (dominantSpeaker.identity !== spotlightIdentity) {
+        manualSpotlightRef.current = false;
+      }
+      return;
+    }
+    setSpotlightIdentity(dominantSpeaker.identity);
+  }, [dominantSpeaker?.identity, spotlightIdentity]);
+
+  const spotlightParticipant = useMemo(
+    () =>
+      remoteParticipants.find((p) => p.identity === spotlightIdentity) ??
+      dominantSpeaker ??
+      remoteParticipants[0],
+    [remoteParticipants, spotlightIdentity, dominantSpeaker],
+  );
+
+  const filmstripParticipants = useMemo(
+    () =>
+      remoteParticipants.filter(
+        (p) => p.identity !== spotlightParticipant?.identity,
+      ),
+    [remoteParticipants, spotlightParticipant?.identity],
+  );
+
+  const filmstripTotalPages = Math.max(
+    1,
+    Math.ceil(filmstripParticipants.length / filmstripPerPage),
+  );
+  const safeFilmstripPage = Math.min(filmstripPage, filmstripTotalPages - 1);
+  const pageFilmstrip = filmstripParticipants.slice(
+    safeFilmstripPage * filmstripPerPage,
+    safeFilmstripPage * filmstripPerPage + filmstripPerPage,
+  );
+
+  useEffect(() => {
+    setFilmstripPage(0);
+  }, [filmstripParticipants.length, filmstripPerPage]);
+
+  useEffect(() => {
+    if (filmstripPage > filmstripTotalPages - 1) {
+      setFilmstripPage(Math.max(0, filmstripTotalPages - 1));
+    }
+  }, [filmstripPage, filmstripTotalPages]);
+
+  const selectSpotlight = (identity: string) => {
+    manualSpotlightRef.current = true;
+    setSpotlightIdentity(identity);
+  };
+
+  if (!spotlightParticipant) return null;
+
+  return (
+    <div className="flex-1 p-4 flex flex-col gap-3 min-h-0 relative">
+      <div className="flex-1 min-h-0 relative rounded-2xl overflow-hidden">
+        <ParticipantTileWrapped
+          participant={spotlightParticipant}
+          speakingIds={speakingIds}
+          raisedHands={raisedHands}
+          className="w-full h-full min-h-0 aspect-auto!"
+        />
+      </div>
+
+      {filmstripParticipants.length > 0 && (
+        <div className="shrink-0 space-y-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin justify-center">
+            {pageFilmstrip.map((participant) => (
+              <ParticipantTileWrapped
+                key={participant.identity}
+                participant={participant}
+                speakingIds={speakingIds}
+                raisedHands={raisedHands}
+                onSelect={() => selectSpotlight(participant.identity)}
+                className={`w-24 h-16 sm:w-28 sm:h-18 md:w-32 md:h-20 shrink-0 aspect-auto! border-2 transition-colors ${
+                  participant.identity === spotlightParticipant.identity
+                    ? "border-[#835BD5]"
+                    : "border-transparent opacity-90 hover:opacity-100"
+                }`}
+              />
+            ))}
+          </div>
+          <StagePagination
+            page={safeFilmstripPage}
+            totalPages={filmstripTotalPages}
+            onPageChange={setFilmstripPage}
+            label="Participant pages"
+          />
+        </div>
+      )}
+      {localParticipant && (
+        <LocalParticipantPip
+          localParticipant={localParticipant}
+          speakingIds={speakingIds}
+          raisedHands={raisedHands}
+          isMobile={isMobile}
+        />
+      )}
+    </div>
+  );
 }
 
 export default function VideoStage({
   layoutMode,
   raisedHands,
-  sidebarOpen,
+  inviteCode,
+  isMobile = false,
 }: VideoStageProps) {
   const participants = useParticipants();
   const speakingParticipants = useSpeakingParticipants();
-  const [page, setPage] = useState(0);
+  const { maxCols, tilesPerPage, filmstripPerPage } = useViewportLayout();
   const [carouselPage, setCarouselPage] = useState(0);
 
   const speakingIds = useMemo(
@@ -57,26 +373,26 @@ export default function VideoStage({
     (participant) =>
       participant.identity !== screenShareOwnerIdentity && !participant.isLocal,
   );
-  const effectiveLayout =
-    participants.length === 2 ? "spotlight" : layoutMode;
-  const totalPages = Math.max(
-    1,
-    Math.ceil(remoteParticipants.length / TILES_PER_PAGE),
-  );
-  const safePage = Math.min(page, totalPages - 1);
-  const pageParticipants = remoteParticipants.slice(
-    safePage * TILES_PER_PAGE,
-    safePage * TILES_PER_PAGE + TILES_PER_PAGE,
-  );
   const totalCarouselPages = Math.max(
     1,
-    Math.ceil(carouselParticipants.length / CAROUSEL_TILES_PER_PAGE),
+    Math.ceil(carouselParticipants.length / SCREEN_SHARE_CAROUSEL_PER_PAGE),
   );
   const safeCarouselPage = Math.min(carouselPage, totalCarouselPages - 1);
   const pageCarouselParticipants = carouselParticipants.slice(
-    safeCarouselPage * CAROUSEL_TILES_PER_PAGE,
-    safeCarouselPage * CAROUSEL_TILES_PER_PAGE + CAROUSEL_TILES_PER_PAGE,
+    safeCarouselPage * SCREEN_SHARE_CAROUSEL_PER_PAGE,
+    safeCarouselPage * SCREEN_SHARE_CAROUSEL_PER_PAGE +
+      SCREEN_SHARE_CAROUSEL_PER_PAGE,
   );
+
+  useEffect(() => {
+    setCarouselPage(0);
+  }, [carouselParticipants.length]);
+
+  useEffect(() => {
+    if (carouselPage > totalCarouselPages - 1) {
+      setCarouselPage(Math.max(0, totalCarouselPages - 1));
+    }
+  }, [carouselPage, totalCarouselPages]);
 
   if (activeScreenShareRef && activeScreenShareTrack) {
     const sharerName =
@@ -99,140 +415,78 @@ export default function VideoStage({
             <div className="absolute left-4 right-4 bottom-4 space-y-2 z-20">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                 {pageCarouselParticipants.map((participant) => (
-                  <ParticipantContext.Provider
+                  <ParticipantTileWrapped
                     key={participant.identity}
-                    value={participant}
-                  >
-                    <ParticipantTile
-                      isLocal={participant.isLocal}
-                      isSpeaking={speakingIds.has(participant.identity)}
-                      raisedHand={raisedHands.has(participant.identity)}
-                      className="h-24 w-full border border-white/20 bg-black/30 backdrop-blur-sm"
-                    />
-                  </ParticipantContext.Provider>
+                    participant={participant}
+                    speakingIds={speakingIds}
+                    raisedHands={raisedHands}
+                    className="h-24 w-full border border-white/20 bg-black/30 backdrop-blur-sm aspect-auto!"
+                  />
                 ))}
               </div>
-
-              {totalCarouselPages > 1 && (
-                <div className="flex justify-center gap-2 py-1">
-                  {Array.from({ length: totalCarouselPages }).map((_, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => setCarouselPage(index)}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === safeCarouselPage ? "bg-[#835BD5]" : "bg-white/30"
-                      }`}
-                      aria-label={`Carousel page ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              )}
+              <StagePagination
+                page={safeCarouselPage}
+                totalPages={totalCarouselPages}
+                onPageChange={setCarouselPage}
+                label="Carousel pages"
+              />
             </div>
           )}
 
-          {localParticipant && (
-            <div
-              className={`absolute bottom-4 z-30 ${
-                sidebarOpen ? "right-88" : "right-4"
-              }`}
-            >
-              <ParticipantContext.Provider value={localParticipant}>
-                <ParticipantTile
-                  isLocal
-                  isSpeaking={speakingIds.has(localParticipant.identity)}
-                  raisedHand={raisedHands.has(localParticipant.identity)}
-                  className="w-56 h-32 shadow-lg border border-white/20"
-                />
-              </ParticipantContext.Provider>
-            </div>
-          )}
+          {localParticipant &&
+            localParticipant.identity !== screenShareOwnerIdentity && (
+              <LocalParticipantPip
+                localParticipant={localParticipant}
+                speakingIds={speakingIds}
+                raisedHands={raisedHands}
+                isMobile={isMobile}
+              />
+            )}
         </div>
       </div>
     );
   }
 
-  if (participants.length === 2 && effectiveLayout === "spotlight") {
-    const remote = remoteParticipants[0];
+  if (remoteParticipants.length === 0) {
     return (
-      <div className="flex-1 p-4 min-h-0 relative">
-        {remote && (
-          <ParticipantContext.Provider value={remote}>
-            <ParticipantTile
-              isSpeaking={speakingIds.has(remote.identity)}
-              raisedHand={raisedHands.has(remote.identity)}
-              className="w-full h-full min-h-0 aspect-auto!"
-            />
-          </ParticipantContext.Provider>
-        )}
+      <div className="flex-1 flex flex-col min-h-0 relative">
+        <EmptyRoomState inviteCode={inviteCode} />
         {localParticipant && (
-          <div
-            className={`absolute bottom-8 z-20 ${
-              sidebarOpen ? "right-88" : "right-4"
-            }`}
-          >
-            <ParticipantContext.Provider value={localParticipant}>
-              <ParticipantTile
-                isLocal
-                isSpeaking={speakingIds.has(localParticipant.identity)}
-                raisedHand={raisedHands.has(localParticipant.identity)}
-                className="w-56 h-32 shadow-lg border border-white/20"
-              />
-            </ParticipantContext.Provider>
-          </div>
+          <LocalParticipantPip
+            localParticipant={localParticipant}
+            speakingIds={speakingIds}
+            raisedHands={raisedHands}
+            isMobile={isMobile}
+            className="absolute bottom-2 z-20 right-6"
+          />
         )}
       </div>
+    );
+  }
+
+  if (layoutMode === "spotlight") {
+    return (
+      <SpotlightLayoutView
+        remoteParticipants={remoteParticipants}
+        localParticipant={localParticipant}
+        speakingParticipants={speakingParticipants}
+        speakingIds={speakingIds}
+        raisedHands={raisedHands}
+        filmstripPerPage={filmstripPerPage}
+        isMobile={isMobile}
+      />
     );
   }
 
   return (
-    <div className="flex-1 p-4 flex flex-col gap-3 min-h-0 relative">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 flex-1 min-h-0 auto-rows-fr">
-        {pageParticipants.map((participant) => (
-          <ParticipantContext.Provider
-            key={participant.identity}
-            value={participant}
-          >
-            <ParticipantTile
-              isSpeaking={speakingIds.has(participant.identity)}
-              raisedHand={raisedHands.has(participant.identity)}
-            />
-          </ParticipantContext.Provider>
-        ))}
-      </div>
-
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 py-1">
-          {Array.from({ length: totalPages }).map((_, index) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => setPage(index)}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                index === safePage ? "bg-[#835BD5]" : "bg-white/30"
-              }`}
-              aria-label={`Page ${index + 1}`}
-            />
-          ))}
-        </div>
-      )}
-
-      {localParticipant && (
-        <div
-          className={`absolute bottom-4 z-20 ${
-            sidebarOpen ? "right-88" : "right-4"
-          }`}
-        >
-          <ParticipantContext.Provider value={localParticipant}>
-            <ParticipantTile
-              isLocal
-              isSpeaking={speakingIds.has(localParticipant.identity)}
-              raisedHand={raisedHands.has(localParticipant.identity)}
-              className="w-56 h-32 shadow-lg border border-white/20"
-            />
-          </ParticipantContext.Provider>
-        </div>
-      )}
-    </div>
+    <GridLayoutView
+      participants={participants}
+      localParticipant={localParticipant}
+      speakingIds={speakingIds}
+      raisedHands={raisedHands}
+      maxCols={maxCols}
+      tilesPerPage={tilesPerPage}
+      isMobile={isMobile}
+    />
   );
 }

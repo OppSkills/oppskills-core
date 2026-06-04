@@ -16,6 +16,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import LayoutProvider from "@/components/layout-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Suspense } from "react";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import { PostHogProvider } from "@/components/posthog-provider";
 
 const urbanist = Urbanist({
@@ -159,6 +160,7 @@ export default function RootLayout({
         <body
           className={`${urbanist.variable} ${aeonicPro.variable} font-sans antialiased`}
         >
+          <GoogleAnalytics />
           <JsonLd data={[organizationSchema, websiteSchema]} />
           <Suspense>
             <PostHogProvider>
