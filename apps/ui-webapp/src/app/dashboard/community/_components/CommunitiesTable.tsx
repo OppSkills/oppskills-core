@@ -34,7 +34,8 @@ import { Badge } from "@/components/ui/badge";
 const ROLE_LABEL: Record<MyCommunityListItem["myRole"], string> = {
   OWNER: "Owner",
   ADMIN: "Admin",
-  EDITOR: "Editor",
+  MODERATOR: "Moderator",
+  READ_ONLY: "Read Only",
 };
 
 function industryLabel(value: CommunityIndustryValue): string {

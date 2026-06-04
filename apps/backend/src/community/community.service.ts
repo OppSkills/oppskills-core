@@ -57,7 +57,9 @@ export class CommunityService {
           ? ('OWNER' as const)
           : row.members[0]?.accessControlRole === 'ADMIN'
             ? ('ADMIN' as const)
-            : ('EDITOR' as const);
+            : row.members[0]?.accessControlRole === 'MODERATOR'
+              ? ('MODERATOR' as const)
+              : ('READ_ONLY' as const);
 
       return {
         id: row.id,
@@ -89,15 +91,11 @@ export class CommunityService {
     }
 
     const isOwner = community.ownerId === userId;
-    const myMemberRecord = community.members[0];
-    const isOwnerOrAdminOrModerator =
-      isOwner ||
-      (myMemberRecord &&
-        ['ADMIN', 'MODERATOR'].includes(myMemberRecord.accessControlRole));
+    const isMember = community.members.length > 0;
 
-    if (!isOwnerOrAdminOrModerator) {
+    if (!isOwner && !isMember) {
       throw new ForbiddenException(
-        'You do not have permission to manage this community.',
+        'You do not have permission to view this community.',
       );
     }
 
@@ -237,13 +235,9 @@ export class CommunityService {
     }
 
     const isOwner = community.ownerId === userId;
-    const myMemberRecord = community.members[0];
-    const isOwnerOrAdminOrModerator =
-      isOwner ||
-      (myMemberRecord &&
-        ['ADMIN', 'MODERATOR'].includes(myMemberRecord.accessControlRole));
+    const isMember = community.members.length > 0;
 
-    if (!isOwnerOrAdminOrModerator) {
+    if (!isOwner && !isMember) {
       throw new ForbiddenException(
         'You do not have permission to view this community.',
       );
@@ -267,11 +261,40 @@ export class CommunityService {
 
     const isOwner = community.ownerId === userId;
     const myMemberRecord = community.members[0];
+    const isWriteEligible =
+      isOwner ||
+      (myMemberRecord &&
+        ['ADMIN', 'MODERATOR'].includes(myMemberRecord.accessControlRole));
+
+    if (!isWriteEligible) {
+      throw new ForbiddenException(
+        'You do not have permission to modify data in this community.',
+      );
+    }
+    return community;
+  }
+
+  async checkCommunityAdminPermission(userId: string, communityId: string) {
+    const community = await prisma.communityEntity.findUnique({
+      where: { id: communityId },
+      include: {
+        members: {
+          where: { userId },
+        },
+      },
+    });
+
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    const isOwner = community.ownerId === userId;
+    const myMemberRecord = community.members[0];
     const isAdmin = myMemberRecord?.accessControlRole === 'ADMIN';
 
     if (!isOwner && !isAdmin) {
       throw new ForbiddenException(
-        'You do not have permission to modify data in this community.',
+        'You do not have permission to perform administrative actions in this community.',
       );
     }
     return community;
@@ -305,13 +328,9 @@ export class CommunityService {
     }
 
     const isOwner = community.ownerId === currentUserId;
-    const myMemberRecord = community.members[0];
-    const isOwnerOrAdminOrModerator =
-      isOwner ||
-      (myMemberRecord &&
-        ['ADMIN', 'MODERATOR'].includes(myMemberRecord.accessControlRole));
+    const isMember = community.members.length > 0;
 
-    if (!isOwnerOrAdminOrModerator) {
+    if (!isOwner && !isMember) {
       throw new ForbiddenException(
         'You do not have permission to view this community.',
       );
@@ -382,7 +401,19 @@ export class CommunityService {
     communityId: string,
     dto: AddCommunityMembersDto,
   ) {
-    await this.checkCommunityWritePermission(currentUserId, communityId);
+    const community = await this.checkCommunityWritePermission(currentUserId, communityId);
+
+    const requesterMember = community.members[0];
+    const isOwner = community.ownerId === currentUserId;
+    const isAdmin = requesterMember?.accessControlRole === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      if (dto.accessControlRole && dto.accessControlRole !== 'READ_ONLY') {
+        throw new ForbiddenException(
+          'Moderators can only add members with READ_ONLY access.',
+        );
+      }
+    }
 
     if (dto.userIds.includes(currentUserId)) {
       throw new BadRequestException(
@@ -465,9 +496,21 @@ export class CommunityService {
       throw new NotFoundException('Community member not found.');
     }
 
+    const requesterMember = community.members[0];
+    const isOwner = community.ownerId === currentUserId;
+    const isAdmin = requesterMember?.accessControlRole === 'ADMIN';
+
+    // Moderators cannot modify admins or other moderators
+    if (!isOwner && !isAdmin) {
+      if (member.accessControlRole === 'ADMIN' || member.accessControlRole === 'MODERATOR') {
+        throw new ForbiddenException(
+          'Moderators cannot modify roles of admins or other moderators.',
+        );
+      }
+    }
+
     // Admin cannot change role (type) of other admin
     if (member.accessControlRole === 'ADMIN') {
-      const isOwner = community.ownerId === currentUserId;
       if (!isOwner) {
         throw new ForbiddenException('Admins cannot modify other admins.');
       }
@@ -485,7 +528,7 @@ export class CommunityService {
     memberId: string,
     accessControlRole: CommunityAccessControlRole,
   ) {
-    const community = await this.checkCommunityWritePermission(currentUserId, communityId);
+    const community = await this.checkCommunityAdminPermission(currentUserId, communityId);
 
     const member = await prisma.communityMemberEntity.findFirst({
       where: { id: memberId, communityId },
@@ -532,9 +575,21 @@ export class CommunityService {
       throw new BadRequestException('The community owner cannot be removed.');
     }
 
+    const requesterMember = community.members[0];
+    const isOwner = community.ownerId === currentUserId;
+    const isAdmin = requesterMember?.accessControlRole === 'ADMIN';
+
+    // Moderators cannot remove admins or other moderators
+    if (!isOwner && !isAdmin) {
+      if (member.accessControlRole === 'ADMIN' || member.accessControlRole === 'MODERATOR') {
+        throw new ForbiddenException(
+          'Moderators cannot remove admins or other moderators.',
+        );
+      }
+    }
+
     // Admin cannot delete/remove other admin
     if (member.accessControlRole === 'ADMIN') {
-      const isOwner = community.ownerId === currentUserId;
       if (!isOwner) {
         throw new ForbiddenException('Admins cannot remove other admins.');
       }

@@ -157,8 +157,12 @@ export class MediaService {
   }
 
   private normalizeBaseUrl(value: string): string {
+    let url = value.trim();
+    if (!url.includes('://')) {
+      url = `https://${url}`;
+    }
     // Remove trailing slashes so `${base}/${key}` is correct.
-    return value.replace(/\/+$/g, '');
+    return url.replace(/\/+$/g, '');
   }
 
   private getMaxUploadBytes(): number {

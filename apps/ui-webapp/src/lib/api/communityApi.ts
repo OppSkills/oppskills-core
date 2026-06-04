@@ -26,7 +26,7 @@ export type CommunityResponse = Readonly<{
   createdAt: string;
 }>;
 
-export type CommunityMyRole = "OWNER" | "ADMIN" | "EDITOR";
+export type CommunityMyRole = "OWNER" | "ADMIN" | "MODERATOR" | "READ_ONLY";
 
 export type MyCommunityListItem = Readonly<{
   id: string;
