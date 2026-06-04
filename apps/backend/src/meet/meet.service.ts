@@ -96,13 +96,40 @@ export class MeetService {
     }
 
     const isOwner = community.ownerId === userId;
+    const member = community.members[0];
     const isManager =
-      community.members.length > 0 &&
-      ['ADMIN', 'EDITOR'].includes(community.members[0].role);
+      member && ['ADMIN', 'MODERATOR'].includes(member.accessControlRole);
 
     if (!isOwner && !isManager) {
       throw new ForbiddenException(
         'You do not have permission to manage meets for this community.',
+      );
+    }
+  }
+
+  private async assertCanReadCommunity(
+    userId: string,
+    communityId: string,
+  ): Promise<void> {
+    const community = await prisma.communityEntity.findUnique({
+      where: { id: communityId },
+      include: {
+        members: {
+          where: { userId },
+        },
+      },
+    });
+
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    const isOwner = community.ownerId === userId;
+    const isMember = community.members.length > 0;
+
+    if (!isOwner && !isMember) {
+      throw new ForbiddenException(
+        'You do not have permission to view meets for this community.',
       );
     }
   }
@@ -213,7 +240,7 @@ export class MeetService {
     userId: string,
     communityId: string,
   ): Promise<CommunityMeetResponse[]> {
-    await this.assertCanManageCommunity(userId, communityId);
+    await this.assertCanReadCommunity(userId, communityId);
 
     const meets = await prisma.communityMeetEntity.findMany({
       where: { communityId },

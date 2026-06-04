@@ -1,18 +1,19 @@
 model CommunityEntity {
-  id          String                  @id @default(cuid())
-  name        String
-  handle      String                  @unique
-  description String?
-  website     String?
-  industry    Industry
-  coverImage  String?                 @map("cover_image")
-  avatarImage String?                 @map("avatar_image")
-  ownerId     String                  @map("owner_id")
-  createdAt   DateTime                @default(now()) @map("created_at")
-  updatedAt   DateTime                @updatedAt @map("updated_at")
-  owner       UserEntity              @relation("UserCommunities", fields: [ownerId], references: [id])
-  meets       CommunityMeetEntity[]
-  members     CommunityMemberEntity[]
+  id                    String                  @id @default(cuid())
+  name                  String
+  handle                String                  @unique
+  description           String?
+  website               String?
+  industry              Industry
+  coverImage            String?                 @map("cover_image")
+  avatarImage           String?                 @map("avatar_image")
+  ownerId               String                  @map("owner_id")
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+  owner                 UserEntity              @relation("UserCommunities", fields: [ownerId], references: [id])
+  meets                 CommunityMeetEntity[]
+  members               CommunityMemberEntity[]
+  communityTaskEntities CommunityTaskEntity[]
 
   @@unique([name, ownerId])
   @@index([ownerId])
@@ -38,12 +39,64 @@ model CommunityMemberEntity {
   @@schema("community")
 }
 
-model CommunityCustomRoles {
+model CommunityTaskEntity {
   id          String @id @default(cuid())
   communityId String @map("community_id")
-  name        String @map("name")
 
-  @@map("community_custom_roles")
+  title       String
+  description String?
+
+  dueDate DateTime? @map("due_date")
+
+  toUserId String @map("to_user_id")
+  byUserId String @map("by_user_id")
+
+  priority TaskPriority @default(MEDIUM)
+  status   TaskStatus   @default(PENDING)
+
+  tags String[]
+
+  optForMail Boolean @default(false) @map("opt_for_mail")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  community                          CommunityEntity                    @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  assignedTo                         UserEntity                         @relation("CommunityTaskAssignedTo", fields: [toUserId], references: [id])
+  assignedBy                         UserEntity                         @relation("CommunityTaskAssignedBy", fields: [byUserId], references: [id])
+  communityTaskThreadMessageEntities CommunityTaskThreadMessageEntity[]
+
+  @@index([communityId])
+  @@index([toUserId])
+  @@index([byUserId])
+  @@index([status])
+  @@map("community_task")
+  @@schema("community")
+}
+
+model CommunityTaskThreadMessageEntity {
+  id String @id @default(cuid())
+
+  taskId String @map("task_id")
+  userId String @map("user_id")
+
+  type TaskThreadMessageType
+
+  content String
+
+  fileName String? @map("file_name")
+  fileSize Int?    @map("file_size")
+  mimeType String? @map("mime_type")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  task CommunityTaskEntity @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user UserEntity          @relation(fields: [userId], references: [id])
+
+  @@index([taskId])
+  @@index([userId])
+  @@map("community_task_thread_message")
   @@schema("community")
 }
 
@@ -96,6 +149,35 @@ enum CommunityAccessControlRole {
   MODERATOR
 
   @@map("CommunityAccessControlRole")
+  @@schema("community")
+}
+
+enum TaskThreadMessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  DOCUMENT
+
+  @@map("TaskThreadMessageType")
+  @@schema("community")
+}
+
+enum TaskPriority {
+  HIGH
+  MEDIUM
+  LOW
+
+  @@map("TaskPriority")
+  @@schema("community")
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+
+  @@map("TaskStatus")
   @@schema("community")
 }
 

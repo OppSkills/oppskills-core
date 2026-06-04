@@ -103,5 +103,55 @@ describe('CommunityService', () => {
         userIds.slice(200, 250),
       );
     });
+
+    it('allows MODERATOR to add members with READ_ONLY access', async () => {
+      (prisma.communityEntity.findUnique as jest.Mock).mockResolvedValue({
+        id: 'comm1',
+        ownerId: 'user99',
+        members: [{ id: 'mem1', accessControlRole: 'MODERATOR' }],
+      });
+      (prisma.userEntity.findMany as jest.Mock).mockResolvedValue([{ id: 'user2' }]);
+      (prisma.communityMemberEntity.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.communityMemberEntity.createMany as jest.Mock).mockResolvedValue({ count: 1 });
+
+      const result = await service.addMembersToCommunity('user1', 'comm1', {
+        userIds: ['user2'],
+        role: 'MEMBER',
+        accessControlRole: 'READ_ONLY',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('throws ForbiddenException if MODERATOR tries to add members with ADMIN access', async () => {
+      (prisma.communityEntity.findUnique as jest.Mock).mockResolvedValue({
+        id: 'comm1',
+        ownerId: 'user99',
+        members: [{ id: 'mem1', accessControlRole: 'MODERATOR' }],
+      });
+
+      await expect(
+        service.addMembersToCommunity('user1', 'comm1', {
+          userIds: ['user2'],
+          role: 'MEMBER',
+          accessControlRole: 'ADMIN',
+        }),
+      ).rejects.toThrow('Moderators can only add members with READ_ONLY access');
+    });
+
+    it('throws ForbiddenException if READ_ONLY tries to add members', async () => {
+      (prisma.communityEntity.findUnique as jest.Mock).mockResolvedValue({
+        id: 'comm1',
+        ownerId: 'user99',
+        members: [{ id: 'mem1', accessControlRole: 'READ_ONLY' }],
+      });
+
+      await expect(
+        service.addMembersToCommunity('user1', 'comm1', {
+          userIds: ['user2'],
+          role: 'MEMBER',
+          accessControlRole: 'READ_ONLY',
+        }),
+      ).rejects.toThrow('You do not have permission to modify data in this community');
+    });
   });
 });

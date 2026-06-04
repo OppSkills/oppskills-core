@@ -28,6 +28,7 @@ import { RecommendationModule } from './recommendation/recommendation.module';
 import { CommunityModule } from './community/community.module';
 import { MeetModule } from './meet/meet.module';
 import { ChatModule } from './chat/chat.module';
+import { CommunityTaskModule } from './community-task/community-task.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { ChatModule } from './chat/chat.module';
     CommunityModule,
     MeetModule,
     ChatModule,
+    CommunityTaskModule,
   ],
   controllers: [AppController],
   providers: [
