@@ -7,9 +7,13 @@ import { EventModule } from 'src/event/event.module';
 import { IncompleteRegistrationReminderService } from './incomplete-registration-reminder.service';
 import { IncompleteRegistrationReminderCron } from './incomplete-registration-reminder.cron';
 import { HackathonModule } from 'src/hackathon/hackathon.module';
+import { CommonModule } from '../common/common.module';
+import { CommunityEmailQueue } from './queue/community-email.queue';
+import { CommunityEmailWorker } from './queue/community-email.worker';
 
 @Module({
   imports: [
+    CommonModule,
     forwardRef(() => EventModule),
     forwardRef(() => TeamModule),
     forwardRef(() => HackathonModule),
@@ -20,7 +24,13 @@ import { HackathonModule } from 'src/hackathon/hackathon.module';
     EmailListener,
     IncompleteRegistrationReminderService,
     IncompleteRegistrationReminderCron,
+    CommunityEmailQueue,
+    CommunityEmailWorker,
   ],
-  exports: [EmailService, IncompleteRegistrationReminderService],
+  exports: [
+    EmailService,
+    IncompleteRegistrationReminderService,
+    CommunityEmailQueue,
+  ],
 })
 export class EmailModule {}
