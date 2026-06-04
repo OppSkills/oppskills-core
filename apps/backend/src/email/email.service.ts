@@ -28,6 +28,8 @@ import {
   HackathonTeamNotificationEmailProps,
   ReferralInvitationEmail,
   ReferralInvitationEmailProps,
+  CommunityWelcomeEmail,
+  CommunityWelcomeEmailProps,
 } from '@oppskills/emails';
 import { Logger } from 'src/_utils/logger';
 
@@ -43,7 +45,8 @@ export type EmailType =
   | 'hackathon-join-confirmation'
   | 'hackathon-new-member-joined'
   | 'hackathon-team-notification'
-  | 'referral-invitation';
+  | 'referral-invitation'
+  | 'community-welcome';
 
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
@@ -74,7 +77,9 @@ export interface SendEmailOptions<T extends EmailType> {
                         ? HackathonTeamNotificationEmailProps
                         : T extends 'referral-invitation'
                           ? ReferralInvitationEmailProps
-                          : never;
+                          : T extends 'community-welcome'
+                            ? CommunityWelcomeEmailProps
+                            : never;
 }
 
 @Injectable()
@@ -206,7 +211,8 @@ export class EmailService {
       | HackathonJoinConfirmationEmailProps
       | HackathonNewMemberJoinedEmailProps
       | HackathonTeamNotificationEmailProps
-      | ReferralInvitationEmailProps,
+      | ReferralInvitationEmailProps
+      | CommunityWelcomeEmailProps,
   ): Promise<{ subject: string; html: string }> {
     switch (type) {
       case 'welcome': {
@@ -314,6 +320,15 @@ export class EmailService {
         const html = await render(element, { pretty: true });
         return {
           subject: `You were added as a referral for ${p.entityName}`,
+          html,
+        };
+      }
+      case 'community-welcome': {
+        const p = props as CommunityWelcomeEmailProps;
+        const element = createElement(CommunityWelcomeEmail, p);
+        const html = await render(element, { pretty: true });
+        return {
+          subject: `You have been added to the ${p.communityName} community`,
           html,
         };
       }

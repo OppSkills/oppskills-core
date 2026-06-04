@@ -12,3 +12,4 @@ export * from "./HackathonNewMemberJoinedEmail";
 export * from "./HackathonNotificationEmail";
 export * from "./HackathonTeamNotification";
 export * from "./ReferralInvitationEmail";
+export * from "./CommunityWelcomeEmail";

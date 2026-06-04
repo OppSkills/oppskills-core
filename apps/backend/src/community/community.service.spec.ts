@@ -1,0 +1,107 @@
+import 'reflect-metadata';
+import { CommunityService } from './community.service';
+import { prisma } from '@oppskills/db';
+
+jest.mock('@oppskills/db', () => ({
+  prisma: {
+    communityEntity: {
+      findUnique: jest.fn(),
+    },
+    userEntity: {
+      findMany: jest.fn(),
+    },
+    communityMemberEntity: {
+      findMany: jest.fn(),
+      createMany: jest.fn(),
+    },
+  },
+}));
+
+describe('CommunityService', () => {
+  let service: CommunityService;
+  const mockEmailQueue = {
+    addCommunityWelcomeBatch: jest.fn(),
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new CommunityService(mockEmailQueue as any);
+    (prisma.communityEntity.findUnique as jest.Mock).mockResolvedValue({
+      id: 'comm1',
+      ownerId: 'user1',
+      members: [{ id: 'mem1', accessControlRole: 'ADMIN' }],
+    });
+  });
+
+  describe('addMembersToCommunity', () => {
+    it('throws error if current user adds themselves', async () => {
+      await expect(
+        service.addMembersToCommunity('user1', 'comm1', {
+          userIds: ['user1'],
+          role: 'MEMBER',
+          accessControlRole: 'READ_ONLY',
+        }),
+      ).rejects.toThrow('You cannot add your own user ID');
+    });
+
+    it('throws NotFoundException if userIds do not exist in database', async () => {
+      (prisma.userEntity.findMany as jest.Mock).mockResolvedValue([{ id: 'user2' }]);
+
+      await expect(
+        service.addMembersToCommunity('user1', 'comm1', {
+          userIds: ['user2', 'user3'],
+          role: 'MEMBER',
+          accessControlRole: 'READ_ONLY',
+        }),
+      ).rejects.toThrow('The following user IDs do not exist: user3');
+    });
+
+    it('successfully queues emails in chunks of 100 when adding members', async () => {
+      const userIds = Array.from({ length: 250 }, (_, i) => `user_${i + 2}`);
+      (prisma.communityEntity.findUnique as jest.Mock).mockResolvedValue({
+        id: 'comm1',
+        ownerId: 'user1',
+        members: [{ id: 'mem1', accessControlRole: 'ADMIN' }],
+      });
+      (prisma.userEntity.findMany as jest.Mock).mockResolvedValue(
+        userIds.map((id) => ({ id })),
+      );
+      (prisma.communityMemberEntity.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.communityMemberEntity.createMany as jest.Mock).mockResolvedValue({ count: 250 });
+
+      const result = await service.addMembersToCommunity('user1', 'comm1', {
+        userIds,
+        role: 'MEMBER',
+        accessControlRole: 'READ_ONLY',
+      });
+
+      expect(result).toEqual({ success: true, count: 250 });
+      expect(prisma.communityMemberEntity.createMany).toHaveBeenCalledWith({
+        data: userIds.map((uid) => ({
+          communityId: 'comm1',
+          userId: uid,
+          role: 'MEMBER',
+          accessControlRole: 'READ_ONLY',
+        })),
+      });
+
+      // Verify chunking: 250 users should be chunked into 3 batches (100, 100, 50)
+      expect(mockEmailQueue.addCommunityWelcomeBatch).toHaveBeenCalledTimes(3);
+      expect(mockEmailQueue.addCommunityWelcomeBatch).toHaveBeenNthCalledWith(
+        1,
+        'comm1',
+        userIds.slice(0, 100),
+      );
+      expect(mockEmailQueue.addCommunityWelcomeBatch).toHaveBeenNthCalledWith(
+        2,
+        'comm1',
+        userIds.slice(100, 200),
+      );
+      expect(mockEmailQueue.addCommunityWelcomeBatch).toHaveBeenNthCalledWith(
+        3,
+        'comm1',
+        userIds.slice(200, 250),
+      );
+    });
+  });
+});

@@ -12,9 +12,12 @@ import { CreateCommunityDto } from './dto/create-community.dto';
 import { CommunityResponseDto } from './dto/community-response.dto';
 import type { CommunityListItemDto } from './dto/community-list-item.dto';
 import { AddCommunityMembersDto } from './dto/add-community-members.dto';
+import { CommunityEmailQueue } from '../email/queue/community-email.queue';
 
 @Injectable()
 export class CommunityService {
+  constructor(private readonly communityEmailQueue: CommunityEmailQueue) {}
+
   /**
    * Communities the user can open in the manage dashboard: owned, or member with ADMIN/EDITOR.
    */
@@ -424,6 +427,13 @@ export class CommunityService {
         accessControlRole: dto.accessControlRole,
       })),
     });
+
+    // Queue welcome emails in chunks of 100 to avoid resource/rate limiting issues
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < dto.userIds.length; i += BATCH_SIZE) {
+      const batch = dto.userIds.slice(i, i + BATCH_SIZE);
+      await this.communityEmailQueue.addCommunityWelcomeBatch(communityId, batch);
+    }
 
     return { success: true, count: dto.userIds.length };
   }
