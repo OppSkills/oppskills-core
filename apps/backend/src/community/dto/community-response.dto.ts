@@ -32,6 +32,9 @@ export class CommunityResponseDto {
   })
   avatarImage: string | null;
 
+  @ApiProperty({ example: 'clxyz123ownerid' })
+  ownerId: string;
+
   @ApiProperty({ example: '2026-05-25T12:00:00.000Z' })
   createdAt: Date;
 }

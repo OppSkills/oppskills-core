@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Req,
   UnauthorizedException,
@@ -23,6 +25,9 @@ import { CommunityService } from './community.service';
 import { CreateCommunityDto } from './dto/create-community.dto';
 import { CommunityResponseDto } from './dto/community-response.dto';
 import { CommunityListItemDto } from './dto/community-list-item.dto';
+import { AddCommunityMembersDto } from './dto/add-community-members.dto';
+import { UpdateMemberTypeDto } from './dto/update-member-type.dto';
+import { UpdateMemberAccessDto } from './dto/update-member-access.dto';
 
 @ApiTags('Communities')
 @ApiBearerAuth('clerk-auth')
@@ -106,5 +111,139 @@ export class CommunityController {
     }
 
     return this.communityService.create(userId, dto);
+  }
+
+  @Post(':id/members')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Bulk add members to a community',
+    description: 'Adds multiple users to a community by their user IDs with a specific role and access control level.',
+  })
+  @ApiBody({ type: AddCommunityMembersDto })
+  @ApiResponse({ status: 201, description: 'Members added successfully' })
+  @ApiResponse({ status: 400, description: 'Bad Request - Validation or self-addition error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - No permission to manage community' })
+  @ApiResponse({ status: 404, description: 'Not Found - User ID or Community not found' })
+  @ApiResponse({ status: 409, description: 'Conflict - User is already a member' })
+  async addMembers(
+    @Param('id') communityId: string,
+    @Body() dto: AddCommunityMembersDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.addMembersToCommunity(userId, communityId, dto);
+  }
+
+  @Get(':id/members/types')
+  @ApiOperation({
+    summary: 'Fetch unique member types (roles) for a community',
+    description: 'Retrieves all distinct member types/roles currently assigned to members in the community.',
+  })
+  @ApiResponse({ status: 200, description: 'Unique member types list', type: [String] })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async getUniqueMemberTypes(
+    @Param('id') communityId: string,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.getUniqueMemberTypes(userId, communityId);
+  }
+
+  @Patch(':id/members/:memberId/type')
+  @ApiOperation({
+    summary: 'Update a member\'s type (role string)',
+    description: 'Updates the role description string for a specific member in the community.',
+  })
+  @ApiBody({ type: UpdateMemberTypeDto })
+  @ApiResponse({ status: 200, description: 'Type updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Not Found' })
+  async updateMemberType(
+    @Param('id') communityId: string,
+    @Param('memberId') memberId: string,
+    @Body() dto: UpdateMemberTypeDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.updateMemberType(userId, communityId, memberId, dto.role);
+  }
+
+  @Patch(':id/members/:memberId/access-control')
+  @ApiOperation({
+    summary: 'Update a member\'s access control role',
+    description: 'Updates the access control level for a specific member in the community.',
+  })
+  @ApiBody({ type: UpdateMemberAccessDto })
+  @ApiResponse({ status: 200, description: 'Access control updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Not Found' })
+  async updateMemberAccess(
+    @Param('id') communityId: string,
+    @Param('memberId') memberId: string,
+    @Body() dto: UpdateMemberAccessDto,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.updateMemberAccess(
+      userId,
+      communityId,
+      memberId,
+      dto.accessControlRole,
+    );
+  }
+
+  @Get(':id/members')
+  @ApiOperation({
+    summary: 'List community members',
+    description: 'Retrieves all members of the community.',
+  })
+  @ApiResponse({ status: 200, description: 'Members list' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async listMembers(
+    @Param('id') communityId: string,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.listMembers(userId, communityId);
+  }
+
+  @Delete(':id/members/:memberId')
+  @ApiOperation({
+    summary: 'Delete a community member',
+    description: 'Removes a member from the community.',
+  })
+  @ApiResponse({ status: 200, description: 'Member removed successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async deleteMember(
+    @Param('id') communityId: string,
+    @Param('memberId') memberId: string,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.deleteMember(userId, communityId, memberId);
   }
 }

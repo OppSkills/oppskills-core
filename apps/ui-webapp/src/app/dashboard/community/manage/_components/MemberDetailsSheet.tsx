@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   ChevronLeft,
   Mail,
@@ -33,6 +33,11 @@ interface MemberDetailsSheetProps {
   tasks?: Task[];
   meets?: Meet[];
   onToggleTask?: (id: string) => void;
+  isEligibleToModify?: boolean;
+  communityOwnerId?: string;
+  currentUserMember?: MemberDetails;
+  onUpdateRole?: (memberId: string, newRole: string) => void;
+  onUpdateAccess?: (memberId: string, newAccess: string) => void;
 }
 
 const EMPTY_TASKS: Task[] = [];
@@ -118,10 +123,34 @@ export default function MemberDetailsSheet({
   tasks = EMPTY_TASKS,
   meets = EMPTY_MEETS,
   onToggleTask,
+  isEligibleToModify = false,
+  communityOwnerId = "",
+  currentUserMember,
+  onUpdateRole,
+  onUpdateAccess,
 }: MemberDetailsSheetProps) {
   const [activeTaskTab, setActiveTaskTab] = useState<
     "In Progress" | "Completed"
   >("In Progress");
+
+  const [roleInput, setRoleInput] = useState("");
+
+  // Sync roleInput when member changes
+  useEffect(() => {
+    if (member) {
+      setRoleInput(member.role);
+    }
+  }, [member]);
+
+  const canModifyTarget = () => {
+    if (!member || !isEligibleToModify) return false;
+    if (member.userId === communityOwnerId) return false;
+    if (member.accessControlRole === "ADMIN") {
+      const isCurrentOwner = currentUserMember?.userId === communityOwnerId;
+      if (!isCurrentOwner) return false;
+    }
+    return true;
+  };
 
   const profileDetails = useMemo(() => {
     if (!member) return null;
@@ -249,6 +278,62 @@ export default function MemberDetailsSheet({
               </div>
             </div>
           </div>
+
+          {/* Access & Role Settings Card (Only shown if eligible) */}
+          {canModifyTarget() && (
+            <div className="bg-white rounded-3xl p-6 border border-neutral-150 shadow-2xs flex flex-col gap-4">
+              <h3 className="font-aeonicPro text-lg font-bold text-neutral-800 tracking-tight">
+                Access & Role Settings
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Custom Role Input/Select */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-neutral-500">
+                    Custom Member Role
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={roleInput}
+                      onChange={(e) => setRoleInput(e.target.value)}
+                      placeholder="e.g. Media Lead"
+                      className="flex-1 h-10 px-3 border border-neutral-200 focus:border-[#835BD5] outline-none rounded-xl text-sm bg-white font-medium shadow-3xs"
+                    />
+                    <button
+                      onClick={() => {
+                        if (roleInput.trim() && onUpdateRole) {
+                          onUpdateRole(member.id, roleInput.trim());
+                        }
+                      }}
+                      className="bg-[#271B40] hover:bg-[#423072] active:scale-97 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+
+                {/* Access Control Dropdown */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-neutral-500">
+                    Access Control Level
+                  </label>
+                  <select
+                    value={member.accessControlRole || "READ_ONLY"}
+                    onChange={(e) => {
+                      if (onUpdateAccess) {
+                        onUpdateAccess(member.id, e.target.value);
+                      }
+                    }}
+                    className="h-10 px-3 border border-neutral-200 focus:border-[#835BD5] outline-none rounded-xl text-sm bg-white font-medium cursor-pointer shadow-3xs"
+                  >
+                    <option value="ADMIN">Admin Access</option>
+                    <option value="MODERATOR">Moderator</option>
+                    <option value="READ_ONLY">Read Only</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 2. Tasks Updates Box Card */}
           <div className="bg-white rounded-3xl p-6 border border-neutral-150 shadow-2xs flex flex-col gap-5">

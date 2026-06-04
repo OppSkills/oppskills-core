@@ -330,6 +330,70 @@ export default function ChatsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"All" | "Unread" | "Groups" | "Individual">("All");
 
+  // Sticky Scroll & Input Focus States & Refs
+  const [stickyDate, setStickyDate] = useState<string>("");
+  const [showSticky, setShowSticky] = useState<boolean>(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const lastScrollTopRef = useRef<number>(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const focusInput = () => {
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const scrollTop = container.scrollTop;
+    const isScrollingUp = scrollTop < lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+
+    const messageElements = container.querySelectorAll("[data-message-date]");
+    let currentTopDate = "";
+    const containerRect = container.getBoundingClientRect();
+
+    for (let i = 0; i < messageElements.length; i++) {
+      const el = messageElements[i] as HTMLElement;
+      const rect = el.getBoundingClientRect();
+      if (rect.bottom >= containerRect.top) {
+        currentTopDate = el.getAttribute("data-message-date") || "";
+        break;
+      }
+    }
+
+    let isSeparatorHidden = false;
+    let formattedDate = "";
+    if (currentTopDate) {
+      formattedDate = formatDateSeparator(currentTopDate);
+      setStickyDate(formattedDate);
+
+      // Find if the inline separator for this date is hidden
+      const separatorEl = container.querySelector(`[data-date-separator="${formattedDate}"]`) as HTMLElement | null;
+      if (separatorEl) {
+        const sepRect = separatorEl.getBoundingClientRect();
+        isSeparatorHidden = sepRect.bottom <= containerRect.top;
+      } else {
+        isSeparatorHidden = true;
+      }
+    }
+
+    if (scrollTop > 10 && isScrollingUp && isSeparatorHidden) {
+      setShowSticky(true);
+    } else {
+      setShowSticky(false);
+    }
+  };
+
+  // Reset sticky state when changing conversations
+  useEffect(() => {
+    setStickyDate("");
+    setShowSticky(false);
+    lastScrollTopRef.current = 0;
+  }, [selectedChatId]);
+
   // Input fields
   const [inputMessage, setInputMessage] = useState("");
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -479,6 +543,7 @@ export default function ChatsPage() {
 
     setInputMessage("");
     setReplyingToMessage(null);
+    focusInput();
   };
 
   // Handle group creation
@@ -771,8 +836,29 @@ export default function ChatsPage() {
 
               {/* Message timeline and input */}
               <div className="flex-1 flex flex-col min-w-0 h-full relative">
+                {/* Sticky Date Header */}
+                <AnimatePresence>
+                  {showSticky && stickyDate && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-4 left-1/2 -translate-x-1/2 z-40"
+                    >
+                      <span className="bg-white border border-[var(--color-neutral-200)] text-[var(--color-neutral-700)] px-4 py-1.5 rounded-full shadow-md font-semibold text-xs whitespace-nowrap">
+                        {stickyDate}
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {/* Chat Timeline (Scrollable Messages) */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scrollbar bg-[var(--color-neutral-100)]">
+                <div
+                  ref={scrollContainerRef}
+                  onScroll={handleScroll}
+                  className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scrollbar bg-[var(--color-neutral-100)]"
+                >
                   {(() => {
                     const sortedMessages = [...activeChat.messages].sort((a, b) => {
                       return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
@@ -793,13 +879,15 @@ export default function ChatsPage() {
                           lastMessageDateStr = dateKey;
                           const dateText = formatDateSeparator(message.timestamp);
                           separatorElement = (
-                            <div key={`sep-${message.id}`} className="flex items-center justify-center my-6 select-none">
+                            <div
+                              key={`sep-${message.id}`}
+                              data-date-separator={dateText}
+                              className="flex items-center justify-center my-6 select-none"
+                            >
                               <div className="flex items-center w-full max-w-lg justify-center text-[var(--color-neutral-500)] text-xs font-medium tracking-wide">
-                                <span className="text-[var(--color-neutral-400)] mr-3 select-none">------------------</span>
                                 <span className="bg-white border border-[var(--color-neutral-200)] text-[var(--color-neutral-700)] px-4 py-1.5 rounded-full shadow-xs backdrop-blur-xs font-semibold shrink-0">
                                   {dateText}
                                 </span>
-                                <span className="text-[var(--color-neutral-400)] ml-3 select-none">------------------</span>
                               </div>
                             </div>
                           );
@@ -807,7 +895,7 @@ export default function ChatsPage() {
                       }
 
                       const messageElement = isSystem ? (
-                        <div key={message.id} className="flex justify-center my-3">
+                        <div key={message.id} data-message-date={message.timestamp} className="flex justify-center my-3">
                           <div className="bg-[var(--color-neutral-200)] text-[var(--color-neutral-600)] text-[10px] md:text-xs font-semibold py-1 px-3.5 rounded-full shadow-sm">
                             {message.text}
                           </div>
@@ -817,6 +905,7 @@ export default function ChatsPage() {
                           <div
                             key={message.id}
                             id={`msg-${message.id}`}
+                            data-message-date={message.timestamp}
                             className="flex justify-end items-end gap-2 transition-all duration-300 w-full"
                           >
                             <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%]">
@@ -824,7 +913,10 @@ export default function ChatsPage() {
                               <div className="absolute right-full mr-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
                                 <button
                                   type="button"
-                                  onClick={() => setReplyingToMessage(message)}
+                                  onClick={() => {
+                                    setReplyingToMessage(message);
+                                    focusInput();
+                                  }}
                                   title="Reply"
                                   className="p-1.5 rounded-full bg-white hover:bg-neutral-100 text-neutral-500 hover:text-[var(--color-primary-600)] shadow-md border border-neutral-200 transition-all active:scale-90"
                                 >
@@ -916,6 +1008,7 @@ export default function ChatsPage() {
                           <div
                             key={message.id}
                             id={`msg-${message.id}`}
+                            data-message-date={message.timestamp}
                             className="flex justify-start items-end gap-2 transition-all duration-300 w-full"
                           >
                             {/* Participant Avatar for group chat left-aligned messages */}
@@ -1015,7 +1108,10 @@ export default function ChatsPage() {
                               <div className="absolute left-full ml-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
                                 <button
                                   type="button"
-                                  onClick={() => setReplyingToMessage(message)}
+                                  onClick={() => {
+                                    setReplyingToMessage(message);
+                                    focusInput();
+                                  }}
                                   title="Reply"
                                   className="p-1.5 rounded-full bg-white hover:bg-neutral-100 text-neutral-500 hover:text-[var(--color-primary-600)] shadow-md border border-neutral-200 transition-all active:scale-90"
                                 >
@@ -1087,6 +1183,7 @@ export default function ChatsPage() {
                     {/* Input field */}
                     <div className="flex-1 bg-[var(--color-neutral-100)] border border-[var(--color-neutral-200)] hover:border-[var(--color-neutral-300)] rounded-full px-4 py-2.5 flex items-center transition-colors">
                       <input
+                        ref={inputRef}
                         type="text"
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}

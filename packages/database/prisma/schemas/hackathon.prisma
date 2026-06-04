@@ -1,6 +1,3 @@
-// PostgreSQL schema: hackathon
-// Hackathons, teams, rounds, and registrations
-
 model HackathonUserRoleEntity {
   id          String            @id @default(cuid())
   hackathonId String            @map("hackathon_id")
@@ -36,7 +33,6 @@ model HackathonEntity {
   participantType          ParticipantType                         @default(INDIVIDUAL)
   locationType             LocationType?                           @map("location_type")
   locationAddress          String?                                 @map("location_address")
-  locationCoords           String?                                 @map("location_coords")
   locationVirtualLink      String?                                 @map("location_virtual_link")
   registrationDeadline     DateTime?                               @map("registration_deadline")
   externalRegistrationLink String?                                 @map("external_registration_link")
@@ -70,20 +66,21 @@ model HackathonEntity {
   deletedAt                DateTime?                               @map("deleted_at")
   isDeleted                Boolean                                 @default(false) @map("is_deleted")
   feeBearer                FeeBearer                               @default(ORGANISER) @map("fee_bearer")
+  locationCoords           String?                                 @map("location_coords")
+  notifications            notifications[]
   festival                 FestivalEntity?                         @relation(fields: [festivalId], references: [id])
   owner                    UserEntity                              @relation("UserHackathons", fields: [ownerId], references: [id])
   attachments              HackathonAttachmentEntity[]
-  discountCodes            HackathonDiscountCodeEntity[]
-  payments                 HackathonPaymentEntity[]
-  payouts                  HackathonPayoutEntity[]
   registrationSubmissions  HackathonRegistrationSubmissionEntity[]
   userRoles                HackathonUserRoleEntity[]
   prizeBreakdown           PrizeBreakdownEntity[]
   registrationForm         RegistrationFormEntity?
   rounds                   RoundEntity[]
   teams                    TeamEntity[]
+  discountCodes            HackathonDiscountCodeEntity[]
+  payments                 HackathonPaymentEntity[]
+  payouts                  HackathonPayoutEntity[]
   payoutDetails            OrganizerPayoutDetailsEntity?
-  notifications            notifications[]
   ticketTiers              TicketTierEntity[]
 
   @@index([festivalId])
@@ -184,6 +181,152 @@ model HackathonAttachmentEntity {
   @@schema("hackathon")
 }
 
+model TeamEntity {
+  id                      String                                  @id @default(cuid())
+  name                    String
+  createdAt               DateTime                                @default(now())
+  updatedAt               DateTime                                @updatedAt
+  maxSize                 Int
+  hackathonId             String
+  leaderId                String
+  creatorId               String                                  @map("creator_id")
+  /// Unique invitation code for joining this team (generated on create)
+  invitationCode          String?                                 @unique @map("invitation_code")
+  /// Whether the team is open for new members to browse and join
+  isOpen                  Boolean                                 @default(true) @map("is_open")
+  /// When set, the PER_TEAM leader registration was attributed to this referral (leader has no TeamMemberEntity row).
+  referralId              String?                                 @map("referral_id")
+  /// Selected ticket tier for free-tier registrations (no payment row).
+  ticketTierId            String?                                 @map("ticket_tier_id")
+  registrationSubmissions HackathonRegistrationSubmissionEntity[]
+  roundSubmissions        HackathonTeamRoundSubmissionEntity[]
+  creator                 UserEntity                              @relation("TeamCreator", fields: [creatorId], references: [id])
+  hackathon               HackathonEntity                         @relation(fields: [hackathonId], references: [id])
+  leader                  UserEntity                              @relation("UserTeams", fields: [leaderId], references: [id])
+  referral                ReferralEntity?                         @relation(fields: [referralId], references: [id])
+  ticketTier              TicketTierEntity?                       @relation(fields: [ticketTierId], references: [id])
+  members                 TeamMemberEntity[]
+  roundQualifications     TeamRoundQualificationEntity[]
+  payments                HackathonPaymentEntity[]
+
+  @@index([referralId])
+  @@index([ticketTierId])
+  @@map("team")
+  @@schema("hackathon")
+}
+
+model TeamMemberEntity {
+  id                     String                                 @id @default(cuid())
+  joinedAt               DateTime                               @default(now())
+  userId                 String
+  teamId                 String
+  referralId             String?                                @map("referral_id")
+  scanned_at             DateTime?
+  /// Selected ticket tier for PER_USER free-tier registrations (no payment row).
+  ticketTierId           String?                                @map("ticket_tier_id")
+  registrationSubmission HackathonRegistrationSubmissionEntity?
+  referral               ReferralEntity?                        @relation(fields: [referralId], references: [id])
+  team                   TeamEntity                             @relation(fields: [teamId], references: [id])
+  ticketTier             TicketTierEntity?                      @relation(fields: [ticketTierId], references: [id])
+  user                   UserEntity                             @relation(fields: [userId], references: [id])
+
+  @@unique([userId, teamId])
+  @@index([referralId])
+  @@index([ticketTierId])
+  @@map("team_member")
+  @@schema("hackathon")
+}
+
+model HackathonRegistrationSubmissionEntity {
+  id           String                              @id @default(cuid())
+  hackathonId  String                              @map("hackathon_id")
+  userId       String                              @map("user_id")
+  teamId       String                              @map("team_id")
+  /// Optional link to team member (null for team leader who is not in members table)
+  teamMemberId String?                             @unique @map("team_member_id")
+  /// Whether this user is the team leader
+  isLeader     Boolean                             @default(false) @map("is_leader")
+  submittedAt  DateTime                            @default(now()) @map("submitted_at")
+  createdAt    DateTime                            @default(now())
+  updatedAt    DateTime                            @updatedAt
+  /// Free-tier selection when no payment row (e.g. PER_USER leader without a team_member row).
+  ticketTierId String?                             @map("ticket_tier_id")
+  answers      HackathonRegistrationAnswerEntity[]
+  hackathon    HackathonEntity                     @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  team         TeamEntity                          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamMember   TeamMemberEntity?                   @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+  ticketTier   TicketTierEntity?                   @relation(fields: [ticketTierId], references: [id])
+  user         UserEntity                          @relation("UserHackathonSubmissions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([hackathonId, userId])
+  @@index([hackathonId])
+  @@index([userId])
+  @@index([teamId])
+  @@index([ticketTierId])
+  @@map("hackathon_registration_submission")
+  @@schema("hackathon")
+}
+
+model HackathonRegistrationAnswerEntity {
+  id           String                                @id @default(cuid())
+  submissionId String                                @map("submission_id")
+  fieldId      String                                @map("field_id")
+  valueText    String?                               @map("value_text")
+  valueJson    Json?                                 @map("value_json")
+  createdAt    DateTime                              @default(now())
+  updatedAt    DateTime                              @updatedAt
+  field        RegistrationFieldEntity               @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  submission   HackathonRegistrationSubmissionEntity @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, fieldId])
+  @@index([submissionId])
+  @@index([fieldId])
+  @@map("hackathon_registration_answer")
+  @@schema("hackathon")
+}
+
+model HackathonTeamRoundSubmissionEntity {
+  id          String      @id @default(cuid())
+  teamId      String      @map("team_id")
+  roundId     String      @map("round_id")
+  /// Full submission payload (flexible JSON for synopsis text, links, file URLs, etc.)
+  payload     Json        @default("{}")
+  /// When the submission was made (null = not yet submitted)
+  submittedAt DateTime?   @map("submitted_at")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  round       RoundEntity @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  team        TeamEntity  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, roundId])
+  @@index([teamId])
+  @@index([roundId])
+  @@map("hackathon_team_round_submission")
+  @@schema("hackathon")
+}
+
+model TeamRoundQualificationEntity {
+  id          String      @id @default(cuid())
+  teamId      String      @map("team_id")
+  roundId     String      @map("round_id")
+  /// Whether the team is qualified/advanced for this round
+  qualified   Boolean     @default(false)
+  /// When the qualification status was set
+  qualifiedAt DateTime?   @map("qualified_at")
+  /// User ID of the organizer who set the status
+  qualifiedBy String?     @map("qualified_by")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  round       RoundEntity @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  team        TeamEntity  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, roundId])
+  @@index([teamId])
+  @@index([roundId])
+  @@map("team_round_qualification")
+  @@schema("hackathon")
+}
+
 enum HackathonMode {
   ONLINE
   OFFLINE
@@ -270,159 +413,5 @@ enum HackathonChargeMode {
   PER_USER
 
   @@map("HackathonChargeMode")
-  @@schema("hackathon")
-}
-
-model TeamEntity {
-  id                      String                                  @id @default(cuid())
-  name                    String
-  createdAt               DateTime                                @default(now())
-  updatedAt               DateTime                                @updatedAt
-  maxSize                 Int
-  hackathonId             String
-  leaderId                String
-  creatorId               String                                  @map("creator_id")
-  /// Unique invitation code for joining this team (generated on create)
-  invitationCode          String?                                 @unique @map("invitation_code")
-  /// Whether the team is open for new members to browse and join
-  isOpen                  Boolean                                 @default(true) @map("is_open")
-  /// When set, the PER_TEAM leader registration was attributed to this referral (leader has no TeamMemberEntity row).
-  referralId              String?                                 @map("referral_id")
-  /// Selected ticket tier for free-tier registrations (no payment row).
-  ticketTierId            String?                                 @map("ticket_tier_id")
-  ticketTier              TicketTierEntity?                       @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
-  payments                HackathonPaymentEntity[]
-  registrationSubmissions HackathonRegistrationSubmissionEntity[]
-  roundSubmissions        HackathonTeamRoundSubmissionEntity[]
-  creator                 UserEntity                              @relation("TeamCreator", fields: [creatorId], references: [id])
-  hackathon               HackathonEntity                         @relation(fields: [hackathonId], references: [id])
-  leader                  UserEntity                              @relation("UserTeams", fields: [leaderId], references: [id])
-  referral                ReferralEntity?                         @relation(fields: [referralId], references: [id])
-  members                 TeamMemberEntity[]
-  roundQualifications     TeamRoundQualificationEntity[]
-
-  @@index([referralId])
-  @@index([ticketTierId])
-  @@map("team")
-  @@schema("hackathon")
-}
-
-model TeamMemberEntity {
-  id                     String                                 @id @default(cuid())
-  joinedAt               DateTime                               @default(now())
-  userId                 String
-  teamId                 String
-  referralId             String?                                @map("referral_id")
-  /// Selected ticket tier for PER_USER free-tier registrations (no payment row).
-  ticketTierId           String?                                @map("ticket_tier_id")
-  ticketTier             TicketTierEntity?                      @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
-  scanned_at             DateTime?
-  registrationSubmission HackathonRegistrationSubmissionEntity?
-  referral               ReferralEntity?                        @relation(fields: [referralId], references: [id])
-  team                   TeamEntity                             @relation(fields: [teamId], references: [id])
-  user                   UserEntity                             @relation(fields: [userId], references: [id])
-
-  @@unique([userId, teamId])
-  @@index([referralId])
-  @@index([ticketTierId])
-  @@map("team_member")
-  @@schema("hackathon")
-}
-
-model HackathonRegistrationSubmissionEntity {
-  id           String                              @id @default(cuid())
-  hackathonId  String                              @map("hackathon_id")
-  userId       String                              @map("user_id")
-  teamId       String                              @map("team_id")
-  /// Optional link to team member (null for team leader who is not in members table)
-  teamMemberId String?                             @unique @map("team_member_id")
-  /// Whether this user is the team leader
-  isLeader     Boolean                             @default(false) @map("is_leader")
-  /// Free-tier selection when no payment row (e.g. PER_USER leader without a team_member row).
-  ticketTierId String?                             @map("ticket_tier_id")
-  ticketTier   TicketTierEntity?                   @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
-  submittedAt  DateTime                            @default(now()) @map("submitted_at")
-  createdAt    DateTime                            @default(now())
-  updatedAt    DateTime                            @updatedAt
-  answers      HackathonRegistrationAnswerEntity[]
-  hackathon    HackathonEntity                     @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
-  team         TeamEntity                          @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  teamMember   TeamMemberEntity?                   @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
-  user         UserEntity                          @relation("UserHackathonSubmissions", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([hackathonId, userId])
-  @@index([hackathonId])
-  @@index([userId])
-  @@index([teamId])
-  @@index([ticketTierId])
-  @@map("hackathon_registration_submission")
-  @@schema("hackathon")
-}
-
-/// Individual answer to a hackathon registration field.
-
-model HackathonRegistrationAnswerEntity {
-  id           String                                @id @default(cuid())
-  submissionId String                                @map("submission_id")
-  fieldId      String                                @map("field_id")
-  valueText    String?                               @map("value_text")
-  valueJson    Json?                                 @map("value_json")
-  createdAt    DateTime                              @default(now())
-  updatedAt    DateTime                              @updatedAt
-  field        RegistrationFieldEntity               @relation(fields: [fieldId], references: [id], onDelete: Cascade)
-  submission   HackathonRegistrationSubmissionEntity @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-
-  @@unique([submissionId, fieldId])
-  @@index([submissionId])
-  @@index([fieldId])
-  @@map("hackathon_registration_answer")
-  @@schema("hackathon")
-}
-
-/// Submission for a team in a hackathon round.
-/// Stores the full submission payload (synopsis, presentation links, etc.).
-
-model HackathonTeamRoundSubmissionEntity {
-  id          String      @id @default(cuid())
-  teamId      String      @map("team_id")
-  roundId     String      @map("round_id")
-  /// Full submission payload (flexible JSON for synopsis text, links, file URLs, etc.)
-  payload     Json        @default("{}")
-  /// When the submission was made (null = not yet submitted)
-  submittedAt DateTime?   @map("submitted_at")
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  round       RoundEntity @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  team        TeamEntity  @relation(fields: [teamId], references: [id], onDelete: Cascade)
-
-  @@unique([teamId, roundId])
-  @@index([teamId])
-  @@index([roundId])
-  @@map("hackathon_team_round_submission")
-  @@schema("hackathon")
-}
-
-/// Tracks team qualification/advancement status per round.
-/// Organizers mark teams as qualified to advance to the next round.
-
-model TeamRoundQualificationEntity {
-  id          String      @id @default(cuid())
-  teamId      String      @map("team_id")
-  roundId     String      @map("round_id")
-  /// Whether the team is qualified/advanced for this round
-  qualified   Boolean     @default(false)
-  /// When the qualification status was set
-  qualifiedAt DateTime?   @map("qualified_at")
-  /// User ID of the organizer who set the status
-  qualifiedBy String?     @map("qualified_by")
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  round       RoundEntity @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  team        TeamEntity  @relation(fields: [teamId], references: [id], onDelete: Cascade)
-
-  @@unique([teamId, roundId])
-  @@index([teamId])
-  @@index([roundId])
-  @@map("team_round_qualification")
   @@schema("hackathon")
 }

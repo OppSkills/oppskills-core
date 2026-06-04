@@ -4,12 +4,14 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, CommunityAccessControlRole } from '@prisma/client';
 import { prisma } from '@oppskills/db';
 import { CreateCommunityDto } from './dto/create-community.dto';
 import { CommunityResponseDto } from './dto/community-response.dto';
 import type { CommunityListItemDto } from './dto/community-list-item.dto';
+import { AddCommunityMembersDto } from './dto/add-community-members.dto';
 
 @Injectable()
 export class CommunityService {
@@ -25,7 +27,6 @@ export class CommunityService {
             members: {
               some: {
                 userId,
-                role: { in: ['ADMIN', 'EDITOR'] },
               },
             },
           },
@@ -42,7 +43,7 @@ export class CommunityService {
         createdAt: true,
         members: {
           where: { userId },
-          select: { role: true },
+          select: { role: true, accessControlRole: true },
         },
       },
     });
@@ -51,7 +52,7 @@ export class CommunityService {
       const myRole =
         row.ownerId === userId
           ? ('OWNER' as const)
-          : row.members[0]?.role === 'ADMIN'
+          : row.members[0]?.accessControlRole === 'ADMIN'
             ? ('ADMIN' as const)
             : ('EDITOR' as const);
 
@@ -85,11 +86,13 @@ export class CommunityService {
     }
 
     const isOwner = community.ownerId === userId;
-    const isMember =
-      community.members.length > 0 &&
-      ['ADMIN', 'EDITOR'].includes(community.members[0].role);
+    const myMemberRecord = community.members[0];
+    const isOwnerOrAdminOrModerator =
+      isOwner ||
+      (myMemberRecord &&
+        ['ADMIN', 'MODERATOR'].includes(myMemberRecord.accessControlRole));
 
-    if (!isOwner && !isMember) {
+    if (!isOwnerOrAdminOrModerator) {
       throw new ForbiddenException(
         'You do not have permission to manage this community.',
       );
@@ -126,7 +129,8 @@ export class CommunityService {
           data: {
             communityId: created.id,
             userId: ownerId,
-            role: 'ADMIN',
+            role: 'OWNER',
+            accessControlRole: 'ADMIN',
           },
         });
 
@@ -173,6 +177,7 @@ export class CommunityService {
     industry: CommunityResponseDto['industry'];
     coverImage: string | null;
     avatarImage: string | null;
+    ownerId: string;
     createdAt: Date;
   }): CommunityResponseDto {
     return {
@@ -184,7 +189,350 @@ export class CommunityService {
       industry: community.industry,
       coverImage: community.coverImage,
       avatarImage: community.avatarImage,
+      ownerId: community.ownerId,
       createdAt: community.createdAt,
     };
   }
+
+  async checkCommunityManagementPermission(userId: string, communityId: string) {
+    const community = await prisma.communityEntity.findUnique({
+      where: { id: communityId },
+      include: {
+        members: {
+          where: { userId },
+        },
+      },
+    });
+
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    const isOwner = community.ownerId === userId;
+    const isMember = community.members.length > 0;
+
+    if (!isOwner && !isMember) {
+      throw new ForbiddenException(
+        'You do not have permission to manage this community.',
+      );
+    }
+    return community;
+  }
+
+  async checkCommunityReadPermission(userId: string, communityId: string) {
+    const community = await prisma.communityEntity.findUnique({
+      where: { id: communityId },
+      include: {
+        members: {
+          where: { userId },
+        },
+      },
+    });
+
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    const isOwner = community.ownerId === userId;
+    const myMemberRecord = community.members[0];
+    const isOwnerOrAdminOrModerator =
+      isOwner ||
+      (myMemberRecord &&
+        ['ADMIN', 'MODERATOR'].includes(myMemberRecord.accessControlRole));
+
+    if (!isOwnerOrAdminOrModerator) {
+      throw new ForbiddenException(
+        'You do not have permission to view this community.',
+      );
+    }
+    return community;
+  }
+
+  async checkCommunityWritePermission(userId: string, communityId: string) {
+    const community = await prisma.communityEntity.findUnique({
+      where: { id: communityId },
+      include: {
+        members: {
+          where: { userId },
+        },
+      },
+    });
+
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    const isOwner = community.ownerId === userId;
+    const myMemberRecord = community.members[0];
+    const isAdmin = myMemberRecord?.accessControlRole === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      throw new ForbiddenException(
+        'You do not have permission to modify data in this community.',
+      );
+    }
+    return community;
+  }
+
+  async listMembers(
+    currentUserId: string,
+    communityId: string,
+  ) {
+    // 1. Fetch community details and verify read permission
+    const community = await prisma.communityEntity.findUnique({
+      where: { id: communityId },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+        members: {
+          where: { userId: currentUserId },
+        },
+      },
+    });
+
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    const isOwner = community.ownerId === currentUserId;
+    const myMemberRecord = community.members[0];
+    const isOwnerOrAdminOrModerator =
+      isOwner ||
+      (myMemberRecord &&
+        ['ADMIN', 'MODERATOR'].includes(myMemberRecord.accessControlRole));
+
+    if (!isOwnerOrAdminOrModerator) {
+      throw new ForbiddenException(
+        'You do not have permission to view this community.',
+      );
+    }
+
+    // 2. Fetch all members
+    const members = await prisma.communityMemberEntity.findMany({
+      where: { communityId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // 3. Map members list, and ensure the community owner record has role: 'OWNER' and accessControlRole: 'ADMIN'
+    const mappedMembers = members.map((m) => {
+      const displayName = [m.user.firstName, m.user.lastName].filter(Boolean).join(' ') || m.user.email.split('@')[0];
+      const isMemberOwner = m.userId === community.ownerId;
+      return {
+        id: m.id,
+        userId: m.user.id,
+        name: displayName,
+        email: m.user.email,
+        role: isMemberOwner ? 'OWNER' : m.role,
+        accessControlRole: isMemberOwner ? 'ADMIN' : m.accessControlRole,
+        avatarUrl: m.user.imageUrl || '/avatars/user.png',
+        lastAssignedDate: m.createdAt.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }).replace(/\//g, '-'),
+      };
+    });
+
+    // 4. If the owner is somehow not in the members list (e.g. for legacy communities), we can add the owner manually
+    const hasOwnerInMembers = mappedMembers.some((m) => m.userId === community.ownerId);
+    if (!hasOwnerInMembers && community.owner) {
+      const ownerDisplayName = [community.owner.firstName, community.owner.lastName].filter(Boolean).join(' ') || community.owner.email.split('@')[0];
+      mappedMembers.unshift({
+        id: `owner-${community.owner.id}`,
+        userId: community.owner.id,
+        name: ownerDisplayName,
+        email: community.owner.email,
+        role: 'OWNER',
+        accessControlRole: 'ADMIN',
+        avatarUrl: community.owner.imageUrl || '/avatars/user.png',
+        lastAssignedDate: community.createdAt.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }).replace(/\//g, '-'),
+      });
+    }
+
+    return mappedMembers;
+  }
+
+  async addMembersToCommunity(
+    currentUserId: string,
+    communityId: string,
+    dto: AddCommunityMembersDto,
+  ) {
+    await this.checkCommunityWritePermission(currentUserId, communityId);
+
+    if (dto.userIds.includes(currentUserId)) {
+      throw new BadRequestException(
+        'You cannot add your own user ID to the community members.',
+      );
+    }
+
+    // Verify all user IDs exist in database
+    const users = await prisma.userEntity.findMany({
+      where: { id: { in: dto.userIds } },
+      select: { id: true },
+    });
+    const foundUserIds = users.map((u) => u.id);
+    const invalidUserIds = dto.userIds.filter((id) => !foundUserIds.includes(id));
+    if (invalidUserIds.length > 0) {
+      throw new NotFoundException(
+        `The following user IDs do not exist: ${invalidUserIds.join(', ')}`,
+      );
+    }
+
+    // Check if any of these users are already members
+    const existingMembers = await prisma.communityMemberEntity.findMany({
+      where: {
+        communityId,
+        userId: { in: dto.userIds },
+      },
+      select: { userId: true },
+    });
+    const existingUserIds = existingMembers.map((m) => m.userId);
+    if (existingUserIds.length > 0) {
+      throw new ConflictException(
+        `The following users are already members of this community: ${existingUserIds.join(', ')}`,
+      );
+    }
+
+    // Bulk add members
+    await prisma.communityMemberEntity.createMany({
+      data: dto.userIds.map((uid) => ({
+        communityId,
+        userId: uid,
+        role: dto.role,
+        accessControlRole: dto.accessControlRole,
+      })),
+    });
+
+    return { success: true, count: dto.userIds.length };
+  }
+
+  async getUniqueMemberTypes(currentUserId: string, communityId: string): Promise<string[]> {
+    await this.checkCommunityReadPermission(currentUserId, communityId);
+
+    const uniqueRoles = await prisma.communityMemberEntity.findMany({
+      where: { communityId },
+      select: { role: true },
+      distinct: ['role'],
+    });
+
+    return uniqueRoles.map((r) => r.role);
+  }
+
+  async updateMemberType(
+    currentUserId: string,
+    communityId: string,
+    memberId: string,
+    role: string,
+  ) {
+    const community = await this.checkCommunityWritePermission(currentUserId, communityId);
+
+    const member = await prisma.communityMemberEntity.findFirst({
+      where: { id: memberId, communityId },
+    });
+    if (!member) {
+      throw new NotFoundException('Community member not found.');
+    }
+
+    // Admin cannot change role (type) of other admin
+    if (member.accessControlRole === 'ADMIN') {
+      const isOwner = community.ownerId === currentUserId;
+      if (!isOwner) {
+        throw new ForbiddenException('Admins cannot modify other admins.');
+      }
+    }
+
+    return prisma.communityMemberEntity.update({
+      where: { id: memberId },
+      data: { role },
+    });
+  }
+
+  async updateMemberAccess(
+    currentUserId: string,
+    communityId: string,
+    memberId: string,
+    accessControlRole: CommunityAccessControlRole,
+  ) {
+    const community = await this.checkCommunityWritePermission(currentUserId, communityId);
+
+    const member = await prisma.communityMemberEntity.findFirst({
+      where: { id: memberId, communityId },
+    });
+    if (!member) {
+      throw new NotFoundException('Community member not found.');
+    }
+
+    // Check if target member is owner
+    if (member.userId === community.ownerId) {
+      throw new BadRequestException('The access control role of the owner cannot be changed.');
+    }
+
+    // Admin cannot demote/change role of other admin
+    if (member.accessControlRole === 'ADMIN') {
+      const isOwner = community.ownerId === currentUserId;
+      if (!isOwner) {
+        throw new ForbiddenException('Admins cannot modify other admins.');
+      }
+    }
+
+    return prisma.communityMemberEntity.update({
+      where: { id: memberId },
+      data: { accessControlRole },
+    });
+  }
+
+  async deleteMember(
+    currentUserId: string,
+    communityId: string,
+    memberId: string,
+  ) {
+    const community = await this.checkCommunityWritePermission(currentUserId, communityId);
+
+    const member = await prisma.communityMemberEntity.findFirst({
+      where: { id: memberId, communityId },
+    });
+    if (!member) {
+      throw new NotFoundException('Community member not found.');
+    }
+
+    // Check if target member is owner
+    if (member.userId === community.ownerId) {
+      throw new BadRequestException('The community owner cannot be removed.');
+    }
+
+    // Admin cannot delete/remove other admin
+    if (member.accessControlRole === 'ADMIN') {
+      const isOwner = community.ownerId === currentUserId;
+      if (!isOwner) {
+        throw new ForbiddenException('Admins cannot remove other admins.');
+      }
+    }
+
+    return prisma.communityMemberEntity.delete({
+      where: { id: memberId },
+    });
+  }
 }
+

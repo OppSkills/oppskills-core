@@ -1,5 +1,74 @@
-// PostgreSQL schema: community
-// Communities owned by users
+model CommunityEntity {
+  id          String                  @id @default(cuid())
+  name        String
+  handle      String                  @unique
+  description String?
+  website     String?
+  industry    Industry
+  coverImage  String?                 @map("cover_image")
+  avatarImage String?                 @map("avatar_image")
+  ownerId     String                  @map("owner_id")
+  createdAt   DateTime                @default(now()) @map("created_at")
+  updatedAt   DateTime                @updatedAt @map("updated_at")
+  owner       UserEntity              @relation("UserCommunities", fields: [ownerId], references: [id])
+  meets       CommunityMeetEntity[]
+  members     CommunityMemberEntity[]
+
+  @@unique([name, ownerId])
+  @@index([ownerId])
+  @@map("community")
+  @@schema("community")
+}
+
+model CommunityMemberEntity {
+  id                String                     @id @default(cuid())
+  communityId       String                     @map("community_id")
+  userId            String                     @map("user_id")
+  createdAt         DateTime                   @default(now()) @map("created_at")
+  updatedAt         DateTime                   @updatedAt @map("updated_at")
+  accessControlRole CommunityAccessControlRole @default(READ_ONLY)
+  role              String                     @default("MEMBER")
+  community         CommunityEntity            @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user              UserEntity                 @relation("UserCommunityMemberships", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
+  @@index([userId])
+  @@index([communityId])
+  @@map("community_member")
+  @@schema("community")
+}
+
+model CommunityCustomRoles {
+  id          String @id @default(cuid())
+  communityId String @map("community_id")
+  name        String @map("name")
+
+  @@map("community_custom_roles")
+  @@schema("community")
+}
+
+model CommunityMeetEntity {
+  id               String            @id @default(cuid())
+  communityId      String            @map("community_id")
+  inviteCode       String            @unique @map("invite_code")
+  kind             MeetKind
+  title            String
+  description      String?
+  scheduledStartAt DateTime?         @map("scheduled_start_at")
+  audienceScope    MeetAudienceScope @default(ALL) @map("audience_scope")
+  hostUserId       String            @map("host_user_id")
+  livekitRoomName  String            @unique @map("livekit_room_name")
+  status           MeetStatus        @default(ACTIVE)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  community        CommunityEntity   @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  host             UserEntity        @relation("CommunityMeetHost", fields: [hostUserId], references: [id])
+
+  @@index([communityId])
+  @@index([hostUserId])
+  @@map("community_meet")
+  @@schema("community")
+}
 
 enum Industry {
   TECHNOLOGY
@@ -21,51 +90,12 @@ enum Industry {
   @@schema("community")
 }
 
-enum CommunityMemberRole {
+enum CommunityAccessControlRole {
   ADMIN
-  EDITOR
-  MEMBER
+  READ_ONLY
+  MODERATOR
 
-  @@map("CommunityMemberRole")
-  @@schema("community")
-}
-
-model CommunityEntity {
-  id          String   @id @default(cuid())
-  name        String
-  handle      String   @unique
-  description String?
-  website     String?
-  industry    Industry
-  coverImage  String?  @map("cover_image")
-  avatarImage String?  @map("avatar_image")
-  ownerId     String   @map("owner_id")
-  owner       UserEntity @relation("UserCommunities", fields: [ownerId], references: [id])
-  members     CommunityMemberEntity[]
-  meets       CommunityMeetEntity[]
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@unique([name, ownerId])
-  @@index([ownerId])
-  @@map("community")
-  @@schema("community")
-}
-
-model CommunityMemberEntity {
-  id          String              @id @default(cuid())
-  communityId String              @map("community_id")
-  userId      String              @map("user_id")
-  role        CommunityMemberRole
-  createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @updatedAt @map("updated_at")
-  community   CommunityEntity     @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  user        UserEntity          @relation("UserCommunityMemberships", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([communityId, userId])
-  @@index([userId])
-  @@index([communityId])
-  @@map("community_member")
+  @@map("CommunityAccessControlRole")
   @@schema("community")
 }
 
@@ -92,28 +122,5 @@ enum MeetStatus {
   ENDED
 
   @@map("MeetStatus")
-  @@schema("community")
-}
-
-model CommunityMeetEntity {
-  id               String            @id @default(cuid())
-  communityId      String?           @map("community_id")
-  inviteCode       String            @unique @map("invite_code")
-  kind             MeetKind
-  title            String
-  description      String?
-  scheduledStartAt DateTime?         @map("scheduled_start_at")
-  audienceScope    MeetAudienceScope @default(ALL) @map("audience_scope")
-  hostUserId       String            @map("host_user_id")
-  livekitRoomName  String            @unique @map("livekit_room_name")
-  status           MeetStatus        @default(ACTIVE)
-  community        CommunityEntity?  @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  host             UserEntity        @relation("CommunityMeetHost", fields: [hostUserId], references: [id])
-  createdAt        DateTime          @default(now()) @map("created_at")
-  updatedAt        DateTime          @updatedAt @map("updated_at")
-
-  @@index([communityId])
-  @@index([hostUserId])
-  @@map("community_meet")
   @@schema("community")
 }
