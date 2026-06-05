@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { CreateTeamFormContentProps } from "./RegistrationModal.types";
+import { RegistrationOnboardingFields } from "@/components/registration/RegistrationOnboardingFields";
 import { cn } from "@/lib/utils";
 import { isUploadField } from "@/lib/form-utils";
 
@@ -44,6 +45,10 @@ export function CreateTeamFormContent({
   ticketTierId,
   setTicketTierId,
   omitTicketTierSection = false,
+  onboardingValues,
+  onOnboardingChange,
+  onboardingErrors,
+  showTeamPreference = true,
 }: CreateTeamFormContentProps) {
   const activeTiers: TicketTier[] = (ticketTiers ?? []).filter(
     (tier: TicketTier) => tier.isActive !== false,
@@ -277,6 +282,16 @@ export function CreateTeamFormContent({
             </div>
           )}
         </div>
+      )}
+
+      {onboardingValues && onOnboardingChange && (
+        <RegistrationOnboardingFields
+          values={onboardingValues}
+          onChange={onOnboardingChange}
+          errors={onboardingErrors}
+          showTeamPreference={showTeamPreference}
+          compact
+        />
       )}
 
       {/* Dynamic Registration Fields */}

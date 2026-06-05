@@ -33,12 +33,13 @@ Add these to your GitHub repo **Settings → Secrets and variables → Actions**
 
 The SSH deploy step assumes the EC2 instance has:
 
-- **Instance IAM role** that allows:
+- **Instance IAM role** (`oppskills-ec2-role`) that allows:
   - `ecr:GetAuthorizationToken`
   - `ecr:BatchCheckLayerAvailability`
   - `ecr:GetDownloadUrlForLayer`
   - `ecr:BatchGetImage`
   - `secretsmanager:GetSecretValue` (for `oppskills-env`, or your chosen secret)
+  - **S3 on `oppskills-assets`**: `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` on `arn:aws:s3:::oppskills-assets/*` (required for chat attachment upload **and** download/stream — see `deploy/aws-media-s3-cloudfront.md` §6)
 - **Docker installed** and the instance user allowed to run it
 - **AWS CLI installed** (used for `aws ecr get-login-password`)
 

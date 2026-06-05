@@ -20,12 +20,18 @@ type UserCategory =
   | "FRESHER"
   | "PROFESSIONAL_SCHOOL_STUDENT";
 
+export interface MergeRegistrationFieldsOptions {
+  /** When true, gender and category identity fields live in the onboarding block. */
+  includeOnboardingBlock?: boolean;
+}
+
 /**
  * Default identity + contact fields for registration UIs.
- * For SCHOOL_STUDENT, includes School Class (required by onboarding API).
+ * With `includeOnboardingBlock`, only name/email/phone remain here; onboarding UI owns the rest.
  */
 export function buildDefaultFields(
   userCategory?: string | null,
+  options?: MergeRegistrationFieldsOptions,
 ): RegistrationField[] {
   const fields: RegistrationField[] = [
     {
@@ -55,16 +61,21 @@ export function buildDefaultFields(
       options: [],
       placeholder: "+91 XXXXX XXXXX",
     },
-    {
-      id: "default-gender",
-      label: "Gender",
-      type: "OPTIONS",
-      required: true,
-      order: -20,
-      options: ["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"],
-      placeholder: "Select gender",
-    },
   ];
+
+  if (options?.includeOnboardingBlock) {
+    return fields;
+  }
+
+  fields.push({
+    id: "default-gender",
+    label: "Gender",
+    type: "OPTIONS",
+    required: true,
+    order: -20,
+    options: ["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"],
+    placeholder: "Select gender",
+  });
 
   const category = userCategory as UserCategory | undefined;
 
@@ -141,8 +152,9 @@ const IDENTITY_FIELD_LABELS = new Set([
 export function mergeDefaultAndCustomFields(
   customFields: RegistrationField[] | undefined,
   userCategory?: string | null,
+  options?: MergeRegistrationFieldsOptions,
 ): RegistrationField[] {
-  const defaults = buildDefaultFields(userCategory);
+  const defaults = buildDefaultFields(userCategory, options);
   const customs = (customFields ?? []).map((f) => ({
     ...f,
     options: Array.isArray(f.options) ? f.options : [],
