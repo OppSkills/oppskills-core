@@ -18,34 +18,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Loader2,
-  AlertCircle,
-  Check,
-  ChevronsUpDown,
-  X,
-  FileText,
-} from "lucide-react";
+import { Loader2, AlertCircle, X, FileText } from "lucide-react";
 import { cn, getApiErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import { presignDocumentUpload } from "@/lib/api/mediaApi";
 import { uploadDocumentToS3PresignedPost } from "@/lib/uploads/uploadDocumentToS3";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { useAuth } from "@clerk/nextjs";
-import { searchColleges } from "@/lib/api/collegesApi";
-import { Checkbox } from "@/components/ui/checkbox";
+import { getMe, submitOnboarding, updateProfile } from "@/lib/api/usersApi";
+import { RegistrationOnboardingFields } from "@/components/registration/RegistrationOnboardingFields";
+import {
+  EMPTY_REGISTRATION_ONBOARDING,
+  type RegistrationOnboardingValues,
+} from "@/lib/registration/registrationOnboardingTypes";
+import {
+  buildCreateOnboardingDtoFromRegistration,
+  buildProfileNameUpdate,
+  buildRegistrationSubmissionAnswers,
+  clearRegistrationOnboardingForCategory,
+  injectOnboardingIntoRegistrationAnswers,
+  prefillRegistrationOnboarding,
+  validateRegistrationOnboarding,
+} from "@/lib/registration/registrationOnboardingSync";
+import { UserCategoryValue } from "@oppskills/types/enums";
 import type { RegistrationField } from "@/lib/registration/mergeRegistrationFields";
 
 // Default gender options matching Prisma Gender enum
@@ -270,25 +264,17 @@ export function EventRegistrationModal({
   eventName,
   isSubmitting,
   userData,
-  showOnboarding = false,
+  showOnboarding = true,
 }: EventRegistrationModalProps) {
   const { getToken } = useAuth();
   const [values, setValues] = useState<Record<string, FieldValue>>({});
   const [errors, setErrors] = useState<FieldErrors>({});
 
-  // Onboarding State
-  // Keeping step state just in case, but we are single page now
-  const [onboardingValues, setOnboardingValues] = useState<OnboardingValues>(
-    {},
-  );
-
-  // College Search State
-  const [collegeSearchQuery, setCollegeSearchQuery] = useState("");
-  const [collegeSearchResults, setCollegeSearchResults] = useState<
-    Array<{ id: string; name: string; city: string; state: string }>
-  >([]);
-  const [isSearchingColleges, setIsSearchingColleges] = useState(false);
-  const [collegeComboboxOpen, setCollegeComboboxOpen] = useState(false);
+  const [onboardingValues, setOnboardingValues] =
+    useState<RegistrationOnboardingValues>(EMPTY_REGISTRATION_ONBOARDING);
+  const [onboardingErrors, setOnboardingErrors] = useState<
+    Record<string, string>
+  >({});
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<
@@ -301,68 +287,72 @@ export function EventRegistrationModal({
 
   // Pre-fill values when modal opens
   useEffect(() => {
-    if (isOpen && userData) {
+    if (!isOpen) {
+      setValues({});
+      setErrors({});
+      setOnboardingValues(EMPTY_REGISTRATION_ONBOARDING);
+      setOnboardingErrors({});
+      setUploadedFiles({});
+      return;
+    }
+
+    const load = async () => {
       const prefilled: Record<string, FieldValue> = {};
       for (const field of supportedFields) {
         const prefilledValue = getPrefilledValue(field, userData);
-        if (prefilledValue) {
-          prefilled[field.id] = prefilledValue;
-        }
+        if (prefilledValue) prefilled[field.id] = prefilledValue;
       }
       setValues(prefilled);
       setErrors({});
 
-      // Pre-fill onboarding fields if visible
-      if (showOnboarding) {
-        const startingOnboardingValues: OnboardingValues = {};
+      if (!showOnboarding) return;
 
-        // Map all available userData to OnboardingValues
-        if (userData.gender)
-          startingOnboardingValues.gender = userData.gender as Gender;
-        if (userData.userCategory)
-          startingOnboardingValues.userCategory = userData.userCategory;
-
-        if (userData.schoolName)
-          startingOnboardingValues.schoolName = userData.schoolName;
-        if (userData.schoolClass)
-          startingOnboardingValues.schoolClass = userData.schoolClass;
-        if (userData.schoolAddress)
-          startingOnboardingValues.schoolAddress = userData.schoolAddress;
-
-        if (userData.collegeName)
-          startingOnboardingValues.collegeName = userData.collegeName;
-        if (userData.collegeId)
-          startingOnboardingValues.collegeId = userData.collegeId;
-        if (userData.collegeSkipped)
-          startingOnboardingValues.collegeSkipped = userData.collegeSkipped;
-
-        if (userData.companyName)
-          startingOnboardingValues.companyName = userData.companyName;
-        if (userData.jobTitle)
-          startingOnboardingValues.jobTitle = userData.jobTitle;
-
-        if (userData.interests)
-          startingOnboardingValues.interests = userData.interests;
-        if (userData.skills) startingOnboardingValues.skills = userData.skills;
-
-        if (userData.experienceLevel)
-          startingOnboardingValues.experienceLevel = userData.experienceLevel;
-        if (userData.teamPreference)
-          startingOnboardingValues.teamPreference = userData.teamPreference;
-
-        setOnboardingValues((prev) => ({
-          ...prev,
-          ...startingOnboardingValues,
-        }));
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const me = await getMe(token);
+        setOnboardingValues(
+          prefillRegistrationOnboarding({
+            me,
+            phone: userData?.phone,
+          }),
+        );
+      } catch {
+        if (userData) {
+          setOnboardingValues({
+            ...EMPTY_REGISTRATION_ONBOARDING,
+            gender:
+              (userData.gender as unknown as RegistrationOnboardingValues["gender"]) ||
+              "",
+            userCategory:
+              (userData.userCategory as unknown as RegistrationOnboardingValues["userCategory"]) ||
+              "",
+            schoolName: userData.schoolName ?? "",
+            schoolClass: userData.schoolClass ?? "",
+            schoolAddress: userData.schoolAddress ?? "",
+            collegeId: userData.collegeId ?? "",
+            collegeName: userData.collegeName ?? "",
+            collegeSkipped: userData.collegeSkipped ?? false,
+            companyName: userData.companyName ?? "",
+            jobTitle: userData.jobTitle ?? "",
+            locationCoords: userData.locationCoords ?? "",
+            locationState: userData.locationState ?? "",
+            locationCountry: userData.locationCountry ?? "India",
+            interests: userData.interests ?? [],
+            skills: userData.skills ?? [],
+            experienceLevel:
+              (userData.experienceLevel as unknown as RegistrationOnboardingValues["experienceLevel"]) ||
+              "",
+            teamPreference:
+              (userData.teamPreference as unknown as RegistrationOnboardingValues["teamPreference"]) ||
+              "",
+          });
+        }
       }
-    } else if (!isOpen) {
-      // Reset on close
-      setValues({});
-      setErrors({});
-      setOnboardingValues({}); // Reset onboarding values too
-      setUploadedFiles({});
-    }
-  }, [isOpen, userData, fields, showOnboarding]);
+    };
+
+    void load();
+  }, [isOpen, userData, fields, showOnboarding, getToken, supportedFields]);
 
   const handleFileSelect = async (
     fieldId: string,
@@ -417,31 +407,6 @@ export function EventRegistrationModal({
   const setValue = (fieldId: string, value: FieldValue) => {
     setValues((prev) => ({ ...prev, [fieldId]: value }));
 
-    // Sync to onboarding if it's a known field
-    if (showOnboarding) {
-      const field = supportedFields.find((f) => f.id === fieldId);
-      if (field) {
-        const label = field.label.toLowerCase();
-        if (label === "gender") {
-          updateOnboardingValue("gender", value);
-        } else if (
-          label.includes("college") ||
-          label.includes("university") ||
-          label.includes("institution")
-        ) {
-          updateOnboardingValue("collegeName", value);
-        } else if (label.includes("school")) {
-          updateOnboardingValue("schoolName", value);
-        } else if (
-          label.includes("company") ||
-          label.includes("organization") ||
-          label.includes("employer")
-        ) {
-          updateOnboardingValue("companyName", value);
-        }
-      }
-    }
-
     // Clear error on change
     if (errors[fieldId]) {
       setErrors((prev) => {
@@ -452,68 +417,17 @@ export function EventRegistrationModal({
     }
   };
 
-  const validateOnboarding = (): {
-    isValid: boolean;
-    newErrors: FieldErrors;
-  } => {
-    if (!showOnboarding) return { isValid: true, newErrors: {} };
-
-    let isValid = true;
-    const newErrors: FieldErrors = {};
-
-    // Helper to check required fields
-    const checkRequired = (
-      key: keyof OnboardingValues,
-      label: string,
-      errorKey: string,
-    ) => {
-      const value = onboardingValues[key];
-      if (
-        value === undefined ||
-        value === null ||
-        (typeof value === "string" && value.trim() === "")
-      ) {
-        newErrors[errorKey] = `Field "${label}" is required`;
-        isValid = false;
+  const handleOnboardingChange = (next: RegistrationOnboardingValues) => {
+    setOnboardingValues((prev) => {
+      if (next.userCategory && next.userCategory !== prev.userCategory) {
+        return clearRegistrationOnboardingForCategory(
+          next,
+          next.userCategory as UserCategoryValue,
+        );
       }
-    };
-
-    if (!dynamicGenderField) {
-      checkRequired("gender", "Gender", "gender");
-    }
-    checkRequired("userCategory", "User Category", "userCategory");
-
-    if (onboardingValues.userCategory === UserCategory.SCHOOL_STUDENT) {
-      if (!dynamicSchoolField) {
-        checkRequired("schoolName", "School Name", "schoolName");
-      }
-      checkRequired("schoolClass", "Class", "schoolClass");
-      checkRequired("schoolAddress", "School Address", "schoolAddress");
-    }
-
-    if (
-      onboardingValues.userCategory === UserCategory.COLLEGE_STUDENT ||
-      onboardingValues.userCategory ===
-        UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
-      onboardingValues.userCategory === UserCategory.FRESHER
-    ) {
-      if (!dynamicCollegeField) {
-        if (!onboardingValues.collegeSkipped) {
-          checkRequired("collegeId", "College", "collegeId");
-        } else {
-          checkRequired("collegeName", "College Name", "collegeName");
-        }
-      }
-    }
-
-    if (onboardingValues.userCategory === UserCategory.WORKING_PROFESSIONAL) {
-      if (!dynamicCompanyField) {
-        checkRequired("companyName", "Company Name", "companyName");
-      }
-      checkRequired("jobTitle", "Job Title", "jobTitle");
-    }
-
-    return { isValid, newErrors };
+      return next;
+    });
+    setOnboardingErrors({});
   };
 
   const validate = (): boolean => {
@@ -592,131 +506,86 @@ export function EventRegistrationModal({
     const isRegistrationValid = Object.keys(newErrors).length === 0;
 
     // Validate Onboarding
-    const onboardingValidation = validateOnboarding();
-    if (!onboardingValidation.isValid) {
-      setErrors((prev) => ({ ...prev, ...onboardingValidation.newErrors }));
+    if (showOnboarding) {
+      const onboardingValidation =
+        validateRegistrationOnboarding(onboardingValues);
+      if (!onboardingValidation.isValid) {
+        setOnboardingErrors(onboardingValidation.errors);
+        return false;
+      }
+      setOnboardingErrors({});
     }
 
-    return isRegistrationValid && onboardingValidation.isValid;
-  };
-
-  // Helper to map category to default identity field ID
-  const getIdentityFieldId = (category: UserCategory): string | null => {
-    switch (category) {
-      case UserCategory.SCHOOL_STUDENT:
-        return "default-school-name";
-      case UserCategory.COLLEGE_STUDENT:
-      case UserCategory.PROFESSIONAL_SCHOOL_STUDENT:
-      case UserCategory.FRESHER:
-        return "default-college-name";
-      case UserCategory.WORKING_PROFESSIONAL:
-        return "default-company-name";
-      default:
-        return null;
-    }
+    return isRegistrationValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validate()) {
-      // Optional: Trigger a toast if validation fails silently for the user (especially for onboarding fields which might not show error text yet)
+      toast.error("Please complete all required fields.");
       return;
     }
 
-    // Build answers array
-    const answers: Array<{
-      fieldId: string;
-      value: string | number | string[];
-    }> = [];
-
-    // Capture standard fields
-    for (const field of supportedFields) {
-      const value = values[field.id];
-      if (value !== undefined && value !== "") {
-        // Convert NUMBER type to number
-        if (field.type === "NUMBER" && typeof value === "string") {
-          answers.push({ fieldId: field.id, value: Number(value) });
-        } else {
-          answers.push({ fieldId: field.id, value });
-        }
-      }
-    }
-
-    // Determine current category to inject the correct default identity field
-    const effectiveCategory = showOnboarding
-      ? onboardingValues.userCategory
-      : userData?.userCategory;
-
-    // Determine values source
-    const valuesSource = showOnboarding ? onboardingValues : userData;
-
-    if (effectiveCategory && valuesSource) {
-      const identityFieldId = getIdentityFieldId(
-        effectiveCategory as UserCategory,
+    const rawValues: Record<string, unknown> = { ...values };
+    if (showOnboarding) {
+      const injected = injectOnboardingIntoRegistrationAnswers(
+        rawValues,
+        onboardingValues,
       );
-      let identityValue: string | undefined;
-
-      if (effectiveCategory === UserCategory.SCHOOL_STUDENT) {
-        identityValue = valuesSource.schoolName;
-      } else if (
-        effectiveCategory === UserCategory.COLLEGE_STUDENT ||
-        effectiveCategory === UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
-        effectiveCategory === UserCategory.FRESHER
-      ) {
-        identityValue = valuesSource.collegeName;
-      } else if (effectiveCategory === UserCategory.WORKING_PROFESSIONAL) {
-        identityValue = valuesSource.companyName;
-      }
-
-      // Inject if we have both ID and Value, and it's not already in answers
-      // (It might be in answers if the form happened to have that exact field ID, but usually dynamic fields have UUIDs)
-      // We prioritize this injection to ensure the backend gets the specific default field it expects for the category.
-      if (identityFieldId && identityValue) {
-        // Check if already exists (unlikely but safe to check)
-        const existingIndex = answers.findIndex(
-          (a) => a.fieldId === identityFieldId,
-        );
-        if (existingIndex > -1) {
-          answers[existingIndex].value = identityValue;
-        } else {
-          answers.push({ fieldId: identityFieldId, value: identityValue });
-        }
-      }
+      Object.assign(rawValues, injected);
     }
+
+    const mergedFieldIds = new Set(supportedFields.map((f) => f.id));
+    const answers = buildRegistrationSubmissionAnswers(
+      rawValues,
+      mergedFieldIds,
+    ) as Array<{ fieldId: string; value: string | number | string[] }>;
 
     if (showOnboarding) {
-      // Filter onboarding data based on category to avoid sending irrelevant fields
-      const filteredOnboardingData: OnboardingValues = {
-        // Common fields
-        gender: onboardingValues.gender,
-        userCategory: onboardingValues.userCategory,
-        interests: onboardingValues.interests,
-        skills: onboardingValues.skills,
-        experienceLevel: onboardingValues.experienceLevel,
-        teamPreference: onboardingValues.teamPreference,
-      };
+      const token = await getToken();
+      if (token) {
+        try {
+          const me = await getMe(token);
+          const onboardingDto = buildCreateOnboardingDtoFromRegistration({
+            onboarding: onboardingValues,
+            answers: rawValues,
+            profile: me.onboardingProfile,
+          });
+          await submitOnboarding(token, onboardingDto);
 
-      if (onboardingValues.userCategory === UserCategory.SCHOOL_STUDENT) {
-        filteredOnboardingData.schoolName = onboardingValues.schoolName;
-        filteredOnboardingData.schoolClass = onboardingValues.schoolClass;
-        filteredOnboardingData.schoolAddress = onboardingValues.schoolAddress;
-      } else if (
-        onboardingValues.userCategory === UserCategory.COLLEGE_STUDENT ||
-        onboardingValues.userCategory ===
-          UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
-        onboardingValues.userCategory === UserCategory.FRESHER
-      ) {
-        filteredOnboardingData.collegeId = onboardingValues.collegeId;
-        filteredOnboardingData.collegeName = onboardingValues.collegeName;
-        filteredOnboardingData.collegeSkipped = onboardingValues.collegeSkipped;
-      } else if (
-        onboardingValues.userCategory === UserCategory.WORKING_PROFESSIONAL
-      ) {
-        filteredOnboardingData.companyName = onboardingValues.companyName;
-        filteredOnboardingData.jobTitle = onboardingValues.jobTitle;
+          const fullName = rawValues["default-name"];
+          if (typeof fullName === "string") {
+            const nameUpdate = buildProfileNameUpdate(fullName, {
+              firstName: me.firstName,
+              lastName: me.lastName,
+            });
+            if (nameUpdate) await updateProfile(token, nameUpdate);
+          }
+        } catch (err) {
+          toast.error(getApiErrorMessage(err, "Could not save your profile."));
+          return;
+        }
       }
 
+      const filteredOnboardingData: OnboardingValues = {
+        gender: onboardingValues.gender as Gender | undefined,
+        userCategory: onboardingValues.userCategory as UserCategory | undefined,
+        interests: onboardingValues.interests,
+        skills: onboardingValues.skills,
+        experienceLevel:
+          onboardingValues.experienceLevel as ExperienceLevel | undefined,
+        teamPreference:
+          onboardingValues.teamPreference as TeamPreference | undefined,
+        schoolName: onboardingValues.schoolName,
+        schoolClass: onboardingValues.schoolClass,
+        schoolAddress: onboardingValues.schoolAddress,
+        collegeId: onboardingValues.collegeId,
+        collegeName: onboardingValues.collegeName,
+        collegeSkipped: onboardingValues.collegeSkipped,
+        companyName: onboardingValues.companyName,
+        jobTitle: onboardingValues.jobTitle,
+      };
       await onSubmit(answers, filteredOnboardingData);
     } else {
       await onSubmit(answers);
@@ -729,40 +598,6 @@ export function EventRegistrationModal({
     }
   };
 
-  // Update onboarding value helper
-  const updateOnboardingValue = (key: keyof OnboardingValues, value: any) => {
-    setOnboardingValues((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleCollegeSearch = async (query: string) => {
-    setCollegeSearchQuery(query);
-
-    if (query.trim().length < 2) {
-      setCollegeSearchResults([]);
-      return;
-    }
-
-    setIsSearchingColleges(true);
-    try {
-      const token = await getToken();
-      if (!token) return;
-
-      const results = await searchColleges(token, query);
-      setCollegeSearchResults(
-        results.map((c) => ({
-          id: c.id,
-          name: c.name,
-          city: c.city,
-          state: c.state,
-        })),
-      );
-    } catch (err) {
-      console.error("Failed to search colleges:", err);
-    } finally {
-      setIsSearchingColleges(false);
-    }
-  };
-
   const isCollegeFieldLabel = (label: string) => {
     const l = label.toLowerCase();
     return (
@@ -772,334 +607,15 @@ export function EventRegistrationModal({
     );
   };
 
-  const renderCollegeSearch = (
-    currentValue: string,
-    onSelect: (college: { id: string; name: string }) => void,
-    onTextChange: (value: string) => void,
-    error?: string,
-    placeholder?: string,
-  ) => {
-    const isSkipped = onboardingValues.collegeSkipped || false;
-
-    return (
-      <div className="space-y-4">
-        {!isSkipped ? (
-          <Popover
-            open={collegeComboboxOpen}
-            onOpenChange={setCollegeComboboxOpen}
-          >
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={collegeComboboxOpen}
-                className={cn(
-                  "w-full justify-between font-normal",
-                  error && "border-red-500",
-                )}
-              >
-                {currentValue || placeholder || "Search for your college..."}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-full min-w-[300px] p-0" align="start">
-              <Command shouldFilter={false}>
-                <CommandInput
-                  placeholder="Search colleges..."
-                  value={collegeSearchQuery}
-                  onValueChange={handleCollegeSearch}
-                />
-                <CommandList>
-                  {isSearchingColleges && (
-                    <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Searching...
-                    </div>
-                  )}
-                  {!isSearchingColleges &&
-                    collegeSearchQuery.length >= 2 &&
-                    collegeSearchResults.length === 0 && (
-                      <CommandEmpty>No colleges found.</CommandEmpty>
-                    )}
-                  {collegeSearchQuery.length < 2 && !currentValue && (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">
-                      Type at least 2 characters to search...
-                    </div>
-                  )}
-                  <CommandGroup>
-                    {collegeSearchResults.map((college) => (
-                      <CommandItem
-                        key={college.id}
-                        value={college.id}
-                        onSelect={() => {
-                          onSelect(college);
-                          setCollegeSearchQuery("");
-                          setCollegeSearchResults([]);
-                          setCollegeComboboxOpen(false);
-                        }}
-                        className="cursor-pointer"
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            onboardingValues.collegeId === college.id
-                              ? "opacity-100"
-                              : "opacity-0",
-                          )}
-                        />
-                        <div className="flex flex-col">
-                          <span className="font-medium">{college.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {college.city}, {college.state}
-                          </span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-        ) : (
-          <Input
-            placeholder="Enter College Name"
-            value={currentValue}
-            onChange={(e) => onTextChange(e.target.value)}
-            className={cn(error && "border-red-500")}
-          />
-        )}
-
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="collegeSkipped"
-            checked={isSkipped}
-            onCheckedChange={(checked) => {
-              updateOnboardingValue("collegeSkipped", checked === true);
-              if (checked === true) {
-                updateOnboardingValue("collegeId", undefined);
-                onTextChange(""); // Clear value when switching to manual entry
-              }
-            }}
-          />
-          <Label
-            htmlFor="collegeSkipped"
-            className="text-sm font-normal cursor-pointer"
-          >
-            My college is not listed
-          </Label>
-        </div>
-      </div>
-    );
-  };
-
-  // Check if any dynamic field is "Gender"
-  const dynamicGenderField = supportedFields.find(
-    (f) => f.label.toLowerCase() === "gender",
+  const renderOnboardingFields = () => (
+    <RegistrationOnboardingFields
+      values={onboardingValues}
+      onChange={handleOnboardingChange}
+      errors={onboardingErrors}
+      showTeamPreference={false}
+      compact
+    />
   );
-
-  const dynamicCollegeField = supportedFields.find((f) => {
-    const label = f.label.toLowerCase();
-    return (
-      label.includes("college") ||
-      label.includes("university") ||
-      label.includes("institution")
-    );
-  });
-
-  const dynamicSchoolField = supportedFields.find((f) =>
-    f.label.toLowerCase().includes("school"),
-  );
-
-  const dynamicCompanyField = supportedFields.find((f) => {
-    const label = f.label.toLowerCase();
-    return (
-      label.includes("company") ||
-      label.includes("organization") ||
-      label.includes("employer")
-    );
-  });
-
-  const renderOnboardingFields = () => {
-    return (
-      <div className="space-y-6 pt-4">
-        {/* Step 1: Basic Info */}
-        <div className="grid grid-cols-1">
-          {!dynamicGenderField && (
-            <div className="space-y-2">
-              <Label>
-                Gender <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={onboardingValues.gender}
-                onValueChange={(v) => updateOnboardingValue("gender", v)}
-              >
-                <SelectTrigger
-                  className={cn(errors.gender && "border-red-500")}
-                >
-                  <SelectValue placeholder="Select Gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(Gender).map((g) => (
-                    <SelectItem key={g} value={g}>
-                      {g.replace(/_/g, " ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.gender && (
-                <p className="text-xs text-red-500">{errors.gender}</p>
-              )}
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label>
-              User Category <span className="text-red-500">*</span>
-            </Label>
-            <Select
-              value={onboardingValues.userCategory}
-              onValueChange={(v) => updateOnboardingValue("userCategory", v)}
-            >
-              <SelectTrigger
-                className={cn(errors.userCategory && "border-red-500")}
-              >
-                <SelectValue placeholder="Select Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(UserCategory).map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c.replace(/_/g, " ")}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.userCategory && (
-              <p className="text-xs text-red-500">{errors.userCategory}</p>
-            )}
-          </div>
-        </div>
-
-        {onboardingValues.userCategory === UserCategory.SCHOOL_STUDENT && (
-          <div className="space-y-4">
-            {!dynamicSchoolField && (
-              <div className="space-y-2">
-                <Label>
-                  School Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  placeholder="Enter School Name"
-                  value={onboardingValues.schoolName || ""}
-                  onChange={(e) =>
-                    updateOnboardingValue("schoolName", e.target.value)
-                  }
-                  className={cn(errors.schoolName && "border-red-500")}
-                />
-                {errors.schoolName && (
-                  <p className="text-xs text-red-500">{errors.schoolName}</p>
-                )}
-              </div>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>
-                  Class <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  placeholder="e.g. 10th, 12th"
-                  value={onboardingValues.schoolClass || ""}
-                  onChange={(e) =>
-                    updateOnboardingValue("schoolClass", e.target.value)
-                  }
-                  className={cn(errors.schoolClass && "border-red-500")}
-                />
-                {errors.schoolClass && (
-                  <p className="text-xs text-red-500">{errors.schoolClass}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>
-                  School Address <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  placeholder="City, Area"
-                  value={onboardingValues.schoolAddress || ""}
-                  onChange={(e) =>
-                    updateOnboardingValue("schoolAddress", e.target.value)
-                  }
-                  className={cn(errors.schoolAddress && "border-red-500")}
-                />
-                {errors.schoolAddress && (
-                  <p className="text-xs text-red-500">{errors.schoolAddress}</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {(onboardingValues.userCategory === UserCategory.COLLEGE_STUDENT ||
-          onboardingValues.userCategory ===
-            UserCategory.PROFESSIONAL_SCHOOL_STUDENT ||
-          onboardingValues.userCategory === UserCategory.FRESHER) && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>
-                College <span className="text-red-500">*</span>
-              </Label>
-              {renderCollegeSearch(
-                onboardingValues.collegeName || "",
-                (college) => {
-                  updateOnboardingValue("collegeId", college.id);
-                  updateOnboardingValue("collegeName", college.name);
-                },
-                (val) => updateOnboardingValue("collegeName", val),
-                errors.collegeId || errors.collegeName,
-                "Search for your college...",
-              )}
-            </div>
-          </div>
-        )}
-
-        {onboardingValues.userCategory ===
-          UserCategory.WORKING_PROFESSIONAL && (
-          <div className="space-y-4">
-            {!dynamicCompanyField && (
-              <div className="space-y-2">
-                <Label>
-                  Company Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  placeholder="Enter Company Name"
-                  value={onboardingValues.companyName || ""}
-                  onChange={(e) =>
-                    updateOnboardingValue("companyName", e.target.value)
-                  }
-                  className={cn(errors.companyName && "border-red-500")}
-                />
-                {errors.companyName && (
-                  <p className="text-xs text-red-500">{errors.companyName}</p>
-                )}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label>
-                Job Title <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                placeholder="e.g. Software Engineer"
-                value={onboardingValues.jobTitle || ""}
-                onChange={(e) =>
-                  updateOnboardingValue("jobTitle", e.target.value)
-                }
-                className={cn(errors.jobTitle && "border-red-500")}
-              />
-              {errors.jobTitle && (
-                <p className="text-xs text-red-500">{errors.jobTitle}</p>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const renderField = (field: RegistrationField) => {
     const error = errors[field.id];
@@ -1303,30 +819,14 @@ export function EventRegistrationModal({
               {field.label}
               {field.required && <span className="text-red-500 ml-1">*</span>}
             </Label>
-            {isCollegeField ? (
-              renderCollegeSearch(
-                typeof value === "string" ? value : "",
-                (college) => {
-                  setValue(field.id, college.name);
-                  if (showOnboarding) {
-                    updateOnboardingValue("collegeId", college.id);
-                    updateOnboardingValue("collegeName", college.name);
-                  }
-                },
-                (val) => setValue(field.id, val),
-                error,
-                field.placeholder || "",
-              )
-            ) : (
-              <Input
-                id={field.id}
-                type="text"
-                placeholder={field.placeholder || ""}
-                value={typeof value === "string" ? value : ""}
-                onChange={(e) => setValue(field.id, e.target.value)}
-                className={cn(error && "border-red-500")}
-              />
-            )}
+            <Input
+              id={field.id}
+              type="text"
+              placeholder={field.placeholder || ""}
+              value={typeof value === "string" ? value : ""}
+              onChange={(e) => setValue(field.id, e.target.value)}
+              className={cn(error && "border-red-500")}
+            />
             {error && <p className="text-xs text-red-500">{error}</p>}
           </div>
         );

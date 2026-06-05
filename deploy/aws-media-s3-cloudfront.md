@@ -169,25 +169,28 @@ Route53 hosted zone for `oppskills.com`:
 
 ---
 
-## 6) IAM permissions (backend signing + optional cleanup)
+## 6) IAM permissions (backend signing, chat streaming, optional cleanup)
 
-The backend will generate **presigned POST** policies. S3 validates signatures using the backend’s AWS identity, so that identity must have permission to put objects.
+The backend uses the **EC2 instance IAM role** (`oppskills-ec2-role`) to:
 
-Because you deploy backend on EC2 using an **instance role** (see `deploy/backend-ec2.md`), the recommended approach is:
+1. **Sign presigned POST** uploads (`s3:PutObject`, …)
+2. **Stream chat attachments** from S3 via `GET /chats/.../attachment` (`s3:GetObject` on `private/chat-attachments/*`)
 
-- Add permissions to the **EC2 instance IAM role** used by the backend host.
+Because you deploy backend on EC2 (see `deploy/backend-ec2.md`), attach this to the instance role (not only a GitHub Actions user).
 
-Minimal policy (bucket name must match):
+**Required policy** (bucket name must match):
 
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AllowUploadToMediaBucket",
+      "Sid": "AllowMediaBucketObjectAccess",
       "Effect": "Allow",
       "Action": [
+        "s3:GetObject",
         "s3:PutObject",
+        "s3:DeleteObject",
         "s3:AbortMultipartUpload",
         "s3:ListBucketMultipartUploads",
         "s3:ListMultipartUploadParts"
@@ -200,8 +203,10 @@ Minimal policy (bucket name must match):
 
 Notes:
 
-- We do **not** use ACLs; objects remain private and are served by CloudFront.
-- If you later implement “delete old image”, add `s3:DeleteObject` too.
+- **`s3:GetObject` is required** for chat media/docs. Without it, prod logs show `AccessDenied` on `private/chat-attachments/...` while local dev (broader AWS creds) still works.
+- Chat uploads use prefix `private/chat-attachments/`; public hackathon banners use `public/`.
+- Legacy objects under `public/chat-attachments/` still need `GetObject` if served through the authenticated attachment endpoint.
+- We do **not** use ACLs; public marketing images are still read via CloudFront OAC (bucket policy), not public S3 URLs.
 
 ---
 

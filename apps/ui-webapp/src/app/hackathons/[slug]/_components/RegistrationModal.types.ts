@@ -1,4 +1,8 @@
 import { TeamDetailResponse } from "@/lib/api/teamApi";
+import type {
+  RegistrationOnboardingErrors,
+  RegistrationOnboardingValues,
+} from "@/lib/registration/registrationOnboardingTypes";
 import { CompetitionDetails, RegistrationField } from "./types";
 
 export interface RegistrationModalProps {
@@ -63,6 +67,10 @@ export interface CreateTeamFormContentProps {
   setTicketTierId?: (id: string) => void;
   /** Hide tier list when tiers were chosen on the detail page */
   omitTicketTierSection?: boolean;
+  onboardingValues?: RegistrationOnboardingValues;
+  onOnboardingChange?: (values: RegistrationOnboardingValues) => void;
+  onboardingErrors?: RegistrationOnboardingErrors;
+  showTeamPreference?: boolean;
 }
 
 export interface JoinTeamFormContentProps {
@@ -83,4 +91,8 @@ export interface JoinTeamFormContentProps {
   isUploading: boolean;
   uploadedFiles: Record<string, { name: string; url: string }>;
   slug: string;
+  onboardingValues?: RegistrationOnboardingValues;
+  onOnboardingChange?: (values: RegistrationOnboardingValues) => void;
+  onboardingErrors?: RegistrationOnboardingErrors;
+  showTeamPreference?: boolean;
 }

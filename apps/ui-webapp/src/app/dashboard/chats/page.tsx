@@ -368,6 +368,8 @@ export default function ChatsPage() {
     setShowChatMenu(false);
   }, [selectedChatId]);
 
+  const activeChat = chats.find((c) => c.id === selectedChatId);
+
   // Compute matching message IDs
   const matchingMessageIds = useMemo(() => {
     if (!isSearchingMessages || !messageSearchQuery.trim() || !activeChat) return [];
@@ -450,8 +452,6 @@ export default function ChatsPage() {
   // Image modal gallery state
   const [showImageModal, setShowImageModal] = useState(false);
   const [activeModalImageIndex, setActiveModalImageIndex] = useState(0);
-
-  const activeChat = chats.find((c) => c.id === selectedChatId);
 
   const chatPresenceSubtitle = useMemo(
     () =>
