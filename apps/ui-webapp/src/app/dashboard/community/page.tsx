@@ -7,15 +7,18 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import Link from "next/link";
-import { getMyCommunities, type MyCommunityListItem } from "@/lib/api/communityApi";
+import {
+  getMyCommunities,
+  type MyCommunityListItem,
+} from "@/lib/api/communityApi";
 import { CommunitiesTable } from "./_components/CommunitiesTable";
 
 export default function CommunitiesDashboardPage() {
   const { getToken, isLoaded } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [communities, setCommunities] = useState<ReadonlyArray<MyCommunityListItem>>(
-    [],
-  );
+  const [communities, setCommunities] = useState<
+    ReadonlyArray<MyCommunityListItem>
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -58,8 +61,7 @@ export default function CommunitiesDashboardPage() {
     if (q.length === 0) return communities;
     return communities.filter(
       (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.handle.toLowerCase().includes(q),
+        c.name.toLowerCase().includes(q) || c.handle.toLowerCase().includes(q),
     );
   }, [communities, searchQuery]);
 

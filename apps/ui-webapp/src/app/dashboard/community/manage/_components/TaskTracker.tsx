@@ -33,7 +33,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { startOfToday, format } from "date-fns";
 import {
@@ -107,10 +111,14 @@ export default function TaskTracker({
 
   // Thread details state
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [selectedTaskDetails, setSelectedTaskDetails] = useState<TaskResponse | null>(null);
+  const [selectedTaskDetails, setSelectedTaskDetails] =
+    useState<TaskResponse | null>(null);
   const [refreshingThread, setRefreshingThread] = useState(false);
   const isClosed = useMemo(() => {
-    return selectedTaskDetails?.status === "COMPLETED" || selectedTaskDetails?.status === "CANCELLED";
+    return (
+      selectedTaskDetails?.status === "COMPLETED" ||
+      selectedTaskDetails?.status === "CANCELLED"
+    );
   }, [selectedTaskDetails]);
   const [commentText, setCommentText] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -125,9 +133,7 @@ export default function TaskTracker({
 
     return date;
   });
-  const [assignee, setAssignee] = useState<string>(
-    memberName || "unassigned",
-  );
+  const [assignee, setAssignee] = useState<string>(memberName || "unassigned");
   const [selectedTags, setSelectedTags] = useState<string[]>([
     "E-Summit",
     "Hackathon",
@@ -177,23 +183,26 @@ export default function TaskTracker({
   }, [isOpen, memberName]);
 
   // Load Task Thread Details
-  const loadTaskDetails = React.useCallback(async (taskId: string, isManualRefresh = false) => {
-    if (isManualRefresh) setRefreshingThread(true);
-    try {
-      const token = await getToken();
-      if (!token) return;
-      const details = await apiGetTask(token, communityId, taskId);
-      setSelectedTaskDetails(details);
-      if (isManualRefresh) {
-        toast.success("Thread updated successfully");
+  const loadTaskDetails = React.useCallback(
+    async (taskId: string, isManualRefresh = false) => {
+      if (isManualRefresh) setRefreshingThread(true);
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const details = await apiGetTask(token, communityId, taskId);
+        setSelectedTaskDetails(details);
+        if (isManualRefresh) {
+          toast.success("Thread updated successfully");
+        }
+      } catch (err: any) {
+        console.error("Failed to load task details:", err);
+        toast.error(err.message || "Failed to load task details");
+      } finally {
+        if (isManualRefresh) setRefreshingThread(false);
       }
-    } catch (err: any) {
-      console.error("Failed to load task details:", err);
-      toast.error(err.message || "Failed to load task details");
-    } finally {
-      if (isManualRefresh) setRefreshingThread(false);
-    }
-  }, [getToken, communityId]);
+    },
+    [getToken, communityId],
+  );
 
   React.useEffect(() => {
     if (selectedTaskId) {
@@ -235,7 +244,8 @@ export default function TaskTracker({
 
       const newTask = await apiCreateTask(token, communityId, {
         title: taskName.trim(),
-        description: description.trim() || "Dedicated community milestone deliverable.",
+        description:
+          description.trim() || "Dedicated community milestone deliverable.",
         dueDate: dueDate ? dueDate.toISOString() : undefined,
         toUserId: assignedUser ? assignedUser.userId : currentUserId!,
         priority: priorityMap[priority] || "MEDIUM",
@@ -305,11 +315,16 @@ export default function TaskTracker({
       }
 
       // Send comment
-      const newComment = await apiCreateComment(token, communityId, selectedTaskId!, {
-        type: selectedFile ? "DOCUMENT" : "TEXT",
-        content,
-        ...fileData,
-      });
+      const newComment = await apiCreateComment(
+        token,
+        communityId,
+        selectedTaskId!,
+        {
+          type: selectedFile ? "DOCUMENT" : "TEXT",
+          content,
+          ...fileData,
+        },
+      );
 
       // Refresh task details
       if (selectedTaskDetails) {
@@ -334,11 +349,18 @@ export default function TaskTracker({
     try {
       const token = await getToken();
       if (!token) return;
-      const updated = await apiUpdateTaskStatus(token, communityId, selectedTaskId!, { status });
+      const updated = await apiUpdateTaskStatus(
+        token,
+        communityId,
+        selectedTaskId!,
+        { status },
+      );
       setSelectedTaskDetails(updated);
 
       if (onTasksChange) {
-        onTasksChange(tasks.map((t) => (t.id === selectedTaskId ? updated : t)));
+        onTasksChange(
+          tasks.map((t) => (t.id === selectedTaskId ? updated : t)),
+        );
       }
 
       toast.success(`Task status updated to ${status}`);
@@ -359,7 +381,10 @@ export default function TaskTracker({
       if (selectedTaskDetails) {
         setSelectedTaskDetails({
           ...selectedTaskDetails,
-          messages: selectedTaskDetails.messages?.filter((msg) => msg.id !== commentId) || [],
+          messages:
+            selectedTaskDetails.messages?.filter(
+              (msg) => msg.id !== commentId,
+            ) || [],
         });
       }
       toast.success("Comment deleted successfully");
@@ -372,7 +397,9 @@ export default function TaskTracker({
   // Filter tasks based on active subtab
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) =>
-      activeTaskTab === "Completed" ? task.status === "COMPLETED" : task.status !== "COMPLETED",
+      activeTaskTab === "Completed"
+        ? task.status === "COMPLETED"
+        : task.status !== "COMPLETED",
     );
   }, [tasks, activeTaskTab]);
 
@@ -409,25 +436,27 @@ export default function TaskTracker({
             <div className="bg-white rounded-3xl p-6 border border-neutral-150 shadow-2xs flex flex-col gap-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <span
-                  className={`border px-3 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wide ${selectedTaskDetails.priority === "HIGH"
-                    ? "bg-red-50 text-[#C62828] border-red-150"
-                    : selectedTaskDetails.priority === "LOW"
-                      ? "bg-emerald-50 text-[#2E7D32] border-emerald-150"
-                      : "bg-amber-50 text-[#D84315] border-amber-150"
-                    }`}
+                  className={`border px-3 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wide ${
+                    selectedTaskDetails.priority === "HIGH"
+                      ? "bg-red-50 text-[#C62828] border-red-150"
+                      : selectedTaskDetails.priority === "LOW"
+                        ? "bg-emerald-50 text-[#2E7D32] border-emerald-150"
+                        : "bg-amber-50 text-[#D84315] border-amber-150"
+                  }`}
                 >
                   {selectedTaskDetails.priority} Priority
                 </span>
 
                 <span
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold ${selectedTaskDetails.status === "COMPLETED"
-                    ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                    : selectedTaskDetails.status === "IN_PROGRESS"
-                      ? "bg-blue-100 text-blue-800 border border-blue-200"
-                      : selectedTaskDetails.status === "CANCELLED"
-                        ? "bg-neutral-150 text-neutral-600 border border-neutral-200"
-                        : "bg-amber-100 text-amber-800 border border-amber-200"
-                    }`}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold ${
+                    selectedTaskDetails.status === "COMPLETED"
+                      ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                      : selectedTaskDetails.status === "IN_PROGRESS"
+                        ? "bg-blue-100 text-blue-800 border border-blue-200"
+                        : selectedTaskDetails.status === "CANCELLED"
+                          ? "bg-neutral-150 text-neutral-600 border border-neutral-200"
+                          : "bg-amber-100 text-amber-800 border border-amber-200"
+                  }`}
                 >
                   Status: {selectedTaskDetails.status}
                 </span>
@@ -447,28 +476,40 @@ export default function TaskTracker({
               {/* Members Involved */}
               <div className="grid grid-cols-2 gap-4 border-t border-neutral-100 pt-4">
                 <div className="flex items-center gap-2.5">
-                  <span className="text-xs font-semibold text-neutral-450 uppercase">Assigner</span>
+                  <span className="text-xs font-semibold text-neutral-450 uppercase">
+                    Assigner
+                  </span>
                   <div className="flex items-center gap-2">
                     <Avatar className="w-6 h-6 border border-neutral-100">
-                      <AvatarImage src={selectedTaskDetails.byUserAvatar || undefined} />
+                      <AvatarImage
+                        src={selectedTaskDetails.byUserAvatar || undefined}
+                      />
                       <AvatarFallback className="text-[9px] bg-purple-100 text-purple-700 font-bold">
                         {selectedTaskDetails.byUserName?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-xs font-bold text-neutral-700">{selectedTaskDetails.byUserName}</span>
+                    <span className="text-xs font-bold text-neutral-700">
+                      {selectedTaskDetails.byUserName}
+                    </span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                  <span className="text-xs font-semibold text-neutral-450 uppercase">Assignee</span>
+                  <span className="text-xs font-semibold text-neutral-450 uppercase">
+                    Assignee
+                  </span>
                   <div className="flex items-center gap-2">
                     <Avatar className="w-6 h-6 border border-neutral-100">
-                      <AvatarImage src={selectedTaskDetails.toUserAvatar || undefined} />
+                      <AvatarImage
+                        src={selectedTaskDetails.toUserAvatar || undefined}
+                      />
                       <AvatarFallback className="text-[9px] bg-purple-100 text-purple-700 font-bold">
                         {selectedTaskDetails.toUserName?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-xs font-bold text-neutral-700">{selectedTaskDetails.toUserName}</span>
+                    <span className="text-xs font-bold text-neutral-700">
+                      {selectedTaskDetails.toUserName}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -477,7 +518,8 @@ export default function TaskTracker({
               <div className="flex flex-wrap items-center gap-2.5 border-t border-neutral-100 pt-4">
                 {currentUserId === selectedTaskDetails.byUserId && (
                   <>
-                    {(selectedTaskDetails.status === "COMPLETED" || selectedTaskDetails.status === "CANCELLED") ? (
+                    {selectedTaskDetails.status === "COMPLETED" ||
+                    selectedTaskDetails.status === "CANCELLED" ? (
                       <Button
                         onClick={() => handleUpdateStatus("IN_PROGRESS")}
                         className="bg-amber-600 hover:bg-amber-700 text-white rounded-full text-xs font-bold h-9 px-5 active:scale-97 cursor-pointer"
@@ -503,14 +545,15 @@ export default function TaskTracker({
                   </>
                 )}
 
-                {currentUserId === selectedTaskDetails.toUserId && selectedTaskDetails.status === "PENDING" && (
-                  <Button
-                    onClick={() => handleUpdateStatus("IN_PROGRESS")}
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full text-xs font-bold h-9 px-5 active:scale-97 cursor-pointer"
-                  >
-                    Start Work
-                  </Button>
-                )}
+                {currentUserId === selectedTaskDetails.toUserId &&
+                  selectedTaskDetails.status === "PENDING" && (
+                    <Button
+                      onClick={() => handleUpdateStatus("IN_PROGRESS")}
+                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-full text-xs font-bold h-9 px-5 active:scale-97 cursor-pointer"
+                    >
+                      Start Work
+                    </Button>
+                  )}
               </div>
             </div>
 
@@ -522,20 +565,26 @@ export default function TaskTracker({
                 </h4>
                 <button
                   type="button"
-                  onClick={() => selectedTaskId && loadTaskDetails(selectedTaskId, true)}
+                  onClick={() =>
+                    selectedTaskId && loadTaskDetails(selectedTaskId, true)
+                  }
                   disabled={refreshingThread}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#423072] hover:text-[#5c44a0] border border-neutral-200 hover:bg-neutral-50 rounded-full cursor-pointer transition-colors disabled:opacity-50"
                   title="Refresh Thread"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${refreshingThread ? "animate-spin" : ""}`} />
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${refreshingThread ? "animate-spin" : ""}`}
+                  />
                   {refreshingThread ? "Refreshing..." : "Refresh"}
                 </button>
               </div>
 
               <div className="flex flex-col gap-4 max-h-[350px] overflow-y-auto pr-1">
-                {!selectedTaskDetails.messages || selectedTaskDetails.messages.length === 0 ? (
+                {!selectedTaskDetails.messages ||
+                selectedTaskDetails.messages.length === 0 ? (
                   <div className="py-8 text-center text-neutral-400 text-sm font-semibold select-none">
-                    No activity updates yet. Use the area below to add comments or upload documents.
+                    No activity updates yet. Use the area below to add comments
+                    or upload documents.
                   </div>
                 ) : (
                   selectedTaskDetails.messages.map((msg) =>
@@ -553,29 +602,42 @@ export default function TaskTracker({
                     ) : (
                       <div
                         key={msg.id}
-                        className={`flex flex-col gap-1.5 p-3.5 rounded-2xl ${msg.userId === currentUserId
-                          ? "bg-[#423072] text-white self-end rounded-tr-xs shadow-sm"
-                          : "bg-[#F4F4F5] border border-neutral-200/60 text-neutral-800 self-start rounded-tl-xs shadow-xs"
-                          } w-[85%] md:w-3/4`}
+                        className={`flex flex-col gap-1.5 p-3.5 rounded-2xl ${
+                          msg.userId === currentUserId
+                            ? "bg-[#423072] text-white self-end rounded-tr-xs shadow-sm"
+                            : "bg-[#F4F4F5] border border-neutral-200/60 text-neutral-800 self-start rounded-tl-xs shadow-xs"
+                        } w-[85%] md:w-3/4`}
                       >
                         <div className="flex items-center justify-between gap-2 select-none">
                           <div className="flex items-center gap-2">
-                            <Avatar className={`w-5 h-5 border ${msg.userId === currentUserId ? "border-purple-400/30" : "border-neutral-200"}`}>
+                            <Avatar
+                              className={`w-5 h-5 border ${msg.userId === currentUserId ? "border-purple-400/30" : "border-neutral-200"}`}
+                            >
                               <AvatarImage src={msg.userAvatar || undefined} />
-                              <AvatarFallback className={`text-[8px] font-bold ${msg.userId === currentUserId ? "bg-white/20 text-white" : "bg-purple-100 text-[#423072]"}`}>
+                              <AvatarFallback
+                                className={`text-[8px] font-bold ${msg.userId === currentUserId ? "bg-white/20 text-white" : "bg-purple-100 text-[#423072]"}`}
+                              >
                                 {msg.userName.charAt(0)}
                               </AvatarFallback>
                             </Avatar>
-                            <span className={`text-xs font-bold ${msg.userId === currentUserId ? "text-purple-100" : "text-neutral-700"}`}>
-                              {msg.userName} {msg.userId === currentUserId && " (You)"}
+                            <span
+                              className={`text-xs font-bold ${msg.userId === currentUserId ? "text-purple-100" : "text-neutral-700"}`}
+                            >
+                              {msg.userName}{" "}
+                              {msg.userId === currentUserId && " (You)"}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-[10px] font-medium ${msg.userId === currentUserId ? "text-purple-300" : "text-neutral-450"}`}>
-                              {new Date(msg.createdAt).toLocaleTimeString("en-GB", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                            <span
+                              className={`text-[10px] font-medium ${msg.userId === currentUserId ? "text-purple-300" : "text-neutral-450"}`}
+                            >
+                              {new Date(msg.createdAt).toLocaleTimeString(
+                                "en-GB",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
                             </span>
 
                             {msg.userId === currentUserId && (
@@ -588,7 +650,10 @@ export default function TaskTracker({
                                     <MoreVertical className="w-3.5 h-3.5" />
                                   </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-32 border-neutral-200 shadow-md rounded-xl">
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-32 border-neutral-200 shadow-md rounded-xl"
+                                >
                                   <DropdownMenuItem
                                     onClick={() => handleDeleteComment(msg.id)}
                                     className="text-red-600 focus:text-red-700 focus:bg-red-50 font-bold text-xs cursor-pointer flex items-center gap-1.5"
@@ -603,37 +668,47 @@ export default function TaskTracker({
                         </div>
 
                         {msg.type === "DOCUMENT" ? (
-                          <div className={`flex items-center gap-2.5 mt-1.5 p-2.5 rounded-xl border ${msg.userId === currentUserId
-                            ? "bg-white/10 border-white/20 text-white"
-                            : "bg-white border-neutral-200 text-neutral-800"
-                            }`}>
-                            <FileText className={`w-5 h-5 shrink-0 ${msg.userId === currentUserId ? "text-purple-200" : "text-[#423072]"}`} />
+                          <div
+                            className={`flex items-center gap-2.5 mt-1.5 p-2.5 rounded-xl border ${
+                              msg.userId === currentUserId
+                                ? "bg-white/10 border-white/20 text-white"
+                                : "bg-white border-neutral-200 text-neutral-800"
+                            }`}
+                          >
+                            <FileText
+                              className={`w-5 h-5 shrink-0 ${msg.userId === currentUserId ? "text-purple-200" : "text-[#423072]"}`}
+                            />
                             <div className="flex flex-col min-w-0">
                               <a
                                 href={msg.content}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className={`text-xs font-bold hover:underline truncate ${msg.userId === currentUserId
-                                  ? "text-white"
-                                  : "text-[#423072]"
-                                  }`}
+                                className={`text-xs font-bold hover:underline truncate ${
+                                  msg.userId === currentUserId
+                                    ? "text-white"
+                                    : "text-[#423072]"
+                                }`}
                               >
                                 {msg.fileName || "View Attachment"}
                               </a>
                               {msg.fileSize && (
-                                <span className={`text-[9px] ${msg.userId === currentUserId ? "text-purple-200" : "text-[#423072]"}`}>
+                                <span
+                                  className={`text-[9px] ${msg.userId === currentUserId ? "text-purple-200" : "text-[#423072]"}`}
+                                >
                                   {(msg.fileSize / 1024 / 1024).toFixed(2)} MB
                                 </span>
                               )}
                             </div>
                           </div>
                         ) : (
-                          <p className={`text-sm leading-relaxed whitespace-pre-line mt-1 ${msg.userId === currentUserId ? "text-white" : "text-neutral-800"}`}>
+                          <p
+                            className={`text-sm leading-relaxed whitespace-pre-line mt-1 ${msg.userId === currentUserId ? "text-white" : "text-neutral-800"}`}
+                          >
                             {msg.content}
                           </p>
                         )}
                       </div>
-                    )
+                    ),
                   )
                 )}
               </div>
@@ -698,7 +773,9 @@ export default function TaskTracker({
 
                 <Button
                   type="submit"
-                  disabled={uploadingFile || (!commentText.trim() && !selectedFile)}
+                  disabled={
+                    uploadingFile || (!commentText.trim() && !selectedFile)
+                  }
                   className="bg-[#271B40] hover:bg-[#423072] active:scale-97 text-white font-bold px-6 py-2.5 rounded-full text-xs transition-all shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   {uploadingFile ? (
@@ -756,12 +833,17 @@ export default function TaskTracker({
                         {dueDate ? (
                           format(dueDate, "dd-MM-yyyy")
                         ) : (
-                          <span className="text-neutral-400">Select due date</span>
+                          <span className="text-neutral-400">
+                            Select due date
+                          </span>
                         )}
                         <CalendarIcon className="w-5 h-5 text-neutral-400 shrink-0 ml-2" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 rounded-2xl shadow-md border-neutral-200" align="start">
+                    <PopoverContent
+                      className="w-auto p-0 rounded-2xl shadow-md border-neutral-200"
+                      align="start"
+                    >
                       <Calendar
                         mode="single"
                         selected={dueDate}
@@ -794,7 +876,9 @@ export default function TaskTracker({
                           <span>{assignee}</span>
                         </div>
                       ) : (
-                        <span className="text-neutral-400">Select a member</span>
+                        <span className="text-neutral-400">
+                          Select a member
+                        </span>
                       )}
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl shadow-md border-neutral-200">
@@ -865,22 +949,27 @@ export default function TaskTracker({
 
                   {/* Available quick tags selection pills */}
                   <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                    {tagSearchQuery.trim() && !AVAILABLE_TAGS.some(t => t.toLowerCase() === tagSearchQuery.trim().toLowerCase()) && (
-                      <button
-                        key="custom-tag-btn"
-                        type="button"
-                        onClick={() => {
-                          const newTag = tagSearchQuery.trim();
-                          if (!selectedTags.includes(newTag)) {
-                            setSelectedTags((prev) => [...prev, newTag]);
-                          }
-                          setTagSearchQuery("");
-                        }}
-                        className="px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer bg-[#F3EEFF] text-[#423072] border-[#835BD5]/30 hover:bg-[#E2D4FF]"
-                      >
-                        {tagSearchQuery.trim()}
-                      </button>
-                    )}
+                    {tagSearchQuery.trim() &&
+                      !AVAILABLE_TAGS.some(
+                        (t) =>
+                          t.toLowerCase() ===
+                          tagSearchQuery.trim().toLowerCase(),
+                      ) && (
+                        <button
+                          key="custom-tag-btn"
+                          type="button"
+                          onClick={() => {
+                            const newTag = tagSearchQuery.trim();
+                            if (!selectedTags.includes(newTag)) {
+                              setSelectedTags((prev) => [...prev, newTag]);
+                            }
+                            setTagSearchQuery("");
+                          }}
+                          className="px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer bg-[#F3EEFF] text-[#423072] border-[#835BD5]/30 hover:bg-[#E2D4FF]"
+                        >
+                          {tagSearchQuery.trim()}
+                        </button>
+                      )}
                     {filteredAvailableTags.map((tag) => {
                       const isSelected = selectedTags.includes(tag);
                       return (
@@ -888,10 +977,11 @@ export default function TaskTracker({
                           key={tag}
                           type="button"
                           onClick={() => handleToggleTag(tag)}
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${isSelected
-                            ? "bg-[#423072] text-white border-[#423072]"
-                            : "bg-neutral-50 text-neutral-500 border-neutral-200 hover:bg-neutral-100"
-                            }`}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-[#423072] text-white border-[#423072]"
+                              : "bg-neutral-50 text-neutral-500 border-neutral-200 hover:bg-neutral-100"
+                          }`}
                         >
                           {tag}
                         </button>
@@ -955,12 +1045,14 @@ export default function TaskTracker({
                   <button
                     type="button"
                     onClick={() => setSendEmail(!sendEmail)}
-                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${sendEmail ? "bg-[#34C759]" : "bg-neutral-250"
-                      }`}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
+                      sendEmail ? "bg-[#34C759]" : "bg-neutral-250"
+                    }`}
                   >
                     <div
-                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${sendEmail ? "translate-x-5" : "translate-x-0"
-                        }`}
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                        sendEmail ? "translate-x-5" : "translate-x-0"
+                      }`}
                     />
                   </button>
                   <span className="text-sm font-semibold text-neutral-500">
@@ -988,17 +1080,20 @@ export default function TaskTracker({
                 {(["In Progress", "Completed"] as const).map((tab) => {
                   const isActive = activeTaskTab === tab;
                   const count = tasks.filter((t) =>
-                    tab === "Completed" ? t.status === "COMPLETED" : t.status !== "COMPLETED",
+                    tab === "Completed"
+                      ? t.status === "COMPLETED"
+                      : t.status !== "COMPLETED",
                   ).length;
                   return (
                     <button
                       key={tab}
                       type="button"
                       onClick={() => setActiveTaskTab(tab)}
-                      className={`relative px-4 py-2 text-sm font-bold transition-all cursor-pointer pb-2.5 ${isActive
-                        ? "text-[#423072]"
-                        : "text-neutral-500 hover:text-neutral-800"
-                        }`}
+                      className={`relative px-4 py-2 text-sm font-bold transition-all cursor-pointer pb-2.5 ${
+                        isActive
+                          ? "text-[#423072]"
+                          : "text-neutral-500 hover:text-neutral-800"
+                      }`}
                     >
                       <span>
                         {tab} ({count})
@@ -1054,13 +1149,18 @@ export default function TaskTracker({
                               ? "bg-emerald-50 text-[#2E7D32] border-emerald-150"
                               : "bg-amber-50 text-[#D84315] border-amber-150";
 
-                        const displayPriority = task.priority === "HIGH" ? "High" : task.priority === "LOW" ? "Low" : "Medium";
+                        const displayPriority =
+                          task.priority === "HIGH"
+                            ? "High"
+                            : task.priority === "LOW"
+                              ? "Low"
+                              : "Medium";
                         const displayDueDate = task.dueDate
                           ? new Date(task.dueDate).toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })
                           : "N/A";
 
                         return (

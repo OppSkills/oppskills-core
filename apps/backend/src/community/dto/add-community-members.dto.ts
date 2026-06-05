@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsString, MinLength, MaxLength } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsString,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 import { CommunityAccessControlRole } from '@prisma/client';
 
 export class AddCommunityMembersDto {

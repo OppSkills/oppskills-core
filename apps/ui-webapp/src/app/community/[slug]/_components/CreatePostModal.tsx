@@ -76,16 +76,14 @@ export default function CreatePostModal({
     const selectedText = text.substring(start, end);
     const replacement = prefix + selectedText + suffix;
 
-    setContent(
-      text.substring(0, start) + replacement + text.substring(end)
-    );
+    setContent(text.substring(0, start) + replacement + text.substring(end));
 
     // Refocus and place cursor
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(
         start + prefix.length,
-        start + prefix.length + selectedText.length
+        start + prefix.length + selectedText.length,
       );
     }, 50);
   };
@@ -149,7 +147,7 @@ export default function CreatePostModal({
     if (!files || files.length === 0) return;
 
     const newImages = Array.from(files).map((file) =>
-      URL.createObjectURL(file)
+      URL.createObjectURL(file),
     );
     setImages((prev) => [...prev, ...newImages]);
     toast.success(`${files.length} image(s) attached successfully.`);

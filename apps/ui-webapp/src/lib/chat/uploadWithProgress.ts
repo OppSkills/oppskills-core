@@ -45,9 +45,7 @@ async function uploadPresignedPost(input: {
 
     xhr.upload.onprogress = (event) => {
       if (!event.lengthComputable) return;
-      input.onProgress?.(
-        Math.round((event.loaded / event.total) * 100),
-      );
+      input.onProgress?.(Math.round((event.loaded / event.total) * 100));
     };
 
     xhr.onload = () => {

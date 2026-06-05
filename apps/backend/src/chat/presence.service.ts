@@ -134,12 +134,9 @@ export class PresenceService {
         const id = unique[i]!;
         const existsResult = results[i * 2];
         const lastSeenResult = results[i * 2 + 1];
-        const isOnline =
-          existsResult?.[1] === 1 || existsResult?.[1] === '1';
+        const isOnline = existsResult?.[1] === 1 || existsResult?.[1] === '1';
         const lastSeenAt =
-          typeof lastSeenResult?.[1] === 'string'
-            ? lastSeenResult[1]
-            : null;
+          typeof lastSeenResult?.[1] === 'string' ? lastSeenResult[1] : null;
         map.set(id, { isOnline: Boolean(isOnline), lastSeenAt });
       }
     } catch (error) {
@@ -169,9 +166,7 @@ export class PresenceService {
     members: ChatMemberDto[],
     viewerId: string,
   ): Promise<ChatMemberDto[]> {
-    const otherIds = members
-      .map((m) => m.id)
-      .filter((id) => id !== viewerId);
+    const otherIds = members.map((m) => m.id).filter((id) => id !== viewerId);
     const presenceByUserId = await this.getPresenceMap(otherIds);
     return this.enrichMembers(members, viewerId, presenceByUserId);
   }

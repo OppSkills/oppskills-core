@@ -22,7 +22,7 @@ export default function EditDescriptionModal({
   const [description, setDescription] = useState(details.description || "");
   const [aboutText, setAboutText] = useState(details.aboutText || "");
   const [aboutSecondaryText, setAboutSecondaryText] = useState(
-    details.aboutSecondaryText || ""
+    details.aboutSecondaryText || "",
   );
   const [bulletsText, setBulletsText] = useState("");
 

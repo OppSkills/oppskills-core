@@ -60,9 +60,7 @@ export function CommunitiesTable({
       cell: (info) => {
         const { pageIndex, pageSize } = info.table.getState().pagination;
         const serial = pageIndex * pageSize + info.row.index + 1;
-        return (
-          <div className="text-neutral-600 text-center">{serial}</div>
-        );
+        return <div className="text-neutral-600 text-center">{serial}</div>;
       },
       size: 56,
     },
@@ -188,14 +186,16 @@ export function CommunitiesTable({
                       className="hover:bg-transparent border-none!"
                     >
                       {headerGroup.headers.map((header) => {
-                        const colId = header.column.id || (header.column.columnDef as any).accessorKey;
+                        const colId =
+                          header.column.id ||
+                          (header.column.columnDef as any).accessorKey;
                         const isLeft = colId === "name" || colId === "industry";
                         return (
                           <TableHead
                             key={header.id}
                             className={cn(
                               "h-14 text-[11px] font-bold uppercase tracking-wider text-white border-none!",
-                              isLeft ? "text-left pl-6" : "text-center"
+                              isLeft ? "text-left pl-6" : "text-center",
                             )}
                           >
                             {header.isPlaceholder
@@ -222,14 +222,16 @@ export function CommunitiesTable({
                       }
                     >
                       {row.getVisibleCells().map((cell) => {
-                        const colId = cell.column.id || (cell.column.columnDef as any).accessorKey;
+                        const colId =
+                          cell.column.id ||
+                          (cell.column.columnDef as any).accessorKey;
                         const isLeft = colId === "name" || colId === "industry";
                         return (
                           <TableCell
                             key={cell.id}
                             className={cn(
                               "py-2",
-                              isLeft ? "text-left pl-6" : "text-center"
+                              isLeft ? "text-left pl-6" : "text-center",
                             )}
                           >
                             {flexRender(

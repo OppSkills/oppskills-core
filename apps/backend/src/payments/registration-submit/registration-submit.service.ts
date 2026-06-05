@@ -128,14 +128,13 @@ export class RegistrationSubmitService {
       await this.validatePaymentRequirement(hackathon, leaderTeam, userId);
     }
 
-    const { mappedAnswers, userCategory, fields: registrationFields } =
-      await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
-
-    this.validateAnswers(
-      registrationFields,
+    const {
       mappedAnswers,
       userCategory,
-    );
+      fields: registrationFields,
+    } = await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
+
+    this.validateAnswers(registrationFields, mappedAnswers, userCategory);
 
     const isLeader = leaderTeam.leaderId === userId;
     const result = await prisma.$transaction(async (tx) => {
@@ -322,14 +321,13 @@ export class RegistrationSubmitService {
       }
     }
 
-    const { mappedAnswers, userCategory, fields: registrationFields } =
-      await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
-
-    this.validateAnswers(
-      registrationFields,
+    const {
       mappedAnswers,
       userCategory,
-    );
+      fields: registrationFields,
+    } = await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
+
+    this.validateAnswers(registrationFields, mappedAnswers, userCategory);
 
     if (mappedAnswers.length === 0) {
       return;
@@ -435,14 +433,13 @@ export class RegistrationSubmitService {
       return;
     }
 
-    const { mappedAnswers, userCategory, fields: registrationFields } =
-      await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
-
-    this.validateAnswers(
-      registrationFields,
+    const {
       mappedAnswers,
       userCategory,
-    );
+      fields: registrationFields,
+    } = await this.mapFieldIdsToDatabaseIds(hackathon.id, userId, answers);
+
+    this.validateAnswers(registrationFields, mappedAnswers, userCategory);
 
     if (!mappedAnswers.length && registrationFields.length > 0) {
       throw new BadRequestException('Registration answers are required');

@@ -34,9 +34,7 @@ const MOBILE_CONTROL_BAR_INSET = 80;
 function sortForGrid(participants: StageParticipant[]): StageParticipant[] {
   return [...participants]
     .filter((p) => !p.isLocal)
-    .sort((a, b) =>
-      (a.name || a.identity).localeCompare(b.name || b.identity),
-    );
+    .sort((a, b) => (a.name || a.identity).localeCompare(b.name || b.identity));
 }
 
 function LocalParticipantPip({

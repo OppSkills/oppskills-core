@@ -44,7 +44,9 @@ export default function EmptyRoomState({ inviteCode }: EmptyRoomStateProps) {
             <Link2 className="w-3.5 h-3.5" />
             Meeting link
           </div>
-          <p className="text-sm text-white/80 break-all font-mono">{meetLink}</p>
+          <p className="text-sm text-white/80 break-all font-mono">
+            {meetLink}
+          </p>
           <button
             type="button"
             onClick={() => void handleCopy()}

@@ -23,7 +23,7 @@ interface AddMemberModalProps {
   onAddMember?: (
     selectedUsers: UserSearchResult[],
     role: string,
-    accessControl: string
+    accessControl: string,
   ) => void;
   availableRoles?: string[];
 }
@@ -43,7 +43,7 @@ export default function AddMemberModal({
   const [emailQuery, setEmailQuery] = useState("");
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<UserSearchResult[]>([]);
-  
+
   const [role, setRole] = useState(availableRoles[0] || "Community Admin");
   const [customRole, setCustomRole] = useState("");
   const [accessControl, setAccessControl] = useState("Read Only");
@@ -51,7 +51,11 @@ export default function AddMemberModal({
 
   // Sync role default if availableRoles updates
   useEffect(() => {
-    if (availableRoles.length > 0 && !availableRoles.includes(role) && role !== "custom") {
+    if (
+      availableRoles.length > 0 &&
+      !availableRoles.includes(role) &&
+      role !== "custom"
+    ) {
       setRole(availableRoles[0]);
     }
   }, [availableRoles, role]);
@@ -123,10 +127,12 @@ export default function AddMemberModal({
       onAddMember(selectedUsers, finalRole, accessControl);
     } else {
       const names = selectedUsers
-        .map((u) => [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email)
+        .map(
+          (u) => [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email,
+        )
         .join(", ");
       toast.success(
-        `Successfully added "${names}" as "${finalRole}" with "${accessControl}"!`
+        `Successfully added "${names}" as "${finalRole}" with "${accessControl}"!`,
       );
     }
 
@@ -197,7 +203,8 @@ export default function AddMemberModal({
                       alt={fullName}
                       className="w-9 h-9 rounded-full object-cover border border-neutral-100"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/avatars/user.png";
+                        (e.target as HTMLImageElement).src =
+                          "/avatars/user.png";
                       }}
                     />
                     <div className="flex flex-col min-w-0">
@@ -236,7 +243,8 @@ export default function AddMemberModal({
                       alt={fullName}
                       className="w-5 h-5 rounded-full object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/avatars/user.png";
+                        (e.target as HTMLImageElement).src =
+                          "/avatars/user.png";
                       }}
                     />
                     <span className="max-w-[120px] truncate">{fullName}</span>

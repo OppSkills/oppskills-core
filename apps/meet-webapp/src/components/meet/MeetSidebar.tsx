@@ -12,7 +12,11 @@ interface MeetSidebarProps {
   onClose?: () => void;
 }
 
-export default function MeetSidebar({ hostUserId, open, onClose }: MeetSidebarProps) {
+export default function MeetSidebar({
+  hostUserId,
+  open,
+  onClose,
+}: MeetSidebarProps) {
   const [tab, setTab] = useState<"participants" | "chat">("participants");
   const participants = useParticipants();
   const { chatMessages, send } = useChat();
@@ -56,7 +60,7 @@ export default function MeetSidebar({ hostUserId, open, onClose }: MeetSidebarPr
         )}
       >
         <div className="flex items-center justify-between px-4 border-b border-white/10 md:hidden">
-        <Image src="/logo.svg" alt="OppSkills" width={120} height={32} />
+          <Image src="/logo.svg" alt="OppSkills" width={120} height={32} />
           <button
             type="button"
             onClick={onClose}

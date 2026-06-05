@@ -81,7 +81,8 @@ export default function LayoutProvider({
    * Excludes the legacy index or community list page
    */
   const [isCommunityManageDashboard, communityId] = React.useMemo(() => {
-    const communityManageDetailPattern = /^\/dashboard\/community\/manage\/([^/]+)/;
+    const communityManageDetailPattern =
+      /^\/dashboard\/community\/manage\/([^/]+)/;
     const match = pathname.match(communityManageDetailPattern);
     if (match) {
       return [true, match[1]];
@@ -90,7 +91,10 @@ export default function LayoutProvider({
   }, [pathname]);
 
   const hasSecondarySidebar =
-    ishackathonDetail || isEventsDashboard || isFestivalsDashboard || isCommunityManageDashboard;
+    ishackathonDetail ||
+    isEventsDashboard ||
+    isFestivalsDashboard ||
+    isCommunityManageDashboard;
 
   const [mainSidebarOpen, setMainSidebarOpen] =
     React.useState(!hasSecondarySidebar);

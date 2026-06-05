@@ -55,12 +55,10 @@ export default function MeetLinkDialog({
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-lg rounded-3xl">
         <DialogHeader>
-          <DialogTitle className="font-aeonicPro text-xl">
-            {title}
-          </DialogTitle>
+          <DialogTitle className="font-aeonicPro text-xl">{title}</DialogTitle>
           <DialogDescription>
-            Share this link with community members. Anyone signed in to OppSkills
-            can join.
+            Share this link with community members. Anyone signed in to
+            OppSkills can join.
           </DialogDescription>
         </DialogHeader>
 

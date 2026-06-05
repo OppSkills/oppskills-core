@@ -3,9 +3,12 @@
 import dynamic from "next/dynamic";
 import NoDataPlaceholder from "./NoDataPlaceholder";
 
-const LineChart = dynamic(() => import("recharts").then((mod) => mod.LineChart), {
-  ssr: false,
-});
+const LineChart = dynamic(
+  () => import("recharts").then((mod) => mod.LineChart),
+  {
+    ssr: false,
+  },
+);
 const Line = dynamic(() => import("recharts").then((mod) => mod.Line), {
   ssr: false,
 });

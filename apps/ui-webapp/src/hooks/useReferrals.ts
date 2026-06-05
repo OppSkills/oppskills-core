@@ -41,7 +41,7 @@ const initialReferrersMock: ReferralListItem[] = [
       location: "Mumbai, India",
       profession: "Software Engineer",
       registrationDate: "12 Apr 2026",
-    }
+    },
   },
   {
     id: "ref_2",
@@ -60,7 +60,7 @@ const initialReferrersMock: ReferralListItem[] = [
       location: "Delhi, India",
       profession: "Student",
       registrationDate: "15 Apr 2026",
-    }
+    },
   },
   {
     id: "ref_3",
@@ -79,7 +79,7 @@ const initialReferrersMock: ReferralListItem[] = [
       location: "Mumbai, India",
       profession: "Student",
       registrationDate: "22 Apr 2026",
-    }
+    },
   },
   {
     id: "ref_4",
@@ -98,12 +98,12 @@ const initialReferrersMock: ReferralListItem[] = [
       location: "Pilani, India",
       profession: "Student",
       registrationDate: "01 May 2026",
-    }
-  }
+    },
+  },
 ];
 
 const mockReferredUsers: Record<string, ReferredUser[]> = {
-  "ref_1": [
+  ref_1: [
     {
       id: "ref_user_1",
       name: "Aarav Mehta",
@@ -112,7 +112,7 @@ const mockReferredUsers: Record<string, ReferredUser[]> = {
       registrationDate: "14 Apr 2026",
       institution: "IIT Delhi",
       location: "Delhi, India",
-      profession: "Student"
+      profession: "Student",
     },
     {
       id: "ref_user_2",
@@ -122,10 +122,10 @@ const mockReferredUsers: Record<string, ReferredUser[]> = {
       registrationDate: "15 Apr 2026",
       institution: "Mumbai University",
       location: "Mumbai, India",
-      profession: "Student"
-    }
+      profession: "Student",
+    },
   ],
-  "ref_2": [
+  ref_2: [
     {
       id: "ref_user_3",
       name: "Dev Patel",
@@ -134,9 +134,9 @@ const mockReferredUsers: Record<string, ReferredUser[]> = {
       registrationDate: "18 Apr 2026",
       institution: "Gujarat University",
       location: "Ahmedabad, India",
-      profession: "Student"
-    }
-  ]
+      profession: "Student",
+    },
+  ],
 };
 
 export function useReferrals(entityType: ReferralEntityType, entityId: string) {
@@ -147,23 +147,36 @@ export function useReferrals(entityType: ReferralEntityType, entityId: string) {
     queryFn: async () => {
       if (entityType === "COMMUNITY") {
         if (typeof window === "undefined") {
-          return { data: initialReferrersMock, total: initialReferrersMock.length, page: 1, pageSize: 20 };
+          return {
+            data: initialReferrersMock,
+            total: initialReferrersMock.length,
+            page: 1,
+            pageSize: 20,
+          };
         }
         const key = `oppskills_community_referrals_${entityId}`;
         const stored = localStorage.getItem(key);
         if (stored) {
-          return JSON.parse(stored) as { data: ReferralListItem[]; total: number; page: number; pageSize: number };
+          return JSON.parse(stored) as {
+            data: ReferralListItem[];
+            total: number;
+            page: number;
+            pageSize: number;
+          };
         }
         const defaultData = {
           data: initialReferrersMock,
           total: initialReferrersMock.length,
           page: 1,
-          pageSize: 20
+          pageSize: 20,
         };
         localStorage.setItem(key, JSON.stringify(defaultData));
         return defaultData;
       }
-      return listReferrals(await tokenOrThrow(getToken), { entityType, entityId });
+      return listReferrals(await tokenOrThrow(getToken), {
+        entityType,
+        entityId,
+      });
     },
   });
 }
@@ -191,17 +204,26 @@ export function useReferralAnalytics(
         }
         const referralsKey = `oppskills_community_referrals_${entityId}`;
         const stored = localStorage.getItem(referralsKey);
-        const referrers = stored ? (JSON.parse(stored) as { data: ReferralListItem[] }).data : initialReferrersMock;
-        
-        const totalClicks = referrers.reduce((acc: number, curr: any) => acc + curr.clicksCount, 0);
-        const totalRegistrations = referrers.reduce((acc: number, curr: any) => acc + curr.registrationsCount, 0);
-        
+        const referrers = stored
+          ? (JSON.parse(stored) as { data: ReferralListItem[] }).data
+          : initialReferrersMock;
+
+        const totalClicks = referrers.reduce(
+          (acc: number, curr: any) => acc + curr.clicksCount,
+          0,
+        );
+        const totalRegistrations = referrers.reduce(
+          (acc: number, curr: any) => acc + curr.registrationsCount,
+          0,
+        );
+
         return {
           totalClicks,
           humanClicks: totalClicks,
           referredParticipants: totalRegistrations,
           totalRegistrations,
-          activeReferrers: referrers.filter((r: any) => r.clicksCount > 0).length,
+          activeReferrers: referrers.filter((r: any) => r.clicksCount > 0)
+            .length,
           totalReferrers: referrers.length,
           linksGenerated: referrers.length,
         };
@@ -229,15 +251,34 @@ export function useCreateReferral(
         if (typeof window === "undefined") return null;
         const referralsKey = `oppskills_community_referrals_${entityId}`;
         const stored = localStorage.getItem(referralsKey);
-        const currentData = stored ? JSON.parse(stored) as { data: ReferralListItem[]; total: number; page: number; pageSize: number } : { data: initialReferrersMock, total: initialReferrersMock.length, page: 1, pageSize: 20 };
-        
+        const currentData = stored
+          ? (JSON.parse(stored) as {
+              data: ReferralListItem[];
+              total: number;
+              page: number;
+              pageSize: number;
+            })
+          : {
+              data: initialReferrersMock,
+              total: initialReferrersMock.length,
+              page: 1,
+              pageSize: 20,
+            };
+
         // Check if duplicate
-        if (currentData.data.some((r: any) => r.referrer.email.toLowerCase() === payload.referrerEmail.toLowerCase())) {
+        if (
+          currentData.data.some(
+            (r: any) =>
+              r.referrer.email.toLowerCase() ===
+              payload.referrerEmail.toLowerCase(),
+          )
+        ) {
           throw new Error("Already a Referrer");
         }
 
         const usernamePart = payload.referrerEmail.split("@")[0];
-        const firstName = usernamePart.charAt(0).toUpperCase() + usernamePart.slice(1);
+        const firstName =
+          usernamePart.charAt(0).toUpperCase() + usernamePart.slice(1);
 
         const newReferral = {
           id: `ref_${Date.now()}`,
@@ -258,16 +299,16 @@ export function useCreateReferral(
             registrationDate: new Date().toLocaleDateString("en-GB", {
               day: "2-digit",
               month: "short",
-              year: "numeric"
-            })
-          }
+              year: "numeric",
+            }),
+          },
         };
 
         const updatedData = {
           data: [newReferral, ...currentData.data],
           total: currentData.total + 1,
           page: 1,
-          pageSize: 20
+          pageSize: 20,
         };
 
         localStorage.setItem(referralsKey, JSON.stringify(updatedData));
@@ -305,13 +346,18 @@ export function useDeleteReferral(
         const referralsKey = `oppskills_community_referrals_${entityId}`;
         const stored = localStorage.getItem(referralsKey);
         if (stored) {
-          const currentData = JSON.parse(stored) as { data: ReferralListItem[]; total: number; page: number; pageSize: number };
+          const currentData = JSON.parse(stored) as {
+            data: ReferralListItem[];
+            total: number;
+            page: number;
+            pageSize: number;
+          };
           const filtered = currentData.data.filter((r: any) => r.id !== id);
           const updatedData = {
             data: filtered,
             total: filtered.length,
             page: 1,
-            pageSize: 20
+            pageSize: 20,
           };
           localStorage.setItem(referralsKey, JSON.stringify(updatedData));
         }
@@ -347,7 +393,8 @@ export function useReferrerLookup(
     queryFn: async () => {
       if (entityType === "COMMUNITY") {
         const usernamePart = email.split("@")[0];
-        const firstName = usernamePart.charAt(0).toUpperCase() + usernamePart.slice(1);
+        const firstName =
+          usernamePart.charAt(0).toUpperCase() + usernamePart.slice(1);
         return {
           id: `u_${usernamePart}`,
           email,
@@ -375,7 +422,10 @@ export function useReferralRegistrations(
     queryKey: ["referral-registrations", referralId, page, pageSize],
     enabled: Boolean(referralId),
     queryFn: async () => {
-      if (referralId && (referralId.startsWith("ref_") || referralId.startsWith("COMM-"))) {
+      if (
+        referralId &&
+        (referralId.startsWith("ref_") || referralId.startsWith("COMM-"))
+      ) {
         const key = referralId.startsWith("ref_") ? referralId : "ref_1";
         const users = mockReferredUsers[key] || [
           {
@@ -386,14 +436,14 @@ export function useReferralRegistrations(
             registrationDate: new Date().toLocaleDateString("en-GB"),
             institution: "OppSkills Member",
             location: "Delhi, India",
-            profession: "Student"
-          }
+            profession: "Student",
+          },
         ];
         return {
           data: users,
           total: users.length,
           page: 1,
-          pageSize: 10
+          pageSize: 10,
         };
       }
       return getReferralRegistrations(
@@ -422,7 +472,10 @@ export function useReferrerDetailsForOrganizer(referralId: string | null) {
     queryKey: ["referrer-details", referralId],
     enabled: Boolean(referralId),
     queryFn: async () => {
-      if (referralId && (referralId.startsWith("ref_") || referralId.startsWith("COMM-"))) {
+      if (
+        referralId &&
+        (referralId.startsWith("ref_") || referralId.startsWith("COMM-"))
+      ) {
         if (typeof window === "undefined") {
           return {
             referrer: {
@@ -449,7 +502,7 @@ export function useReferrerDetailsForOrganizer(referralId: string | null) {
                 registrations: 89,
                 registrationsLast24h: 3,
                 isActive: true,
-              }
+              },
             ],
             summary: {
               totalReferrals: 1,
@@ -458,15 +511,19 @@ export function useReferrerDetailsForOrganizer(referralId: string | null) {
               totalRegistrations: 89,
               registrationsLast24h: 3,
               activeLinks: 1,
-            }
+            },
           };
         }
 
-        let foundReferrer = initialReferrersMock.find(r => r.id === referralId);
+        let foundReferrer = initialReferrersMock.find(
+          (r) => r.id === referralId,
+        );
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
           if (key && key.startsWith("oppskills_community_referrals_")) {
-            const data = JSON.parse(localStorage.getItem(key) || "{}") as { data?: ReferralListItem[] };
+            const data = JSON.parse(localStorage.getItem(key) || "{}") as {
+              data?: ReferralListItem[];
+            };
             const match = data.data?.find((r) => r.id === referralId);
             if (match) {
               foundReferrer = match;
@@ -475,25 +532,29 @@ export function useReferrerDetailsForOrganizer(referralId: string | null) {
           }
         }
 
-        const referrer = foundReferrer ? {
-          id: foundReferrer.referrer.id,
-          name: `${foundReferrer.referrer.firstName} ${foundReferrer.referrer.lastName}`.trim(),
-          email: foundReferrer.referrer.email,
-          avatarUrl: foundReferrer.referrer.imageUrl || null,
-          institution: foundReferrer.referrer.institution || "OppSkills Member",
-          location: foundReferrer.referrer.location || "India",
-          profession: foundReferrer.referrer.profession || "Student",
-          registrationDate: foundReferrer.referrer.registrationDate || "Recent",
-        } : {
-          id: "u_1",
-          name: "Karan Malhotra",
-          email: "karan.malhotra@brightwave.io",
-          avatarUrl: null,
-          institution: "BrightWave Inc.",
-          location: "Mumbai, India",
-          profession: "Software Engineer",
-          registrationDate: "12 Apr 2026",
-        };
+        const referrer = foundReferrer
+          ? {
+              id: foundReferrer.referrer.id,
+              name: `${foundReferrer.referrer.firstName} ${foundReferrer.referrer.lastName}`.trim(),
+              email: foundReferrer.referrer.email,
+              avatarUrl: foundReferrer.referrer.imageUrl || null,
+              institution:
+                foundReferrer.referrer.institution || "OppSkills Member",
+              location: foundReferrer.referrer.location || "India",
+              profession: foundReferrer.referrer.profession || "Student",
+              registrationDate:
+                foundReferrer.referrer.registrationDate || "Recent",
+            }
+          : {
+              id: "u_1",
+              name: "Karan Malhotra",
+              email: "karan.malhotra@brightwave.io",
+              avatarUrl: null,
+              institution: "BrightWave Inc.",
+              location: "Mumbai, India",
+              profession: "Software Engineer",
+              registrationDate: "12 Apr 2026",
+            };
 
         const clicks = foundReferrer?.clicksCount ?? 1420;
         const registrations = foundReferrer?.registrationsCount ?? 89;
@@ -516,7 +577,7 @@ export function useReferrerDetailsForOrganizer(referralId: string | null) {
               registrations,
               registrationsLast24h: registrationsRecent,
               isActive: true,
-            }
+            },
           ],
           summary: {
             totalReferrals: 1,
@@ -525,7 +586,7 @@ export function useReferrerDetailsForOrganizer(referralId: string | null) {
             totalRegistrations: registrations,
             registrationsLast24h: registrationsRecent,
             activeLinks: 1,
-          }
+          },
         };
       }
       return getReferrerDetails(await tokenOrThrow(getToken), referralId!);

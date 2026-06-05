@@ -108,9 +108,10 @@ export class ChatService {
     };
   }
 
-  private groupCreatedById(
-    conversation: { type: ConversationType; createdById: string },
-  ): string | null {
+  private groupCreatedById(conversation: {
+    type: ConversationType;
+    createdById: string;
+  }): string | null {
     return conversation.type === ConversationType.GROUP
       ? conversation.createdById
       : null;
@@ -157,8 +158,7 @@ export class ChatService {
     activeParticipantIds?: string[],
   ): Promise<string[]> {
     const active =
-      activeParticipantIds ??
-      (await this.activeParticipantIds(conversationId));
+      activeParticipantIds ?? (await this.activeParticipantIds(conversationId));
     return this.otherParticipantIdsFromActive(active, excludeUserId);
   }
 
@@ -297,9 +297,7 @@ export class ChatService {
     const partMap = new Map(parts.map((p) => [p.conversationId, p]));
 
     const data = await Promise.all(
-      conversations.map((c) =>
-        this.toListItem(c, partMap.get(c.id)!, userId),
-      ),
+      conversations.map((c) => this.toListItem(c, partMap.get(c.id)!, userId)),
     );
 
     return {
@@ -334,9 +332,7 @@ export class ChatService {
     if (conversation.type === ConversationType.GROUP) {
       return conversation.name ?? 'Group';
     }
-    const other = conversation.participants.find(
-      (p) => p.user.id !== viewerId,
-    );
+    const other = conversation.participants.find((p) => p.user.id !== viewerId);
     return other ? this.displayName(other.user) : 'Chat';
   }
 
@@ -366,7 +362,11 @@ export class ChatService {
       handle: string | null;
       imageUrl: string | null;
       createdById: string;
-      participants: { user: UserSelect; lastReadAt: Date | null; leftAt?: Date | null }[];
+      participants: {
+        user: UserSelect;
+        lastReadAt: Date | null;
+        leftAt?: Date | null;
+      }[];
       messages: Array<{
         id: string;
         senderId: string;
@@ -477,9 +477,7 @@ export class ChatService {
       const partMap = new Map(parts.map((p) => [p.conversationId, p]));
 
       conversations = await Promise.all(
-        convs.map((c) =>
-          this.toListItem(c, partMap.get(c.id)!, userId),
-        ),
+        convs.map((c) => this.toListItem(c, partMap.get(c.id)!, userId)),
       );
     }
 
@@ -651,9 +649,7 @@ export class ChatService {
       });
 
       const creator = conv.participants.find((p) => p.user.id === userId);
-      const creatorName = creator
-        ? this.displayName(creator.user)
-        : 'Someone';
+      const creatorName = creator ? this.displayName(creator.user) : 'Someone';
 
       await tx.messageEntity.create({
         data: {
@@ -753,7 +749,11 @@ export class ChatService {
       const data = await Promise.all(
         messages.map((m) => this.mapMessage(m, userId, activeParticipantIds)),
       );
-      await this.ackDelivered(userId, conversationId, data.map((m) => m.id));
+      await this.ackDelivered(
+        userId,
+        conversationId,
+        data.map((m) => m.id),
+      );
       return {
         data,
         hasMore,
@@ -821,9 +821,7 @@ export class ChatService {
       attachmentKind = input.attachment.kind as AttachmentKind;
       if (!body) {
         body =
-          input.attachment.kind === 'IMAGE'
-            ? ''
-            : input.attachment.fileName;
+          input.attachment.kind === 'IMAGE' ? '' : input.attachment.fileName;
       }
     }
 
@@ -1101,16 +1099,15 @@ export class ChatService {
       throw new BadRequestException('Cannot remove the group admin');
     }
 
-    const participant =
-      await prisma.conversationParticipantEntity.findUnique({
-        where: {
-          conversationId_userId: {
-            conversationId,
-            userId: memberUserId,
-          },
+    const participant = await prisma.conversationParticipantEntity.findUnique({
+      where: {
+        conversationId_userId: {
+          conversationId,
+          userId: memberUserId,
         },
-        include: { user: { select: USER_SELECT } },
-      });
+      },
+      include: { user: { select: USER_SELECT } },
+    });
     if (!participant) {
       throw new NotFoundException('Member not in this group');
     }

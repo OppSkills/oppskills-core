@@ -37,7 +37,8 @@ const initialGoals: CommunityGoal[] = [
   {
     id: "g1",
     title: "Expand Student Network",
-    description: "Onboard student ambassadors across technical institutes to drive registrations.",
+    description:
+      "Onboard student ambassadors across technical institutes to drive registrations.",
     category: "growth",
     currentValue: 12300,
     targetValue: 15000,
@@ -48,7 +49,8 @@ const initialGoals: CommunityGoal[] = [
   {
     id: "g2",
     title: "Weekly Developer Meets",
-    description: "Organize consistent knowledge-sharing sessions with domain experts.",
+    description:
+      "Organize consistent knowledge-sharing sessions with domain experts.",
     category: "events",
     currentValue: 8,
     targetValue: 12,
@@ -70,7 +72,8 @@ const initialGoals: CommunityGoal[] = [
   {
     id: "g4",
     title: "Launch Annual Hackathon",
-    description: "Secure sponsorships, finalize partners, and publish register portals.",
+    description:
+      "Secure sponsorships, finalize partners, and publish register portals.",
     category: "events",
     currentValue: 1,
     targetValue: 1,
@@ -86,11 +89,13 @@ export default function CommunityGoalsPage() {
   const id = Array.isArray(rawId) ? rawId[0] : rawId || "";
 
   const [goals, setGoals] = useState<CommunityGoal[]>(initialGoals);
-  
+
   // Form State
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<"growth" | "engagement" | "events" | "other">("growth");
+  const [category, setCategory] = useState<
+    "growth" | "engagement" | "events" | "other"
+  >("growth");
   const [targetValue, setTargetValue] = useState("");
   const [unit, setUnit] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -120,7 +125,7 @@ export default function CommunityGoalsPage() {
 
     setGoals((prev) => [newGoal, ...prev]);
     toast.success(`Successfully created goal: "${title}"`);
-    
+
     // Reset Form
     setTitle("");
     setDescription("");
@@ -135,14 +140,18 @@ export default function CommunityGoalsPage() {
       prev.map((g) => {
         if (g.id === goalId) {
           const nextCompleted = !g.completed;
-          const nextValue = nextCompleted ? g.targetValue : Math.round(g.targetValue / 2);
+          const nextValue = nextCompleted
+            ? g.targetValue
+            : Math.round(g.targetValue / 2);
           toast.success(
-            nextCompleted ? `Goal completed: "${g.title}"!` : `Goal status reverted.`
+            nextCompleted
+              ? `Goal completed: "${g.title}"!`
+              : `Goal status reverted.`,
           );
           return { ...g, completed: nextCompleted, currentValue: nextValue };
         }
         return g;
-      })
+      }),
     );
   };
 
@@ -167,12 +176,12 @@ export default function CommunityGoalsPage() {
   // Stats calculation
   const totalCount = goals.length;
   const completedCount = goals.filter((g) => g.completed).length;
-  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const progressPercent =
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
     <div className="flex justify-center w-full min-h-screen bg-[#FAFAFA] pb-12">
       <div className="w-full p-4 lg:p-6 flex flex-col gap-8 animate-in fade-in duration-500">
-        
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full pb-2 border-b border-neutral-100">
           <div className="space-y-1">
@@ -180,11 +189,10 @@ export default function CommunityGoalsPage() {
               Community Goals & Milestones
             </h1>
             <p className="text-neutral-700 text-base">
-              Define, organize, and monitor targets to drive student community success.
+              Define, organize, and monitor targets to drive student community
+              success.
             </p>
-            <p className="text-xs text-neutral-500 font-mono">
-              ID: {id}
-            </p>
+            <p className="text-xs text-neutral-500 font-mono">ID: {id}</p>
           </div>
         </div>
 
@@ -196,8 +204,12 @@ export default function CommunityGoalsPage() {
                 <Target className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-sm font-medium text-neutral-500">Active Goals</p>
-                <p className="text-2xl font-bold text-neutral-900">{totalCount - completedCount}</p>
+                <p className="text-sm font-medium text-neutral-500">
+                  Active Goals
+                </p>
+                <p className="text-2xl font-bold text-neutral-900">
+                  {totalCount - completedCount}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -208,8 +220,12 @@ export default function CommunityGoalsPage() {
                 <Trophy className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-sm font-medium text-neutral-500">Completed Goals</p>
-                <p className="text-2xl font-bold text-neutral-900">{completedCount}</p>
+                <p className="text-sm font-medium text-neutral-500">
+                  Completed Goals
+                </p>
+                <p className="text-2xl font-bold text-neutral-900">
+                  {completedCount}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -217,17 +233,23 @@ export default function CommunityGoalsPage() {
           <Card className="bg-[#FAF8FF] border-primary-200/40 shadow-xs">
             <CardContent className="pt-6 flex flex-col gap-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-neutral-500">Success Ratio</span>
-                <span className="text-sm font-bold text-primary-700">{progressPercent}%</span>
+                <span className="text-sm font-medium text-neutral-500">
+                  Success Ratio
+                </span>
+                <span className="text-sm font-bold text-primary-700">
+                  {progressPercent}%
+                </span>
               </div>
-              <Progress value={progressPercent} className="h-2 bg-neutral-200" />
+              <Progress
+                value={progressPercent}
+                className="h-2 bg-neutral-200"
+              />
             </CardContent>
           </Card>
         </div>
 
         {/* Content Split */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-          
           {/* Active Goals Listing (Left/Main - 7 cols) */}
           <div className="xl:col-span-8 flex flex-col gap-6">
             <h2 className="text-lg font-bold text-neutral-800 flex items-center gap-2">
@@ -239,7 +261,7 @@ export default function CommunityGoalsPage() {
               {goals.map((goal) => {
                 const percent = Math.min(
                   Math.round((goal.currentValue / goal.targetValue) * 100),
-                  100
+                  100,
                 );
                 return (
                   <Card
@@ -258,10 +280,17 @@ export default function CommunityGoalsPage() {
                           </div>
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className={`font-semibold text-base ${goal.completed ? "line-through text-neutral-500" : "text-neutral-900"}`}>
+                              <h3
+                                className={`font-semibold text-base ${goal.completed ? "line-through text-neutral-500" : "text-neutral-900"}`}
+                              >
                                 {goal.title}
                               </h3>
-                              <Badge variant={goal.completed ? "secondary" : "default"} className="capitalize">
+                              <Badge
+                                variant={
+                                  goal.completed ? "secondary" : "default"
+                                }
+                                className="capitalize"
+                              >
                                 {goal.category}
                               </Badge>
                             </div>
@@ -277,7 +306,11 @@ export default function CommunityGoalsPage() {
                             size="icon"
                             className={`h-8 w-8 rounded-full ${goal.completed ? "text-emerald-700 hover:text-emerald-800" : "text-neutral-400 hover:text-neutral-600"}`}
                             onClick={() => handleToggleComplete(goal.id)}
-                            title={goal.completed ? "Mark Incomplete" : "Mark Complete"}
+                            title={
+                              goal.completed
+                                ? "Mark Incomplete"
+                                : "Mark Complete"
+                            }
                           >
                             <CheckCircle2 className="w-5 h-5" />
                           </Button>
@@ -285,7 +318,9 @@ export default function CommunityGoalsPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-neutral-400 hover:text-red-600 rounded-full"
-                            onClick={() => handleDeleteGoal(goal.id, goal.title)}
+                            onClick={() =>
+                              handleDeleteGoal(goal.id, goal.title)
+                            }
                             title="Delete Goal"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -296,10 +331,16 @@ export default function CommunityGoalsPage() {
                       {/* Progress bar */}
                       <div className="mt-6 flex flex-col gap-2">
                         <div className="flex justify-between text-xs font-semibold text-neutral-500">
-                          <span>Progress: {goal.currentValue.toLocaleString()} / {goal.targetValue.toLocaleString()} {goal.unit}</span>
+                          <span>
+                            Progress: {goal.currentValue.toLocaleString()} /{" "}
+                            {goal.targetValue.toLocaleString()} {goal.unit}
+                          </span>
                           <span>{percent}%</span>
                         </div>
-                        <Progress value={percent} className="h-2 bg-neutral-100" />
+                        <Progress
+                          value={percent}
+                          className="h-2 bg-neutral-100"
+                        />
                       </div>
 
                       <div className="mt-4 flex justify-between items-center pt-3 border-t border-neutral-100/50">
@@ -330,7 +371,10 @@ export default function CommunityGoalsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
-                <form onSubmit={handleCreateGoal} className="flex flex-col gap-4">
+                <form
+                  onSubmit={handleCreateGoal}
+                  className="flex flex-col gap-4"
+                >
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs text-neutral-500 font-semibold uppercase tracking-wider">
                       Goal Title *
@@ -412,7 +456,10 @@ export default function CommunityGoalsPage() {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full bg-primary-700 hover:bg-primary-800 text-white mt-2">
+                  <Button
+                    type="submit"
+                    className="w-full bg-primary-700 hover:bg-primary-800 text-white mt-2"
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Publish Community Goal
                   </Button>
@@ -420,9 +467,7 @@ export default function CommunityGoalsPage() {
               </CardContent>
             </Card>
           </div>
-          
         </div>
-
       </div>
     </div>
   );

@@ -25,7 +25,10 @@ import { CommunityTaskService } from './community-task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
-import { TaskResponseDto, TaskThreadMessageResponseDto } from './dto/task-response.dto';
+import {
+  TaskResponseDto,
+  TaskThreadMessageResponseDto,
+} from './dto/task-response.dto';
 
 @ApiTags('Community Tasks')
 @ApiBearerAuth('clerk-auth')
@@ -38,12 +41,16 @@ export class CommunityTaskController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Create a community task',
-    description: 'Creates a task in the specified community and optionally sends a welcome notification to the assignee.',
+    description:
+      'Creates a task in the specified community and optionally sends a welcome notification to the assignee.',
   })
   @ApiBody({ type: CreateTaskDto })
   @ApiResponse({ status: 201, type: TaskResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden due to hierarchy restrictions' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden due to hierarchy restrictions',
+  })
   async createTask(
     @Param('communityId') communityId: string,
     @Body() dto: CreateTaskDto,
@@ -77,7 +84,8 @@ export class CommunityTaskController {
   @Get(':taskId')
   @ApiOperation({
     summary: 'Get community task with comments thread',
-    description: 'Retrieves full details of a community task along with its comments thread.',
+    description:
+      'Retrieves full details of a community task along with its comments thread.',
   })
   @ApiResponse({ status: 200, type: TaskResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -97,7 +105,8 @@ export class CommunityTaskController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Add a comment/message to the task thread',
-    description: 'Adds a thread comment. Supported message types: TEXT, IMAGE, VIDEO, DOCUMENT. Attachments can be linked with file details.',
+    description:
+      'Adds a thread comment. Supported message types: TEXT, IMAGE, VIDEO, DOCUMENT. Attachments can be linked with file details.',
   })
   @ApiBody({ type: CreateCommentDto })
   @ApiResponse({ status: 201, type: TaskThreadMessageResponseDto })
@@ -118,7 +127,8 @@ export class CommunityTaskController {
   @Patch(':taskId/status')
   @ApiOperation({
     summary: 'Update task status',
-    description: 'Changes the status of a community task. Only assigner can approve/complete or reject/cancel.',
+    description:
+      'Changes the status of a community task. Only assigner can approve/complete or reject/cancel.',
   })
   @ApiBody({ type: UpdateTaskStatusDto })
   @ApiResponse({ status: 200, type: TaskResponseDto })
@@ -147,6 +157,7 @@ export class CommunityTaskController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Comment not found' })
   async deleteComment(
+    @Param('taskId') taskId: string,
     @Param('commentId') commentId: string,
     @Req() req: Request,
   ): Promise<void> {
@@ -154,6 +165,6 @@ export class CommunityTaskController {
     if (typeof userId !== 'string' || userId.trim().length === 0) {
       throw new UnauthorizedException('User not found.');
     }
-    return this.taskService.deleteComment(userId, commentId);
+    return this.taskService.deleteComment(userId, taskId, commentId);
   }
 }

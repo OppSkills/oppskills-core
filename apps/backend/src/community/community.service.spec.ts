@@ -45,7 +45,9 @@ describe('CommunityService', () => {
     });
 
     it('throws NotFoundException if userIds do not exist in database', async () => {
-      (prisma.userEntity.findMany as jest.Mock).mockResolvedValue([{ id: 'user2' }]);
+      (prisma.userEntity.findMany as jest.Mock).mockResolvedValue([
+        { id: 'user2' },
+      ]);
 
       await expect(
         service.addMembersToCommunity('user1', 'comm1', {
@@ -66,8 +68,12 @@ describe('CommunityService', () => {
       (prisma.userEntity.findMany as jest.Mock).mockResolvedValue(
         userIds.map((id) => ({ id })),
       );
-      (prisma.communityMemberEntity.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.communityMemberEntity.createMany as jest.Mock).mockResolvedValue({ count: 250 });
+      (prisma.communityMemberEntity.findMany as jest.Mock).mockResolvedValue(
+        [],
+      );
+      (prisma.communityMemberEntity.createMany as jest.Mock).mockResolvedValue({
+        count: 250,
+      });
 
       const result = await service.addMembersToCommunity('user1', 'comm1', {
         userIds,
@@ -110,9 +116,15 @@ describe('CommunityService', () => {
         ownerId: 'user99',
         members: [{ id: 'mem1', accessControlRole: 'MODERATOR' }],
       });
-      (prisma.userEntity.findMany as jest.Mock).mockResolvedValue([{ id: 'user2' }]);
-      (prisma.communityMemberEntity.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.communityMemberEntity.createMany as jest.Mock).mockResolvedValue({ count: 1 });
+      (prisma.userEntity.findMany as jest.Mock).mockResolvedValue([
+        { id: 'user2' },
+      ]);
+      (prisma.communityMemberEntity.findMany as jest.Mock).mockResolvedValue(
+        [],
+      );
+      (prisma.communityMemberEntity.createMany as jest.Mock).mockResolvedValue({
+        count: 1,
+      });
 
       const result = await service.addMembersToCommunity('user1', 'comm1', {
         userIds: ['user2'],
@@ -135,7 +147,9 @@ describe('CommunityService', () => {
           role: 'MEMBER',
           accessControlRole: 'ADMIN',
         }),
-      ).rejects.toThrow('Moderators can only add members with READ_ONLY access');
+      ).rejects.toThrow(
+        'Moderators can only add members with READ_ONLY access',
+      );
     });
 
     it('throws ForbiddenException if READ_ONLY tries to add members', async () => {
@@ -151,7 +165,9 @@ describe('CommunityService', () => {
           role: 'MEMBER',
           accessControlRole: 'READ_ONLY',
         }),
-      ).rejects.toThrow('You do not have permission to modify data in this community');
+      ).rejects.toThrow(
+        'You do not have permission to modify data in this community',
+      );
     });
   });
 });

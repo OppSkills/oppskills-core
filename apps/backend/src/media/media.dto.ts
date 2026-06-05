@@ -60,13 +60,25 @@ export class PresignDocumentUploadDto {
    * What this document is used for. Controls the S3 prefix.
    */
   @ApiProperty({
-    enum: ['EVENT_ATTACHMENT', 'OPPORTUNITY_ATTACHMENT', 'COMMUNITY_THREAD_ATTACHMENT', 'CHAT_ATTACHMENT'],
+    enum: [
+      'EVENT_ATTACHMENT',
+      'OPPORTUNITY_ATTACHMENT',
+      'COMMUNITY_THREAD_ATTACHMENT',
+      'CHAT_ATTACHMENT',
+    ],
     description: 'Upload purpose (controls S3 key prefix)',
     example: 'EVENT_ATTACHMENT',
   })
   @IsString()
-  @IsIn(['EVENT_ATTACHMENT', 'OPPORTUNITY_ATTACHMENT', 'COMMUNITY_THREAD_ATTACHMENT'])
-  purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT' | 'COMMUNITY_THREAD_ATTACHMENT';
+  @IsIn([
+    'EVENT_ATTACHMENT',
+    'OPPORTUNITY_ATTACHMENT',
+    'COMMUNITY_THREAD_ATTACHMENT',
+  ])
+  purpose:
+    | 'EVENT_ATTACHMENT'
+    | 'OPPORTUNITY_ATTACHMENT'
+    | 'COMMUNITY_THREAD_ATTACHMENT';
 
   /**
    * MIME type as detected by the browser.

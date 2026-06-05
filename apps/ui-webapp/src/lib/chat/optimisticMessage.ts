@@ -12,7 +12,9 @@ function formatSize(bytes: number): string {
 }
 
 /** Blob URLs used only for in-flight optimistic messages */
-export function createOptimisticPreviewUrl(item: PendingAttachment): string | undefined {
+export function createOptimisticPreviewUrl(
+  item: PendingAttachment,
+): string | undefined {
   if (item.kind === "image" || item.kind === "video") {
     return URL.createObjectURL(item.file);
   }

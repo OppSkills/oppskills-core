@@ -1,10 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  useLocalParticipant,
-  useRoomContext,
-} from "@livekit/components-react";
+import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
 import {
   Mic,
   MicOff,
@@ -178,7 +175,10 @@ export default function MeetControlBar({
 
       <ControlButton
         active={localParticipant.isScreenShareEnabled || isScreenShareUpdating}
-        disabled={isScreenShareUpdating || (!canScreenShare && !localParticipant.isScreenShareEnabled)}
+        disabled={
+          isScreenShareUpdating ||
+          (!canScreenShare && !localParticipant.isScreenShareEnabled)
+        }
         onClick={() => void toggleScreenShare()}
         title={
           !canScreenShare && !localParticipant.isScreenShareEnabled

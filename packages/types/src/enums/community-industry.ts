@@ -15,8 +15,7 @@ export const COMMUNITY_INDUSTRY_VALUES = [
   "OTHER",
 ] as const;
 
-export type CommunityIndustryValue =
-  (typeof COMMUNITY_INDUSTRY_VALUES)[number];
+export type CommunityIndustryValue = (typeof COMMUNITY_INDUSTRY_VALUES)[number];
 
 export enum CommunityIndustry {
   TECHNOLOGY = "TECHNOLOGY",
@@ -35,22 +34,20 @@ export enum CommunityIndustry {
   OTHER = "OTHER",
 }
 
-export const COMMUNITY_INDUSTRY_LABELS: Record<
-  CommunityIndustryValue,
-  string
-> = {
-  TECHNOLOGY: "Technology",
-  EDUCATION: "Education",
-  HEALTHCARE: "Healthcare",
-  FINANCE: "Finance",
-  ARTS_CULTURE: "Arts & Culture",
-  SPORTS_FITNESS: "Sports & Fitness",
-  FOOD_BEVERAGE: "Food & Beverage",
-  TRAVEL: "Travel",
-  NONPROFIT: "Nonprofit",
-  GOVERNMENT: "Government",
-  RETAIL: "Retail",
-  MEDIA_ENTERTAINMENT: "Media & Entertainment",
-  REAL_ESTATE: "Real Estate",
-  OTHER: "Other",
-};
+export const COMMUNITY_INDUSTRY_LABELS: Record<CommunityIndustryValue, string> =
+  {
+    TECHNOLOGY: "Technology",
+    EDUCATION: "Education",
+    HEALTHCARE: "Healthcare",
+    FINANCE: "Finance",
+    ARTS_CULTURE: "Arts & Culture",
+    SPORTS_FITNESS: "Sports & Fitness",
+    FOOD_BEVERAGE: "Food & Beverage",
+    TRAVEL: "Travel",
+    NONPROFIT: "Nonprofit",
+    GOVERNMENT: "Government",
+    RETAIL: "Retail",
+    MEDIA_ENTERTAINMENT: "Media & Entertainment",
+    REAL_ESTATE: "Real Estate",
+    OTHER: "Other",
+  };

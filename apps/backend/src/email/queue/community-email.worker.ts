@@ -23,7 +23,11 @@ export class CommunityEmailWorker implements OnModuleInit, OnModuleDestroy {
       async (job) => {
         logger.info(`Starting community email job: ${job.id}`);
         const { communityId, userIds } = job.data;
-        await processCommunityEmailBatch(this.emailService, communityId, userIds);
+        await processCommunityEmailBatch(
+          this.emailService,
+          communityId,
+          userIds,
+        );
       },
       {
         connection: this.cacheService.getClient() as any,

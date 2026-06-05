@@ -50,7 +50,7 @@ interface CommunitySidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function CommunitySidebar({ id, ...props }: CommunitySidebarProps) {
   const { state } = useSidebar();
-  
+
   const navItems = React.useMemo(() => {
     return id ? getCommunityNavItems(id) : [];
   }, [id]);

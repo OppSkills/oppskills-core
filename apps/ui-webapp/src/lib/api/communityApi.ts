@@ -51,7 +51,10 @@ function requireString(obj: Record<string, unknown>, key: string): string {
   return value;
 }
 
-function optionalString(obj: Record<string, unknown>, key: string): string | null {
+function optionalString(
+  obj: Record<string, unknown>,
+  key: string,
+): string | null {
   const value = obj[key];
   if (value === null || value === undefined) return null;
   if (typeof value !== "string") {
@@ -178,9 +181,13 @@ export async function updateMemberType(
   memberId: string,
   role: string,
 ): Promise<any> {
-  const res = await API.patch(`/${communityId}/members/${memberId}/type`, { role }, {
-    headers: buildAuthHeaders(token),
-  });
+  const res = await API.patch(
+    `/${communityId}/members/${memberId}/type`,
+    { role },
+    {
+      headers: buildAuthHeaders(token),
+    },
+  );
   return res.data;
 }
 
@@ -220,5 +227,3 @@ export async function deleteCommunityMember(
   });
   return res.data;
 }
-
-

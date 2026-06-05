@@ -4,7 +4,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { Loader2, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { toast } from "sonner";
-import type { MeetJoinTokenResponse, MeetPreviewResponse } from "@oppskills/types";
+import type {
+  MeetJoinTokenResponse,
+  MeetPreviewResponse,
+} from "@oppskills/types";
 import { getMeetJoinToken, getMeetPreview } from "@/lib/api/meetApi";
 import MeetRoom from "@/components/meet/MeetRoom";
 

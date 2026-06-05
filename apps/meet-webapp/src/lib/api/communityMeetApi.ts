@@ -18,7 +18,10 @@ function requireString(obj: Record<string, unknown>, key: string): string {
   return value;
 }
 
-function optionalString(obj: Record<string, unknown>, key: string): string | null {
+function optionalString(
+  obj: Record<string, unknown>,
+  key: string,
+): string | null {
   const value = obj[key];
   if (value === null || value === undefined) return null;
   if (typeof value !== "string") {
@@ -42,7 +45,9 @@ export function buildMeetUrl(inviteCode: string): string {
   return `${getMeetBaseUrl()}/${inviteCode}`;
 }
 
-function parseMeetResponse(raw: Record<string, unknown>): CommunityMeetResponse {
+function parseMeetResponse(
+  raw: Record<string, unknown>,
+): CommunityMeetResponse {
   const inviteCode = requireString(raw, "inviteCode");
   const communityId = raw["communityId"];
   return {

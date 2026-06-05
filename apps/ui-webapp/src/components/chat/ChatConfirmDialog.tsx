@@ -37,7 +37,9 @@ export function ChatConfirmDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="max-w-md rounded-2xl">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-neutral-900">{title}</AlertDialogTitle>
+          <AlertDialogTitle className="text-neutral-900">
+            {title}
+          </AlertDialogTitle>
           <AlertDialogDescription className="text-neutral-600">
             {description}
           </AlertDialogDescription>

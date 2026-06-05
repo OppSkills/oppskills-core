@@ -66,7 +66,10 @@ export class ChatController {
   @Get('search')
   @ApiOperation({ summary: 'Search conversations then platform users' })
   search(@Req() req: Request, @Query('q') q?: string) {
-    return this.chatService.search(this.userId(req), typeof q === 'string' ? q : '');
+    return this.chatService.search(
+      this.userId(req),
+      typeof q === 'string' ? q : '',
+    );
   }
 
   @Get('users/search')
@@ -104,7 +107,9 @@ export class ChatController {
   }
 
   @Get('conversations/:id/messages')
-  @ApiOperation({ summary: 'List messages (cursor: before=older, after=newer)' })
+  @ApiOperation({
+    summary: 'List messages (cursor: before=older, after=newer)',
+  })
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'before', required: false })
   @ApiQuery({ name: 'after', required: false })
@@ -147,11 +152,7 @@ export class ChatController {
     @Param('id') id: string,
     @Body() dto: AckDeliveredDto,
   ) {
-    return this.chatService.ackDelivered(
-      this.userId(req),
-      id,
-      dto.messageIds,
-    );
+    return this.chatService.ackDelivered(this.userId(req), id, dto.messageIds);
   }
 
   @Get('conversations/:conversationId/messages/:messageId/attachment')

@@ -94,9 +94,13 @@ export async function sendMessage(
   conversationId: string,
   data: SendChatMessageDto,
 ): Promise<ChatMessageDto> {
-  const res = await API.post(`/conversations/${conversationId}/messages`, data, {
-    headers: buildAuthHeaders(token),
-  });
+  const res = await API.post(
+    `/conversations/${conversationId}/messages`,
+    data,
+    {
+      headers: buildAuthHeaders(token),
+    },
+  );
   return res.data;
 }
 

@@ -117,7 +117,10 @@ describe('AnalyticsService', () => {
       (prisma.eventParticipantEntity.findMany as jest.Mock).mockResolvedValue([
         { joinedAt: now, user: { onboardingProfile: { gender: 'MALE' } } },
         { joinedAt: now, user: { onboardingProfile: { gender: 'FEMALE' } } }, // 2 today
-        { joinedAt: yesterday, user: { onboardingProfile: { gender: 'MALE' } } }, // 1 yesterday
+        {
+          joinedAt: yesterday,
+          user: { onboardingProfile: { gender: 'MALE' } },
+        }, // 1 yesterday
       ]);
 
       // Mock gender stats
@@ -168,8 +171,13 @@ describe('AnalyticsService', () => {
 
     beforeEach(() => {
       // Mock eventIds and hackathonIds resolution
-      (prisma.eventEntity.findMany as jest.Mock).mockResolvedValue([{ id: 'event-1' }, { id: 'event-2' }]);
-      (prisma.hackathonEntity.findMany as jest.Mock).mockResolvedValue([{ id: 'hackathon-1' }]);
+      (prisma.eventEntity.findMany as jest.Mock).mockResolvedValue([
+        { id: 'event-1' },
+        { id: 'event-2' },
+      ]);
+      (prisma.hackathonEntity.findMany as jest.Mock).mockResolvedValue([
+        { id: 'hackathon-1' },
+      ]);
     });
 
     it('should return registrations summary', async () => {
@@ -178,7 +186,9 @@ describe('AnalyticsService', () => {
         { approved: false },
         { approved: true },
       ]);
-      (prisma.hackathonRegistrationSubmissionEntity.count as jest.Mock).mockResolvedValue(5);
+      (
+        prisma.hackathonRegistrationSubmissionEntity.count as jest.Mock
+      ).mockResolvedValue(5);
 
       const result = await service.getRegistrationsSummary(userId);
       expect(result).toEqual({
@@ -211,12 +221,40 @@ describe('AnalyticsService', () => {
 
     it('should return payments summary', async () => {
       (prisma.eventPaymentEntity.findMany as jest.Mock).mockResolvedValue([
-        { grossAmount: 100, organizerShareAmount: 80, paymentStatus: 'CAPTURED', transferStatus: 'PAID', transferOnHold: false, refundedAmount: 0 },
-        { grossAmount: 50, organizerShareAmount: 40, paymentStatus: 'CAPTURED', transferStatus: 'PENDING', transferOnHold: true, refundedAmount: 0 },
+        {
+          grossAmount: 100,
+          organizerShareAmount: 80,
+          paymentStatus: 'CAPTURED',
+          transferStatus: 'PAID',
+          transferOnHold: false,
+          refundedAmount: 0,
+        },
+        {
+          grossAmount: 50,
+          organizerShareAmount: 40,
+          paymentStatus: 'CAPTURED',
+          transferStatus: 'PENDING',
+          transferOnHold: true,
+          refundedAmount: 0,
+        },
       ]);
       (prisma.hackathonPaymentEntity.findMany as jest.Mock).mockResolvedValue([
-        { grossAmount: 200, organizerShareAmount: 160, paymentStatus: 'CAPTURED', transferStatus: 'PENDING', transferOnHold: false, refundedAmount: 0 },
-        { grossAmount: 100, organizerShareAmount: 80, paymentStatus: 'REFUNDED', transferStatus: 'PENDING', transferOnHold: false, refundedAmount: 100 },
+        {
+          grossAmount: 200,
+          organizerShareAmount: 160,
+          paymentStatus: 'CAPTURED',
+          transferStatus: 'PENDING',
+          transferOnHold: false,
+          refundedAmount: 0,
+        },
+        {
+          grossAmount: 100,
+          organizerShareAmount: 80,
+          paymentStatus: 'REFUNDED',
+          transferStatus: 'PENDING',
+          transferOnHold: false,
+          refundedAmount: 100,
+        },
       ]);
 
       const result = await service.getPaymentsSummary(userId);
@@ -228,9 +266,19 @@ describe('AnalyticsService', () => {
     });
 
     it('should return roles summary', async () => {
-      (prisma.eventParticipantEntity.findMany as jest.Mock).mockResolvedValue([{ userId: 'user-1' }, { userId: 'user-2' }]);
-      (prisma.hackathonRegistrationSubmissionEntity.findMany as jest.Mock).mockResolvedValue([{ userId: 'user-2' }, { userId: 'user-3' }]);
-      (prisma.userOnboardingProfileEntity.findMany as jest.Mock).mockResolvedValue([{ collegeId: 'college-a' }, { collegeId: 'college-b' }]);
+      (prisma.eventParticipantEntity.findMany as jest.Mock).mockResolvedValue([
+        { userId: 'user-1' },
+        { userId: 'user-2' },
+      ]);
+      (
+        prisma.hackathonRegistrationSubmissionEntity.findMany as jest.Mock
+      ).mockResolvedValue([{ userId: 'user-2' }, { userId: 'user-3' }]);
+      (
+        prisma.userOnboardingProfileEntity.findMany as jest.Mock
+      ).mockResolvedValue([
+        { collegeId: 'college-a' },
+        { collegeId: 'college-b' },
+      ]);
       (prisma.hackathonUserRoleEntity.count as jest.Mock).mockResolvedValue(2);
       (prisma.eventUserRoleEntity.count as jest.Mock).mockResolvedValue(1);
 
@@ -275,8 +323,12 @@ describe('AnalyticsService', () => {
       (prisma.eventParticipantEntity.findMany as jest.Mock).mockResolvedValue([
         { approved: true },
       ]);
-      (prisma.hackathonRegistrationSubmissionEntity.count as jest.Mock).mockResolvedValue(2);
-      (prisma.teamRoundQualificationEntity.count as jest.Mock).mockResolvedValue(4);
+      (
+        prisma.hackathonRegistrationSubmissionEntity.count as jest.Mock
+      ).mockResolvedValue(2);
+      (
+        prisma.teamRoundQualificationEntity.count as jest.Mock
+      ).mockResolvedValue(4);
 
       const result = await service.getPipelineSummary(userId);
       expect(result).toEqual({
@@ -287,9 +339,16 @@ describe('AnalyticsService', () => {
     });
 
     it('should return settings summary', async () => {
-      (prisma.razorpayRouteAccountEntity.count as jest.Mock).mockResolvedValue(1);
-      (prisma.hackathonUserRoleEntity.findMany as jest.Mock).mockResolvedValue([{ userId: 'user-a' }]);
-      (prisma.eventUserRoleEntity.findMany as jest.Mock).mockResolvedValue([{ userId: 'user-b' }, { userId: 'organizer-123' }]);
+      (prisma.razorpayRouteAccountEntity.count as jest.Mock).mockResolvedValue(
+        1,
+      );
+      (prisma.hackathonUserRoleEntity.findMany as jest.Mock).mockResolvedValue([
+        { userId: 'user-a' },
+      ]);
+      (prisma.eventUserRoleEntity.findMany as jest.Mock).mockResolvedValue([
+        { userId: 'user-b' },
+        { userId: 'organizer-123' },
+      ]);
 
       const result = await service.getSettingsSummary(userId);
       expect(result).toEqual({
