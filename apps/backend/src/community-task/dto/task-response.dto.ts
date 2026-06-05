@@ -1,5 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TaskPriority, TaskStatus, TaskThreadMessageType } from '@prisma/client';
+import {
+  TaskPriority,
+  TaskStatus,
+  TaskThreadMessageType,
+} from '@prisma/client';
 
 export class TaskThreadMessageResponseDto {
   @ApiProperty()

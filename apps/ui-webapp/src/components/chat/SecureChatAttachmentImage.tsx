@@ -58,12 +58,5 @@ export function SecureChatAttachmentImage({
     );
   }
 
-  return (
-    <img
-      src={src}
-      alt={alt}
-      onClick={onClick}
-      className={className}
-    />
-  );
+  return <img src={src} alt={alt} onClick={onClick} className={className} />;
 }

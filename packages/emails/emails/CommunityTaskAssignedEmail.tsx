@@ -43,17 +43,26 @@ export function CommunityTaskAssignedEmail({
           <Header baseUrl={baseUrl} />
           <Section style={contentSection}>
             <Heading style={heading}>Hi {assigneeName || "there"},</Heading>
-            <Heading style={subHeading}>A task has been assigned to you!</Heading>
+            <Heading style={subHeading}>
+              A task has been assigned to you!
+            </Heading>
             <Text style={paragraph}>
-              <strong>{assignerName}</strong> has assigned a new task to you in the <strong>{communityName}</strong> community.
+              <strong>{assignerName}</strong> has assigned a new task to you in
+              the <strong>{communityName}</strong> community.
             </Text>
             <Section style={taskCard}>
-              <Text style={taskTitleText}><strong>Task</strong>: {taskTitle}</Text>
+              <Text style={taskTitleText}>
+                <strong>Task</strong>: {taskTitle}
+              </Text>
               {taskDescription && (
-                <Text style={taskDescText}><strong>Description</strong>: {taskDescription}</Text>
+                <Text style={taskDescText}>
+                  <strong>Description</strong>: {taskDescription}
+                </Text>
               )}
               {dueDate && (
-                <Text style={taskDateText}>📅 <strong>Due Date</strong>: {dueDate}</Text>
+                <Text style={taskDateText}>
+                  📅 <strong>Due Date</strong>: {dueDate}
+                </Text>
               )}
             </Section>
             <Section style={ctaSection}>
@@ -73,7 +82,8 @@ export default CommunityTaskAssignedEmail;
 
 const main: React.CSSProperties = {
   backgroundColor: "#f3f4f6",
-  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  fontFamily:
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   padding: "40px 0",
 };
 const container: React.CSSProperties = {

@@ -443,7 +443,9 @@ export default function MembersDirectory({
                               Assign Task
                             </button>
                           ) : (
-                            <span className="text-xs text-neutral-500 font-medium select-none">No Actions</span>
+                            <span className="text-xs text-neutral-500 font-medium select-none">
+                              No Actions
+                            </span>
                           )}
 
                           <button
@@ -473,7 +475,9 @@ export default function MembersDirectory({
                               <Trash2 className="w-5 h-5 stroke-1.5" />
                             </button>
                           ) : (
-                            <span className="text-xs text-neutral-400 font-semibold select-none">Locked</span>
+                            <span className="text-xs text-neutral-400 font-semibold select-none">
+                              Locked
+                            </span>
                           )}
                         </td>
                       )}

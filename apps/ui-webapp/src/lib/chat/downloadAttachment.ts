@@ -32,9 +32,7 @@ export async function downloadChatMessageAttachment(
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(
-      text.trim() || `Download failed (${res.status})`,
-    );
+    throw new Error(text.trim() || `Download failed (${res.status})`);
   }
 
   const blob = await res.blob();

@@ -30,9 +30,12 @@ const ResponsiveContainer = dynamic(
     ssr: false,
   },
 );
-const LabelList = dynamic(() => import("recharts").then((mod) => mod.LabelList), {
-  ssr: false,
-});
+const LabelList = dynamic(
+  () => import("recharts").then((mod) => mod.LabelList),
+  {
+    ssr: false,
+  },
+);
 
 const data = [
   { name: "Engineering", value: 190, percentage: "63%" },

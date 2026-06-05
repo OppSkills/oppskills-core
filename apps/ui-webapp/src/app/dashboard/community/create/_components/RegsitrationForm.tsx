@@ -15,7 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@clerk/nextjs";
-import { presignImageUpload, type PresignImageUploadPurpose } from "@/lib/api/mediaApi";
+import {
+  presignImageUpload,
+  type PresignImageUploadPurpose,
+} from "@/lib/api/mediaApi";
 import { uploadImageToS3PresignedPost } from "@/lib/uploads/uploadImageToS3";
 import ImageCropDialog from "./ImageCropDialog";
 

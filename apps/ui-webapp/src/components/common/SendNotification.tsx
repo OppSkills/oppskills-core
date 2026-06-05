@@ -52,7 +52,8 @@ const initialCommunityNotificationsMock: NotificationRecord[] = [
   {
     id: "n1",
     userId: "u_admin",
-    content: "<p>Pizza, networking, and expert knowledge-sharing starts at 6 PM. See you at the auditorium!</p>",
+    content:
+      "<p>Pizza, networking, and expert knowledge-sharing starts at 6 PM. See you at the auditorium!</p>",
     scheduleType: "IMMEDIATELY",
     status: "COMPLETED",
     totalRecipients: 12300,
@@ -62,15 +63,36 @@ const initialCommunityNotificationsMock: NotificationRecord[] = [
     createdAt: "2026-05-25T16:00:00.000Z",
     completedAt: "2026-05-25T16:05:00.000Z",
     logs: [
-      { id: "l1", level: "INFO", message: "Broadcast initiated successfully.", createdAt: "2026-05-25T16:00:00.000Z" },
-      { id: "l2", level: "INFO", message: "Resolved 12,300 active subscriber emails.", createdAt: "2026-05-25T16:01:00.000Z" },
-      { id: "l3", level: "ERROR", message: "Mailing queue completed. 15 bounces detected.", createdAt: "2026-05-25T16:05:00.000Z", meta: JSON.stringify({ failedCount: 15, successCount: 12285, processedCount: 12300 }) },
-    ]
+      {
+        id: "l1",
+        level: "INFO",
+        message: "Broadcast initiated successfully.",
+        createdAt: "2026-05-25T16:00:00.000Z",
+      },
+      {
+        id: "l2",
+        level: "INFO",
+        message: "Resolved 12,300 active subscriber emails.",
+        createdAt: "2026-05-25T16:01:00.000Z",
+      },
+      {
+        id: "l3",
+        level: "ERROR",
+        message: "Mailing queue completed. 15 bounces detected.",
+        createdAt: "2026-05-25T16:05:00.000Z",
+        meta: JSON.stringify({
+          failedCount: 15,
+          successCount: 12285,
+          processedCount: 12300,
+        }),
+      },
+    ],
   },
   {
     id: "n2",
     userId: "u_admin",
-    content: "<p>Team sync to review student chapter applications. Please review the shared documents beforehand.</p>",
+    content:
+      "<p>Team sync to review student chapter applications. Please review the shared documents beforehand.</p>",
     scheduleType: "IMMEDIATELY",
     status: "COMPLETED",
     totalRecipients: 18,
@@ -80,14 +102,25 @@ const initialCommunityNotificationsMock: NotificationRecord[] = [
     createdAt: "2026-05-22T10:30:00.000Z",
     completedAt: "2026-05-22T10:31:00.000Z",
     logs: [
-      { id: "l4", level: "INFO", message: "Broadcast initiated successfully.", createdAt: "2026-05-22T10:30:00.000Z" },
-      { id: "l5", level: "INFO", message: "Delivered to core administration segment.", createdAt: "2026-05-22T10:31:00.000Z" },
-    ]
+      {
+        id: "l4",
+        level: "INFO",
+        message: "Broadcast initiated successfully.",
+        createdAt: "2026-05-22T10:30:00.000Z",
+      },
+      {
+        id: "l5",
+        level: "INFO",
+        message: "Delivered to core administration segment.",
+        createdAt: "2026-05-22T10:31:00.000Z",
+      },
+    ],
   },
   {
     id: "n3",
     userId: "u_admin",
-    content: "<p>Please ensure all pending community outreach checklists are uploaded by Friday EOD.</p>",
+    content:
+      "<p>Please ensure all pending community outreach checklists are uploaded by Friday EOD.</p>",
     scheduleType: "CUSTOM",
     scheduledAt: "2026-05-28T14:00:00.000Z",
     status: "QUEUED",
@@ -97,9 +130,19 @@ const initialCommunityNotificationsMock: NotificationRecord[] = [
     failedCount: 0,
     createdAt: "2026-05-24T14:00:00.000Z",
     logs: [
-      { id: "l6", level: "INFO", message: "Broadcast scheduled in system cron scheduler.", createdAt: "2026-05-24T14:00:00.000Z", meta: JSON.stringify({ delay: 345600000, expectedFinishAt: "2026-05-28T14:00:00.000Z", totalRecipients: 42 }) },
-    ]
-  }
+      {
+        id: "l6",
+        level: "INFO",
+        message: "Broadcast scheduled in system cron scheduler.",
+        createdAt: "2026-05-24T14:00:00.000Z",
+        meta: JSON.stringify({
+          delay: 345600000,
+          expectedFinishAt: "2026-05-28T14:00:00.000Z",
+          totalRecipients: 42,
+        }),
+      },
+    ],
+  },
 ];
 
 export function SendNotification({
@@ -137,11 +180,17 @@ export function SendNotification({
         }
         const key = `oppskills_community_notifications_${slugOrId}`;
         const stored = localStorage.getItem(key);
-        let list: NotificationRecord[] = stored ? JSON.parse(stored) : initialCommunityNotificationsMock;
-        
+        let list: NotificationRecord[] = stored
+          ? JSON.parse(stored)
+          : initialCommunityNotificationsMock;
+
         let modified = false;
-        list = list.map(n => {
-          if (n.status === "QUEUED" && n.scheduledAt && new Date(n.scheduledAt) <= new Date()) {
+        list = list.map((n) => {
+          if (
+            n.status === "QUEUED" &&
+            n.scheduledAt &&
+            new Date(n.scheduledAt) <= new Date()
+          ) {
             modified = true;
             return {
               ...n,
@@ -152,16 +201,19 @@ export function SendNotification({
                   id: `l_${Date.now()}_proc`,
                   level: "INFO",
                   message: "Simulated queue worker picked up broadcast task.",
-                  createdAt: new Date().toISOString()
-                }
-              ]
+                  createdAt: new Date().toISOString(),
+                },
+              ],
             };
           } else if (n.status === "PROCESSING") {
             modified = true;
-            const newProcessed = Math.min(n.totalRecipients, n.processedCount + Math.ceil(n.totalRecipients / 3));
+            const newProcessed = Math.min(
+              n.totalRecipients,
+              n.processedCount + Math.ceil(n.totalRecipients / 3),
+            );
             const newSuccess = newProcessed;
             const isFinished = newProcessed >= n.totalRecipients;
-            
+
             return {
               ...n,
               processedCount: newProcessed,
@@ -173,10 +225,12 @@ export function SendNotification({
                 {
                   id: `l_${Date.now()}_step_${newProcessed}`,
                   level: "INFO",
-                  message: isFinished ? "Simulated broadcast campaign successfully finished." : `Simulated sending to recipients... progress: ${newProcessed}/${n.totalRecipients}`,
-                  createdAt: new Date().toISOString()
-                }
-              ]
+                  message: isFinished
+                    ? "Simulated broadcast campaign successfully finished."
+                    : `Simulated sending to recipients... progress: ${newProcessed}/${n.totalRecipients}`,
+                  createdAt: new Date().toISOString(),
+                },
+              ],
             };
           }
           return n;
@@ -266,16 +320,21 @@ export function SendNotification({
       if (type === "community") {
         const key = `oppskills_community_notifications_${slugOrId}`;
         const stored = localStorage.getItem(key);
-        const currentList: NotificationRecord[] = stored ? JSON.parse(stored) : initialCommunityNotificationsMock;
-        
+        const currentList: NotificationRecord[] = stored
+          ? JSON.parse(stored)
+          : initialCommunityNotificationsMock;
+
         const totalRecipients = 12300;
-        
+
         const newNotif: NotificationRecord = {
           id: `n_${Date.now()}`,
           userId: "u_admin",
           content: message,
           scheduleType: whenToSend === "Custom Time" ? "CUSTOM" : "IMMEDIATELY",
-          scheduledAt: whenToSend === "Custom Time" ? new Date(customDateTime).toISOString() : undefined,
+          scheduledAt:
+            whenToSend === "Custom Time"
+              ? new Date(customDateTime).toISOString()
+              : undefined,
           status: whenToSend === "Custom Time" ? "QUEUED" : "PROCESSING",
           totalRecipients,
           processedCount: 0,
@@ -286,19 +345,22 @@ export function SendNotification({
             {
               id: `l_${Date.now()}_init`,
               level: "INFO",
-              message: whenToSend === "Custom Time" 
-                ? `Simulated broadcast scheduled for ${new Date(customDateTime).toLocaleString()}` 
-                : "Simulated broadcast initialized immediately.",
-              createdAt: new Date().toISOString()
-            }
-          ]
+              message:
+                whenToSend === "Custom Time"
+                  ? `Simulated broadcast scheduled for ${new Date(customDateTime).toLocaleString()}`
+                  : "Simulated broadcast initialized immediately.",
+              createdAt: new Date().toISOString(),
+            },
+          ],
         };
 
         const updatedList = [newNotif, ...currentList];
         localStorage.setItem(key, JSON.stringify(updatedList));
 
         setLastScheduledTime(
-          whenToSend === "Custom Time" ? new Date(customDateTime).toISOString() : new Date().toISOString(),
+          whenToSend === "Custom Time"
+            ? new Date(customDateTime).toISOString()
+            : new Date().toISOString(),
         );
         setMessage("");
         setWhenToSend("Immediately");
@@ -564,7 +626,11 @@ export function SendNotification({
                 </h1>
                 <p className="text-neutral-500 text-sm mt-1">
                   Send email to participants about{" "}
-                  {type === "event" ? "events" : type === "hackathon" ? "hackathons" : "communities"}
+                  {type === "event"
+                    ? "events"
+                    : type === "hackathon"
+                      ? "hackathons"
+                      : "communities"}
                 </p>
               </div>
             </div>

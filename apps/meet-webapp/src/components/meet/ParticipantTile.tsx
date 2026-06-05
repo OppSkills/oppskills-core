@@ -66,7 +66,8 @@ export default function ParticipantTile({
     <div
       className={cn(
         "relative overflow-hidden rounded-2xl bg-[#1a1525] w-full h-full min-h-0 flex items-center justify-center",
-        isSpeaking && "ring-2 ring-[#835BD5] ring-offset-2 ring-offset-[#0a0a0f]",
+        isSpeaking &&
+          "ring-2 ring-[#835BD5] ring-offset-2 ring-offset-[#0a0a0f]",
         className,
       )}
     >
@@ -142,13 +143,7 @@ function ParticipantMicCameraStatus({
   );
 }
 
-function StatusIcon({
-  isMuted,
-  isMic,
-}: {
-  isMuted: boolean;
-  isMic: boolean;
-}) {
+function StatusIcon({ isMuted, isMic }: { isMuted: boolean; isMic: boolean }) {
   if (isMic) {
     return isMuted ? (
       <MicOff className="h-3.5 w-3.5 text-red-400" />

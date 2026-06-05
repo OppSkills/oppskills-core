@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Crop,
-  FileText,
-  Headphones,
-  Plus,
-  Send,
-  X,
-} from "lucide-react";
+import { Crop, FileText, Headphones, Plus, Send, X } from "lucide-react";
 import type { PendingAttachment } from "@/lib/chat/attachmentTypes";
 import { ChatEmojiPicker } from "./ChatEmojiPicker";
 import { ChatInlineImageCrop } from "./ChatInlineImageCrop";
@@ -64,8 +57,7 @@ export function ChatAttachmentComposer({
   onSend,
 }: ChatAttachmentComposerProps) {
   const active = items[activeIndex];
-  const canCrop =
-    active?.kind === "image" && Boolean(active.previewUrl);
+  const canCrop = active?.kind === "image" && Boolean(active.previewUrl);
 
   if (!open) return null;
 

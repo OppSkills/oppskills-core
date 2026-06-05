@@ -19,7 +19,10 @@ import { ChatService } from './chat.service';
 import { PresenceService } from './presence.service';
 import type { SendChatMessageDto } from './dto/chat.dto';
 import { prisma } from '@oppskills/db';
-import type { ChatConversationListItemDto, ChatMessageDto } from '@oppskills/types';
+import type {
+  ChatConversationListItemDto,
+  ChatMessageDto,
+} from '@oppskills/types';
 
 type AuthenticatedSocket = Socket & { data: { userId: string } };
 
@@ -127,7 +130,11 @@ export class ChatGateway
     if (error instanceof HttpException) {
       const response = error.getResponse();
       if (typeof response === 'string') return response;
-      if (typeof response === 'object' && response !== null && 'message' in response) {
+      if (
+        typeof response === 'object' &&
+        response !== null &&
+        'message' in response
+      ) {
         const msg = (response as { message?: string | string[] }).message;
         if (Array.isArray(msg)) return msg.join(', ');
         if (typeof msg === 'string') return msg;
@@ -153,7 +160,8 @@ export class ChatGateway
     try {
       const userId = this.requireUserId(client);
       const conversationId = body?.conversationId;
-      if (!conversationId) return { ok: false, error: 'conversationId required' };
+      if (!conversationId)
+        return { ok: false, error: 'conversationId required' };
 
       await this.chatService.assertParticipant(userId, conversationId);
       await client.join(this.conversationRoom(conversationId));
@@ -170,7 +178,8 @@ export class ChatGateway
   ) {
     try {
       const conversationId = body?.conversationId;
-      if (!conversationId) return { ok: false, error: 'conversationId required' };
+      if (!conversationId)
+        return { ok: false, error: 'conversationId required' };
       await client.leave(this.conversationRoom(conversationId));
       return { ok: true };
     } catch (error) {
@@ -187,7 +196,8 @@ export class ChatGateway
     try {
       const userId = this.requireUserId(client);
       const { conversationId, ...payload } = body;
-      if (!conversationId) return { ok: false, error: 'conversationId required' };
+      if (!conversationId)
+        return { ok: false, error: 'conversationId required' };
 
       const message = await this.chatService.sendMessage(
         userId,
@@ -221,15 +231,14 @@ export class ChatGateway
       lastSeenAt !== null
         ? { isOnline: false, lastSeenAt }
         : await this.presenceService.getPresence(userId);
-    const payload = this.presenceService.buildPresencePayload(
-      userId,
-      presence,
-    );
+    const payload = this.presenceService.buildPresencePayload(userId, presence);
 
     const contactIds =
       await this.presenceService.getSharedContactUserIds(userId);
     for (const contactId of contactIds) {
-      this.server.to(this.userRoom(contactId)).emit('presence_updated', payload);
+      this.server
+        .to(this.userRoom(contactId))
+        .emit('presence_updated', payload);
     }
   }
 
@@ -301,10 +310,7 @@ export class ChatGateway
     );
   }
 
-  async broadcastNewMessage(
-    conversationId: string,
-    message: ChatMessageDto,
-  ) {
+  async broadcastNewMessage(conversationId: string, message: ChatMessageDto) {
     const payload = { conversationId, message };
 
     this.server
@@ -318,7 +324,9 @@ export class ChatGateway
 
     await Promise.all(
       participants.map(async (p) => {
-        this.server.to(this.userRoom(p.userId)).emit('message_created', payload);
+        this.server
+          .to(this.userRoom(p.userId))
+          .emit('message_created', payload);
 
         const preview = await this.chatService.getConversationPreviewForUser(
           conversationId,

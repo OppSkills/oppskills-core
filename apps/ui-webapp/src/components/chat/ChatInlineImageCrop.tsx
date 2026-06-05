@@ -4,10 +4,7 @@ import { useCallback, useState } from "react";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
 import { Crop } from "lucide-react";
-import {
-  blobToCroppedFile,
-  getCroppedImageBlob,
-} from "@/lib/chat/cropImage";
+import { blobToCroppedFile, getCroppedImageBlob } from "@/lib/chat/cropImage";
 
 type ChatInlineImageCropProps = {
   imageSrc: string;
@@ -27,12 +24,9 @@ export function ChatInlineImageCrop({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [processing, setProcessing] = useState(false);
 
-  const onCropComplete = useCallback(
-    (_: Area, croppedAreaPixelsData: Area) => {
-      setCroppedAreaPixels(croppedAreaPixelsData);
-    },
-    [],
-  );
+  const onCropComplete = useCallback((_: Area, croppedAreaPixelsData: Area) => {
+    setCroppedAreaPixels(croppedAreaPixelsData);
+  }, []);
 
   const handleReset = () => {
     setCrop({ x: 0, y: 0 });

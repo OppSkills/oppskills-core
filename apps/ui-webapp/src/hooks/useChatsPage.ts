@@ -104,15 +104,15 @@ export function useChatsPage(selectedChatId: string | null) {
   const chatsRef = useRef<Chat[]>(chats);
   chatsRef.current = chats;
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const groupSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const groupSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   selectedChatIdRef.current = selectedChatId;
 
   const clearUnreadForConversation = useCallback((conversationId: string) => {
     setChats((prev) =>
-      prev.map((c) =>
-        c.id === conversationId ? { ...c, unreadCount: 0 } : c,
-      ),
+      prev.map((c) => (c.id === conversationId ? { ...c, unreadCount: 0 } : c)),
     );
   }, []);
 
@@ -182,8 +182,7 @@ export function useChatsPage(selectedChatId: string | null) {
       connectChatSocket(token, {
         onMessageCreated: ({ conversationId, message }) => {
           const uiMsg = mapMessageToUi(message, currentUserId);
-          const isActiveChat =
-            selectedChatIdRef.current === conversationId;
+          const isActiveChat = selectedChatIdRef.current === conversationId;
 
           setChats((prev) =>
             prev.map((c) => {
@@ -194,8 +193,7 @@ export function useChatsPage(selectedChatId: string | null) {
               if (uiMsg.isYou) {
                 const pending = c.messages.find(
                   (m) =>
-                    m.sendState === "pending" &&
-                    m.id.startsWith("optimistic-"),
+                    m.sendState === "pending" && m.id.startsWith("optimistic-"),
                 );
                 if (pending) {
                   const next = replaceOptimisticMessage(
@@ -220,18 +218,14 @@ export function useChatsPage(selectedChatId: string | null) {
           }
         },
         onConversationUpdated: ({ conversation }) => {
-          const isActiveChat =
-            selectedChatIdRef.current === conversation.id;
+          const isActiveChat = selectedChatIdRef.current === conversation.id;
 
           setChats((prev) => {
             const existing = prev.find((c) => c.id === conversation.id);
             const messages = existing?.messages ?? [];
-            return applyInboxConversationUpdate(
-              prev,
-              conversation,
-              messages,
-              { isActiveChat },
-            );
+            return applyInboxConversationUpdate(prev, conversation, messages, {
+              isActiveChat,
+            });
           });
 
           if (isActiveChat) {
@@ -459,13 +453,13 @@ export function useChatsPage(selectedChatId: string | null) {
               users
                 .filter((u) => u.id !== currentUserId)
                 .map((u) => ({
-                id: u.id,
-                name: memberDisplayName(u),
-                email: u.email,
-                avatar:
-                  u.imageUrl ??
-                  "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&h=150&q=80",
-              })),
+                  id: u.id,
+                  name: memberDisplayName(u),
+                  email: u.email,
+                  avatar:
+                    u.imageUrl ??
+                    "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&h=150&q=80",
+                })),
             );
           } catch (e) {
             console.error(e);
@@ -517,11 +511,7 @@ export function useChatsPage(selectedChatId: string | null) {
   );
 
   const sendTextMessage = useCallback(
-    async (
-      conversationId: string,
-      text: string,
-      replyToMessageId?: string,
-    ) => {
+    async (conversationId: string, text: string, replyToMessageId?: string) => {
       if (!currentUserId) return;
 
       const payload = {
@@ -576,7 +566,9 @@ export function useChatsPage(selectedChatId: string | null) {
       }
 
       const isVideo = kind === "video";
-      const attachmentKind = isVideo ? ("VIDEO" as const) : ("DOCUMENT" as const);
+      const attachmentKind = isVideo
+        ? ("VIDEO" as const)
+        : ("DOCUMENT" as const);
       const presign = await presignDocumentUpload(token, {
         purpose: "CHAT_ATTACHMENT",
         mimeType: mime,
@@ -807,15 +799,18 @@ export function useChatsPage(selectedChatId: string | null) {
     [getTokenSafe],
   );
 
-  const upsertConversation = useCallback((item: ChatConversationListItemDto) => {
-    setChats((prev) => {
-      const existing = prev.find((c) => c.id === item.id);
-      const messages = existing?.messages ?? [];
-      const ui = mapConversationToUi(item, messages);
-      const rest = prev.filter((c) => c.id !== item.id);
-      return [ui, ...rest];
-    });
-  }, []);
+  const upsertConversation = useCallback(
+    (item: ChatConversationListItemDto) => {
+      setChats((prev) => {
+        const existing = prev.find((c) => c.id === item.id);
+        const messages = existing?.messages ?? [];
+        const ui = mapConversationToUi(item, messages);
+        const rest = prev.filter((c) => c.id !== item.id);
+        return [ui, ...rest];
+      });
+    },
+    [],
+  );
 
   const applyChatDetail = useCallback(
     (conversationId: string, detail: ChatConversationDetailDto) => {
@@ -864,12 +859,15 @@ export function useChatsPage(selectedChatId: string | null) {
     [getTokenSafe, applyChatDetail, loadMessages],
   );
 
-  const removeChatFromInbox = useCallback((conversationId: string) => {
-    setChats((prev) => prev.filter((c) => c.id !== conversationId));
-    if (selectedChatIdRef.current === conversationId) {
-      router.replace("/dashboard/chats");
-    }
-  }, [router]);
+  const removeChatFromInbox = useCallback(
+    (conversationId: string) => {
+      setChats((prev) => prev.filter((c) => c.id !== conversationId));
+      if (selectedChatIdRef.current === conversationId) {
+        router.replace("/dashboard/chats");
+      }
+    },
+    [router],
+  );
 
   const deleteChat = useCallback(
     async (conversationId: string) => {

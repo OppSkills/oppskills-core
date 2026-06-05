@@ -116,65 +116,61 @@ export class OpportunityService {
       };
     }
     // (PUBLISHED + APPROVED)
-    const [
-      matchingHackathons,
-      matchingEvents,
-      topHackathons,
-      topEvents,
-    ] = await Promise.all([
-      prisma.hackathonEntity.findMany({
-        where: {
-          name: { contains: q, mode: 'insensitive' },
-          status: 'PUBLISHED',
-          approvalStatus: 'APPROVED',
-          isDeleted: false,
-        },
-        select: this.OPPORTUNITY_SELECT,
-        take: 4,
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.eventEntity.findMany({
-        where: {
-          name: { contains: q, mode: 'insensitive' },
-          status: 'PUBLISHED',
-          approvalStatus: 'APPROVED',
-          isDeleted: false,
-        },
-        select: this.OPPORTUNITY_SELECT,
-        take: 4,
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.hackathonEntity.findMany({
-        where: {
-          name: { contains: q, mode: 'insensitive' },
-          status: 'PUBLISHED',
-          approvalStatus: 'APPROVED',
-          isDeleted: false,
-        },
-        select: this.OPPORTUNITY_SELECT,
-        take: 8,
-        orderBy: [
-          { registrationCount: 'desc' },
-          { views: 'desc' },
-          { impressions: 'desc' },
-        ],
-      }),
-      prisma.eventEntity.findMany({
-        where: {
-          name: { contains: q, mode: 'insensitive' },
-          status: 'PUBLISHED',
-          approvalStatus: 'APPROVED',
-          isDeleted: false,
-        },
-        select: this.OPPORTUNITY_SELECT,
-        take: 8,
-        orderBy: [
-          { registrationCount: 'desc' },
-          { views: 'desc' },
-          { impressions: 'desc' },
-        ],
-      }),
-    ]);
+    const [matchingHackathons, matchingEvents, topHackathons, topEvents] =
+      await Promise.all([
+        prisma.hackathonEntity.findMany({
+          where: {
+            name: { contains: q, mode: 'insensitive' },
+            status: 'PUBLISHED',
+            approvalStatus: 'APPROVED',
+            isDeleted: false,
+          },
+          select: this.OPPORTUNITY_SELECT,
+          take: 4,
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.eventEntity.findMany({
+          where: {
+            name: { contains: q, mode: 'insensitive' },
+            status: 'PUBLISHED',
+            approvalStatus: 'APPROVED',
+            isDeleted: false,
+          },
+          select: this.OPPORTUNITY_SELECT,
+          take: 4,
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.hackathonEntity.findMany({
+          where: {
+            name: { contains: q, mode: 'insensitive' },
+            status: 'PUBLISHED',
+            approvalStatus: 'APPROVED',
+            isDeleted: false,
+          },
+          select: this.OPPORTUNITY_SELECT,
+          take: 8,
+          orderBy: [
+            { registrationCount: 'desc' },
+            { views: 'desc' },
+            { impressions: 'desc' },
+          ],
+        }),
+        prisma.eventEntity.findMany({
+          where: {
+            name: { contains: q, mode: 'insensitive' },
+            status: 'PUBLISHED',
+            approvalStatus: 'APPROVED',
+            isDeleted: false,
+          },
+          select: this.OPPORTUNITY_SELECT,
+          take: 8,
+          orderBy: [
+            { registrationCount: 'desc' },
+            { views: 'desc' },
+            { impressions: 'desc' },
+          ],
+        }),
+      ]);
 
     const combinedTop = [
       ...topHackathons.map((h) => ({ ...h, type: 'HACKATHON' })),

@@ -46,7 +46,9 @@ export default function StagePagination({
               type="button"
               onClick={() => onPageChange(index)}
               className={`w-2 h-2 rounded-full transition-colors ${
-                index === safePage ? "bg-[#835BD5]" : "bg-white/30 hover:bg-white/50"
+                index === safePage
+                  ? "bg-[#835BD5]"
+                  : "bg-white/30 hover:bg-white/50"
               }`}
               aria-label={`${label}, page ${index + 1} of ${totalPages}`}
               aria-current={index === safePage ? "page" : undefined}

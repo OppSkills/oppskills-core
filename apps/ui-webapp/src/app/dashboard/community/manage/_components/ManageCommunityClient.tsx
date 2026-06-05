@@ -26,7 +26,11 @@ import {
 } from "@/lib/api/communityMeetApi";
 import { listTasks, updateTaskStatus } from "@/lib/api/communityTaskApi";
 
-import type { CommunityMember as Member, CommunityTask as Task, CommunityMeet as Meet } from "@oppskills/types";
+import type {
+  CommunityMember as Member,
+  CommunityTask as Task,
+  CommunityMeet as Meet,
+} from "@oppskills/types";
 
 const initialMembers: Member[] = [];
 
@@ -36,9 +40,6 @@ const defaultRoles = [
   "Content Writer",
   "Circle",
 ];
-
-
-
 
 const initialMeets: Meet[] = [];
 
@@ -60,20 +61,25 @@ export default function ManageCommunityClient({
       try {
         const token = await getToken();
         if (!token) return;
-        const [details, meetItems, types, memberList, taskList] = await Promise.all([
-          getCommunity(token, communityId),
-          listCommunityMeets(token, communityId),
-          getUniqueMemberTypes(token, communityId),
-          listCommunityMembers(token, communityId),
-          listTasks(token, communityId),
-        ]);
+        const [details, meetItems, types, memberList, taskList] =
+          await Promise.all([
+            getCommunity(token, communityId),
+            listCommunityMeets(token, communityId),
+            getUniqueMemberTypes(token, communityId),
+            listCommunityMembers(token, communityId),
+            listTasks(token, communityId),
+          ]);
         if (!cancelled) {
           const isOwner = loggedInUserId === details.ownerId;
-          const myMemberRecord = memberList.find((m) => m.userId === loggedInUserId);
+          const myMemberRecord = memberList.find(
+            (m) => m.userId === loggedInUserId,
+          );
           const isOwnerOrMember =
             isOwner ||
             (myMemberRecord &&
-              ["ADMIN", "MODERATOR", "READ_ONLY"].includes(myMemberRecord.accessControlRole));
+              ["ADMIN", "MODERATOR", "READ_ONLY"].includes(
+                myMemberRecord.accessControlRole,
+              ));
 
           if (!isOwnerOrMember) {
             toast.error("You do not have permission to view this community.");
@@ -91,7 +97,9 @@ export default function ManageCommunityClient({
         }
       } catch (error) {
         console.error("Failed to load community details:", error);
-        toast.error("You do not have permission to manage this community or it does not exist.");
+        toast.error(
+          "You do not have permission to manage this community or it does not exist.",
+        );
         router.push("/dashboard/community");
       }
     }
@@ -105,8 +113,11 @@ export default function ManageCommunityClient({
   const [isTaskTrackerOpen, setIsTaskTrackerOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
 
-  const [selectedMemberForTask, setSelectedMemberForTask] = useState<string | null>(null);
-  const [selectedMemberForDetails, setSelectedMemberForDetails] = useState<Member | null>(null);
+  const [selectedMemberForTask, setSelectedMemberForTask] = useState<
+    string | null
+  >(null);
+  const [selectedMemberForDetails, setSelectedMemberForDetails] =
+    useState<Member | null>(null);
 
   // Shared Dynamic State Pools
   const [members, setMembers] = useState<Member[]>(initialMembers);
@@ -115,7 +126,7 @@ export default function ManageCommunityClient({
   const [tasks, setTasks] = useState<any[]>([]);
 
   const mappedTasksForSheet = useMemo(() => {
-    return tasks.map(t => ({
+    return tasks.map((t) => ({
       id: t.id,
       text: t.title,
       description: t.description || "",
@@ -129,7 +140,11 @@ export default function ManageCommunityClient({
             year: "numeric",
           })
         : undefined,
-      priority: (t.priority === "HIGH" ? "High" : t.priority === "LOW" ? "Low" : "Medium") as "High" | "Medium" | "Low",
+      priority: (t.priority === "HIGH"
+        ? "High"
+        : t.priority === "LOW"
+          ? "Low"
+          : "Medium") as "High" | "Medium" | "Low",
     }));
   }, [tasks]);
 
@@ -151,7 +166,13 @@ export default function ManageCommunityClient({
 
   // State Mutators
   const handleInviteMembers = async (
-    selectedUsers: { id: string; email: string; firstName: string | null; lastName: string | null; imageUrl: string | null }[],
+    selectedUsers: {
+      id: string;
+      email: string;
+      firstName: string | null;
+      lastName: string | null;
+      imageUrl: string | null;
+    }[],
     roleName: string,
     accessControl: string,
   ) => {
@@ -183,7 +204,9 @@ export default function ManageCommunityClient({
       setAvailableRoles(updatedTypes.length > 0 ? updatedTypes : defaultRoles);
 
       const names = selectedUsers
-        .map((u) => [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email)
+        .map(
+          (u) => [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email,
+        )
         .join(", ");
       toast.success(
         `Successfully added ${selectedUsers.length} member(s): ${names} as "${roleName}" with "${accessControl}"!`,
@@ -218,13 +241,13 @@ export default function ManageCommunityClient({
       const token = await getToken();
       if (!token) return;
       await updateMemberType(token, communityId, memberId, newRole);
-      
+
       setMembers((prev) =>
-        prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m))
+        prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m)),
       );
 
       setSelectedMemberForDetails((prev) =>
-        prev && prev.id === memberId ? { ...prev, role: newRole } : prev
+        prev && prev.id === memberId ? { ...prev, role: newRole } : prev,
       );
 
       const updatedTypes = await getUniqueMemberTypes(token, communityId);
@@ -238,7 +261,10 @@ export default function ManageCommunityClient({
     }
   };
 
-  const handleUpdateMemberAccess = async (memberId: string, newAccess: string) => {
+  const handleUpdateMemberAccess = async (
+    memberId: string,
+    newAccess: string,
+  ) => {
     try {
       const token = await getToken();
       if (!token) return;
@@ -253,13 +279,11 @@ export default function ManageCommunityClient({
       await updateMemberAccess(token, communityId, memberId, accessControlRole);
 
       setMembers((prev) =>
-        prev.map((m) =>
-          m.id === memberId ? { ...m, accessControlRole } : m
-        )
+        prev.map((m) => (m.id === memberId ? { ...m, accessControlRole } : m)),
       );
 
       setSelectedMemberForDetails((prev) =>
-        prev && prev.id === memberId ? { ...prev, accessControlRole } : prev
+        prev && prev.id === memberId ? { ...prev, accessControlRole } : prev,
       );
 
       toast.success("Member access control updated successfully");
@@ -276,12 +300,14 @@ export default function ManageCommunityClient({
       const task = tasks.find((t) => t.id === id);
       if (!task) return;
       const nextStatus = task.status === "COMPLETED" ? "PENDING" : "COMPLETED";
-      const updated = await updateTaskStatus(token, communityId, id, { status: nextStatus });
+      const updated = await updateTaskStatus(token, communityId, id, {
+        status: nextStatus,
+      });
       setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
       toast.success(
         nextStatus === "COMPLETED"
           ? `Completed task: "${task.title}"`
-          : `Reopened task: "${task.title}"`
+          : `Reopened task: "${task.title}"`,
       );
     } catch (err: any) {
       console.error("Failed to toggle task:", err);
@@ -290,15 +316,19 @@ export default function ManageCommunityClient({
   };
 
   // Dynamic calculations relative to core stats
-  const totalCommunitySize = Math.max(members.length, 12300 + (members.length - 7));
-  const coreTeamCount = members.filter((m) =>
-    ["Community Admin", "Media Lead", "Content Writer"].includes(m.role) || m.accessControlRole === "ADMIN"
+  const totalCommunitySize = Math.max(
+    members.length,
+    12300 + (members.length - 7),
+  );
+  const coreTeamCount = members.filter(
+    (m) =>
+      ["Community Admin", "Media Lead", "Content Writer"].includes(m.role) ||
+      m.accessControlRole === "ADMIN",
   ).length;
 
   return (
     <div className="flex justify-center w-full min-h-screen bg-[#FAFAFA] pb-12">
       <div className="w-full p-4 lg:p-6 flex flex-col gap-8 animate-in fade-in duration-500">
-
         {/* Header Section */}
         <ManageHeader
           communityId={communityId}

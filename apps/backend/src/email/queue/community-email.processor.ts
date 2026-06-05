@@ -20,12 +20,15 @@ export async function processCommunityEmailBatch(
 
   const payload = await Promise.all(
     users.map(async (user) => {
-      const { subject, html } = await emailService.renderEmail('community-welcome', {
-        firstName: user.firstName || undefined,
-        communityName: community.name,
-        communityHandle: community.handle,
-        baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
-      } as any);
+      const { subject, html } = await emailService.renderEmail(
+        'community-welcome',
+        {
+          firstName: user.firstName || undefined,
+          communityName: community.name,
+          communityHandle: community.handle,
+          baseUrl: process.env.FRONTEND_URL || 'https://oppskills.com',
+        } as any,
+      );
 
       return {
         to: user.email,

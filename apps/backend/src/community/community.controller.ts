@@ -117,15 +117,28 @@ export class CommunityController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Bulk add members to a community',
-    description: 'Adds multiple users to a community by their user IDs with a specific role and access control level.',
+    description:
+      'Adds multiple users to a community by their user IDs with a specific role and access control level.',
   })
   @ApiBody({ type: AddCommunityMembersDto })
   @ApiResponse({ status: 201, description: 'Members added successfully' })
-  @ApiResponse({ status: 400, description: 'Bad Request - Validation or self-addition error' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Validation or self-addition error',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - No permission to manage community' })
-  @ApiResponse({ status: 404, description: 'Not Found - User ID or Community not found' })
-  @ApiResponse({ status: 409, description: 'Conflict - User is already a member' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - No permission to manage community',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - User ID or Community not found',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - User is already a member',
+  })
   async addMembers(
     @Param('id') communityId: string,
     @Body() dto: AddCommunityMembersDto,
@@ -135,15 +148,24 @@ export class CommunityController {
     if (typeof userId !== 'string' || userId.trim().length === 0) {
       throw new UnauthorizedException('User not found.');
     }
-    return this.communityService.addMembersToCommunity(userId, communityId, dto);
+    return this.communityService.addMembersToCommunity(
+      userId,
+      communityId,
+      dto,
+    );
   }
 
   @Get(':id/members/types')
   @ApiOperation({
     summary: 'Fetch unique member types (roles) for a community',
-    description: 'Retrieves all distinct member types/roles currently assigned to members in the community.',
+    description:
+      'Retrieves all distinct member types/roles currently assigned to members in the community.',
   })
-  @ApiResponse({ status: 200, description: 'Unique member types list', type: [String] })
+  @ApiResponse({
+    status: 200,
+    description: 'Unique member types list',
+    type: [String],
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   async getUniqueMemberTypes(
@@ -159,8 +181,9 @@ export class CommunityController {
 
   @Patch(':id/members/:memberId/type')
   @ApiOperation({
-    summary: 'Update a member\'s type (role string)',
-    description: 'Updates the role description string for a specific member in the community.',
+    summary: "Update a member's type (role string)",
+    description:
+      'Updates the role description string for a specific member in the community.',
   })
   @ApiBody({ type: UpdateMemberTypeDto })
   @ApiResponse({ status: 200, description: 'Type updated successfully' })
@@ -177,16 +200,25 @@ export class CommunityController {
     if (typeof userId !== 'string' || userId.trim().length === 0) {
       throw new UnauthorizedException('User not found.');
     }
-    return this.communityService.updateMemberType(userId, communityId, memberId, dto.role);
+    return this.communityService.updateMemberType(
+      userId,
+      communityId,
+      memberId,
+      dto.role,
+    );
   }
 
   @Patch(':id/members/:memberId/access-control')
   @ApiOperation({
-    summary: 'Update a member\'s access control role',
-    description: 'Updates the access control level for a specific member in the community.',
+    summary: "Update a member's access control role",
+    description:
+      'Updates the access control level for a specific member in the community.',
   })
   @ApiBody({ type: UpdateMemberAccessDto })
-  @ApiResponse({ status: 200, description: 'Access control updated successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Access control updated successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Not Found' })
@@ -216,10 +248,7 @@ export class CommunityController {
   @ApiResponse({ status: 200, description: 'Members list' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async listMembers(
-    @Param('id') communityId: string,
-    @Req() req: Request,
-  ) {
+  async listMembers(@Param('id') communityId: string, @Req() req: Request) {
     const userId = req.user?.id;
     if (typeof userId !== 'string' || userId.trim().length === 0) {
       throw new UnauthorizedException('User not found.');

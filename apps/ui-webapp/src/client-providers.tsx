@@ -14,9 +14,7 @@ export default function ClientProviders({
   return (
     <QueryClientProvider client={queryClient}>
       <InitBoneyard />
-      <MotionConfig reducedMotion="user">
-        {children}
-      </MotionConfig>
+      <MotionConfig reducedMotion="user">{children}</MotionConfig>
     </QueryClientProvider>
   );
 }

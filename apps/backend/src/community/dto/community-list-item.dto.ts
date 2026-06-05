@@ -1,7 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { CommunityIndustryValue } from '@oppskills/types';
 
-export type CommunityMyRoleValue = 'OWNER' | 'ADMIN' | 'MODERATOR' | 'READ_ONLY';
+export type CommunityMyRoleValue =
+  | 'OWNER'
+  | 'ADMIN'
+  | 'MODERATOR'
+  | 'READ_ONLY';
 
 export class CommunityListItemDto {
   @ApiProperty()

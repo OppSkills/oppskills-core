@@ -50,4 +50,3 @@ export enum CommunityAccessControlRole {
   MODERATOR = "MODERATOR",
   READ_ONLY = "READ_ONLY",
 }
-

@@ -15,7 +15,11 @@ const CORNER_CLASSES: Record<PipCorner, string> = {
   "bottom-right": "bottom-2 right-2",
 };
 
-function snapCorner(clientX: number, clientY: number, bounds: DOMRect): PipCorner {
+function snapCorner(
+  clientX: number,
+  clientY: number,
+  bounds: DOMRect,
+): PipCorner {
   const midX = bounds.left + bounds.width / 2;
   const midY = bounds.top + bounds.height / 2;
   const isLeft = clientX < midX;
@@ -40,9 +44,10 @@ export default function DraggableLocalPip({
   className,
 }: DraggableLocalPipProps) {
   const [corner, setCorner] = useState<PipCorner>("bottom-right");
-  const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(
-    null,
-  );
+  const [dragPosition, setDragPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const pipRef = useRef<HTMLDivElement>(null);
   const pointerOffsetRef = useRef({ x: 0, y: 0 });
@@ -132,7 +137,7 @@ export default function DraggableLocalPip({
           isLocal
           isSpeaking={speakingIds.has(localParticipant.identity)}
           raisedHand={raisedHands.has(localParticipant.identity)}
-        className="w-full h-full min-h-0 shadow-lg border border-white/20 pointer-events-none max-w-[min(40vw,10rem)] max-h-[min(40vh,11rem)]"
+          className="w-full h-full min-h-0 shadow-lg border border-white/20 pointer-events-none max-w-[min(40vw,10rem)] max-h-[min(40vh,11rem)]"
         />
       </ParticipantContext.Provider>
     </div>
