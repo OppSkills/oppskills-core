@@ -106,10 +106,7 @@ function MeetRoomContent({
 
   return (
     <div className="h-dvh flex flex-col overflow-hidden bg-[#0a0a0f] relative">
-      <MeetHeader
-        layoutMode={layoutMode}
-        onLayoutChange={setLayoutMode}
-      />
+      <MeetHeader layoutMode={layoutMode} onLayoutChange={setLayoutMode} />
 
       <div className="flex-1 flex min-h-0 overflow-hidden max-md:pb-20">
         <div

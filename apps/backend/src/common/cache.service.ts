@@ -23,7 +23,6 @@ export class CacheService implements OnModuleDestroy {
         REDISPORT: process.env.REDISPORT,
       });
 
-
       const sharedOptions: Redis['options'] & { maxRetriesPerRequest: null } = {
         maxRetriesPerRequest: null,
         enableOfflineQueue: false,

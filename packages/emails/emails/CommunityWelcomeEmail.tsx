@@ -38,18 +38,26 @@ export function CommunityWelcomeEmail({
 
           <Section style={contentSection}>
             <Heading style={heading}>Hi {firstName || "there"},</Heading>
-            <Heading style={subHeading}>You've been added to {communityName}!</Heading>
+            <Heading style={subHeading}>
+              You've been added to {communityName}!
+            </Heading>
 
             <Text style={paragraph}>
-              We are excited to let you know that you have been added to the **{communityName}** community on OppSkills.
+              We are excited to let you know that you have been added to the{" "}
+              <strong>{communityName}</strong> community on OppSkills.
             </Text>
 
             <Text style={paragraph}>
-              As a member of this community, you can stay updated on upcoming meets, access exclusive resources, and collaborate with other members.
+              As a member of this community, you can stay updated on upcoming
+              meets, access exclusive resources, and collaborate with other
+              members.
             </Text>
 
             <Section style={ctaSection}>
-              <Link href={`${baseUrl}/dashboard/community/manage`} style={ctaButton}>
+              <Link
+                href={`${baseUrl}/dashboard/community/manage`}
+                style={ctaButton}
+              >
                 Go to Community ↗
               </Link>
             </Section>

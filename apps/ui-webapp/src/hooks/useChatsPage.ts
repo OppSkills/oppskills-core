@@ -74,16 +74,70 @@ import { getMe } from "@/lib/api/usersApi";
 
 const MESSAGE_PAGE_SIZE = 30;
 
+// Simple in-memory global cache persisting across page mounts
+let globalChatsCache: Chat[] = [];
+let globalSearchUsersCache: SearchUserHit[] = [];
+let globalGroupSearchUsersCache: SearchUserHit[] = [];
+let globalLoadingCache = true;
+let globalCurrentUserIdCache: string | null = null;
+
 export function useChatsPage(selectedChatId: string | null) {
   const { getToken, isLoaded } = useAuth();
   const { user } = useUser();
   const router = useRouter();
 
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [searchUsers, setSearchUsers] = useState<SearchUserHit[]>([]);
-  const [groupSearchUsers, setGroupSearchUsers] = useState<SearchUserHit[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserIdState] = useState<string | null>(
+    globalCurrentUserIdCache,
+  );
+  const [chats, setChatsState] = useState<Chat[]>(globalChatsCache);
+  const [searchUsers, setSearchUsersState] = useState<SearchUserHit[]>(
+    globalSearchUsersCache,
+  );
+  const [groupSearchUsers, setGroupSearchUsersState] = useState<
+    SearchUserHit[]
+  >(globalGroupSearchUsersCache);
+  const [loading, setLoadingState] = useState(
+    globalChatsCache.length > 0 ? false : globalLoadingCache,
+  );
+
+  const setCurrentUserId = (val: string | null) => {
+    globalCurrentUserIdCache = val;
+    setCurrentUserIdState(val);
+  };
+
+  const setChats = (val: Chat[] | ((prev: Chat[]) => Chat[])) => {
+    setChatsState((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      globalChatsCache = next;
+      return next;
+    });
+  };
+
+  const setSearchUsers = (
+    val: SearchUserHit[] | ((prev: SearchUserHit[]) => SearchUserHit[]),
+  ) => {
+    setSearchUsersState((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      globalSearchUsersCache = next;
+      return next;
+    });
+  };
+
+  const setGroupSearchUsers = (
+    val: SearchUserHit[] | ((prev: SearchUserHit[]) => SearchUserHit[]),
+  ) => {
+    setGroupSearchUsersState((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      globalGroupSearchUsersCache = next;
+      return next;
+    });
+  };
+
+  const setLoading = (val: boolean) => {
+    globalLoadingCache = val;
+    setLoadingState(val);
+  };
+
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [hasOlderMessages, setHasOlderMessages] = useState(false);
   const [olderCursor, setOlderCursor] = useState<string | null>(null);
@@ -104,15 +158,15 @@ export function useChatsPage(selectedChatId: string | null) {
   const chatsRef = useRef<Chat[]>(chats);
   chatsRef.current = chats;
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const groupSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const groupSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   selectedChatIdRef.current = selectedChatId;
 
   const clearUnreadForConversation = useCallback((conversationId: string) => {
     setChats((prev) =>
-      prev.map((c) =>
-        c.id === conversationId ? { ...c, unreadCount: 0 } : c,
-      ),
+      prev.map((c) => (c.id === conversationId ? { ...c, unreadCount: 0 } : c)),
     );
   }, []);
 
@@ -182,8 +236,7 @@ export function useChatsPage(selectedChatId: string | null) {
       connectChatSocket(token, {
         onMessageCreated: ({ conversationId, message }) => {
           const uiMsg = mapMessageToUi(message, currentUserId);
-          const isActiveChat =
-            selectedChatIdRef.current === conversationId;
+          const isActiveChat = selectedChatIdRef.current === conversationId;
 
           setChats((prev) =>
             prev.map((c) => {
@@ -194,8 +247,7 @@ export function useChatsPage(selectedChatId: string | null) {
               if (uiMsg.isYou) {
                 const pending = c.messages.find(
                   (m) =>
-                    m.sendState === "pending" &&
-                    m.id.startsWith("optimistic-"),
+                    m.sendState === "pending" && m.id.startsWith("optimistic-"),
                 );
                 if (pending) {
                   const next = replaceOptimisticMessage(
@@ -220,18 +272,14 @@ export function useChatsPage(selectedChatId: string | null) {
           }
         },
         onConversationUpdated: ({ conversation }) => {
-          const isActiveChat =
-            selectedChatIdRef.current === conversation.id;
+          const isActiveChat = selectedChatIdRef.current === conversation.id;
 
           setChats((prev) => {
             const existing = prev.find((c) => c.id === conversation.id);
             const messages = existing?.messages ?? [];
-            return applyInboxConversationUpdate(
-              prev,
-              conversation,
-              messages,
-              { isActiveChat },
-            );
+            return applyInboxConversationUpdate(prev, conversation, messages, {
+              isActiveChat,
+            });
           });
 
           if (isActiveChat) {
@@ -292,7 +340,11 @@ export function useChatsPage(selectedChatId: string | null) {
   const loadMessages = useCallback(
     async (conversationId: string) => {
       const token = await getTokenSafe();
-      setMessagesLoading(true);
+      const cached = chatsRef.current.find((c) => c.id === conversationId);
+      const hasCachedMessages = (cached?.messages.length ?? 0) > 0;
+      if (!hasCachedMessages) {
+        setMessagesLoading(true);
+      }
       try {
         const page = await listMessages(token, conversationId, {
           limit: MESSAGE_PAGE_SIZE,
@@ -329,16 +381,11 @@ export function useChatsPage(selectedChatId: string | null) {
     }
     prevChatIdRef.current = selectedChatId;
 
-    const cached = chatsRef.current.find((c) => c.id === selectedChatId);
-    const hasCachedMessages = (cached?.messages.length ?? 0) > 0;
-
     clearUnreadForConversation(selectedChatId);
 
     void (async () => {
       await joinConversation(selectedChatId);
-      if (!hasCachedMessages) {
-        await loadMessages(selectedChatId);
-      }
+      await loadMessages(selectedChatId);
     })();
     void markActiveConversationRead(selectedChatId);
 
@@ -459,13 +506,13 @@ export function useChatsPage(selectedChatId: string | null) {
               users
                 .filter((u) => u.id !== currentUserId)
                 .map((u) => ({
-                id: u.id,
-                name: memberDisplayName(u),
-                email: u.email,
-                avatar:
-                  u.imageUrl ??
-                  "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&h=150&q=80",
-              })),
+                  id: u.id,
+                  name: memberDisplayName(u),
+                  email: u.email,
+                  avatar:
+                    u.imageUrl ??
+                    "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&h=150&q=80",
+                })),
             );
           } catch (e) {
             console.error(e);
@@ -517,11 +564,7 @@ export function useChatsPage(selectedChatId: string | null) {
   );
 
   const sendTextMessage = useCallback(
-    async (
-      conversationId: string,
-      text: string,
-      replyToMessageId?: string,
-    ) => {
+    async (conversationId: string, text: string, replyToMessageId?: string) => {
       if (!currentUserId) return;
 
       const payload = {
@@ -576,7 +619,9 @@ export function useChatsPage(selectedChatId: string | null) {
       }
 
       const isVideo = kind === "video";
-      const attachmentKind = isVideo ? ("VIDEO" as const) : ("DOCUMENT" as const);
+      const attachmentKind = isVideo
+        ? ("VIDEO" as const)
+        : ("DOCUMENT" as const);
       const presign = await presignDocumentUpload(token, {
         purpose: "CHAT_ATTACHMENT",
         mimeType: mime,
@@ -807,15 +852,18 @@ export function useChatsPage(selectedChatId: string | null) {
     [getTokenSafe],
   );
 
-  const upsertConversation = useCallback((item: ChatConversationListItemDto) => {
-    setChats((prev) => {
-      const existing = prev.find((c) => c.id === item.id);
-      const messages = existing?.messages ?? [];
-      const ui = mapConversationToUi(item, messages);
-      const rest = prev.filter((c) => c.id !== item.id);
-      return [ui, ...rest];
-    });
-  }, []);
+  const upsertConversation = useCallback(
+    (item: ChatConversationListItemDto) => {
+      setChats((prev) => {
+        const existing = prev.find((c) => c.id === item.id);
+        const messages = existing?.messages ?? [];
+        const ui = mapConversationToUi(item, messages);
+        const rest = prev.filter((c) => c.id !== item.id);
+        return [ui, ...rest];
+      });
+    },
+    [],
+  );
 
   const applyChatDetail = useCallback(
     (conversationId: string, detail: ChatConversationDetailDto) => {
@@ -864,12 +912,15 @@ export function useChatsPage(selectedChatId: string | null) {
     [getTokenSafe, applyChatDetail, loadMessages],
   );
 
-  const removeChatFromInbox = useCallback((conversationId: string) => {
-    setChats((prev) => prev.filter((c) => c.id !== conversationId));
-    if (selectedChatIdRef.current === conversationId) {
-      router.replace("/dashboard/chats");
-    }
-  }, [router]);
+  const removeChatFromInbox = useCallback(
+    (conversationId: string) => {
+      setChats((prev) => prev.filter((c) => c.id !== conversationId));
+      if (selectedChatIdRef.current === conversationId) {
+        router.replace("/dashboard/chats");
+      }
+    },
+    [router],
+  );
 
   const deleteChat = useCallback(
     async (conversationId: string) => {

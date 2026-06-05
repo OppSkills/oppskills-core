@@ -381,9 +381,7 @@ export class UserAccountsController {
     const validated: string[] = [];
     for (const item of arr) {
       if (typeof item !== 'string') {
-        throw new BadRequestException(
-          `All ${fieldName} items must be strings`,
-        );
+        throw new BadRequestException(`All ${fieldName} items must be strings`);
       }
       const trimmed = item.trim();
 

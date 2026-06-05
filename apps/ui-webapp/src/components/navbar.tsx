@@ -306,7 +306,9 @@ const Navbar = () => {
                     )}
                   >
                     <MessageSquare className="w-6 h-6 shrink-0" />
-                    <span className="text-xl font-semibold">{chatNavLink.name}</span>
+                    <span className="text-xl font-semibold">
+                      {chatNavLink.name}
+                    </span>
                   </Link>
                   <div className="space-y-4">
                     <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest px-4">

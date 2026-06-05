@@ -195,7 +195,10 @@ export class CommunityService {
     };
   }
 
-  async checkCommunityManagementPermission(userId: string, communityId: string) {
+  async checkCommunityManagementPermission(
+    userId: string,
+    communityId: string,
+  ) {
     const community = await prisma.communityEntity.findUnique({
       where: { id: communityId },
       include: {
@@ -300,10 +303,7 @@ export class CommunityService {
     return community;
   }
 
-  async listMembers(
-    currentUserId: string,
-    communityId: string,
-  ) {
+  async listMembers(currentUserId: string, communityId: string) {
     // 1. Fetch community details and verify read permission
     const community = await prisma.communityEntity.findUnique({
       where: { id: communityId },
@@ -315,6 +315,19 @@ export class CommunityService {
             firstName: true,
             lastName: true,
             imageUrl: true,
+            createdAt: true,
+            onboardingProfile: {
+              include: {
+                college: {
+                  select: {
+                    name: true,
+                    city: true,
+                    state: true,
+                    country: true,
+                  },
+                },
+              },
+            },
           },
         },
         members: {
@@ -347,16 +360,109 @@ export class CommunityService {
             firstName: true,
             lastName: true,
             imageUrl: true,
+            createdAt: true,
+            onboardingProfile: {
+              include: {
+                college: {
+                  select: {
+                    name: true,
+                    city: true,
+                    state: true,
+                    country: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
       orderBy: { createdAt: 'asc' },
     });
 
+    const mapProfileDetails = (user: any, memberCreatedAt: Date) => {
+      const profile = user.onboardingProfile;
+      let university = 'Not Specified';
+      if (profile) {
+        if (profile.college) {
+          university = profile.college.name;
+        } else if (profile.schoolName) {
+          university = profile.schoolName;
+        } else if (profile.companyName) {
+          university = profile.companyName;
+        }
+      }
+
+      let location = 'Not Specified';
+      if (profile) {
+        const parts = [
+          profile.locationCoords ||
+            (profile.college ? profile.college.city : null),
+          profile.locationState ||
+            (profile.college ? profile.college.state : null),
+          profile.locationCountry ||
+            (profile.college ? profile.college.country : null),
+        ].filter(Boolean);
+        if (parts.length > 0) {
+          location = parts.join(', ');
+        }
+      }
+
+      const tags: string[] = [];
+      if (profile) {
+        const categoryLabels: Record<string, string> = {
+          SCHOOL_STUDENT: 'School Student',
+          COLLEGE_STUDENT: 'College Student',
+          WORKING_PROFESSIONAL: 'Working Professional',
+          FRESHER: 'Fresher',
+          PROFESSIONAL_SCHOOL_STUDENT: 'Professional School Student',
+        };
+        if (profile.userCategory && categoryLabels[profile.userCategory]) {
+          tags.push(categoryLabels[profile.userCategory]);
+        }
+        if (profile.course) {
+          let courseStr = profile.course;
+          if (profile.courseSpecialization) {
+            courseStr += ` (${profile.courseSpecialization})`;
+          }
+          tags.push(courseStr);
+        }
+        if (profile.collegeCurrentYear) {
+          tags.push(`${profile.collegeCurrentYear} Year`);
+        } else if (profile.jobTitle) {
+          tags.push(profile.jobTitle);
+        }
+        if (profile.skills && profile.skills.length > 0) {
+          tags.push(...profile.skills.slice(0, 2));
+        }
+      }
+      if (tags.length === 0) {
+        tags.push('Member');
+      }
+
+      const regDate = user.createdAt || memberCreatedAt;
+      const registeredDate =
+        regDate.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }) +
+        ', ' +
+        regDate.toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+
+      return { university, location, tags, registeredDate };
+    };
+
     // 3. Map members list, and ensure the community owner record has role: 'OWNER' and accessControlRole: 'ADMIN'
     const mappedMembers = members.map((m) => {
-      const displayName = [m.user.firstName, m.user.lastName].filter(Boolean).join(' ') || m.user.email.split('@')[0];
+      const displayName =
+        [m.user.firstName, m.user.lastName].filter(Boolean).join(' ') ||
+        m.user.email.split('@')[0];
       const isMemberOwner = m.userId === community.ownerId;
+      const profileInfo = mapProfileDetails(m.user, m.createdAt);
       return {
         id: m.id,
         userId: m.user.id,
@@ -365,18 +471,30 @@ export class CommunityService {
         role: isMemberOwner ? 'OWNER' : m.role,
         accessControlRole: isMemberOwner ? 'ADMIN' : m.accessControlRole,
         avatarUrl: m.user.imageUrl || '/avatars/user.png',
-        lastAssignedDate: m.createdAt.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        }).replace(/\//g, '-'),
+        lastAssignedDate: m.createdAt
+          .toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          })
+          .replace(/\//g, '-'),
+        ...profileInfo,
       };
     });
 
     // 4. If the owner is somehow not in the members list (e.g. for legacy communities), we can add the owner manually
-    const hasOwnerInMembers = mappedMembers.some((m) => m.userId === community.ownerId);
+    const hasOwnerInMembers = mappedMembers.some(
+      (m) => m.userId === community.ownerId,
+    );
     if (!hasOwnerInMembers && community.owner) {
-      const ownerDisplayName = [community.owner.firstName, community.owner.lastName].filter(Boolean).join(' ') || community.owner.email.split('@')[0];
+      const ownerDisplayName =
+        [community.owner.firstName, community.owner.lastName]
+          .filter(Boolean)
+          .join(' ') || community.owner.email.split('@')[0];
+      const ownerProfileInfo = mapProfileDetails(
+        community.owner,
+        community.createdAt,
+      );
       mappedMembers.unshift({
         id: `owner-${community.owner.id}`,
         userId: community.owner.id,
@@ -385,11 +503,14 @@ export class CommunityService {
         role: 'OWNER',
         accessControlRole: 'ADMIN',
         avatarUrl: community.owner.imageUrl || '/avatars/user.png',
-        lastAssignedDate: community.createdAt.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        }).replace(/\//g, '-'),
+        lastAssignedDate: community.createdAt
+          .toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          })
+          .replace(/\//g, '-'),
+        ...ownerProfileInfo,
       });
     }
 
@@ -401,7 +522,10 @@ export class CommunityService {
     communityId: string,
     dto: AddCommunityMembersDto,
   ) {
-    const community = await this.checkCommunityWritePermission(currentUserId, communityId);
+    const community = await this.checkCommunityWritePermission(
+      currentUserId,
+      communityId,
+    );
 
     const requesterMember = community.members[0];
     const isOwner = community.ownerId === currentUserId;
@@ -427,7 +551,9 @@ export class CommunityService {
       select: { id: true },
     });
     const foundUserIds = users.map((u) => u.id);
-    const invalidUserIds = dto.userIds.filter((id) => !foundUserIds.includes(id));
+    const invalidUserIds = dto.userIds.filter(
+      (id) => !foundUserIds.includes(id),
+    );
     if (invalidUserIds.length > 0) {
       throw new NotFoundException(
         `The following user IDs do not exist: ${invalidUserIds.join(', ')}`,
@@ -463,13 +589,19 @@ export class CommunityService {
     const BATCH_SIZE = 100;
     for (let i = 0; i < dto.userIds.length; i += BATCH_SIZE) {
       const batch = dto.userIds.slice(i, i + BATCH_SIZE);
-      await this.communityEmailQueue.addCommunityWelcomeBatch(communityId, batch);
+      await this.communityEmailQueue.addCommunityWelcomeBatch(
+        communityId,
+        batch,
+      );
     }
 
     return { success: true, count: dto.userIds.length };
   }
 
-  async getUniqueMemberTypes(currentUserId: string, communityId: string): Promise<string[]> {
+  async getUniqueMemberTypes(
+    currentUserId: string,
+    communityId: string,
+  ): Promise<string[]> {
     await this.checkCommunityReadPermission(currentUserId, communityId);
 
     const uniqueRoles = await prisma.communityMemberEntity.findMany({
@@ -487,7 +619,10 @@ export class CommunityService {
     memberId: string,
     role: string,
   ) {
-    const community = await this.checkCommunityWritePermission(currentUserId, communityId);
+    const community = await this.checkCommunityWritePermission(
+      currentUserId,
+      communityId,
+    );
 
     const member = await prisma.communityMemberEntity.findFirst({
       where: { id: memberId, communityId },
@@ -502,7 +637,10 @@ export class CommunityService {
 
     // Moderators cannot modify admins or other moderators
     if (!isOwner && !isAdmin) {
-      if (member.accessControlRole === 'ADMIN' || member.accessControlRole === 'MODERATOR') {
+      if (
+        member.accessControlRole === 'ADMIN' ||
+        member.accessControlRole === 'MODERATOR'
+      ) {
         throw new ForbiddenException(
           'Moderators cannot modify roles of admins or other moderators.',
         );
@@ -528,7 +666,10 @@ export class CommunityService {
     memberId: string,
     accessControlRole: CommunityAccessControlRole,
   ) {
-    const community = await this.checkCommunityAdminPermission(currentUserId, communityId);
+    const community = await this.checkCommunityAdminPermission(
+      currentUserId,
+      communityId,
+    );
 
     const member = await prisma.communityMemberEntity.findFirst({
       where: { id: memberId, communityId },
@@ -539,7 +680,9 @@ export class CommunityService {
 
     // Check if target member is owner
     if (member.userId === community.ownerId) {
-      throw new BadRequestException('The access control role of the owner cannot be changed.');
+      throw new BadRequestException(
+        'The access control role of the owner cannot be changed.',
+      );
     }
 
     // Admin cannot demote/change role of other admin
@@ -561,7 +704,10 @@ export class CommunityService {
     communityId: string,
     memberId: string,
   ) {
-    const community = await this.checkCommunityWritePermission(currentUserId, communityId);
+    const community = await this.checkCommunityWritePermission(
+      currentUserId,
+      communityId,
+    );
 
     const member = await prisma.communityMemberEntity.findFirst({
       where: { id: memberId, communityId },
@@ -581,7 +727,10 @@ export class CommunityService {
 
     // Moderators cannot remove admins or other moderators
     if (!isOwner && !isAdmin) {
-      if (member.accessControlRole === 'ADMIN' || member.accessControlRole === 'MODERATOR') {
+      if (
+        member.accessControlRole === 'ADMIN' ||
+        member.accessControlRole === 'MODERATOR'
+      ) {
         throw new ForbiddenException(
           'Moderators cannot remove admins or other moderators.',
         );
@@ -600,4 +749,3 @@ export class CommunityService {
     });
   }
 }
-

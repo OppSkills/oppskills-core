@@ -2,7 +2,12 @@ import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 export type TaskPriority = "HIGH" | "MEDIUM" | "LOW";
 export type TaskStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-export type TaskThreadMessageType = "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
+export type TaskThreadMessageType =
+  | "TEXT"
+  | "IMAGE"
+  | "VIDEO"
+  | "DOCUMENT"
+  | "ALERT";
 
 export interface TaskThreadMessage {
   id: string;
@@ -66,7 +71,7 @@ const API = createApiClient("/communities");
 export async function createTask(
   token: string,
   communityId: string,
-  data: CreateTaskRequest
+  data: CreateTaskRequest,
 ): Promise<TaskResponse> {
   const res = await API.post(`/${communityId}/tasks`, data, {
     headers: buildAuthHeaders(token),
@@ -76,7 +81,7 @@ export async function createTask(
 
 export async function listTasks(
   token: string,
-  communityId: string
+  communityId: string,
 ): Promise<TaskResponse[]> {
   const res = await API.get(`/${communityId}/tasks`, {
     headers: buildAuthHeaders(token),
@@ -87,7 +92,7 @@ export async function listTasks(
 export async function getTask(
   token: string,
   communityId: string,
-  taskId: string
+  taskId: string,
 ): Promise<TaskResponse> {
   const res = await API.get(`/${communityId}/tasks/${taskId}`, {
     headers: buildAuthHeaders(token),
@@ -99,7 +104,7 @@ export async function createComment(
   token: string,
   communityId: string,
   taskId: string,
-  data: CreateCommentRequest
+  data: CreateCommentRequest,
 ): Promise<TaskThreadMessage> {
   const res = await API.post(`/${communityId}/tasks/${taskId}/comments`, data, {
     headers: buildAuthHeaders(token),
@@ -111,10 +116,21 @@ export async function updateTaskStatus(
   token: string,
   communityId: string,
   taskId: string,
-  data: UpdateTaskStatusRequest
+  data: UpdateTaskStatusRequest,
 ): Promise<TaskResponse> {
   const res = await API.patch(`/${communityId}/tasks/${taskId}/status`, data, {
     headers: buildAuthHeaders(token),
   });
   return res.data as TaskResponse;
+}
+
+export async function deleteComment(
+  token: string,
+  communityId: string,
+  taskId: string,
+  commentId: string,
+): Promise<void> {
+  await API.delete(`/${communityId}/tasks/${taskId}/comments/${commentId}`, {
+    headers: buildAuthHeaders(token),
+  });
 }

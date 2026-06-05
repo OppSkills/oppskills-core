@@ -14,7 +14,8 @@ export class UserLocationController {
   @Post()
   @ApiOperation({
     summary: 'Submit user coordinates',
-    description: 'Receives and logs user coordinates. Logs email if authenticated, otherwise Anonymous.',
+    description:
+      'Receives and logs user coordinates. Logs email if authenticated, otherwise Anonymous.',
   })
   @ApiResponse({
     status: 200,
@@ -34,7 +35,10 @@ export class UserLocationController {
           // Dev auth bypass check
           if (process.env.AUTH_BYPASS === 'true') {
             const headerUserId = req.headers['x-user-id'];
-            if (typeof headerUserId === 'string' && headerUserId.trim().length > 0) {
+            if (
+              typeof headerUserId === 'string' &&
+              headerUserId.trim().length > 0
+            ) {
               const userId = headerUserId.trim();
               email = req.headers['x-user-email'] || `${userId}@local.test`;
             }

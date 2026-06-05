@@ -30,12 +30,15 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Crown,
   Users,
   UserMinus,
   Loader2,
   LogOut,
   Trash2,
+  Calendar,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useChatsPage } from "@/hooks/useChatsPage";
@@ -48,7 +51,10 @@ import { ChatCameraCapture } from "@/components/chat/ChatCameraCapture";
 import { ChatMessageImage } from "@/components/chat/ChatMessageImage";
 import { SecureChatAttachmentImage } from "@/components/chat/SecureChatAttachmentImage";
 import { formatLastMessagePreview } from "@/lib/chat/chatMappers";
-import { messageDownloadName, messageDownloadUrl } from "@/lib/chat/downloadAttachment";
+import {
+  messageDownloadName,
+  messageDownloadUrl,
+} from "@/lib/chat/downloadAttachment";
 import { CHAT_DOCUMENT_INPUT_ACCEPT } from "@/lib/chat/documentAccept";
 import {
   formatChatPresenceSubtitle,
@@ -74,39 +80,51 @@ function formatTime12h(isoString: string): string {
   if (isNaN(date.getTime())) return isoString;
   let hours = date.getHours();
   const minutes = date.getMinutes();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const ampm = hours >= 12 ? "PM" : "AM";
   hours = hours % 12;
   hours = hours ? hours : 12; // the hour '0' should be '12'
-  const strHours = String(hours).padStart(2, '0');
-  const strMinutes = String(minutes).padStart(2, '0');
+  const strHours = String(hours).padStart(2, "0");
+  const strMinutes = String(minutes).padStart(2, "0");
   return `${strHours}:${strMinutes} ${ampm}`;
 }
 
 function formatDateSeparator(isoString: string): string {
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return isoString;
-  
+
   const todayDate = new Date();
   const compareDate = new Date(date);
-  
-  const isToday = todayDate.getFullYear() === compareDate.getFullYear() &&
-                  todayDate.getMonth() === compareDate.getMonth() &&
-                  todayDate.getDate() === compareDate.getDate();
-                  
+
+  const isToday =
+    todayDate.getFullYear() === compareDate.getFullYear() &&
+    todayDate.getMonth() === compareDate.getMonth() &&
+    todayDate.getDate() === compareDate.getDate();
+
   const yesterdayDate = new Date();
   yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const isYesterday = yesterdayDate.getFullYear() === compareDate.getFullYear() &&
-                      yesterdayDate.getMonth() === compareDate.getMonth() &&
-                      yesterdayDate.getDate() === compareDate.getDate();
-                      
+  const isYesterday =
+    yesterdayDate.getFullYear() === compareDate.getFullYear() &&
+    yesterdayDate.getMonth() === compareDate.getMonth() &&
+    yesterdayDate.getDate() === compareDate.getDate();
+
   if (isToday) {
     return "Today";
   } else if (isYesterday) {
     return "Yesterday";
   } else {
     const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
     const day = compareDate.getDate();
     const monthName = months[compareDate.getMonth()];
@@ -119,30 +137,62 @@ function formatSidebarTimestamp(isoString: string): string {
   if (!isoString) return "";
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return isoString;
-  
+
   const todayDate = new Date();
   const compareDate = new Date(date);
-  
-  const isToday = todayDate.getFullYear() === compareDate.getFullYear() &&
-                  todayDate.getMonth() === compareDate.getMonth() &&
-                  todayDate.getDate() === compareDate.getDate();
-                  
+
+  const isToday =
+    todayDate.getFullYear() === compareDate.getFullYear() &&
+    todayDate.getMonth() === compareDate.getMonth() &&
+    todayDate.getDate() === compareDate.getDate();
+
   const yesterdayDate = new Date();
   yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const isYesterday = yesterdayDate.getFullYear() === compareDate.getFullYear() &&
-                      yesterdayDate.getMonth() === compareDate.getMonth() &&
-                      yesterdayDate.getDate() === compareDate.getDate();
-                      
+  const isYesterday =
+    yesterdayDate.getFullYear() === compareDate.getFullYear() &&
+    yesterdayDate.getMonth() === compareDate.getMonth() &&
+    yesterdayDate.getDate() === compareDate.getDate();
+
   if (isToday) {
     return formatTime12h(isoString);
   } else if (isYesterday) {
     return "Yesterday";
   } else {
-    const day = String(compareDate.getDate()).padStart(2, '0');
-    const month = String(compareDate.getMonth() + 1).padStart(2, '0');
+    const day = String(compareDate.getDate()).padStart(2, "0");
+    const month = String(compareDate.getMonth() + 1).padStart(2, "0");
     const year = compareDate.getFullYear();
     return `${day}-${month}-${year}`;
   }
+}
+
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+interface HighlightedTextProps {
+  text: string;
+  highlight: string;
+}
+
+function HighlightedText({ text, highlight }: HighlightedTextProps) {
+  if (!highlight.trim()) return <>{text}</>;
+
+  const regex = new RegExp(`(${escapeRegExp(highlight)})`, "gi");
+  const parts = text.split(regex);
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-yellow-300 text-neutral-900 rounded-xs px-0.5 font-bold">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
 }
 
 export default function ChatsPage() {
@@ -201,7 +251,9 @@ export default function ChatsPage() {
   );
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"All" | "Unread" | "Groups" | "Individual">("All");
+  const [activeTab, setActiveTab] = useState<
+    "All" | "Unread" | "Groups" | "Individual"
+  >("All");
 
   // Sticky Scroll & Input Focus States & Refs
   const [stickyDate, setStickyDate] = useState<string>("");
@@ -221,11 +273,7 @@ export default function ChatsPage() {
     if (!container) return;
 
     const scrollTop = container.scrollTop;
-    if (
-      scrollTop < 80 &&
-      hasOlderMessages &&
-      !loadingOlderRef.current
-    ) {
+    if (scrollTop < 80 && hasOlderMessages && !loadingOlderRef.current) {
       loadingOlderRef.current = true;
       void loadOlderMessages().finally(() => {
         loadingOlderRef.current = false;
@@ -254,7 +302,9 @@ export default function ChatsPage() {
       setStickyDate(formattedDate);
 
       // Find if the inline separator for this date is hidden
-      const separatorEl = container.querySelector(`[data-date-separator="${formattedDate}"]`) as HTMLElement | null;
+      const separatorEl = container.querySelector(
+        `[data-date-separator="${formattedDate}"]`,
+      ) as HTMLElement | null;
       if (separatorEl) {
         const sepRect = separatorEl.getBoundingClientRect();
         isSeparatorHidden = sepRect.bottom <= containerRect.top;
@@ -270,12 +320,26 @@ export default function ChatsPage() {
     }
   };
 
-  // Reset sticky state when changing conversations
+  // Reset sticky state & filters when changing conversations
   useEffect(() => {
     setStickyDate("");
     setShowSticky(false);
     lastScrollTopRef.current = 0;
+
+    setIsSearchingMessages(false);
+    setMessageSearchQuery("");
+    setShowDateFilter(false);
+    setStartDateFilter("");
+    setEndDateFilter("");
   }, [selectedChatId]);
+
+  // Message filters and search states
+  const [isSearchingMessages, setIsSearchingMessages] = useState(false);
+  const [messageSearchQuery, setMessageSearchQuery] = useState("");
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [startDateFilter, setStartDateFilter] = useState("");
+  const [endDateFilter, setEndDateFilter] = useState("");
+  const [currentMatchIndex, setCurrentMatchIndex] = useState<number>(0);
 
   // Input fields
   const [inputMessage, setInputMessage] = useState("");
@@ -284,8 +348,12 @@ export default function ChatsPage() {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
   // Reply states
-  const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null);
-  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(
+    null,
+  );
+  const [highlightedMessageId, setHighlightedMessageId] = useState<
+    string | null
+  >(null);
 
   // Right sidebar details state
   const [showRightSidebar, setShowRightSidebar] = useState(false);
@@ -299,6 +367,71 @@ export default function ChatsPage() {
     setActiveRightSidebarTab("Media");
     setShowChatMenu(false);
   }, [selectedChatId]);
+
+  // Compute matching message IDs
+  const matchingMessageIds = useMemo(() => {
+    if (!isSearchingMessages || !messageSearchQuery.trim() || !activeChat) return [];
+    const query = messageSearchQuery.toLowerCase();
+    const sorted = [...activeChat.messages].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    return sorted
+      .filter((message) => {
+        if (message.type === "SYSTEM") return false;
+
+        if (showDateFilter) {
+          const msgTime = new Date(message.timestamp).getTime();
+          if (startDateFilter) {
+            const start = new Date(startDateFilter);
+            start.setHours(0, 0, 0, 0);
+            if (msgTime < start.getTime()) return false;
+          }
+          if (endDateFilter) {
+            const end = new Date(endDateFilter);
+            end.setHours(23, 59, 59, 999);
+            if (msgTime > end.getTime()) return false;
+          }
+        }
+
+        const textMatch = message.text.toLowerCase().includes(query);
+        const senderMatch = message.senderName?.toLowerCase().includes(query);
+        return textMatch || senderMatch;
+      })
+      .map((m) => m.id);
+  }, [
+    activeChat?.messages,
+    isSearchingMessages,
+    messageSearchQuery,
+    showDateFilter,
+    startDateFilter,
+    endDateFilter,
+  ]);
+
+  // Reset match index to the last match (newest) when query or matches list changes
+  useEffect(() => {
+    if (matchingMessageIds.length > 0) {
+      setCurrentMatchIndex(matchingMessageIds.length - 1);
+    } else {
+      setCurrentMatchIndex(0);
+    }
+  }, [matchingMessageIds]);
+
+  // Scroll to current match when index, matches list, or search state changes
+  useEffect(() => {
+    if (matchingMessageIds.length > 0 && isSearchingMessages) {
+      const matchId = matchingMessageIds[currentMatchIndex];
+      if (matchId) {
+        const el = document.getElementById(`msg-${matchId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          setHighlightedMessageId(matchId);
+        }
+      }
+    } else {
+      setHighlightedMessageId(null);
+    }
+  }, [currentMatchIndex, matchingMessageIds, isSearchingMessages]);
 
   useEffect(() => {
     if (!showChatMenu) return;
@@ -322,9 +455,7 @@ export default function ChatsPage() {
 
   const chatPresenceSubtitle = useMemo(
     () =>
-      activeChat
-        ? formatChatPresenceSubtitle(activeChat, currentUserId)
-        : "",
+      activeChat ? formatChatPresenceSubtitle(activeChat, currentUserId) : "",
     [activeChat, currentUserId],
   );
 
@@ -359,11 +490,7 @@ export default function ChatsPage() {
       ? sidebarMedia
       : activeChat
         ? activeChat.messages
-            .filter(
-              (m) =>
-                m.imageUrl &&
-                !m.id.startsWith("optimistic-"),
-            )
+            .filter((m) => m.imageUrl && !m.id.startsWith("optimistic-"))
             .map((m) => ({
               messageId: m.id,
               fileName: messageDownloadName(m),
@@ -376,7 +503,13 @@ export default function ChatsPage() {
       ? undefined
       : activeChat.members.find((m) => m.id !== currentUserId)?.id;
     void loadSidebarData(selectedChatId, otherMemberId);
-  }, [showRightSidebar, selectedChatId, activeChat, currentUserId, loadSidebarData]);
+  }, [
+    showRightSidebar,
+    selectedChatId,
+    activeChat,
+    currentUserId,
+    loadSidebarData,
+  ]);
 
   const handleGroupAvatarSelect = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -412,10 +545,7 @@ export default function ChatsPage() {
     setPendingConfirm({ kind: "delete-group" });
   };
 
-  const requestRemoveGroupMember = (
-    memberId: string,
-    memberName: string,
-  ) => {
+  const requestRemoveGroupMember = (memberId: string, memberName: string) => {
     if (!selectedChatId || !isGroupAdmin) return;
     setPendingConfirm({ kind: "remove-member", memberId, memberName });
   };
@@ -671,17 +801,13 @@ export default function ChatsPage() {
   };
 
   const toggleSelectMember = (id: string) => {
-    setSelectedMembers(prev =>
-      prev.includes(id) ? prev.filter(mId => mId !== id) : [...prev, id]
+    setSelectedMembers((prev) =>
+      prev.includes(id) ? prev.filter((mId) => mId !== id) : [...prev, id],
     );
   };
 
   const getLastMessageText = (chat: Chat) =>
-    formatLastMessagePreview(
-      chat.lastMessagePreview,
-      chat,
-      currentUserId,
-    );
+    formatLastMessagePreview(chat.lastMessagePreview, chat, currentUserId);
 
   const handleDownloadMessage = (message: Message) => {
     if (!selectedChatId) return;
@@ -732,13 +858,13 @@ export default function ChatsPage() {
 
   return (
     <div className="flex flex-1 w-full h-[calc(100vh-64px)] min-h-0 bg-background overflow-hidden relative font-sans text-neutral-900">
-
       {/* Sidebar Container */}
-      <div className={`
+      <div
+        className={`
         ${selectedChatId ? "hidden md:flex" : "flex"}
         w-full md:w-[380px] border-r border-neutral-300 flex-col bg-white shrink-0 h-full relative z-10
-      `}>
-
+      `}
+      >
         {/* Search Header */}
         <div className="p-5 pb-3">
           <div className="relative border border-primary-400 rounded-full px-5 py-3 flex items-center shadow-sm focus-within:shadow-md transition-shadow">
@@ -767,14 +893,15 @@ export default function ChatsPage() {
               onClick={() => setActiveTab(tab)}
               className={`
                 flex-1 text-center py-3 text-xs font-semibold tracking-wide transition-all border-b-2 relative uppercase
-                ${activeTab === tab
-                  ? "text-primary-600 border-primary-500"
-                  : "text-neutral-500 border-transparent hover:text-neutral-700"
+                ${
+                  activeTab === tab
+                    ? "text-primary-600 border-primary-500"
+                    : "text-neutral-500 border-transparent hover:text-neutral-700"
                 }
               `}
             >
               {tab}
-              {tab === "Unread" && chats.some(c => c.unreadCount > 0) && (
+              {tab === "Unread" && chats.some((c) => c.unreadCount > 0) && (
                 <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-UI-Success animate-pulse" />
               )}
             </button>
@@ -786,8 +913,12 @@ export default function ChatsPage() {
           {filteredChats.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 p-5 text-center">
               <MessageSquare className="w-10 h-10 text-neutral-400 mb-2" />
-              <p className="text-sm font-medium text-neutral-600">No chats found</p>
-              <p className="text-xs text-neutral-400 mt-1">Try resetting filters or search terms</p>
+              <p className="text-sm font-medium text-neutral-600">
+                No chats found
+              </p>
+              <p className="text-xs text-neutral-400 mt-1">
+                Try resetting filters or search terms
+              </p>
             </div>
           ) : (
             filteredChats.map((chat) => {
@@ -845,7 +976,9 @@ export default function ChatsPage() {
                       <div className="mt-1 flex items-center gap-1.5 py-0.5 px-2 rounded-full bg-neutral-100 border border-neutral-300 text-[10px] w-fit font-medium text-neutral-700">
                         <FileText className="w-3.5 h-3.5 text-primary-500" />
                         <span className="truncate max-w-[130px]">
-                          {lastMsg?.attachment?.name ?? lastPreview?.body ?? "Attachment"}
+                          {lastMsg?.attachment?.name ??
+                            lastPreview?.body ??
+                            "Attachment"}
                         </span>
                       </div>
                     )}
@@ -906,11 +1039,12 @@ export default function ChatsPage() {
       </div>
 
       {/* Main Body (Chat Area) */}
-      <div className={`
+      <div
+        className={`
         ${selectedChatId ? "flex" : "hidden md:flex"}
         flex-1 flex-col h-full bg-neutral-100 relative min-w-0
-      `}>
-
+      `}
+      >
         {activeChat ? (
           <>
             {/* Active Chat Header */}
@@ -943,7 +1077,8 @@ export default function ChatsPage() {
                   </h3>
                   <p
                     className={`text-[10px] md:text-xs truncate ${
-                      !activeChat.isGroup && isDmPeerOnline(activeChat, currentUserId)
+                      !activeChat.isGroup &&
+                      isDmPeerOnline(activeChat, currentUserId)
                         ? "text-emerald-600"
                         : "text-neutral-500"
                     }`}
@@ -974,6 +1109,31 @@ export default function ChatsPage() {
                   </button>
                   {showChatMenu && activeChat && (
                     <div className="absolute right-0 top-full mt-1 w-52 py-1 bg-white border border-neutral-200 rounded-xl shadow-lg z-30">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSearchingMessages(true);
+                          setShowChatMenu(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-neutral-700 hover:bg-primary-50 hover:text-primary-700 text-left"
+                      >
+                        <Search className="w-4 h-4 shrink-0" />
+                        Search messages
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowDateFilter(true);
+                          setShowChatMenu(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-neutral-700 hover:bg-primary-50 hover:text-primary-700 text-left"
+                      >
+                        <Calendar className="w-4 h-4 shrink-0" />
+                        Filter by date
+                      </button>
+
+                      <div className="border-t border-neutral-100 my-1"></div>
+
                       {activeChat.isGroup && !isGroupAdmin && (
                         <button
                           type="button"
@@ -1012,7 +1172,6 @@ export default function ChatsPage() {
 
             {/* Split layout: messages timeline/input on left, right sidebar on right */}
             <div className="flex-1 flex min-h-0 relative w-full overflow-hidden">
-
               {/* Message timeline and input */}
               <div className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
                 <ChatAttachmentComposer
@@ -1047,6 +1206,145 @@ export default function ChatsPage() {
                   )}
                 </AnimatePresence>
 
+                {/* Message Filter / Search Bar */}
+                {(isSearchingMessages || showDateFilter) && (
+                  <div className="bg-white border-b border-neutral-300 px-4 md:px-6 py-2.5 flex flex-wrap items-center gap-3 shrink-0 shadow-xs z-10">
+                    {isSearchingMessages && (
+                      <div className="relative flex items-center flex-1 min-w-[280px]">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={messageSearchQuery}
+                            onChange={(e) =>
+                              setMessageSearchQuery(e.target.value)
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                if (matchingMessageIds.length > 0) {
+                                  if (e.shiftKey) {
+                                    // Shift+Enter: go up (older match)
+                                    setCurrentMatchIndex((prev) =>
+                                      prev > 0 ? prev - 1 : matchingMessageIds.length - 1
+                                    );
+                                  } else {
+                                    // Enter: go down (newer match)
+                                    setCurrentMatchIndex((prev) =>
+                                      prev < matchingMessageIds.length - 1 ? prev + 1 : 0
+                                    );
+                                  }
+                                }
+                              }
+                            }}
+                            placeholder="Search messages in this chat..."
+                            className="w-full pl-9 pr-24 py-1.5 border border-neutral-300 focus:border-primary-500 outline-none rounded-xl text-xs font-semibold shadow-2xs bg-white text-neutral-900"
+                          />
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                          
+                          {/* Search details and clear button */}
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[10px] font-bold text-neutral-500 bg-white pl-1 select-none">
+                            {messageSearchQuery.trim() && (
+                              <span className="font-mono">
+                                {matchingMessageIds.length > 0
+                                  ? `${currentMatchIndex + 1}/${matchingMessageIds.length}`
+                                  : "0/0"}
+                              </span>
+                            )}
+                            {messageSearchQuery && (
+                              <button
+                                type="button"
+                                onClick={() => setMessageSearchQuery("")}
+                                className="text-neutral-400 hover:text-neutral-600 p-0.5 rounded-full hover:bg-neutral-100 transition-colors"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Navigation arrows (Up for older, Down for newer) */}
+                        {messageSearchQuery.trim() && matchingMessageIds.length > 0 && (
+                          <div className="flex items-center gap-1 ml-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCurrentMatchIndex((prev) =>
+                                  prev > 0 ? prev - 1 : matchingMessageIds.length - 1
+                                )
+                              }
+                              title="Previous match (Shift+Enter / Up)"
+                              className="p-1.5 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-xl text-neutral-600 transition-colors shadow-2xs cursor-pointer"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCurrentMatchIndex((prev) =>
+                                  prev < matchingMessageIds.length - 1 ? prev + 1 : 0
+                                )
+                              }
+                              title="Next match (Enter / Down)"
+                              className="p-1.5 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-xl text-neutral-600 transition-colors shadow-2xs cursor-pointer"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {showDateFilter && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="font-semibold text-neutral-500">
+                          From:
+                        </span>
+                        <input
+                          type="date"
+                          value={startDateFilter}
+                          onChange={(e) => setStartDateFilter(e.target.value)}
+                          className="px-2.5 py-1.5 border border-neutral-300 rounded-xl text-xs outline-none focus:border-primary-500 font-semibold shadow-2xs bg-white"
+                        />
+                        <span className="font-semibold text-neutral-500">
+                          To:
+                        </span>
+                        <input
+                          type="date"
+                          value={endDateFilter}
+                          onChange={(e) => setEndDateFilter(e.target.value)}
+                          className="px-2.5 py-1.5 border border-neutral-300 rounded-xl text-xs outline-none focus:border-primary-500 font-semibold shadow-2xs bg-white"
+                        />
+                        {(startDateFilter || endDateFilter) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStartDateFilter("");
+                              setEndDateFilter("");
+                            }}
+                            className="text-primary-600 hover:text-primary-800 underline font-bold ml-1 cursor-pointer"
+                          >
+                            Clear dates
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSearchingMessages(false);
+                        setMessageSearchQuery("");
+                        setShowDateFilter(false);
+                        setStartDateFilter("");
+                        setEndDateFilter("");
+                      }}
+                      className="text-xs text-red-500 hover:text-red-700 font-bold ml-auto cursor-pointer"
+                    >
+                      Close Filters
+                    </button>
+                  </div>
+                )}
+
                 {/* Chat Timeline (Scrollable Messages) */}
                 <div
                   ref={scrollContainerRef}
@@ -1054,13 +1352,38 @@ export default function ChatsPage() {
                   className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scrollbar bg-neutral-100"
                 >
                   {(() => {
-                    const sortedMessages = [...activeChat.messages].sort((a, b) => {
-                      return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
-                    });
+                    const sortedMessages = [...activeChat.messages].sort(
+                      (a, b) => {
+                        return (
+                          new Date(a.timestamp).getTime() -
+                          new Date(b.timestamp).getTime()
+                        );
+                      },
+                    );
+
+                    const filteredMessages = sortedMessages.filter(
+                      (message) => {
+                        if (showDateFilter) {
+                          const msgTime = new Date(message.timestamp).getTime();
+                          if (startDateFilter) {
+                            const start = new Date(startDateFilter);
+                            start.setHours(0, 0, 0, 0);
+                            if (msgTime < start.getTime()) return false;
+                          }
+                          if (endDateFilter) {
+                            const end = new Date(endDateFilter);
+                            end.setHours(23, 59, 59, 999);
+                            if (msgTime > end.getTime()) return false;
+                          }
+                        }
+
+                        return true;
+                      },
+                    );
 
                     let lastMessageDateStr = "";
 
-                    return sortedMessages.map((message, index) => {
+                    return filteredMessages.map((message, index) => {
                       const isSystem = message.type === "SYSTEM";
 
                       // Check for date separator
@@ -1071,7 +1394,9 @@ export default function ChatsPage() {
                         const dateKey = `${messageDate.getFullYear()}-${messageDate.getMonth()}-${messageDate.getDate()}`;
                         if (dateKey !== lastMessageDateStr) {
                           lastMessageDateStr = dateKey;
-                          const dateText = formatDateSeparator(message.timestamp);
+                          const dateText = formatDateSeparator(
+                            message.timestamp,
+                          );
                           separatorElement = (
                             <div
                               key={`sep-${message.id}`}
@@ -1089,96 +1414,108 @@ export default function ChatsPage() {
                       }
 
                       const messageElement = isSystem ? (
-                        <div key={message.id} data-message-date={message.timestamp} className="flex justify-center my-3">
+                        <div
+                          key={message.id}
+                          data-message-date={message.timestamp}
+                          className="flex justify-center my-3"
+                        >
                           <div className="bg-neutral-200 text-neutral-600 text-[10px] md:text-xs font-semibold py-1 px-3.5 rounded-full shadow-sm">
                             {message.text}
                           </div>
                         </div>
-                      ) : (
-                        message.isYou ? (
-                          <div
-                            key={message.stableKey ?? message.id}
-                            id={`msg-${message.id}`}
-                            data-message-date={message.timestamp}
-                            className="flex justify-end items-end gap-2 transition-all duration-300 w-full"
-                          >
-                            <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%]">
-                              {/* Hover reply action icon: immediately to the left of the bubble */}
-                              <div className="absolute right-full mr-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setReplyingToMessage(message);
-                                    focusInput();
-                                  }}
-                                  title="Reply"
-                                  className="p-1.5 rounded-full bg-white hover:bg-neutral-100 text-neutral-500 hover:text-primary-600 shadow-md border border-neutral-200 transition-all active:scale-90"
-                                >
-                                  <CornerUpLeft className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
+                      ) : message.isYou ? (
+                        <div
+                          key={message.stableKey ?? message.id}
+                          id={`msg-${message.id}`}
+                          data-message-date={message.timestamp}
+                          className="flex justify-end items-end gap-2 transition-all duration-300 w-full"
+                        >
+                          <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%]">
+                            {/* Hover reply action icon: immediately to the left of the bubble */}
+                            <div className="absolute right-full mr-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setReplyingToMessage(message);
+                                  focusInput();
+                                }}
+                                title="Reply"
+                                className="p-1.5 rounded-full bg-white hover:bg-neutral-100 text-neutral-500 hover:text-primary-600 shadow-md border border-neutral-200 transition-all active:scale-90"
+                              >
+                                <CornerUpLeft className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
 
-                              <div className="w-full flex flex-col">
-                                {/* Bubble content */}
-                                <div
-                                  className={`
-                                    p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300
+                            <div className="w-full flex flex-col">
+                              {/* Bubble content */}
+                              <div
+                                className={`
+                                    p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
                                     bg-primary-600 text-white rounded-br-none
-                                    ${highlightedMessageId === message.id
-                                      ? "ring-4 ring-primary-400 ring-offset-2 scale-[1.02]"
-                                      : ""
+                                    ${
+                                      (highlightedMessageId === message.id || (isSearchingMessages && matchingMessageIds[currentMatchIndex] === message.id))
+                                        ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
+                                        : ""
                                     }
                                   `}
-                                >
-                                  {/* Reply reference preview inside the bubble */}
-                                  {message.replyTo && (
-                                    <div
-                                      onClick={() => message.replyTo && scrollToMessage(message.replyTo.messageId)}
-                                      className="mb-2.5 p-2 rounded-lg border-l-4 text-xs cursor-pointer text-left transition-all hover:opacity-90 select-none bg-primary-700/80 border-primary-300 text-white/90"
-                                    >
-                                      <p className="font-bold text-[10px] uppercase tracking-wider mb-0.5 text-primary-200">
-                                        {message.replyTo.senderName}
-                                      </p>
-                                      <p className="truncate opacity-80">{message.replyTo.text}</p>
-                                    </div>
-                                  )}
+                              >
+                                {/* Reply reference preview inside the bubble */}
+                                {message.replyTo && (
+                                  <div
+                                    onClick={() =>
+                                      message.replyTo &&
+                                      scrollToMessage(message.replyTo.messageId)
+                                    }
+                                    className="mb-2.5 p-2 rounded-lg border-l-4 text-xs cursor-pointer text-left transition-all hover:opacity-90 select-none bg-primary-700/80 border-primary-300 text-white/90"
+                                  >
+                                    <p className="font-bold text-[10px] uppercase tracking-wider mb-0.5 text-primary-200">
+                                      {message.replyTo.senderName}
+                                    </p>
+                                    <p className="truncate opacity-80">
+                                      {message.replyTo.text}
+                                    </p>
+                                  </div>
+                                )}
 
-                                  {message.imageUrl && (
-                                    <ChatMessageImage
-                                      message={message}
-                                      conversationId={selectedChatId}
-                                      onOpen={() => openImageInModal(message.id)}
-                                      onDownload={() =>
+                                {message.imageUrl && (
+                                  <ChatMessageImage
+                                    message={message}
+                                    conversationId={selectedChatId}
+                                    onOpen={() => openImageInModal(message.id)}
+                                    onDownload={() =>
+                                      handleDownloadMessage(message)
+                                    }
+                                  />
+                                )}
+
+                                {message.attachment && !message.imageUrl && (
+                                  <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-primary-700 border-primary-500 text-white">
+                                    <FileText className="w-7 h-7 shrink-0 text-white fill-neutral-500/10" />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-semibold truncate leading-tight">
+                                        {message.attachment.name}
+                                      </p>
+                                      <p className="text-[9px] mt-0.5 text-primary-200">
+                                        {message.attachment.size ||
+                                          "Unknown size"}
+                                      </p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
                                         handleDownloadMessage(message)
                                       }
-                                    />
-                                  )}
+                                      className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
+                                      title="Download"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                )}
 
-                                  {message.attachment && !message.imageUrl && (
-                                    <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-primary-700 border-primary-500 text-white">
-                                      <FileText className="w-7 h-7 shrink-0 text-white fill-neutral-500/10" />
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-semibold truncate leading-tight">
-                                          {message.attachment.name}
-                                        </p>
-                                        <p className="text-[9px] mt-0.5 text-primary-200">
-                                          {message.attachment.size || "Unknown size"}
-                                        </p>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDownloadMessage(message)}
-                                        className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
-                                        title="Download"
-                                      >
-                                        <Download className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  )}
-
-                                  {message.attachment &&
-                                    message.imageUrl &&
-                                    message.attachment.type === "video" && (
+                                {message.attachment &&
+                                  message.imageUrl &&
+                                  message.attachment.type === "video" && (
                                     <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-primary-700 border-primary-500 text-white">
                                       <FileText className="w-7 h-7 shrink-0 text-white" />
                                       <div className="min-w-0 flex-1">
@@ -1191,7 +1528,9 @@ export default function ChatsPage() {
                                       </div>
                                       <button
                                         type="button"
-                                        onClick={() => handleDownloadMessage(message)}
+                                        onClick={() =>
+                                          handleDownloadMessage(message)
+                                        }
                                         className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
                                         title="Download video"
                                       >
@@ -1200,145 +1539,174 @@ export default function ChatsPage() {
                                     </div>
                                   )}
 
-                                  {message.text.trim() ? (
-                                    <p className="wrap-break-word">{message.text}</p>
-                                  ) : null}
+                                {message.text.trim() ? (
+                                  <p className="wrap-break-word">
+                                    <HighlightedText
+                                      text={message.text}
+                                      highlight={isSearchingMessages ? messageSearchQuery : ""}
+                                    />
+                                  </p>
+                                ) : null}
 
-                                  <div className="flex items-center justify-end gap-1 mt-1 text-[9px] opacity-70">
-                                    <span>{formatTime12h(message.timestamp)}</span>
-                                    <OutgoingMessageStatus message={message} />
-                                  </div>
+                                <div className="flex items-center justify-end gap-1 mt-1 text-[9px] opacity-70">
+                                  <span>
+                                    {formatTime12h(message.timestamp)}
+                                  </span>
+                                  <OutgoingMessageStatus message={message} />
                                 </div>
                               </div>
                             </div>
                           </div>
-                        ) : (
-                          <div
-                            key={message.id}
-                            id={`msg-${message.id}`}
-                            data-message-date={message.timestamp}
-                            className="flex justify-start items-end gap-2 transition-all duration-300 w-full"
-                          >
-                            {/* Participant Avatar for group chat left-aligned messages */}
-                            {!message.isYou && activeChat.isGroup && (
-                              <div className="w-7 h-7 rounded-full bg-primary-300 text-[10px] font-bold text-white flex items-center justify-center shrink-0 uppercase shadow-sm mb-0.5">
-                                {message.senderName.substring(0, 2)}
-                              </div>
-                            )}
+                        </div>
+                      ) : (
+                        <div
+                          key={message.id}
+                          id={`msg-${message.id}`}
+                          data-message-date={message.timestamp}
+                          className="flex justify-start items-end gap-2 transition-all duration-300 w-full"
+                        >
+                          {/* Participant Avatar for group chat left-aligned messages */}
+                          {!message.isYou && activeChat.isGroup && (
+                            <div className="w-7 h-7 rounded-full bg-primary-300 text-[10px] font-bold text-white flex items-center justify-center shrink-0 uppercase shadow-sm mb-0.5">
+                              {message.senderName.substring(0, 2)}
+                            </div>
+                          )}
 
-                            <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%]">
-                              <div className="w-full flex flex-col">
-                                {/* Sender Name in Group Chat */}
-                                {!message.isYou && activeChat.isGroup && (
-                                  <span className="text-[10px] font-bold text-neutral-500 ml-2.5 mb-0.5">
-                                    {message.senderName}
-                                  </span>
-                                )}
+                          <div className="relative group flex items-end gap-2 max-w-[75%] md:max-w-[60%]">
+                            <div className="w-full flex flex-col">
+                              {/* Sender Name in Group Chat */}
+                              {!message.isYou && activeChat.isGroup && (
+                                <span className="text-[10px] font-bold text-neutral-500 ml-2.5 mb-0.5">
+                                  {message.senderName}
+                                </span>
+                              )}
 
-                                {/* Bubble content */}
-                                <div
-                                  className={`
-                                    p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300
+                              {/* Bubble content */}
+                              <div
+                                className={`
+                                    p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
                                     bg-white text-neutral-900 rounded-bl-none border border-neutral-200
-                                    ${highlightedMessageId === message.id
-                                      ? "ring-4 ring-primary-400 ring-offset-2 scale-[1.02]"
-                                      : ""
+                                    ${
+                                      (highlightedMessageId === message.id || (isSearchingMessages && matchingMessageIds[currentMatchIndex] === message.id))
+                                        ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
+                                        : ""
                                     }
                                   `}
-                                >
-                                  {/* Reply reference preview inside the bubble */}
-                                  {message.replyTo && (
-                                    <div
-                                      onClick={() => message.replyTo && scrollToMessage(message.replyTo.messageId)}
-                                      className="mb-2.5 p-2 rounded-lg border-l-4 text-xs cursor-pointer text-left transition-all hover:opacity-90 select-none bg-neutral-100 border-primary-500 text-neutral-700"
-                                    >
-                                      <p className="font-bold text-[10px] uppercase tracking-wider mb-0.5 text-primary-600">
-                                        {message.replyTo.senderName}
-                                      </p>
-                                      <p className="truncate opacity-80">{message.replyTo.text}</p>
-                                    </div>
-                                  )}
-
-                                  {message.imageUrl && (
-                                    <ChatMessageImage
-                                      message={message}
-                                      conversationId={selectedChatId}
-                                      onOpen={() => openImageInModal(message.id)}
-                                      onDownload={() => handleDownloadMessage(message)}
-                                    />
-                                  )}
-
-                                  {message.attachment && !message.imageUrl && (
-                                    <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-neutral-100 border-neutral-300 text-neutral-800">
-                                      <FileText className="w-7 h-7 shrink-0 text-primary-600" />
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-semibold truncate leading-tight">
-                                          {message.attachment.name}
-                                        </p>
-                                        <p className="text-[9px] mt-0.5 text-neutral-500">
-                                          {message.attachment.size || "Unknown size"}
-                                        </p>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDownloadMessage(message)}
-                                        className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
-                                        title="Download"
-                                      >
-                                        <Download className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  )}
-
-                                  {message.attachment && message.imageUrl && message.attachment.type !== "image" && (
-                                    <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-neutral-100 border-neutral-300 text-neutral-800">
-                                      <FileText className="w-7 h-7 shrink-0 text-primary-600" />
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-semibold truncate leading-tight">
-                                          {message.attachment.name}
-                                        </p>
-                                        <p className="text-[9px] mt-0.5 text-neutral-500">
-                                          {message.attachment.size || "Unknown size"}
-                                        </p>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDownloadMessage(message)}
-                                        className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
-                                        title="Download"
-                                      >
-                                        <Download className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  )}
-
-                                  {message.text.trim() ? (
-                                    <p className="wrap-break-word">{message.text}</p>
-                                  ) : null}
-
-                                  <div className="flex items-center justify-end gap-1 mt-1 text-[9px] opacity-70">
-                                    <span>{formatTime12h(message.timestamp)}</span>
+                              >
+                                {/* Reply reference preview inside the bubble */}
+                                {message.replyTo && (
+                                  <div
+                                    onClick={() =>
+                                      message.replyTo &&
+                                      scrollToMessage(message.replyTo.messageId)
+                                    }
+                                    className="mb-2.5 p-2 rounded-lg border-l-4 text-xs cursor-pointer text-left transition-all hover:opacity-90 select-none bg-neutral-100 border-primary-500 text-neutral-700"
+                                  >
+                                    <p className="font-bold text-[10px] uppercase tracking-wider mb-0.5 text-primary-600">
+                                      {message.replyTo.senderName}
+                                    </p>
+                                    <p className="truncate opacity-80">
+                                      {message.replyTo.text}
+                                    </p>
                                   </div>
+                                )}
+
+                                {message.imageUrl && (
+                                  <ChatMessageImage
+                                    message={message}
+                                    conversationId={selectedChatId}
+                                    onOpen={() => openImageInModal(message.id)}
+                                    onDownload={() =>
+                                      handleDownloadMessage(message)
+                                    }
+                                  />
+                                )}
+
+                                {message.attachment && !message.imageUrl && (
+                                  <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-neutral-100 border-neutral-300 text-neutral-800">
+                                    <FileText className="w-7 h-7 shrink-0 text-primary-600" />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-semibold truncate leading-tight">
+                                        {message.attachment.name}
+                                      </p>
+                                      <p className="text-[9px] mt-0.5 text-neutral-500">
+                                        {message.attachment.size ||
+                                          "Unknown size"}
+                                      </p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleDownloadMessage(message)
+                                      }
+                                      className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
+                                      title="Download"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                )}
+
+                                {message.attachment &&
+                                  message.imageUrl &&
+                                  message.attachment.type !== "image" && (
+                                    <div className="mb-2 p-3 rounded-lg flex items-center gap-3 border bg-neutral-100 border-neutral-300 text-neutral-800">
+                                      <FileText className="w-7 h-7 shrink-0 text-primary-600" />
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-xs font-semibold truncate leading-tight">
+                                          {message.attachment.name}
+                                        </p>
+                                        <p className="text-[9px] mt-0.5 text-neutral-500">
+                                          {message.attachment.size ||
+                                            "Unknown size"}
+                                        </p>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleDownloadMessage(message)
+                                        }
+                                        className="p-1.5 rounded-full hover:bg-black/10 transition-colors shrink-0"
+                                        title="Download"
+                                      >
+                                        <Download className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  )}
+
+                                {message.text.trim() ? (
+                                  <p className="wrap-break-word">
+                                    <HighlightedText
+                                      text={message.text}
+                                      highlight={isSearchingMessages ? messageSearchQuery : ""}
+                                    />
+                                  </p>
+                                ) : null}
+
+                                <div className="flex items-center justify-end gap-1 mt-1 text-[9px] opacity-70">
+                                  <span>
+                                    {formatTime12h(message.timestamp)}
+                                  </span>
                                 </div>
                               </div>
+                            </div>
 
-                              {/* Hover reply action icon: immediately to the right of the bubble */}
-                              <div className="absolute left-full ml-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setReplyingToMessage(message);
-                                    focusInput();
-                                  }}
-                                  title="Reply"
-                                  className="p-1.5 rounded-full bg-white hover:bg-neutral-100 text-neutral-500 hover:text-primary-600 shadow-md border border-neutral-200 transition-all active:scale-90"
-                                >
-                                  <CornerUpLeft className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
+                            {/* Hover reply action icon: immediately to the right of the bubble */}
+                            <div className="absolute left-full ml-2.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setReplyingToMessage(message);
+                                  focusInput();
+                                }}
+                                title="Reply"
+                                className="p-1.5 rounded-full bg-white hover:bg-neutral-100 text-neutral-500 hover:text-primary-600 shadow-md border border-neutral-200 transition-all active:scale-90"
+                              >
+                                <CornerUpLeft className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
-                        )
+                        </div>
                       );
 
                       return (
@@ -1390,7 +1758,10 @@ export default function ChatsPage() {
                     onSubmit={handleSendMessage}
                     className="h-20 px-4 md:px-6 flex items-center gap-3 w-full"
                   >
-                    <div className="relative shrink-0" ref={attachmentAnchorRef}>
+                    <div
+                      className="relative shrink-0"
+                      ref={attachmentAnchorRef}
+                    >
                       <button
                         type="button"
                         onClick={() =>
@@ -1402,7 +1773,9 @@ export default function ChatsPage() {
                       </button>
                       <ChatAttachmentMenu
                         open={fileComposer.attachmentMenuOpen}
-                        onClose={() => fileComposer.setAttachmentMenuOpen(false)}
+                        onClose={() =>
+                          fileComposer.setAttachmentMenuOpen(false)
+                        }
                         onPickDocument={fileComposer.triggerDocPick}
                         onPickPhotosVideos={fileComposer.triggerMediaPick}
                         onPickAudio={fileComposer.triggerAudioPick}
@@ -1432,9 +1805,10 @@ export default function ChatsPage() {
                       disabled={!inputMessage.trim()}
                       className={`
                         p-3 rounded-full text-white transition-all shrink-0 shadow-md hover:shadow-lg
-                        ${inputMessage.trim()
-                          ? "bg-primary-600 hover:bg-primary-700 cursor-pointer scale-100 active:scale-95"
-                          : "bg-neutral-300 cursor-not-allowed opacity-80"
+                        ${
+                          inputMessage.trim()
+                            ? "bg-primary-600 hover:bg-primary-700 cursor-pointer scale-100 active:scale-95"
+                            : "bg-neutral-300 cursor-not-allowed opacity-80"
                         }
                       `}
                     >
@@ -1452,15 +1826,16 @@ export default function ChatsPage() {
                     animate={{ x: 0 }}
                     exit={{ x: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 220 }}
-                    className="absolute inset-y-0 right-0 md:relative w-80 lg:w-[350px] shrink-0 border-l border-neutral-300 bg-white flex flex-col h-full z-20 shadow-lg md:shadow-none overflow-hidden"
+                    className="absolute inset-y-0 right-0 md:relative w-80 lg:w-[350px] shrink-0 border-l border-neutral-300 bg-white flex flex-col h-full z-45 shadow-lg md:shadow-none overflow-hidden"
                   >
                     {/* Header profile info */}
                     <div
                       className="relative p-6 text-center border-b border-neutral-200 shrink-0"
                       style={{
                         backgroundColor: "var(--color-neutral-100)",
-                        backgroundImage: "radial-gradient(var(--color-neutral-300) 1px, transparent 0)",
-                        backgroundSize: "16px 16px"
+                        backgroundImage:
+                          "radial-gradient(var(--color-neutral-300) 1px, transparent 0)",
+                        backgroundSize: "16px 16px",
                       }}
                     >
                       {/* Close button (Mobile-friendly) */}
@@ -1494,7 +1869,9 @@ export default function ChatsPage() {
                             />
                             <button
                               type="button"
-                              onClick={() => groupAvatarInputRef.current?.click()}
+                              onClick={() =>
+                                groupAvatarInputRef.current?.click()
+                              }
                               disabled={groupPhotoUploading}
                               title="Change group photo"
                               className="absolute bottom-0 right-0 p-2 rounded-full bg-primary-600 text-white border-2 border-white shadow-md hover:bg-primary-700 transition-colors disabled:opacity-50 z-10"
@@ -1546,9 +1923,10 @@ export default function ChatsPage() {
                           onClick={() => setActiveRightSidebarTab(tab)}
                           className={`
                             flex-1 text-center py-3 text-xs font-semibold tracking-wide transition-all border-b-2 relative uppercase cursor-pointer
-                            ${activeRightSidebarTab === tab
-                              ? "text-primary-600 border-primary-500 font-bold"
-                              : "text-neutral-500 border-transparent hover:text-neutral-700 font-medium"
+                            ${
+                              activeRightSidebarTab === tab
+                                ? "text-primary-600 border-primary-500 font-bold"
+                                : "text-neutral-500 border-transparent hover:text-neutral-700 font-medium"
                             }
                           `}
                         >
@@ -1559,7 +1937,8 @@ export default function ChatsPage() {
 
                     {/* Scrollable list content */}
                     <div className="flex-1 overflow-y-auto p-4 scrollbar bg-white">
-                      {activeRightSidebarTab === "Members" && activeChat.isGroup ? (
+                      {activeRightSidebarTab === "Members" &&
+                      activeChat.isGroup ? (
                         <div className="space-y-2">
                           <h4 className="text-[10px] font-bold text-neutral-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                             <Users className="w-3.5 h-3.5" />
@@ -1568,9 +1947,7 @@ export default function ChatsPage() {
                           {activeChat.members.map((member) => {
                             const isSelf = member.id === currentUserId;
                             const canRemove =
-                              isGroupAdmin &&
-                              !member.isAdmin &&
-                              !isSelf;
+                              isGroupAdmin && !member.isAdmin && !isSelf;
                             return (
                               <div
                                 key={member.id}
@@ -1627,8 +2004,12 @@ export default function ChatsPage() {
                           {galleryItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10 text-center">
                               <ImageIcon className="w-8 h-8 text-neutral-400 mb-2" />
-                              <p className="text-xs font-semibold text-neutral-600">No media shared yet</p>
-                              <p className="text-[10px] text-neutral-400 mt-1">Photos shared in this chat will show up here</p>
+                              <p className="text-xs font-semibold text-neutral-600">
+                                No media shared yet
+                              </p>
+                              <p className="text-[10px] text-neutral-400 mt-1">
+                                Photos shared in this chat will show up here
+                              </p>
                             </div>
                           ) : (
                             <div>
@@ -1671,7 +2052,9 @@ export default function ChatsPage() {
                       ) : sidebarDocs.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-10 text-center">
                           <FileText className="w-8 h-8 text-neutral-400 mb-2" />
-                          <p className="text-xs font-semibold text-neutral-600">No documents shared yet</p>
+                          <p className="text-xs font-semibold text-neutral-600">
+                            No documents shared yet
+                          </p>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -1713,11 +2096,9 @@ export default function ChatsPage() {
                         </div>
                       )}
                     </div>
-
                   </motion.div>
                 )}
               </AnimatePresence>
-
             </div>
           </>
         ) : (
@@ -1736,7 +2117,8 @@ export default function ChatsPage() {
               Your OppSkills Workspace Chat
             </h2>
             <p className="text-sm text-neutral-600 max-w-sm leading-relaxed mb-6">
-              Select an active conversation or user from the sidebar directory to view messages, attachments, and coordinate on college events.
+              Select an active conversation or user from the sidebar directory
+              to view messages, attachments, and coordinate on college events.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-semibold text-neutral-600">
               <span className="py-1.5 px-3 rounded-full bg-white border border-neutral-200 shadow-sm">
@@ -1825,41 +2207,48 @@ export default function ChatsPage() {
                         groupSearchUsers
                           .filter((contact) => contact.id !== currentUserId)
                           .map((contact) => {
-                        const isSelected = selectedMembers.includes(contact.id);
-                        return (
-                          <div
-                            key={contact.id}
-                            onClick={() => toggleSelectMember(contact.id)}
-                            className="flex items-center justify-between p-2.5 rounded-lg cursor-pointer hover:bg-primary-100/40 transition-colors"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <img
-                                src={contact.avatar}
-                                alt={contact.name}
-                                className="w-9 h-9 rounded-full object-cover border border-neutral-200 shrink-0"
-                              />
-                              <div className="min-w-0">
-                                <span className="text-sm font-semibold text-neutral-900 block truncate">
-                                  {contact.name}
-                                </span>
-                                <span className="text-[10px] text-neutral-500 block truncate">
-                                  {contact.email}
-                                </span>
-                              </div>
-                            </div>
+                            const isSelected = selectedMembers.includes(
+                              contact.id,
+                            );
+                            return (
+                              <div
+                                key={contact.id}
+                                onClick={() => toggleSelectMember(contact.id)}
+                                className="flex items-center justify-between p-2.5 rounded-lg cursor-pointer hover:bg-primary-100/40 transition-colors"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <img
+                                    src={contact.avatar}
+                                    alt={contact.name}
+                                    className="w-9 h-9 rounded-full object-cover border border-neutral-200 shrink-0"
+                                  />
+                                  <div className="min-w-0">
+                                    <span className="text-sm font-semibold text-neutral-900 block truncate">
+                                      {contact.name}
+                                    </span>
+                                    <span className="text-[10px] text-neutral-500 block truncate">
+                                      {contact.email}
+                                    </span>
+                                  </div>
+                                </div>
 
-                            <div className={`
+                                <div
+                                  className={`
                               w-5 h-5 rounded-full border flex items-center justify-center transition-colors shrink-0
-                              ${isSelected
-                                ? "bg-primary-600 border-primary-600 text-white"
-                                : "border-neutral-400 bg-white"
+                              ${
+                                isSelected
+                                  ? "bg-primary-600 border-primary-600 text-white"
+                                  : "border-neutral-400 bg-white"
                               }
-                            `}>
-                              {isSelected && <Check className="w-3.5 h-3.5 stroke-[3px]" />}
-                            </div>
-                          </div>
-                        );
-                      })
+                            `}
+                                >
+                                  {isSelected && (
+                                    <Check className="w-3.5 h-3.5 stroke-[3px]" />
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
                       )}
                     </div>
                   </div>
@@ -1876,12 +2265,15 @@ export default function ChatsPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={!newGroupName.trim() || selectedMembers.length === 0}
+                    disabled={
+                      !newGroupName.trim() || selectedMembers.length === 0
+                    }
                     className={`
                       py-2.5 px-5 text-xs font-bold text-white rounded-full transition-all uppercase tracking-wider font-aeonicPro shadow-md
-                      ${newGroupName.trim() && selectedMembers.length > 0
-                        ? "bg-primary-600 hover:bg-primary-700 cursor-pointer"
-                        : "bg-neutral-300 cursor-not-allowed"
+                      ${
+                        newGroupName.trim() && selectedMembers.length > 0
+                          ? "bg-primary-600 hover:bg-primary-700 cursor-pointer"
+                          : "bg-neutral-300 cursor-not-allowed"
                       }
                     `}
                   >
@@ -1896,9 +2288,7 @@ export default function ChatsPage() {
 
       {/* Full Screen Image Gallery Modal */}
       <AnimatePresence>
-        {showImageModal &&
-          galleryItems.length > 0 &&
-          selectedChatId && (
+        {showImageModal && galleryItems.length > 0 && selectedChatId && (
           <div className="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center select-none z-50">
             {/* Close button (top right) */}
             <button
@@ -2018,7 +2408,6 @@ export default function ChatsPage() {
           onConfirm={() => void executePendingConfirm()}
         />
       )}
-
     </div>
   );
 }

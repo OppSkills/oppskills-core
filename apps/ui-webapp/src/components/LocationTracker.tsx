@@ -6,7 +6,7 @@ import { sendUserLocation } from "@/lib/api/recommendationApi";
 
 export default function LocationTracker() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
-  
+
   // Keep refs of values so we don't have to keep re-running the effect
   const authRef = useRef({ isLoaded, isSignedIn, getToken });
   authRef.current = { isLoaded, isSignedIn, getToken };
@@ -18,7 +18,9 @@ export default function LocationTracker() {
 
         // 1. Check if geolocation is supported
         if (!("geolocation" in navigator)) {
-          console.warn("[LocationTracker] Geolocation is not supported by this browser.");
+          console.warn(
+            "[LocationTracker] Geolocation is not supported by this browser.",
+          );
           return;
         }
 
@@ -43,17 +45,35 @@ export default function LocationTracker() {
                 await new Promise((resolve) => setTimeout(resolve, 100));
               }
 
-              const { isLoaded: clerkLoaded, isSignedIn: loggedIn, getToken: fetchToken } = authRef.current;
-              
-              console.log("[LocationTracker] Clerk status on sending location - isLoaded:", clerkLoaded, "isSignedIn:", loggedIn);
+              const {
+                isLoaded: clerkLoaded,
+                isSignedIn: loggedIn,
+                getToken: fetchToken,
+              } = authRef.current;
+
+              console.log(
+                "[LocationTracker] Clerk status on sending location - isLoaded:",
+                clerkLoaded,
+                "isSignedIn:",
+                loggedIn,
+              );
 
               try {
-                const token = (clerkLoaded && loggedIn) ? await fetchToken() : null;
-                console.log("[LocationTracker] Sending coordinates to backend. Authenticated:", !!token);
+                const token =
+                  clerkLoaded && loggedIn ? await fetchToken() : null;
+                console.log(
+                  "[LocationTracker] Sending coordinates to backend. Authenticated:",
+                  !!token,
+                );
                 await sendUserLocation(token, { latitude, longitude });
-                console.log("[LocationTracker] Successfully sent coordinates to backend.");
+                console.log(
+                  "[LocationTracker] Successfully sent coordinates to backend.",
+                );
               } catch (apiError) {
-                console.error("[LocationTracker] Failed to send location to backend:", apiError);
+                console.error(
+                  "[LocationTracker] Failed to send location to backend:",
+                  apiError,
+                );
               }
             };
 
@@ -61,13 +81,16 @@ export default function LocationTracker() {
             waitForClerkAndSend();
           },
           (geoError) => {
-            console.warn("[LocationTracker] Geolocation permission denied or failed:", geoError.message);
+            console.warn(
+              "[LocationTracker] Geolocation permission denied or failed:",
+              geoError.message,
+            );
           },
           {
             enableHighAccuracy: true,
             timeout: 15000,
             maximumAge: 0,
-          }
+          },
         );
       } catch (err) {
         console.error("[LocationTracker] Error in tracking logic:", err);

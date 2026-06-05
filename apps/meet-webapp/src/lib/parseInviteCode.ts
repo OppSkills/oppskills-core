@@ -11,7 +11,10 @@ export function parseInviteCode(input: string): string | null {
       const segment = url.pathname.replace(/^\/+|\/+$/g, "").split("/")[0];
       return segment || null;
     }
-    const segment = url.pathname.replace(/^\/+|\/+$/g, "").split("/").pop();
+    const segment = url.pathname
+      .replace(/^\/+|\/+$/g, "")
+      .split("/")
+      .pop();
     return segment || null;
   } catch {
     return trimmed.replace(/^\/+|\/+$/g, "") || null;

@@ -36,7 +36,11 @@ export class MeetService {
     return (configured || fallback).replace(/\/+$/g, '');
   }
 
-  private getLivekitConfig(): { apiKey: string; apiSecret: string; url: string } {
+  private getLivekitConfig(): {
+    apiKey: string;
+    apiSecret: string;
+    url: string;
+  } {
     const apiKey = this.config.get<string>('LIVEKIT_API_KEY')?.trim();
     const apiSecret = this.config.get<string>('LIVEKIT_API_SECRET')?.trim();
     const url = this.config.get<string>('LIVEKIT_URL')?.trim();

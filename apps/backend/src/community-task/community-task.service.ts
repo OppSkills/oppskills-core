@@ -9,7 +9,10 @@ import { EmailService } from '../email/email.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
-import { TaskResponseDto, TaskThreadMessageResponseDto } from './dto/task-response.dto';
+import {
+  TaskResponseDto,
+  TaskThreadMessageResponseDto,
+} from './dto/task-response.dto';
 import { TaskStatus } from '@prisma/client';
 
 @Injectable()
@@ -20,7 +23,10 @@ export class CommunityTaskService {
    * Helper to map user role in community to a numeric hierarchy level:
    * OWNER/ADMIN = 3, MODERATOR = 2, READ_ONLY = 1.
    */
-  private async getUserHierarchyLevel(userId: string, communityId: string): Promise<number> {
+  private async getUserHierarchyLevel(
+    userId: string,
+    communityId: string,
+  ): Promise<number> {
     const community = await prisma.communityEntity.findUnique({
       where: { id: communityId },
       select: { ownerId: true },
@@ -55,9 +61,14 @@ export class CommunityTaskService {
     }
   }
 
-  private formatUserName(user: { firstName: string | null; lastName: string | null; email: string }): string {
+  private formatUserName(user: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  }): string {
     const parts = [user.firstName, user.lastName].filter(
-      (part): part is string => typeof part === 'string' && part.trim().length > 0,
+      (part): part is string =>
+        typeof part === 'string' && part.trim().length > 0,
     );
     return parts.length > 0 ? parts.join(' ') : user.email.split('@')[0];
   }
@@ -68,8 +79,14 @@ export class CommunityTaskService {
     dto: CreateTaskDto,
   ): Promise<TaskResponseDto> {
     // 1. Get hierarchy level of assigner and assignee
-    const assignerLevel = await this.getUserHierarchyLevel(currentUserId, communityId);
-    const assigneeLevel = await this.getUserHierarchyLevel(dto.toUserId, communityId);
+    const assignerLevel = await this.getUserHierarchyLevel(
+      currentUserId,
+      communityId,
+    );
+    const assigneeLevel = await this.getUserHierarchyLevel(
+      dto.toUserId,
+      communityId,
+    );
 
     // 2. Validate hierarchy rule: Assigners can only assign to equal/lower levels
     if (assignerLevel < assigneeLevel) {
@@ -152,12 +169,18 @@ export class CommunityTaskService {
     };
   }
 
-  async listTasks(currentUserId: string, communityId: string): Promise<TaskResponseDto[]> {
+  async listTasks(
+    currentUserId: string,
+    communityId: string,
+  ): Promise<TaskResponseDto[]> {
     // Verify membership
     await this.getUserHierarchyLevel(currentUserId, communityId);
 
     const tasks = await prisma.communityTaskEntity.findMany({
-      where: { communityId },
+      where: {
+        communityId,
+        OR: [{ toUserId: currentUserId }, { byUserId: currentUserId }],
+      },
       include: {
         assignedTo: true,
         assignedBy: true,
@@ -186,7 +209,10 @@ export class CommunityTaskService {
     }));
   }
 
-  async getTask(currentUserId: string, taskId: string): Promise<TaskResponseDto> {
+  async getTask(
+    currentUserId: string,
+    taskId: string,
+  ): Promise<TaskResponseDto> {
     const task = await prisma.communityTaskEntity.findUnique({
       where: { id: taskId },
       include: {
@@ -207,6 +233,13 @@ export class CommunityTaskService {
 
     // Verify membership
     await this.getUserHierarchyLevel(currentUserId, task.communityId);
+
+    // Verify user is assignee or assigner
+    if (currentUserId !== task.toUserId && currentUserId !== task.byUserId) {
+      throw new ForbiddenException(
+        'You do not have permission to view this task.',
+      );
+    }
 
     const messages = task.communityTaskThreadMessageEntities.map((msg) => ({
       id: msg.id,
@@ -251,7 +284,7 @@ export class CommunityTaskService {
   ): Promise<TaskThreadMessageResponseDto> {
     const task = await prisma.communityTaskEntity.findUnique({
       where: { id: taskId },
-      select: { toUserId: true, byUserId: true },
+      select: { toUserId: true, byUserId: true, status: true },
     });
 
     if (!task) {
@@ -260,7 +293,9 @@ export class CommunityTaskService {
 
     // Verify user is assignee or assigner
     if (currentUserId !== task.toUserId && currentUserId !== task.byUserId) {
-      throw new ForbiddenException('Only the assignee or assigner can comment on this task thread.');
+      throw new ForbiddenException(
+        'Only the assignee or assigner can comment on this task thread.',
+      );
     }
 
     const message = await prisma.communityTaskThreadMessageEntity.create({
@@ -315,14 +350,41 @@ export class CommunityTaskService {
 
     // Verify user belongs to assignee or assigner
     if (!isAssigner && !isAssignee) {
-      throw new ForbiddenException('You do not have permission to modify this task.');
+      throw new ForbiddenException(
+        'You do not have permission to modify this task.',
+      );
     }
 
     // "only assigner can approve or reject the task"
     // COMPLETED -> approve, CANCELLED -> reject/cancel
-    if (dto.status === TaskStatus.COMPLETED || dto.status === TaskStatus.CANCELLED) {
+    if (
+      dto.status === TaskStatus.COMPLETED ||
+      dto.status === TaskStatus.CANCELLED
+    ) {
       if (!isAssigner) {
-        throw new ForbiddenException('Only the assigner can approve, complete or reject/cancel this task.');
+        throw new ForbiddenException(
+          'Only the assigner can approve, complete or reject/cancel this task.',
+        );
+      }
+    }
+
+    // Assigner can revert action to in progress, assignee can start pending task to in progress
+    if (dto.status === TaskStatus.IN_PROGRESS) {
+      if (
+        task.status === TaskStatus.COMPLETED ||
+        task.status === TaskStatus.CANCELLED
+      ) {
+        if (!isAssigner) {
+          throw new ForbiddenException(
+            'Only the assigner can revert this task to In Progress.',
+          );
+        }
+      } else {
+        if (!isAssignee) {
+          throw new ForbiddenException(
+            'Only the assignee can start work on this task.',
+          );
+        }
       }
     }
 
@@ -335,24 +397,82 @@ export class CommunityTaskService {
       },
     });
 
-    return {
-      id: updatedTask.id,
-      communityId: updatedTask.communityId,
-      title: updatedTask.title,
-      description: updatedTask.description || undefined,
-      dueDate: updatedTask.dueDate?.toISOString(),
-      toUserId: updatedTask.toUserId,
-      toUserName: this.formatUserName(updatedTask.assignedTo),
-      toUserAvatar: updatedTask.assignedTo.imageUrl || undefined,
-      byUserId: updatedTask.byUserId,
-      byUserName: this.formatUserName(updatedTask.assignedBy),
-      byUserAvatar: updatedTask.assignedBy.imageUrl || undefined,
-      priority: updatedTask.priority,
-      status: updatedTask.status,
-      tags: updatedTask.tags,
-      optForMail: updatedTask.optForMail,
-      createdAt: updatedTask.createdAt.toISOString(),
-      updatedAt: updatedTask.updatedAt.toISOString(),
-    };
+    let alertContent = '';
+    if (dto.status === TaskStatus.COMPLETED) {
+      alertContent = 'Task Approved';
+    } else if (dto.status === TaskStatus.CANCELLED) {
+      alertContent = 'Task Rejected';
+    } else if (
+      dto.status === TaskStatus.IN_PROGRESS &&
+      (task.status === TaskStatus.COMPLETED ||
+        task.status === TaskStatus.CANCELLED)
+    ) {
+      alertContent = 'Task Reverted to In Progress';
+    }
+
+    if (alertContent) {
+      await prisma.communityTaskThreadMessageEntity.create({
+        data: {
+          taskId,
+          userId: currentUserId,
+          type: 'ALERT',
+          content: alertContent,
+        },
+      });
+    }
+
+    return this.getTask(currentUserId, taskId);
+  }
+
+  async deleteComment(
+    currentUserId: string,
+    taskId: string,
+    commentId: string,
+  ): Promise<void> {
+    const comment = await prisma.communityTaskThreadMessageEntity.findUnique({
+      where: { id: commentId },
+      select: {
+        userId: true,
+        taskId: true,
+        task: {
+          select: {
+            toUserId: true,
+            byUserId: true,
+            communityId: true,
+          },
+        },
+      },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found.');
+    }
+
+    if (comment.taskId !== taskId) {
+      throw new BadRequestException(
+        'Comment does not belong to the specified task.',
+      );
+    }
+
+    if (
+      currentUserId !== comment.task.toUserId &&
+      currentUserId !== comment.task.byUserId
+    ) {
+      throw new ForbiddenException(
+        'You do not have permission to access this task thread.',
+      );
+    }
+
+    await this.getUserHierarchyLevel(currentUserId, comment.task.communityId);
+
+    if (comment.userId !== currentUserId) {
+      throw new ForbiddenException(
+        'Only the owner of the comment can delete it.',
+      );
+    }
+
+    await prisma.communityTaskThreadMessageEntity.delete({
+      where: { id: commentId },
+    });
   }
 }

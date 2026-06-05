@@ -2619,52 +2619,53 @@ export class HackathonService {
         },
       }),
       prisma.teamEntity.findFirst({
-      where: { id: teamId, hackathonId: hackathon.id },
-      include: {
-        leader: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            imageUrl: true,
-            onboardingProfile: {
-              include: {
-                college: {
-                  select: {
-                    id: true,
-                    name: true,
-                    city: true,
-                    state: true,
-                    country: true,
+        where: { id: teamId, hackathonId: hackathon.id },
+        include: {
+          leader: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              imageUrl: true,
+              onboardingProfile: {
+                include: {
+                  college: {
+                    select: {
+                      id: true,
+                      name: true,
+                      city: true,
+                      state: true,
+                      country: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        members: {
-          select: {
-            id: true,
-            joinedAt: true,
-            user: {
-              select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-                imageUrl: true,
-                onboardingProfile: {
-                  select: {
-                    collegeCurrentYear: true,
-                    skills: true,
-                    college: {
-                      select: {
-                        id: true,
-                        name: true,
-                        city: true,
-                        state: true,
-                        country: true,
+          members: {
+            select: {
+              id: true,
+              joinedAt: true,
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  firstName: true,
+                  lastName: true,
+                  imageUrl: true,
+                  onboardingProfile: {
+                    select: {
+                      collegeCurrentYear: true,
+                      skills: true,
+                      college: {
+                        select: {
+                          id: true,
+                          name: true,
+                          city: true,
+                          state: true,
+                          country: true,
+                        },
                       },
                     },
                   },
@@ -2672,23 +2673,22 @@ export class HackathonService {
               },
             },
           },
-        },
-        roundSubmissions: {
-          select: {
-            id: true,
-            roundId: true,
-            submittedAt: true,
-            payload: true,
+          roundSubmissions: {
+            select: {
+              id: true,
+              roundId: true,
+              submittedAt: true,
+              payload: true,
+            },
+          },
+          roundQualifications: {
+            select: {
+              roundId: true,
+              qualified: true,
+              qualifiedAt: true,
+            },
           },
         },
-        roundQualifications: {
-          select: {
-            roundId: true,
-            qualified: true,
-            qualifiedAt: true,
-          },
-        },
-      },
       }),
     ]);
 

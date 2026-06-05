@@ -8,8 +8,7 @@ export const OG_IMAGE = {
   alt: "OppSkills – College Events, Hackathons & Opportunities",
 } as const;
 
-const defaultTitle =
-  "OppSkills Meet | Community video meetings for students";
+const defaultTitle = "OppSkills Meet | Community video meetings for students";
 const defaultDescription =
   "Join live community meetings on OppSkills. Video calls for college events, hackathons, clubs, and student communities.";
 

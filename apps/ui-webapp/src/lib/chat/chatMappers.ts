@@ -100,7 +100,7 @@ export function formatLastMessagePreview(
         ? "Photo"
         : preview.type === "VIDEO"
           ? "Video"
-          : preview.body ?? "Document";
+          : (preview.body ?? "Document");
     return isYou
       ? `You: Sent an attachment (${label})`
       : `${senderLabel}: Sent an attachment (${label})`;
@@ -131,9 +131,7 @@ export function patchMemberPresence(
   userId: string,
   presence: { isOnline: boolean; lastSeenAt: string | null },
 ): ChatMemberUi[] {
-  return members.map((m) =>
-    m.id === userId ? { ...m, presence } : m,
-  );
+  return members.map((m) => (m.id === userId ? { ...m, presence } : m));
 }
 
 /** Update inbox row without reordering unless there is new message activity. */
@@ -174,7 +172,9 @@ export function mapConversationToUi(
   messages: Message[] = [],
 ): Chat {
   const lastFromMessages =
-    messages.length > 0 ? lastMessagePreviewFromMessage(messages[messages.length - 1]!) : null;
+    messages.length > 0
+      ? lastMessagePreviewFromMessage(messages[messages.length - 1]!)
+      : null;
 
   return {
     id: c.id,
@@ -267,8 +267,7 @@ export function replaceOptimisticMessage(
     (m) => m.id !== tempId && m.id !== message.id,
   );
   const messages = [...without, merged].sort(
-    (a, b) =>
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
   );
   return {
     ...chat,
@@ -277,10 +276,7 @@ export function replaceOptimisticMessage(
   };
 }
 
-export function markOptimisticMessageFailed(
-  chat: Chat,
-  tempId: string,
-): Chat {
+export function markOptimisticMessageFailed(chat: Chat, tempId: string): Chat {
   return {
     ...chat,
     messages: chat.messages.map((m) =>

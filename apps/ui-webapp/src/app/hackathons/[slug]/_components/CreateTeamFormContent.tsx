@@ -19,7 +19,9 @@ import { cn } from "@/lib/utils";
 import { isUploadField } from "@/lib/form-utils";
 
 const EMPTY_TICKET_TIERS: CreateTeamFormContentProps["ticketTiers"] = [];
-type TicketTier = NonNullable<CreateTeamFormContentProps["ticketTiers"]>[number];
+type TicketTier = NonNullable<
+  CreateTeamFormContentProps["ticketTiers"]
+>[number];
 
 export function CreateTeamFormContent({
   fields,

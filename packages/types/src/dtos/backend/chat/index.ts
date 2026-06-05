@@ -1,10 +1,15 @@
-export type ChatDeliveryStatus = 'SENT' | 'DELIVERED';
+export type ChatDeliveryStatus = "SENT" | "DELIVERED";
 
-export type ChatConversationType = 'DIRECT' | 'GROUP';
+export type ChatConversationType = "DIRECT" | "GROUP";
 
-export type ChatMessageType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'SYSTEM';
+export type ChatMessageType =
+  | "TEXT"
+  | "IMAGE"
+  | "VIDEO"
+  | "DOCUMENT"
+  | "SYSTEM";
 
-export type ChatAttachmentKind = 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+export type ChatAttachmentKind = "IMAGE" | "VIDEO" | "DOCUMENT";
 
 export type ChatUserPresenceDto = Readonly<{
   isOnline: boolean;

@@ -59,9 +59,7 @@ export function CommunitiesTable({
       cell: (info) => {
         const { pageIndex, pageSize } = info.table.getState().pagination;
         const serial = pageIndex * pageSize + info.row.index + 1;
-        return (
-          <div className="text-neutral-600 text-center">{serial}</div>
-        );
+        return <div className="text-neutral-600 text-center">{serial}</div>;
       },
       size: 56,
     },

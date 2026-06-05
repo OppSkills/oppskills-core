@@ -4,13 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
-import {
-  Calendar,
-  Link2,
-  Loader2,
-  Video,
-  Zap,
-} from "lucide-react";
+import { Calendar, Link2, Loader2, Video, Zap } from "lucide-react";
 import { toast } from "sonner";
 import type { MeetKind } from "@oppskills/types";
 import { createMeet } from "@/lib/api/meetApi";
@@ -232,7 +226,10 @@ export default function MeetLanding() {
 
               {!isSignedIn ? (
                 <p className="text-center text-sm text-white/45">
-                  <Link href="/sign-in" className="text-[#835BD5] hover:underline">
+                  <Link
+                    href="/sign-in"
+                    className="text-[#835BD5] hover:underline"
+                  >
                     Sign in
                   </Link>{" "}
                   to create a meet
@@ -300,10 +297,7 @@ export default function MeetLanding() {
                     type="button"
                     disabled={isSubmitting}
                     onClick={() =>
-                      void handleCreate(
-                        activeKind,
-                        activeFlow === "instant",
-                      )
+                      void handleCreate(activeKind, activeFlow === "instant")
                     }
                     className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#835BD5] text-sm font-semibold text-white transition-colors hover:bg-[#9470e0] disabled:opacity-60"
                   >

@@ -292,7 +292,10 @@ export default function MeetScheduler({
                     <label className="text-xs font-semibold text-neutral-450 uppercase tracking-wide">
                       Who can join?
                     </label>
-                    <Select value={audienceScope} onValueChange={() => undefined}>
+                    <Select
+                      value={audienceScope}
+                      onValueChange={() => undefined}
+                    >
                       <SelectTrigger className="h-12 px-5 border border-neutral-200 rounded-full">
                         <SelectValue placeholder="Open to all members" />
                       </SelectTrigger>

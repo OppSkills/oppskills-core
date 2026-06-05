@@ -96,7 +96,11 @@ export class MediaService {
    */
   async presignDocumentUpload(input: {
     userId: string;
-    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT' | 'CHAT_ATTACHMENT';
+    purpose:
+      | 'EVENT_ATTACHMENT'
+      | 'OPPORTUNITY_ATTACHMENT'
+      | 'COMMUNITY_THREAD_ATTACHMENT'
+      | 'CHAT_ATTACHMENT';
     mimeType: string;
     fileName: string;
   }): Promise<PresignDocumentUploadResponse> {
@@ -362,7 +366,11 @@ export class MediaService {
   }
 
   private buildDocumentObjectKey(
-    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT' | 'CHAT_ATTACHMENT',
+    purpose:
+      | 'EVENT_ATTACHMENT'
+      | 'OPPORTUNITY_ATTACHMENT'
+      | 'COMMUNITY_THREAD_ATTACHMENT'
+      | 'CHAT_ATTACHMENT',
     userId: string,
     fileName: string,
     extension: string,
@@ -379,14 +387,14 @@ export class MediaService {
       .substring(0, 50); // Limit length
 
     const uuid = crypto.randomUUID();
-    let prefix: string;
-    if (purpose === 'EVENT_ATTACHMENT') {
-      prefix = 'public/event-attachments';
-    } else if (purpose === 'CHAT_ATTACHMENT') {
-      prefix = 'private/chat-attachments';
-    } else {
-      prefix = 'public/opportunity-attachments';
-    }
+    const prefixMap = {
+      EVENT_ATTACHMENT: 'public/event-attachments',
+      COMMUNITY_THREAD_ATTACHMENT: 'public/community-thread-attachments',
+      CHAT_ATTACHMENT: 'private/chat-attachments',
+      OPPORTUNITY_ATTACHMENT: 'public/opportunity-attachments',
+    } as const;
+
+    const prefix = prefixMap[purpose] ?? 'public/opportunity-attachments';
 
     return `${prefix}/${encodeURIComponent(safeUserId)}/${safeFileName}-${uuid}.${extension}`;
   }

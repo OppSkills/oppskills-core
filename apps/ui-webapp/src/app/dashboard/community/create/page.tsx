@@ -55,7 +55,9 @@ const createCommunitySchema = z.object({
       "Handle may only contain lowercase letters, numbers, underscores, and hyphens",
     ),
   description: z.string().max(500).optional(),
-  website: z.union([z.string().url("Enter a valid URL"), z.literal("")]).optional(),
+  website: z
+    .union([z.string().url("Enter a valid URL"), z.literal("")])
+    .optional(),
   industry: z.enum([...COMMUNITY_INDUSTRY_VALUES], {
     message: "Select an industry",
   }),
@@ -90,7 +92,9 @@ export default function CreateCommunityPage() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>({});
+  const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>(
+    {},
+  );
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<FieldName, string>>
   >({});
@@ -204,7 +208,10 @@ export default function CreateCommunityPage() {
         }
 
         setSubmitError(
-          getApiErrorMessage(error, "Failed to create community. Please try again."),
+          getApiErrorMessage(
+            error,
+            "Failed to create community. Please try again.",
+          ),
         );
       } finally {
         setIsSubmitting(false);
@@ -291,7 +298,8 @@ export default function CreateCommunityPage() {
 
     const setUploading =
       cropType === "cover" ? setIsUploadingCover : setIsUploadingAvatar;
-    const setPreview = cropType === "cover" ? setCoverPreview : setAvatarPreview;
+    const setPreview =
+      cropType === "cover" ? setCoverPreview : setAvatarPreview;
     const fieldName = cropType === "cover" ? "coverImage" : "avatarImage";
     const purpose =
       cropType === "cover" ? "COMMUNITY_COVER" : "COMMUNITY_AVATAR";
@@ -308,7 +316,9 @@ export default function CreateCommunityPage() {
       }
     } catch (err: unknown) {
       console.error(err);
-      toast.error(`${cropType === "cover" ? "Cover banner" : "Logo"} upload failed.`);
+      toast.error(
+        `${cropType === "cover" ? "Cover banner" : "Logo"} upload failed.`,
+      );
       setPreview(null);
       form.setFieldValue(fieldName, "");
     } finally {
@@ -349,360 +359,392 @@ export default function CreateCommunityPage() {
                     .slice(0, 30) || "your-handle";
                 const consentChecked = formValues.consent === true;
                 const industryValue =
-                  formValues.industry.length > 0 ? formValues.industry : undefined;
+                  formValues.industry.length > 0
+                    ? formValues.industry
+                    : undefined;
 
                 return (
                   <>
-            <div className="relative w-full">
-              <label htmlFor={coverInputId} className="sr-only">
-                Upload cover image
-              </label>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => coverInputRef.current?.click()}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    coverInputRef.current?.click();
-                  }
-                }}
-                className={cn(
-                  "relative w-full aspect-[4/1] rounded-3xl bg-[#E6E0FA]/60 border-2 border-dashed border-[#BCA5F4]/40 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden hover:bg-[#E6E0FA]/80 group",
-                  coverPreview ? "border-none" : "",
-                )}
-              >
-                <input
-                  id={coverInputId}
-                  type="file"
-                  ref={coverInputRef}
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
-                    void handleCoverSelected(file);
-                    e.target.value = "";
-                  }}
-                />
-                {isUploadingCover ? (
-                  <div className="flex items-center gap-2 text-[#3A2482] font-semibold text-sm">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Uploading cover…
-                  </div>
-                ) : coverPreview ? (
-                  <>
-                    <Image
-                      src={coverPreview}
-                      alt="Community cover preview"
-                      fill
-                      className="object-cover"
-                      unoptimized={coverPreview.startsWith("blob:")}
-                    />
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
-                      <p className="text-white font-bold text-sm bg-black/40 px-4 py-2 rounded-full flex items-center gap-2">
-                        <Upload className="w-4 h-4" /> Change Cover
+                    <div className="relative w-full">
+                      <label htmlFor={coverInputId} className="sr-only">
+                        Upload cover image
+                      </label>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => coverInputRef.current?.click()}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            coverInputRef.current?.click();
+                          }
+                        }}
+                        className={cn(
+                          "relative w-full aspect-[4/1] rounded-3xl bg-[#E6E0FA]/60 border-2 border-dashed border-[#BCA5F4]/40 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden hover:bg-[#E6E0FA]/80 group",
+                          coverPreview ? "border-none" : "",
+                        )}
+                      >
+                        <input
+                          id={coverInputId}
+                          type="file"
+                          ref={coverInputRef}
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] ?? null;
+                            void handleCoverSelected(file);
+                            e.target.value = "";
+                          }}
+                        />
+                        {isUploadingCover ? (
+                          <div className="flex items-center gap-2 text-[#3A2482] font-semibold text-sm">
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Uploading cover…
+                          </div>
+                        ) : coverPreview ? (
+                          <>
+                            <Image
+                              src={coverPreview}
+                              alt="Community cover preview"
+                              fill
+                              className="object-cover"
+                              unoptimized={coverPreview.startsWith("blob:")}
+                            />
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                              <p className="text-white font-bold text-sm bg-black/40 px-4 py-2 rounded-full flex items-center gap-2">
+                                <Upload className="w-4 h-4" /> Change Cover
+                              </p>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1 text-center px-4">
+                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#5D3EBB] shadow-xs">
+                              <Upload className="w-4 h-4" />
+                            </div>
+                            <span className="font-bold text-sm md:text-base text-[#3A2482]">
+                              Upload Cover / Cover Size 400×100
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <label htmlFor={avatarInputId} className="sr-only">
+                        Upload avatar image
+                      </label>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => avatarInputRef.current?.click()}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            avatarInputRef.current?.click();
+                          }
+                        }}
+                        className="absolute left-6 md:left-8 bottom-[-40px] w-20 h-20 md:w-24 md:h-24 bg-[#E6E0FA] rounded-2xl border-4 border-white shadow-md flex items-center justify-center cursor-pointer overflow-hidden z-10 transition-transform hover:scale-105 group"
+                      >
+                        <input
+                          id={avatarInputId}
+                          type="file"
+                          ref={avatarInputRef}
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] ?? null;
+                            void handleAvatarSelected(file);
+                            e.target.value = "";
+                          }}
+                        />
+                        {isUploadingAvatar ? (
+                          <Loader2 className="w-6 h-6 animate-spin text-[#5D3EBB]" />
+                        ) : avatarPreview ? (
+                          <>
+                            <Image
+                              src={avatarPreview}
+                              alt="Community avatar preview"
+                              fill
+                              className="object-cover"
+                              unoptimized={avatarPreview.startsWith("blob:")}
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                              <Upload className="w-4 h-4 text-white" />
+                            </div>
+                          </>
+                        ) : (
+                          <Upload className="w-6 h-6 text-[#5D3EBB]" />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="h-10 md:h-12 w-full" />
+
+                    <div className="flex flex-col gap-3">
+                      <label htmlFor="community-name" className="sr-only">
+                        Community Name
+                      </label>
+                      <input
+                        id="community-name"
+                        type="text"
+                        value={formValues.name}
+                        onCompositionStart={() => {
+                          nameIsComposingRef.current = true;
+                        }}
+                        onCompositionEnd={(e) => {
+                          nameIsComposingRef.current = false;
+                          if (!handleManuallyEdited.current) {
+                            form.setFieldValue(
+                              "handle",
+                              deriveHandleFromName(e.currentTarget.value),
+                            );
+                          }
+                        }}
+                        onChange={(e) => {
+                          const nextName = e.target.value;
+                          form.setFieldValue("name", nextName);
+                          if (nameIsComposingRef.current) return;
+                          if (!handleManuallyEdited.current) {
+                            form.setFieldValue(
+                              "handle",
+                              deriveHandleFromName(nextName),
+                            );
+                          }
+                        }}
+                        onBlur={() => handleBlur("name")}
+                        placeholder="Community Name"
+                        aria-invalid={touched.name && !!fieldErrors.name}
+                        className="text-3xl md:text-4xl font-extrabold text-neutral-800 placeholder-neutral-300 outline-none w-full bg-transparent border-b border-transparent focus:border-neutral-200 pb-1 transition-colors"
+                      />
+                      {touched.name && fieldErrors.name ? (
+                        <p className="text-sm text-red-600">
+                          {fieldErrors.name}
+                        </p>
+                      ) : null}
+
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 pt-1">
+                        <div className="flex flex-col gap-1 max-w-fit">
+                          <label htmlFor="community-handle" className="sr-only">
+                            Community handle
+                          </label>
+                          <div className="flex items-center gap-1 bg-neutral-50 px-3 py-1.5 rounded-full border border-neutral-100">
+                            <span className="text-neutral-400 font-semibold text-sm">
+                              @
+                            </span>
+                            <input
+                              id="community-handle"
+                              type="text"
+                              value={formValues.handle}
+                              onChange={(e) => {
+                                handleManuallyEdited.current = true;
+                                form.setFieldValue("handle", e.target.value);
+                              }}
+                              onBlur={() => handleBlur("handle")}
+                              placeholder="community-handle"
+                              aria-invalid={
+                                touched.handle && !!fieldErrors.handle
+                              }
+                              className="bg-transparent outline-none text-neutral-700 text-sm font-semibold placeholder-neutral-400 w-40"
+                            />
+                          </div>
+                          {touched.handle && fieldErrors.handle ? (
+                            <p className="text-sm text-red-600 pl-1">
+                              {fieldErrors.handle}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 text-indigo-600/80 font-medium italic text-sm">
+                          <Globe className="w-4 h-4 shrink-0" aria-hidden />
+                          <span
+                            className="break-all select-all"
+                            aria-label="Community URL"
+                          >
+                            https://oppskills.com/c/
+                            <span className="font-bold underline decoration-dotted">
+                              {displayHandle}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                      <div className="flex flex-col gap-2">
+                        <label
+                          htmlFor="community-description"
+                          className="text-xs text-neutral-700 tracking-wider pl-1"
+                        >
+                          Community Description
+                        </label>
+                        <Textarea
+                          id="community-description"
+                          value={formValues.description}
+                          onChange={(e) =>
+                            form.setFieldValue("description", e.target.value)
+                          }
+                          onBlur={() => handleBlur("description")}
+                          placeholder="Tell Us about the community"
+                          aria-invalid={
+                            touched.description && !!fieldErrors.description
+                          }
+                          className="border-neutral-400 min-h-[140px] resize-none rounded-3xl p-4"
+                        />
+                        {touched.description && fieldErrors.description ? (
+                          <p className="text-sm text-red-600">
+                            {fieldErrors.description}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <div className="flex flex-col gap-5 justify-between">
+                        <div className="flex flex-col gap-2">
+                          <label
+                            htmlFor="community-website"
+                            className="text-xs text-neutral-700 tracking-wider pl-1"
+                          >
+                            Community Website
+                          </label>
+                          <Input
+                            id="community-website"
+                            type="url"
+                            value={formValues.website}
+                            onChange={(e) =>
+                              form.setFieldValue("website", e.target.value)
+                            }
+                            onBlur={() => handleBlur("website")}
+                            placeholder="Place Holder Text"
+                            aria-invalid={
+                              touched.website && !!fieldErrors.website
+                            }
+                            className="border-neutral-400 rounded-full h-12 px-5 text-base shadow-2xs"
+                          />
+                          {touched.website && fieldErrors.website ? (
+                            <p className="text-sm text-red-600">
+                              {fieldErrors.website}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <label
+                            htmlFor="community-industry"
+                            className="text-xs text-neutral-700 tracking-wider pl-1"
+                          >
+                            Community Industry
+                          </label>
+                          <Select
+                            value={industryValue}
+                            onValueChange={(value) => {
+                              form.setFieldValue(
+                                "industry",
+                                value as CommunityIndustryValue,
+                              );
+                              setTouched((prev) => ({
+                                ...prev,
+                                industry: true,
+                              }));
+                              validateField("industry", {
+                                ...formValues,
+                                industry: value as CommunityIndustryValue,
+                              });
+                            }}
+                          >
+                            <SelectTrigger
+                              id="community-industry"
+                              aria-label="Community industry"
+                              className="border-neutral-400 rounded-full h-12 px-5 text-base text-neutral-700 shadow-2xs"
+                            >
+                              <SelectValue placeholder="Select industry" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-2xl">
+                              {COMMUNITY_INDUSTRY_VALUES.map((value) => (
+                                <SelectItem key={value} value={value}>
+                                  {COMMUNITY_INDUSTRY_LABELS[value]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {touched.industry && fieldErrors.industry ? (
+                            <p className="text-sm text-red-600">
+                              {fieldErrors.industry}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3.5 mt-2">
+                      <Checkbox
+                        id="community-consent"
+                        checked={consentChecked}
+                        onCheckedChange={(checked) => {
+                          form.setFieldValue("consent", checked === true);
+                          if (checked === true) {
+                            setFieldErrors((prev) => {
+                              const next = { ...prev };
+                              delete next.consent;
+                              return next;
+                            });
+                          }
+                        }}
+                        onBlur={() => handleBlur("consent")}
+                        aria-invalid={touched.consent && !!fieldErrors.consent}
+                      />
+                      <label
+                        htmlFor="community-consent"
+                        className="text-sm text-neutral-700 cursor-pointer select-none leading-relaxed"
+                      >
+                        I verify that I am an authorized representative of this
+                        community and have the right to act on its behalf in the
+                        creation of this page.
+                      </label>
+                    </div>
+                    {touched.consent && fieldErrors.consent ? (
+                      <p className="text-sm text-red-600 -mt-4">
+                        {fieldErrors.consent}
                       </p>
+                    ) : null}
+
+                    <div className="flex justify-end w-full pt-2">
+                      <Button
+                        type="submit"
+                        disabled={!consentChecked || isSubmitting}
+                        className="bg-[#2E1E66] hover:bg-[#1E1146] text-white font-bold px-8 py-3 rounded-full text-base h-auto"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Listing…
+                          </>
+                        ) : (
+                          "List Community"
+                        )}
+                      </Button>
                     </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center gap-1 text-center px-4">
-                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#5D3EBB] shadow-xs">
-                      <Upload className="w-4 h-4" />
+
+                    <div className="h-px w-full bg-neutral-200/80 my-2" />
+
+                    <div className="flex flex-col gap-6 w-full pt-1">
+                      <h3 className="text-xl md:text-2xl font-bold tracking-tight text-neutral-800">
+                        Trusted By Communities From Top Colleges
+                      </h3>
+                      <div className="flex flex-wrap items-center justify-between gap-4 md:gap-6 bg-neutral-50/50 p-4 rounded-3xl border border-neutral-100">
+                        {topColleges.map((logo) => (
+                          <div
+                            key={logo.name}
+                            className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center overflow-hidden rounded-full border p-3 md:p-4 bg-white hover:bg-neutral-50 transition-all duration-300 border-neutral-200/50 hover:border-primary/20 hover:scale-105 shadow-2xs"
+                            title={logo.name}
+                          >
+                            <Image
+                              src={`/logos/${logo.img}`}
+                              alt={logo.name}
+                              width={60}
+                              height={60}
+                              className="object-contain w-full h-full"
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <span className="font-bold text-sm md:text-base text-[#3A2482]">
-                      Upload Cover / Cover Size 400×100
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <label htmlFor={avatarInputId} className="sr-only">
-                Upload avatar image
-              </label>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => avatarInputRef.current?.click()}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    avatarInputRef.current?.click();
-                  }
-                }}
-                className="absolute left-6 md:left-8 bottom-[-40px] w-20 h-20 md:w-24 md:h-24 bg-[#E6E0FA] rounded-2xl border-4 border-white shadow-md flex items-center justify-center cursor-pointer overflow-hidden z-10 transition-transform hover:scale-105 group"
-              >
-                <input
-                  id={avatarInputId}
-                  type="file"
-                  ref={avatarInputRef}
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
-                    void handleAvatarSelected(file);
-                    e.target.value = "";
-                  }}
-                />
-                {isUploadingAvatar ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-[#5D3EBB]" />
-                ) : avatarPreview ? (
-                  <>
-                    <Image
-                      src={avatarPreview}
-                      alt="Community avatar preview"
-                      fill
-                      className="object-cover"
-                      unoptimized={avatarPreview.startsWith("blob:")}
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
-                      <Upload className="w-4 h-4 text-white" />
-                    </div>
-                  </>
-                ) : (
-                  <Upload className="w-6 h-6 text-[#5D3EBB]" />
-                )}
-              </div>
-            </div>
-
-            <div className="h-10 md:h-12 w-full" />
-
-            <div className="flex flex-col gap-3">
-              <label htmlFor="community-name" className="sr-only">
-                Community Name
-              </label>
-              <input
-                id="community-name"
-                type="text"
-                value={formValues.name}
-                onCompositionStart={() => {
-                  nameIsComposingRef.current = true;
-                }}
-                onCompositionEnd={(e) => {
-                  nameIsComposingRef.current = false;
-                  if (!handleManuallyEdited.current) {
-                    form.setFieldValue(
-                      "handle",
-                      deriveHandleFromName(e.currentTarget.value),
-                    );
-                  }
-                }}
-                onChange={(e) => {
-                  const nextName = e.target.value;
-                  form.setFieldValue("name", nextName);
-                  if (nameIsComposingRef.current) return;
-                  if (!handleManuallyEdited.current) {
-                    form.setFieldValue("handle", deriveHandleFromName(nextName));
-                  }
-                }}
-                onBlur={() => handleBlur("name")}
-                placeholder="Community Name"
-                aria-invalid={touched.name && !!fieldErrors.name}
-                className="text-3xl md:text-4xl font-extrabold text-neutral-800 placeholder-neutral-300 outline-none w-full bg-transparent border-b border-transparent focus:border-neutral-200 pb-1 transition-colors"
-              />
-              {touched.name && fieldErrors.name ? (
-                <p className="text-sm text-red-600">{fieldErrors.name}</p>
-              ) : null}
-
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 pt-1">
-                <div className="flex flex-col gap-1 max-w-fit">
-                  <label htmlFor="community-handle" className="sr-only">
-                    Community handle
-                  </label>
-                  <div className="flex items-center gap-1 bg-neutral-50 px-3 py-1.5 rounded-full border border-neutral-100">
-                    <span className="text-neutral-400 font-semibold text-sm">
-                      @
-                    </span>
-                    <input
-                      id="community-handle"
-                      type="text"
-                      value={formValues.handle}
-                      onChange={(e) => {
-                        handleManuallyEdited.current = true;
-                        form.setFieldValue("handle", e.target.value);
-                      }}
-                      onBlur={() => handleBlur("handle")}
-                      placeholder="community-handle"
-                      aria-invalid={touched.handle && !!fieldErrors.handle}
-                      className="bg-transparent outline-none text-neutral-700 text-sm font-semibold placeholder-neutral-400 w-40"
-                    />
-                  </div>
-                  {touched.handle && fieldErrors.handle ? (
-                    <p className="text-sm text-red-600 pl-1">{fieldErrors.handle}</p>
-                  ) : null}
-                </div>
-
-                <div className="flex items-center gap-1.5 text-indigo-600/80 font-medium italic text-sm">
-                  <Globe className="w-4 h-4 shrink-0" aria-hidden />
-                  <span className="break-all select-all" aria-label="Community URL">
-                    https://oppskills.com/c/
-                    <span className="font-bold underline decoration-dotted">
-                      {displayHandle}
-                    </span>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="community-description"
-                  className="text-xs text-neutral-700 tracking-wider pl-1"
-                >
-                  Community Description
-                </label>
-                <Textarea
-                  id="community-description"
-                  value={formValues.description}
-                  onChange={(e) =>
-                    form.setFieldValue("description", e.target.value)
-                  }
-                  onBlur={() => handleBlur("description")}
-                  placeholder="Tell Us about the community"
-                  aria-invalid={touched.description && !!fieldErrors.description}
-                  className="border-neutral-400 min-h-[140px] resize-none rounded-3xl p-4"
-                />
-                {touched.description && fieldErrors.description ? (
-                  <p className="text-sm text-red-600">{fieldErrors.description}</p>
-                ) : null}
-              </div>
-
-              <div className="flex flex-col gap-5 justify-between">
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="community-website"
-                    className="text-xs text-neutral-700 tracking-wider pl-1"
-                  >
-                    Community Website
-                  </label>
-                  <Input
-                    id="community-website"
-                    type="url"
-                    value={formValues.website}
-                    onChange={(e) => form.setFieldValue("website", e.target.value)}
-                    onBlur={() => handleBlur("website")}
-                    placeholder="Place Holder Text"
-                    aria-invalid={touched.website && !!fieldErrors.website}
-                    className="border-neutral-400 rounded-full h-12 px-5 text-base shadow-2xs"
-                  />
-                  {touched.website && fieldErrors.website ? (
-                    <p className="text-sm text-red-600">{fieldErrors.website}</p>
-                  ) : null}
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="community-industry"
-                    className="text-xs text-neutral-700 tracking-wider pl-1"
-                  >
-                    Community Industry
-                  </label>
-                  <Select
-                    value={industryValue}
-                    onValueChange={(value) => {
-                      form.setFieldValue(
-                        "industry",
-                        value as CommunityIndustryValue,
-                      );
-                      setTouched((prev) => ({ ...prev, industry: true }));
-                      validateField("industry", {
-                        ...formValues,
-                        industry: value as CommunityIndustryValue,
-                      });
-                    }}
-                  >
-                    <SelectTrigger
-                      id="community-industry"
-                      aria-label="Community industry"
-                      className="border-neutral-400 rounded-full h-12 px-5 text-base text-neutral-700 shadow-2xs"
-                    >
-                      <SelectValue placeholder="Select industry" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      {COMMUNITY_INDUSTRY_VALUES.map((value) => (
-                        <SelectItem key={value} value={value}>
-                          {COMMUNITY_INDUSTRY_LABELS[value]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {touched.industry && fieldErrors.industry ? (
-                    <p className="text-sm text-red-600">{fieldErrors.industry}</p>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5 mt-2">
-              <Checkbox
-                id="community-consent"
-                checked={consentChecked}
-                onCheckedChange={(checked) => {
-                  form.setFieldValue("consent", checked === true);
-                  if (checked === true) {
-                    setFieldErrors((prev) => {
-                      const next = { ...prev };
-                      delete next.consent;
-                      return next;
-                    });
-                  }
-                }}
-                onBlur={() => handleBlur("consent")}
-                aria-invalid={touched.consent && !!fieldErrors.consent}
-              />
-              <label
-                htmlFor="community-consent"
-                className="text-sm text-neutral-700 cursor-pointer select-none leading-relaxed"
-              >
-                I verify that I am an authorized representative of this community
-                and have the right to act on its behalf in the creation of this page.
-              </label>
-            </div>
-            {touched.consent && fieldErrors.consent ? (
-              <p className="text-sm text-red-600 -mt-4">{fieldErrors.consent}</p>
-            ) : null}
-
-            <div className="flex justify-end w-full pt-2">
-              <Button
-                type="submit"
-                disabled={!consentChecked || isSubmitting}
-                className="bg-[#2E1E66] hover:bg-[#1E1146] text-white font-bold px-8 py-3 rounded-full text-base h-auto"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Listing…
-                  </>
-                ) : (
-                  "List Community"
-                )}
-              </Button>
-            </div>
-
-            <div className="h-px w-full bg-neutral-200/80 my-2" />
-
-            <div className="flex flex-col gap-6 w-full pt-1">
-              <h3 className="text-xl md:text-2xl font-bold tracking-tight text-neutral-800">
-                Trusted By Communities From Top Colleges
-              </h3>
-              <div className="flex flex-wrap items-center justify-between gap-4 md:gap-6 bg-neutral-50/50 p-4 rounded-3xl border border-neutral-100">
-                {topColleges.map((logo) => (
-                  <div
-                    key={logo.name}
-                    className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center overflow-hidden rounded-full border p-3 md:p-4 bg-white hover:bg-neutral-50 transition-all duration-300 border-neutral-200/50 hover:border-primary/20 hover:scale-105 shadow-2xs"
-                    title={logo.name}
-                  >
-                    <Image
-                      src={`/logos/${logo.img}`}
-                      alt={logo.name}
-                      width={60}
-                      height={60}
-                      className="object-contain w-full h-full"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
                   </>
                 );
               }}

@@ -84,10 +84,7 @@ describe('ChatService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new ChatService(
-      mediaService as never,
-      presenceService as never,
-    );
+    service = new ChatService(mediaService as never, presenceService as never);
   });
 
   describe('assertParticipant', () => {

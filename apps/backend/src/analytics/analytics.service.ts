@@ -872,34 +872,34 @@ export class AnalyticsService {
   async getTopListings(userId: string) {
     const [topEvents, topHackathons] = await Promise.all([
       prisma.eventEntity.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userRoles: { some: { userId, role: 'MANAGER' } } },
-        ],
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        bannerImageUrl: true,
-        organizationName: true,
-        locationCoords: true,
-        registrationCount: true,
-        participants: {
-          where: { approved: true },
-          select: { id: true },
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userRoles: { some: { userId, role: 'MANAGER' } } },
+          ],
+          isDeleted: false,
         },
-      },
-      orderBy: {
-        participants: {
-          _count: 'desc',
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          bannerImageUrl: true,
+          organizationName: true,
+          locationCoords: true,
+          registrationCount: true,
+          participants: {
+            where: { approved: true },
+            select: { id: true },
+          },
         },
-      },
-      take: 3,
-    }),
+        orderBy: {
+          participants: {
+            _count: 'desc',
+          },
+        },
+        take: 3,
+      }),
       prisma.hackathonEntity.findMany({
         where: {
           OR: [
@@ -1381,16 +1381,18 @@ export class AnalyticsService {
   ): Promise<OrganizerPipelineSummaryDto> {
     const [regSummary, { shortlisted }] = await Promise.all([
       this.getRegistrationsSummary(userId),
-      this.getOrganizerOpportunitiesIds(userId).then(async ({ hackathonIds }) => ({
-        shortlisted: await prisma.teamRoundQualificationEntity.count({
-          where: {
-            qualified: true,
-            round: {
-              hackathonId: { in: hackathonIds },
+      this.getOrganizerOpportunitiesIds(userId).then(
+        async ({ hackathonIds }) => ({
+          shortlisted: await prisma.teamRoundQualificationEntity.count({
+            where: {
+              qualified: true,
+              round: {
+                hackathonId: { in: hackathonIds },
+              },
             },
-          },
+          }),
         }),
-      })),
+      ),
     ]);
 
     return {
@@ -1410,7 +1412,7 @@ export class AnalyticsService {
       process.env.GOOGLE_SHEETS_CLIENT_EMAIL &&
       process.env.GOOGLE_SHEETS_PRIVATE_KEY &&
       process.env.GOOGLE_SHEETS_SPREADSHEET_ID
-     );
+    );
 
     const [activeRazorpay, hackathonRoles, eventRoles] = await Promise.all([
       prisma.razorpayRouteAccountEntity.count({

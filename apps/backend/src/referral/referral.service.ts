@@ -903,24 +903,30 @@ export class ReferralService {
       await Promise.all([
         this.counter.getBatchClicksLast24h(referralIds),
         prisma.eventParticipantEntity.groupBy({
-        by: ['referralId'],
-        where: { referralId: { in: referralIds }, joinedAt: { gte: start24h } },
-        _count: { _all: true },
-      }),
-      prisma.teamEntity.groupBy({
-        by: ['referralId'],
-        where: {
-          referralId: { in: referralIds },
-          createdAt: { gte: start24h },
-        },
-        _count: { _all: true },
-      }),
-      prisma.teamMemberEntity.groupBy({
-        by: ['referralId'],
-        where: { referralId: { in: referralIds }, joinedAt: { gte: start24h } },
-        _count: { _all: true },
-      }),
-    ]);
+          by: ['referralId'],
+          where: {
+            referralId: { in: referralIds },
+            joinedAt: { gte: start24h },
+          },
+          _count: { _all: true },
+        }),
+        prisma.teamEntity.groupBy({
+          by: ['referralId'],
+          where: {
+            referralId: { in: referralIds },
+            createdAt: { gte: start24h },
+          },
+          _count: { _all: true },
+        }),
+        prisma.teamMemberEntity.groupBy({
+          by: ['referralId'],
+          where: {
+            referralId: { in: referralIds },
+            joinedAt: { gte: start24h },
+          },
+          _count: { _all: true },
+        }),
+      ]);
 
     const regMap: Record<string, number> = {};
     [...eventRegs24h, ...teamRegs24h, ...teamMemberRegs24h].forEach((r) => {

@@ -41,7 +41,10 @@ export function getGridDimensions(
   if (tileCount === 1) return { cols: 1, rows: 1 };
 
   const cappedMaxCols = Math.max(1, Math.min(maxCols, tileCount));
-  let best: GridDimensions = { cols: cappedMaxCols, rows: Math.ceil(tileCount / cappedMaxCols) };
+  let best: GridDimensions = {
+    cols: cappedMaxCols,
+    rows: Math.ceil(tileCount / cappedMaxCols),
+  };
   let bestWaste = best.cols * best.rows - tileCount;
 
   for (let cols = 1; cols <= cappedMaxCols; cols += 1) {

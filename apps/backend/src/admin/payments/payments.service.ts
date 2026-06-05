@@ -121,26 +121,26 @@ export class AdminPaymentsService {
     const [total, hackathonPayments] = await Promise.all([
       prisma.hackathonPaymentEntity.count({ where }),
       prisma.hackathonPaymentEntity.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        payerUser: {
-          select: {
-            email: true,
-            firstName: true,
-            lastName: true,
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          payerUser: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          hackathon: {
+            select: {
+              name: true,
+              slug: true,
+            },
           },
         },
-        hackathon: {
-          select: {
-            name: true,
-            slug: true,
-          },
-        },
-      },
-    }),
+      }),
     ]);
 
     const data = hackathonPayments.map((p) => this.mapHackathonPayment(p));
@@ -159,26 +159,26 @@ export class AdminPaymentsService {
     const [total, eventPayments] = await Promise.all([
       prisma.eventPaymentEntity.count({ where }),
       prisma.eventPaymentEntity.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        payerUser: {
-          select: {
-            email: true,
-            firstName: true,
-            lastName: true,
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          payerUser: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          event: {
+            select: {
+              name: true,
+              slug: true,
+            },
           },
         },
-        event: {
-          select: {
-            name: true,
-            slug: true,
-          },
-        },
-      },
-    }),
+      }),
     ]);
 
     const data = eventPayments.map((p) => this.mapEventPayment(p));
