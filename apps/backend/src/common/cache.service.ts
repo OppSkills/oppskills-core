@@ -11,12 +11,7 @@ export class CacheService implements OnModuleDestroy {
 
   constructor() {
     this.logger = new Logger(CacheService.name);
-    /**
-     * Create the ioredis client in the constructor (not `onModuleInit`).
-     * Other services (BullMQ, ReferralCounterService, etc.) capture
-     * `getClient()` in their constructors; Nest runs all constructors before
-     * any `onModuleInit`, so deferring init there left `this.redis` undefined.
-     */
+
     this.initializeRedis();
   }
 
@@ -28,15 +23,7 @@ export class CacheService implements OnModuleDestroy {
         REDISPORT: process.env.REDISPORT,
       });
 
-      /**
-       * ioredis accepts the URL as the first positional argument.
-       * Passing { url: '...' } inside the options object is NOT supported
-       * and was the root cause of the original connection failure.
-       *
-       * maxRetriesPerRequest: null is required so that BullMQ (which uses
-       * this same client via getClient()) can manage its own retry logic
-       * using blocking commands that must not auto-retry.
-       */
+
       const sharedOptions: Redis['options'] & { maxRetriesPerRequest: null } = {
         maxRetriesPerRequest: null,
         enableOfflineQueue: false,

@@ -28,7 +28,7 @@ import {
 } from "@solar-icons/react";
 import { NavUser } from "./nav-user";
 import { usePathname } from "next/navigation";
-import { User, Calendar, Trophy, Wallet } from "lucide-react";
+import { User, Calendar, Trophy, Wallet, MessageSquare } from "lucide-react";
 
 const data = {
   navMain: [
@@ -56,6 +56,11 @@ const data = {
       title: "Community",
       url: "/dashboard/community",
       icon: <UsersGroupTwoRounded />,
+    },
+    {
+      title: "Chats",
+      url: "/dashboard/chats",
+      icon: <MessageSquare className="size-4" />,
     },
   ],
   navProfile: [
