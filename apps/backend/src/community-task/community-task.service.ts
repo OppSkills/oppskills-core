@@ -421,25 +421,7 @@ export class CommunityTaskService {
       });
     }
 
-    return {
-      id: updatedTask.id,
-      communityId: updatedTask.communityId,
-      title: updatedTask.title,
-      description: updatedTask.description || undefined,
-      dueDate: updatedTask.dueDate?.toISOString(),
-      toUserId: updatedTask.toUserId,
-      toUserName: this.formatUserName(updatedTask.assignedTo),
-      toUserAvatar: updatedTask.assignedTo.imageUrl || undefined,
-      byUserId: updatedTask.byUserId,
-      byUserName: this.formatUserName(updatedTask.assignedBy),
-      byUserAvatar: updatedTask.assignedBy.imageUrl || undefined,
-      priority: updatedTask.priority,
-      status: updatedTask.status,
-      tags: updatedTask.tags,
-      optForMail: updatedTask.optForMail,
-      createdAt: updatedTask.createdAt.toISOString(),
-      updatedAt: updatedTask.updatedAt.toISOString(),
-    };
+    return this.getTask(currentUserId, taskId);
   }
 
   async deleteComment(

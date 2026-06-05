@@ -7,6 +7,10 @@ export interface CommunityMember {
   avatarUrl: string;
   lastAssignedDate: string;
   accessControlRole: string;
+  university?: string;
+  location?: string;
+  tags?: string[];
+  registeredDate?: string;
 }
 
 export interface CommunityTask {

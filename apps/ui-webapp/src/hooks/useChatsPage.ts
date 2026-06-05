@@ -74,16 +74,70 @@ import { getMe } from "@/lib/api/usersApi";
 
 const MESSAGE_PAGE_SIZE = 30;
 
+// Simple in-memory global cache persisting across page mounts
+let globalChatsCache: Chat[] = [];
+let globalSearchUsersCache: SearchUserHit[] = [];
+let globalGroupSearchUsersCache: SearchUserHit[] = [];
+let globalLoadingCache = true;
+let globalCurrentUserIdCache: string | null = null;
+
 export function useChatsPage(selectedChatId: string | null) {
   const { getToken, isLoaded } = useAuth();
   const { user } = useUser();
   const router = useRouter();
 
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [searchUsers, setSearchUsers] = useState<SearchUserHit[]>([]);
-  const [groupSearchUsers, setGroupSearchUsers] = useState<SearchUserHit[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserIdState] = useState<string | null>(
+    globalCurrentUserIdCache,
+  );
+  const [chats, setChatsState] = useState<Chat[]>(globalChatsCache);
+  const [searchUsers, setSearchUsersState] = useState<SearchUserHit[]>(
+    globalSearchUsersCache,
+  );
+  const [groupSearchUsers, setGroupSearchUsersState] = useState<
+    SearchUserHit[]
+  >(globalGroupSearchUsersCache);
+  const [loading, setLoadingState] = useState(
+    globalChatsCache.length > 0 ? false : globalLoadingCache,
+  );
+
+  const setCurrentUserId = (val: string | null) => {
+    globalCurrentUserIdCache = val;
+    setCurrentUserIdState(val);
+  };
+
+  const setChats = (val: Chat[] | ((prev: Chat[]) => Chat[])) => {
+    setChatsState((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      globalChatsCache = next;
+      return next;
+    });
+  };
+
+  const setSearchUsers = (
+    val: SearchUserHit[] | ((prev: SearchUserHit[]) => SearchUserHit[]),
+  ) => {
+    setSearchUsersState((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      globalSearchUsersCache = next;
+      return next;
+    });
+  };
+
+  const setGroupSearchUsers = (
+    val: SearchUserHit[] | ((prev: SearchUserHit[]) => SearchUserHit[]),
+  ) => {
+    setGroupSearchUsersState((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      globalGroupSearchUsersCache = next;
+      return next;
+    });
+  };
+
+  const setLoading = (val: boolean) => {
+    globalLoadingCache = val;
+    setLoadingState(val);
+  };
+
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [hasOlderMessages, setHasOlderMessages] = useState(false);
   const [olderCursor, setOlderCursor] = useState<string | null>(null);
@@ -286,7 +340,11 @@ export function useChatsPage(selectedChatId: string | null) {
   const loadMessages = useCallback(
     async (conversationId: string) => {
       const token = await getTokenSafe();
-      setMessagesLoading(true);
+      const cached = chatsRef.current.find((c) => c.id === conversationId);
+      const hasCachedMessages = (cached?.messages.length ?? 0) > 0;
+      if (!hasCachedMessages) {
+        setMessagesLoading(true);
+      }
       try {
         const page = await listMessages(token, conversationId, {
           limit: MESSAGE_PAGE_SIZE,
@@ -323,16 +381,11 @@ export function useChatsPage(selectedChatId: string | null) {
     }
     prevChatIdRef.current = selectedChatId;
 
-    const cached = chatsRef.current.find((c) => c.id === selectedChatId);
-    const hasCachedMessages = (cached?.messages.length ?? 0) > 0;
-
     clearUnreadForConversation(selectedChatId);
 
     void (async () => {
       await joinConversation(selectedChatId);
-      if (!hasCachedMessages) {
-        await loadMessages(selectedChatId);
-      }
+      await loadMessages(selectedChatId);
     })();
     void markActiveConversationRead(selectedChatId);
 

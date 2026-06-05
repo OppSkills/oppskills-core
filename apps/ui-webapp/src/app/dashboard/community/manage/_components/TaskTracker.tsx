@@ -719,17 +719,19 @@ export default function TaskTracker({
               onSubmit={handleSendComment}
               className="bg-white rounded-3xl p-6 border border-neutral-150 shadow-2xs flex flex-col gap-4 shrink-0"
             >
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-neutral-450 pl-0.5 select-none uppercase tracking-wide">
-                  Write comment or post file
-                </label>
-                <Textarea
-                  placeholder="Share updates, links, or ask questions..."
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  className="w-full min-h-[80px] p-4 border border-neutral-200 focus:border-[#835BD5] rounded-2xl text-sm placeholder-neutral-400 leading-relaxed resize-none bg-white font-medium"
-                />
-              </div>
+              {!selectedFile && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-neutral-450 pl-0.5 select-none uppercase tracking-wide">
+                    Write comment
+                  </label>
+                  <Textarea
+                    placeholder="Share updates, links, or ask questions..."
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    className="w-full min-h-[80px] p-4 border border-neutral-200 focus:border-[#835BD5] rounded-2xl text-sm placeholder-neutral-400 leading-relaxed resize-none bg-white font-medium"
+                  />
+                </div>
+              )}
 
               {/* Show selected file attachment name */}
               {selectedFile && (
@@ -761,15 +763,17 @@ export default function TaskTracker({
                   className="hidden"
                 />
 
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingFile}
-                  className="p-2 border border-neutral-200 hover:bg-neutral-50 text-neutral-500 rounded-full active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-                  title="Attach File"
-                >
-                  <Paperclip className="w-5 h-5" />
-                </button>
+                {!commentText.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingFile}
+                    className="p-2 border border-neutral-200 hover:bg-neutral-50 text-neutral-500 rounded-full active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                    title="Attach File"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+                )}
 
                 <Button
                   type="submit"
@@ -783,6 +787,8 @@ export default function TaskTracker({
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       Uploading Attachment...
                     </>
+                  ) : selectedFile ? (
+                    "Post Attachment"
                   ) : (
                     "Post Comment"
                   )}
