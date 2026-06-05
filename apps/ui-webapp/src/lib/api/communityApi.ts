@@ -1,5 +1,7 @@
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 import type { CommunityIndustryValue } from "@oppskills/types/enums";
+import type { PaginatedCommunityMembers, CommunityMember } from "@oppskills/types";
+
 
 const API = createApiClient("/communities");
 
@@ -207,14 +209,32 @@ export async function updateMemberAccess(
   return res.data;
 }
 
+export async function getMyMemberRecord(
+  token: string,
+  communityId: string,
+): Promise<CommunityMember> {
+  const res = await API.get(`/${communityId}/members/me`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as CommunityMember;
+}
+
 export async function listCommunityMembers(
   token: string,
   communityId: string,
-): Promise<any[]> {
+  params?: {
+    page?: number;
+    take?: number;
+    search?: string;
+    role?: string;
+    sortDirection?: string | null;
+  },
+): Promise<PaginatedCommunityMembers> {
   const res = await API.get(`/${communityId}/members`, {
     headers: buildAuthHeaders(token),
+    params,
   });
-  return res.data as any[];
+  return res.data as PaginatedCommunityMembers;
 }
 
 export async function deleteCommunityMember(
@@ -226,4 +246,40 @@ export async function deleteCommunityMember(
     headers: buildAuthHeaders(token),
   });
   return res.data;
+}
+
+export type CommunityStatsResponse = Readonly<{
+  totalMembers: number;
+  newMembers30Days: number;
+  pageImpressions: number;
+  postImpressions: number;
+  adminCount: number;
+  moderatorCount: number;
+}>;
+
+export async function getCommunityStats(
+  token: string,
+  communityId: string,
+): Promise<CommunityStatsResponse> {
+  const res = await API.get(`/${communityId}/stats`, {
+    headers: buildAuthHeaders(token),
+  });
+
+  const raw = res.data as unknown;
+  if (!isRecord(raw)) {
+    throw new Error("Invalid response: expected object.");
+  }
+
+  return {
+    totalMembers: typeof raw.totalMembers === "number" ? raw.totalMembers : 0,
+    newMembers30Days:
+      typeof raw.newMembers30Days === "number" ? raw.newMembers30Days : 0,
+    pageImpressions:
+      typeof raw.pageImpressions === "number" ? raw.pageImpressions : 0,
+    postImpressions:
+      typeof raw.postImpressions === "number" ? raw.postImpressions : 0,
+    adminCount: typeof raw.adminCount === "number" ? raw.adminCount : 0,
+    moderatorCount:
+      typeof raw.moderatorCount === "number" ? raw.moderatorCount : 0,
+  };
 }

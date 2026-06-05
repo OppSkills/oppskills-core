@@ -13,6 +13,7 @@ jest.mock('@oppskills/db', () => ({
     communityMemberEntity: {
       findMany: jest.fn(),
       createMany: jest.fn(),
+      count: jest.fn(),
     },
   },
 }));
@@ -168,6 +169,87 @@ describe('CommunityService', () => {
       ).rejects.toThrow(
         'You do not have permission to modify data in this community',
       );
+    });
+  });
+
+  describe('getCommunityStats', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('returns community statistics correctly', async () => {
+      (prisma.communityEntity.findUnique as jest.Mock).mockResolvedValue({
+        id: 'comm1',
+        ownerId: 'user1',
+        createdAt: new Date(),
+        members: [{ id: 'mem1', accessControlRole: 'ADMIN' }],
+      });
+
+      (prisma.communityMemberEntity.count as jest.Mock).mockImplementation(
+        async ({ where }) => {
+          if (where.userId === 'user1') {
+            return 1; // hasOwnerInMembers is true
+          }
+          if (where.accessControlRole === 'ADMIN') {
+            return 2;
+          }
+          if (where.accessControlRole === 'MODERATOR') {
+            return 3;
+          }
+          if (where.createdAt) {
+            return 5; // new members in last 30 days
+          }
+          return 10; // total members
+        },
+      );
+
+      const stats = await service.getCommunityStats('user1', 'comm1');
+      expect(stats).toEqual({
+        totalMembers: 10,
+        newMembers30Days: 5,
+        pageImpressions: 0,
+        postImpressions: 0,
+        adminCount: 2,
+        moderatorCount: 3,
+      });
+    });
+
+    it('safely handles legacy communities where owner is not in members', async () => {
+      const commCreatedAt = new Date();
+      (prisma.communityEntity.findUnique as jest.Mock).mockResolvedValue({
+        id: 'comm1',
+        ownerId: 'user1',
+        createdAt: commCreatedAt,
+        members: [{ id: 'mem1', accessControlRole: 'ADMIN' }],
+      });
+
+      (prisma.communityMemberEntity.count as jest.Mock).mockImplementation(
+        async ({ where }) => {
+          if (where.userId === 'user1') {
+            return 0; // hasOwnerInMembers is false
+          }
+          if (where.accessControlRole === 'ADMIN') {
+            return 1;
+          }
+          if (where.accessControlRole === 'MODERATOR') {
+            return 2;
+          }
+          if (where.createdAt) {
+            return 3; // new members in last 30 days
+          }
+          return 5; // total members (excluding owner)
+        },
+      );
+
+      const stats = await service.getCommunityStats('user1', 'comm1');
+      expect(stats).toEqual({
+        totalMembers: 6, // totalMembersDb + 1
+        newMembers30Days: 4, // newMembers30DaysDb + 1
+        pageImpressions: 0,
+        postImpressions: 0,
+        adminCount: 2, // adminCountDb + 1
+        moderatorCount: 2,
+      });
     });
   });
 });

@@ -43,3 +43,21 @@ export interface CommunityMeet {
   status: MeetStatus;
   hostName?: string;
 }
+
+export interface CommunityStatsResponse {
+  totalMembers: number;
+  newMembers30Days: number;
+  pageImpressions: number;
+  postImpressions: number;
+  adminCount: number;
+  moderatorCount: number;
+}
+
+export interface PaginatedCommunityMembers {
+  items: CommunityMember[];
+  total: number;
+  page: number;
+  take: number;
+  totalPages: number;
+}
+

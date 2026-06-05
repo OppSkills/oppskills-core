@@ -1,18 +1,17 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Search,
   Trash2,
   CheckSquare,
   Info,
-  Plus,
   ChevronUp,
   ChevronDown,
-  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Pagination from "@/components/common/Pagination";
 
 import type { CommunityMember as Member } from "@oppskills/types";
 
@@ -26,11 +25,20 @@ interface MembersDirectoryProps {
   isEligibleToModify?: boolean;
   communityOwnerId?: string;
   currentUserMember?: Member;
+  page?: number;
+  totalPages?: number;
+  totalMembers?: number;
+  onPageChange?: (page: number) => void;
+  searchQuery?: string;
+  onSearchChange?: (val: string) => void;
+  activeTab?: string;
+  onTabChange?: (val: string) => void;
+  sortDirection?: "asc" | "desc" | null;
+  onSortChange?: (dir: "asc" | "desc" | null) => void;
+  isLoading?: boolean;
 }
 
 const EMPTY_TABS: string[] = [];
-
-const initialMembers: Member[] = [];
 
 interface TabItem {
   label: string;
@@ -43,16 +51,23 @@ export default function MembersDirectory({
   onAssignTask,
   customTabs = EMPTY_TABS,
   onViewDetails,
-  members: propMembers,
+  members = [],
   onDeleteMember,
-  onChangeRole,
   isEligibleToModify = false,
   communityOwnerId = "",
   currentUserMember,
+  page = 1,
+  totalPages = 1,
+  totalMembers = 0,
+  onPageChange,
+  searchQuery = "",
+  onSearchChange,
+  activeTab = "All Members",
+  onTabChange,
+  sortDirection = null,
+  onSortChange,
+  isLoading = false,
 }: MembersDirectoryProps) {
-  const [localMembers, setLocalMembers] = useState<Member[]>([]);
-  const members = propMembers || localMembers;
-
   const canModifyMember = (targetMember: Member) => {
     if (!isEligibleToModify) return false;
     if (targetMember.userId === communityOwnerId) return false;
@@ -62,16 +77,23 @@ export default function MembersDirectory({
     }
     return true;
   };
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<string>("All Members");
+
+  // Debounced search input
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onSearchChange?.(localSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localSearch, onSearchChange]);
 
   // Selection states
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  // Sort states
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
-    null,
-  );
 
   // Combine default tabs with dynamic custom tabs
   const tabs: TabItem[] = useMemo(() => {
@@ -79,76 +101,19 @@ export default function MembersDirectory({
       {
         label: "All Members",
         showCount: true,
-        totalCount: members.length,
+        totalCount: totalMembers,
         hasInfo: false,
       },
     ];
 
-    const activeRoles = new Set(members.map((m) => m.role.toLowerCase()));
-    const filteredCustomTabs = customTabs.filter((label) =>
-      activeRoles.has(label.toLowerCase()),
-    );
-
-    const custom: TabItem[] = filteredCustomTabs.map((label) => ({
+    const custom: TabItem[] = customTabs.map((label) => ({
       label,
       showCount: false,
       hasInfo: true,
     }));
 
     return [...base, ...custom];
-  }, [customTabs, members]);
-
-  // Filter members based on search and active tab
-  const filteredMembers = useMemo(() => {
-    return members.filter((member) => {
-      // Search filter
-      const matchesSearch =
-        member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.role.toLowerCase().includes(searchQuery.toLowerCase());
-
-      // Tab filter
-      let matchesTab = true;
-      if (activeTab !== "All Members") {
-        matchesTab = member.role.toLowerCase() === activeTab.toLowerCase();
-      }
-
-      return matchesSearch && matchesTab;
-    });
-  }, [members, searchQuery, activeTab]);
-
-  // Sort members based on:
-  // 1. Current user at the top
-  // 2. Hierarchy role: ADMIN > MODERATOR > READ_ONLY
-  // 3. Alphabetical comparison of name
-  const sortedMembers = useMemo(() => {
-    const ROLE_RANKS: Record<string, number> = {
-      ADMIN: 1,
-      MODERATOR: 2,
-      READ_ONLY: 3,
-    };
-
-    return [...filteredMembers].sort((a, b) => {
-      const isCurrentUserA = currentUserMember && a.id === currentUserMember.id;
-      const isCurrentUserB = currentUserMember && b.id === currentUserMember.id;
-
-      if (isCurrentUserA && !isCurrentUserB) return -1;
-      if (isCurrentUserB && !isCurrentUserA) return 1;
-
-      const rankA = ROLE_RANKS[a.accessControlRole || ""] || 4;
-      const rankB = ROLE_RANKS[b.accessControlRole || ""] || 4;
-
-      if (rankA !== rankB) {
-        return rankA - rankB;
-      }
-
-      const comparison = a.name.localeCompare(b.name);
-      if (sortDirection === "desc") {
-        return -comparison;
-      }
-      return comparison;
-    });
-  }, [filteredMembers, currentUserMember, sortDirection]);
+  }, [customTabs, totalMembers]);
 
   // Toggle selection for individual row
   const handleToggleRow = (id: string) => {
@@ -163,12 +128,12 @@ export default function MembersDirectory({
     });
   };
 
-  // Toggle selection for all filtered rows
+  // Toggle selection for all rows on the current page
   const handleToggleAll = () => {
-    if (selectedIds.size === sortedMembers.length) {
+    if (selectedIds.size === members.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(sortedMembers.map((m) => m.id)));
+      setSelectedIds(new Set(members.map((m) => m.id)));
     }
   };
 
@@ -176,7 +141,6 @@ export default function MembersDirectory({
     if (onDeleteMember) {
       onDeleteMember(id, name);
     } else {
-      setLocalMembers((prev) => prev.filter((m) => m.id !== id));
       toast.success(`Removed ${name} from community`);
     }
   };
@@ -190,16 +154,19 @@ export default function MembersDirectory({
         }
       });
     } else {
-      setLocalMembers((prev) => prev.filter((m) => !selectedIds.has(m.id)));
       toast.success(`Bulk removed ${selectedIds.size} members`);
     }
     setSelectedIds(new Set());
   };
 
   const toggleSort = () => {
-    setSortDirection((prev) =>
-      prev === "asc" ? "desc" : prev === "desc" ? null : "asc",
-    );
+    const nextDir =
+      sortDirection === "asc"
+        ? "desc"
+        : sortDirection === "desc"
+          ? null
+          : "asc";
+    onSortChange?.(nextDir);
   };
 
   // Get elegant badge styles based on member role
@@ -210,7 +177,6 @@ export default function MembersDirectory({
     if (role === "Circle") {
       return "bg-[#E0F2F1] text-[#00695C] border border-[#B2DFDB]/30";
     }
-    // Community Admin, Media Lead, Content Writer
     return "bg-[#FFEFA6] text-[#6A4E00] border border-[#FFF59D]/40";
   };
 
@@ -224,7 +190,7 @@ export default function MembersDirectory({
             return (
               <button
                 key={tab.label}
-                onClick={() => setActiveTab(tab.label as any)}
+                onClick={() => onTabChange?.(tab.label)}
                 className={`relative flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap pb-3 ${
                   isActive
                     ? "text-[#423072]"
@@ -255,8 +221,8 @@ export default function MembersDirectory({
           <input
             type="text"
             placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
             className="w-full pl-5 pr-11 py-2 border border-neutral-200 focus:border-[#835BD5] outline-none rounded-full text-sm bg-white shadow-2xs placeholder-neutral-400 font-medium"
           />
           <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 w-4.5 h-4.5" />
@@ -313,8 +279,8 @@ export default function MembersDirectory({
                       <input
                         type="checkbox"
                         checked={
-                          sortedMembers.length > 0 &&
-                          selectedIds.size === sortedMembers.length
+                          members.length > 0 &&
+                          selectedIds.size === members.length
                         }
                         onChange={handleToggleAll}
                         className="w-5 h-5 rounded-md border-2 border-neutral-400 focus:ring-0 text-[#835BD5] cursor-pointer accent-[#835BD5]"
@@ -373,7 +339,19 @@ export default function MembersDirectory({
 
             {/* Table Body */}
             <tbody className="divide-y divide-neutral-100">
-              {sortedMembers.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td
+                    colSpan={isEligibleToModify ? 6 : 4}
+                    className="py-16 text-center text-neutral-450 font-semibold"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="h-5 w-5 border-2 border-t-transparent border-[#835BD5] animate-spin rounded-full" />
+                      Loading members...
+                    </div>
+                  </td>
+                </tr>
+              ) : members.length === 0 ? (
                 <tr>
                   <td
                     colSpan={isEligibleToModify ? 6 : 4}
@@ -384,10 +362,10 @@ export default function MembersDirectory({
                   </td>
                 </tr>
               ) : (
-                sortedMembers.map((member, index) => {
+                members.map((member, index) => {
                   const isChecked = selectedIds.has(member.id);
                   const isCurrentUser =
-                    currentUserMember && member.id === currentUserMember.id;
+                    currentUserMember && member.userId === currentUserMember.userId;
                   return (
                     <tr
                       key={member.id}
@@ -415,7 +393,7 @@ export default function MembersDirectory({
 
                       {/* Serial Number */}
                       <td className="py-4 px-4 text-center border-r border-neutral-100 text-sm font-semibold text-neutral-700">
-                        {index + 1}
+                        {(page - 1) * 20 + index + 1}
                       </td>
 
                       {/* Member Info (Avatar, Name, Email) */}
@@ -529,6 +507,20 @@ export default function MembersDirectory({
           </table>
         </div>
       </div>
+
+      {/* Pagination component */}
+      {!isLoading && totalPages > 1 && (
+        <div className="w-full flex justify-end">
+          <Pagination
+            curPage={page}
+            totalPages={totalPages}
+            perPage={20}
+            setPerPage={() => {}}
+            onPageChange={(p) => onPageChange?.(p)}
+          />
+        </div>
+      )}
     </div>
   );
 }
+

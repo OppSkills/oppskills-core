@@ -131,7 +131,7 @@ export class PresenceService {
       if (!results) return map;
 
       for (let i = 0; i < unique.length; i++) {
-        const id = unique[i]!;
+        const id = unique[i];
         const existsResult = results[i * 2];
         const lastSeenResult = results[i * 2 + 1];
         const isOnline = existsResult?.[1] === 1 || existsResult?.[1] === '1';

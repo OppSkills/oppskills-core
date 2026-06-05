@@ -28,6 +28,7 @@ import { CommunityListItemDto } from './dto/community-list-item.dto';
 import { AddCommunityMembersDto } from './dto/add-community-members.dto';
 import { UpdateMemberTypeDto } from './dto/update-member-type.dto';
 import { UpdateMemberAccessDto } from './dto/update-member-access.dto';
+import { CommunityStatsResponseDto } from './dto/community-stats-response.dto';
 
 @ApiTags('Communities')
 @ApiBearerAuth('clerk-auth')
@@ -240,6 +241,24 @@ export class CommunityController {
     );
   }
 
+  @Get(':id/members/me')
+  @ApiOperation({
+    summary: 'Get current user member record in a community',
+  })
+  @ApiResponse({ status: 200, description: 'Member record' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Not Found' })
+  async getMyMemberRecord(
+    @Param('id') communityId: string,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.getMemberRecord(userId, communityId);
+  }
+
   @Get(':id/members')
   @ApiOperation({
     summary: 'List community members',
@@ -248,12 +267,26 @@ export class CommunityController {
   @ApiResponse({ status: 200, description: 'Members list' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async listMembers(@Param('id') communityId: string, @Req() req: Request) {
+  async listMembers(
+    @Param('id') communityId: string,
+    @Query('page') page?: string,
+    @Query('take') take?: string,
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+    @Query('sortDirection') sortDirection?: 'asc' | 'desc',
+    @Req() req: Request,
+  ) {
     const userId = req.user?.id;
     if (typeof userId !== 'string' || userId.trim().length === 0) {
       throw new UnauthorizedException('User not found.');
     }
-    return this.communityService.listMembers(userId, communityId);
+    return this.communityService.listMembers(userId, communityId, {
+      page: page ? Number(page) : undefined,
+      take: take ? Number(take) : undefined,
+      search,
+      role,
+      sortDirection,
+    });
   }
 
   @Delete(':id/members/:memberId')
@@ -274,5 +307,30 @@ export class CommunityController {
       throw new UnauthorizedException('User not found.');
     }
     return this.communityService.deleteMember(userId, communityId, memberId);
+  }
+
+  @Get(':id/stats')
+  @ApiOperation({
+    summary: 'Get community dashboard statistics',
+    description:
+      'Returns the statistics (members, page/post impressions, admin/moderator counts) for a community dashboard.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Community statistics retrieved successfully',
+    type: CommunityStatsResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Not Found' })
+  async getCommunityStats(
+    @Param('id') id: string,
+    @Req() req: Request,
+  ): Promise<CommunityStatsResponseDto> {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.getCommunityStats(userId, id);
   }
 }

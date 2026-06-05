@@ -13,6 +13,7 @@ import { CommunityResponseDto } from './dto/community-response.dto';
 import type { CommunityListItemDto } from './dto/community-list-item.dto';
 import { AddCommunityMembersDto } from './dto/add-community-members.dto';
 import { CommunityEmailQueue } from '../email/queue/community-email.queue';
+import { CommunityStatsResponseDto } from './dto/community-stats-response.dto';
 
 @Injectable()
 export class CommunityService {
@@ -303,7 +304,17 @@ export class CommunityService {
     return community;
   }
 
-  async listMembers(currentUserId: string, communityId: string) {
+  async listMembers(
+    currentUserId: string,
+    communityId: string,
+    query?: {
+      page?: number;
+      take?: number;
+      search?: string;
+      role?: string;
+      sortDirection?: 'asc' | 'desc';
+    },
+  ) {
     // 1. Fetch community details and verify read permission
     const community = await prisma.communityEntity.findUnique({
       where: { id: communityId },
@@ -349,35 +360,51 @@ export class CommunityService {
       );
     }
 
-    // 2. Fetch all members
-    const members = await prisma.communityMemberEntity.findMany({
-      where: { communityId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            imageUrl: true,
-            createdAt: true,
-            onboardingProfile: {
-              include: {
-                college: {
-                  select: {
-                    name: true,
-                    city: true,
-                    state: true,
-                    country: true,
-                  },
-                },
-              },
-            },
+    // 2. Fetch all members with pagination and search filters
+    const page = query?.page || 1;
+    const take = query?.take || 20;
+    const search = query?.search;
+    const role = query?.role;
+    const sortDirection = query?.sortDirection || 'asc';
+
+    const where: Prisma.CommunityMemberEntityWhereInput = {
+      communityId,
+    };
+
+    if (role && role !== 'All Members') {
+      where.role = {
+        equals: role,
+        mode: 'insensitive',
+      };
+    }
+
+    if (search) {
+      const searchLower = search.toLowerCase();
+      where.OR = [
+        {
+          user: {
+            OR: [
+              { firstName: { contains: searchLower, mode: 'insensitive' } },
+              { lastName: { contains: searchLower, mode: 'insensitive' } },
+              { email: { contains: searchLower, mode: 'insensitive' } },
+            ],
           },
         },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+        {
+          role: { contains: searchLower, mode: 'insensitive' },
+        },
+      ];
+    }
+
+    const hasOwnerInMembers = await prisma.communityMemberEntity.count({
+      where: { communityId, userId: community.ownerId },
+    }).then((c) => c > 0);
+
+    const isOwnerLegacy = !hasOwnerInMembers && community.owner;
+
+    // Determine if the legacy owner matches the active search / role filters
+    let legacyOwnerMatches = false;
+    let legacyOwnerRecord: any = null;
 
     const mapProfileDetails = (user: any, memberCreatedAt: Date) => {
       const profile = user.onboardingProfile;
@@ -456,7 +483,113 @@ export class CommunityService {
       return { university, location, tags, registeredDate };
     };
 
-    // 3. Map members list, and ensure the community owner record has role: 'OWNER' and accessControlRole: 'ADMIN'
+    if (isOwnerLegacy && community.owner) {
+      const owner = community.owner;
+      const ownerDisplayName =
+        [owner.firstName, owner.lastName].filter(Boolean).join(' ') ||
+        owner.email.split('@')[0];
+      const ownerRole = 'OWNER';
+
+      let matchesSearch = true;
+      if (search) {
+        const searchLower = search.toLowerCase();
+        matchesSearch =
+          ownerDisplayName.toLowerCase().includes(searchLower) ||
+          owner.email.toLowerCase().includes(searchLower) ||
+          ownerRole.toLowerCase().includes(searchLower);
+      }
+
+      let matchesRole = true;
+      if (role && role !== 'All Members') {
+        matchesRole = ownerRole.toLowerCase() === role.toLowerCase();
+      }
+
+      if (matchesSearch && matchesRole) {
+        legacyOwnerMatches = true;
+        const ownerProfileInfo = mapProfileDetails(
+          owner,
+          community.createdAt,
+        );
+        legacyOwnerRecord = {
+          id: `owner-${owner.id}`,
+          userId: owner.id,
+          name: ownerDisplayName,
+          email: owner.email,
+          role: 'OWNER',
+          accessControlRole: 'ADMIN',
+          avatarUrl: owner.imageUrl || '/avatars/user.png',
+          lastAssignedDate: community.createdAt
+            .toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            })
+            .replace(/\//g, '-'),
+          ...ownerProfileInfo,
+        };
+      }
+    }
+
+    const dbCount = await prisma.communityMemberEntity.count({ where });
+    const total = legacyOwnerMatches ? dbCount + 1 : dbCount;
+
+    let skip = (page - 1) * take;
+    let dbTake = take;
+
+    if (legacyOwnerMatches) {
+      if (page === 1) {
+        dbTake = Math.max(0, take - 1);
+      } else {
+        skip = skip - 1;
+      }
+    }
+
+    let members: any[] = [];
+    if (dbTake > 0) {
+      members = await prisma.communityMemberEntity.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              imageUrl: true,
+              createdAt: true,
+              onboardingProfile: {
+                include: {
+                  college: {
+                    select: {
+                      name: true,
+                      city: true,
+                      state: true,
+                      country: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: [
+          { accessControlRole: 'asc' }, // ADMIN, MODERATOR, READ_ONLY
+          {
+            user: {
+              firstName: sortDirection === 'desc' ? 'desc' : 'asc',
+            },
+          },
+          {
+            user: {
+              lastName: sortDirection === 'desc' ? 'desc' : 'asc',
+            },
+          },
+        ],
+        skip,
+        take: dbTake,
+      });
+    }
+
     const mappedMembers = members.map((m) => {
       const displayName =
         [m.user.firstName, m.user.lastName].filter(Boolean).join(' ') ||
@@ -482,27 +615,65 @@ export class CommunityService {
       };
     });
 
-    // 4. If the owner is somehow not in the members list (e.g. for legacy communities), we can add the owner manually
-    const hasOwnerInMembers = mappedMembers.some(
-      (m) => m.userId === community.ownerId,
-    );
-    if (!hasOwnerInMembers && community.owner) {
-      const ownerDisplayName =
-        [community.owner.firstName, community.owner.lastName]
-          .filter(Boolean)
-          .join(' ') || community.owner.email.split('@')[0];
-      const ownerProfileInfo = mapProfileDetails(
-        community.owner,
-        community.createdAt,
+    if (legacyOwnerMatches && page === 1) {
+      mappedMembers.unshift(legacyOwnerRecord);
+    }
+
+    return {
+      items: mappedMembers,
+      total,
+      page,
+      take,
+      totalPages: Math.ceil(total / take),
+    };
+  }
+
+  async getMemberRecord(userId: string, communityId: string) {
+    const community = await prisma.communityEntity.findUnique({
+      where: { id: communityId },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+        members: {
+          where: { userId },
+        },
+      },
+    });
+
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    const isOwner = community.ownerId === userId;
+    const isMember = community.members.length > 0;
+
+    if (!isOwner && !isMember) {
+      throw new ForbiddenException(
+        'You do not have permission to view this community.',
       );
-      mappedMembers.unshift({
-        id: `owner-${community.owner.id}`,
-        userId: community.owner.id,
-        name: ownerDisplayName,
-        email: community.owner.email,
+    }
+
+    let member = community.members[0];
+    if (!member && isOwner && community.owner) {
+      const owner = community.owner;
+      const displayName =
+        [owner.firstName, owner.lastName].filter(Boolean).join(' ') ||
+        owner.email.split('@')[0];
+      return {
+        id: `owner-${owner.id}`,
+        userId: owner.id,
+        name: displayName,
+        email: owner.email,
         role: 'OWNER',
         accessControlRole: 'ADMIN',
-        avatarUrl: community.owner.imageUrl || '/avatars/user.png',
+        avatarUrl: owner.imageUrl || '/avatars/user.png',
         lastAssignedDate: community.createdAt
           .toLocaleDateString('en-GB', {
             day: '2-digit',
@@ -510,11 +681,53 @@ export class CommunityService {
             year: 'numeric',
           })
           .replace(/\//g, '-'),
-        ...ownerProfileInfo,
-      });
+      };
     }
 
-    return mappedMembers;
+    if (!member) {
+      throw new NotFoundException('Member record not found.');
+    }
+
+    const fullMember = await prisma.communityMemberEntity.findUnique({
+      where: { id: member.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            imageUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!fullMember) {
+      throw new NotFoundException('Member record not found.');
+    }
+
+    const displayName =
+      [fullMember.user.firstName, fullMember.user.lastName]
+        .filter(Boolean)
+        .join(' ') || fullMember.user.email.split('@')[0];
+
+    return {
+      id: fullMember.id,
+      userId: fullMember.userId,
+      name: displayName,
+      email: fullMember.user.email,
+      role: isOwner ? 'OWNER' : fullMember.role,
+      accessControlRole: isOwner ? 'ADMIN' : fullMember.accessControlRole,
+      avatarUrl: fullMember.user.imageUrl || '/avatars/user.png',
+      lastAssignedDate: fullMember.createdAt
+        .toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        })
+        .replace(/\//g, '-'),
+    };
   }
 
   async addMembersToCommunity(
@@ -747,5 +960,77 @@ export class CommunityService {
     return prisma.communityMemberEntity.delete({
       where: { id: memberId },
     });
+  }
+
+  async getCommunityStats(
+    currentUserId: string,
+    communityId: string,
+  ): Promise<CommunityStatsResponseDto> {
+    const community = await this.checkCommunityReadPermission(
+      currentUserId,
+      communityId,
+    );
+
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [
+      totalMembersDb,
+      newMembers30DaysDb,
+      adminCountDb,
+      moderatorCount,
+      hasOwnerInMembers,
+    ] = await Promise.all([
+      prisma.communityMemberEntity.count({
+        where: { communityId },
+      }),
+      prisma.communityMemberEntity.count({
+        where: {
+          communityId,
+          createdAt: { gte: thirtyDaysAgo },
+        },
+      }),
+      prisma.communityMemberEntity.count({
+        where: {
+          communityId,
+          accessControlRole: 'ADMIN',
+        },
+      }),
+      prisma.communityMemberEntity.count({
+        where: {
+          communityId,
+          accessControlRole: 'MODERATOR',
+        },
+      }),
+      prisma.communityMemberEntity
+        .count({
+          where: {
+            communityId,
+            userId: community.ownerId,
+          },
+        })
+        .then((count) => count > 0),
+    ]);
+
+    let totalMembers = totalMembersDb;
+    let adminCount = adminCountDb;
+    let newMembers30Days = newMembers30DaysDb;
+
+    // Handle legacy community edge-case where owner is not present in members
+    if (!hasOwnerInMembers) {
+      totalMembers += 1;
+      adminCount += 1;
+      if (community.createdAt >= thirtyDaysAgo) {
+        newMembers30Days += 1;
+      }
+    }
+
+    return {
+      totalMembers,
+      newMembers30Days,
+      pageImpressions: 0,
+      postImpressions: 0,
+      adminCount,
+      moderatorCount,
+    };
   }
 }
