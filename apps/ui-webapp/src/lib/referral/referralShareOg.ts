@@ -2,6 +2,7 @@ import { API_URL, SITE_URL } from "@/lib/constants";
 import { getPublicEventBySlug } from "@/lib/api/eventApi";
 import { getPublicHackathonBySlug } from "@/lib/api/hackathonApi";
 import { getFestivalBySlug } from "@/lib/api/festivalApi";
+import { getPublicCommunityByHandle } from "@/lib/api/communityApi";
 import { stripHtml } from "@/lib/utils";
 import type { ReferralEntityType } from "@/lib/api/referralApi";
 
@@ -81,6 +82,24 @@ export async function fetchReferralTargetShareOg(
         ? stripHtml(String(f.description)).slice(0, 160)
         : `Join ${name} on OppSkills.`;
       const banner = f.bannerImageUrl ?? f.bannerUrl ?? f.coverImageUrl;
+      const imageUrl =
+        typeof banner === "string" && banner.length > 0
+          ? imageServeUrl(banner)
+          : `${SITE_URL}/og_poster.png`;
+      return { title: `${name} | OppSkills`, description, imageUrl };
+    }
+
+    if (entityType === "COMMUNITY") {
+      const community = (await getPublicCommunityByHandle(slug)) as Record<
+        string,
+        unknown
+      > | null;
+      if (!community) return null;
+      const name = String(community.name ?? "Community");
+      const description = `Join the ${name} community on OppSkills.`;
+      const avatar = community.avatarImage;
+      const cover = community.coverImage;
+      const banner = avatar ?? cover;
       const imageUrl =
         typeof banner === "string" && banner.length > 0
           ? imageServeUrl(banner)

@@ -27,14 +27,17 @@ model CommunityMemberEntity {
   userId            String                     @map("user_id")
   createdAt         DateTime                   @default(now()) @map("created_at")
   updatedAt         DateTime                   @updatedAt @map("updated_at")
-  accessControlRole CommunityAccessControlRole @default(READ_ONLY)
+  accessControlRole CommunityAccessControlRole @default(MEMBER)
   role              String                     @default("MEMBER")
   community         CommunityEntity            @relation(fields: [communityId], references: [id], onDelete: Cascade)
   user              UserEntity                 @relation("UserCommunityMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  referralId        String?                    @map("referral_id")
+  referral          ReferralEntity?            @relation("ReferralCommunityMembers", fields: [referralId], references: [id])
 
   @@unique([communityId, userId])
   @@index([userId])
   @@index([communityId])
+  @@index([referralId])
   @@map("community_member")
   @@schema("community")
 }
@@ -133,6 +136,7 @@ enum CommunityAccessControlRole {
   ADMIN
   READ_ONLY
   MODERATOR
+  MEMBER
 
   @@map("CommunityAccessControlRole")
   @@schema("community")

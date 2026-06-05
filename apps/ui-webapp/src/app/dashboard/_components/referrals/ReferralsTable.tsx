@@ -53,10 +53,11 @@ interface ReferralsTableProps {
   baseUrl: string;
   entityType: ReferralEntityType;
   entityId: string;
+  isReadOnly?: boolean;
 }
 
 export const ReferralsTable: React.FC<ReferralsTableProps> = memo(
-  ({ baseUrl, entityType, entityId }) => {
+  ({ baseUrl, entityType, entityId, isReadOnly = false }) => {
     const [rowSelection, setRowSelection] = useState({});
     const { data, isLoading } = useReferrals(entityType, entityId);
     const deleteMutation = useDeleteReferral(entityType, entityId);
@@ -250,22 +251,26 @@ export const ReferralsTable: React.FC<ReferralsTableProps> = memo(
             </div>
           ),
         },
-        {
-          id: "delete",
-          header: "Delete",
-          cell: (info) => (
-            <div className="flex justify-center">
-              <button
-                className="text-red-500 hover:text-red-700 transition-colors p-2"
-                onClick={() => handleDelete(info.row.original.id)}
-              >
-                <Trash2 size={20} />
-              </button>
-            </div>
-          ),
-        },
+        ...(!isReadOnly
+          ? [
+              {
+                id: "delete",
+                header: "Delete",
+                cell: (info: any) => (
+                  <div className="flex justify-center">
+                    <button
+                      className="text-red-500 hover:text-red-700 transition-colors p-2"
+                      onClick={() => handleDelete(info.row.original.id)}
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+                ),
+              },
+            ]
+          : []),
       ],
-      [handleDelete, appOrigin],
+      [handleDelete, appOrigin, isReadOnly],
     );
 
     const table = useReactTable({

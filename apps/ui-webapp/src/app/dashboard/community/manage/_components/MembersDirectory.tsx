@@ -8,10 +8,18 @@ import {
   Info,
   ChevronUp,
   ChevronDown,
+  MoreVertical,
+  Edit,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Pagination from "@/components/common/Pagination";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 import type { CommunityMember as Member } from "@oppskills/types";
 
@@ -21,6 +29,7 @@ interface MembersDirectoryProps {
   onViewDetails?: (member: any) => void;
   members?: Member[];
   onDeleteMember?: (id: string, name: string) => void;
+  onEditMember?: (member: Member) => void;
   onChangeRole?: (id: string, newRole: string) => void;
   isEligibleToModify?: boolean;
   communityOwnerId?: string;
@@ -53,6 +62,7 @@ export default function MembersDirectory({
   onViewDetails,
   members = [],
   onDeleteMember,
+  onEditMember,
   isEligibleToModify = false,
   communityOwnerId = "",
   currentUserMember,
@@ -68,14 +78,48 @@ export default function MembersDirectory({
   onSortChange,
   isLoading = false,
 }: MembersDirectoryProps) {
-  const canModifyMember = (targetMember: Member) => {
+  const getMemberHierarchyRank = (m: Member) => {
+    if (m.userId === communityOwnerId) return 4; // OWNER
+    if (m.accessControlRole === "ADMIN") return 3;
+    if (m.accessControlRole === "MODERATOR") return 2;
+    return 1; // READ_ONLY or fallback
+  };
+
+  const canEditMember = (targetMember: Member) => {
+    if (!currentUserMember) return false;
     if (!isEligibleToModify) return false;
-    if (targetMember.userId === communityOwnerId) return false;
-    if (targetMember.accessControlRole === "ADMIN") {
-      const isCurrentOwner = currentUserMember?.userId === communityOwnerId;
-      if (!isCurrentOwner) return false;
-    }
-    return true;
+
+    const isCurrentUserOwner = currentUserMember.userId === communityOwnerId;
+    const isTargetCurrentUser =
+      targetMember.userId === currentUserMember.userId;
+
+    if (isCurrentUserOwner) return true;
+    if (isTargetCurrentUser) return false;
+
+    const currentUserRank = getMemberHierarchyRank(currentUserMember);
+    const targetUserRank = getMemberHierarchyRank(targetMember);
+
+    return currentUserRank > targetUserRank;
+  };
+
+  const canDeleteMember = (targetMember: Member) => {
+    if (!currentUserMember) return false;
+    if (!isEligibleToModify) return false;
+
+    const isTargetOwner = targetMember.userId === communityOwnerId;
+    if (isTargetOwner) return false;
+
+    const isCurrentUserOwner = currentUserMember.userId === communityOwnerId;
+    const isTargetCurrentUser =
+      targetMember.userId === currentUserMember.userId;
+
+    if (isCurrentUserOwner) return true;
+    if (isTargetCurrentUser) return false;
+
+    const currentUserRank = getMemberHierarchyRank(currentUserMember);
+    const targetUserRank = getMemberHierarchyRank(targetMember);
+
+    return currentUserRank > targetUserRank;
   };
 
   // Debounced search input
@@ -274,7 +318,7 @@ export default function MembersDirectory({
               <tr className="bg-[#22163b] text-white text-sm font-aeonicPro select-none">
                 {/* Select All Checkbox Column */}
                 {isEligibleToModify && (
-                  <th className="py-4 px-4 text-center w-14 border-r border-neutral-700/30">
+                  <th className="py-4 px-4 text-center w-14 border-r border-neutral-100">
                     <div className="flex items-center justify-center">
                       <input
                         type="checkbox"
@@ -290,14 +334,14 @@ export default function MembersDirectory({
                 )}
 
                 {/* S.No Column */}
-                <th className="py-4 px-4 text-center w-16 border-r border-neutral-700/30 font-semibold">
+                <th className="py-4 px-5 text-center w-20 whitespace-nowrap border-r border-neutral-100 font-semibold">
                   S. No.
                 </th>
 
                 {/* Member Details Column */}
                 <th
                   onClick={toggleSort}
-                  className="py-4 px-6 border-r border-neutral-700/30 font-semibold cursor-pointer hover:bg-[#2e204e] transition-colors"
+                  className="py-4 px-6 border-r border-neutral-100 font-semibold cursor-pointer hover:bg-[#2e204e] transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     Member
@@ -313,7 +357,7 @@ export default function MembersDirectory({
                 </th>
 
                 {/* Member Role Column */}
-                <th className="py-4 px-6 border-r border-neutral-700/30 font-semibold">
+                <th className="py-4 px-6 border-r border-neutral-100 font-semibold">
                   <div className="flex items-center gap-2">
                     Member Role
                     <span className="text-neutral-400 flex flex-col text-[10px]">
@@ -324,14 +368,14 @@ export default function MembersDirectory({
                 </th>
 
                 {/* Tasks Column */}
-                <th className="py-4 px-6 border-r border-neutral-700/30 font-semibold text-center w-52">
+                <th className="py-4 px-6 border-r border-neutral-100 font-semibold text-center w-52">
                   Task
                 </th>
 
-                {/* Delete Column */}
+                {/* Actions Column */}
                 {isEligibleToModify && (
                   <th className="py-4 px-4 font-semibold text-center w-24">
-                    Delete
+                    Actions
                   </th>
                 )}
               </tr>
@@ -392,7 +436,7 @@ export default function MembersDirectory({
                       )}
 
                       {/* Serial Number */}
-                      <td className="py-4 px-4 text-center border-r border-neutral-100 text-sm font-semibold text-neutral-700">
+                      <td className="py-4 px-5 text-center whitespace-nowrap border-r border-neutral-100 text-sm font-semibold text-neutral-700">
                         {(page - 1) * 20 + index + 1}
                       </td>
 
@@ -479,21 +523,42 @@ export default function MembersDirectory({
                         </div>
                       </td>
 
-                      {/* Red Trash Delete Action */}
+                      {/* Actions Column */}
                       {isEligibleToModify && (
                         <td className="py-4 px-4 text-center">
-                          {canModifyMember(member) ? (
-                            <button
-                              onClick={() =>
-                                handleDeleteMember(member.id, member.name)
-                              }
-                              className="p-2 rounded-lg text-neutral-400 hover:text-[#E92215] hover:bg-[#E92215]/10 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                              title="Remove Member"
-                            >
-                              <Trash2 className="w-5 h-5 stroke-1.5" />
-                            </button>
+                          {canEditMember(member) || canDeleteMember(member) ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  className="p-2 rounded-lg text-neutral-400 hover:text-[#835BD5] hover:bg-neutral-100 active:scale-95 transition-all cursor-pointer"
+                                  title="Actions"
+                                >
+                                  <MoreVertical className="w-5 h-5 stroke-1.5" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-44 bg-white border border-neutral-200 shadow-lg rounded-xl p-1.5 z-50">
+                                {canEditMember(member) && (
+                                  <DropdownMenuItem
+                                    onClick={() => onEditMember?.(member)}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 cursor-pointer focus:bg-neutral-50 outline-hidden"
+                                  >
+                                    <Edit className="w-4 h-4 text-neutral-500" />
+                                    Edit Role & Access
+                                  </DropdownMenuItem>
+                                )}
+                                {canDeleteMember(member) && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteMember(member.id, member.name)}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer focus:bg-red-50 outline-hidden"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                    Remove Member
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           ) : (
-                            <span className="text-xs text-neutral-400 font-semibold select-none">
+                            <span className="text-xs text-neutral-400 font-semibold select-none bg-neutral-100 px-2 py-1 rounded-md">
                               Locked
                             </span>
                           )}

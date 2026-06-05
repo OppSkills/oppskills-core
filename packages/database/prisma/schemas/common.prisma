@@ -58,6 +58,7 @@ model ReferralEntity {
   eventParticipants  EventParticipantEntity[]
   teams              TeamEntity[]
   teamMembers        TeamMemberEntity[]
+  communityMembers   CommunityMemberEntity[]  @relation("ReferralCommunityMembers")
 
   @@unique([entityType, entityId, referrerId])
   @@index([entityType, entityId])
@@ -138,6 +139,7 @@ enum ReferralEntityType {
   HACKATHON
   EVENT
   FESTIVAL
+  COMMUNITY
 
   @@map("ReferralEntityType")
   @@schema("common")

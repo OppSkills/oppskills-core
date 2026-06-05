@@ -16,6 +16,7 @@ export enum ReferralEntityTypeDto {
   HACKATHON = "HACKATHON",
   EVENT = "EVENT",
   FESTIVAL = "FESTIVAL",
+  COMMUNITY = "COMMUNITY",
 }
 
 export class CreateReferralDto {

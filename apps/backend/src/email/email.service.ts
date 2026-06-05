@@ -32,6 +32,8 @@ import {
   CommunityWelcomeEmailProps,
   CommunityTaskAssignedEmail,
   CommunityTaskAssignedEmailProps,
+  CommunityTaskStatusUpdatedEmail,
+  CommunityTaskStatusUpdatedEmailProps,
 } from '@oppskills/emails';
 import { Logger } from 'src/_utils/logger';
 
@@ -49,7 +51,8 @@ export type EmailType =
   | 'hackathon-team-notification'
   | 'referral-invitation'
   | 'community-welcome'
-  | 'community-task-assigned';
+  | 'community-task-assigned'
+  | 'community-task-status-updated';
 
 export interface SendEmailOptions<T extends EmailType> {
   type: T;
@@ -84,7 +87,9 @@ export interface SendEmailOptions<T extends EmailType> {
                             ? CommunityWelcomeEmailProps
                             : T extends 'community-task-assigned'
                               ? CommunityTaskAssignedEmailProps
-                              : never;
+                              : T extends 'community-task-status-updated'
+                                ? CommunityTaskStatusUpdatedEmailProps
+                                : never;
 }
 
 @Injectable()
@@ -218,7 +223,8 @@ export class EmailService {
       | HackathonTeamNotificationEmailProps
       | ReferralInvitationEmailProps
       | CommunityWelcomeEmailProps
-      | CommunityTaskAssignedEmailProps,
+      | CommunityTaskAssignedEmailProps
+      | CommunityTaskStatusUpdatedEmailProps,
   ): Promise<{ subject: string; html: string }> {
     switch (type) {
       case 'welcome': {
@@ -344,6 +350,15 @@ export class EmailService {
         const html = await render(element, { pretty: true });
         return {
           subject: `New Task Assigned: ${p.taskTitle}`,
+          html,
+        };
+      }
+      case 'community-task-status-updated': {
+        const p = props as CommunityTaskStatusUpdatedEmailProps;
+        const element = createElement(CommunityTaskStatusUpdatedEmail, p);
+        const html = await render(element, { pretty: true });
+        return {
+          subject: `Task ${p.statusText}: ${p.taskTitle}`,
           html,
         };
       }

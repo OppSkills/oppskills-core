@@ -60,6 +60,7 @@ export class ReferralService {
       userId,
       dto.entityType,
       dto.entityId,
+      'write',
     );
     const user = await prisma.userEntity.findFirst({
       where: { email: { equals: dto.email.trim(), mode: 'insensitive' } },
@@ -80,6 +81,7 @@ export class ReferralService {
       userId,
       dto.entityType,
       dto.entityId,
+      'write',
     );
     const referrer = await prisma.userEntity.findFirst({
       where: {
@@ -167,6 +169,7 @@ export class ReferralService {
       userId,
       query.entityType,
       query.entityId,
+      'read',
     );
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 10;
@@ -407,6 +410,7 @@ export class ReferralService {
       userId,
       referral.entityType as ReferralEntityTypeDto,
       referral.entityId,
+      'read',
     );
     return referral;
   }
@@ -418,7 +422,7 @@ export class ReferralService {
     pageSize = 10,
   ) {
     const referral = await this.getReferralById(id, userId);
-    const [teamMembers, eventParticipants, leaderTeams] = await Promise.all([
+    const [teamMembers, eventParticipants, leaderTeams, communityMembers] = await Promise.all([
       prisma.teamMemberEntity.findMany({
         where: { referralId: referral.id },
         select: {
@@ -458,6 +462,22 @@ export class ReferralService {
           id: true,
           createdAt: true,
           leader: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+              imageUrl: true,
+              onboardingProfile: ONBOARDING_PROFILE_SELECT,
+            },
+          },
+        },
+      }),
+      prisma.communityMemberEntity.findMany({
+        where: { referralId: referral.id },
+        select: {
+          id: true,
+          createdAt: true,
+          user: {
             select: {
               firstName: true,
               lastName: true,
@@ -529,8 +549,8 @@ export class ReferralService {
           t.leader.onboardingProfile?.college?.name ||
           t.leader.onboardingProfile?.schoolName ||
           'N/A',
-        location: this.formatLocation(t.leader.onboardingProfile),
-        profession: this.formatProfession(t.leader.onboardingProfile),
+        location: formatLocation(t.leader.onboardingProfile),
+        profession: formatProfession(t.leader.onboardingProfile),
       })),
       ...eventParticipants.map((ep) => ({
         id: ep.id,
@@ -542,8 +562,21 @@ export class ReferralService {
           ep.user.onboardingProfile?.college?.name ||
           ep.user.onboardingProfile?.schoolName ||
           'N/A',
-        location: this.formatLocation(ep.user.onboardingProfile),
-        profession: this.formatProfession(ep.user.onboardingProfile),
+        location: formatLocation(ep.user.onboardingProfile),
+        profession: formatProfession(ep.user.onboardingProfile),
+      })),
+      ...communityMembers.map((cm) => ({
+        id: cm.id,
+        name: `${cm.user.firstName ?? ''} ${cm.user.lastName ?? ''}`.trim(),
+        email: cm.user.email,
+        avatarUrl: cm.user.imageUrl,
+        registrationDate: cm.createdAt.toISOString(),
+        institution:
+          cm.user.onboardingProfile?.college?.name ||
+          cm.user.onboardingProfile?.schoolName ||
+          'N/A',
+        location: formatLocation(cm.user.onboardingProfile),
+        profession: formatProfession(cm.user.onboardingProfile),
       })),
     ].sort(
       (a, b) =>
@@ -568,6 +601,7 @@ export class ReferralService {
       userId,
       query.entityType,
       query.entityId,
+      'read',
     );
     const refs = await prisma.referralEntity.findMany({
       where: {
@@ -604,6 +638,12 @@ export class ReferralService {
 
   async deleteReferral(id: string, userId: string) {
     const referral = await this.getReferralById(id, userId);
+    await this.authz.assertCanManageEntity(
+      userId,
+      referral.entityType as ReferralEntityTypeDto,
+      referral.entityId,
+      'write',
+    );
     await prisma.referralEntity.update({
       where: { id: referral.id },
       data: { isDeleted: true, isActive: false, deletedAt: new Date() },
@@ -765,6 +805,7 @@ export class ReferralService {
     const hackathonIdSet = new Set<string>();
     const eventIdSet = new Set<string>();
     const festivalIdSet = new Set<string>();
+    const communityIdSet = new Set<string>();
     for (const r of referrals) {
       if (r.entityType === 'HACKATHON') {
         hackathonIdSet.add(r.entityId);
@@ -772,13 +813,16 @@ export class ReferralService {
         eventIdSet.add(r.entityId);
       } else if (r.entityType === 'FESTIVAL') {
         festivalIdSet.add(r.entityId);
+      } else if (r.entityType === 'COMMUNITY') {
+        communityIdSet.add(r.entityId);
       }
     }
     const hackathonIds = [...hackathonIdSet];
     const eventIds = [...eventIdSet];
     const festivalIds = [...festivalIdSet];
+    const communityIds = [...communityIdSet];
 
-    const [hackathons, events, festivals] = await Promise.all([
+    const [hackathons, events, festivals, communities] = await Promise.all([
       prisma.hackathonEntity.findMany({
         where: { id: { in: hackathonIds } },
         select: {
@@ -809,6 +853,15 @@ export class ReferralService {
           slug: true,
         },
       }),
+      prisma.communityEntity.findMany({
+        where: { id: { in: communityIds } },
+        select: {
+          id: true,
+          name: true,
+          avatarImage: true,
+          handle: true,
+        },
+      }),
     ]);
 
     const entityMap: Record<string, any> = {};
@@ -834,6 +887,14 @@ export class ReferralService {
         organization: f.organizationName || 'Unknown',
         thumbnail: f.posterImageUrl || '',
         slug: f.slug,
+      };
+    });
+    communities.forEach((c) => {
+      entityMap[`COMMUNITY:${c.id}`] = {
+        title: c.name,
+        organization: 'Community',
+        thumbnail: c.avatarImage || '',
+        slug: c.handle,
       };
     });
 
@@ -899,7 +960,7 @@ export class ReferralService {
     const now = new Date();
     const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const [clicksLast24hMap, eventRegs24h, teamRegs24h, teamMemberRegs24h] =
+    const [clicksLast24hMap, eventRegs24h, teamRegs24h, teamMemberRegs24h, communityRegs24h] =
       await Promise.all([
         this.counter.getBatchClicksLast24h(referralIds),
         prisma.eventParticipantEntity.groupBy({
@@ -926,10 +987,18 @@ export class ReferralService {
           },
           _count: { _all: true },
         }),
+        prisma.communityMemberEntity.groupBy({
+          by: ['referralId'],
+          where: {
+            referralId: { in: referralIds },
+            createdAt: { gte: start24h },
+          },
+          _count: { _all: true },
+        }),
       ]);
 
     const regMap: Record<string, number> = {};
-    [...eventRegs24h, ...teamRegs24h, ...teamMemberRegs24h].forEach((r) => {
+    [...eventRegs24h, ...teamRegs24h, ...teamMemberRegs24h, ...communityRegs24h].forEach((r) => {
       if (r.referralId) {
         regMap[r.referralId] = (regMap[r.referralId] || 0) + r._count._all;
       }

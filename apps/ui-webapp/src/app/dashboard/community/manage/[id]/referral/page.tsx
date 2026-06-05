@@ -1,15 +1,78 @@
 import { Suspense } from "react";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { getCommunity, getMyMemberRecord } from "@/lib/api/communityApi";
 import { AddReferrerButton } from "@/app/dashboard/_components/referrals/AddReferrerButton";
 import { ReferralsTable } from "@/app/dashboard/_components/referrals/ReferralsTable";
 import { ReferralAnalyticsCards } from "@/app/dashboard/_components/referrals/ReferralAnalyticsCards";
 import { ReferralsAnalyticsLoader } from "@/app/dashboard/_components/referrals/ReferralsAnalyticsLoader";
+
+type CommunityAccessControlRole =
+  | "OWNER"
+  | "ADMIN"
+  | "MODERATOR"
+  | "READ_ONLY"
+  | "MEMBER";
+
+async function getCommunityData(token: string, id: string) {
+  try {
+    const community = await getCommunity(token, id);
+    return community;
+  } catch {
+    return null;
+  }
+}
+
+async function getMemberRole(
+  token: string,
+  communityId: string,
+): Promise<CommunityAccessControlRole | null> {
+  try {
+    const member = await getMyMemberRecord(token, communityId);
+    return (member.accessControlRole as CommunityAccessControlRole) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export default async function CommunityReferralsPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const params = await props.params;
   const id = params?.id;
-  const communityName = "OppSkills Community";
+
+  const { getToken, userId } = await auth();
+  const token = (await getToken()) ?? "";
+
+  if (!userId || !token) {
+    redirect("/sign-in");
+  }
+
+  const community = await getCommunityData(token, id);
+
+  // If community not found, redirect
+  if (!community) {
+    redirect("/dashboard/community");
+  }
+
+  // Determine user's access level:
+  // ownerId gets full access
+  const isOwner = community.ownerId === userId;
+
+  let role: CommunityAccessControlRole | null = null;
+  if (!isOwner) {
+    role = await getMemberRole(token, id);
+  }
+
+  // MEMBER or non-member: no access to referral management
+  if (!isOwner && (!role || role === "MEMBER")) {
+    redirect("/dashboard/community");
+  }
+
+  // READ_ONLY members can view but cannot mutate
+  const isReadOnly = !isOwner && role === "READ_ONLY";
+
+  const communityName = community.name;
 
   return (
     <div className="flex justify-center w-full min-h-screen bg-[#FAFAFA]">
@@ -25,7 +88,11 @@ export default async function CommunityReferralsPage(props: {
             </p>
           </div>
           <div className="right self-end md:self-auto w-full sm:w-auto">
-            <AddReferrerButton entityType="COMMUNITY" entityId={id} />
+            <AddReferrerButton
+              entityType="COMMUNITY"
+              entityId={id}
+              isReadOnly={isReadOnly}
+            />
           </div>
         </div>
 
@@ -34,7 +101,7 @@ export default async function CommunityReferralsPage(props: {
           <ReferralAnalyticsCards
             entityType="COMMUNITY"
             entityId={id}
-            slug={id}
+            slug={community.handle}
             itemName={communityName}
           />
         </Suspense>
@@ -45,6 +112,7 @@ export default async function CommunityReferralsPage(props: {
             baseUrl={`/dashboard/community/manage/${id}/referral`}
             entityType="COMMUNITY"
             entityId={id}
+            isReadOnly={isReadOnly}
           />
         </div>
       </div>

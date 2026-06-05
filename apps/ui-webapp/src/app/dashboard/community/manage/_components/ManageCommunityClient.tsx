@@ -7,6 +7,7 @@ import MembersDirectory from "./MembersDirectory";
 import MeetScheduler from "./MeetScheduler";
 import TaskTracker from "./TaskTracker";
 import AddMemberModal from "./AddMemberModal";
+import EditMemberModal from "./EditMemberModal";
 import MemberDetailsSheet from "./MemberDetailsSheet";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
@@ -71,6 +72,10 @@ export default function ManageCommunityClient({
   const [totalMembers, setTotalMembers] = useState(0);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const [currentUserMember, setCurrentUserMember] = useState<Member | null>(null);
+
+  // Edit Member Modal States
+  const [isEditMemberOpen, setIsEditMemberOpen] = useState(false);
+  const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<Member | null>(null);
 
   // Shared Dynamic State Pools
   const [members, setMembers] = useState<Member[]>(initialMembers);
@@ -365,6 +370,60 @@ export default function ManageCommunityClient({
     }
   };
 
+  const handleUpdateMember = async (
+    memberId: string,
+    newRole: string,
+    newAccess: string,
+  ) => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      let accessControlRole = "READ_ONLY";
+      if (newAccess === "Admin Access" || newAccess === "ADMIN") {
+        accessControlRole = "ADMIN";
+      } else if (newAccess === "Moderator" || newAccess === "MODERATOR") {
+        accessControlRole = "MODERATOR";
+      }
+
+      const targetMember = members.find((m) => m.id === memberId);
+      if (!targetMember) return;
+
+      const isRoleChanged = targetMember.role !== newRole;
+      const isAccessChanged =
+        targetMember.accessControlRole !== accessControlRole;
+
+      if (isRoleChanged) {
+        await updateMemberType(token, communityId, memberId, newRole);
+      }
+      if (isAccessChanged) {
+        await updateMemberAccess(token, communityId, memberId, accessControlRole);
+      }
+
+      if (isRoleChanged || isAccessChanged) {
+        void fetchMembers(page, search, role, sortDirection);
+
+        const updatedTypes = await getUniqueMemberTypes(token, communityId);
+        setCustomMemberTypes(updatedTypes);
+        setAvailableRoles(
+          updatedTypes.length > 0 ? updatedTypes : defaultRoles,
+        );
+
+        setSelectedMemberForDetails((prev) =>
+          prev && prev.id === memberId
+            ? { ...prev, role: newRole, accessControlRole }
+            : prev,
+        );
+
+        toast.success("Member updated successfully");
+      }
+    } catch (err: any) {
+      console.error("Failed to update member:", err);
+      toast.error(err.message || "Failed to update member");
+      throw err;
+    }
+  };
+
   const handleToggleTask = async (id: string) => {
     try {
       const token = await getToken();
@@ -417,6 +476,10 @@ export default function ManageCommunityClient({
             customTabs={customMemberTypes}
             members={members}
             onDeleteMember={handleDeleteMember}
+            onEditMember={(m) => {
+              setSelectedMemberForEdit(m);
+              setIsEditMemberOpen(true);
+            }}
             isEligibleToModify={isEligibleToModify}
             communityOwnerId={communityOwnerId}
             currentUserMember={currentUserMember || undefined}
@@ -457,6 +520,18 @@ export default function ManageCommunityClient({
           isOpen={isAddMemberOpen}
           onClose={() => setIsAddMemberOpen(false)}
           onAddMember={handleInviteMembers}
+          availableRoles={availableRoles}
+        />
+
+        {/* Edit Member Dialog Modal */}
+        <EditMemberModal
+          isOpen={isEditMemberOpen}
+          onClose={() => {
+            setIsEditMemberOpen(false);
+            setSelectedMemberForEdit(null);
+          }}
+          member={selectedMemberForEdit}
+          onUpdateMember={handleUpdateMember}
           availableRoles={availableRoles}
         />
 

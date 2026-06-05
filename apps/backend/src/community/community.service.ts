@@ -826,6 +826,50 @@ export class CommunityService {
     return uniqueRoles.map((r) => r.role);
   }
 
+  private validateHierarchyAction(
+    currentUserId: string,
+    communityOwnerId: string,
+    requesterMember: { accessControlRole: string } | undefined | null,
+    targetMember: { userId: string; accessControlRole: string },
+  ): void {
+    const isOwner = communityOwnerId === currentUserId;
+    const isTargetOwner = communityOwnerId === targetMember.userId;
+
+    // owner can edit himself and all other
+    if (isOwner) {
+      return;
+    }
+
+    // no-one can edit himself
+    if (targetMember.userId === currentUserId) {
+      throw new ForbiddenException('You cannot modify your own member record.');
+    }
+
+    // Target is owner, but requester is not owner
+    if (isTargetOwner) {
+      throw new ForbiddenException(
+        'Only the community owner can modify the owner.',
+      );
+    }
+
+    const getRank = (accessControlRole: string) => {
+      if (accessControlRole === 'ADMIN') return 3;
+      if (accessControlRole === 'MODERATOR') return 2;
+      return 1; // READ_ONLY
+    };
+
+    const requesterRank = requesterMember
+      ? getRank(requesterMember.accessControlRole)
+      : 0;
+    const targetRank = getRank(targetMember.accessControlRole);
+
+    if (requesterRank <= targetRank) {
+      throw new ForbiddenException(
+        'Only users with a higher access role can modify this member.',
+      );
+    }
+  }
+
   async updateMemberType(
     currentUserId: string,
     communityId: string,
@@ -844,28 +888,12 @@ export class CommunityService {
       throw new NotFoundException('Community member not found.');
     }
 
-    const requesterMember = community.members[0];
-    const isOwner = community.ownerId === currentUserId;
-    const isAdmin = requesterMember?.accessControlRole === 'ADMIN';
-
-    // Moderators cannot modify admins or other moderators
-    if (!isOwner && !isAdmin) {
-      if (
-        member.accessControlRole === 'ADMIN' ||
-        member.accessControlRole === 'MODERATOR'
-      ) {
-        throw new ForbiddenException(
-          'Moderators cannot modify roles of admins or other moderators.',
-        );
-      }
-    }
-
-    // Admin cannot change role (type) of other admin
-    if (member.accessControlRole === 'ADMIN') {
-      if (!isOwner) {
-        throw new ForbiddenException('Admins cannot modify other admins.');
-      }
-    }
+    this.validateHierarchyAction(
+      currentUserId,
+      community.ownerId,
+      community.members[0],
+      member,
+    );
 
     return prisma.communityMemberEntity.update({
       where: { id: memberId },
@@ -898,13 +926,12 @@ export class CommunityService {
       );
     }
 
-    // Admin cannot demote/change role of other admin
-    if (member.accessControlRole === 'ADMIN') {
-      const isOwner = community.ownerId === currentUserId;
-      if (!isOwner) {
-        throw new ForbiddenException('Admins cannot modify other admins.');
-      }
-    }
+    this.validateHierarchyAction(
+      currentUserId,
+      community.ownerId,
+      community.members[0],
+      member,
+    );
 
     return prisma.communityMemberEntity.update({
       where: { id: memberId },
@@ -934,28 +961,12 @@ export class CommunityService {
       throw new BadRequestException('The community owner cannot be removed.');
     }
 
-    const requesterMember = community.members[0];
-    const isOwner = community.ownerId === currentUserId;
-    const isAdmin = requesterMember?.accessControlRole === 'ADMIN';
-
-    // Moderators cannot remove admins or other moderators
-    if (!isOwner && !isAdmin) {
-      if (
-        member.accessControlRole === 'ADMIN' ||
-        member.accessControlRole === 'MODERATOR'
-      ) {
-        throw new ForbiddenException(
-          'Moderators cannot remove admins or other moderators.',
-        );
-      }
-    }
-
-    // Admin cannot delete/remove other admin
-    if (member.accessControlRole === 'ADMIN') {
-      if (!isOwner) {
-        throw new ForbiddenException('Admins cannot remove other admins.');
-      }
-    }
+    this.validateHierarchyAction(
+      currentUserId,
+      community.ownerId,
+      community.members[0],
+      member,
+    );
 
     return prisma.communityMemberEntity.delete({
       where: { id: memberId },
@@ -1032,5 +1043,88 @@ export class CommunityService {
       adminCount,
       moderatorCount,
     };
+  }
+
+  async getCommunityByHandle(handle: string) {
+    const community = await prisma.communityEntity.findUnique({
+      where: { handle: handle.trim().toLowerCase() },
+      select: {
+        id: true,
+        name: true,
+        handle: true,
+        description: true,
+        avatarImage: true,
+        coverImage: true,
+      },
+    });
+    if (!community) {
+      throw new NotFoundException('Community not found');
+    }
+    return community;
+  }
+
+  async joinCommunity(
+    userId: string,
+    communityId: string,
+    referralCode?: string,
+  ) {
+    const community = await prisma.communityEntity.findUnique({
+      where: { id: communityId },
+    });
+    if (!community) {
+      throw new NotFoundException('Community not found.');
+    }
+
+    const existing = await prisma.communityMemberEntity.findUnique({
+      where: {
+        communityId_userId: {
+          communityId,
+          userId,
+        },
+      },
+    });
+    if (existing) {
+      throw new ConflictException('You are already a member of this community.');
+    }
+
+    let referralId: string | null = null;
+    if (referralCode) {
+      const referral = await prisma.referralEntity.findUnique({
+        where: { code: referralCode },
+      });
+      if (
+        referral &&
+        !referral.isDeleted &&
+        referral.isActive &&
+        referral.entityType === 'COMMUNITY' &&
+        referral.entityId === communityId
+      ) {
+        if (referral.referrerId !== userId) {
+          referralId = referral.id;
+        }
+      }
+    }
+
+    const member = await prisma.communityMemberEntity.create({
+      data: {
+        communityId,
+        userId,
+        role: 'MEMBER',
+        accessControlRole: 'MEMBER',
+        referralId,
+      },
+    });
+
+    if (referralId) {
+      await prisma.referralEntity.update({
+        where: { id: referralId },
+        data: {
+          registrationsCount: { increment: 1 },
+          lastRegistrationAt: new Date(),
+        },
+      });
+    }
+
+    return { success: true, memberId: member.id };
   }
 }

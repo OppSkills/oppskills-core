@@ -283,3 +283,27 @@ export async function getCommunityStats(
       typeof raw.moderatorCount === "number" ? raw.moderatorCount : 0,
   };
 }
+
+export async function getPublicCommunityByHandle(
+  handle: string,
+): Promise<CommunityResponse> {
+  const safeHandle = handle.trim();
+  if (safeHandle.length === 0) {
+    throw new Error("Community handle is required.");
+  }
+  const res = await API.get(`/public/by-handle/${encodeURIComponent(safeHandle)}`);
+  return res.data as CommunityResponse;
+}
+
+export async function joinCommunity(
+  token: string,
+  communityId: string,
+  referralCode?: string,
+): Promise<{ success: boolean; memberId: string }> {
+  const res = await API.post(
+    `/${communityId}/join`,
+    { referralCode },
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as { success: boolean; memberId: string };
+}

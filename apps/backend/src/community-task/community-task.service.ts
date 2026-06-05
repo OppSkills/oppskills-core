@@ -394,6 +394,7 @@ export class CommunityTaskService {
       include: {
         assignedTo: true,
         assignedBy: true,
+        community: true,
       },
     });
 
@@ -417,6 +418,40 @@ export class CommunityTaskService {
           userId: currentUserId,
           type: 'ALERT',
           content: alertContent,
+        },
+      });
+    }
+
+    if (
+      updatedTask.optForMail &&
+      updatedTask.assignedTo.email &&
+      task.status !== dto.status &&
+      (dto.status === TaskStatus.COMPLETED ||
+        dto.status === TaskStatus.CANCELLED)
+    ) {
+      const assignerName = this.formatUserName(updatedTask.assignedBy);
+      const assigneeName = this.formatUserName(updatedTask.assignedTo);
+      const formattedDate = updatedTask.dueDate
+        ? updatedTask.dueDate.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          })
+        : undefined;
+
+      await this.emailService.send({
+        type: 'community-task-status-updated',
+        to: updatedTask.assignedTo.email,
+        props: {
+          assigneeName,
+          assignerName,
+          communityName: updatedTask.community.name,
+          taskTitle: updatedTask.title,
+          taskDescription: updatedTask.description || undefined,
+          statusText:
+            dto.status === TaskStatus.COMPLETED ? 'approved' : 'rejected',
+          dueDate: formattedDate,
+          baseUrl: process.env.FRONTEND_URL || 'https://www.oppskills.com',
         },
       });
     }

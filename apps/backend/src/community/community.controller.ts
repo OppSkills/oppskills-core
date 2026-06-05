@@ -11,6 +11,7 @@ import {
   Req,
   UnauthorizedException,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -274,9 +275,9 @@ export class CommunityController {
     @Query('search') search?: string,
     @Query('role') role?: string,
     @Query('sortDirection') sortDirection?: 'asc' | 'desc',
-    @Req() req: Request,
+    @Req() req?: Request,
   ) {
-    const userId = req.user?.id;
+    const userId = req?.user?.id;
     if (typeof userId !== 'string' || userId.trim().length === 0) {
       throw new UnauthorizedException('User not found.');
     }
@@ -332,5 +333,26 @@ export class CommunityController {
       throw new UnauthorizedException('User not found.');
     }
     return this.communityService.getCommunityStats(userId, id);
+  }
+
+  @Post(':id/join')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Join a community',
+    description: 'Allows an authenticated user to join a community as a MEMBER, optionally attributing a referral code.',
+  })
+  @ApiResponse({ status: 200, description: 'Successfully joined community' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 409, description: 'Already a member' })
+  async joinCommunity(
+    @Param('id') communityId: string,
+    @Body('referralCode') referralCode: string | undefined,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.communityService.joinCommunity(userId, communityId, referralCode);
   }
 }
