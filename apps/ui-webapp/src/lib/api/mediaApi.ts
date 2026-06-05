@@ -25,7 +25,8 @@ export type PresignImageUploadResponse = Readonly<{
 
 export type PresignDocumentUploadPurpose =
   | "EVENT_ATTACHMENT"
-  | "OPPORTUNITY_ATTACHMENT";
+  | "OPPORTUNITY_ATTACHMENT"
+  | "COMMUNITY_THREAD_ATTACHMENT";
 
 export type PresignDocumentUploadRequest = Readonly<{
   purpose: PresignDocumentUploadPurpose;

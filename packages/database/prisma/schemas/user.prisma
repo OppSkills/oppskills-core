@@ -1,24 +1,23 @@
 model UserEntity {
-  id                          String                             @id @default(cuid())
-  email                       String                             @unique
-  imageUrl                    String?
-  firstName                   String?
-  lastName                    String?
-  accessLevel                 AccessLevel                        @default(USER) @map("access_level")
-  createdAt                   DateTime                           @default(now())
-  updatedAt                   DateTime                           @updatedAt
-  onboarded                   Boolean                            @default(false)
-  festivals                   FestivalEntity[]                   @relation("UserFestivals")
-  approvedReferrals           ReferralEntity[]                   @relation("ReferralApprover")
-  referralsCreated            ReferralEntity[]                   @relation("ReferralCreator")
-  referralsAssigned           ReferralEntity[]                   @relation("ReferralReferrer")
-  communities                 CommunityEntity[]                  @relation("UserCommunities")
-  hostedCommunityMeets        CommunityMeetEntity[]              @relation("CommunityMeetHost")
-  communityMemberships        CommunityMemberEntity[]            @relation("UserCommunityMemberships")
-  communityAssignedTasks      CommunityTaskEntity[]              @relation("CommunityTaskAssignedTo")
-  communityCreatedTasks       CommunityTaskEntity[]              @relation("CommunityTaskAssignedBy")
-  communityTaskThreadMessages CommunityTaskThreadMessageEntity[]
-
+  id                               String                                  @id @default(cuid())
+  email                            String                                  @unique
+  imageUrl                         String?
+  firstName                        String?
+  lastName                         String?
+  accessLevel                      AccessLevel                             @default(USER) @map("access_level")
+  createdAt                        DateTime                                @default(now())
+  updatedAt                        DateTime                                @updatedAt
+  onboarded                        Boolean                                 @default(false)
+  festivals                        FestivalEntity[]                        @relation("UserFestivals")
+  approvedReferrals                ReferralEntity[]                        @relation("ReferralApprover")
+  referralsCreated                 ReferralEntity[]                        @relation("ReferralCreator")
+  referralsAssigned                ReferralEntity[]                        @relation("ReferralReferrer")
+  communities                      CommunityEntity[]                       @relation("UserCommunities")
+  hostedCommunityMeets             CommunityMeetEntity[]                   @relation("CommunityMeetHost")
+  communityMemberships             CommunityMemberEntity[]                 @relation("UserCommunityMemberships")
+  communityCreatedTasks            CommunityTaskEntity[]                   @relation("CommunityTaskAssignedBy")
+  communityAssignedTasks           CommunityTaskEntity[]                   @relation("CommunityTaskAssignedTo")
+  communityTaskThreadMessages      CommunityTaskThreadMessageEntity[]
   notifications                    notifications[]                         @relation("UserNotifications")
   events                           EventEntity[]                           @relation("UserEvents")
   eventParticipantApprovals        EventParticipantEntity[]                @relation("EventParticipantApprover")

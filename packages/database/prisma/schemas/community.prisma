@@ -40,30 +40,22 @@ model CommunityMemberEntity {
 }
 
 model CommunityTaskEntity {
-  id          String @id @default(cuid())
-  communityId String @map("community_id")
-
-  title       String
-  description String?
-
-  dueDate DateTime? @map("due_date")
-
-  toUserId String @map("to_user_id")
-  byUserId String @map("by_user_id")
-
-  priority TaskPriority @default(MEDIUM)
-  status   TaskStatus   @default(PENDING)
-
-  tags String[]
-
-  optForMail Boolean @default(false) @map("opt_for_mail")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
+  id                                 String                             @id @default(cuid())
+  communityId                        String                             @map("community_id")
+  title                              String
+  description                        String?
+  dueDate                            DateTime?                          @map("due_date")
+  toUserId                           String                             @map("to_user_id")
+  byUserId                           String                             @map("by_user_id")
+  priority                           TaskPriority                       @default(MEDIUM)
+  status                             TaskStatus                         @default(PENDING)
+  tags                               String[]
+  optForMail                         Boolean                            @default(false) @map("opt_for_mail")
+  createdAt                          DateTime                           @default(now()) @map("created_at")
+  updatedAt                          DateTime                           @updatedAt @map("updated_at")
+  assignedBy                         UserEntity                         @relation("CommunityTaskAssignedBy", fields: [byUserId], references: [id])
   community                          CommunityEntity                    @relation(fields: [communityId], references: [id], onDelete: Cascade)
   assignedTo                         UserEntity                         @relation("CommunityTaskAssignedTo", fields: [toUserId], references: [id])
-  assignedBy                         UserEntity                         @relation("CommunityTaskAssignedBy", fields: [byUserId], references: [id])
   communityTaskThreadMessageEntities CommunityTaskThreadMessageEntity[]
 
   @@index([communityId])
@@ -75,24 +67,18 @@ model CommunityTaskEntity {
 }
 
 model CommunityTaskThreadMessageEntity {
-  id String @id @default(cuid())
-
-  taskId String @map("task_id")
-  userId String @map("user_id")
-
-  type TaskThreadMessageType
-
-  content String
-
-  fileName String? @map("file_name")
-  fileSize Int?    @map("file_size")
-  mimeType String? @map("mime_type")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  task CommunityTaskEntity @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user UserEntity          @relation(fields: [userId], references: [id])
+  id        String                @id @default(cuid())
+  taskId    String                @map("task_id")
+  userId    String                @map("user_id")
+  type      TaskThreadMessageType
+  content   String
+  fileName  String?               @map("file_name")
+  fileSize  Int?                  @map("file_size")
+  mimeType  String?               @map("mime_type")
+  createdAt DateTime              @default(now()) @map("created_at")
+  updatedAt DateTime              @updatedAt @map("updated_at")
+  task      CommunityTaskEntity   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      UserEntity            @relation(fields: [userId], references: [id])
 
   @@index([taskId])
   @@index([userId])
@@ -157,6 +143,7 @@ enum TaskThreadMessageType {
   IMAGE
   VIDEO
   DOCUMENT
+  ALERT
 
   @@map("TaskThreadMessageType")
   @@schema("community")

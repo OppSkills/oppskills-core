@@ -90,7 +90,7 @@ export class MediaService {
    */
   async presignDocumentUpload(input: {
     userId: string;
-    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT';
+    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT' | 'COMMUNITY_THREAD_ATTACHMENT';
     mimeType: string;
     fileName: string;
   }): Promise<PresignDocumentUploadResponse> {
@@ -325,7 +325,7 @@ export class MediaService {
    * Builds S3 object key for document uploads
    */
   private buildDocumentObjectKey(
-    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT',
+    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT' | 'COMMUNITY_THREAD_ATTACHMENT',
     userId: string,
     fileName: string,
     extension: string,
@@ -345,7 +345,9 @@ export class MediaService {
     const prefix =
       purpose === 'EVENT_ATTACHMENT'
         ? 'public/event-attachments'
-        : 'public/opportunity-attachments';
+        : purpose === 'COMMUNITY_THREAD_ATTACHMENT'
+          ? 'public/community-thread-attachments'
+          : 'public/opportunity-attachments';
 
     return `${prefix}/${encodeURIComponent(safeUserId)}/${safeFileName}-${uuid}.${extension}`;
   }
