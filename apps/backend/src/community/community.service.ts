@@ -315,6 +315,19 @@ export class CommunityService {
             firstName: true,
             lastName: true,
             imageUrl: true,
+            createdAt: true,
+            onboardingProfile: {
+              include: {
+                college: {
+                  select: {
+                    name: true,
+                    city: true,
+                    state: true,
+                    country: true,
+                  },
+                },
+              },
+            },
           },
         },
         members: {
@@ -347,11 +360,101 @@ export class CommunityService {
             firstName: true,
             lastName: true,
             imageUrl: true,
+            createdAt: true,
+            onboardingProfile: {
+              include: {
+                college: {
+                  select: {
+                    name: true,
+                    city: true,
+                    state: true,
+                    country: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
       orderBy: { createdAt: 'asc' },
     });
+
+    const mapProfileDetails = (user: any, memberCreatedAt: Date) => {
+      const profile = user.onboardingProfile;
+      let university = 'Not Specified';
+      if (profile) {
+        if (profile.college) {
+          university = profile.college.name;
+        } else if (profile.schoolName) {
+          university = profile.schoolName;
+        } else if (profile.companyName) {
+          university = profile.companyName;
+        }
+      }
+
+      let location = 'Not Specified';
+      if (profile) {
+        const parts = [
+          profile.locationCoords ||
+            (profile.college ? profile.college.city : null),
+          profile.locationState ||
+            (profile.college ? profile.college.state : null),
+          profile.locationCountry ||
+            (profile.college ? profile.college.country : null),
+        ].filter(Boolean);
+        if (parts.length > 0) {
+          location = parts.join(', ');
+        }
+      }
+
+      const tags: string[] = [];
+      if (profile) {
+        const categoryLabels: Record<string, string> = {
+          SCHOOL_STUDENT: 'School Student',
+          COLLEGE_STUDENT: 'College Student',
+          WORKING_PROFESSIONAL: 'Working Professional',
+          FRESHER: 'Fresher',
+          PROFESSIONAL_SCHOOL_STUDENT: 'Professional School Student',
+        };
+        if (profile.userCategory && categoryLabels[profile.userCategory]) {
+          tags.push(categoryLabels[profile.userCategory]);
+        }
+        if (profile.course) {
+          let courseStr = profile.course;
+          if (profile.courseSpecialization) {
+            courseStr += ` (${profile.courseSpecialization})`;
+          }
+          tags.push(courseStr);
+        }
+        if (profile.collegeCurrentYear) {
+          tags.push(`${profile.collegeCurrentYear} Year`);
+        } else if (profile.jobTitle) {
+          tags.push(profile.jobTitle);
+        }
+        if (profile.skills && profile.skills.length > 0) {
+          tags.push(...profile.skills.slice(0, 2));
+        }
+      }
+      if (tags.length === 0) {
+        tags.push('Member');
+      }
+
+      const regDate = user.createdAt || memberCreatedAt;
+      const registeredDate =
+        regDate.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }) +
+        ', ' +
+        regDate.toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+
+      return { university, location, tags, registeredDate };
+    };
 
     // 3. Map members list, and ensure the community owner record has role: 'OWNER' and accessControlRole: 'ADMIN'
     const mappedMembers = members.map((m) => {
@@ -359,6 +462,7 @@ export class CommunityService {
         [m.user.firstName, m.user.lastName].filter(Boolean).join(' ') ||
         m.user.email.split('@')[0];
       const isMemberOwner = m.userId === community.ownerId;
+      const profileInfo = mapProfileDetails(m.user, m.createdAt);
       return {
         id: m.id,
         userId: m.user.id,
@@ -374,6 +478,7 @@ export class CommunityService {
             year: 'numeric',
           })
           .replace(/\//g, '-'),
+        ...profileInfo,
       };
     });
 
@@ -386,6 +491,10 @@ export class CommunityService {
         [community.owner.firstName, community.owner.lastName]
           .filter(Boolean)
           .join(' ') || community.owner.email.split('@')[0];
+      const ownerProfileInfo = mapProfileDetails(
+        community.owner,
+        community.createdAt,
+      );
       mappedMembers.unshift({
         id: `owner-${community.owner.id}`,
         userId: community.owner.id,
@@ -401,6 +510,7 @@ export class CommunityService {
             year: 'numeric',
           })
           .replace(/\//g, '-'),
+        ...ownerProfileInfo,
       });
     }
 

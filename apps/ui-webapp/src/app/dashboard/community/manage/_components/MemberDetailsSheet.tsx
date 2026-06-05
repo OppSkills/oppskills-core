@@ -43,80 +43,6 @@ interface MemberDetailsSheetProps {
 const EMPTY_TASKS: Task[] = [];
 const EMPTY_MEETS: Meet[] = [];
 
-// Extracted detailed profiles matching the clicked member
-const MEMBER_PROFILES: Record<
-  string,
-  {
-    university: string;
-    location: string;
-    tags: string[];
-    registeredDate: string;
-  }
-> = {
-  "Ananya Sharma": {
-    university: "Indian Institute of Technology Delhi",
-    location: "New Delhi, Delhi, India",
-    tags: [
-      "College Student",
-      "Technology",
-      "4-Year B.Tech (Computer Science)",
-      "Full Time",
-      "3rd Year",
-    ],
-    registeredDate: "15 Jan 2025, 10:30 AM",
-  },
-  "Rohit Verma": {
-    university: "Indian Institute of Management Ahmedabad",
-    location: "Ahmedabad, Gujarat, India",
-    tags: [
-      "College Student",
-      "Management",
-      "2-Year MBA (Master of Business Administration)",
-      "Full Time",
-      "1st Year",
-    ],
-    registeredDate: "12 Feb 2025, 11:15 AM",
-  },
-  "Suhani Mehta": {
-    university: "Delhi Technological University",
-    location: "New Delhi, Delhi, India",
-    tags: [
-      "College Student",
-      "Design",
-      "4-Year B.Des (Interaction Design)",
-      "Full Time",
-      "2nd Year",
-    ],
-    registeredDate: "05 Mar 2025, 02:45 PM",
-  },
-  "Amitabh Singh": {
-    university: "Symbiosis Institute of Media & Communication",
-    location: "Pune, Maharashtra, India",
-    tags: [
-      "College Student",
-      "Media",
-      "2-Year MBA (Communication Management)",
-      "Full Time",
-      "1st Year",
-    ],
-    registeredDate: "20 Apr 2025, 09:10 AM",
-  },
-};
-
-// Default profile for members not in explicit record
-const DEFAULT_PROFILE = {
-  university: "Indian Institute of Science Bangalore",
-  location: "Bengaluru, Karnataka, India",
-  tags: [
-    "Research Student",
-    "Engineering",
-    "4-Year B.S. (Research)",
-    "Full Time",
-    "4th Year",
-  ],
-  registeredDate: "10 Feb 2025, 10:00 AM",
-};
-
 export default function MemberDetailsSheet({
   member,
   onClose,
@@ -160,11 +86,6 @@ export default function MemberDetailsSheet({
     return true;
   };
 
-  const profileDetails = useMemo(() => {
-    if (!member) return null;
-    return MEMBER_PROFILES[member.name] || DEFAULT_PROFILE;
-  }, [member]);
-
   const memberTasks = useMemo(() => {
     if (!member) return [];
     return tasks.filter((task) => {
@@ -183,7 +104,7 @@ export default function MemberDetailsSheet({
     });
   }, [tasks, member, activeTaskTab]);
 
-  if (!member || !profileDetails) return null;
+  if (!member) return null;
 
   const handleMarkComplete = (taskId: string) => {
     if (onToggleTask) {
@@ -244,7 +165,7 @@ export default function MemberDetailsSheet({
                 {/* School */}
                 <div className="flex items-start gap-3">
                   <GraduationCap className="w-5 h-5 text-neutral-400 shrink-0 mt-0.5" />
-                  <span>{profileDetails.university}</span>
+                  <span>{member.university || "Not Specified"}</span>
                 </div>
 
                 {/* Email */}
@@ -258,14 +179,14 @@ export default function MemberDetailsSheet({
                 {/* Location */}
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-neutral-400 shrink-0 mt-0.5" />
-                  <span>{profileDetails.location}</span>
+                  <span>{member.location || "Not Specified"}</span>
                 </div>
 
                 {/* Profile tags list */}
                 <div className="flex items-start gap-3 pt-0.5 border-t border-dashed border-neutral-100 mt-0.5 pt-3">
                   <BookOpen className="w-5 h-5 text-neutral-400 shrink-0 mt-0.5" />
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    {profileDetails.tags.map((tag, idx) => (
+                    {(member.tags || ["Member"]).map((tag, idx) => (
                       <React.Fragment key={tag}>
                         {idx > 0 && (
                           <span className="text-neutral-300 select-none">
@@ -281,7 +202,9 @@ export default function MemberDetailsSheet({
                 {/* Registered date */}
                 <div className="flex items-start gap-3">
                   <Calendar className="w-5 h-5 text-neutral-400 shrink-0 mt-0.5" />
-                  <span>Registered on: {profileDetails.registeredDate}</span>
+                  <span>
+                    Registered on: {member.registeredDate || "Not Specified"}
+                  </span>
                 </div>
               </div>
             </div>

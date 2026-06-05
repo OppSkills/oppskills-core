@@ -84,14 +84,19 @@ export default function MembersDirectory({
       },
     ];
 
-    const custom: TabItem[] = customTabs.map((label) => ({
+    const activeRoles = new Set(members.map((m) => m.role.toLowerCase()));
+    const filteredCustomTabs = customTabs.filter((label) =>
+      activeRoles.has(label.toLowerCase()),
+    );
+
+    const custom: TabItem[] = filteredCustomTabs.map((label) => ({
       label,
       showCount: false,
       hasInfo: true,
     }));
 
     return [...base, ...custom];
-  }, [customTabs, members.length]);
+  }, [customTabs, members]);
 
   // Filter members based on search and active tab
   const filteredMembers = useMemo(() => {
@@ -112,14 +117,38 @@ export default function MembersDirectory({
     });
   }, [members, searchQuery, activeTab]);
 
-  // Sort members alphabetically
+  // Sort members based on:
+  // 1. Current user at the top
+  // 2. Hierarchy role: ADMIN > MODERATOR > READ_ONLY
+  // 3. Alphabetical comparison of name
   const sortedMembers = useMemo(() => {
-    if (!sortDirection) return filteredMembers;
+    const ROLE_RANKS: Record<string, number> = {
+      ADMIN: 1,
+      MODERATOR: 2,
+      READ_ONLY: 3,
+    };
+
     return [...filteredMembers].sort((a, b) => {
+      const isCurrentUserA = currentUserMember && a.id === currentUserMember.id;
+      const isCurrentUserB = currentUserMember && b.id === currentUserMember.id;
+
+      if (isCurrentUserA && !isCurrentUserB) return -1;
+      if (isCurrentUserB && !isCurrentUserA) return 1;
+
+      const rankA = ROLE_RANKS[a.accessControlRole || ""] || 4;
+      const rankB = ROLE_RANKS[b.accessControlRole || ""] || 4;
+
+      if (rankA !== rankB) {
+        return rankA - rankB;
+      }
+
       const comparison = a.name.localeCompare(b.name);
-      return sortDirection === "asc" ? comparison : -comparison;
+      if (sortDirection === "desc") {
+        return -comparison;
+      }
+      return comparison;
     });
-  }, [filteredMembers, sortDirection]);
+  }, [filteredMembers, currentUserMember, sortDirection]);
 
   // Toggle selection for individual row
   const handleToggleRow = (id: string) => {
@@ -357,11 +386,17 @@ export default function MembersDirectory({
               ) : (
                 sortedMembers.map((member, index) => {
                   const isChecked = selectedIds.has(member.id);
+                  const isCurrentUser =
+                    currentUserMember && member.id === currentUserMember.id;
                   return (
                     <tr
                       key={member.id}
-                      className={`hover:bg-neutral-50/50 transition-colors ${
-                        isChecked ? "bg-[#F3EEFF]/20" : ""
+                      className={`transition-colors ${
+                        isCurrentUser
+                          ? "bg-purple-50/40 hover:bg-purple-50/60"
+                          : isChecked
+                            ? "bg-[#F3EEFF]/20 hover:bg-neutral-50/50"
+                            : "hover:bg-neutral-50/50"
                       }`}
                     >
                       {/* Checkbox */}
@@ -399,8 +434,13 @@ export default function MembersDirectory({
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col min-w-0">
-                            <span className="font-semibold text-neutral-800 text-sm leading-tight truncate">
+                            <span className="font-semibold text-neutral-800 text-sm leading-tight truncate flex items-center gap-1.5">
                               {member.name}
+                              {isCurrentUser && (
+                                <span className="bg-[#835BD5]/10 text-[#835BD5] text-[10px] font-bold px-1.5 py-0.5 rounded-full select-none shrink-0">
+                                  You
+                                </span>
+                              )}
                             </span>
                             <span className="text-xs text-neutral-400 font-medium truncate mt-0.5">
                               {member.email}

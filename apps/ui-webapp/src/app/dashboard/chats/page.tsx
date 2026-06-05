@@ -36,6 +36,7 @@ import {
   Loader2,
   LogOut,
   Trash2,
+  Calendar,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useChatsPage } from "@/hooks/useChatsPage";
@@ -287,12 +288,25 @@ export default function ChatsPage() {
     }
   };
 
-  // Reset sticky state when changing conversations
+  // Reset sticky state & filters when changing conversations
   useEffect(() => {
     setStickyDate("");
     setShowSticky(false);
     lastScrollTopRef.current = 0;
+
+    setIsSearchingMessages(false);
+    setMessageSearchQuery("");
+    setShowDateFilter(false);
+    setStartDateFilter("");
+    setEndDateFilter("");
   }, [selectedChatId]);
+
+  // Message filters and search states
+  const [isSearchingMessages, setIsSearchingMessages] = useState(false);
+  const [messageSearchQuery, setMessageSearchQuery] = useState("");
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [startDateFilter, setStartDateFilter] = useState("");
+  const [endDateFilter, setEndDateFilter] = useState("");
 
   // Input fields
   const [inputMessage, setInputMessage] = useState("");
@@ -997,6 +1011,31 @@ export default function ChatsPage() {
                   </button>
                   {showChatMenu && activeChat && (
                     <div className="absolute right-0 top-full mt-1 w-52 py-1 bg-white border border-neutral-200 rounded-xl shadow-lg z-30">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSearchingMessages(true);
+                          setShowChatMenu(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-neutral-700 hover:bg-primary-50 hover:text-primary-700 text-left"
+                      >
+                        <Search className="w-4 h-4 shrink-0" />
+                        Search messages
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowDateFilter(true);
+                          setShowChatMenu(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-neutral-700 hover:bg-primary-50 hover:text-primary-700 text-left"
+                      >
+                        <Calendar className="w-4 h-4 shrink-0" />
+                        Filter by date
+                      </button>
+
+                      <div className="border-t border-neutral-100 my-1"></div>
+
                       {activeChat.isGroup && !isGroupAdmin && (
                         <button
                           type="button"
@@ -1069,6 +1108,84 @@ export default function ChatsPage() {
                   )}
                 </AnimatePresence>
 
+                {/* Message Filter / Search Bar */}
+                {(isSearchingMessages || showDateFilter) && (
+                  <div className="bg-white border-b border-neutral-300 px-4 md:px-6 py-2.5 flex flex-wrap items-center gap-3 shrink-0 shadow-xs z-10">
+                    {isSearchingMessages && (
+                      <div className="relative flex-1 min-w-[200px]">
+                        <input
+                          type="text"
+                          value={messageSearchQuery}
+                          onChange={(e) =>
+                            setMessageSearchQuery(e.target.value)
+                          }
+                          placeholder="Search messages in this chat..."
+                          className="w-full pl-9 pr-8 py-1.5 border border-neutral-300 focus:border-primary-500 outline-none rounded-xl text-xs font-semibold shadow-2xs"
+                        />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                        {messageSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setMessageSearchQuery("")}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {showDateFilter && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="font-semibold text-neutral-500">
+                          From:
+                        </span>
+                        <input
+                          type="date"
+                          value={startDateFilter}
+                          onChange={(e) => setStartDateFilter(e.target.value)}
+                          className="px-2.5 py-1.5 border border-neutral-300 rounded-xl text-xs outline-none focus:border-primary-500 font-semibold shadow-2xs bg-white"
+                        />
+                        <span className="font-semibold text-neutral-500">
+                          To:
+                        </span>
+                        <input
+                          type="date"
+                          value={endDateFilter}
+                          onChange={(e) => setEndDateFilter(e.target.value)}
+                          className="px-2.5 py-1.5 border border-neutral-300 rounded-xl text-xs outline-none focus:border-primary-500 font-semibold shadow-2xs bg-white"
+                        />
+                        {(startDateFilter || endDateFilter) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStartDateFilter("");
+                              setEndDateFilter("");
+                            }}
+                            className="text-primary-600 hover:text-primary-800 underline font-bold ml-1 cursor-pointer"
+                          >
+                            Clear dates
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSearchingMessages(false);
+                        setMessageSearchQuery("");
+                        setShowDateFilter(false);
+                        setStartDateFilter("");
+                        setEndDateFilter("");
+                      }}
+                      className="text-xs text-red-500 hover:text-red-700 font-bold ml-auto cursor-pointer"
+                    >
+                      Close Filters
+                    </button>
+                  </div>
+                )}
+
                 {/* Chat Timeline (Scrollable Messages) */}
                 <div
                   ref={scrollContainerRef}
@@ -1085,9 +1202,43 @@ export default function ChatsPage() {
                       },
                     );
 
+                    const filteredMessages = sortedMessages.filter(
+                      (message) => {
+                        if (
+                          isSearchingMessages &&
+                          messageSearchQuery.trim() !== ""
+                        ) {
+                          const query = messageSearchQuery.toLowerCase();
+                          const textMatch = message.text
+                            .toLowerCase()
+                            .includes(query);
+                          const senderMatch = message.senderName
+                            ?.toLowerCase()
+                            .includes(query);
+                          if (!textMatch && !senderMatch) return false;
+                        }
+
+                        if (showDateFilter) {
+                          const msgTime = new Date(message.timestamp).getTime();
+                          if (startDateFilter) {
+                            const start = new Date(startDateFilter);
+                            start.setHours(0, 0, 0, 0);
+                            if (msgTime < start.getTime()) return false;
+                          }
+                          if (endDateFilter) {
+                            const end = new Date(endDateFilter);
+                            end.setHours(23, 59, 59, 999);
+                            if (msgTime > end.getTime()) return false;
+                          }
+                        }
+
+                        return true;
+                      },
+                    );
+
                     let lastMessageDateStr = "";
 
-                    return sortedMessages.map((message, index) => {
+                    return filteredMessages.map((message, index) => {
                       const isSystem = message.type === "SYSTEM";
 
                       // Check for date separator
@@ -1154,7 +1305,7 @@ export default function ChatsPage() {
                               {/* Bubble content */}
                               <div
                                 className={`
-                                    p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300
+                                    p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
                                     bg-primary-600 text-white rounded-br-none
                                     ${
                                       highlightedMessageId === message.id
@@ -1285,7 +1436,7 @@ export default function ChatsPage() {
                               {/* Bubble content */}
                               <div
                                 className={`
-                                    p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300
+                                    p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
                                     bg-white text-neutral-900 rounded-bl-none border border-neutral-200
                                     ${
                                       highlightedMessageId === message.id
