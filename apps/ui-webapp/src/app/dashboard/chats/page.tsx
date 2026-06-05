@@ -30,6 +30,8 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Crown,
   Users,
   UserMinus,
@@ -161,6 +163,36 @@ function formatSidebarTimestamp(isoString: string): string {
     const year = compareDate.getFullYear();
     return `${day}-${month}-${year}`;
   }
+}
+
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+interface HighlightedTextProps {
+  text: string;
+  highlight: string;
+}
+
+function HighlightedText({ text, highlight }: HighlightedTextProps) {
+  if (!highlight.trim()) return <>{text}</>;
+
+  const regex = new RegExp(`(${escapeRegExp(highlight)})`, "gi");
+  const parts = text.split(regex);
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-yellow-300 text-neutral-900 rounded-xs px-0.5 font-bold">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
 }
 
 export default function ChatsPage() {
@@ -307,6 +339,7 @@ export default function ChatsPage() {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [startDateFilter, setStartDateFilter] = useState("");
   const [endDateFilter, setEndDateFilter] = useState("");
+  const [currentMatchIndex, setCurrentMatchIndex] = useState<number>(0);
 
   // Input fields
   const [inputMessage, setInputMessage] = useState("");
@@ -334,6 +367,71 @@ export default function ChatsPage() {
     setActiveRightSidebarTab("Media");
     setShowChatMenu(false);
   }, [selectedChatId]);
+
+  // Compute matching message IDs
+  const matchingMessageIds = useMemo(() => {
+    if (!isSearchingMessages || !messageSearchQuery.trim() || !activeChat) return [];
+    const query = messageSearchQuery.toLowerCase();
+    const sorted = [...activeChat.messages].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    return sorted
+      .filter((message) => {
+        if (message.type === "SYSTEM") return false;
+
+        if (showDateFilter) {
+          const msgTime = new Date(message.timestamp).getTime();
+          if (startDateFilter) {
+            const start = new Date(startDateFilter);
+            start.setHours(0, 0, 0, 0);
+            if (msgTime < start.getTime()) return false;
+          }
+          if (endDateFilter) {
+            const end = new Date(endDateFilter);
+            end.setHours(23, 59, 59, 999);
+            if (msgTime > end.getTime()) return false;
+          }
+        }
+
+        const textMatch = message.text.toLowerCase().includes(query);
+        const senderMatch = message.senderName?.toLowerCase().includes(query);
+        return textMatch || senderMatch;
+      })
+      .map((m) => m.id);
+  }, [
+    activeChat?.messages,
+    isSearchingMessages,
+    messageSearchQuery,
+    showDateFilter,
+    startDateFilter,
+    endDateFilter,
+  ]);
+
+  // Reset match index to the last match (newest) when query or matches list changes
+  useEffect(() => {
+    if (matchingMessageIds.length > 0) {
+      setCurrentMatchIndex(matchingMessageIds.length - 1);
+    } else {
+      setCurrentMatchIndex(0);
+    }
+  }, [matchingMessageIds]);
+
+  // Scroll to current match when index, matches list, or search state changes
+  useEffect(() => {
+    if (matchingMessageIds.length > 0 && isSearchingMessages) {
+      const matchId = matchingMessageIds[currentMatchIndex];
+      if (matchId) {
+        const el = document.getElementById(`msg-${matchId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          setHighlightedMessageId(matchId);
+        }
+      }
+    } else {
+      setHighlightedMessageId(null);
+    }
+  }, [currentMatchIndex, matchingMessageIds, isSearchingMessages]);
 
   useEffect(() => {
     if (!showChatMenu) return;
@@ -1112,25 +1210,86 @@ export default function ChatsPage() {
                 {(isSearchingMessages || showDateFilter) && (
                   <div className="bg-white border-b border-neutral-300 px-4 md:px-6 py-2.5 flex flex-wrap items-center gap-3 shrink-0 shadow-xs z-10">
                     {isSearchingMessages && (
-                      <div className="relative flex-1 min-w-[200px]">
-                        <input
-                          type="text"
-                          value={messageSearchQuery}
-                          onChange={(e) =>
-                            setMessageSearchQuery(e.target.value)
-                          }
-                          placeholder="Search messages in this chat..."
-                          className="w-full pl-9 pr-8 py-1.5 border border-neutral-300 focus:border-primary-500 outline-none rounded-xl text-xs font-semibold shadow-2xs"
-                        />
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
-                        {messageSearchQuery && (
-                          <button
-                            type="button"
-                            onClick={() => setMessageSearchQuery("")}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
+                      <div className="relative flex items-center flex-1 min-w-[280px]">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={messageSearchQuery}
+                            onChange={(e) =>
+                              setMessageSearchQuery(e.target.value)
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                if (matchingMessageIds.length > 0) {
+                                  if (e.shiftKey) {
+                                    // Shift+Enter: go up (older match)
+                                    setCurrentMatchIndex((prev) =>
+                                      prev > 0 ? prev - 1 : matchingMessageIds.length - 1
+                                    );
+                                  } else {
+                                    // Enter: go down (newer match)
+                                    setCurrentMatchIndex((prev) =>
+                                      prev < matchingMessageIds.length - 1 ? prev + 1 : 0
+                                    );
+                                  }
+                                }
+                              }
+                            }}
+                            placeholder="Search messages in this chat..."
+                            className="w-full pl-9 pr-24 py-1.5 border border-neutral-300 focus:border-primary-500 outline-none rounded-xl text-xs font-semibold shadow-2xs bg-white text-neutral-900"
+                          />
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-3.5 h-3.5" />
+                          
+                          {/* Search details and clear button */}
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[10px] font-bold text-neutral-500 bg-white pl-1 select-none">
+                            {messageSearchQuery.trim() && (
+                              <span className="font-mono">
+                                {matchingMessageIds.length > 0
+                                  ? `${currentMatchIndex + 1}/${matchingMessageIds.length}`
+                                  : "0/0"}
+                              </span>
+                            )}
+                            {messageSearchQuery && (
+                              <button
+                                type="button"
+                                onClick={() => setMessageSearchQuery("")}
+                                className="text-neutral-400 hover:text-neutral-600 p-0.5 rounded-full hover:bg-neutral-100 transition-colors"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Navigation arrows (Up for older, Down for newer) */}
+                        {messageSearchQuery.trim() && matchingMessageIds.length > 0 && (
+                          <div className="flex items-center gap-1 ml-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCurrentMatchIndex((prev) =>
+                                  prev > 0 ? prev - 1 : matchingMessageIds.length - 1
+                                )
+                              }
+                              title="Previous match (Shift+Enter / Up)"
+                              className="p-1.5 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-xl text-neutral-600 transition-colors shadow-2xs cursor-pointer"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCurrentMatchIndex((prev) =>
+                                  prev < matchingMessageIds.length - 1 ? prev + 1 : 0
+                                )
+                              }
+                              title="Next match (Enter / Down)"
+                              className="p-1.5 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-xl text-neutral-600 transition-colors shadow-2xs cursor-pointer"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     )}
@@ -1204,20 +1363,6 @@ export default function ChatsPage() {
 
                     const filteredMessages = sortedMessages.filter(
                       (message) => {
-                        if (
-                          isSearchingMessages &&
-                          messageSearchQuery.trim() !== ""
-                        ) {
-                          const query = messageSearchQuery.toLowerCase();
-                          const textMatch = message.text
-                            .toLowerCase()
-                            .includes(query);
-                          const senderMatch = message.senderName
-                            ?.toLowerCase()
-                            .includes(query);
-                          if (!textMatch && !senderMatch) return false;
-                        }
-
                         if (showDateFilter) {
                           const msgTime = new Date(message.timestamp).getTime();
                           if (startDateFilter) {
@@ -1308,8 +1453,8 @@ export default function ChatsPage() {
                                     p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
                                     bg-primary-600 text-white rounded-br-none
                                     ${
-                                      highlightedMessageId === message.id
-                                        ? "ring-4 ring-primary-400 ring-offset-2 scale-[1.02]"
+                                      (highlightedMessageId === message.id || (isSearchingMessages && matchingMessageIds[currentMatchIndex] === message.id))
+                                        ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
                                         : ""
                                     }
                                   `}
@@ -1396,7 +1541,10 @@ export default function ChatsPage() {
 
                                 {message.text.trim() ? (
                                   <p className="wrap-break-word">
-                                    {message.text}
+                                    <HighlightedText
+                                      text={message.text}
+                                      highlight={isSearchingMessages ? messageSearchQuery : ""}
+                                    />
                                   </p>
                                 ) : null}
 
@@ -1439,8 +1587,8 @@ export default function ChatsPage() {
                                     p-3 md:p-4 rounded-2xl shadow-sm text-sm font-normal relative leading-relaxed transition-all duration-300 min-w-[80px]
                                     bg-white text-neutral-900 rounded-bl-none border border-neutral-200
                                     ${
-                                      highlightedMessageId === message.id
-                                        ? "ring-4 ring-primary-400 ring-offset-2 scale-[1.02]"
+                                      (highlightedMessageId === message.id || (isSearchingMessages && matchingMessageIds[currentMatchIndex] === message.id))
+                                        ? "ring-4 ring-yellow-400 ring-offset-2 scale-[1.02]"
                                         : ""
                                     }
                                   `}
@@ -1528,7 +1676,10 @@ export default function ChatsPage() {
 
                                 {message.text.trim() ? (
                                   <p className="wrap-break-word">
-                                    {message.text}
+                                    <HighlightedText
+                                      text={message.text}
+                                      highlight={isSearchingMessages ? messageSearchQuery : ""}
+                                    />
                                   </p>
                                 ) : null}
 
@@ -1675,7 +1826,7 @@ export default function ChatsPage() {
                     animate={{ x: 0 }}
                     exit={{ x: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 220 }}
-                    className="absolute inset-y-0 right-0 md:relative w-80 lg:w-[350px] shrink-0 border-l border-neutral-300 bg-white flex flex-col h-full z-20 shadow-lg md:shadow-none overflow-hidden"
+                    className="absolute inset-y-0 right-0 md:relative w-80 lg:w-[350px] shrink-0 border-l border-neutral-300 bg-white flex flex-col h-full z-45 shadow-lg md:shadow-none overflow-hidden"
                   >
                     {/* Header profile info */}
                     <div
