@@ -362,7 +362,7 @@ export class MediaService {
   }
 
   private buildDocumentObjectKey(
-    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT' | 'COMMUNITY_THREAD_ATTACHMENT',
+    purpose: 'EVENT_ATTACHMENT' | 'OPPORTUNITY_ATTACHMENT' | 'COMMUNITY_THREAD_ATTACHMENT' | 'CHAT_ATTACHMENT',
     userId: string,
     fileName: string,
     extension: string,
