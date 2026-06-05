@@ -45,15 +45,15 @@ export function CommunityTaskAssignedEmail({
             <Heading style={heading}>Hi {assigneeName || "there"},</Heading>
             <Heading style={subHeading}>A task has been assigned to you!</Heading>
             <Text style={paragraph}>
-              **{assignerName}** has assigned a new task to you in the **{communityName}** community.
+              <strong>{assignerName}</strong> has assigned a new task to you in the <strong>{communityName}</strong> community.
             </Text>
             <Section style={taskCard}>
-              <Text style={taskTitleText}>**Task**: {taskTitle}</Text>
+              <Text style={taskTitleText}><strong>Task</strong>: {taskTitle}</Text>
               {taskDescription && (
-                <Text style={taskDescText}>*Description*: {taskDescription}</Text>
+                <Text style={taskDescText}><strong>Description</strong>: {taskDescription}</Text>
               )}
               {dueDate && (
-                <Text style={taskDateText}>📅 *Due Date*: {dueDate}</Text>
+                <Text style={taskDateText}>📅 <strong>Due Date</strong>: {dueDate}</Text>
               )}
             </Section>
             <Section style={ctaSection}>

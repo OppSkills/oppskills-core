@@ -157,7 +157,13 @@ export class CommunityTaskService {
     await this.getUserHierarchyLevel(currentUserId, communityId);
 
     const tasks = await prisma.communityTaskEntity.findMany({
-      where: { communityId },
+      where: {
+        communityId,
+        OR: [
+          { toUserId: currentUserId },
+          { byUserId: currentUserId },
+        ],
+      },
       include: {
         assignedTo: true,
         assignedBy: true,
@@ -208,6 +214,11 @@ export class CommunityTaskService {
     // Verify membership
     await this.getUserHierarchyLevel(currentUserId, task.communityId);
 
+    // Verify user is assignee or assigner
+    if (currentUserId !== task.toUserId && currentUserId !== task.byUserId) {
+      throw new ForbiddenException('You do not have permission to view this task.');
+    }
+
     const messages = task.communityTaskThreadMessageEntities.map((msg) => ({
       id: msg.id,
       taskId: msg.taskId,
@@ -251,7 +262,7 @@ export class CommunityTaskService {
   ): Promise<TaskThreadMessageResponseDto> {
     const task = await prisma.communityTaskEntity.findUnique({
       where: { id: taskId },
-      select: { toUserId: true, byUserId: true },
+      select: { toUserId: true, byUserId: true, status: true },
     });
 
     if (!task) {
@@ -326,6 +337,19 @@ export class CommunityTaskService {
       }
     }
 
+    // Assigner can revert action to in progress, assignee can start pending task to in progress
+    if (dto.status === TaskStatus.IN_PROGRESS) {
+      if (task.status === TaskStatus.COMPLETED || task.status === TaskStatus.CANCELLED) {
+        if (!isAssigner) {
+          throw new ForbiddenException('Only the assigner can revert this task to In Progress.');
+        }
+      } else {
+        if (!isAssignee) {
+          throw new ForbiddenException('Only the assignee can start work on this task.');
+        }
+      }
+    }
+
     const updatedTask = await prisma.communityTaskEntity.update({
       where: { id: taskId },
       data: { status: dto.status },
@@ -334,6 +358,26 @@ export class CommunityTaskService {
         assignedBy: true,
       },
     });
+
+    let alertContent = '';
+    if (dto.status === TaskStatus.COMPLETED) {
+      alertContent = 'Task Approved';
+    } else if (dto.status === TaskStatus.CANCELLED) {
+      alertContent = 'Task Rejected';
+    } else if (dto.status === TaskStatus.IN_PROGRESS && (task.status === TaskStatus.COMPLETED || task.status === TaskStatus.CANCELLED)) {
+      alertContent = 'Task Reverted to In Progress';
+    }
+
+    if (alertContent) {
+      await prisma.communityTaskThreadMessageEntity.create({
+        data: {
+          taskId,
+          userId: currentUserId,
+          type: 'ALERT',
+          content: alertContent,
+        },
+      });
+    }
 
     return {
       id: updatedTask.id,
@@ -354,5 +398,24 @@ export class CommunityTaskService {
       createdAt: updatedTask.createdAt.toISOString(),
       updatedAt: updatedTask.updatedAt.toISOString(),
     };
+  }
+
+  async deleteComment(currentUserId: string, commentId: string): Promise<void> {
+    const comment = await prisma.communityTaskThreadMessageEntity.findUnique({
+      where: { id: commentId },
+      select: { userId: true },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found.');
+    }
+
+    if (comment.userId !== currentUserId) {
+      throw new ForbiddenException('Only the owner of the comment can delete it.');
+    }
+
+    await prisma.communityTaskThreadMessageEntity.delete({
+      where: { id: commentId },
+    });
   }
 }

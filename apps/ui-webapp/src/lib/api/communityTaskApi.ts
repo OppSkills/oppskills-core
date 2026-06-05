@@ -2,7 +2,7 @@ import { buildAuthHeaders, createApiClient } from "./apiClient";
 
 export type TaskPriority = "HIGH" | "MEDIUM" | "LOW";
 export type TaskStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-export type TaskThreadMessageType = "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
+export type TaskThreadMessageType = "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT" | "ALERT";
 
 export interface TaskThreadMessage {
   id: string;
@@ -117,4 +117,15 @@ export async function updateTaskStatus(
     headers: buildAuthHeaders(token),
   });
   return res.data as TaskResponse;
+}
+
+export async function deleteComment(
+  token: string,
+  communityId: string,
+  taskId: string,
+  commentId: string
+): Promise<void> {
+  await API.delete(`/${communityId}/tasks/${taskId}/comments/${commentId}`, {
+    headers: buildAuthHeaders(token),
+  });
 }

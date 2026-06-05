@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -133,5 +134,26 @@ export class CommunityTaskController {
       throw new UnauthorizedException('User not found.');
     }
     return this.taskService.updateTaskStatus(userId, taskId, dto);
+  }
+
+  @Delete(':taskId/comments/:commentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete a comment/message from the task thread',
+    description: 'Deletes a thread comment by its owner.',
+  })
+  @ApiResponse({ status: 204, description: 'Comment deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Comment not found' })
+  async deleteComment(
+    @Param('commentId') commentId: string,
+    @Req() req: Request,
+  ): Promise<void> {
+    const userId = req.user?.id;
+    if (typeof userId !== 'string' || userId.trim().length === 0) {
+      throw new UnauthorizedException('User not found.');
+    }
+    return this.taskService.deleteComment(userId, commentId);
   }
 }

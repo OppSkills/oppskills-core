@@ -41,7 +41,7 @@ export function CommunityWelcomeEmail({
             <Heading style={subHeading}>You've been added to {communityName}!</Heading>
 
             <Text style={paragraph}>
-              We are excited to let you know that you have been added to the **{communityName}** community on OppSkills.
+              We are excited to let you know that you have been added to the <strong>{communityName}</strong> community on OppSkills.
             </Text>
 
             <Text style={paragraph}>
