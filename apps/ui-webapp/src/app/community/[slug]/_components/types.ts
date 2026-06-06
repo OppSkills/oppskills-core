@@ -1,4 +1,7 @@
-import type { CommunityPostKind, CommunityPostRepostedFromSummary } from "@oppskills/types";
+import type {
+  CommunityPostKind,
+  CommunityPostRepostedFromSummary,
+} from "@oppskills/types";
 
 export interface CommunityDetails {
   name: string;

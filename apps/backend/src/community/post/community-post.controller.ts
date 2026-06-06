@@ -77,11 +77,7 @@ export class CommunityPostController {
     @Body() dto: CreateCommunityPostDto,
     @Req() req: Request,
   ) {
-    return this.postService.createPost(
-      this.getUserId(req),
-      communityId,
-      dto,
-    );
+    return this.postService.createPost(this.getUserId(req), communityId, dto);
   }
 
   @Patch(':postId')
@@ -166,17 +162,18 @@ export class CommunityPostController {
   }
 
   @Post(':postId/comments/:commentId/like')
-  @RateLimit({ limit: 30, windowMs: 60_000, keyPrefix: 'community-comment-like' })
+  @RateLimit({
+    limit: 30,
+    windowMs: 60_000,
+    keyPrefix: 'community-comment-like',
+  })
   @ApiOperation({ summary: 'Toggle like on a comment' })
   @ApiResponse({ status: 200, type: ToggleCommunityPostCommentLikeResponseDto })
   async toggleCommentLike(
     @Param('commentId') commentId: string,
     @Req() req: Request,
   ): Promise<ToggleCommunityPostCommentLikeResponseDto> {
-    return this.commentLikeService.toggleLike(
-      commentId,
-      this.getUserId(req),
-    );
+    return this.commentLikeService.toggleLike(commentId, this.getUserId(req));
   }
 
   @Post(':postId/repost')

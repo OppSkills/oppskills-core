@@ -33,9 +33,7 @@ export class CommunityPostCacheService {
   ): Promise<T | null> {
     if (!this.redis) return null;
     try {
-      const raw = await this.redis.get(
-        this.feedKey(communityId, cursor, take),
-      );
+      const raw = await this.redis.get(this.feedKey(communityId, cursor, take));
       if (!raw) return null;
       return JSON.parse(raw) as T;
     } catch {
@@ -94,10 +92,7 @@ export class CommunityPostCacheService {
     }
   }
 
-  async removeFromTimeline(
-    communityId: string,
-    postId: string,
-  ): Promise<void> {
+  async removeFromTimeline(communityId: string, postId: string): Promise<void> {
     if (!this.redis) return;
     try {
       await this.redis.zrem(this.timelineKey(communityId), postId);

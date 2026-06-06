@@ -50,7 +50,10 @@ export class UpdateCommunityPostDto {
   @MaxLength(65535)
   content?: string;
 
-  @ApiPropertyOptional({ type: [String], maxItems: COMMUNITY_POST_IMAGES_MAX_COUNT })
+  @ApiPropertyOptional({
+    type: [String],
+    maxItems: COMMUNITY_POST_IMAGES_MAX_COUNT,
+  })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(COMMUNITY_POST_IMAGES_MAX_COUNT)

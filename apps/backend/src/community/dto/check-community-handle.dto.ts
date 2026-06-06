@@ -6,6 +6,9 @@ export class CheckCommunityHandleResponseDto {
 }
 
 export class SuggestCommunityHandlesResponseDto {
-  @ApiProperty({ type: [String], example: ['oppskills-devs', 'oppskills-devs-2'] })
+  @ApiProperty({
+    type: [String],
+    example: ['oppskills-devs', 'oppskills-devs-2'],
+  })
   suggestions: string[];
 }

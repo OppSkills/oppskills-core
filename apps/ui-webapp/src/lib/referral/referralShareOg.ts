@@ -90,10 +90,9 @@ export async function fetchReferralTargetShareOg(
     }
 
     if (entityType === "COMMUNITY") {
-      const community = (await getPublicCommunityByHandle(slug)) as unknown as Record<
-        string,
-        unknown
-      > | null;
+      const community = (await getPublicCommunityByHandle(
+        slug,
+      )) as unknown as Record<string, unknown> | null;
       if (!community) return null;
       const name = String(community.name ?? "Community");
       const description = `Join the ${name} community on OppSkills.`;

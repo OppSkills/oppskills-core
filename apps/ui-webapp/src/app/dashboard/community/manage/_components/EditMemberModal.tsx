@@ -22,7 +22,7 @@ interface EditMemberModalProps {
   onUpdateMember: (
     memberId: string,
     role: string,
-    accessControl: string
+    accessControl: string,
   ) => Promise<void>;
   availableRoles?: string[];
 }
@@ -32,7 +32,12 @@ export default function EditMemberModal({
   onClose,
   member,
   onUpdateMember,
-  availableRoles = ["Community Admin", "Media Lead", "Content Writer", "Circle"],
+  availableRoles = [
+    "Community Admin",
+    "Media Lead",
+    "Content Writer",
+    "Circle",
+  ],
 }: EditMemberModalProps) {
   const [role, setRole] = useState("");
   const [customRole, setCustomRole] = useState("");
@@ -186,15 +191,17 @@ export default function EditMemberModal({
               <SelectValue placeholder="Select access control" />
             </SelectTrigger>
             <SelectContent className="rounded-2xl shadow-md border-neutral-200">
-              {["Admin Access", "Moderator", "Read Only", "Member"].map((level) => (
-                <SelectItem
-                  key={level}
-                  value={level}
-                  className="rounded-lg font-medium cursor-pointer"
-                >
-                  {level}
-                </SelectItem>
-              ))}
+              {["Admin Access", "Moderator", "Read Only", "Member"].map(
+                (level) => (
+                  <SelectItem
+                    key={level}
+                    value={level}
+                    className="rounded-lg font-medium cursor-pointer"
+                  >
+                    {level}
+                  </SelectItem>
+                ),
+              )}
             </SelectContent>
           </Select>
         </div>

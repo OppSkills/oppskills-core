@@ -34,7 +34,10 @@ export class CommunityTaskService {
     userId: string,
     communityId: string,
   ): Promise<number> {
-    const member = await this.communityService.getMemberRecord(userId, communityId);
+    const member = await this.communityService.getMemberRecord(
+      userId,
+      communityId,
+    );
     // Returns 0 for regular MEMBERs — callers must decide whether rank 0 is
     // acceptable for their operation. Only throws if the user has no membership
     // record at all (getMemberRecord throws NotFoundException in that case).
@@ -291,7 +294,12 @@ export class CommunityTaskService {
   ): Promise<TaskThreadMessageResponseDto> {
     const task = await prisma.communityTaskEntity.findUnique({
       where: { id: taskId },
-      select: { toUserId: true, byUserId: true, status: true, communityId: true },
+      select: {
+        toUserId: true,
+        byUserId: true,
+        status: true,
+        communityId: true,
+      },
     });
 
     if (!task) {

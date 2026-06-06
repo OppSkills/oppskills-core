@@ -84,7 +84,9 @@ export class ReferralAuthzService {
       });
 
       if (!member) {
-        throw new ForbiddenException('You do not have access to this community.');
+        throw new ForbiddenException(
+          'You do not have access to this community.',
+        );
       }
 
       const role = member.accessControlRole;

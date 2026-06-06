@@ -430,7 +430,8 @@ export function SendNotification({
               <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-2xl p-4 flex items-center gap-3 animate-in fade-in duration-300">
                 <Info className="w-5 h-5 text-yellow-600 shrink-0" />
                 <p className="text-sm">
-                  You have read-only access to this community. You can view the notification history but cannot send new notifications.
+                  You have read-only access to this community. You can view the
+                  notification history but cannot send new notifications.
                 </p>
               </div>
             )}
@@ -499,7 +500,12 @@ export function SendNotification({
               <label className="text-xs text-neutral-400 font-medium tracking-wide">
                 Main Body
               </label>
-              <div className={cn("border-none rounded-3xl overflow-hidden bg-white", isReadOnly && "pointer-events-none opacity-60 select-none")}>
+              <div
+                className={cn(
+                  "border-none rounded-3xl overflow-hidden bg-white",
+                  isReadOnly && "pointer-events-none opacity-60 select-none",
+                )}
+              >
                 <RichTextEditor
                   placeholder="Type your message here..."
                   value={message}

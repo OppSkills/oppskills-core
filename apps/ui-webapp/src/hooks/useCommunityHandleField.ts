@@ -110,12 +110,9 @@ export function useCommunityHandleField({
     refreshSuggestions,
   ]);
 
-  const applySuggestion = useCallback(
-    (suggestion: string) => {
-      onHandleChangeRef.current(suggestion);
-    },
-    [],
-  );
+  const applySuggestion = useCallback((suggestion: string) => {
+    onHandleChangeRef.current(suggestion);
+  }, []);
 
   const canSubmitHandle =
     isValidCommunityHandle(normalizedHandle) && status === "available";

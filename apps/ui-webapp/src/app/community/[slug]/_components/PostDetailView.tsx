@@ -25,7 +25,11 @@ import {
   useRepostPost,
   useUndoRepost,
 } from "@/hooks/useCommunityPosts";
-import { formatAuthorName, getAuthorInitials, stripHtmlPreview } from "./communityUtils";
+import {
+  formatAuthorName,
+  getAuthorInitials,
+  stripHtmlPreview,
+} from "./communityUtils";
 
 interface PostDetailViewProps {
   handle: string;
@@ -33,7 +37,13 @@ interface PostDetailViewProps {
   communityId: string;
 }
 
-function PostBody({ post, communityHandle }: { post: CommunityPostFeedItem; communityHandle: string }) {
+function PostBody({
+  post,
+  communityHandle,
+}: {
+  post: CommunityPostFeedItem;
+  communityHandle: string;
+}) {
   return (
     <>
       {post.postKind === "REPOST" && (
@@ -45,14 +55,19 @@ function PostBody({ post, communityHandle }: { post: CommunityPostFeedItem; comm
         <PostContent content={post.content} />
       )}
       {post.repostedFrom && (
-        <QuotedPostCard post={post.repostedFrom} communityHandle={communityHandle} />
+        <QuotedPostCard
+          post={post.repostedFrom}
+          communityHandle={communityHandle}
+        />
       )}
       {post.postKind === "ORIGINAL" && <PostContent content={post.content} />}
       {post.images.length > 0 && post.postKind !== "REPOST" && (
         <div
           className={cn(
             "w-full rounded-2xl overflow-hidden border border-neutral-100",
-            post.images.length > 1 ? "grid grid-cols-2 gap-2" : "relative h-64 sm:h-96",
+            post.images.length > 1
+              ? "grid grid-cols-2 gap-2"
+              : "relative h-64 sm:h-96",
           )}
         >
           {post.images.map((img, index) => (
@@ -63,7 +78,12 @@ function PostBody({ post, communityHandle }: { post: CommunityPostFeedItem; comm
                 post.images.length > 1 ? "h-44 sm:h-64" : "h-64 sm:h-96",
               )}
             >
-              <Image src={img} alt={`Post image ${index + 1}`} fill className="object-cover" />
+              <Image
+                src={img}
+                alt={`Post image ${index + 1}`}
+                fill
+                className="object-cover"
+              />
             </div>
           ))}
         </div>
@@ -151,7 +171,10 @@ export default function PostDetailView({
     return (
       <div className="text-center py-16">
         <p className="text-lg font-bold text-neutral-700">Post not found.</p>
-        <Link href={`/community/${handle}`} className="text-[#5D3EBB] font-semibold mt-2 inline-block">
+        <Link
+          href={`/community/${handle}`}
+          className="text-[#5D3EBB] font-semibold mt-2 inline-block"
+        >
           Back to community
         </Link>
       </div>
@@ -174,7 +197,12 @@ export default function PostDetailView({
         <div className="flex items-center gap-3">
           <div className="relative w-12 h-12 rounded-full overflow-hidden bg-neutral-900 flex items-center justify-center text-white font-bold shrink-0">
             {post.author.imageUrl ? (
-              <Image src={post.author.imageUrl} alt={authorName} fill className="object-cover" />
+              <Image
+                src={post.author.imageUrl}
+                alt={authorName}
+                fill
+                className="object-cover"
+              />
             ) : (
               getAuthorInitials(post.author)
             )}
@@ -182,7 +210,9 @@ export default function PostDetailView({
           <div>
             <p className="font-extrabold text-neutral-800">{authorName}</p>
             <p className="text-xs text-neutral-400 font-bold">
-              {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+              {formatDistanceToNow(new Date(post.createdAt), {
+                addSuffix: true,
+              })}
             </p>
           </div>
         </div>

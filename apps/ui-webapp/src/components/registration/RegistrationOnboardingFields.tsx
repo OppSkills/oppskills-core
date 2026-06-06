@@ -215,7 +215,9 @@ export function RegistrationOnboardingFields({
             </Label>
             <Select
               value={values.gender || undefined}
-              onValueChange={(v) => patch({ gender: v as RegistrationOnboardingValues["gender"] })}
+              onValueChange={(v) =>
+                patch({ gender: v as RegistrationOnboardingValues["gender"] })
+              }
             >
               <SelectTrigger className={cn(errors.gender && "border-red-500")}>
                 <SelectValue placeholder="Select gender" />
@@ -241,7 +243,8 @@ export function RegistrationOnboardingFields({
               value={values.userCategory || undefined}
               onValueChange={(v) =>
                 patch({
-                  userCategory: v as RegistrationOnboardingValues["userCategory"],
+                  userCategory:
+                    v as RegistrationOnboardingValues["userCategory"],
                 })
               }
             >
@@ -342,7 +345,10 @@ export function RegistrationOnboardingFields({
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full min-w-[300px] p-0" align="start">
+                    <PopoverContent
+                      className="w-full min-w-[300px] p-0"
+                      align="start"
+                    >
                       <Command shouldFilter={false}>
                         <CommandInput
                           placeholder="Search colleges..."
@@ -385,7 +391,9 @@ export function RegistrationOnboardingFields({
                                   )}
                                 />
                                 <div className="flex flex-col">
-                                  <span className="font-medium">{college.name}</span>
+                                  <span className="font-medium">
+                                    {college.name}
+                                  </span>
                                   <span className="text-xs text-muted-foreground">
                                     {college.city}, {college.state}
                                   </span>
@@ -424,7 +432,10 @@ export function RegistrationOnboardingFields({
                     });
                   }}
                 />
-                <Label htmlFor="reg-collegeSkipped" className="font-normal cursor-pointer">
+                <Label
+                  htmlFor="reg-collegeSkipped"
+                  className="font-normal cursor-pointer"
+                >
                   My college is not listed
                 </Label>
               </div>
@@ -519,7 +530,10 @@ export function RegistrationOnboardingFields({
               <Input
                 value={values.locationCoords}
                 onChange={(e) => {
-                  patch({ locationCoords: e.target.value, locationPlaceId: "" });
+                  patch({
+                    locationCoords: e.target.value,
+                    locationPlaceId: "",
+                  });
                   ignoreLocationQueryRef.current = "";
                   setShowLocationDropdown(true);
                 }}

@@ -39,7 +39,9 @@ function CommentLikeButton({
         isLiked ? "text-[#5D3EBB]" : "text-neutral-400 hover:text-[#5D3EBB]",
       )}
     >
-      <ThumbsUp className={cn("w-3.5 h-3.5", isLiked ? "fill-[#5D3EBB]" : "")} />
+      <ThumbsUp
+        className={cn("w-3.5 h-3.5", isLiked ? "fill-[#5D3EBB]" : "")}
+      />
       Liked ({likeCount})
     </button>
   );
@@ -85,7 +87,9 @@ function ReplyItem({
             {formatAuthorName(reply.author)}
           </span>
           <span className="text-[10px] text-neutral-400 font-bold">
-            {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true })}
+            {formatDistanceToNow(new Date(reply.createdAt), {
+              addSuffix: true,
+            })}
           </span>
         </div>
         <p className="text-neutral-600 text-xs sm:text-sm leading-relaxed font-semibold mt-0.5">

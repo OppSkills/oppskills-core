@@ -1,8 +1,8 @@
-import type { CommunityIndustryValue } from '../../../enums/community-industry';
+import type { CommunityIndustryValue } from "../../../enums/community-industry";
 
-export type CommunityPostStatus = 'PUBLISHED' | 'DELETED';
+export type CommunityPostStatus = "PUBLISHED" | "DELETED";
 
-export type CommunityPostKind = 'ORIGINAL' | 'REPOST' | 'QUOTE_REPOST';
+export type CommunityPostKind = "ORIGINAL" | "REPOST" | "QUOTE_REPOST";
 
 export interface CreateCommunityPostDto {
   content: string;
@@ -104,10 +104,10 @@ export interface PublicCommunityListResponse {
 }
 
 export type CommunityMyRole =
-  | 'OWNER'
-  | 'ADMIN'
-  | 'MODERATOR'
-  | 'READ_ONLY'
+  | "OWNER"
+  | "ADMIN"
+  | "MODERATOR"
+  | "READ_ONLY"
   | null;
 
 export interface PublicCommunityProfile {

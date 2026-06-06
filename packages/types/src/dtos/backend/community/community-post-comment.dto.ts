@@ -1,4 +1,4 @@
-export type CommunityPostCommentStatus = 'PUBLISHED' | 'DELETED';
+export type CommunityPostCommentStatus = "PUBLISHED" | "DELETED";
 
 export interface CreateCommunityPostCommentDto {
   content: string;

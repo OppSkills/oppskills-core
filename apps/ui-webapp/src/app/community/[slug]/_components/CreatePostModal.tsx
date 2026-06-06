@@ -88,7 +88,9 @@ export default function CreatePostModal({
 
     const remaining = COMMUNITY_POST_IMAGES_MAX_COUNT - images.length;
     if (remaining <= 0) {
-      toast.error(`You can attach up to ${COMMUNITY_POST_IMAGES_MAX_COUNT} images.`);
+      toast.error(
+        `You can attach up to ${COMMUNITY_POST_IMAGES_MAX_COUNT} images.`,
+      );
       e.target.value = "";
       return;
     }
@@ -108,10 +110,14 @@ export default function CreatePostModal({
 
   const handleAddMockImage = () => {
     if (images.length >= COMMUNITY_POST_IMAGES_MAX_COUNT) {
-      toast.error(`You can attach up to ${COMMUNITY_POST_IMAGES_MAX_COUNT} images.`);
+      toast.error(
+        `You can attach up to ${COMMUNITY_POST_IMAGES_MAX_COUNT} images.`,
+      );
       return;
     }
-    const notYetUsed = PRESET_MOCK_IMAGES.filter((url) => !images.includes(url));
+    const notYetUsed = PRESET_MOCK_IMAGES.filter(
+      (url) => !images.includes(url),
+    );
     const pool = notYetUsed.length > 0 ? notYetUsed : PRESET_MOCK_IMAGES;
     const idx = mockImageIndexRef.current % pool.length;
     mockImageIndexRef.current += 1;
@@ -142,7 +148,9 @@ export default function CreatePostModal({
       toast.error("Please enter some content for your post.");
       return;
     }
-    if (getPlainTextLengthFromHtml(content) > COMMUNITY_POST_CONTENT_MAX_LENGTH) {
+    if (
+      getPlainTextLengthFromHtml(content) > COMMUNITY_POST_CONTENT_MAX_LENGTH
+    ) {
       toast.error(
         `Post content cannot exceed ${COMMUNITY_POST_CONTENT_MAX_LENGTH} characters.`,
       );
@@ -193,7 +201,8 @@ export default function CreatePostModal({
           {images.length > 0 && (
             <div className="flex flex-col gap-2">
               <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
-                Attached Images ({images.length}/{COMMUNITY_POST_IMAGES_MAX_COUNT})
+                Attached Images ({images.length}/
+                {COMMUNITY_POST_IMAGES_MAX_COUNT})
               </span>
               <div className="flex items-center gap-3.5 overflow-x-auto pb-1 scrollbar-none">
                 {images.map((img, idx) => (

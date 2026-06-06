@@ -141,7 +141,9 @@ export default function CommunityGoalsPage() {
       } catch (error) {
         console.error("Failed to validate community access:", error);
         if (!cancelled) {
-          toast.error("You do not have permission to manage this community or it does not exist.");
+          toast.error(
+            "You do not have permission to manage this community or it does not exist.",
+          );
           router.push("/dashboard/community");
         }
       }

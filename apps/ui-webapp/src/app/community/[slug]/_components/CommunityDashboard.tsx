@@ -40,13 +40,13 @@ interface CommunityDashboardProps {
   handle: string;
 }
 
-function canManageCommunity(
-  myRole: string | null | undefined,
-): boolean {
+function canManageCommunity(myRole: string | null | undefined): boolean {
   return myRole === "OWNER" || myRole === "ADMIN" || myRole === "MODERATOR";
 }
 
-export default function CommunityDashboard({ handle }: CommunityDashboardProps) {
+export default function CommunityDashboard({
+  handle,
+}: CommunityDashboardProps) {
   const { getToken, isSignedIn } = useAuth();
   const queryClient = useQueryClient();
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -63,15 +63,18 @@ export default function CommunityDashboard({ handle }: CommunityDashboardProps) 
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
 
-  const { data: profile, isLoading: profileLoading, error: profileError } =
-    useQuery({
-      queryKey: ["community-profile", handle, isSignedIn],
-      queryFn: async () => {
-        const token = isSignedIn ? await getToken() : undefined;
-        return getPublicCommunityByHandle(handle, token ?? undefined);
-      },
-      enabled: !!handle,
-    });
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useQuery({
+    queryKey: ["community-profile", handle, isSignedIn],
+    queryFn: async () => {
+      const token = isSignedIn ? await getToken() : undefined;
+      return getPublicCommunityByHandle(handle, token ?? undefined);
+    },
+    enabled: !!handle,
+  });
 
   const {
     data: postsData,
@@ -186,7 +189,9 @@ export default function CommunityDashboard({ handle }: CommunityDashboardProps) 
       await createPostMutation.mutateAsync({ content, imageUrls });
       toast.success("Post published!");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create post.");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create post.",
+      );
     } finally {
       setIsUploadingImages(false);
     }
@@ -252,7 +257,9 @@ export default function CommunityDashboard({ handle }: CommunityDashboardProps) 
       await deletePostMutation.mutateAsync(postId);
       toast.success("Post deleted.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete post.");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete post.",
+      );
     }
   };
 
@@ -306,10 +313,7 @@ export default function CommunityDashboard({ handle }: CommunityDashboardProps) 
     }
   };
 
-  const handleImageUpload = async (
-    file: File,
-    type: "cover" | "avatar",
-  ) => {
+  const handleImageUpload = async (file: File, type: "cover" | "avatar") => {
     const purpose = type === "cover" ? "COMMUNITY_COVER" : "COMMUNITY_AVATAR";
     const url = await uploadImageFile(file, purpose);
     if (!url) return;
@@ -331,7 +335,9 @@ export default function CommunityDashboard({ handle }: CommunityDashboardProps) 
   if (profileError || !details) {
     return (
       <div className="w-full max-w-5xl mx-auto px-4 py-16 text-center">
-        <p className="text-lg font-bold text-neutral-700">Community not found.</p>
+        <p className="text-lg font-bold text-neutral-700">
+          Community not found.
+        </p>
       </div>
     );
   }
@@ -362,97 +368,93 @@ export default function CommunityDashboard({ handle }: CommunityDashboardProps) 
       />
 
       <div className="w-full flex flex-col gap-6">
-          <CommunityHeader
-            details={details}
-            canManage={canManage}
-            isFollowing={isFollowing}
-            isFollowLoading={isFollowLoading}
-            onEditCover={
-              canManage ? () => coverInputRef.current?.click() : undefined
-            }
-            onEditAvatar={
-              canManage ? () => avatarInputRef.current?.click() : undefined
-            }
-            onCreatePost={
-              canManage ? () => setIsCreatingPost(true) : undefined
-            }
-            onFollow={canManage ? undefined : handleFollow}
-            onUnfollow={canManage ? undefined : handleUnfollow}
-          />
+        <CommunityHeader
+          details={details}
+          canManage={canManage}
+          isFollowing={isFollowing}
+          isFollowLoading={isFollowLoading}
+          onEditCover={
+            canManage ? () => coverInputRef.current?.click() : undefined
+          }
+          onEditAvatar={
+            canManage ? () => avatarInputRef.current?.click() : undefined
+          }
+          onCreatePost={canManage ? () => setIsCreatingPost(true) : undefined}
+          onFollow={canManage ? undefined : handleFollow}
+          onUnfollow={canManage ? undefined : handleUnfollow}
+        />
 
-          <AboutCard
-            details={details}
-            onEditAbout={
-              canManage ? () => setIsEditAboutOpen(true) : undefined
-            }
-          />
+        <AboutCard
+          details={details}
+          onEditAbout={canManage ? () => setIsEditAboutOpen(true) : undefined}
+        />
 
-          <div className="flex flex-col gap-5 w-full">
-            <div className="flex items-center justify-between border-b border-neutral-100 pb-2">
-              <h3 className="text-xl font-extrabold text-neutral-800 tracking-tight">
-                Community Feed
-              </h3>
-              {isSignedIn && (
-                <Link
-                  href={`/community/${handle}/activity`}
-                  className="text-sm font-bold text-[#5D3EBB] hover:underline"
-                >
-                  My Activity
-                </Link>
-              )}
-            </div>
-
-            {postsLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-[#5D3EBB]" />
-              </div>
-            ) : posts.length > 0 ? (
-              <div className="flex flex-col gap-6 w-full">
-                {posts.map((post) => (
-                  <div key={post.id} id={`post-${post.id}`}>
-                    <PostCard
-                      post={post}
-                      communityHandle={handle}
-                      onLike={handleLikePost}
-                      onDelete={handleDeletePost}
-                      onRepost={handleRepostPost}
-                      onShare={handleSharePost}
-                      canManage={canManage}
-                    />
-                  </div>
-                ))}
-                {hasNextPage && (
-                  <div className="flex justify-center pt-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => fetchNextPage()}
-                      disabled={isFetchingNextPage}
-                      className="rounded-full"
-                    >
-                      {isFetchingNextPage ? "Loading..." : "Load more posts"}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="w-full bg-white border border-neutral-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3">
-                <span className="text-neutral-400 text-lg font-bold">
-                  No posts yet.
-                </span>
-                <span className="text-neutral-500 text-sm">
-                  Be the first to create a post in this community!
-                </span>
-                {canManage && (
-                  <Button
-                    onClick={() => setIsCreatingPost(true)}
-                    className="mt-2 bg-[#2E1E66] hover:bg-[#1E1146] text-white font-bold px-6 rounded-full"
-                  >
-                    Create Post
-                  </Button>
-                )}
-              </div>
+        <div className="flex flex-col gap-5 w-full">
+          <div className="flex items-center justify-between border-b border-neutral-100 pb-2">
+            <h3 className="text-xl font-extrabold text-neutral-800 tracking-tight">
+              Community Feed
+            </h3>
+            {isSignedIn && (
+              <Link
+                href={`/community/${handle}/activity`}
+                className="text-sm font-bold text-[#5D3EBB] hover:underline"
+              >
+                My Activity
+              </Link>
             )}
           </div>
+
+          {postsLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-[#5D3EBB]" />
+            </div>
+          ) : posts.length > 0 ? (
+            <div className="flex flex-col gap-6 w-full">
+              {posts.map((post) => (
+                <div key={post.id} id={`post-${post.id}`}>
+                  <PostCard
+                    post={post}
+                    communityHandle={handle}
+                    onLike={handleLikePost}
+                    onDelete={handleDeletePost}
+                    onRepost={handleRepostPost}
+                    onShare={handleSharePost}
+                    canManage={canManage}
+                  />
+                </div>
+              ))}
+              {hasNextPage && (
+                <div className="flex justify-center pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="rounded-full"
+                  >
+                    {isFetchingNextPage ? "Loading..." : "Load more posts"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-full bg-white border border-neutral-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3">
+              <span className="text-neutral-400 text-lg font-bold">
+                No posts yet.
+              </span>
+              <span className="text-neutral-500 text-sm">
+                Be the first to create a post in this community!
+              </span>
+              {canManage && (
+                <Button
+                  onClick={() => setIsCreatingPost(true)}
+                  className="mt-2 bg-[#2E1E66] hover:bg-[#1E1146] text-white font-bold px-6 rounded-full"
+                >
+                  Create Post
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <CreatePostModal

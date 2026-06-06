@@ -10,10 +10,7 @@ import "react-image-crop/dist/ReactCrop.css";
 import { X } from "lucide-react";
 import CustomModal from "./CustomModal";
 import { Button } from "@/components/ui/button";
-import {
-  blobToCroppedFile,
-  getCroppedImageBlob,
-} from "@/lib/chat/cropImage";
+import { blobToCroppedFile, getCroppedImageBlob } from "@/lib/chat/cropImage";
 
 interface AdjustImagesModalProps {
   isOpen: boolean;
@@ -33,10 +30,7 @@ const FULL_IMAGE_CROP: Crop = {
   height: 100,
 };
 
-function toNaturalPixelCrop(
-  crop: Crop,
-  image: HTMLImageElement,
-): PixelCrop {
+function toNaturalPixelCrop(crop: Crop, image: HTMLImageElement): PixelCrop {
   const displayCrop = convertToPixelCrop(crop, image.width, image.height);
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;

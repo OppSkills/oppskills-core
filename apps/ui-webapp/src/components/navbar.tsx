@@ -140,10 +140,7 @@ const Navbar = () => {
         {/* --- RIGHT SIDE ACTIONS --- */}
         <div className="flex items-center gap-3">
           <div className="hidden xl:flex items-center justify-center relative search-input-container">
-            <form
-              onSubmit={handleSearch}
-              className="relative w-full max-w-75"
-            >
+            <form onSubmit={handleSearch} className="relative w-full max-w-75">
               <Input
                 type="text"
                 placeholder="Search"

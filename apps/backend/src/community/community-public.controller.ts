@@ -19,7 +19,7 @@ export class CommunityPublicController {
   constructor(
     private readonly communityService: CommunityService,
     private readonly optionalAuth: OptionalAuthService,
-  ) { }
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List public communities' })
@@ -57,9 +57,6 @@ export class CommunityPublicController {
     @Req() req: Request,
   ): Promise<PublicCommunityProfileDto> {
     const viewerUserId = await this.optionalAuth.resolveUserId(req);
-    return this.communityService.getPublicProfileByHandle(
-      handle,
-      viewerUserId,
-    );
+    return this.communityService.getPublicProfileByHandle(handle, viewerUserId);
   }
 }

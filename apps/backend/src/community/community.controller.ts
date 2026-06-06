@@ -40,7 +40,7 @@ import { CommunityStatsResponseDto } from './dto/community-stats-response.dto';
 @ApiTags('Communities')
 @Controller('communities')
 export class CommunityController {
-  constructor(private readonly communityService: CommunityService) { }
+  constructor(private readonly communityService: CommunityService) {}
 
   @Get('my')
   @UseGuards(ClerkAuthGuard)
@@ -73,7 +73,9 @@ export class CommunityController {
   async checkHandleAvailability(
     @Query('handle') handle: string,
   ): Promise<CheckCommunityHandleResponseDto> {
-    const available = await this.communityService.isHandleAvailable(handle ?? '');
+    const available = await this.communityService.isHandleAvailable(
+      handle ?? '',
+    );
     return { available };
   }
 
@@ -198,7 +200,10 @@ export class CommunityController {
   @ApiBearerAuth('clerk-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Unfollow a community (leave membership)' })
-  @ApiResponse({ status: 200, description: 'No longer following the community' })
+  @ApiResponse({
+    status: 200,
+    description: 'No longer following the community',
+  })
   async unfollowCommunity(@Param('id') id: string, @Req() req: Request) {
     const userId = req.user?.id;
     if (typeof userId !== 'string' || userId.trim().length === 0) {
@@ -348,7 +353,10 @@ export class CommunityController {
   })
   @ApiResponse({ status: 200, description: 'Member record' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden – regular members cannot access the dashboard' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden – regular members cannot access the dashboard',
+  })
   @ApiResponse({ status: 404, description: 'Not Found' })
   async getMyMemberRecord(
     @Param('id') communityId: string,
@@ -358,7 +366,10 @@ export class CommunityController {
     if (typeof userId !== 'string' || userId.trim().length === 0) {
       throw new UnauthorizedException('User not found.');
     }
-    const record = await this.communityService.getMemberRecord(userId, communityId);
+    const record = await this.communityService.getMemberRecord(
+      userId,
+      communityId,
+    );
     // Dashboard eligibility: only ADMIN, MODERATOR, READ_ONLY (and the owner)
     // may access the manage dashboard. Regular MEMBERs are community
     // participants only and must not gain dashboard access.
@@ -456,7 +467,8 @@ export class CommunityController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Join a community',
-    description: 'Allows an authenticated user to join a community as a MEMBER, optionally attributing a referral code.',
+    description:
+      'Allows an authenticated user to join a community as a MEMBER, optionally attributing a referral code.',
   })
   @ApiResponse({ status: 200, description: 'Successfully joined community' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -470,6 +482,10 @@ export class CommunityController {
     if (typeof userId !== 'string' || userId.trim().length === 0) {
       throw new UnauthorizedException('User not found.');
     }
-    return this.communityService.joinCommunity(userId, communityId, referralCode);
+    return this.communityService.joinCommunity(
+      userId,
+      communityId,
+      referralCode,
+    );
   }
 }

@@ -101,7 +101,10 @@ export default function RichTextEditor({
         className="flex-1 min-h-0 overflow-y-auto cursor-text scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
         onClick={() => editor.chain().focus().run()}
       >
-        <EditorContent editor={editor} className={scrollable ? "min-h-0" : "min-h-[200px]"} />
+        <EditorContent
+          editor={editor}
+          className={scrollable ? "min-h-0" : "min-h-[200px]"}
+        />
       </div>
       {maxLength != null ? (
         <div className="shrink-0 px-4 py-2 border-t text-xs text-neutral-500 text-right">

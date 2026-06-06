@@ -8,7 +8,10 @@ export function getPlainTextLengthFromHtml(html: string): number {
     .trim().length;
 }
 
-export function truncatePlainTextInHtml(html: string, maxLength: number): string {
+export function truncatePlainTextInHtml(
+  html: string,
+  maxLength: number,
+): string {
   const plain = html.replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ");
   if (plain.trim().length <= maxLength) return html;
   return plain.slice(0, maxLength);

@@ -25,7 +25,6 @@ import {
   normalizeCommunityHandle,
 } from './community-handle.util';
 
-
 @Injectable()
 export class CommunityService {
   private readonly logger = new Logger(CommunityService.name);
@@ -206,14 +205,16 @@ export class CommunityService {
     }
   }
 
-  async listPublicCommunities(input: {
-    page?: number;
-    take?: number;
-    search?: string;
-    industry?: string[];
-    sort?: string;
-    sortOrder?: 'asc' | 'desc';
-  } = {}): Promise<{
+  async listPublicCommunities(
+    input: {
+      page?: number;
+      take?: number;
+      search?: string;
+      industry?: string[];
+      sort?: string;
+      sortOrder?: 'asc' | 'desc';
+    } = {},
+  ): Promise<{
     items: PublicCommunityListItemDto[];
     total: number;
     totalPages: number;
@@ -636,9 +637,11 @@ export class CommunityService {
       ];
     }
 
-    const hasOwnerInMembers = await prisma.communityMemberEntity.count({
-      where: { communityId, userId: community.ownerId },
-    }).then((c) => c > 0);
+    const hasOwnerInMembers = await prisma.communityMemberEntity
+      .count({
+        where: { communityId, userId: community.ownerId },
+      })
+      .then((c) => c > 0);
 
     const isOwnerLegacy = !hasOwnerInMembers && community.owner;
 
@@ -746,10 +749,7 @@ export class CommunityService {
 
       if (matchesSearch && matchesRole) {
         legacyOwnerMatches = true;
-        const ownerProfileInfo = mapProfileDetails(
-          owner,
-          community.createdAt,
-        );
+        const ownerProfileInfo = mapProfileDetails(owner, community.createdAt);
         legacyOwnerRecord = {
           id: `owner-${owner.id}`,
           userId: owner.id,
@@ -1407,7 +1407,9 @@ export class CommunityService {
         communityId,
         userId,
       });
-      throw new ConflictException('You are already a member of this community.');
+      throw new ConflictException(
+        'You are already a member of this community.',
+      );
     }
 
     let referralId: string | null = null;
@@ -1557,7 +1559,9 @@ export class CommunityService {
     }
 
     if (community.ownerId === userId) {
-      throw new BadRequestException('Community owners cannot unfollow their community.');
+      throw new BadRequestException(
+        'Community owners cannot unfollow their community.',
+      );
     }
 
     const member = await prisma.communityMemberEntity.findUnique({

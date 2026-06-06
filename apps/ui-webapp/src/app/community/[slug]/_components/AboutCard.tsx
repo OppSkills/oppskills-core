@@ -11,7 +11,8 @@ interface AboutCardProps {
 
 export default function AboutCard({ details, onEditAbout }: AboutCardProps) {
   const hasAboutContent =
-    details.aboutText && details.aboutText.replace(/<[^>]*>/g, "").trim().length > 0;
+    details.aboutText &&
+    details.aboutText.replace(/<[^>]*>/g, "").trim().length > 0;
 
   return (
     <div className="w-full bg-white rounded-3xl border border-neutral-200 p-6 sm:p-8 flex flex-col gap-6 relative shadow-xs group">

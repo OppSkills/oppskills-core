@@ -436,73 +436,74 @@ export class ReferralService {
     pageSize = 10,
   ) {
     const referral = await this.getReferralById(id, userId);
-    const [teamMembers, eventParticipants, leaderTeams, communityMembers] = await Promise.all([
-      prisma.teamMemberEntity.findMany({
-        where: { referralId: referral.id },
-        select: {
-          id: true,
-          joinedAt: true,
-          user: {
-            select: {
-              firstName: true,
-              lastName: true,
-              email: true,
-              imageUrl: true,
-              onboardingProfile: ONBOARDING_PROFILE_SELECT,
+    const [teamMembers, eventParticipants, leaderTeams, communityMembers] =
+      await Promise.all([
+        prisma.teamMemberEntity.findMany({
+          where: { referralId: referral.id },
+          select: {
+            id: true,
+            joinedAt: true,
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+                imageUrl: true,
+                onboardingProfile: ONBOARDING_PROFILE_SELECT,
+              },
             },
           },
-        },
-      }),
-      prisma.eventParticipantEntity.findMany({
-        where: { referralId: referral.id },
-        select: {
-          id: true,
-          joinedAt: true,
-          approved: true,
-          user: {
-            select: {
-              firstName: true,
-              lastName: true,
-              email: true,
-              imageUrl: true,
-              onboardingProfile: ONBOARDING_PROFILE_SELECT,
+        }),
+        prisma.eventParticipantEntity.findMany({
+          where: { referralId: referral.id },
+          select: {
+            id: true,
+            joinedAt: true,
+            approved: true,
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+                imageUrl: true,
+                onboardingProfile: ONBOARDING_PROFILE_SELECT,
+              },
             },
           },
-        },
-      }),
-      prisma.teamEntity.findMany({
-        where: { referralId: referral.id },
-        select: {
-          id: true,
-          createdAt: true,
-          leader: {
-            select: {
-              firstName: true,
-              lastName: true,
-              email: true,
-              imageUrl: true,
-              onboardingProfile: ONBOARDING_PROFILE_SELECT,
+        }),
+        prisma.teamEntity.findMany({
+          where: { referralId: referral.id },
+          select: {
+            id: true,
+            createdAt: true,
+            leader: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+                imageUrl: true,
+                onboardingProfile: ONBOARDING_PROFILE_SELECT,
+              },
             },
           },
-        },
-      }),
-      prisma.communityMemberEntity.findMany({
-        where: { referralId: referral.id },
-        select: {
-          id: true,
-          createdAt: true,
-          user: {
-            select: {
-              firstName: true,
-              lastName: true,
-              email: true,
-              imageUrl: true,
-              onboardingProfile: ONBOARDING_PROFILE_SELECT,
+        }),
+        prisma.communityMemberEntity.findMany({
+          where: { referralId: referral.id },
+          select: {
+            id: true,
+            createdAt: true,
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+                imageUrl: true,
+                onboardingProfile: ONBOARDING_PROFILE_SELECT,
+              },
             },
           },
-        },
-      }),
-    ]);
+        }),
+      ]);
 
     const formatProfession = (profile: any) => {
       if (!profile) return 'Other';
@@ -746,7 +747,13 @@ export class ReferralService {
   }) {
     const referral = await prisma.referralEntity.findUnique({
       where: { code: input.code },
-      select: { id: true, isDeleted: true, isActive: true, entityType: true, entityId: true },
+      select: {
+        id: true,
+        isDeleted: true,
+        isActive: true,
+        entityType: true,
+        entityId: true,
+      },
     });
     if (!referral || referral.isDeleted || !referral.isActive) {
       throw new NotFoundException('Referral code not found');
@@ -996,45 +1003,55 @@ export class ReferralService {
     const now = new Date();
     const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const [clicksLast24hMap, eventRegs24h, teamRegs24h, teamMemberRegs24h, communityRegs24h] =
-      await Promise.all([
-        this.counter.getBatchClicksLast24h(referralIds),
-        prisma.eventParticipantEntity.groupBy({
-          by: ['referralId'],
-          where: {
-            referralId: { in: referralIds },
-            joinedAt: { gte: start24h },
-          },
-          _count: { _all: true },
-        }),
-        prisma.teamEntity.groupBy({
-          by: ['referralId'],
-          where: {
-            referralId: { in: referralIds },
-            createdAt: { gte: start24h },
-          },
-          _count: { _all: true },
-        }),
-        prisma.teamMemberEntity.groupBy({
-          by: ['referralId'],
-          where: {
-            referralId: { in: referralIds },
-            joinedAt: { gte: start24h },
-          },
-          _count: { _all: true },
-        }),
-        prisma.communityMemberEntity.groupBy({
-          by: ['referralId'],
-          where: {
-            referralId: { in: referralIds },
-            createdAt: { gte: start24h },
-          },
-          _count: { _all: true },
-        }),
-      ]);
+    const [
+      clicksLast24hMap,
+      eventRegs24h,
+      teamRegs24h,
+      teamMemberRegs24h,
+      communityRegs24h,
+    ] = await Promise.all([
+      this.counter.getBatchClicksLast24h(referralIds),
+      prisma.eventParticipantEntity.groupBy({
+        by: ['referralId'],
+        where: {
+          referralId: { in: referralIds },
+          joinedAt: { gte: start24h },
+        },
+        _count: { _all: true },
+      }),
+      prisma.teamEntity.groupBy({
+        by: ['referralId'],
+        where: {
+          referralId: { in: referralIds },
+          createdAt: { gte: start24h },
+        },
+        _count: { _all: true },
+      }),
+      prisma.teamMemberEntity.groupBy({
+        by: ['referralId'],
+        where: {
+          referralId: { in: referralIds },
+          joinedAt: { gte: start24h },
+        },
+        _count: { _all: true },
+      }),
+      prisma.communityMemberEntity.groupBy({
+        by: ['referralId'],
+        where: {
+          referralId: { in: referralIds },
+          createdAt: { gte: start24h },
+        },
+        _count: { _all: true },
+      }),
+    ]);
 
     const regMap: Record<string, number> = {};
-    [...eventRegs24h, ...teamRegs24h, ...teamMemberRegs24h, ...communityRegs24h].forEach((r) => {
+    [
+      ...eventRegs24h,
+      ...teamRegs24h,
+      ...teamMemberRegs24h,
+      ...communityRegs24h,
+    ].forEach((r) => {
       if (r.referralId) {
         regMap[r.referralId] = (regMap[r.referralId] || 0) + r._count._all;
       }

@@ -1,4 +1,10 @@
-import { buildAuthHeaders, createApiClient, isRecord, requireString, optionalString } from "./apiClient";
+import {
+  buildAuthHeaders,
+  createApiClient,
+  isRecord,
+  requireString,
+  optionalString,
+} from "./apiClient";
 import type {
   CommunityMeetResponse,
   CreateCommunityMeetDto,
@@ -8,8 +14,6 @@ import type {
 
 const COMMUNITY_MEETS_API = createApiClient("/communities");
 const MEETS_API = createApiClient("/meets");
-
-
 
 function parseMeetResponse(
   raw: Record<string, unknown>,

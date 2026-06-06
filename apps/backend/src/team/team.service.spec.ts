@@ -69,7 +69,10 @@ describe('TeamService', () => {
       resolveForRegistration: jest.fn().mockResolvedValue('ref-123'),
       markRegistrationAttributed: jest.fn().mockResolvedValue(undefined),
     };
-    service = new TeamService({ emit: jest.fn() } as any, referralServiceMock as any);
+    service = new TeamService(
+      { emit: jest.fn() } as any,
+      referralServiceMock as any,
+    );
     jest.clearAllMocks();
   });
 

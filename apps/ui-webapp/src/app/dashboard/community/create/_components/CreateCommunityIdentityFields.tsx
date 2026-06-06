@@ -73,8 +73,7 @@ function IdentityFieldsBody({
   const handleStatusMessage = (() => {
     if (!normalizedHandle) return null;
     if (status === "checking") return "Checking availability…";
-    if (status === "available")
-      return `@${normalizedHandle} is available`;
+    if (status === "available") return `@${normalizedHandle} is available`;
     if (status === "taken") return `@${normalizedHandle} is already taken`;
     if (status === "invalid")
       return `Use ${COMMUNITY_HANDLE_MIN_LENGTH}–${COMMUNITY_HANDLE_MAX_LENGTH} characters: lowercase letters, numbers, _ or -`;

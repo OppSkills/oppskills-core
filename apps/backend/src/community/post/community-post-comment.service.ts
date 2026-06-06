@@ -80,8 +80,7 @@ export class CommunityPostCommentService {
       parentId: null;
       status: 'PUBLISHED';
       OR?: Array<
-        | { createdAt: Date; id: { lt: string } }
-        | { createdAt: { lt: Date } }
+        { createdAt: Date; id: { lt: string } } | { createdAt: { lt: Date } }
       >;
     } = {
       postId,
@@ -144,8 +143,7 @@ export class CommunityPostCommentService {
       parentId: string;
       status: 'PUBLISHED';
       OR?: Array<
-        | { createdAt: Date; id: { gt: string } }
-        | { createdAt: { gt: Date } }
+        { createdAt: Date; id: { gt: string } } | { createdAt: { gt: Date } }
       >;
     } = {
       postId,
@@ -199,7 +197,7 @@ export class CommunityPostCommentService {
         );
         return this.toCommentItem(
           comment,
-          viewerUserId ? likedMap[comment.id] ?? false : undefined,
+          viewerUserId ? (likedMap[comment.id] ?? false) : undefined,
           likeCount,
         );
       }),

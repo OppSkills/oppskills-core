@@ -23,7 +23,9 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Pagination from "./Pagination";
 
-interface GenericListingPageProps<T extends { sort?: string; sortOrder?: "asc" | "desc" }> {
+interface GenericListingPageProps<
+  T extends { sort?: string; sortOrder?: "asc" | "desc" },
+> {
   items: ListingItem[];
   isLoading: boolean;
   error?: unknown;
@@ -31,9 +33,7 @@ interface GenericListingPageProps<T extends { sort?: string; sortOrder?: "asc" |
   hasMore?: boolean;
   isFetchingNextPage?: boolean;
   filters?: T;
-  setFilters?: (
-    filters: T | ((prev: T) => T),
-  ) => void;
+  setFilters?: (filters: T | ((prev: T) => T)) => void;
   title?: string;
   description?: string;
   showPagination?: boolean;
@@ -49,7 +49,9 @@ interface GenericListingPageProps<T extends { sort?: string; sortOrder?: "asc" |
   onClearFilters?: () => void;
 }
 
-export function GenericListingPage<T extends { sort?: string; sortOrder?: "asc" | "desc" }>({
+export function GenericListingPage<
+  T extends { sort?: string; sortOrder?: "asc" | "desc" },
+>({
   items,
   isLoading,
   error,
@@ -88,11 +90,14 @@ export function GenericListingPage<T extends { sort?: string; sortOrder?: "asc" 
       setFilters &&
       (filters.sort !== curSort || filters.sortOrder !== curSortOrder)
     ) {
-      setFilters((prev: T) => ({
-        ...prev,
-        sort: curSort,
-        sortOrder: curSortOrder,
-      } as T));
+      setFilters(
+        (prev: T) =>
+          ({
+            ...prev,
+            sort: curSort,
+            sortOrder: curSortOrder,
+          }) as T,
+      );
     }
   }, [curSort, curSortOrder, filters, setFilters]);
 
@@ -131,8 +136,8 @@ export function GenericListingPage<T extends { sort?: string; sortOrder?: "asc" 
                 <ScrollArea className="h-full px-4 py-8">
                   {filterSidebar || (
                     <GenericFilterSidebar
-                      filters={filters}
-                      setFilters={setFilters}
+                      filters={filters as unknown as FilterState}
+                      setFilters={setFilters as any}
                     />
                   )}
                 </ScrollArea>
@@ -147,7 +152,10 @@ export function GenericListingPage<T extends { sort?: string; sortOrder?: "asc" 
           <aside className="hidden min-w-40 max-w-64 shrink-0 lg:block">
             <div className="sticky top-20 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto pr-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {filterSidebar || (
-                <GenericFilterSidebar filters={filters} setFilters={setFilters} />
+                <GenericFilterSidebar
+                  filters={filters as unknown as FilterState}
+                  setFilters={setFilters as any}
+                />
               )}
             </div>
           </aside>
@@ -189,7 +197,7 @@ export function GenericListingPage<T extends { sort?: string; sortOrder?: "asc" 
                           eventDates: [],
                           eligibility: [],
                           sort: filters.sort,
-                        });
+                        } as any);
                       }
                     }}
                     className="mt-2"
@@ -210,12 +218,20 @@ export function GenericListingPage<T extends { sort?: string; sortOrder?: "asc" 
 
                       {/* Desktop Sort List */}
                       <div className="hidden sm:flex gap-3 text-neutral-700 select-none">
-                        {(sortOptions || [
-                          { label: "Most Relevant", value: "most_relevant" },
-                          { label: "Submission Date", value: "submission_date" },
-                          { label: "Recently Added", value: "recently_added" },
-                          { label: "Price Amount", value: "price_amount" },
-                        ]).map((opt) => {
+                        {(
+                          sortOptions || [
+                            { label: "Most Relevant", value: "most_relevant" },
+                            {
+                              label: "Submission Date",
+                              value: "submission_date",
+                            },
+                            {
+                              label: "Recently Added",
+                              value: "recently_added",
+                            },
+                            { label: "Price Amount", value: "price_amount" },
+                          ]
+                        ).map((opt) => {
                           const id = opt.value;
                           const label = opt.label;
                           const isActive = curSort === id;
@@ -245,12 +261,26 @@ export function GenericListingPage<T extends { sort?: string; sortOrder?: "asc" 
                               <SelectValue placeholder="Sort by" />
                             </SelectTrigger>
                             <SelectContent>
-                              {(sortOptions || [
-                                { label: "Most Relevant", value: "most_relevant" },
-                                { label: "Submission Date", value: "submission_date" },
-                                { label: "Recently Added", value: "recently_added" },
-                                { label: "Price Amount", value: "price_amount" },
-                              ]).map((opt) => (
+                              {(
+                                sortOptions || [
+                                  {
+                                    label: "Most Relevant",
+                                    value: "most_relevant",
+                                  },
+                                  {
+                                    label: "Submission Date",
+                                    value: "submission_date",
+                                  },
+                                  {
+                                    label: "Recently Added",
+                                    value: "recently_added",
+                                  },
+                                  {
+                                    label: "Price Amount",
+                                    value: "price_amount",
+                                  },
+                                ]
+                              ).map((opt) => (
                                 <SelectItem key={opt.value} value={opt.value}>
                                   {opt.label}
                                 </SelectItem>

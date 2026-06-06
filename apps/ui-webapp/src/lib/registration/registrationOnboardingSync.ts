@@ -130,12 +130,17 @@ export function validateRegistrationOnboarding(
 
   switch (values.userCategory) {
     case UserCategoryValue.SCHOOL_STUDENT:
-      if (!values.schoolName.trim()) errors.schoolName = "School name is required";
+      if (!values.schoolName.trim())
+        errors.schoolName = "School name is required";
       if (!values.schoolClass.trim()) errors.schoolClass = "Class is required";
       break;
     case UserCategoryValue.COLLEGE_STUDENT:
     case UserCategoryValue.PROFESSIONAL_SCHOOL_STUDENT:
-      if (!values.collegeSkipped && !values.collegeId && !values.collegeName.trim()) {
+      if (
+        !values.collegeSkipped &&
+        !values.collegeId &&
+        !values.collegeName.trim()
+      ) {
         errors.college = "College is required unless not listed";
       }
       break;
@@ -160,27 +165,36 @@ export function buildCreateOnboardingDtoFromRegistration(args: {
 }): CreateOnboardingDto {
   const { onboarding, answers, profile } = args;
 
-  const genderRaw = onboarding.gender || answers["default-gender"] || profile?.gender;
+  const genderRaw =
+    onboarding.gender || answers["default-gender"] || profile?.gender;
   if (!genderRaw) throw new Error("Gender is required.");
   const gender = asGender(genderRaw);
 
   const categoryRaw =
-    onboarding.userCategory || profile?.userCategory || UserCategoryValue.COLLEGE_STUDENT;
+    onboarding.userCategory ||
+    profile?.userCategory ||
+    UserCategoryValue.COLLEGE_STUDENT;
   const userCategory = asCategory(categoryRaw);
 
   const dto: CreateOnboardingDto = {
     gender,
     userCategory,
-    interests: onboarding.interests.length ? [...onboarding.interests] : profile?.interests,
+    interests: onboarding.interests.length
+      ? [...onboarding.interests]
+      : profile?.interests,
     skills: onboarding.skills.length ? [...onboarding.skills] : profile?.skills,
     experienceLevel:
       onboarding.experienceLevel || profile?.experienceLevel || undefined,
     teamPreference:
       onboarding.teamPreference || profile?.teamPreference || undefined,
-    locationCoords: onboarding.locationCoords.trim() || profile?.locationCoords || undefined,
-    locationState: onboarding.locationState.trim() || profile?.locationState || undefined,
+    locationCoords:
+      onboarding.locationCoords.trim() || profile?.locationCoords || undefined,
+    locationState:
+      onboarding.locationState.trim() || profile?.locationState || undefined,
     locationCountry:
-      onboarding.locationCountry.trim() || profile?.locationCountry || undefined,
+      onboarding.locationCountry.trim() ||
+      profile?.locationCountry ||
+      undefined,
     locationPlaceId: onboarding.locationPlaceId || undefined,
   };
 
