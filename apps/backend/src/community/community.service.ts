@@ -902,7 +902,7 @@ export class CommunityService {
       throw new NotFoundException('Member record not found.');
     }
 
-    let member = community.members[0];
+    const member = community.members[0];
     if (!member && isOwner && community.owner) {
       const owner = community.owner;
       const displayName =
