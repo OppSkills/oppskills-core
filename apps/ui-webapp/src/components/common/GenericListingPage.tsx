@@ -23,16 +23,16 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Pagination from "./Pagination";
 
-interface GenericListingPageProps {
+interface GenericListingPageProps<T extends object> {
   items: ListingItem[];
   isLoading: boolean;
   error?: unknown;
   onLoadMore?: () => void;
   hasMore?: boolean;
   isFetchingNextPage?: boolean;
-  filters?: any;
+  filters?: T;
   setFilters?: (
-    filters: any | ((prev: any) => any),
+    filters: T | ((prev: T) => T),
   ) => void;
   title?: string;
   description?: string;
@@ -49,7 +49,7 @@ interface GenericListingPageProps {
   onClearFilters?: () => void;
 }
 
-export function GenericListingPage({
+export function GenericListingPage<T extends object>({
   items,
   isLoading,
   error,
@@ -65,7 +65,7 @@ export function GenericListingPage({
   filterSidebar,
   sortOptions,
   onClearFilters,
-}: GenericListingPageProps) {
+}: GenericListingPageProps<T>) {
   const [curSort, setCurSort] = useState(filters?.sort || "recently_added");
   const [curSortOrder, setCurSortOrder] = useState<"asc" | "desc">(
     filters?.sortOrder || "desc",
@@ -88,11 +88,11 @@ export function GenericListingPage({
       setFilters &&
       (filters.sort !== curSort || filters.sortOrder !== curSortOrder)
     ) {
-      setFilters((prev) => ({
+      setFilters((prev: T) => ({
         ...prev,
         sort: curSort,
         sortOrder: curSortOrder,
-      }));
+      } as T));
     }
   }, [curSort, curSortOrder, filters, setFilters]);
 

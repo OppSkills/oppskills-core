@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useMemo, useCallback } from "react";
 import { usePublicCommunitiesPaged } from "@/hooks/useCommunities";
 import { GenericListingPage } from "@/components/common/GenericListingPage";
 import { ListingItem } from "@/components/common/ListingCard";
 import { CommunityFilterSidebar } from "@/components/common/CommunityFilterSidebar";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
+
+const communitySorts = [
+  { label: "Recently Added", value: "recently_added" },
+  { label: "Name", value: "name" },
+];
 
 function CommunitiesPageContent() {
   const router = useRouter();
@@ -15,10 +20,26 @@ function CommunitiesPageContent() {
 
   // Read parameters from URL (Single source of truth)
   const search = searchParams.get("q") || "";
-  const industry = searchParams.get("industry")?.split(",").filter(Boolean) || [];
+  
+  const rawIndustry = searchParams.get("industry") || "";
+  const industry = useMemo(() => {
+    return rawIndustry.split(",").filter(Boolean);
+  }, [rawIndustry]);
+
   const sort = searchParams.get("sort") || "recently_added";
-  const sortOrder = (searchParams.get("sortOrder") as "asc" | "desc") || "desc";
-  const curPage = parseInt(searchParams.get("page") || "1", 10);
+
+  const rawSortOrder = searchParams.get("sortOrder");
+  const sortOrder = useMemo(() => {
+    return rawSortOrder === "asc" || rawSortOrder === "desc" ? rawSortOrder : "desc";
+  }, [rawSortOrder]);
+
+  const rawPage = searchParams.get("page");
+  const curPage = useMemo(() => {
+    if (!rawPage) return 1;
+    const parsed = parseInt(rawPage, 10);
+    return isNaN(parsed) || parsed < 1 ? 1 : parsed;
+  }, [rawPage]);
+
   const [perPage, setPerPage] = useState(10);
 
   const { data, isLoading, error } = usePublicCommunitiesPaged(
@@ -36,22 +57,24 @@ function CommunitiesPageContent() {
   const communities = data?.items ?? [];
   const totalPages = data?.totalPages ?? 1;
 
-  const items: ListingItem[] = communities.map((c) => ({
-    id: c.id,
-    title: c.name,
-    slug: c.handle,
-    bannerUrl: c.coverImage ?? undefined,
-    avatarUrl: c.avatarImage ?? undefined,
-    status: c.industry,
-    location: `${c.memberCount} members`,
-    registrationCount: c.memberCount,
-    opportunityCount: c.postCount,
-    tags: [c.industry],
-    routePrefix: "community",
-    eventType: "Community",
-  }));
+  const items: ListingItem[] = useMemo(() => {
+    return communities.map((c) => ({
+      id: c.id,
+      title: c.name,
+      slug: c.handle,
+      bannerUrl: c.coverImage ?? undefined,
+      avatarUrl: c.avatarImage ?? undefined,
+      status: c.industry,
+      location: `${c.memberCount} members`,
+      registrationCount: c.memberCount,
+      opportunityCount: c.postCount,
+      tags: [c.industry],
+      routePrefix: "community",
+      eventType: "Community",
+    }));
+  }, [communities]);
 
-  const updateUrl = (updates: {
+  const updateUrl = useCallback((updates: {
     search?: string;
     industry?: string[];
     sort?: string;
@@ -87,16 +110,61 @@ function CommunitiesPageContent() {
     }
 
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  };
+  }, [router, pathname, searchParams]);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     router.replace(pathname, { scroll: false });
-  };
+  }, [router, pathname]);
 
-  const communitySorts = [
-    { label: "Recently Added", value: "recently_added" },
-    { label: "Name", value: "name" },
-  ];
+  const handlePageSizeChange = useCallback((val: number) => {
+    setPerPage(val);
+    updateUrl({ page: 1 });
+  }, [updateUrl]);
+
+  const handlePageChange = useCallback((page: number) => {
+    updateUrl({ page });
+  }, [updateUrl]);
+
+  const handleSetFilters = useCallback((f: any) => {
+    // Map sort actions back to URL updates
+    if (typeof f === "function") {
+      const prev = { sort, sortOrder };
+      const next = f(prev);
+      updateUrl({ sort: next.sort, sortOrder: next.sortOrder, page: 1 });
+    } else {
+      updateUrl({ sort: f.sort, sortOrder: f.sortOrder, page: 1 });
+    }
+  }, [sort, sortOrder, updateUrl]);
+
+  const handleFilterChange = useCallback((newVals: { search: string; industry: string[] }) => {
+    updateUrl({ search: newVals.search, industry: newVals.industry, page: 1 });
+  }, [updateUrl]);
+
+  const paginationConfig = useMemo(() => ({
+    setPerPage: handlePageSizeChange,
+    perPage,
+    curPage,
+    totalPages,
+    onPageChange: handlePageChange,
+  }), [handlePageSizeChange, perPage, curPage, totalPages, handlePageChange]);
+
+  const filtersConfig = useMemo(() => ({
+    search,
+    modes: [],
+    status: [],
+    eventDates: [],
+    eligibility: [],
+    sort,
+    sortOrder,
+  }), [search, sort, sortOrder]);
+
+  const filterSidebarElement = useMemo(() => (
+    <CommunityFilterSidebar
+      values={{ search, industry }}
+      onChange={handleFilterChange}
+      onClear={handleClearFilters}
+    />
+  ), [search, industry, handleFilterChange, handleClearFilters]);
 
   return (
     <GenericListingPage
@@ -104,45 +172,11 @@ function CommunitiesPageContent() {
       isLoading={isLoading}
       error={error}
       showPagination={true}
-      pagination={{
-        setPerPage: (val) => {
-          setPerPage(val);
-          updateUrl({ page: 1 });
-        },
-        perPage,
-        curPage,
-        totalPages,
-        onPageChange: (page) => updateUrl({ page }),
-      }}
-      filters={{
-        search,
-        modes: [],
-        status: [],
-        eventDates: [],
-        eligibility: [],
-        sort,
-        sortOrder,
-      }}
-      setFilters={(f) => {
-        // Map sort actions back to URL updates
-        if (typeof f === "function") {
-          const prev = { sort, sortOrder };
-          const next = f(prev);
-          updateUrl({ sort: next.sort, sortOrder: next.sortOrder, page: 1 });
-        } else {
-          updateUrl({ sort: f.sort, sortOrder: f.sortOrder, page: 1 });
-        }
-      }}
+      pagination={paginationConfig}
+      filters={filtersConfig}
+      setFilters={handleSetFilters}
       onClearFilters={handleClearFilters}
-      filterSidebar={
-        <CommunityFilterSidebar
-          values={{ search, industry }}
-          onChange={(newVals) => {
-            updateUrl({ search: newVals.search, industry: newVals.industry, page: 1 });
-          }}
-          onClear={handleClearFilters}
-        />
-      }
+      filterSidebar={filterSidebarElement}
       sortOptions={communitySorts}
       title="Communities"
       description="Discover vibrant communities to connect, collaborate, and grow."

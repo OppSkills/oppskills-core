@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -42,21 +42,29 @@ export function CommunityFilterSidebar({
   className,
 }: CommunityFilterSidebarProps) {
   const [localSearch, setLocalSearch] = useState(values.search);
+  const onChangeRef = useRef(onChange);
+  const valuesRef = useRef(values);
+
+  // Keep refs updated on every render
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    valuesRef.current = values;
+  });
 
   // Sync local search when parent search value changes (e.g. on clear)
   useEffect(() => {
     setLocalSearch(values.search);
   }, [values.search]);
 
-  // Debounced search input sync
+  // Debounced search input sync (only triggers when localSearch changes)
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (localSearch !== values.search) {
-        onChange({ ...values, search: localSearch });
+      if (localSearch !== valuesRef.current.search) {
+        onChangeRef.current({ ...valuesRef.current, search: localSearch });
       }
     }, 450);
     return () => clearTimeout(timer);
-  }, [localSearch, values, onChange]);
+  }, [localSearch]);
 
   const handleCheckboxChange = (industry: string, checked: boolean | string) => {
     let updated: string[];
