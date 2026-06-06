@@ -97,6 +97,26 @@ export class NotificationController {
     );
   }
 
+  @Get('community/:communityId')
+  @ApiOperation({ summary: 'List all notifications for a community' })
+  @ApiResponse({ status: 200, description: 'List of community notifications' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async listNotificationsForCommunity(
+    @Param('communityId') communityId: string,
+    @Req() req: Request,
+  ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID is required.');
+    }
+    const validCommunityId = assertNonEmptyId(communityId, 'communityId');
+    return this.notificationService.listNotificationsForCommunity(
+      validCommunityId,
+      userId,
+    );
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a notification details by its ID' })
   @ApiResponse({ status: 200, description: 'Notification details' })

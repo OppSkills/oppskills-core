@@ -15,4 +15,4 @@ export * from "./ReferralInvitationEmail";
 export * from "./CommunityWelcomeEmail";
 export * from "./CommunityTaskAssignedEmail";
 export * from "./CommunityTaskStatusUpdatedEmail";
-
+export * from "./CommunityNotificationEmail";

@@ -14,6 +14,7 @@ model CommunityEntity {
   meets                 CommunityMeetEntity[]
   members               CommunityMemberEntity[]
   communityTaskEntities CommunityTaskEntity[]
+  notifications         notifications[]         @relation("CommunityNotifications")
 
   @@unique([name, ownerId])
   @@index([ownerId])

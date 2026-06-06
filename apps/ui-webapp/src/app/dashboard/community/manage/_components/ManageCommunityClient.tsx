@@ -231,15 +231,15 @@ export default function ManageCommunityClient({
   const isModerator = currentUserMember?.accessControlRole === "MODERATOR";
   const isEligibleToModify = isOwner || isAdmin || isModerator;
 
-  const handleSearchChange = (val: string) => {
+  const handleSearchChange = useCallback((val: string) => {
     setSearch(val);
     setPage(1);
-  };
+  }, []);
 
-  const handleRoleChange = (val: string) => {
+  const handleRoleChange = useCallback((val: string) => {
     setRole(val);
     setPage(1);
-  };
+  }, []);
 
   // State Mutators
   const handleInviteMembers = async (

@@ -31,13 +31,24 @@ import {
   submitMissingRegistrationAnswers,
   saveEventRegistrationCheckoutDraft,
 } from "@/lib/api/eventApi";
-import { getMe, submitOnboarding } from "@/lib/api/usersApi";
-import type { CreateOnboardingDto, MeResponseDto } from "@oppskills/types";
+import { getMe, submitOnboarding, updateProfile } from "@/lib/api/usersApi";
+import type { MeResponseDto } from "@oppskills/types";
+import { UserCategoryValue } from "@oppskills/types/enums";
 import { mergeDefaultAndCustomFields } from "@/lib/registration/mergeRegistrationFields";
 import {
+  EMPTY_REGISTRATION_ONBOARDING,
+  type RegistrationOnboardingErrors,
+  type RegistrationOnboardingValues,
+} from "@/lib/registration/registrationOnboardingTypes";
+import {
   buildCreateOnboardingDtoFromRegistration,
-  filterAnswersToMergedFieldIds,
-} from "@/lib/registration/hackathonOnboardingFromAnswers";
+  buildProfileNameUpdate,
+  buildRegistrationSubmissionAnswers,
+  clearRegistrationOnboardingForCategory,
+  injectOnboardingIntoRegistrationAnswers,
+  prefillRegistrationOnboarding,
+  validateRegistrationOnboarding,
+} from "@/lib/registration/registrationOnboardingSync";
 import { presignDocumentUpload } from "@/lib/api/mediaApi";
 import { uploadDocumentToS3PresignedPost } from "@/lib/uploads/uploadDocumentToS3";
 import { getApiErrorMessage, cn, ensureAbsoluteUrl } from "@/lib/utils";
@@ -200,6 +211,11 @@ export function RegistrationModal({
   const [fieldsReady, setFieldsReady] = useState(false);
   const [onboardingProfile, setOnboardingProfile] =
     useState<MeResponseDto["onboardingProfile"]>(undefined);
+  const [meData, setMeData] = useState<MeResponseDto | null>(null);
+  const [onboardingValues, setOnboardingValues] =
+    useState<RegistrationOnboardingValues>(EMPTY_REGISTRATION_ONBOARDING);
+  const [onboardingErrors, setOnboardingErrors] =
+    useState<RegistrationOnboardingErrors>({});
 
   const maxSize = mapMaxSize(competition.participantType || "");
   const isIndividual =
@@ -208,6 +224,48 @@ export function RegistrationModal({
   const onUpdateAnswer = useCallback((fieldId: string, value: any) => {
     setAnswers((prev) => ({ ...prev, [fieldId]: value }));
   }, []);
+
+  const handleOnboardingChange = useCallback(
+    (next: RegistrationOnboardingValues) => {
+      setOnboardingValues((prev) => {
+        if (
+          next.userCategory &&
+          next.userCategory !== prev.userCategory
+        ) {
+          return clearRegistrationOnboardingForCategory(
+            next,
+            next.userCategory as UserCategoryValue,
+          );
+        }
+        return next;
+      });
+      setOnboardingErrors({});
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!isOpen || !fieldsReady) return;
+    const merged = mergeDefaultAndCustomFields(
+      competition.registrationForm?.fields as RegistrationField[] | undefined,
+      onboardingValues.userCategory || onboardingProfile?.userCategory,
+      { includeOnboardingBlock: true },
+    );
+    setMergedFields(merged);
+  }, [
+    isOpen,
+    fieldsReady,
+    onboardingValues.userCategory,
+    onboardingProfile?.userCategory,
+    competition.registrationForm?.fields,
+  ]);
+
+  const onboardingFieldProps = {
+    onboardingValues,
+    onOnboardingChange: handleOnboardingChange,
+    onboardingErrors,
+    showTeamPreference: type === "HACKATHON",
+  };
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -222,6 +280,9 @@ export function RegistrationModal({
       setMergedFields([]);
       setFieldsReady(false);
       setOnboardingProfile(undefined);
+      setMeData(null);
+      setOnboardingValues(EMPTY_REGISTRATION_ONBOARDING);
+      setOnboardingErrors({});
     } else {
       if (initialInvitationCode) {
         setInvitationCode(initialInvitationCode);
@@ -246,20 +307,28 @@ export function RegistrationModal({
         try {
           const token = await getToken();
           if (!token) return;
-          const meData = await getMe(token);
-          const profile = meData.onboardingProfile;
+          const me = await getMe(token);
+          const profile = me.onboardingProfile;
+          setMeData(me);
           setOnboardingProfile(profile ?? undefined);
+
+          const prefilledOnboarding = prefillRegistrationOnboarding({
+            me,
+            phone: user?.primaryPhoneNumber?.phoneNumber,
+          });
+          setOnboardingValues(prefilledOnboarding);
 
           const merged = mergeDefaultAndCustomFields(
             competition.registrationForm?.fields as
               | RegistrationField[]
               | undefined,
-            profile?.userCategory,
+            prefilledOnboarding.userCategory || profile?.userCategory,
+            { includeOnboardingBlock: true },
           );
           setMergedFields(merged);
 
-          const phone = user?.primaryPhoneNumber?.phoneNumber;
-          const cat = profile?.userCategory;
+          const phone =
+            profile?.mobileNumber || user?.primaryPhoneNumber?.phoneNumber;
           const initialAnswers: Record<string, unknown> = {};
 
           const setIf = (id: string, val: unknown) => {
@@ -273,40 +342,22 @@ export function RegistrationModal({
             if (id === "default-name") {
               setIf(
                 id,
-                [meData.firstName, meData.lastName].filter(Boolean).join(" "),
+                [me.firstName, me.lastName].filter(Boolean).join(" "),
               );
             } else if (id === "default-email") {
-              setIf(id, meData.email);
+              setIf(id, me.email);
             } else if (id === "default-phone") {
               setIf(id, phone);
-            } else if (id === "default-gender") {
-              setIf(id, profile?.gender);
-            } else if (id === "default-school-name") {
-              if (cat === "SCHOOL_STUDENT") setIf(id, profile?.schoolName);
-            } else if (id === "default-school-class") {
-              if (cat === "SCHOOL_STUDENT") setIf(id, profile?.schoolClass);
-            } else if (id === "default-college-name") {
-              if (
-                cat === "COLLEGE_STUDENT" ||
-                cat === "PROFESSIONAL_SCHOOL_STUDENT" ||
-                cat === "FRESHER" ||
-                !cat
-              ) {
-                setIf(id, profile?.college?.name);
-              }
-            } else if (id === "default-company-name") {
-              if (cat === "WORKING_PROFESSIONAL") {
-                setIf(id, profile?.companyName);
-              }
             } else {
               const lowerLabel = field.label.toLowerCase();
               const prefillMap: Record<string, unknown> = {
-                name: [meData.firstName, meData.lastName]
-                  .filter(Boolean)
-                  .join(" "),
-                email: meData.email,
+                name: [me.firstName, me.lastName].filter(Boolean).join(" "),
+                email: me.email,
                 phone,
                 gender: profile?.gender,
+                city: profile?.locationCoords,
+                state: profile?.locationState,
+                country: profile?.locationCountry,
               };
               Object.entries(prefillMap).forEach(([key, value]) => {
                 if (
@@ -874,8 +925,23 @@ export function RegistrationModal({
         return;
       }
 
+      const onboardingValidation = validateRegistrationOnboarding(
+        onboardingValues,
+      );
+      if (!onboardingValidation.isValid) {
+        setOnboardingErrors(onboardingValidation.errors);
+        toast.error("Please complete your profile details.");
+        return;
+      }
+      setOnboardingErrors({});
+
+      const answersWithOnboarding = injectOnboardingIntoRegistrationAnswers(
+        answers,
+        onboardingValues,
+      );
+
       const missingFields = mergedFields
-        .filter((f) => f.required && !answers[f.id])
+        .filter((f) => f.required && !answersWithOnboarding[f.id])
         .map((f) => f.label);
 
       if (missingFields.length > 0) {
@@ -886,8 +952,8 @@ export function RegistrationModal({
       }
 
       const mergedFieldIds = new Set(mergedFields.map((f) => f.id));
-      const filteredFormatted = filterAnswersToMergedFieldIds(
-        answers,
+      const filteredFormatted = buildRegistrationSubmissionAnswers(
+        answersWithOnboarding,
         mergedFieldIds,
       );
 
@@ -922,10 +988,11 @@ export function RegistrationModal({
         return;
       }
 
-      let onboardingDto: CreateOnboardingDto;
+      let onboardingDto;
       try {
         onboardingDto = buildCreateOnboardingDtoFromRegistration({
-          answers,
+          onboarding: onboardingValues,
+          answers: answersWithOnboarding,
           profile: onboardingProfile ?? null,
         });
       } catch (parseErr: unknown) {
@@ -947,6 +1014,21 @@ export function RegistrationModal({
           ),
         );
         return;
+      }
+
+      const fullName = answersWithOnboarding["default-name"];
+      if (typeof fullName === "string") {
+        const nameUpdate = buildProfileNameUpdate(fullName, {
+          firstName: meData?.firstName,
+          lastName: meData?.lastName,
+        });
+        if (nameUpdate) {
+          try {
+            await updateProfile(token, nameUpdate);
+          } catch (profileErr: unknown) {
+            console.warn("Profile name sync failed:", profileErr);
+          }
+        }
       }
 
       if (completionMode && type === "HACKATHON") {
@@ -1258,6 +1340,7 @@ export function RegistrationModal({
                 completionMode
                 paymentCompleted={paymentCompleted}
                 omitTicketTierSection={omitTicketTierSection}
+                {...onboardingFieldProps}
               />
             ) : completionMode && type === "EVENT" ? (
               <CreateTeamFormContent
@@ -1282,6 +1365,7 @@ export function RegistrationModal({
                 completionMode
                 paymentCompleted={paymentCompleted}
                 omitTicketTierSection={omitTicketTierSection}
+                {...onboardingFieldProps}
               />
             ) : mode === "CREATE" ? (
               <CreateTeamFormContent
@@ -1305,6 +1389,7 @@ export function RegistrationModal({
                 setIsOpenToggle={setIsOpenToggle}
                 type={type}
                 omitTicketTierSection={omitTicketTierSection}
+                {...onboardingFieldProps}
               />
             ) : (
               <JoinTeamFormContent
@@ -1324,6 +1409,7 @@ export function RegistrationModal({
                 isUploading={isUploading}
                 uploadedFiles={uploadedFiles}
                 slug={competition.slug}
+                {...onboardingFieldProps}
               />
             )}
           </div>

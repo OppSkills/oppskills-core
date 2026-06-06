@@ -5,6 +5,7 @@ import { render } from '@react-email/components';
 import {
   EventNotificationEmail,
   HackathonNotificationEmail,
+  CommunityNotificationEmail,
 } from '@oppskills/emails';
 
 export async function processNotification(notificationId: string) {
@@ -29,6 +30,13 @@ export async function processNotification(notificationId: string) {
     });
     if (hackathon)
       entityDetails = { name: hackathon.name, slug: hackathon.slug };
+  } else if (notification.communityId) {
+    const community = await prisma.communityEntity.findUnique({
+      where: { id: notification.communityId },
+      select: { name: true, handle: true },
+    });
+    if (community)
+      entityDetails = { name: community.name, slug: community.handle };
   }
 
   // Mark status as PROCESSING immediately
@@ -100,6 +108,29 @@ export async function processNotification(notificationId: string) {
           }
         }
         lastIdThisBatch = submissions[submissions.length - 1].id;
+      } else if (notification.communityId) {
+        const members = await prisma.communityMemberEntity.findMany({
+          where: {
+            communityId: notification.communityId,
+            ...(lastProcessedId ? { id: { gt: lastProcessedId } } : {}),
+          },
+          take: 100,
+          orderBy: { id: 'asc' },
+          include: { user: { select: { email: true, firstName: true } } },
+        });
+
+        if (members.length === 0) break;
+
+        batchRecipients = [];
+        for (const m of members) {
+          if (m.user?.email) {
+            batchRecipients.push({
+              email: m.user.email,
+              firstName: m.user.firstName,
+            });
+          }
+        }
+        lastIdThisBatch = members[members.length - 1].id;
       }
 
       if (batchRecipients.length === 0) break;
@@ -128,6 +159,16 @@ export async function processNotification(notificationId: string) {
                     firstName: recipient.firstName || undefined,
                     hackathonName: entityDetails.name,
                     hackathonSlug: entityDetails.slug,
+                    htmlBody: notification.content,
+                  }),
+                );
+              } else if (notification.communityId) {
+                subject = `Update for ${entityDetails.name}`;
+                html = await render(
+                  createElement(CommunityNotificationEmail, {
+                    firstName: recipient.firstName || undefined,
+                    communityName: entityDetails.name,
+                    communityHandle: entityDetails.slug,
                     htmlBody: notification.content,
                   }),
                 );

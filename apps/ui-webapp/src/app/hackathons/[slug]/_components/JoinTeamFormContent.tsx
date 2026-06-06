@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { JoinTeamFormContentProps } from "./RegistrationModal.types";
+import { RegistrationOnboardingFields } from "@/components/registration/RegistrationOnboardingFields";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -50,6 +51,10 @@ export function JoinTeamFormContent({
   isUploading,
   uploadedFiles,
   slug,
+  onboardingValues,
+  onOnboardingChange,
+  onboardingErrors,
+  showTeamPreference = true,
 }: JoinTeamFormContentProps) {
   const matchingTeam = teams.find(
     (t) => t.invitationCode?.toUpperCase() === invitationCode?.toUpperCase(),
@@ -343,6 +348,16 @@ export function JoinTeamFormContent({
             </p>
           </div>
         </>
+      )}
+
+      {onboardingValues && onOnboardingChange && (
+        <RegistrationOnboardingFields
+          values={onboardingValues}
+          onChange={onOnboardingChange}
+          errors={onboardingErrors}
+          showTeamPreference={showTeamPreference}
+          compact
+        />
       )}
 
       <div className="relative flex items-center justify-center">
