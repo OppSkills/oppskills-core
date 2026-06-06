@@ -7,6 +7,10 @@ import { ListingItem } from "@/components/common/ListingCard";
 import { CommunityFilterSidebar } from "@/components/common/CommunityFilterSidebar";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import {
+  COMMUNITY_INDUSTRY_LABELS,
+  type CommunityIndustryValue,
+} from "@oppskills/types/enums";
 
 const communitySorts = [
   { label: "Recently Added", value: "recently_added" },
@@ -60,20 +64,25 @@ function CommunitiesPageContent() {
   const totalPages = data?.totalPages ?? 1;
 
   const items: ListingItem[] = useMemo(() => {
-    return communities.map((c) => ({
-      id: c.id,
-      title: c.name,
-      slug: c.handle,
-      bannerUrl: c.coverImage ?? undefined,
-      avatarUrl: c.avatarImage ?? undefined,
-      status: c.industry,
-      location: `${c.memberCount} members`,
-      registrationCount: c.memberCount,
-      opportunityCount: c.postCount,
-      tags: [c.industry],
-      routePrefix: "community",
-      eventType: "Community",
-    }));
+    return communities.map((c) => {
+      const displayIndustry =
+        COMMUNITY_INDUSTRY_LABELS[c.industry as CommunityIndustryValue] ??
+        c.industry;
+      return {
+        id: c.id,
+        title: c.name,
+        slug: c.handle,
+        bannerUrl: c.coverImage ?? undefined,
+        avatarUrl: c.avatarImage ?? undefined,
+        status: displayIndustry,
+        location: `${c.memberCount} members`,
+        registrationCount: c.memberCount,
+        opportunityCount: c.postCount,
+        tags: [displayIndustry],
+        routePrefix: "community",
+        eventType: "Community",
+      };
+    });
   }, [communities]);
 
   const updateUrl = useCallback(

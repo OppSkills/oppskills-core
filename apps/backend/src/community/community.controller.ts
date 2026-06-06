@@ -348,6 +348,8 @@ export class CommunityController {
   }
 
   @Get(':id/members/me')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @ApiOperation({
     summary: 'Get current user member record in a community',
   })
@@ -374,7 +376,7 @@ export class CommunityController {
     // may access the manage dashboard. Regular MEMBERs are community
     // participants only and must not gain dashboard access.
     const eligibleRoles = ['ADMIN', 'MODERATOR', 'READ_ONLY'];
-    if (!eligibleRoles.includes(record.accessControlRole as string)) {
+    if (!eligibleRoles.includes(record.accessControlRole)) {
       throw new ForbiddenException(
         'You do not have permission to view this community dashboard.',
       );
@@ -439,6 +441,8 @@ export class CommunityController {
   }
 
   @Get(':id/stats')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @ApiOperation({
     summary: 'Get community dashboard statistics',
     description:
@@ -464,6 +468,8 @@ export class CommunityController {
   }
 
   @Post(':id/join')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth('clerk-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Join a community',
