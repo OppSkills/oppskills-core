@@ -1,5 +1,10 @@
 import { buildAuthHeaders, createApiClient } from "./apiClient";
 import type { CommunityIndustryValue } from "@oppskills/types/enums";
+import type {
+  PublicCommunityListResponse,
+  PublicCommunityProfile,
+  UpdateCommunityDto,
+} from "@oppskills/types";
 
 const API = createApiClient("/communities");
 
@@ -123,6 +128,36 @@ export async function getMyCommunities(
   });
 }
 
+export async function checkCommunityHandleAvailability(
+  handle: string,
+): Promise<{ available: boolean }> {
+  const res = await API.get("/handles/check", {
+    params: { handle },
+  });
+  const raw = res.data as unknown;
+  if (!isRecord(raw) || typeof raw.available !== "boolean") {
+    throw new Error('Invalid response: missing "available".');
+  }
+  return { available: raw.available };
+}
+
+export async function suggestCommunityHandles(
+  name: string,
+): Promise<{ suggestions: string[] }> {
+  const res = await API.get("/handles/suggest", {
+    params: { name },
+  });
+  const raw = res.data as unknown;
+  if (!isRecord(raw) || !Array.isArray(raw.suggestions)) {
+    throw new Error('Invalid response: missing "suggestions".');
+  }
+  return {
+    suggestions: raw.suggestions.filter(
+      (item): item is string => typeof item === "string",
+    ),
+  };
+}
+
 export async function getCommunity(
   token: string,
   id: string,
@@ -226,4 +261,77 @@ export async function deleteCommunityMember(
     headers: buildAuthHeaders(token),
   });
   return res.data;
+}
+
+export async function followCommunity(
+  token: string,
+  communityId: string,
+): Promise<{ following: boolean; memberCount: number }> {
+  const res = await API.post(
+    `/${communityId}/follow`,
+    {},
+    { headers: buildAuthHeaders(token) },
+  );
+  return res.data as { following: boolean; memberCount: number };
+}
+
+export async function unfollowCommunity(
+  token: string,
+  communityId: string,
+): Promise<{ following: boolean; memberCount: number }> {
+  const res = await API.delete(`/${communityId}/follow`, {
+    headers: buildAuthHeaders(token),
+  });
+  return res.data as { following: boolean; memberCount: number };
+}
+
+export async function getPublicCommunities(
+  params: {
+    page?: number;
+    take?: number;
+    q?: string;
+    industry?: string[];
+    sort?: string;
+    sortOrder?: "asc" | "desc";
+  } = {},
+): Promise<PublicCommunityListResponse> {
+  const res = await API.get("/public", { params });
+  return res.data as PublicCommunityListResponse;
+}
+
+export async function getPublicCommunityByHandle(
+  handle: string,
+  token?: string,
+): Promise<PublicCommunityProfile> {
+  const headers = token ? buildAuthHeaders(token) : undefined;
+  const res = await API.get(`/public/${handle}`, { headers });
+  return res.data as PublicCommunityProfile;
+}
+
+export async function updateCommunity(
+  token: string,
+  id: string,
+  data: UpdateCommunityDto,
+): Promise<CommunityResponse> {
+  const res = await API.patch(`/${id}`, data, {
+    headers: buildAuthHeaders(token),
+  });
+
+  const raw = res.data as unknown;
+  if (!isRecord(raw)) {
+    throw new Error("Invalid response: expected object.");
+  }
+
+  return {
+    id: requireString(raw, "id"),
+    name: requireString(raw, "name"),
+    handle: requireString(raw, "handle"),
+    description: optionalString(raw, "description"),
+    website: optionalString(raw, "website"),
+    industry: requireString(raw, "industry") as CommunityIndustryValue,
+    coverImage: optionalString(raw, "coverImage"),
+    avatarImage: optionalString(raw, "avatarImage"),
+    ownerId: requireString(raw, "ownerId"),
+    createdAt: requireString(raw, "createdAt"),
+  };
 }
