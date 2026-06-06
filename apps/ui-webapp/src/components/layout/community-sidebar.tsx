@@ -27,11 +27,11 @@ const getCommunityNavItems = (id: string) => [
     url: `/dashboard/community/manage/${id}`,
     icon: <Widget2 className="size-4" />,
   },
-  {
-    title: "Community Goals",
-    url: `/dashboard/community/manage/${id}/goals`,
-    icon: <Checklist className="size-4" />,
-  },
+  // {
+  //   title: "Community Goals",
+  //   url: `/dashboard/community/manage/${id}/goals`,
+  //   icon: <Checklist className="size-4" />,
+  // },
   {
     title: "Referral",
     url: `/dashboard/community/manage/${id}/referral`,

@@ -183,7 +183,7 @@ export default function MemberDetailsSheet({
                 </div>
 
                 {/* Profile tags list */}
-                <div className="flex items-start gap-3 pt-0.5 border-t border-dashed border-neutral-100 mt-0.5 pt-3">
+                <div className="flex items-start gap-3">
                   <BookOpen className="w-5 h-5 text-neutral-400 shrink-0 mt-0.5" />
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {(member.tags || ["Member"]).map((tag, idx) => (
