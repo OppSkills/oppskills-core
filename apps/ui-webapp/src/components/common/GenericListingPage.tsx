@@ -23,7 +23,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Pagination from "./Pagination";
 
-interface GenericListingPageProps<T extends object> {
+interface GenericListingPageProps<T extends { sort?: string; sortOrder?: "asc" | "desc" }> {
   items: ListingItem[];
   isLoading: boolean;
   error?: unknown;
@@ -49,7 +49,7 @@ interface GenericListingPageProps<T extends object> {
   onClearFilters?: () => void;
 }
 
-export function GenericListingPage<T extends object>({
+export function GenericListingPage<T extends { sort?: string; sortOrder?: "asc" | "desc" }>({
   items,
   isLoading,
   error,
